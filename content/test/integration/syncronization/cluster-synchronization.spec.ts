@@ -11,6 +11,7 @@ import {
 } from '../E2EAssertions'
 import { loadTestEnvironment } from '../E2ETestEnvironment'
 import { awaitUntil, buildDeployData, buildDeployDataAfterEntity } from '../E2ETestUtils'
+import { getIntegrationResourcePathFor } from '../resources/get-resources-path'
 import { TestProgram } from '../TestProgram'
 
 loadTestEnvironment()('End 2 end synchronization tests', function (testEnv) {
@@ -58,14 +59,14 @@ loadTestEnvironment()('End 2 end synchronization tests', function (testEnv) {
     // Prepare data to be deployed
     const { deployData: deployData1, controllerEntity: entityBeingDeployed1 } = await buildDeployData(['X1,Y1'], {
       metadata: 'metadata',
-      contentPaths: ['test/integration/resources/some-binary-file.png']
+      contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
     })
     const { deployData: deployData2, controllerEntity: entityBeingDeployed2 } = await buildDeployDataAfterEntity(
       entityBeingDeployed1,
       ['X2,Y2'],
       {
         metadata: 'metadata',
-        contentPaths: ['test/integration/resources/some-binary-file.png']
+        contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
       }
     )
 

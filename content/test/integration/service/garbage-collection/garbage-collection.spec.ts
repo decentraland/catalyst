@@ -14,6 +14,7 @@ import {
   deployEntitiesCombo,
   EntityCombo
 } from '../../E2ETestUtils'
+import { getIntegrationResourcePathFor } from '../../resources/get-resources-path'
 
 loadStandaloneTestEnvironment({
   [EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL]: ms('2s'),
@@ -29,10 +30,10 @@ loadStandaloneTestEnvironment({
 
   beforeAll(async () => {
     E1 = await buildDeployData([P1], {
-      contentPaths: ['test/integration/resources/some-binary-file.png', 'test/integration/resources/some-text-file.txt']
+      contentPaths: [getIntegrationResourcePathFor('some-binary-file.png'), getIntegrationResourcePathFor('some-text-file.txt')]
     })
     E2 = await buildDeployDataAfterEntity(E1, [P1], {
-      contentPaths: ['test/integration/resources/some-binary-file.png']
+      contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
     })
     E3 = await buildDeployDataAfterEntity(E2, [P2])
       ;[sharedContent, onlyE1Content] = E1.entity.content?.map(({ hash }) => hash) ?? []

@@ -9,6 +9,7 @@ import {
 } from '../E2EAssertions'
 import { loadTestEnvironment } from '../E2ETestEnvironment'
 import { awaitUntil, buildDeployData, buildDeployDataAfterEntity } from '../E2ETestUtils'
+import { getIntegrationResourcePathFor } from '../resources/get-resources-path'
 import { TestProgram } from '../TestProgram'
 
 loadTestEnvironment()('End 2 end - Node onboarding', function (testEnv) {
@@ -30,7 +31,7 @@ loadTestEnvironment()('End 2 end - Node onboarding', function (testEnv) {
     // Prepare data to be deployed
     const { deployData: deployData1, controllerEntity: entity1 } = await buildDeployData(['X1,Y1', 'X2,Y2'], {
       metadata: 'metadata',
-      contentPaths: ['test/integration/resources/some-binary-file.png']
+      contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
     })
     const entity1ContentHash: ContentFileHash = entity1.content![0].hash
     const { deployData: deployData2, controllerEntity: entity2 } = await buildDeployDataAfterEntity(
@@ -71,7 +72,7 @@ loadTestEnvironment()('End 2 end - Node onboarding', function (testEnv) {
     // Prepare data to be deployed
     const { deployData, controllerEntity: entity } = await buildDeployData(['X1,Y1', 'X2,Y2'], {
       metadata: 'metadata',
-      contentPaths: ['test/integration/resources/some-binary-file.png']
+      contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
     })
     const entityContentHash: ContentFileHash = entity.content![0].hash
 

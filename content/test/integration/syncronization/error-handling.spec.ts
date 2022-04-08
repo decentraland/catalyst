@@ -14,6 +14,7 @@ import {
 } from '../E2EAssertions'
 import { loadTestEnvironment } from '../E2ETestEnvironment'
 import { awaitUntil, buildDeployData, buildDeployDataAfterEntity, createIdentity } from '../E2ETestUtils'
+import { getIntegrationResourcePathFor } from '../resources/get-resources-path'
 import { TestProgram } from '../TestProgram'
 
 loadTestEnvironment()('End 2 end - Error handling', (testEnv) => {
@@ -56,7 +57,7 @@ loadTestEnvironment()('End 2 end - Error handling', (testEnv) => {
     // Prepare entity to deploy
     const { deployData: deployData1, controllerEntity: entityBeingDeployed1 } = await buildDeployData(['0,0', '0,1'], {
       metadata: 'metadata',
-      contentPaths: ['test/integration/resources/some-binary-file.png']
+      contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
     })
     const entity1Content = entityBeingDeployed1.content![0].hash
 
@@ -135,7 +136,7 @@ loadTestEnvironment()('End 2 end - Error handling', (testEnv) => {
     // Prepare entity to deploy
     const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(['0,0', '0,1'], {
       metadata: 'metadata',
-      contentPaths: ['test/integration/resources/some-binary-file.png']
+      contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
     })
 
     // Deploy the entity

@@ -4,6 +4,7 @@ import { EnvironmentConfig } from '../../../src/Environment'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
+import { getIntegrationResourcePathFor } from '../resources/get-resources-path'
 import { TestProgram } from '../TestProgram'
 
 loadStandaloneTestEnvironment()('Integration - Get Active Entities By Content Hash', (testEnv) => {
@@ -30,12 +31,12 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities By Content Ha
 
     const deployResult = await buildDeployData(['0,0', '0,1'], {
       metadata: 'this is just some metadata',
-      contentPaths: ['test/integration/resources/some-binary-file.png']
+      contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
     })
 
     const secondDeployResult = await buildDeployData(['0,3', '0,2'], {
       metadata: 'this is just some metadata',
-      contentPaths: ['test/integration/resources/some-binary-file.png']
+      contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
     })
 
     // Deploy entity

@@ -4,6 +4,7 @@ import { makeNoopSynchronizationManager } from '../../helpers/service/synchroniz
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
+import { getIntegrationResourcePathFor } from '../resources/get-resources-path'
 import { TestProgram } from '../TestProgram'
 
 loadStandaloneTestEnvironment()('Integration - Deployment Fields', (testEnv) => {
@@ -20,7 +21,7 @@ loadStandaloneTestEnvironment()('Integration - Deployment Fields', (testEnv) => 
   it('When deployments fields filter is used, then the result is the expected', async () => {
     const { deployData } = await buildDeployData(['0,0', '0,1'], {
       metadata: 'this is just some metadata',
-      contentPaths: ['test/integration/resources/some-binary-file.png']
+      contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
     })
 
     // Deploy entity

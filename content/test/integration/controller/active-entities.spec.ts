@@ -5,6 +5,7 @@ import * as deployments from '../../../src/service/deployments/deployments'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
+import { getIntegrationResourcePathFor } from '../resources/get-resources-path'
 import { TestProgram } from '../TestProgram'
 
 loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) => {
@@ -17,7 +18,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
 
     const deployResult = await buildDeployData(['0,0', '0,1'], {
       metadata: 'this is just some metadata',
-      contentPaths: ['test/integration/resources/some-binary-file.png']
+      contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
     })
 
     // Deploy entity
@@ -37,7 +38,8 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
 
     const deployResult = await buildDeployData(['0,0', '0,1'], {
       metadata: 'this is just some metadata',
-      contentPaths: ['test/integration/resources/some-binary-file.png']
+      contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
+
     })
 
     // Deploy entity
@@ -59,7 +61,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
 
     const deployResult = await buildDeployData(['0,0', '0,1'], {
       metadata: 'this is just some metadata',
-      contentPaths: ['test/integration/resources/some-binary-file.png']
+      contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
     })
 
     // Deploy entity
@@ -67,7 +69,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
 
     const newDeployResult = await buildDeployData(['0,0', '0,1'], {
       metadata: 'this is just some metadata 2',
-      contentPaths: ['test/integration/resources/some-binary-file.png']
+      contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
     })
 
     // Deploy newer entity
@@ -87,7 +89,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
 
     const deployResult = await buildDeployData(['0,0', '0,1'], {
       metadata: 'this is just some metadata',
-      contentPaths: ['test/integration/resources/some-binary-file.png']
+      contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
     })
 
     // Deploy entity
@@ -95,7 +97,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
 
     const deployResult2 = await buildDeployData(['2,0', '2,1'], {
       metadata: 'this is just some metadata',
-      contentPaths: ['test/integration/resources/some-binary-file.png']
+      contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
     })
 
     // Deploy other entity
@@ -116,7 +118,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
 
     const deployResult = await buildDeployData(['0,0', '0,1'], {
       metadata: 'this is just some metadata',
-      contentPaths: ['test/integration/resources/some-binary-file.png']
+      contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
     })
 
     // Deploy entity
@@ -137,7 +139,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     const pointers = ['0,0', '0,1']
     const deployResult = await buildDeployData(pointers, {
       metadata: 'this is just some metadata',
-      contentPaths: ['test/integration/resources/some-binary-file.png']
+      contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
     })
 
     // Deploy entity
@@ -156,7 +158,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       const pointers = ['0,0', '0,1']
       const deployResult = await buildDeployData(pointers, {
         metadata: 'this is just some metadata',
-        contentPaths: ['test/integration/resources/some-binary-file.png']
+        contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
       })
 
       // Deploy entity
@@ -205,7 +207,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       const pointers = ['0,0', '0,1']
       const { deployData } = await buildDeployData(pointers, {
         metadata: 'this is just some metadata',
-        contentPaths: ['test/integration/resources/some-binary-file.png']
+        contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
       })
 
       // Deploy entity with pointers ['0,0', '0,1']
@@ -213,7 +215,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
 
       const { deployData: secondDeployData } = await buildDeployData(['0,1'], {
         metadata: 'this is just some metadata',
-        contentPaths: ['test/integration/resources/some-binary-file.png']
+        contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
       })
       // Deploy entity with pointer ['0,1']
       await server.deploy(secondDeployData) // Override entity and invalidate pointer ['0,0']
@@ -233,7 +235,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       const pointers = ['0,0', '0,1']
       const { deployData } = await buildDeployData(pointers, {
         metadata: 'this is just some metadata',
-        contentPaths: ['test/integration/resources/some-binary-file.png']
+        contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
       })
 
       // Deploy entity with pointers ['0,0', '0,1']
@@ -250,7 +252,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
 
       const { deployData: secondDeployData } = await buildDeployData(pointers, {
         metadata: 'this is just some metadata 2',
-        contentPaths: ['test/integration/resources/some-binary-file.png']
+        contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
       })
       // Deploy new entity with pointers ['0,0', '0,1']
       await server.deploy(secondDeployData)
@@ -272,13 +274,13 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       const firstPointers = ['0,0', '0,1']
       const { deployData } = await buildDeployData(firstPointers, {
         metadata: 'this is just some metadata',
-        contentPaths: ['test/integration/resources/some-binary-file.png']
+        contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
       })
 
       const secondPointers = ['0,2', '0,3']
       const { deployData: secondDeployData } = await buildDeployData(secondPointers, {
         metadata: 'this is just some metadata',
-        contentPaths: ['test/integration/resources/some-binary-file.png']
+        contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
       })
 
       await server.deploy(deployData)
@@ -315,7 +317,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       const pointers = ['0,0', '0,1']
       const { deployData } = await buildDeployData(pointers, {
         metadata: 'this is just some metadata',
-        contentPaths: ['test/integration/resources/some-binary-file.png']
+        contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
       })
 
       // Deploy entity with pointers ['0,0', '0,1']
@@ -323,7 +325,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
 
       const { deployData: secondDeployData } = await buildDeployData(['0,1'], {
         metadata: 'this is just some metadata',
-        contentPaths: ['test/integration/resources/some-binary-file.png']
+        contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
       })
       // Deploy entity with pointer ['0,1']
       await server.deploy(secondDeployData) // Override entity and invalidate pointer ['0,0']
@@ -357,7 +359,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       const pointer = ['urn:dcl:collection:itemId']
       const deployResult = await buildDeployData(pointer, {
         metadata: 'this is just some metadata',
-        contentPaths: ['test/integration/resources/some-binary-file.png']
+        contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
       })
 
       // Deploy entity
@@ -377,7 +379,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       const pointer = ['urn:dcl:collection:itemId']
       const deployResult = await buildDeployData(pointer, {
         metadata: 'this is just some metadata',
-        contentPaths: ['test/integration/resources/some-binary-file.png']
+        contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
       })
 
       // Deploy entity
@@ -396,11 +398,11 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       const pointer = ['urn:dcl:collection:itemId']
       const firstDeploy = await buildDeployData(pointer, {
         metadata: 'this is just some metadata',
-        contentPaths: ['test/integration/resources/some-binary-file.png']
+        contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
       })
       const secondDeploy = await buildDeployData(pointer, {
         metadata: 'this is just some metadata',
-        contentPaths: ['test/integration/resources/some-binary-file.png']
+        contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
       })
 
       // Deploy entity
@@ -421,11 +423,11 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       const pointers = ['0,0', '0,1']
       const firstDeploy = await buildDeployData(pointers, {
         metadata: 'this is just some metadata',
-        contentPaths: ['test/integration/resources/some-binary-file.png']
+        contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
       })
       const secondDeploy = await buildDeployData(['0,0'], {
         metadata: 'this is just some metadata',
-        contentPaths: ['test/integration/resources/some-binary-file.png']
+        contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
       })
 
       // Deploy entity

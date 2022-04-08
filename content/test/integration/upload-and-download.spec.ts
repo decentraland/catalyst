@@ -6,6 +6,7 @@ import { makeNoopValidator } from '../helpers/service/validations/NoOpValidator'
 import { assertDeploymentsAreReported, buildDeployment } from './E2EAssertions'
 import { loadStandaloneTestEnvironment } from './E2ETestEnvironment'
 import { buildDeployData } from './E2ETestUtils'
+import { getIntegrationResourcePathFor } from './resources/get-resources-path'
 import { TestProgram } from './TestProgram'
 
 loadStandaloneTestEnvironment()('End 2 end deploy test', (testEnv) => {
@@ -41,7 +42,7 @@ loadStandaloneTestEnvironment()('End 2 end deploy test', (testEnv) => {
     //------------------------------
     const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData([POINTER0, POINTER1], {
       metadata: 'this is just some metadata',
-      contentPaths: ['test/integration/resources/some-binary-file.png', 'test/integration/resources/some-text-file.txt']
+      contentPaths: [getIntegrationResourcePathFor('some-binary-file.png'), getIntegrationResourcePathFor('some-text-file.txt')]
     })
 
     const creationTimestamp = await server.deploy(deployData)
