@@ -11,6 +11,8 @@ import { cleanSnapshots } from '../../src/snapshotCleaner'
 import { makeNoopValidator } from '../helpers/service/validations/NoOpValidator'
 import { loadStandaloneTestEnvironment, testCaseWithComponents } from './E2ETestEnvironment'
 import { buildDeployData } from './E2ETestUtils'
+import { getIntegrationResourcePathFor } from './resources/get-resources-path'
+
 const promifiedExec = promisify(exec)
 
 const tmpRootDir = mkdtempSync(path.join(os.tmpdir(), 'snapshot-cleaner-'))
@@ -113,9 +115,9 @@ loadStandaloneTestEnvironment({ [EnvironmentConfig.STORAGE_ROOT_FOLDER]: tmpRoot
     await server.startProgram()
     const deployResult = await buildDeployData(['0,0', '0,1'], {
       metadata: 'this is just some metadata',
-      // Put a snapshot file?
-      contentPaths: ['test/integration/resources/some-binary-file.png']
+      contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
     })
+
     await server.deploy(deployResult.deployData)
 
     const contentHashes: Map<ContentFileHash, Uint8Array> = await ServiceImpl.hashFiles(deployResult.deployData.files, deployResult.deployData.entityId)

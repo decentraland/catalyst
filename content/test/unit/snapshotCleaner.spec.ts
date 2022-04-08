@@ -3,6 +3,7 @@ import path from 'path'
 import sinon from 'sinon'
 import * as ct from '../../src/ports/contentStorage/contentStorage'
 import { FileCompressor } from '../../src/ports/gzipCompressor'
+import { createTestDatabaseComponent } from '../../src/ports/postgres'
 import { cleanSnapshots } from '../../src/snapshotCleaner'
 
 const streamToBufferStub = sinon.stub(ct, 'streamToBuffer')
@@ -13,6 +14,8 @@ describe('clean snapshots', () => {
     compress: jest.fn(),
     decompress: jest.fn()
   }
+  const database = createTestDatabaseComponent()
+  database.queryWithValues = jest.fn().mockResolvedValue({ rows: [] })
 
   beforeEach(() => streamToBufferStub.reset())
 
@@ -26,7 +29,7 @@ describe('clean snapshots', () => {
     const fs = createFsMockWithFiles(filepathToContent)
     const executeCommandMock = createExecuteCommandMockWithStdoutListingFiles(filepathToContent)
 
-    await cleanSnapshots(executeCommandMock, { fs, logs, gzipCompressor }, tmpRootDir, minimumSnapshotSizeInBytes)
+    await cleanSnapshots(executeCommandMock, { fs, logs, gzipCompressor, database }, tmpRootDir, minimumSnapshotSizeInBytes)
 
     expect(fs.unlink).toBeCalledWith(bigSnapshotFilepath)
     expect(fs.createReadStream).toBeCalledWith(bigSnapshotFilepath, { end: 59 })
@@ -43,7 +46,7 @@ describe('clean snapshots', () => {
     const fs = createFsMockWithFiles(filepathToContent)
     const executeCommandMock = createExecuteCommandMockWithStdoutListingFiles(filepathToContent)
 
-    await cleanSnapshots(executeCommandMock, { fs, logs, gzipCompressor } , tmpRootDir, minimumSnapshotSizeInBytes)
+    await cleanSnapshots(executeCommandMock, { fs, logs, gzipCompressor, database } , tmpRootDir, minimumSnapshotSizeInBytes)
 
     expect(executeCommandMock).toBeCalledWith(`find ${tmpRootDir} -type f -size +${minimumSnapshotSizeInBytes - 1}c`)
     expect(fs.createReadStream).toBeCalledWith(bigSnapshotFilepath, { end: 59 })
@@ -60,7 +63,7 @@ describe('clean snapshots', () => {
     const fs = createFsMockWithFiles(filepathToContent)
     const executeCommandMock = createExecuteCommandMockWithStdoutListingFiles(filepathToContent)
 
-    await cleanSnapshots(executeCommandMock, { fs, logs, gzipCompressor } , tmpRootDir, minimumSnapshotSizeInBytes)
+    await cleanSnapshots(executeCommandMock, { fs, logs, gzipCompressor, database } , tmpRootDir, minimumSnapshotSizeInBytes)
 
     expect(executeCommandMock).toBeCalledWith(`find ${tmpRootDir} -type f -size +${minimumSnapshotSizeInBytes - 1}c`)
     expect(fs.unlink).toBeCalledWith(bigSnapshotFilepath)
@@ -84,7 +87,7 @@ describe('clean snapshots', () => {
     const executeCommandMock = createExecuteCommandMockWithStdoutListingFiles(filepathToContent)
 
 
-    await cleanSnapshots(executeCommandMock, { fs, logs, gzipCompressor }, tmpRootDir, minimumSnapshotSizeInBytes)
+    await cleanSnapshots(executeCommandMock, { fs, logs, gzipCompressor, database }, tmpRootDir, minimumSnapshotSizeInBytes)
     expect(executeCommandMock).toBeCalledWith(`find ${tmpRootDir} -type f -size +${minimumSnapshotSizeInBytes - 1}c`)
     expect(fs.createReadStream).toBeCalledWith(bigModernSnapshotFilepath, {'end': 59})
     expect(fs.createReadStream).toBeCalledWith(bigLegacySnapshotFilepath, {'end': 59})
@@ -116,7 +119,7 @@ describe('clean snapshots', () => {
     })
     const executeCommandMock = createExecuteCommandMockWithStdoutListingFiles(filepathToContent)
 
-    await cleanSnapshots(executeCommandMock, { fs, logs, gzipCompressor }, tmpRootDir, minimumSnapshotSizeInBytes)
+    await cleanSnapshots(executeCommandMock, { fs, logs, gzipCompressor, database }, tmpRootDir, minimumSnapshotSizeInBytes)
 
     expect(executeCommandMock).toBeCalledWith(`find ${tmpRootDir} -type f -size +${minimumSnapshotSizeInBytes - 1}c`)
     sinon.assert.calledWith(decompressStub, bigModernSnapshotGzipFilepath, bigModernSnapshotFilepath)
@@ -128,7 +131,7 @@ describe('clean snapshots', () => {
 
   it('should uncompress a big gzip non-snapshot file, then delete uncompressed file but not the gzip one', async () => {
     const minimumSnapshotSizeInBytes = 50
-    const bigNonSnapshotFilepath = 'modern-snapshot-hash'
+    const bigNonSnapshotFilepath = 'non-snapshot-hash'
     const bigNonSnapshotGzipFilePath = bigNonSnapshotFilepath + '.gzip'
 
     const filepathToContent = new Map([
@@ -151,7 +154,7 @@ describe('clean snapshots', () => {
 
     const executeCommandMock = createExecuteCommandMockWithStdoutListingFiles(filepathToContent)
 
-    await cleanSnapshots(executeCommandMock, { fs, logs, gzipCompressor }, tmpRootDir, minimumSnapshotSizeInBytes)
+    await cleanSnapshots(executeCommandMock, { fs, logs, gzipCompressor, database }, tmpRootDir, minimumSnapshotSizeInBytes)
 
     expect(executeCommandMock).toBeCalledWith(`find ${tmpRootDir} -type f -size +${minimumSnapshotSizeInBytes - 1}c`)
     sinon.assert.calledWith(decompressStub, bigNonSnapshotGzipFilePath, bigNonSnapshotFilepath)
@@ -159,6 +162,31 @@ describe('clean snapshots', () => {
     expect(fs.unlink).toBeCalledWith(bigNonSnapshotFilepath)
     expect(fs.createReadStream).not.toBeCalledWith(bigNonSnapshotGzipFilePath, {'end': 59})
     expect(fs.unlink).not.toBeCalledWith(bigNonSnapshotGzipFilePath)
+  })
+
+  it('should skip to process big files that has a used hash in the contents table (even if its content starts with a snapshot header)', async () => {
+    const minimumSnapshotSizeInBytes = 50
+    const bigSnapshotFilepath = 'modern-snapshot-hash'
+    const bigContentFilepath = 'a-content-file-hash'
+
+    const filepathToContent = new Map([
+      [bigSnapshotFilepath, modernSnapshotContentWithSize(minimumSnapshotSizeInBytes)],
+      [bigContentFilepath, modernSnapshotContentWithSize(minimumSnapshotSizeInBytes)]
+    ])
+
+    const fs = createFsMockWithFiles(filepathToContent)
+
+    database.queryWithValues = jest.fn().mockResolvedValue({ rows: [{ content_hash: bigContentFilepath }] })
+
+    const executeCommandMock = createExecuteCommandMockWithStdoutListingFiles(filepathToContent)
+
+    await cleanSnapshots(executeCommandMock, { fs, logs, gzipCompressor, database }, tmpRootDir, minimumSnapshotSizeInBytes)
+
+    expect(executeCommandMock).toBeCalledWith(`find ${tmpRootDir} -type f -size +${minimumSnapshotSizeInBytes - 1}c`)
+    expect(fs.createReadStream).toBeCalledWith(bigSnapshotFilepath, {'end': 59})
+    expect(fs.createReadStream).not.toBeCalledWith(bigContentFilepath, {'end': 59})
+    expect(fs.unlink).toBeCalledWith(bigSnapshotFilepath)
+    expect(fs.unlink).not.toBeCalledWith(bigContentFilepath)
   })
 
   it('auxiliar test - should create snapshot content with specified size', () => {
@@ -217,16 +245,3 @@ function createFsMockWithFiles(filepathToContent: Map<string, Buffer>) {
   })
   return fsMock
 }
-
-// function createFsMockWithFiles(filepathToContent: Map<string, Buffer>) {
-//   const filepathToReadStream = new Map()
-//   filepathToContent.forEach((content, filepath) => {
-//     const readStreamMock = { close: jest.fn() }
-//     filepathToReadStream.set(filepath, readStreamMock)
-//     streamToBufferStub.withArgs(sinon.match(readStreamMock)).resolves(content)
-//   })
-//   return {
-//     createReadStream: jest.fn().mockImplementation((filepath) => filepathToReadStream.get(filepath)),
-//     unlink: jest.fn()
-//   }
-// }

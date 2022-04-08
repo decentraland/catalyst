@@ -1,7 +1,7 @@
 import { ReadStream } from 'fs'
 import PQueue from 'p-queue'
 import path from 'path'
-import { getUsedHashes } from '../src/logic/database-queries/snapshot-cleaner-queries'
+import { filterContentFileHashes } from '../src/logic/database-queries/snapshot-cleaner-queries'
 import { streamToBuffer } from './ports/contentStorage/contentStorage'
 import { FSComponent } from './ports/fs'
 import { AppComponents } from './types'
@@ -64,16 +64,12 @@ export async function cleanSnapshots(
   }
 
   const resolvedPath = path.resolve(storageDirectory)
-  logger.info(`Cleaning old snapshots in ${resolvedPath}...`)
   const pathsOfBigFiles = await getPathsOfBigFiles(resolvedPath)
-
-  const hashes = pathsOfBigFiles.map((filepath) => filepath.substring(filepath.lastIndexOf('/') + 1))
-  // Filter files that are being referenced in the DB
-  const usedHashes = await getUsedHashes(components, hashes)
-
+  const bigFilesHashes = pathsOfBigFiles.map((filepath) => filepath.substring(filepath.lastIndexOf('/') + 1))
+  const contentFileHashes = await filterContentFileHashes(components, bigFilesHashes)
   const pathsOfBigNonContentFiles = pathsOfBigFiles.filter((filepath) => {
     const hash = filepath.substring(filepath.lastIndexOf('/') + 1)
-    return !usedHashes.includes(hash)
+    return !contentFileHashes.includes(hash)
   })
 
   logger.debug(`Big files to process: ${JSON.stringify(pathsOfBigNonContentFiles)}`)
