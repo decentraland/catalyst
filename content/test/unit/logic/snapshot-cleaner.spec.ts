@@ -1,10 +1,10 @@
 import { createLogComponent } from '@well-known-components/logger'
 import path from 'path'
 import sinon from 'sinon'
-import * as ct from '../../src/ports/contentStorage/contentStorage'
-import { FileCompressor } from '../../src/ports/gzipCompressor'
-import { createTestDatabaseComponent } from '../../src/ports/postgres'
-import { cleanSnapshots } from '../../src/snapshotCleaner'
+import { cleanSnapshots } from '../../../src/logic/snapshot-cleaner'
+import * as ct from '../../../src/ports/contentStorage/contentStorage'
+import { FileCompressor } from '../../../src/ports/gzipCompressor'
+import { createTestDatabaseComponent } from '../../../src/ports/postgres'
 
 const streamToBufferStub = sinon.stub(ct, 'streamToBuffer')
 describe('clean snapshots', () => {

@@ -1,10 +1,10 @@
 import { ReadStream } from 'fs'
 import PQueue from 'p-queue'
 import path from 'path'
-import { filterContentFileHashes } from '../src/logic/database-queries/snapshot-cleaner-queries'
-import { streamToBuffer } from './ports/contentStorage/contentStorage'
-import { FSComponent } from './ports/fs'
-import { AppComponents } from './types'
+import { streamToBuffer } from '../ports/contentStorage/contentStorage'
+import { FSComponent } from '../ports/fs'
+import { AppComponents } from '../types'
+import { filterContentFileHashes } from './database-queries/snapshot-cleaner-queries'
 
 export async function cleanSnapshots(
   components: Pick<AppComponents, 'logs' | 'gzipCompressor' | 'database'> & {

@@ -2,8 +2,8 @@ import { Lifecycle } from '@well-known-components/interfaces'
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import { EnvironmentConfig } from './Environment'
+import { cleanSnapshots } from './logic/snapshot-cleaner'
 import { bootstrapFromSnapshots } from './service/synchronization/bootstrapFromSnapshots'
-import { cleanSnapshots } from './snapshotCleaner'
 import { AppComponents } from './types'
 const promifiedExec = promisify(exec)
 
