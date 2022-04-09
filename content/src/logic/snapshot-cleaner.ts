@@ -1,12 +1,26 @@
+import { exec } from 'child_process'
 import { ReadStream } from 'fs'
 import PQueue from 'p-queue'
 import path from 'path'
+import { promisify } from 'util'
 import { streamToBuffer } from '../ports/contentStorage/contentStorage'
 import { FSComponent } from '../ports/fs'
 import { AppComponents } from '../types'
 import { filterContentFileHashes } from './database-queries/snapshot-cleaner-queries'
 
 export async function cleanSnapshots(
+  components: Pick<AppComponents, 'logs' | 'gzipCompressor' | 'database'> & {
+    fs: Pick<FSComponent, 'unlink' | 'createReadStream'>
+  },
+  storageDirectory: string,
+  minimumSnapshotSizeInBytes: number
+): Promise<void> {
+  return cleanSnapshotsWithExec(components, promisify(exec), storageDirectory, minimumSnapshotSizeInBytes)
+}
+
+// This function that takes exectueCommand that is for injecting a mock and being able to unit test.
+// Didn't found a way to mock exec/promisify functions.
+export async function cleanSnapshotsWithExec(
   components: Pick<AppComponents, 'logs' | 'gzipCompressor' | 'database'> & {
     fs: Pick<FSComponent, 'unlink' | 'createReadStream'>
   },

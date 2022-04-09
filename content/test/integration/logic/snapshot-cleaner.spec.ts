@@ -1,9 +1,7 @@
-import { exec } from 'child_process'
 import { ContentFileHash } from 'dcl-catalyst-commons'
 import { mkdirSync, mkdtempSync, rmSync } from 'fs'
 import os from 'os'
 import path from 'path'
-import { promisify } from 'util'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { cleanSnapshots } from '../../../src/logic/snapshot-cleaner'
 import { bufferToStream } from '../../../src/ports/contentStorage/contentStorage'
@@ -12,8 +10,6 @@ import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidat
 import { loadStandaloneTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
 import { getIntegrationResourcePathFor } from '../resources/get-resources-path'
-
-const promifiedExec = promisify(exec)
 
 const tmpRootDir = mkdtempSync(path.join(os.tmpdir(), 'snapshot-cleaner-'))
 
@@ -31,7 +27,7 @@ loadStandaloneTestEnvironment({ [EnvironmentConfig.STORAGE_ROOT_FOLDER]: tmpRoot
       const modernSnapshotContent = createModernSnapshotContentWithSize(minimumSnapshotSizeInBytes)
       const bigSnapshotHash = 'modern-snapshot-hash'
       await components.storage.storeStream('modern-snapshot-hash', bufferToStream(modernSnapshotContent))
-      await cleanSnapshots(components, promifiedExec, components.staticConfigs.contentStorageFolder, minimumSnapshotSizeInBytes)
+      await cleanSnapshots(components, components.staticConfigs.contentStorageFolder, minimumSnapshotSizeInBytes)
 
       expect(await components.storage.retrieve(bigSnapshotHash)).toBeUndefined()
     }
@@ -45,7 +41,7 @@ loadStandaloneTestEnvironment({ [EnvironmentConfig.STORAGE_ROOT_FOLDER]: tmpRoot
     const bigSnapshotHash = 'legacy-snapshot-hash'
     await components.storage.storeStream(bigSnapshotHash, bufferToStream(legacySnapshotContent))
 
-    await cleanSnapshots(components, promifiedExec, components.staticConfigs.contentStorageFolder, minimumSnapshotSizeInBytes)
+    await cleanSnapshots(components, components.staticConfigs.contentStorageFolder, minimumSnapshotSizeInBytes)
 
     expect(await components.storage.retrieve(bigSnapshotHash)).toBeUndefined()
     }
@@ -60,7 +56,7 @@ loadStandaloneTestEnvironment({ [EnvironmentConfig.STORAGE_ROOT_FOLDER]: tmpRoot
       await components.storage.storeStream(bigSnapshotHash, bufferToStream(createModernSnapshotContentWithSize(minimumSnapshotSizeInBytes)))
       await components.storage.storeStream(bigNotSnapshotHash, bufferToStream(createNonSnapshotContentWithSize(minimumSnapshotSizeInBytes)))
 
-      await cleanSnapshots(components, promifiedExec, components.staticConfigs.contentStorageFolder, minimumSnapshotSizeInBytes)
+      await cleanSnapshots(components, components.staticConfigs.contentStorageFolder, minimumSnapshotSizeInBytes)
 
       expect(await components.storage.retrieve(bigSnapshotHash)).toBeUndefined()
       expect(await components.storage.retrieve(bigNotSnapshotHash)).not.toBeUndefined()
@@ -78,7 +74,7 @@ loadStandaloneTestEnvironment({ [EnvironmentConfig.STORAGE_ROOT_FOLDER]: tmpRoot
       await components.storage.storeStream(bigModernSnapshotHash, bufferToStream(createLegacySnapshotContentBiggerThan(minimumSnapshotSizeInBytes)))
       await components.storage.storeStream(bigNotSnapshotHash, bufferToStream(createNonSnapshotContentWithSize(minimumSnapshotSizeInBytes)))
 
-      await cleanSnapshots(components, promifiedExec, components.staticConfigs.contentStorageFolder, minimumSnapshotSizeInBytes)
+      await cleanSnapshots(components, components.staticConfigs.contentStorageFolder, minimumSnapshotSizeInBytes)
 
       expect(await components.storage.retrieve(bigModernSnapshotHash)).toBeUndefined()
       expect(await components.storage.retrieve(bigLegacySnapshotHash)).toBeUndefined()
@@ -94,7 +90,7 @@ loadStandaloneTestEnvironment({ [EnvironmentConfig.STORAGE_ROOT_FOLDER]: tmpRoot
       await components.storage.storeStreamAndCompress(bigModernSnapshotHash, bufferToStream(createModernSnapshotContentWithSize(5000)))
       const contentFolder = components.staticConfigs.contentStorageFolder
 
-      await cleanSnapshots(components, promifiedExec, contentFolder, minimumSnapshotSizeInBytes)
+      await cleanSnapshots(components, components.staticConfigs.contentStorageFolder, minimumSnapshotSizeInBytes)
 
       expect(await components.storage.retrieve(bigModernSnapshotHash)).toBeUndefined()
       const fds = await components.fs.readdir(contentFolder)
@@ -129,7 +125,7 @@ loadStandaloneTestEnvironment({ [EnvironmentConfig.STORAGE_ROOT_FOLDER]: tmpRoot
 
     const contentFolder = server.components.staticConfigs.contentStorageFolder
 
-    await cleanSnapshots(components, promifiedExec, contentFolder, minimumSnapshotSizeInBytes)
+    await cleanSnapshots(components, contentFolder, minimumSnapshotSizeInBytes)
 
     expect(await components.storage.retrieve(bigModernSnapshotHash)).toBeUndefined()
     for (const usedHash of usedContentHashes) {

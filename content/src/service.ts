@@ -1,17 +1,14 @@
 import { Lifecycle } from '@well-known-components/interfaces'
-import { exec } from 'child_process'
-import { promisify } from 'util'
 import { EnvironmentConfig } from './Environment'
 import { cleanSnapshots } from './logic/snapshot-cleaner'
 import { bootstrapFromSnapshots } from './service/synchronization/bootstrapFromSnapshots'
 import { AppComponents } from './types'
-const promifiedExec = promisify(exec)
 
 // this function wires the business logic (adapters & controllers) with the components (ports)
 export async function main(program: Lifecycle.EntryPointParameters<AppComponents>): Promise<void> {
   const { components, startComponents } = program
 
-  await cleanSnapshots(components, promifiedExec, components.staticConfigs.contentStorageFolder, 50)
+  await cleanSnapshots(components, components.staticConfigs.contentStorageFolder, 50)
 
   // first of all, run the migrations
   await components.migrationManager.run()
