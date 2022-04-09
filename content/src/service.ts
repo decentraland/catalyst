@@ -11,7 +11,7 @@ const promifiedExec = promisify(exec)
 export async function main(program: Lifecycle.EntryPointParameters<AppComponents>): Promise<void> {
   const { components, startComponents } = program
 
-  await cleanSnapshots(promifiedExec, components, components.staticConfigs.contentStorageFolder, 50)
+  await cleanSnapshots(components, promifiedExec, components.staticConfigs.contentStorageFolder, 50)
 
   // first of all, run the migrations
   await components.migrationManager.run()

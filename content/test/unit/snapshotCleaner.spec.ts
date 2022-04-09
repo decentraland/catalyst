@@ -29,7 +29,7 @@ describe('clean snapshots', () => {
     const fs = createFsMockWithFiles(filepathToContent)
     const executeCommandMock = createExecuteCommandMockWithStdoutListingFiles(filepathToContent)
 
-    await cleanSnapshots(executeCommandMock, { fs, logs, gzipCompressor, database }, tmpRootDir, minimumSnapshotSizeInBytes)
+    await cleanSnapshots({ fs, logs, gzipCompressor, database }, executeCommandMock, tmpRootDir, minimumSnapshotSizeInBytes)
 
     expect(fs.unlink).toBeCalledWith(bigSnapshotFilepath)
     expect(fs.createReadStream).toBeCalledWith(bigSnapshotFilepath, { end: 59 })
@@ -46,7 +46,7 @@ describe('clean snapshots', () => {
     const fs = createFsMockWithFiles(filepathToContent)
     const executeCommandMock = createExecuteCommandMockWithStdoutListingFiles(filepathToContent)
 
-    await cleanSnapshots(executeCommandMock, { fs, logs, gzipCompressor, database } , tmpRootDir, minimumSnapshotSizeInBytes)
+    await cleanSnapshots({ fs, logs, gzipCompressor, database }, executeCommandMock, tmpRootDir, minimumSnapshotSizeInBytes)
 
     expect(executeCommandMock).toBeCalledWith(`find ${tmpRootDir} -type f -size +${minimumSnapshotSizeInBytes - 1}c`)
     expect(fs.createReadStream).toBeCalledWith(bigSnapshotFilepath, { end: 59 })
@@ -63,7 +63,7 @@ describe('clean snapshots', () => {
     const fs = createFsMockWithFiles(filepathToContent)
     const executeCommandMock = createExecuteCommandMockWithStdoutListingFiles(filepathToContent)
 
-    await cleanSnapshots(executeCommandMock, { fs, logs, gzipCompressor, database } , tmpRootDir, minimumSnapshotSizeInBytes)
+    await cleanSnapshots({ fs, logs, gzipCompressor, database }, executeCommandMock, tmpRootDir, minimumSnapshotSizeInBytes)
 
     expect(executeCommandMock).toBeCalledWith(`find ${tmpRootDir} -type f -size +${minimumSnapshotSizeInBytes - 1}c`)
     expect(fs.unlink).toBeCalledWith(bigSnapshotFilepath)
@@ -87,7 +87,7 @@ describe('clean snapshots', () => {
     const executeCommandMock = createExecuteCommandMockWithStdoutListingFiles(filepathToContent)
 
 
-    await cleanSnapshots(executeCommandMock, { fs, logs, gzipCompressor, database }, tmpRootDir, minimumSnapshotSizeInBytes)
+    await cleanSnapshots({ fs, logs, gzipCompressor, database }, executeCommandMock, tmpRootDir, minimumSnapshotSizeInBytes)
     expect(executeCommandMock).toBeCalledWith(`find ${tmpRootDir} -type f -size +${minimumSnapshotSizeInBytes - 1}c`)
     expect(fs.createReadStream).toBeCalledWith(bigModernSnapshotFilepath, {'end': 59})
     expect(fs.createReadStream).toBeCalledWith(bigLegacySnapshotFilepath, {'end': 59})
@@ -119,7 +119,7 @@ describe('clean snapshots', () => {
     })
     const executeCommandMock = createExecuteCommandMockWithStdoutListingFiles(filepathToContent)
 
-    await cleanSnapshots(executeCommandMock, { fs, logs, gzipCompressor, database }, tmpRootDir, minimumSnapshotSizeInBytes)
+    await cleanSnapshots({ fs, logs, gzipCompressor, database }, executeCommandMock, tmpRootDir, minimumSnapshotSizeInBytes)
 
     expect(executeCommandMock).toBeCalledWith(`find ${tmpRootDir} -type f -size +${minimumSnapshotSizeInBytes - 1}c`)
     sinon.assert.calledWith(decompressStub, bigModernSnapshotGzipFilepath, bigModernSnapshotFilepath)
@@ -154,7 +154,7 @@ describe('clean snapshots', () => {
 
     const executeCommandMock = createExecuteCommandMockWithStdoutListingFiles(filepathToContent)
 
-    await cleanSnapshots(executeCommandMock, { fs, logs, gzipCompressor, database }, tmpRootDir, minimumSnapshotSizeInBytes)
+    await cleanSnapshots({ fs, logs, gzipCompressor, database }, executeCommandMock, tmpRootDir, minimumSnapshotSizeInBytes)
 
     expect(executeCommandMock).toBeCalledWith(`find ${tmpRootDir} -type f -size +${minimumSnapshotSizeInBytes - 1}c`)
     sinon.assert.calledWith(decompressStub, bigNonSnapshotGzipFilePath, bigNonSnapshotFilepath)
@@ -180,7 +180,7 @@ describe('clean snapshots', () => {
 
     const executeCommandMock = createExecuteCommandMockWithStdoutListingFiles(filepathToContent)
 
-    await cleanSnapshots(executeCommandMock, { fs, logs, gzipCompressor, database }, tmpRootDir, minimumSnapshotSizeInBytes)
+    await cleanSnapshots({ fs, logs, gzipCompressor, database }, executeCommandMock, tmpRootDir, minimumSnapshotSizeInBytes)
 
     expect(executeCommandMock).toBeCalledWith(`find ${tmpRootDir} -type f -size +${minimumSnapshotSizeInBytes - 1}c`)
     expect(fs.createReadStream).toBeCalledWith(bigSnapshotFilepath, {'end': 59})

@@ -7,10 +7,10 @@ import { FSComponent } from './ports/fs'
 import { AppComponents } from './types'
 
 export async function cleanSnapshots(
-  executeCommand: (command: string) => Promise<{ stdout: string; stderr: string }>,
   components: Pick<AppComponents, 'logs' | 'gzipCompressor' | 'database'> & {
     fs: Pick<FSComponent, 'unlink' | 'createReadStream'>
   },
+  executeCommand: (command: string) => Promise<{ stdout: string; stderr: string }>,
   storageDirectory: string,
   minimumSnapshotSizeInBytes: number
 ): Promise<void> {
