@@ -8,7 +8,7 @@ import { AppComponents } from './types'
 export async function main(program: Lifecycle.EntryPointParameters<AppComponents>): Promise<void> {
   const { components, startComponents } = program
 
-  await cleanSnapshots(components, components.staticConfigs.contentStorageFolder, 50)
+  await cleanSnapshots(components, components.staticConfigs.contentStorageFolder, 50_000_000)
 
   // first of all, run the migrations
   await components.migrationManager.run()
