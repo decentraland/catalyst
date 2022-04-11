@@ -1,4 +1,5 @@
 import { toQueryParams } from '@dcl/catalyst-node-commons'
+import { DecentralandAssetIdentifier, parseUrn } from '@dcl/urn-resolver'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import {
   AuditInfo,
@@ -142,8 +143,7 @@ export class Controller {
     // Path: /entities/currently-pointed/{urnPrefix}
     const urnPrefix: string = req.params.urnPrefix
 
-    const regex = /^[a-zA-Z0-9_.:,-]+$/g
-    if (!regex.test(urnPrefix)) {
+    if (!(await isUrnPrefixValid(urnPrefix))) {
       return res
         .status(400)
         .send({ errors: `Invalid Urn prefix param: '${urnPrefix}'` })
@@ -746,3 +746,12 @@ const DEFAULT_FIELDS_ON_DEPLOYMENTS: DeploymentField[] = [
   DeploymentField.CONTENT,
   DeploymentField.METADATA
 ]
+
+async function isUrnPrefixValid(urnPrefix: string) {
+  const regex = /^[a-zA-Z0-9_.:,-]+$/g
+  if (!regex.test(urnPrefix)) return false
+
+  const parsedUrn: DecentralandAssetIdentifier | null = await parseUrn(urnPrefix)
+
+  return parsedUrn !== null && parsedUrn?.type === 'blockchain-collection-third-party'
+}
