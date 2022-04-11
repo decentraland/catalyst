@@ -87,7 +87,7 @@ export async function cleanSnapshotsWithExec(
   })
 
   logger.debug(`Big files to process: ${JSON.stringify(pathsOfBigNonContentFiles)}`)
-  const queue = new PQueue({ concurrency: 2 })
+  const queue = new PQueue({ concurrency: 10 })
   const proms = pathsOfBigNonContentFiles.map((file) => queue.add(async () => deleteIfItIsASnapshot(file)))
 
   await Promise.all(proms)
