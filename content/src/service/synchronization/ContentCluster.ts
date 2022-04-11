@@ -67,7 +67,7 @@ export class ContentCluster implements IdentityProvider {
     this.stoppedFuture.resolve()
   }
 
-  getStatus() {
+  getStatus(): { lastSyncWithDAO: number } {
     return { lastSyncWithDAO: this.timeOfLastSync }
   }
 

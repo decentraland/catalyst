@@ -40,7 +40,7 @@ export interface MetaverseContentService {
   getEntityById(entityId: EntityId): Promise<{ entityId: string; localTimestamp: number } | void>
 }
 
-export type LocalDeploymentAuditInfo = Pick<AuditInfo, 'authChain' | 'migrationData'>
+export type LocalDeploymentAuditInfo = Pick<AuditInfo, 'authChain'>
 
 export type DeploymentEvent = {
   entity: Entity

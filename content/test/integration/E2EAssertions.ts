@@ -146,7 +146,6 @@ function assertEqualsDeployment(actualDeployment: ControllerDeployment, expected
   assert.equal(actualDeployment.deployedBy, expectedDeployment.deployedBy)
   assert.equal(actualDeployment.auditInfo.version, expectedDeployment.auditInfo.version)
   assert.deepEqual(actualDeployment.auditInfo.authChain, expectedDeployment.auditInfo.authChain)
-  assert.deepEqual(actualDeployment.auditInfo.migrationData, expectedDeployment.auditInfo.migrationData)
   assert.equal(actualDeployment.auditInfo.isDenylisted, expectedDeployment.auditInfo.isDenylisted)
   assert.deepEqual(actualDeployment.auditInfo.denylistedContent, expectedDeployment.auditInfo.denylistedContent)
   assert.ok(actualDeployment.auditInfo.localTimestamp >= expectedDeployment.auditInfo.localTimestamp)

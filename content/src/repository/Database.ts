@@ -4,7 +4,6 @@ import { ContentFilesRepository } from './extensions/ContentFilesRepository'
 import { DeploymentPointerChangesRepository } from './extensions/DeploymentPointerChangesRepository'
 import { DeploymentsRepository } from './extensions/DeploymentsRepository'
 import { LastDeployedPointersRepository } from './extensions/LastDeployedPointersRepository'
-import { MigrationDataRepository } from './extensions/MigrationDataRepository'
 import { PointerHistoryRepository } from './extensions/PointerHistoryRepository'
 import { SystemPropertiesRepository } from './extensions/SystemPropertiesRepository'
 
@@ -13,7 +12,6 @@ export type FullDatabase = IDatabase<IExtensions> & Database
 
 export interface IExtensions {
   deployments: DeploymentsRepository
-  migrationData: MigrationDataRepository
   content: ContentFilesRepository
   pointerHistory: PointerHistoryRepository
   lastDeployedPointers: LastDeployedPointersRepository
@@ -55,7 +53,6 @@ async function connectTo(
   const initOptions: IInitOptions<IExtensions> = {
     extend(obj: Database) {
       obj.deployments = new DeploymentsRepository(obj)
-      obj.migrationData = new MigrationDataRepository(obj)
       obj.content = new ContentFilesRepository(obj)
       obj.pointerHistory = new PointerHistoryRepository(obj)
       obj.lastDeployedPointers = new LastDeployedPointersRepository(obj)

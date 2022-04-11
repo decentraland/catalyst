@@ -9,6 +9,7 @@ import path from 'path'
 import { Controller } from './controller/Controller'
 import { Environment, EnvironmentConfig } from './Environment'
 import { FetcherFactory } from './helpers/FetcherFactory'
+import { splitByCommaTrimAndRemoveEmptyElements } from './logic/config-helpers'
 import { metricsDeclaration } from './metrics'
 import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
 import { createActiveEntitiesComponent } from './ports/activeEntities'
@@ -143,6 +144,10 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     timeout: 60000
   })
 
+  const ignoredTypes = splitByCommaTrimAndRemoveEmptyElements(
+    env.getConfig<string>(EnvironmentConfig.SYNC_IGNORED_ENTITY_TYPES)
+  )
+
   const batchDeployer = createBatchDeployerComponent(
     {
       logs,
@@ -156,9 +161,12 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       storage
     },
     {
-      autoStart: true,
-      concurrency: 10,
-      timeout: 100000
+      ignoredTypes: new Set(ignoredTypes),
+      queueOptions: {
+        autoStart: true,
+        concurrency: 10,
+        timeout: 100000
+      }
     }
   )
 
