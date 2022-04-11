@@ -9,6 +9,19 @@ import { getIntegrationResourcePathFor } from '../resources/get-resources-path'
 import { TestProgram } from '../TestProgram'
 
 loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) => {
+
+  it('when asking without params, it returns client error', async () => {
+    const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+    makeNoopValidator(server.components)
+    await server.startProgram()
+
+    const result = await fetch(server.getUrl() + `/entities/active`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+
+    expect(result.status).toBe(400)
+  })
   it('when asking by ID, it returns active entities with given ID', async () => {
     const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
 

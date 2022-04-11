@@ -75,7 +75,6 @@ async function considerDeploymentsOnPointerAsFailed(pgm: MigrationBuilder, entit
     await pgm.db.query(`DELETE FROM last_deployed_pointers WHERE deployment=${row.id}`)
     await pgm.db.query(`DELETE FROM pointer_history WHERE deployment=${row.id}`)
     await pgm.db.query(`DELETE FROM content_files WHERE deployment=${row.id}`)
-    await pgm.db.query(`DELETE FROM migration_data WHERE deployment=${row.id}`)
     await pgm.db.query(`DELETE FROM deployment_deltas WHERE deployment=${row.id}`)
     await pgm.db.query(`DELETE FROM deployments WHERE id=${row.id}`)
   }

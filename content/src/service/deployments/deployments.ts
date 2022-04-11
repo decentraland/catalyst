@@ -1,7 +1,6 @@
 import { Deployment, EntityVersion, PartialDeploymentHistory } from 'dcl-catalyst-commons'
 import { getContentFiles } from '../../logic/database-queries/content-files-queries'
 import { getHistoricalDeployments } from '../../logic/database-queries/deployments-queries'
-import { getMigrationData } from '../../logic/database-queries/migration-data-queries'
 import { AppComponents } from '../../types'
 import { DeploymentOptions } from './types'
 
@@ -38,9 +37,6 @@ export async function getDeployments(
 
   const content = await getContentFiles(components, deploymentIds)
 
-  // TODO [new-sync]: migrationData nolonger required
-  const migrationData = await getMigrationData(components, deploymentIds)
-
   if (!options?.includeDenylisted) {
     deploymentsResult = deploymentsResult.filter((result) => !components.denylist.isDenylisted(result.entityId))
   }
@@ -58,8 +54,7 @@ export async function getDeployments(
       version: result.version,
       authChain: result.authChain,
       localTimestamp: result.localTimestamp,
-      overwrittenBy: result.overwrittenBy,
-      migrationData: migrationData.get(result.deploymentId)
+      overwrittenBy: result.overwrittenBy
     }
   }))
 
