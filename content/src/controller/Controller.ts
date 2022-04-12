@@ -146,7 +146,9 @@ export class Controller {
     if (!(await isUrnPrefixValid(urnPrefix))) {
       return res
         .status(400)
-        .send({ errors: `Invalid Urn prefix param: '${urnPrefix}'` })
+        .send({
+          errors: `Invalid collection urn param, it should be a valid urn prefix of a 3rd party collection, instead: '${urnPrefix}'`
+        })
         .end()
     }
 
