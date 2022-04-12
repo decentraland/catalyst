@@ -140,7 +140,7 @@ export class Controller {
 
   async filterByUrn(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
-    // Path: /entities/currently-pointed/{urnPrefix}
+    // Path: /entities/active/collections/{collectionUrn}
     const urnPrefix: string = req.params.urnPrefix
 
     if (!(await isUrnPrefixValid(urnPrefix))) {
@@ -753,5 +753,9 @@ async function isUrnPrefixValid(urnPrefix: string) {
 
   const parsedUrn: DecentralandAssetIdentifier | null = await parseUrn(urnPrefix)
 
-  return parsedUrn !== null && parsedUrn?.type === 'blockchain-collection-third-party-collection'
+  return (
+    parsedUrn !== null &&
+    (parsedUrn?.type === 'blockchain-collection-third-party-collection' ||
+      parsedUrn?.type === 'blockchain-collection-third-party')
+  )
 }

@@ -356,7 +356,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       makeNoopValidator(server.components)
       await server.startProgram()
 
-      const response = await fetch(server.getUrl() + `/entities/currently-pointed/in!valid`, {
+      const response = await fetch(server.getUrl() + `/entities/active/collections/in!valid`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' }
       })
@@ -368,7 +368,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       makeNoopValidator(server.components)
       await server.startProgram()
 
-      const response = await fetch(server.getUrl() + `/entities/currently-pointed/urn:decentraland:ethereum:collections-v1:0x32b7495895264ac9d0b12d32afd435453458b1c6`, {
+      const response = await fetch(server.getUrl() + `/entities/active/collections/urn:decentraland:ethereum:collections-v1:0x32b7495895264ac9d0b12d32afd435453458b1c6`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' }
       })
@@ -466,7 +466,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
 
 
   async function fetchActiveEntityByUrnPrefix(server: TestProgram, urnPrefix: string): Promise<{ pointer: Pointer; entityId: EntityId }[]> {
-    const url = server.getUrl() + `/entities/currently-pointed/${urnPrefix}`
+    const url = server.getUrl() + `/entities/active/collections/${urnPrefix}`
 
     return (
       await fetch(url, {
