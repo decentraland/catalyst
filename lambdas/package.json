@@ -15,7 +15,7 @@
     "@dcl/catalyst-contracts": "1.0.2",
     "@dcl/catalyst-node-commons": "1.0.1",
     "@dcl/schemas": "4.3.0",
-    "@dcl/urn-resolver": "tag-tpw-collections",
+    "@dcl/urn-resolver": "tag-tpw-collections-2",
     "@types/sharp": "0.29.2",
     "compression": "1.7.4",
     "cors": "2.8.5",

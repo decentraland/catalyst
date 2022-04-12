@@ -22,7 +22,7 @@
     "@dcl/hashing": "^1.1.0",
     "@dcl/snapshots-fetcher": "3.0.2",
     "@dcl/schemas": "4.3.0",
-    "@dcl/urn-resolver": "tag-tpw-collections",
+    "@dcl/urn-resolver": "tag-tpw-collections-2",
     "@well-known-components/interfaces": "^1.1.1",
     "@well-known-components/logger": "^1.1.0",
     "aws-sdk": "2.1006.0",

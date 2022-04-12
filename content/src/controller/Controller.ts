@@ -753,5 +753,5 @@ async function isUrnPrefixValid(urnPrefix: string) {
 
   const parsedUrn: DecentralandAssetIdentifier | null = await parseUrn(urnPrefix)
 
-  return parsedUrn !== null && parsedUrn?.type === 'blockchain-collection-third-party'
+  return parsedUrn !== null && parsedUrn?.type === 'blockchain-collection-third-party-collection'
 }
