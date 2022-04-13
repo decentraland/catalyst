@@ -1,5 +1,4 @@
-import { existPath } from '@dcl/catalyst-node-commons'
-import fs from 'fs'
+import { mkdtempSync, rmSync } from 'fs'
 import os from 'os'
 import path from 'path'
 import { bufferToStream, ContentStorage } from '../../../../src/ports/contentStorage/contentStorage'
@@ -7,6 +6,7 @@ import { createFileSystemContentStorage } from '../../../../src/ports/contentSto
 import { createFsComponent } from '../../../../src/ports/fs'
 
 describe('fileSystemContentStorage', () => {
+  const fs = createFsComponent()
   let tmpRootDir: string
   let fileSystemContentStorage: ContentStorage
 
@@ -21,48 +21,48 @@ describe('fileSystemContentStorage', () => {
   let filePath2: string
 
   beforeEach(async () => {
-    tmpRootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'content-storage-'))
-    fileSystemContentStorage = await createFileSystemContentStorage({ fs: createFsComponent() }, tmpRootDir)
+    tmpRootDir = mkdtempSync(path.join(os.tmpdir(), 'content-storage-'))
+    fileSystemContentStorage = await createFileSystemContentStorage({ fs }, tmpRootDir)
     filePath = path.join(tmpRootDir, '9584', id)
     filePath2 = path.join(tmpRootDir, 'ea6c', id2)
   })
 
   afterEach(() => {
     console.log(`Deleting: ${tmpRootDir}`)
-    fs.rmSync(tmpRootDir, { recursive: true, force: false })
+    rmSync(tmpRootDir, { recursive: true, force: false })
   })
 
   it(`When content is stored, then the correct file structure is created`, async () => {
     await fileSystemContentStorage.storeStream(id, bufferToStream(content))
-    expect(await existPath(filePath)).toBeTruthy()
+    expect(await fs.existPath(filePath)).toBeTruthy()
   })
 
   it(`When content is deleted, then the backing file is also deleted`, async () => {
     await fileSystemContentStorage.storeStream(id, bufferToStream(content))
-    expect(await existPath(filePath)).toBeTruthy()
+    expect(await fs.existPath(filePath)).toBeTruthy()
     await fileSystemContentStorage.delete([id])
-    expect(await existPath(filePath)).toBeFalsy()
+    expect(await fs.existPath(filePath)).toBeFalsy()
   })
 
   it(`When multiple content is stored, then the correct file structure is created`, async () => {
     await fileSystemContentStorage.storeStream(id, bufferToStream(content))
     await fileSystemContentStorage.storeStream(id2, bufferToStream(content2))
-    expect(await existPath(filePath)).toBeTruthy()
-    expect(await existPath(filePath2)).toBeTruthy()
+    expect(await fs.existPath(filePath)).toBeTruthy()
+    expect(await fs.existPath(filePath2)).toBeTruthy()
   })
 
   it(`When multiple content is stored and one is deleted, then the correct file is deleted`, async () => {
     await fileSystemContentStorage.storeStream(id, bufferToStream(content))
     await fileSystemContentStorage.storeStream(id2, bufferToStream(content2))
     await fileSystemContentStorage.delete([id2])
-    expect(await existPath(filePath)).toBeTruthy()
-    expect(await existPath(filePath2)).toBeFalsy()
+    expect(await fs.existPath(filePath)).toBeTruthy()
+    expect(await fs.existPath(filePath2)).toBeFalsy()
   })
 
   it(`When a content with bad compression ratio is stored and compressed, then it is not stored as .gzip`, async () => {
     await fileSystemContentStorage.storeStreamAndCompress(id, bufferToStream(content))
-    expect(await existPath(filePath)).toBeTruthy()
-    expect(await existPath(filePath + '.gzip')).toBeFalsy()
+    expect(await fs.existPath(filePath)).toBeTruthy()
+    expect(await fs.existPath(filePath + '.gzip')).toBeFalsy()
   })
 
   it(`When a content with good compression ratio is stored and compressed, then it is stored as .gzip and non-compressed file is deleted`, async () => {
@@ -70,8 +70,8 @@ describe('fileSystemContentStorage', () => {
     await fileSystemContentStorage.storeStreamAndCompress(id, bufferToStream(goodCompresstionRatioContent))
     const compressedFile = await fileSystemContentStorage.retrieve(id)
     expect((await compressedFile.asRawStream()).encoding).toBe('gzip')
-    expect(await existPath(filePath)).toBeFalsy()
-    expect(await existPath(filePath + '.gzip')).toBeTruthy()
+    expect(await fs.existPath(filePath)).toBeFalsy()
+    expect(await fs.existPath(filePath + '.gzip')).toBeTruthy()
   })
 
   it(`When content is stored, then all the ids are retrieved`, async () => {
