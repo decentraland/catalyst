@@ -138,9 +138,11 @@ type TestEnvCalls = {
 
 export class ServerBuilder {
   private readonly builder: EnvironmentBuilder
+  private readonly storageBaseFolder: string
 
   constructor(private readonly testEnvCalls: TestEnvCalls, env: Environment, public dao: DAOClient) {
     this.builder = new EnvironmentBuilder(env)
+    this.storageBaseFolder = env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER) ?? 'storage'
   }
 
   withConfig(config: EnvironmentConfig, value: any): ServerBuilder {
@@ -168,7 +170,7 @@ export class ServerBuilder {
       this.testEnvCalls.addToDAO(address)
       const components = await this.builder
         .withConfig(EnvironmentConfig.SERVER_PORT, port)
-        .withConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, `storage_${port}`)
+        .withConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, `${this.storageBaseFolder}/${port}`)
         .withConfig(EnvironmentConfig.PSQL_DATABASE, databaseNames[i])
         .buildConfigAndComponents()
 
