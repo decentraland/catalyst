@@ -375,7 +375,25 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
 
       expect(response.status).toBe(400)
     })
-    it('when fetching entities by urn prefix, then matching entity is retrieved', async () => {
+    it('when fetching entities by item, then matching entity is retrieved', async () => {
+      const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+      makeNoopValidator(server.components)
+      await server.startProgram()
+      const pointer = ['urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1']
+      const deployResult = await buildDeployData(pointer, {
+        metadata: 'this is just some metadata'
+      })
+
+      // Deploy entity
+      await server.deploy(deployResult.deployData)
+      const response = await fetchActiveEntityByUrnPrefix(server, 'urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1')
+
+      expect(response).toBeDefined()
+      expect(response.length).toBe(1)
+      expect(response[0].entityId).toBe(deployResult.controllerEntity.id)
+      expect(response[0].pointer).toBe('urn:decentraland:mumbai:collections-thirdparty:athirdparty:wintercollection:1')
+    })
+    it('when fetching entities by collection name, then matching entity is retrieved', async () => {
       const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
       makeNoopValidator(server.components)
       await server.startProgram()
@@ -393,7 +411,24 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       expect(response[0].entityId).toBe(deployResult.controllerEntity.id)
       expect(response[0].pointer).toBe('urn:decentraland:mumbai:collections-thirdparty:athirdparty:wintercollection:1')
     })
+        it('when fetching entities by third party name, then matching entity is retrieved', async () => {
+      const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+      makeNoopValidator(server.components)
+      await server.startProgram()
+      const pointer = ['urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1']
+      const deployResult = await buildDeployData(pointer, {
+        metadata: 'this is just some metadata'
+      })
 
+      // Deploy entity
+      await server.deploy(deployResult.deployData)
+      const response = await fetchActiveEntityByUrnPrefix(server, 'urn:decentraland:mumbai:collections-thirdparty:aThirdParty')
+
+      expect(response).toBeDefined()
+      expect(response.length).toBe(1)
+      expect(response[0].entityId).toBe(deployResult.controllerEntity.id)
+      expect(response[0].pointer).toBe('urn:decentraland:mumbai:collections-thirdparty:athirdparty:wintercollection:1')
+    })
     it('when fetching entities by not matching urn prefix, then none is retrieved', async () => {
       const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
       makeNoopValidator(server.components)

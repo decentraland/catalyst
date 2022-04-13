@@ -145,7 +145,6 @@ export class Controller {
     const collectionUrn: string = req.params.collectionUrn
 
     const parsedUrn = await isUrnPrefixValid(collectionUrn)
-
     if (!parsedUrn) {
       return res
         .status(400)
@@ -752,9 +751,9 @@ async function isUrnPrefixValid(collectionUrn: string): Promise<string | false> 
     parsedUrn?.type === 'blockchain-collection-third-party-name' ||
     parsedUrn?.type === 'blockchain-collection-third-party-collection'
   ) {
-    return `${parsedUrn}:`
+    return `${collectionUrn}:`
   }
-  if (parsedUrn?.type === 'blockchain-collection-third-party') return `${parsedUrn}`
+  if (parsedUrn?.type === 'blockchain-collection-third-party') return collectionUrn
 
   return false
 }
