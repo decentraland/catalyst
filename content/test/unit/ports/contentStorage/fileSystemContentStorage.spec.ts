@@ -1,71 +1,102 @@
+import { existPath } from '@dcl/catalyst-node-commons'
+import fs from 'fs'
+import os from 'os'
 import path from 'path'
 import { bufferToStream, ContentStorage } from '../../../../src/ports/contentStorage/contentStorage'
 import { createFileSystemContentStorage } from '../../../../src/ports/contentStorage/fileSystemContentStorage'
 import { createFsComponent } from '../../../../src/ports/fs'
-import { FileSystemUtils as fsu } from '../../ports/contentStorage/FileSystemUtils'
 
 describe('fileSystemContentStorage', () => {
   let tmpRootDir: string
-  let fss: ContentStorage
-  let id: string
-  let content: Buffer
+  let fileSystemContentStorage: ContentStorage
+
+  // sha1('some-id') = 9584b661c135a43f2fbbe43cc5104f7bd693d048
+  const id: string = 'some-id'
+  const content = Buffer.from('123')
   let filePath: string
-  let id2: string
-  let content2: Buffer
+
+  // sha1('another-id') = ea6cf57af4e7e1a5041298624af4bff04d245e71
+  const id2: string = 'another-id'
+  const content2 = Buffer.from('456')
   let filePath2: string
 
-  beforeAll(async () => {
-    tmpRootDir = fsu.createTempDirectory()
-    fss = await createFileSystemContentStorage({ fs: createFsComponent() }, tmpRootDir)
-
-    // sha1('some-id') = 9584b661c135a43f2fbbe43cc5104f7bd693d048
-    id = 'some-id'
+  beforeEach(async () => {
+    tmpRootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'content-storage-'))
+    fileSystemContentStorage = await createFileSystemContentStorage({ fs: createFsComponent() }, tmpRootDir)
     filePath = path.join(tmpRootDir, '9584', id)
-    content = Buffer.from('123')
-
-    // sha1('another-id') = ea6cf57af4e7e1a5041298624af4bff04d245e71
-    id2 = 'another-id'
     filePath2 = path.join(tmpRootDir, 'ea6c', id2)
-    content2 = Buffer.from('456')
+  })
+
+  afterEach(() => {
+    console.log(`Deleting: ${tmpRootDir}`)
+    fs.rmSync(tmpRootDir, { recursive: true, force: false })
   })
 
   it(`When content is stored, then the correct file structure is created`, async () => {
-    await fss.storeStream(id, bufferToStream(content))
-    expect(fsu.fileExists(filePath)).toBeTruthy()
+    await fileSystemContentStorage.storeStream(id, bufferToStream(content))
+    expect(await existPath(filePath)).toBeTruthy()
   })
 
   it(`When content is deleted, then the backing file is also deleted`, async () => {
-    await fss.storeStream(id, bufferToStream(content))
-    expect(fsu.fileExists(filePath)).toBeTruthy()
-    await fss.delete([id])
-    expect(fsu.fileExists(filePath)).toBeFalsy()
+    await fileSystemContentStorage.storeStream(id, bufferToStream(content))
+    expect(await existPath(filePath)).toBeTruthy()
+    await fileSystemContentStorage.delete([id])
+    expect(await existPath(filePath)).toBeFalsy()
   })
 
   it(`When multiple content is stored, then the correct file structure is created`, async () => {
-    await fss.storeStream(id, bufferToStream(content))
-    await fss.storeStream(id2, bufferToStream(content2))
-    expect(fsu.fileExists(filePath)).toBeTruthy()
-    expect(fsu.fileExists(filePath2)).toBeTruthy()
+    await fileSystemContentStorage.storeStream(id, bufferToStream(content))
+    await fileSystemContentStorage.storeStream(id2, bufferToStream(content2))
+    expect(await existPath(filePath)).toBeTruthy()
+    expect(await existPath(filePath2)).toBeTruthy()
   })
 
   it(`When multiple content is stored and one is deleted, then the correct file is deleted`, async () => {
-    await fss.storeStream(id, bufferToStream(content))
-    await fss.storeStream(id2, bufferToStream(content2))
-    await fss.delete([id2])
-    expect(fsu.fileExists(filePath)).toBeTruthy()
-    expect(fsu.fileExists(filePath2)).toBeFalsy()
+    await fileSystemContentStorage.storeStream(id, bufferToStream(content))
+    await fileSystemContentStorage.storeStream(id2, bufferToStream(content2))
+    await fileSystemContentStorage.delete([id2])
+    expect(await existPath(filePath)).toBeTruthy()
+    expect(await existPath(filePath2)).toBeFalsy()
   })
 
   it(`When a content with bad compression ratio is stored and compressed, then it is not stored as .gzip`, async () => {
-    await fss.storeStreamAndCompress(id, bufferToStream(content))
-    expect(fsu.fileExists(filePath)).toBeTruthy()
-    expect(fsu.fileExists(filePath + '.gzip')).toBeFalsy()
+    await fileSystemContentStorage.storeStreamAndCompress(id, bufferToStream(content))
+    expect(await existPath(filePath)).toBeTruthy()
+    expect(await existPath(filePath + '.gzip')).toBeFalsy()
   })
 
   it(`When a content with good compression ratio is stored and compressed, then it is stored as .gzip and non-compressed file is deleted`, async () => {
     const goodCompresstionRatioContent = Buffer.from(new Uint8Array(100).fill(0))
-    await fss.storeStreamAndCompress(id, bufferToStream(goodCompresstionRatioContent))
-    expect(fsu.fileExists(filePath)).toBeFalsy()
-    expect(fsu.fileExists(filePath + '.gzip')).toBeTruthy()
+    await fileSystemContentStorage.storeStreamAndCompress(id, bufferToStream(goodCompresstionRatioContent))
+    const compressedFile = await fileSystemContentStorage.retrieve(id)
+    expect((await compressedFile.asRawStream()).encoding).toBe('gzip')
+    expect(await existPath(filePath)).toBeFalsy()
+    expect(await existPath(filePath + '.gzip')).toBeTruthy()
+  })
+
+  it(`When content is stored, then all the ids are retrieved`, async () => {
+    await fileSystemContentStorage.storeStream(id, bufferToStream(content))
+    await fileSystemContentStorage.storeStream(id2, bufferToStream(content2))
+    const fileIds = fileSystemContentStorage.allFileIds()
+    const seenIds = []
+    for await (const fileId of fileIds) {
+      console.log(fileId)
+      seenIds.push(fileId)
+    }
+    expect(seenIds.length).toBe(2)
+    expect(new Set(seenIds)).toEqual(new Set([id, id2]))
+  })
+
+  it(`When content is stored compressed, then all the ids are retrieved without the compress extension`, async () => {
+    const goodCompresstionRatioContent = Buffer.from(new Uint8Array(100).fill(0))
+    await fileSystemContentStorage.storeStreamAndCompress(id, bufferToStream(goodCompresstionRatioContent))
+    await fileSystemContentStorage.storeStream(id2, bufferToStream(content2))
+    const fileIds = fileSystemContentStorage.allFileIds()
+    const seenIds = []
+    for await (const fileId of fileIds) {
+      seenIds.push(fileId)
+    }
+    expect(seenIds.length).toBe(2)
+    expect(new Set(seenIds)).toEqual(new Set([id, id2]))
   })
 })

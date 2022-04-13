@@ -62,6 +62,15 @@ export async function createFileSystemContentStorage(
     return undefined
   }
 
+  const allFileIdsRec = async function* (folder: string): AsyncIterable<string> {
+    const dirEntries = await components.fs.opendir(folder, { bufferSize: 4000 })
+    for await (const entry of dirEntries) {
+      entry.isDirectory()
+        ? yield* allFileIdsRec(path.resolve(folder, entry.name))
+        : yield entry.name.replace(/\.gzip/, '')
+    }
+  }
+
   return {
     storeStream,
     retrieve,
@@ -90,6 +99,7 @@ export async function createFileSystemContentStorage(
     async existMultiple(ids: string[]): Promise<Map<string, boolean>> {
       const checks = await Promise.all(ids.map<Promise<[string, boolean]>>(async (id) => [id, !!(await retrieve(id))]))
       return new Map(checks)
-    }
+    },
+    allFileIds: () => allFileIdsRec(root)
   }
 }

@@ -23,4 +23,7 @@ export class MockedStorage implements ContentStorage {
   async existMultiple(fileIds: string[]): Promise<Map<string, boolean>> {
     return new Map(fileIds.map((fileId) => [fileId, this.storage.has(fileId)]))
   }
+  allFileIds(): AsyncIterable<string> {
+    throw new Error('Method not implemented.')
+  }
 }
