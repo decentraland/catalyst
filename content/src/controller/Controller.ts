@@ -141,19 +141,19 @@ export class Controller {
   async filterByUrn(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
     // Path: /entities/active/collections/{collectionUrn}
-    const urnPrefix: string = req.params.urnPrefix
+    const collectionUrn: string = req.params.collectionUrn
 
-    if (!(await isUrnPrefixValid(urnPrefix))) {
+    if (!(await isUrnPrefixValid(collectionUrn))) {
       return res
         .status(400)
         .send({
-          errors: `Invalid collection urn param, it should be a valid urn prefix of a 3rd party collection, instead: '${urnPrefix}'`
+          errors: `Invalid collection urn param, it should be a valid urn prefix of a 3rd party collection, instead: '${collectionUrn}'`
         })
         .end()
     }
 
     const entities: { pointer: string; entityId: EntityId }[] = await this.components.activeEntities.withPrefix(
-      urnPrefix
+      collectionUrn
     )
 
     res.send(entities)
@@ -749,11 +749,11 @@ const DEFAULT_FIELDS_ON_DEPLOYMENTS: DeploymentField[] = [
   DeploymentField.METADATA
 ]
 
-async function isUrnPrefixValid(urnPrefix: string) {
+async function isUrnPrefixValid(collectionUrn: string) {
   const regex = /^[a-zA-Z0-9_.:,-]+$/g
-  if (!regex.test(urnPrefix)) return false
+  if (!regex.test(collectionUrn)) return false
 
-  const parsedUrn: DecentralandAssetIdentifier | null = await parseUrn(urnPrefix)
+  const parsedUrn: DecentralandAssetIdentifier | null = await parseUrn(collectionUrn)
 
   return (
     parsedUrn !== null &&

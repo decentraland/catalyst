@@ -465,8 +465,8 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
   }
 
 
-  async function fetchActiveEntityByUrnPrefix(server: TestProgram, urnPrefix: string): Promise<{ pointer: Pointer; entityId: EntityId }[]> {
-    const url = server.getUrl() + `/entities/active/collections/${urnPrefix}`
+  async function fetchActiveEntityByUrnPrefix(server: TestProgram, collectionUrn: string): Promise<{ pointer: Pointer; entityId: EntityId }[]> {
+    const url = server.getUrl() + `/entities/active/collections/${collectionUrn}`
 
     return (
       await fetch(url, {
