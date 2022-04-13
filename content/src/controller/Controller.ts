@@ -746,6 +746,8 @@ async function isUrnPrefixValid(collectionUrn: string): Promise<string | false> 
 
   if (parseUrn === null) return false
 
+  // We want to reduce the matches of the query,
+  // so we enforce to write the full name of the third party or collection for the search
   if (
     parsedUrn?.type === 'blockchain-collection-third-party-name' ||
     parsedUrn?.type === 'blockchain-collection-third-party-collection'
