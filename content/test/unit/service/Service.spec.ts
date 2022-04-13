@@ -88,7 +88,6 @@ describe('Service', function() {
       console.dir([...args])
       return 123
     })
-    jest.spyOn(service.components.deploymentManager, 'savePointerChanges').mockResolvedValue()
     jest.spyOn(service.components.deploymentManager, 'setEntitiesAsOverwritten').mockResolvedValue()
 
     const deploymentResult: DeploymentResult = await service.deployEntity(
@@ -123,7 +122,6 @@ describe('Service', function() {
       console.dir([...args])
       return 123
     })
-    jest.spyOn(service.components.deploymentManager, 'savePointerChanges').mockResolvedValue()
     jest.spyOn(service.components.deploymentManager, 'setEntitiesAsOverwritten').mockResolvedValue()
 
     await service.deployEntity([entityFile, randomFile], entity.id, auditInfo, DeploymentContext.LOCAL)
@@ -194,7 +192,6 @@ describe('Service', function() {
     )
 
     jest.spyOn(service.components.deploymentManager, 'saveDeployment').mockImplementation(() => Promise.resolve(1))
-    jest.spyOn(service.components.deploymentManager, 'savePointerChanges').mockImplementation(() => Promise.resolve())
     jest
       .spyOn(service.components.deploymentManager, 'setEntitiesAsOverwritten')
       .mockImplementation(() => Promise.resolve())

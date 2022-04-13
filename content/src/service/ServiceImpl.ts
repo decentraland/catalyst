@@ -289,15 +289,6 @@ export class ServiceImpl implements MetaverseContentService {
             // Update pointers and active entities
             this.updateActiveEntities(pointersFromEntity, entity)
 
-            // Save deployment pointer changes
-            await runReportingQueryDurationMetric(this.components, 'save_pointer_changes', () =>
-              this.components.deploymentManager.savePointerChanges(
-                transaction.deploymentPointerChanges,
-                deploymentId,
-                pointersFromEntity
-              )
-            )
-
             // Add to pointer history
             await runReportingQueryDurationMetric(this.components, 'add_pointer_history', () =>
               this.components.pointerManager.addToHistory(transaction.pointerHistory, deploymentId, entity)

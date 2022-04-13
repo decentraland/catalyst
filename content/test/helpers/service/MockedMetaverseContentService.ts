@@ -13,10 +13,10 @@ import {
 import { AuthChain, AuthLinkType } from 'dcl-crypto'
 import { random } from 'faker'
 import { CURRENT_CONTENT_VERSION } from '../../../src/Environment'
+import { DeploymentWithAuthChain } from '../../../src/logic/database-queries/snapshots-queries'
 import { ContentItem, SimpleContentItem } from '../../../src/ports/contentStorage/contentStorage'
 import { FailedDeployment } from '../../../src/ports/failedDeploymentsCache'
 import { DeploymentOptions, PointerChangesOptions } from '../../../src/service/deployments/types'
-import { DeploymentPointerChanges } from '../../../src/service/pointers/types'
 import { DeploymentContext, LocalDeploymentAuditInfo, MetaverseContentService } from '../../../src/service/Service'
 import { IStatusCapableComponent, StatusProbeResult } from '../../../src/types'
 import { buildEntityAndFile } from './EntityTestFactory'
@@ -47,7 +47,7 @@ export class MockedMetaverseContentService implements MetaverseContentService, I
 
   private readonly entities: Entity[]
   private readonly content: Map<ContentFileHash, Buffer>
-  private readonly pointerChanges: DeploymentPointerChanges[]
+  private readonly pointerChanges: DeploymentWithAuthChain[]
 
   constructor(builder: MockedMetaverseContentServiceBuilder) {
     this.entities = builder.entities
@@ -171,7 +171,7 @@ export class MockedMetaverseContentService implements MetaverseContentService, I
 export class MockedMetaverseContentServiceBuilder {
   readonly entities: Entity[] = []
   readonly content: Map<ContentFileHash, Buffer> = new Map()
-  readonly pointerChanges: DeploymentPointerChanges[] = []
+  readonly pointerChanges: DeploymentWithAuthChain[] = []
 
   withEntity(newEntity: Entity): MockedMetaverseContentServiceBuilder {
     this.entities.push(newEntity)
@@ -183,7 +183,7 @@ export class MockedMetaverseContentServiceBuilder {
     return this
   }
 
-  withPointerChanges(delta: DeploymentPointerChanges): MockedMetaverseContentServiceBuilder {
+  withPointerChanges(delta: DeploymentWithAuthChain): MockedMetaverseContentServiceBuilder {
     this.pointerChanges.push(delta)
     return this
   }
