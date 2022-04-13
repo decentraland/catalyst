@@ -86,7 +86,7 @@ on the 'deployments' table, with the 'deleter_deployment' field. Each deployment
 
 ### Deployments/local history
 
-This history is local to each content server. It depends on the order that deployments were made, so it will most likely be different for each server. This information is stored on the 'deployment_deltas' table, and exposed by the /pointer-changes endpoint. The idea is that this table will store changes made to the pointers. So if a deployment modifies a pointer in some way, this is where it will be recorded.
+This history is local to each content server. It depends on the order that deployments were made, so it will most likely be different for each server.
 
 Possible modifications to a pointer could be: making the pointer reference the new entity or making the pointer point to nothing. Each deployment will have a reference:
 

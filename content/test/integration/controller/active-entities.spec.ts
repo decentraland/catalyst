@@ -455,10 +455,8 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
    })
 
   async function fetchActiveEntityByIds(server: TestProgram, ...ids: string[]): Promise<Entity[]> {
-    const url = server.getUrl() + `/entities/active`
-
     return (
-      await fetch(url, {
+      await fetch(`${server.getUrl()}/entities/active`, {
         method: 'POST',
         body: JSON.stringify({ ids }),
         headers: { 'Content-Type': 'application/json' }
@@ -467,10 +465,8 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
   }
 
   async function fetchActiveEntityByPointers(server: TestProgram, ...pointers: string[]): Promise<Entity[]> {
-    const url = server.getUrl() + `/entities/active`
-
     return (
-      await fetch(url, {
+      await fetch(`${server.getUrl()}/entities/active`, {
         method: 'POST',
         body: JSON.stringify({ pointers }),
         headers: { 'Content-Type': 'application/json' }
@@ -480,10 +476,8 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
 
 
   async function fetchActiveEntityByUrnPrefix(server: TestProgram, urnPrefix: string): Promise<{ pointer: Pointer; entityId: EntityId }[]> {
-    const url = server.getUrl() + `/entities/currently-pointed/${urnPrefix}`
-
     return (
-      await fetch(url, {
+      await fetch(`${server.getUrl()}/entities/currently-pointed/${urnPrefix}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
       })

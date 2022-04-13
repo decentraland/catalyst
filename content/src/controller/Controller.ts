@@ -18,12 +18,13 @@ import express from 'express'
 import onFinished from 'on-finished'
 import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
 import { getActiveDeploymentsByContentHash } from '../logic/database-queries/deployments-queries'
+import { DeploymentWithAuthChain } from '../logic/database-queries/snapshots-queries'
 import { statusResponseFromComponents } from '../logic/status-checks'
 import { ContentItem, RawContent } from '../ports/contentStorage/contentStorage'
 import { getDeployments } from '../service/deployments/deployments'
 import { DeploymentOptions } from '../service/deployments/types'
 import { getPointerChanges } from '../service/pointers/pointers'
-import { DeploymentPointerChanges, PointerChangesFilters } from '../service/pointers/types'
+import { PointerChangesFilters } from '../service/pointers/types'
 import {
   DeploymentContext,
   isInvalidDeployment,
@@ -396,34 +397,28 @@ export class Controller {
       includeOverwrittenInfo: includeAuthChain
     }
 
-    const {
-      pointerChanges: deltas,
-      filters,
-      pagination
-    } = await this.components.sequentialExecutor.run('GetPointerChangesEndpoint', () =>
-      getPointerChanges(this.components, {
-        filters: requestFilters,
-        offset,
-        limit,
-        lastId,
-        sortBy
-      })
+    const { pointerChanges, filters, pagination } = await this.components.sequentialExecutor.run(
+      'GetPointerChangesEndpoint',
+      () =>
+        getPointerChanges(this.components, {
+          filters: requestFilters,
+          offset,
+          limit,
+          lastId,
+          sortBy
+        })
     )
-    const controllerPointerChanges: ControllerPointerChanges[] = deltas.map((delta) => ({
-      ...delta,
-      changes: Array.from(delta.changes.entries()).map(([pointer, { before, after }]) => ({ pointer, before, after }))
-    }))
 
-    if (controllerPointerChanges.length > 0 && pagination.moreData) {
-      const lastPointerChange = controllerPointerChanges[controllerPointerChanges.length - 1]
+    if (pointerChanges.length > 0 && pagination.moreData) {
+      const lastPointerChange = pointerChanges[pointerChanges.length - 1]
       pagination.next = this.calculateNextRelativePathForPointer(lastPointerChange, pagination.limit, filters)
     }
 
-    res.send({ deltas: controllerPointerChanges, filters, pagination })
+    res.send({ deltas: pointerChanges, filters, pagination })
   }
 
   private calculateNextRelativePathForPointer(
-    lastPointerChange: ControllerPointerChanges,
+    lastPointerChange: DeploymentWithAuthChain,
     limit: number,
     filters?: PointerChangesFilters
   ): string | undefined {
@@ -715,14 +710,6 @@ export enum DeploymentField {
   POINTERS = 'pointers',
   METADATA = 'metadata',
   AUDIT_INFO = 'auditInfo'
-}
-
-export type ControllerPointerChanges = Omit<DeploymentPointerChanges, 'changes'> & {
-  changes: {
-    pointer: Pointer
-    before: EntityId | undefined
-    after: EntityId | undefined
-  }[]
 }
 
 export type ControllerDenylistData = {

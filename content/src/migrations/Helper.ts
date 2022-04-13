@@ -2,7 +2,7 @@ import { EntityId, EntityType, Pointer } from 'dcl-catalyst-commons'
 import { MigrationBuilder } from 'node-pg-migrate'
 import { FailureReason } from '../ports/failedDeploymentsCache'
 
-export function deleteFailedDeployments(pgm: MigrationBuilder, ...entityIds: EntityId[]) {
+export function deleteFailedDeployments(pgm: MigrationBuilder, ...entityIds: EntityId[]): void {
   const inClause = entityIds.map((entityId) => `'${entityId}'`).join(',')
   pgm.sql(`DELETE FROM failed_deployments WHERE entity_id IN (${inClause})`)
 }
@@ -63,13 +63,6 @@ async function considerDeploymentsOnPointerAsFailed(pgm: MigrationBuilder, entit
       ) VALUES ('${entityType}', '${row.entity_id}', to_timestamp(${now} / 1000.0), '${reason}', '${description}')
       ON CONFLICT ON CONSTRAINT failed_deployments_uniq_entity_id_entity_type
       DO UPDATE SET failure_timestamp = to_timestamp(${now} / 1000.0), reason = '${reason}', error_description = '${description}'`)
-
-    // Clear dependency on deployment_deltas table
-    const { rows } = await pgm.db.query(`SELECT deployment FROM deployment_deltas WHERE before=${row.id}`)
-    const deployment = rows[0]?.deployment
-    if (deployment) {
-      await pgm.db.query(`UPDATE deployment_deltas SET before=NULL WHERE deployment=${deployment}`)
-    }
 
     // Delete from all tables
     await pgm.db.query(`DELETE FROM last_deployed_pointers WHERE deployment=${row.id}`)
