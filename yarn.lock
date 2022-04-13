@@ -437,10 +437,10 @@
   resolved "https://registry.yarnpkg.com/@dcl/urn-resolver/-/urn-resolver-1.3.0.tgz#680b8e0fb91e0d18a9ff0a9431d0783aa6dfae99"
   integrity sha512-AFKn6u4exB2z0K7o0z8rPAWztkpiAyz4gZd6OqKl/Yy6OxdoPdf0IwnuZzRZYsOgvxZv/LbwOgtSnNtvJVlLxQ==
 
-"@dcl/urn-resolver@tag-tpw-collections-2":
-  version "1.3.1-20220412141438.commit-9e0a4b8"
-  resolved "https://registry.yarnpkg.com/@dcl/urn-resolver/-/urn-resolver-1.3.1-20220412141438.commit-9e0a4b8.tgz#ddf6d63cafb536863194bac53dcf3827de1adc81"
-  integrity sha512-bXQCAP9d/btsho4uV3yaPmwnEzBtTBmYj37NAGd7lSylrWa08NXQ+XctLfVjadx0P4iwIH7SuZLKqx+RFk6lzg==
+"@dcl/urn-resolver@tag-tpw-collections-3":
+  version "1.3.1-20220413174534.commit-3ef812b"
+  resolved "https://registry.yarnpkg.com/@dcl/urn-resolver/-/urn-resolver-1.3.1-20220413174534.commit-3ef812b.tgz#0e6d4b20c2bfdf87a5b67f38d558de82544a5b4a"
+  integrity sha512-U/RtUaNnmOPFdSfDc2pJonliB/ghQVCdMCRrt6G5bM/TipD+RieQIhnaClrberPSdKMqyhbDE3L/MQplhp/m8Q==
 
 "@eslint/eslintrc@^0.4.3":
   version "0.4.3"

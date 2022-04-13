@@ -144,7 +144,9 @@ export class Controller {
     // Path: /entities/active/collections/{collectionUrn}
     const collectionUrn: string = req.params.collectionUrn
 
-    if (!(await isUrnPrefixValid(collectionUrn))) {
+    const parsedUrn = await isUrnPrefixValid(collectionUrn)
+
+    if (!parsedUrn) {
       return res
         .status(400)
         .send({
@@ -154,7 +156,7 @@ export class Controller {
     }
 
     const entities: { pointer: string; entityId: EntityId }[] = await this.components.activeEntities.withPrefix(
-      collectionUrn
+      parsedUrn
     )
 
     res.send(entities)
@@ -736,15 +738,21 @@ const DEFAULT_FIELDS_ON_DEPLOYMENTS: DeploymentField[] = [
   DeploymentField.METADATA
 ]
 
-async function isUrnPrefixValid(collectionUrn: string) {
+async function isUrnPrefixValid(collectionUrn: string): Promise<string | false> {
   const regex = /^[a-zA-Z0-9_.:,-]+$/g
   if (!regex.test(collectionUrn)) return false
 
   const parsedUrn: DecentralandAssetIdentifier | null = await parseUrn(collectionUrn)
 
-  return (
-    parsedUrn !== null &&
-    (parsedUrn?.type === 'blockchain-collection-third-party-collection' ||
-      parsedUrn?.type === 'blockchain-collection-third-party')
-  )
+  if (parseUrn === null) return false
+
+  if (
+    parsedUrn?.type === 'blockchain-collection-third-party-name' ||
+    parsedUrn?.type === 'blockchain-collection-third-party-collection'
+  ) {
+    return `${parsedUrn}:`
+  }
+  if (parsedUrn?.type === 'blockchain-collection-third-party') return `${parsedUrn}`
+
+  return false
 }
