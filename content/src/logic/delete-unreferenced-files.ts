@@ -1,3 +1,4 @@
+import PQueue from 'p-queue'
 import { AppComponents } from '../types'
 import { getContentFileHashes, getEntityFileHashes } from './database-queries/unreferenced-files-queries'
 
@@ -15,9 +16,12 @@ export async function deleteUnreferencedFiles(
   const fileHashes = new Set(contentFileHashes)
   entityFileHashes.forEach((hash) => fileHashes.add(hash))
 
+  const queue = new PQueue({ concurrency: 10 })
+
   let numberOfDeletedFiles = 0
   for await (const storageFileId of storageFileIds) {
     if (!fileHashes.has(storageFileId)) {
+      await queue.add(async () => await components.storage.delete([storageFileId]))
       console.log(`Deleting: ${storageFileId}`)
       await components.storage.delete([storageFileId])
       numberOfDeletedFiles++
