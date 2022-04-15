@@ -10,7 +10,7 @@
 // import { loadStandaloneTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
 // import { buildDeployData } from '../E2ETestUtils'
 // import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
-
+it('i am a test', () => {})
 // const tmpRootDir = mkdtempSync(path.join(os.tmpdir(), 'unreferenced-files-cleaner-'))
 
 // loadStandaloneTestEnvironment({ [EnvironmentConfig.STORAGE_ROOT_FOLDER]: tmpRootDir })('Delete unreferenced files - ', (testEnv) => {
