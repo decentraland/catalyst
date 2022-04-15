@@ -9,6 +9,7 @@
     "build": "tsc -b",
     "start:server": "node ./dist/src/entrypoints/run-server.js",
     "start:db": "node ./dist/src/entrypoints/run-local-database.js",
+    "start:maintenance": "node ./dist/src/entrypoints/run-maintenance.js",
     "test": "jest --runInBand --forceExit --detectOpenHandles --coverage",
     "test:unit": "jest --selectProjects unit --runInBand --forceExit --detectOpenHandles --coverage",
     "test:integration": "jest --selectProjects integration --runInBand --forceExit --detectOpenHandles --coverage",

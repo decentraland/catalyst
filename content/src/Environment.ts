@@ -165,6 +165,10 @@ export class EnvironmentBuilder {
   }
 
   async buildConfigAndComponents(): Promise<AppComponents> {
+    return await initComponentsWithEnv(await this.build())
+  }
+
+  async build(): Promise<Environment> {
     const env = new Environment()
 
     this.registerConfigIfNotAlreadySet(
@@ -436,7 +440,7 @@ export class EnvironmentBuilder {
       () => process.env.RETRY_FAILED_DEPLOYMENTS_DELAY_TIME ?? ms('15m')
     )
 
-    return await initComponentsWithEnv(env)
+    return env
   }
 
   private registerConfigIfNotAlreadySet(env: Environment, key: EnvironmentConfig, valueProvider: () => any): void {
