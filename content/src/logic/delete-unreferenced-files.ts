@@ -23,7 +23,7 @@ export async function deleteUnreferencedFiles(
     if (!fileHashes.has(storageFileId)) {
       await queue.add(async () => {
         logger.debug(`Deleting: ${storageFileId}`)
-        await components.storage.delete([storageFileId])
+        // await components.storage.delete([storageFileId])
       })
       numberOfDeletedFiles++
     }
