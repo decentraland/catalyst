@@ -24,8 +24,9 @@ loadStandaloneTestEnvironment({ [EnvironmentConfig.STORAGE_ROOT_FOLDER]: tmpRoot
     async (components) => {
       const unreferencedFileHash = 'a-hash'
       await components.storage.storeStream(unreferencedFileHash, bufferToStream(fileContent))
+      expect(await components.storage.exist(unreferencedFileHash)).toBeTruthy()
       await deleteUnreferencedFiles(components)
-      expect(await components.storage.retrieve(unreferencedFileHash)).toBeUndefined()
+      expect(await components.storage.exist(unreferencedFileHash)).toBeFalsy()
     }
   )
 
@@ -48,10 +49,10 @@ loadStandaloneTestEnvironment({ [EnvironmentConfig.STORAGE_ROOT_FOLDER]: tmpRoot
     await components.storage.storeStream(unreferencedFileHash, bufferToStream(fileContent))
 
     await deleteUnreferencedFiles(components)
-    expect(await components.storage.retrieve(unreferencedFileHash)).toBeUndefined()
+    expect(await components.storage.exist(unreferencedFileHash)).toBeFalsy()
     // There should be only one file, the entity file. Because it was deployed with no content files associated
     expect(contentFileHashes.length).toBe(1)
-    expect(await components.storage.retrieve(contentFileHashes[0])).toBeDefined()
+    expect(await components.storage.exist(contentFileHashes[0])).toBeTruthy()
 })
 
   it('should not delete entity file and its content file', async () => {
@@ -68,18 +69,17 @@ loadStandaloneTestEnvironment({ [EnvironmentConfig.STORAGE_ROOT_FOLDER]: tmpRoot
 
       const contentsByHash: Map<ContentFileHash, Uint8Array> = await ServiceImpl.hashFiles(deployResult.deployData.files, deployResult.deployData.entityId)
       const contentFileHashes = Array.from(contentsByHash.keys())
-      console.log(contentFileHashes)
 
       const unreferencedFileHash = 'a-hash'
       await components.storage.storeStream(unreferencedFileHash, bufferToStream(fileContent))
 
 
       await deleteUnreferencedFiles(components)
-      expect(await components.storage.retrieve(unreferencedFileHash)).toBeUndefined()
+      expect(await components.storage.exist(unreferencedFileHash)).toBeFalsy()
       // There should be two files, the entity file and its content file.
       expect(contentFileHashes.length).toBe(2)
       for (const usedHash of contentFileHashes) {
-        expect(await components.storage.retrieve(usedHash)).toBeDefined()
+        expect(await components.storage.exist(usedHash)).toBeTruthy()
       }
   })
 })

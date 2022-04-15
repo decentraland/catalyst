@@ -79,12 +79,8 @@ describe('fileSystemContentStorage', () => {
     await fileSystemContentStorage.storeStream(id2, bufferToStream(content2))
     const fileIds = fileSystemContentStorage.allFileIds()
     const seenIds = []
-    for await (const fileId of fileIds) {
-      console.log(fileId)
-      seenIds.push(fileId)
-    }
-    expect(seenIds.length).toBe(2)
-    expect(new Set(seenIds)).toEqual(new Set([id, id2]))
+    for await (const fileId of fileIds) seenIds.push(fileId)
+    expect(seenIds).toEqual(expect.arrayContaining([id, id2]))
   })
 
   it(`When content is stored compressed, then all the ids are retrieved without the compress extension`, async () => {
@@ -93,10 +89,7 @@ describe('fileSystemContentStorage', () => {
     await fileSystemContentStorage.storeStream(id2, bufferToStream(content2))
     const fileIds = fileSystemContentStorage.allFileIds()
     const seenIds = []
-    for await (const fileId of fileIds) {
-      seenIds.push(fileId)
-    }
-    expect(seenIds.length).toBe(2)
-    expect(new Set(seenIds)).toEqual(new Set([id, id2]))
+    for await (const fileId of fileIds) seenIds.push(fileId)
+    expect(seenIds).toEqual(expect.arrayContaining([id, id2]))
   })
 })
