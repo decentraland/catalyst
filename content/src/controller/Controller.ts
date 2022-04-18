@@ -1,4 +1,5 @@
 import { toQueryParams } from '@dcl/catalyst-node-commons'
+import { DecentralandAssetIdentifier, parseUrn } from '@dcl/urn-resolver'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import {
   AuditInfo,
@@ -18,12 +19,13 @@ import express from 'express'
 import onFinished from 'on-finished'
 import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
 import { getActiveDeploymentsByContentHash } from '../logic/database-queries/deployments-queries'
+import { DeploymentWithAuthChain } from '../logic/database-queries/snapshots-queries'
 import { statusResponseFromComponents } from '../logic/status-checks'
 import { ContentItem, RawContent } from '../ports/contentStorage/contentStorage'
 import { getDeployments } from '../service/deployments/deployments'
 import { DeploymentOptions } from '../service/deployments/types'
 import { getPointerChanges } from '../service/pointers/pointers'
-import { DeploymentPointerChanges, PointerChangesFilters } from '../service/pointers/types'
+import { PointerChangesFilters } from '../service/pointers/types'
 import {
   DeploymentContext,
   isInvalidDeployment,
@@ -139,19 +141,21 @@ export class Controller {
 
   async filterByUrn(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
-    // Path: /entities/currently-pointed/{urnPrefix}
-    const urnPrefix: string = req.params.urnPrefix
+    // Path: /entities/active/collections/{collectionUrn}
+    const collectionUrn: string = req.params.collectionUrn
 
-    const regex = /^[a-zA-Z0-9_.:,-]+$/g
-    if (!regex.test(urnPrefix)) {
+    const parsedUrn = await isUrnPrefixValid(collectionUrn)
+    if (!parsedUrn) {
       return res
         .status(400)
-        .send({ errors: `Invalid Urn prefix param: '${urnPrefix}'` })
+        .send({
+          errors: `Invalid collection urn param, it should be a valid urn prefix of a 3rd party collection, instead: '${collectionUrn}'`
+        })
         .end()
     }
 
     const entities: { pointer: string; entityId: EntityId }[] = await this.components.activeEntities.withPrefix(
-      urnPrefix
+      parsedUrn
     )
 
     res.send(entities)
@@ -396,34 +400,28 @@ export class Controller {
       includeOverwrittenInfo: includeAuthChain
     }
 
-    const {
-      pointerChanges: deltas,
-      filters,
-      pagination
-    } = await this.components.sequentialExecutor.run('GetPointerChangesEndpoint', () =>
-      getPointerChanges(this.components, {
-        filters: requestFilters,
-        offset,
-        limit,
-        lastId,
-        sortBy
-      })
+    const { pointerChanges, filters, pagination } = await this.components.sequentialExecutor.run(
+      'GetPointerChangesEndpoint',
+      () =>
+        getPointerChanges(this.components, {
+          filters: requestFilters,
+          offset,
+          limit,
+          lastId,
+          sortBy
+        })
     )
-    const controllerPointerChanges: ControllerPointerChanges[] = deltas.map((delta) => ({
-      ...delta,
-      changes: Array.from(delta.changes.entries()).map(([pointer, { before, after }]) => ({ pointer, before, after }))
-    }))
 
-    if (controllerPointerChanges.length > 0 && pagination.moreData) {
-      const lastPointerChange = controllerPointerChanges[controllerPointerChanges.length - 1]
+    if (pointerChanges.length > 0 && pagination.moreData) {
+      const lastPointerChange = pointerChanges[pointerChanges.length - 1]
       pagination.next = this.calculateNextRelativePathForPointer(lastPointerChange, pagination.limit, filters)
     }
 
-    res.send({ deltas: controllerPointerChanges, filters, pagination })
+    res.send({ deltas: pointerChanges, filters, pagination })
   }
 
   private calculateNextRelativePathForPointer(
-    lastPointerChange: ControllerPointerChanges,
+    lastPointerChange: DeploymentWithAuthChain,
     limit: number,
     filters?: PointerChangesFilters
   ): string | undefined {
@@ -717,14 +715,6 @@ export enum DeploymentField {
   AUDIT_INFO = 'auditInfo'
 }
 
-export type ControllerPointerChanges = Omit<DeploymentPointerChanges, 'changes'> & {
-  changes: {
-    pointer: Pointer
-    before: EntityId | undefined
-    after: EntityId | undefined
-  }[]
-}
-
 export type ControllerDenylistData = {
   target: {
     type: string
@@ -746,3 +736,24 @@ const DEFAULT_FIELDS_ON_DEPLOYMENTS: DeploymentField[] = [
   DeploymentField.CONTENT,
   DeploymentField.METADATA
 ]
+
+async function isUrnPrefixValid(collectionUrn: string): Promise<string | false> {
+  const regex = /^[a-zA-Z0-9_.:,-]+$/g
+  if (!regex.test(collectionUrn)) return false
+
+  const parsedUrn: DecentralandAssetIdentifier | null = await parseUrn(collectionUrn)
+
+  if (parseUrn === null) return false
+
+  // We want to reduce the matches of the query,
+  // so we enforce to write the full name of the third party or collection for the search
+  if (
+    parsedUrn?.type === 'blockchain-collection-third-party-name' ||
+    parsedUrn?.type === 'blockchain-collection-third-party-collection'
+  ) {
+    return `${collectionUrn}:`
+  }
+  if (parsedUrn?.type === 'blockchain-collection-third-party') return collectionUrn
+
+  return false
+}
