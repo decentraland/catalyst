@@ -75,7 +75,7 @@ export abstract class NFTOwnership {
     return result
   }
 
-  protected abstract querySubgraph(
+  protected abstract checkOwnership(
     nftsToCheck: [EthAddress, NFTId[]][]
   ): Promise<{ owner: EthAddress; ownedNFTs: NFTId[] }[]>
 
@@ -87,7 +87,7 @@ export abstract class NFTOwnership {
     while (offset < entries.length) {
       const slice = entries.slice(offset, offset + NFTOwnership.NFT_FRAGMENTS_PER_QUERY)
       try {
-        const queryResult = await this.querySubgraph(slice)
+        const queryResult = await this.checkOwnership(slice)
         for (const { ownedNFTs, owner } of queryResult) {
           result.set(owner, new Set(ownedNFTs))
         }

@@ -1,8 +1,10 @@
+import { DecentralandAssetIdentifier, parseUrn } from '@dcl/urn-resolver'
 import { fetchJson } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import log4js from 'log4js'
-import { FindWearablesByOwner } from '../apis/collections/controllers/wearables'
-import { ThirdPartyAsset, ThirdPartyAssets } from '../apis/collections/types'
+import { FindWearablesByOwner, getWearablesByOwner } from '../apis/collections/controllers/wearables'
+import { ThirdPartyAsset, ThirdPartyAssets, Wearable, WearableId } from '../apis/collections/types'
+import { SmartContentClient } from './SmartContentClient'
 import { TheGraphClient } from './TheGraphClient'
 
 const LOGGER = log4js.getLogger('ThirdPartyResolver')
@@ -70,4 +72,33 @@ const parseCollectionId = (collectionId: string): ThirdPartyId => {
     thirdPartyId: parts.slice(0, 5).join(':'),
     registryId: parts[4]
   }
+}
+
+export async function checkForThirdPartyWearablesOwnership(
+  theGraphClient: TheGraphClient,
+  smartContentClient: SmartContentClient,
+  nftsToCheck: [EthAddress, string[]][]
+): Promise<{ owner: EthAddress; urns: string[] }[]> {
+  const response: { owner: EthAddress; urns: string[] }[] = []
+  nftsToCheck.map((entry) => {
+    const address: EthAddress = entry[0]
+    const wearables: string[] = entry[1]
+    const collectionsForAddress: Set<string> = new Set()
+    wearables.forEach(async (wearable) => {
+      const parsedUrn: DecentralandAssetIdentifier | null = await parseUrn(wearable)
+      if (parsedUrn?.type === 'blockchain-collection-third-party') {
+        collectionsForAddress.add(parsedUrn.collectionId)
+      }
+    })
+    collectionsForAddress.forEach(async (collectionId) => {
+      const resolver = await createThirdPartyResolver(theGraphClient, createThirdPartyFetcher(), collectionId)
+
+      const wearablesByOwner: { urn: WearableId; amount: number; definition?: Wearable | undefined }[] =
+        await getWearablesByOwner(address, true, smartContentClient, resolver)
+
+      const onlyAskedWearables = wearablesByOwner.map((a) => a.urn).filter((a) => !!wearables.find((b) => b === a))
+      response.push({ owner: address, urns: onlyAskedWearables })
+    })
+  })
+  return response
 }

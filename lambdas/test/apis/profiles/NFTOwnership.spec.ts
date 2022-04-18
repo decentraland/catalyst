@@ -83,7 +83,7 @@ function buildOwnership() {
 class TestOwnership extends NFTOwnership {
   private queried = 0
 
-  protected querySubgraph(nftsToCheck: [string, string[]][]): Promise<{ ownedNFTs: string[]; owner: string }[]> {
+  protected checkOwnership(nftsToCheck: [string, string[]][]): Promise<{ ownedNFTs: string[]; owner: string }[]> {
     this.queried++
     return Promise.resolve([
       { ownedNFTs: ['marcosnc'], owner: address.toLowerCase() },
@@ -99,7 +99,7 @@ class TestOwnership extends NFTOwnership {
 class FailingOwnership extends NFTOwnership {
   private queried = 0
 
-  protected querySubgraph(nftsToCheck: [string, string[]][]): Promise<{ ownedNFTs: string[]; owner: string }[]> {
+  protected checkOwnership(nftsToCheck: [string, string[]][]): Promise<{ ownedNFTs: string[]; owner: string }[]> {
     this.queried++
     return Promise.reject('Failed to query the subgraph')
   }
