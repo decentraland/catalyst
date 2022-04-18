@@ -15,23 +15,38 @@ export async function deleteUnreferencedFiles(
     components.storage.allFileIds()
   ])
 
-  // const fileHashes = new Set(contentFileHashes)
-  // entityFileHashes.forEach((hash) => fileHashes.add(hash))
+  const fileHashes = new Set(contentFileHashes)
+  entityFileHashes.forEach((hash) => fileHashes.add(hash))
   // const bloom = createBloomFilterComponent({ sizeInBytes: 10_485_760 })
-  const newBloom = BloomFilter.create(15_000_000, 0.001)
   console.log(`#Content files: ${contentFileHashes.length}`)
   console.log(`#Entity files: ${entityFileHashes.length}`)
+  console.time('Creating bloom filter')
+  const newBloom = BloomFilter.create(15_000_000, 0.001)
   contentFileHashes.forEach((hash) => newBloom.add(hash))
   entityFileHashes.forEach((hash) => newBloom.add(hash))
+  console.timeEnd('Creating bloom filter')
 
   const queue = new PQueue({ concurrency: 10 })
 
   let numberOfDeletedFiles = 0
   for await (const storageFileId of storageFileIds) {
-    // if (!fileHashes.has(storageFileId)) {
-    if (!newBloom.has(storageFileId)) {
+    const notInBloom = !newBloom.has(storageFileId)
+    const notInSet = !fileHashes.has(storageFileId)
+    let debugMessage
+    if (notInBloom && notInSet) {
+      debugMessage = `Deleting by both: ${storageFileId}`
+    }
+    if (notInBloom) {
+      debugMessage = `Deleting by bloom: ${storageFileId}`
+    }
+    if (notInSet) {
+      debugMessage = `Deleting by set: ${storageFileId}`
+    }
+
+    // if (!newBloom.has(storageFileId)) {
+    if (!newBloom.has(storageFileId) || !fileHashes.has(storageFileId)) {
       await queue.add(async () => {
-        logger.debug(`Deleting: ${storageFileId}`)
+        logger.debug(debugMessage)
         // await components.storage.delete([storageFileId])
       })
       numberOfDeletedFiles++
