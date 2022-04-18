@@ -1,7 +1,8 @@
+import bf from 'bloom-filters'
 import PQueue from 'p-queue'
-import { createBloomFilterComponent } from '../ports/bloomFilter'
 import { AppComponents } from '../types'
 import { getContentFileHashes, getEntityFileHashes } from './database-queries/unreferenced-files-queries'
+const { BloomFilter } = bf
 
 export async function deleteUnreferencedFiles(
   components: Pick<AppComponents, 'logs' | 'database' | 'storage'>
@@ -16,16 +17,17 @@ export async function deleteUnreferencedFiles(
 
   // const fileHashes = new Set(contentFileHashes)
   // entityFileHashes.forEach((hash) => fileHashes.add(hash))
-  const bloom = createBloomFilterComponent({ sizeInBytes: 10_485_760 })
-  contentFileHashes.forEach((hash) => bloom.add(hash))
-  entityFileHashes.forEach((hash) => bloom.add(hash))
+  // const bloom = createBloomFilterComponent({ sizeInBytes: 10_485_760 })
+  const newBloom = BloomFilter.create(15_000_000, 0.001)
+  contentFileHashes.forEach((hash) => newBloom.add(hash))
+  entityFileHashes.forEach((hash) => newBloom.add(hash))
 
   const queue = new PQueue({ concurrency: 10 })
 
   let numberOfDeletedFiles = 0
   for await (const storageFileId of storageFileIds) {
     // if (!fileHashes.has(storageFileId)) {
-    if (!bloom.check(storageFileId)) {
+    if (!newBloom.has(storageFileId)) {
       await queue.add(async () => {
         logger.debug(`Deleting: ${storageFileId}`)
         // await components.storage.delete([storageFileId])
