@@ -20,9 +20,9 @@ void Lifecycle.run({
 
     await migrateContentFolderStructure(components)
 
-    await deleteUnreferencedFiles(components)
-
     await startComponents()
+
+    await deleteUnreferencedFiles(components)
 
     await stop()
   },
