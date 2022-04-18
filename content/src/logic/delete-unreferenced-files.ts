@@ -1,4 +1,4 @@
-import bf from 'bloom-filters'
+import * as bf from 'bloom-filters'
 import PQueue from 'p-queue'
 import { AppComponents } from '../types'
 import { getContentFileHashes, getEntityFileHashes } from './database-queries/unreferenced-files-queries'
@@ -19,6 +19,8 @@ export async function deleteUnreferencedFiles(
   // entityFileHashes.forEach((hash) => fileHashes.add(hash))
   // const bloom = createBloomFilterComponent({ sizeInBytes: 10_485_760 })
   const newBloom = BloomFilter.create(15_000_000, 0.001)
+  console.log(`#Content files: ${contentFileHashes.length}`)
+  console.log(`#Entity files: ${entityFileHashes.length}`)
   contentFileHashes.forEach((hash) => newBloom.add(hash))
   entityFileHashes.forEach((hash) => newBloom.add(hash))
 
