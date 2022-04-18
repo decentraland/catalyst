@@ -51,16 +51,13 @@ export async function deleteUnreferencedFiles(
       debugMessage = `Deleting by both: ${storageFileId}`
       numberOfDeletedFilesByBloom++
       numberOfDeletedFilesBySet++
-    }
-    if (notInBloom) {
+    } else if (notInBloom) {
       debugMessage = `Deleting by bloom: ${storageFileId}`
       numberOfDeletedFilesByBloom++
-    }
-    if (notInSet) {
+    } else if (notInSet) {
       debugMessage = `Deleting by set: ${storageFileId}`
       numberOfDeletedFilesBySet++
     }
-
     // if (!newBloom.has(storageFileId)) {
     if (!newBloom.has(storageFileId) || !fileHashes.has(storageFileId)) {
       await queue.add(async () => {
