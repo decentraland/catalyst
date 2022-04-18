@@ -442,7 +442,7 @@ type Query<QueryResult, ReturnType> = {
   mapper: (queryResult: QueryResult) => ReturnType
 }
 
-type URLs = {
+export type URLs = {
   ensSubgraph: string
   collectionsSubgraph: string
   maticCollectionsSubgraph: string

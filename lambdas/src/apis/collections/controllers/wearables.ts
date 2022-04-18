@@ -40,7 +40,11 @@ export async function getWearablesByOwnerEndpoint(
       includeDefinition,
       client,
       collectionId
-        ? await createThirdPartyResolver(theGraphClient, createThirdPartyFetcher(), collectionId as string)
+        ? await createThirdPartyResolver(
+            async (a, b) => await theGraphClient.findThirdPartyResolver(a, b),
+            createThirdPartyFetcher(),
+            collectionId as string
+          )
         : theGraphClient
     )
     res.send(wearablesByOwner)

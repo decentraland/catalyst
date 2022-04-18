@@ -81,10 +81,9 @@ describe('wearables by owner', () => {
         urn: { decentraland: WEARABLE_ID_1 }
       }
     ])
-    const { instance: thirdPartyGraphClientInstance, mock: thirdPartyGraphClientMock } = thirdPartyGraphClient()
 
     const resolver = await thirdPartyResolver(
-      thirdPartyGraphClientInstance,
+      'someUrl',
       thirdPartyFetcherInstance,
       'urn:decentraland:mumbai:collections-thirdparty:some-third-party'
     )
@@ -99,24 +98,21 @@ describe('wearables by owner', () => {
     expect(wearable.definition).toEqual({ ...WEARABLE_METADATA, id: WEARABLE_ID_1 })
     verify(contentClientMock.fetchEntitiesByPointers(anything(), anything())).once()
     verify(thirdPartyFetcherMock.fetchAssets(anything(), anything(), anything())).once()
-    verify(thirdPartyGraphClientMock.findThirdPartyResolver(anything(), anything())).once()
   })
 
   it(`When there is no third party registered for a collectionId, it should return an error`, async () => {
     const collectionId = 'urn:decentraland:mumbai:collections-thirdparty:some-third-party'
-    const { instance } = noThirdPartyRegistered()
     const { instance: thirdPartyFetcherInstance } = thirdPartyFetcher([])
-    await expect(thirdPartyResolver(instance, thirdPartyFetcherInstance, collectionId)).rejects.toThrowError(
+    await expect(thirdPartyResolver(undefined, thirdPartyFetcherInstance, collectionId)).rejects.toThrowError(
       `Could not find third party resolver for collectionId: ${collectionId}`
     )
   })
 
   it(`When there a third party resolver doesn't respond, it should return an error`, async () => {
     const { instance: thirdPartyFetcher } = undefinedThirdPartyFetcher()
-    const { instance: thirdPartyGraphClientInstance } = thirdPartyGraphClient()
 
     const resolver = await thirdPartyResolver(
-      thirdPartyGraphClientInstance,
+      'someUrl',
       thirdPartyFetcher,
       'urn:decentraland:mumbai:collections-thirdparty:some-third-party'
     )
@@ -154,11 +150,14 @@ function contentServerThatReturns(id?: WearableId) {
 }
 
 async function thirdPartyResolver(
-  graphClient: TheGraphClient,
+  resolverResponse: string | undefined,
   thirdPartyFetcher: ThirdPartyFetcher,
   collectionId: string
 ): Promise<FindWearablesByOwner> {
-  return await createThirdPartyResolver(graphClient, thirdPartyFetcher, collectionId)
+  return await createThirdPartyResolver(
+    async (_a, _b) => resolverResponse,
+    thirdPartyFetcher,
+    collectionId)
 }
 
 function thirdPartyFetcher(assets: ThirdPartyAsset[]): { instance: ThirdPartyFetcher; mock: ThirdPartyFetcher } {
@@ -171,18 +170,6 @@ function undefinedThirdPartyFetcher(): { instance: ThirdPartyFetcher; mock: Thir
   const resolver = mock<ThirdPartyFetcher>()
   when(resolver.fetchAssets(anything(), anything(), anything())).thenResolve(undefined)
   return { instance: instance(resolver), mock: resolver }
-}
-
-function noThirdPartyRegistered() {
-  const mockedClient = mock(TheGraphClient)
-  when(mockedClient.findThirdPartyResolver(anything(), anything())).thenResolve(undefined)
-  return { instance: instance(mockedClient), mock: mockedClient }
-}
-
-function thirdPartyGraphClient(url: string = 'someUrl'): { instance: TheGraphClient; mock: TheGraphClient } {
-  const mockedClient = mock(TheGraphClient)
-  when(mockedClient.findThirdPartyResolver(anything(), anything())).thenResolve(url)
-  return { instance: instance(mockedClient), mock: mockedClient }
 }
 
 function noOwnedWearables() {

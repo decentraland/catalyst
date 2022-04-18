@@ -3,7 +3,7 @@ import { EthAddress } from 'dcl-crypto'
 import log4js from 'log4js'
 import { FindWearablesByOwner } from '../apis/collections/controllers/wearables'
 import { ThirdPartyAsset, ThirdPartyAssets } from '../apis/collections/types'
-import { TheGraphClient } from './TheGraphClient'
+import { URLs } from './TheGraphClient'
 
 const LOGGER = log4js.getLogger('ThirdPartyResolver')
 
@@ -14,13 +14,13 @@ export interface ThirdPartyFetcher {
 export const createThirdPartyFetcher = (): ThirdPartyFetcher => ({
   fetchAssets: async (url: string, registryId: string, owner: EthAddress): Promise<ThirdPartyAsset[]> => {
     try {
-      const assetsByOnwer = (await fetchJson(`${url}/registry/${registryId}/address/${owner}/assets`, {
+      const assetsByOwner = (await fetchJson(`${url}/registry/${registryId}/address/${owner}/assets`, {
         timeout: '5000'
       })) as ThirdPartyAssets
 
-      if (!assetsByOnwer)
+      if (!assetsByOwner)
         LOGGER.debug(`No assets found with owner: ${owner}, url: ${url} and registryId: ${registryId}`)
-      return assetsByOnwer?.assets ?? []
+      return assetsByOwner?.assets ?? []
     } catch (e) {
       throw new Error(`Error fetching assets with owner: ${owner}, url: ${url} and registryId: ${registryId}`)
     }
@@ -28,15 +28,12 @@ export const createThirdPartyFetcher = (): ThirdPartyFetcher => ({
 })
 
 export const createThirdPartyResolver = async (
-  theGraphClient: TheGraphClient,
+  findThirdPartyResolver: (subgraph: keyof URLs, id: string) => Promise<string | undefined>,
   thirdPartyFetcher: ThirdPartyFetcher,
   collectionId: string
 ): Promise<FindWearablesByOwner> => {
   const thirdPartyId = parseCollectionId(collectionId)
-  const thirdPartyResolverAPI = await theGraphClient.findThirdPartyResolver(
-    'thirdPartyRegistrySubgraph',
-    thirdPartyId.thirdPartyId
-  )
+  const thirdPartyResolverAPI = await findThirdPartyResolver('thirdPartyRegistrySubgraph', thirdPartyId.thirdPartyId)
   if (!thirdPartyResolverAPI) throw new Error(`Could not find third party resolver for collectionId: ${collectionId}`)
 
   return {
