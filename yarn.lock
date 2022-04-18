@@ -341,10 +341,10 @@
   dependencies:
     "@cspotcode/source-map-consumer" "0.8.0"
 
-"@dcl/catalyst-api-specs@1.2.1":
-  version "1.2.1"
-  resolved "https://registry.yarnpkg.com/@dcl/catalyst-api-specs/-/catalyst-api-specs-1.2.1.tgz#8cced1745f4943c852400befc2ced52f6e160a89"
-  integrity sha512-WP+BQz2XGBj5gJSAoCnxXLkTKsIxz3MfsKSg5JTX04QUAuHNnKwiUISLht1Ld6ZZB1sIf77ANiIyr71F09stZg==
+"@dcl/catalyst-api-specs@1.2.2":
+  version "1.2.2"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-api-specs/-/catalyst-api-specs-1.2.2.tgz#ad79bbce410737b92a03b059e5160077abebb3dc"
+  integrity sha512-2Ff+vzzCapX5X1HCQp4y/P56bgBTOmAGvPzOiPb0nr3EwDtoHRf94HkfPZoaAYkH9c0xXhdCyTZsMfQVhCOxBA==
   dependencies:
     yaml "1.10.2"
 
@@ -432,15 +432,15 @@
     "@well-known-components/metrics" "^1.1.2"
     p-queue "^6.6.2"
 
-"@dcl/urn-resolver@1.2.1":
-  version "1.2.1"
-  resolved "https://registry.npmjs.org/@dcl/urn-resolver/-/urn-resolver-1.2.1.tgz"
-  integrity sha512-BI08kTJ7fWFoUGJd+fhTghzkuUBCjTtxPIvHC122GZQ98ae0FrmTUkJ4yemHwjyKIXVhWxvpqYPdhSyFcHKsYg==
-
 "@dcl/urn-resolver@1.3.0":
   version "1.3.0"
   resolved "https://registry.yarnpkg.com/@dcl/urn-resolver/-/urn-resolver-1.3.0.tgz#680b8e0fb91e0d18a9ff0a9431d0783aa6dfae99"
   integrity sha512-AFKn6u4exB2z0K7o0z8rPAWztkpiAyz4gZd6OqKl/Yy6OxdoPdf0IwnuZzRZYsOgvxZv/LbwOgtSnNtvJVlLxQ==
+
+"@dcl/urn-resolver@1.3.1":
+  version "1.3.1"
+  resolved "https://registry.yarnpkg.com/@dcl/urn-resolver/-/urn-resolver-1.3.1.tgz#fa1a036f562c2e2fe12ee44a8b0465b62d7e9ef5"
+  integrity sha512-I/ktPcHjAMsJcGL3tsFcNZ4SjZ9UEVEfLue9ys5Ci2S/J/DE5zUPijBc2AFOvAT1sV/4WtF57SNDxMAvwPRNNQ==
 
 "@eslint/eslintrc@^0.4.3":
   version "0.4.3"

@@ -1,5 +1,5 @@
-import { initializeMetricsServer } from '@dcl/catalyst-node-commons'
 import { CONTENT_API } from '@dcl/catalyst-api-specs'
+import { initializeMetricsServer } from '@dcl/catalyst-node-commons'
 import { IBaseComponent, ILoggerComponent } from '@well-known-components/interfaces'
 import compression from 'compression'
 import cors from 'cors'
@@ -78,7 +78,7 @@ export class Server implements IBaseComponent {
     }
 
     this.registerRoute('/entities/:type', controller, controller.getEntities)
-    this.registerRoute('/entities/currently-pointed/:urnPrefix', controller, controller.filterByUrn)
+    this.registerRoute('/entities/active/collections/:collectionUrn', controller, controller.filterByUrn)
     this.registerRoute('/entities', controller, controller.createEntity, HttpMethod.POST, upload.any()) // TODO: Deprecate
     this.registerRoute('/entities/active', controller, controller.getActiveEntities, HttpMethod.POST)
     this.registerRoute('/contents/:hashId', controller, controller.headContent, HttpMethod.HEAD) // Register before GET

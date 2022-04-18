@@ -1,4 +1,5 @@
 import { toQueryParams } from '@dcl/catalyst-node-commons'
+import { DecentralandAssetIdentifier, parseUrn } from '@dcl/urn-resolver'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import {
   AuditInfo,
@@ -140,19 +141,21 @@ export class Controller {
 
   async filterByUrn(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
-    // Path: /entities/currently-pointed/{urnPrefix}
-    const urnPrefix: string = req.params.urnPrefix
+    // Path: /entities/active/collections/{collectionUrn}
+    const collectionUrn: string = req.params.collectionUrn
 
-    const regex = /^[a-zA-Z0-9_.:,-]+$/g
-    if (!regex.test(urnPrefix)) {
+    const parsedUrn = await isUrnPrefixValid(collectionUrn)
+    if (!parsedUrn) {
       return res
         .status(400)
-        .send({ errors: `Invalid Urn prefix param: '${urnPrefix}'` })
+        .send({
+          errors: `Invalid collection urn param, it should be a valid urn prefix of a 3rd party collection, instead: '${collectionUrn}'`
+        })
         .end()
     }
 
     const entities: { pointer: string; entityId: EntityId }[] = await this.components.activeEntities.withPrefix(
-      urnPrefix
+      parsedUrn
     )
 
     res.send(entities)
@@ -733,3 +736,24 @@ const DEFAULT_FIELDS_ON_DEPLOYMENTS: DeploymentField[] = [
   DeploymentField.CONTENT,
   DeploymentField.METADATA
 ]
+
+async function isUrnPrefixValid(collectionUrn: string): Promise<string | false> {
+  const regex = /^[a-zA-Z0-9_.:,-]+$/g
+  if (!regex.test(collectionUrn)) return false
+
+  const parsedUrn: DecentralandAssetIdentifier | null = await parseUrn(collectionUrn)
+
+  if (parseUrn === null) return false
+
+  // We want to reduce the matches of the query,
+  // so we enforce to write the full name of the third party or collection for the search
+  if (
+    parsedUrn?.type === 'blockchain-collection-third-party-name' ||
+    parsedUrn?.type === 'blockchain-collection-third-party-collection'
+  ) {
+    return `${collectionUrn}:`
+  }
+  if (parsedUrn?.type === 'blockchain-collection-third-party') return collectionUrn
+
+  return false
+}
