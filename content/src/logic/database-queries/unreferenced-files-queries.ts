@@ -15,3 +15,25 @@ export async function getEntityFileHashes(components: Pick<AppComponents, 'datab
     await components.database.queryWithValues<{ entity_id: string }>(ENTITY_FILE_HASHES_QUERY, 'used_hashes')
   ).rows.map((row) => row.entity_id)
 }
+
+export async function* streamAllDistinctContentFileHashes(
+  components: Pick<AppComponents, 'database'>
+): AsyncIterable<string> {
+  const { database } = components
+
+  for await (const row of database.streamQuery<{ content_hash: string }>(CONTENT_FILE_HASHES_QUERY, {
+    batchSize: 10000
+  })) {
+    yield row.content_hash
+  }
+}
+
+export async function* streamAllDistinctEntityIds(components: Pick<AppComponents, 'database'>): AsyncIterable<string> {
+  const { database } = components
+
+  for await (const row of database.streamQuery<{ entity_id: string }>(CONTENT_FILE_HASHES_QUERY, {
+    batchSize: 10000
+  })) {
+    yield row.entity_id
+  }
+}
