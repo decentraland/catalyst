@@ -1,3 +1,4 @@
+import { parseUrn } from '@dcl/urn-resolver'
 import { Entity } from 'dcl-catalyst-commons'
 import { SmartContentClient } from '../../utils/SmartContentClient'
 import {
@@ -14,12 +15,11 @@ import {
  *
  */
 export async function translateWearablesIdFormat(wearableId: WearableId): Promise<WearableId | undefined> {
-  // if (!wearableId.startsWith('dcl://')) {
-  //   return wearableId
-  // }
-  // const parsed = await parseUrn(wearableId)
-  // return parsed?.uri?.toString()
-  return wearableId
+  if (!wearableId.startsWith('dcl://')) {
+    return wearableId
+  }
+  const parsed = await parseUrn(wearableId)
+  return parsed?.uri?.toString()
 }
 
 export function isBaseAvatar(wearable: WearableId): boolean {
