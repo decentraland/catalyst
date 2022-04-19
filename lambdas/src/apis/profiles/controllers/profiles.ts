@@ -261,7 +261,8 @@ function fixWearableId(wearableIds: WearableId[]): WearableId[] {
   return wearableIds.map(fixId)
 }
 /**
- * We are sanitizing the wearables that are being worn. This includes removing any wearables that is not currently owned, and transforming all of them into the new format
+ * We are sanitizing the wearables that are being worn. This includes removing any wearables that is not currently owned,
+ * and transforming all of them into the new format
  */
 async function sanitizeWearables(
   wearablesInProfile: WearableId[],
