@@ -34,30 +34,35 @@ export async function deleteUnreferencedFiles(
   // const bloom = createBloomFilterComponent({ sizeInBytes: 10_485_760 })
   // console.log(`#Content files: ${contentFileHashes.length}`)
   // console.log(`#Entity files: ${entityFileHashes.length}`)
-  printMemory(`Memory usage before streaming hashes:`)
+  printMemory(`Memory usage before streaming entity ids`)
   console.time('Creating bloom filter')
   const newBloom = BloomFilter.create(15_000_000, 0.001)
+  console.time('Stream entity ids + add to bloomFilter')
   let totalEntityIds = 0
   for await (const entityId of streamAllDistinctEntityIds(components)) {
     totalEntityIds++
     newBloom.add(entityId)
   }
+  printMemory(`Memory usage after streaming entity ids`)
+  console.timeEnd('Stream entity ids + add to bloomFilter')
+  console.time('Stream content file hashes + add to bloomFilter')
   let totalContentFileHashes = 0
   for await (const contentFileHash of streamAllDistinctContentFileHashes(components)) {
     totalContentFileHashes++
     newBloom.add(contentFileHash)
   }
-  const storageFileIds = components.storage.allFileIds()
+  console.timeEnd('Stream content file hashes + add to bloomFilter')
+  printMemory(`Memory usage after streaming content file hashes`)
   // contentFileHashes.forEach((hash) => newBloom.add(hash))
   // entityFileHashes.forEach((hash) => newBloom.add(hash))
   console.timeEnd('Creating bloom filter')
   console.log(`Created bloom filter with: ${totalEntityIds} entity ids and ${totalContentFileHashes} content hashes.`)
-  printMemory(`Memory usage after loading hashes in bloom filter:`)
 
   const queue = new PQueue({ concurrency: 1000 })
   let numberOfDeletedFiles = 0
   // let numberOfDeletedFilesByBloom = 0
   // let numberOfDeletedFilesBySet = 0
+  const storageFileIds = components.storage.allFileIds()
   for await (const storageFileId of storageFileIds) {
     // const notInBloom = !newBloom.has(storageFileId)
     // const notInSet = !fileHashes.has(storageFileId)
