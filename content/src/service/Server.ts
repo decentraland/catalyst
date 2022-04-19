@@ -35,7 +35,7 @@ export class Server implements IBaseComponent {
       }
     })
 
-    env.logConfigValues()
+    env.logConfigValues(this.LOGGER)
 
     this.port = env.getConfig(EnvironmentConfig.SERVER_PORT)
 

@@ -22,6 +22,8 @@ void Lifecycle.run({
 
     await startComponents()
 
+    components.env.logConfigValues(components.logs.getLogger('Environment'))
+
     await deleteUnreferencedFiles(components)
 
     await stop()
