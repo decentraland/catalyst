@@ -123,49 +123,40 @@ export async function fetchProfiles(
   performWearableSanitization: boolean = true
 ): Promise<ProfileMetadata[] | undefined> {
   try {
-    const entities: Entity[] = await client.fetchEntitiesByPointers(EntityType.PROFILE, ethAddresses)
+    const profilesEntities: Entity[] = await client.fetchEntitiesByPointers(EntityType.PROFILE, ethAddresses)
 
-    if (ifModifiedSinceTimestamp && entities.every((it) => roundToSeconds(it.timestamp) <= ifModifiedSinceTimestamp))
+    // Avoid querying profiles if there wasn't any new deployment
+    if (
+      ifModifiedSinceTimestamp &&
+      profilesEntities.every((it) => roundToSeconds(it.timestamp) <= ifModifiedSinceTimestamp)
+    )
       return
 
-    const profiles: Map<EthAddress, { metadata: ProfileMetadata; content: Map<string, ContentFileHash> }> = new Map()
-    const names: Map<EthAddress, string[]> = new Map()
-    const wearables: Map<EthAddress, WearableId[]> = new Map()
+    const profilesMap: Map<EthAddress, { metadata: ProfileMetadata; content: Map<string, ContentFileHash> }> = new Map()
+    const namesMap: Map<EthAddress, string[]> = new Map()
+    const wearablesMap: Map<EthAddress, WearableId[]> = new Map()
 
     // Group nfts and profile metadata by ethAddress
-    const entityPromises = entities
+    const entityPromises = profilesEntities
       .filter((entity) => !!entity.metadata)
       .map(async (entity) => {
-        const ethAddress = entity.pointers[0]
-        const metadata: ProfileMetadata = entity.metadata
-        metadata.timestamp = entity.timestamp
-        const content = new Map((entity.content ?? []).map(({ file, hash }) => [file, hash]))
-        profiles.set(ethAddress, { metadata, content })
-        const filteredNames = metadata.avatars.map(({ name }) => name).filter((name) => name && name.trim().length > 0)
-        names.set(ethAddress, filteredNames)
-        const allWearablesInProfilePromises: Promise<WearableId | undefined>[] = []
-        metadata.avatars.forEach(({ avatar }) =>
-          avatar.wearables
-            .filter((wearableId) => !isBaseAvatar(wearableId))
-            .map(translateWearablesIdFormat)
-            .forEach((wearableId) => allWearablesInProfilePromises.push(wearableId))
-        )
-        const filtered = (await Promise.all(allWearablesInProfilePromises)).filter(
-          (wearableId): wearableId is WearableId => !!wearableId
-        )
-        wearables.set(ethAddress, filtered)
+        const { ethAddress, metadata, content, names, wearables } = await extractData(entity)
+
+        profilesMap.set(ethAddress, { metadata, content })
+        namesMap.set(ethAddress, names)
+        wearablesMap.set(ethAddress, wearables)
       })
     await Promise.all(entityPromises)
 
     // Check which NFTs are owned
     const ownedWearablesPromise = performWearableSanitization
-      ? wearablesOwnership.areNFTsOwned(wearables)
+      ? wearablesOwnership.areNFTsOwned(wearablesMap)
       : Promise.resolve(new Map())
-    const ownedENSPromise = ensOwnership.areNFTsOwned(names)
+    const ownedENSPromise = ensOwnership.areNFTsOwned(namesMap)
     const [ownedWearables, ownedENS] = await Promise.all([ownedWearablesPromise, ownedENSPromise])
 
     // Add name data and snapshot urls to profiles
-    const result = Array.from(profiles.entries()).map(async ([ethAddress, profile]) => {
+    const result = Array.from(profilesMap.entries()).map(async ([ethAddress, profile]) => {
       const ensOwnership = ownedENS.get(ethAddress)!
       const wearablesOwnership = ownedWearables.get(ethAddress)!
       const { metadata, content } = profile
@@ -190,6 +181,39 @@ export async function fetchProfiles(
     LOGGER.warn(error)
     return []
   }
+}
+
+async function extractData(entity: Entity): Promise<{
+  ethAddress: string
+  metadata: ProfileMetadata
+  content: Map<string, ContentFileHash>
+  names: string[]
+  wearables: WearableId[]
+}> {
+  const ethAddress = entity.pointers[0]
+  const metadata: ProfileMetadata = entity.metadata
+  const content = new Map((entity.content ?? []).map(({ file, hash }) => [file, hash]))
+  const filteredNames = metadata.avatars.map(({ name }) => name).filter((name) => name && name.trim().length > 0)
+  // Add timestamp to the metadata
+  metadata.timestamp = entity.timestamp
+  // Validate wearables urn
+  const filteredWearables = await validateWearablesUrn(metadata)
+
+  return { ethAddress, metadata, content, names: filteredNames, wearables: filteredWearables }
+}
+
+async function validateWearablesUrn(metadata: ProfileMetadata) {
+  const allWearablesInProfilePromises: Promise<WearableId | undefined>[] = []
+  metadata.avatars.forEach(({ avatar }) =>
+    avatar.wearables
+      .filter((wearableId) => !isBaseAvatar(wearableId))
+      .map(translateWearablesIdFormat)
+      .forEach((wearableId) => allWearablesInProfilePromises.push(wearableId))
+  )
+  const filteredWearables = (await Promise.all(allWearablesInProfilePromises)).filter(
+    (wearableId): wearableId is WearableId => !!wearableId
+  )
+  return filteredWearables
 }
 
 // Visible for testing purposes
