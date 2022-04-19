@@ -3,7 +3,7 @@ import { fetchJson } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import log4js from 'log4js'
 import { FindWearablesByOwner, getWearablesByOwner } from '../apis/collections/controllers/wearables'
-import { ThirdPartyAsset, ThirdPartyAssets, Wearable, WearableId } from '../apis/collections/types'
+import { ThirdPartyAsset, ThirdPartyAssets } from '../apis/collections/types'
 import { SmartContentClient } from './SmartContentClient'
 import { TheGraphClient } from './TheGraphClient'
 
@@ -91,11 +91,12 @@ export async function checkForThirdPartyWearablesOwnership(
       }
     })
     collectionsForAddress.forEach(async (collectionId) => {
-      const resolver = await createThirdPartyResolver(theGraphClient, createThirdPartyFetcher(), collectionId)
-
-      const wearablesByOwner: { urn: WearableId; amount: number; definition?: Wearable | undefined }[] =
-        await getWearablesByOwner(address, true, smartContentClient, resolver)
-
+      const wearablesByOwner = await getWearablesByOwner(
+        address,
+        true,
+        smartContentClient,
+        await createThirdPartyResolver(theGraphClient, createThirdPartyFetcher(), collectionId)
+      )
       const onlyAskedWearables = wearablesByOwner.map((a) => a.urn).filter((a) => !!wearables.find((b) => b === a))
       response.push({ owner: address, urns: onlyAskedWearables })
     })
