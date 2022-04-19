@@ -102,7 +102,14 @@ export async function getProfilesById(
   }
   // TODO: Check if anyone is using snapshots
 
-  const profiles = await fetchProfiles(profileIds, client, ensOwnership, wearables, getIfModifiedSinceTimestamp(req))
+  const profiles = await fetchProfiles(
+    profileIds,
+    client,
+    ensOwnership,
+    wearables,
+    getIfModifiedSinceTimestamp(req),
+    false
+  )
   sendProfilesResponse(res, profiles, profilesCacheTTL)
 }
 
