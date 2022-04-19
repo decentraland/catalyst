@@ -31,7 +31,7 @@ export async function* streamAllDistinctContentFileHashes(
 export async function* streamAllDistinctEntityIds(components: Pick<AppComponents, 'database'>): AsyncIterable<string> {
   const { database } = components
 
-  for await (const row of database.streamQuery<{ entity_id: string }>(CONTENT_FILE_HASHES_QUERY, {
+  for await (const row of database.streamQuery<{ entity_id: string }>(ENTITY_FILE_HASHES_QUERY, {
     batchSize: 10000
   })) {
     yield row.entity_id
