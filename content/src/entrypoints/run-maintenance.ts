@@ -22,8 +22,6 @@ void Lifecycle.run({
 
     await startComponents()
 
-    components.env.logConfigValues(components.logs.getLogger('Environment'))
-
     await deleteUnreferencedFiles(components)
 
     await stop()
@@ -39,6 +37,7 @@ void Lifecycle.run({
     const contentFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
     const storage = await createFileSystemContentStorage({ fs }, contentFolder)
     const migrationManager = MigrationManagerFactory.create({ logs, env })
+    env.logConfigValues(logs.getLogger('Environment'))
     return { logs, metrics, env, database, migrationManager, fs, storage }
   }
 })
