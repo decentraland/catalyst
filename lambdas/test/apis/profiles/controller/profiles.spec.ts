@@ -4,7 +4,6 @@ import { anything, instance, mock, when } from 'ts-mockito'
 import { WearableId } from '../../../../src/apis/collections/types'
 import {
   fetchProfiles,
-  fetchProfilesForSnapshots,
   ProfileMetadata
 } from '../../../../src/apis/profiles/controllers/profiles'
 import { EnsOwnership } from '../../../../src/apis/profiles/EnsOwnership'
@@ -102,31 +101,6 @@ describe('profiles', () => {
     const profiles = (await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership))!
 
     expect(profiles.length).toEqual(1)
-    expect(profiles[0].avatars[0].avatar.snapshots.aKey).toEqual(`${EXTERNAL_URL}/contents/fileHash`)
-  })
-
-  it(`When profiles are returned but only the snapshots, external urls are added to snapshots`, async () => {
-    const { entity } = profileWith(SOME_ADDRESS, { snapshots: { aKey: 'aHash' } })
-    const client = contentServerThatReturns(entity)
-
-    const profiles = await fetchProfilesForSnapshots([SOME_ADDRESS], client)
-
-    expect(profiles.length).toEqual(1)
-    expect(profiles[0].ethAddress).toEqual(SOME_ADDRESS)
-    expect(profiles[0].avatars[0].avatar.snapshots.aKey).toEqual(`${EXTERNAL_URL}/contents/aHash`)
-  })
-
-  it(`When profiles are returned but only the snapshots, external urls pointing to the hash are added to snapshots`, async () => {
-    const { entity } = profileWith(SOME_ADDRESS, {
-      snapshots: { aKey: './file' },
-      content: { file: './file', hash: 'fileHash' }
-    })
-    const client = contentServerThatReturns(entity)
-
-    const profiles = await fetchProfilesForSnapshots([SOME_ADDRESS], client)
-
-    expect(profiles.length).toEqual(1)
-    expect(profiles[0].ethAddress).toEqual(SOME_ADDRESS)
     expect(profiles[0].avatars[0].avatar.snapshots.aKey).toEqual(`${EXTERNAL_URL}/contents/fileHash`)
   })
 

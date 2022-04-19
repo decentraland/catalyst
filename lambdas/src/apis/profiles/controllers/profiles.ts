@@ -72,7 +72,7 @@ export async function getIndividualProfileById(
   res: Response
 ): Promise<void> {
   // Method: GET
-  // Path: /:id
+  // Path: /lambdas/profiles/:id
   const profileId: string = req.params.id
   const profiles = await fetchProfiles(
     [profileId],
@@ -93,19 +93,17 @@ export async function getProfilesById(
   req: Request,
   res: Response
 ): Promise<Response<any, Record<string, any>> | undefined> {
+  // Method: GET
+  // Path: /lambdas/profiles?id={ids}
   const profileIds: EthAddress[] | undefined = asArray(req.query.id as string)
-  const fields: string[] | undefined = asArray(req.query.field as string)
+
   if (!profileIds) {
     return res.status(400).send({ error: 'You must specify at least one profile id' })
   }
+  // TODO: Check if anyone is using snapshots
 
-  if (fields && fields.includes('snapshots')) {
-    const profiles = await fetchProfilesForSnapshots(profileIds, client)
-    res.send(profiles)
-  } else {
-    const profiles = await fetchProfiles(profileIds, client, ensOwnership, wearables, getIfModifiedSinceTimestamp(req))
-    sendProfilesResponse(res, profiles, profilesCacheTTL)
-  }
+  const profiles = await fetchProfiles(profileIds, client, ensOwnership, wearables, getIfModifiedSinceTimestamp(req))
+  sendProfilesResponse(res, profiles, profilesCacheTTL)
 }
 
 // Dates received from If-Modified-Since headers have precisions of seconds, so we need to round
@@ -214,41 +212,6 @@ async function validateWearablesUrn(metadata: ProfileMetadata) {
     (wearableId): wearableId is WearableId => !!wearableId
   )
   return filteredWearables
-}
-
-// Visible for testing purposes
-export async function fetchProfilesForSnapshots(
-  ethAddresses: EthAddress[],
-  client: SmartContentClient
-): Promise<ProfileMetadataForSnapshots[]> {
-  try {
-    const entities: Entity[] = await client.fetchEntitiesByPointers(EntityType.PROFILE, ethAddresses)
-
-    const profilesMetadataForSnapshots: ProfileMetadataForSnapshots[] = entities
-      .filter((entity) => !!entity.metadata)
-      .map((entity) => {
-        const ethAddress: EthAddress = entity.pointers[0]
-        const metadata: ProfileMetadata = entity.metadata
-        const avatar: Avatar = metadata.avatars[0].avatar
-        const content = new Map((entity.content ?? []).map(({ file, hash }) => [file, hash]))
-        const profileMetadataForSnapshots: ProfileMetadataForSnapshots = {
-          ethAddress,
-          avatars: [
-            {
-              avatar: {
-                snapshots: addBaseUrlToSnapshots(client.getExternalContentServerUrl(), avatar, content)
-              }
-            }
-          ]
-        }
-        return profileMetadataForSnapshots
-      })
-    return profilesMetadataForSnapshots
-  } catch (error) {
-    console.log(error)
-    LOGGER.warn(error)
-    return []
-  }
 }
 
 /**
