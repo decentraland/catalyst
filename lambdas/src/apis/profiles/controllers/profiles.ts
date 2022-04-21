@@ -74,14 +74,7 @@ export async function getIndividualProfileById(
   // Method: GET
   // Path: /lambdas/profiles/:id
   const profileId: string = req.params.id
-  const profiles = await fetchProfiles(
-    [profileId],
-    client,
-    ensOwnership,
-    wearables,
-    getIfModifiedSinceTimestamp(req),
-    false
-  )
+  const profiles = await fetchProfiles([profileId], client, ensOwnership, wearables, getIfModifiedSinceTimestamp(req))
   sendProfilesResponse(res, profiles, profilesCacheTTL, true)
 }
 
@@ -102,14 +95,7 @@ export async function getProfilesById(
   }
   // TODO: Check if anyone is using snapshots
 
-  const profiles = await fetchProfiles(
-    profileIds,
-    client,
-    ensOwnership,
-    wearables,
-    getIfModifiedSinceTimestamp(req),
-    false
-  )
+  const profiles = await fetchProfiles(profileIds, client, ensOwnership, wearables, getIfModifiedSinceTimestamp(req))
   sendProfilesResponse(res, profiles, profilesCacheTTL)
 }
 
@@ -124,8 +110,7 @@ export async function fetchProfiles(
   client: SmartContentClient,
   ensOwnership: EnsOwnership,
   wearablesOwnership: WearablesOwnership,
-  ifModifiedSinceTimestamp?: number | undefined,
-  performWearableSanitization: boolean = true
+  ifModifiedSinceTimestamp?: number | undefined
 ): Promise<ProfileMetadata[] | undefined> {
   try {
     const profilesEntities: Entity[] = await client.fetchEntitiesByPointers(EntityType.PROFILE, ethAddresses)
@@ -154,9 +139,7 @@ export async function fetchProfiles(
     await Promise.all(entityPromises)
 
     // Check which NFTs are owned
-    const ownedWearablesPromise = performWearableSanitization
-      ? wearablesOwnership.areNFTsOwned(wearablesMap)
-      : Promise.resolve(new Map())
+    const ownedWearablesPromise = wearablesOwnership.areNFTsOwned(wearablesMap)
     const ownedENSPromise = ensOwnership.areNFTsOwned(namesMap)
     const [ownedWearables, ownedENS] = await Promise.all([ownedWearablesPromise, ownedENSPromise])
 
@@ -170,13 +153,9 @@ export async function fetchProfiles(
         hasClaimedName: ensOwnership.get(profileData.name) ?? false,
         avatar: {
           ...profileData.avatar,
-          bodyShape: performWearableSanitization
-            ? await translateWearablesIdFormat(profileData.avatar.bodyShape)
-            : profileData.avatar.bodyShape,
+          bodyShape: await translateWearablesIdFormat(profileData.avatar.bodyShape),
           snapshots: addBaseUrlToSnapshots(client.getExternalContentServerUrl(), profileData.avatar, content),
-          wearables: performWearableSanitization
-            ? await sanitizeWearables(fixWearableId(profileData.avatar.wearables), wearablesOwnership)
-            : fixWearableId(profileData.avatar.wearables)
+          wearables: await sanitizeWearables(fixWearableId(profileData.avatar.wearables), wearablesOwnership)
         }
       }))
       return { timestamp: profile.metadata.timestamp, avatars: await Promise.all(avatars) }

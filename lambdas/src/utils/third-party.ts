@@ -97,8 +97,8 @@ export async function checkForThirdPartyWearablesOwnership(
         smartContentClient,
         await createThirdPartyResolver(theGraphClient, createThirdPartyFetcher(), collectionId)
       )
-      const onlyAskedWearables = wearablesByOwner.map((a) => a.urn).filter((a) => !!wearables.find((b) => b === a))
-      response.push({ owner: address, urns: onlyAskedWearables })
+      // const onlyAskedWearables = wearablesByOwner.map((a) => a.urn).filter((a) => !!wearables.find((b) => b === a))
+      response.push({ owner: address, urns: wearablesByOwner.map((a) => a.urn) })
     })
   })
   return response

@@ -55,17 +55,17 @@ describe('profiles', () => {
     expect(profiles[0].avatars[0].avatar.wearables.length).toEqual(0)
   })
 
-  it(`When some of the worn wearables are not owned but sanitization is off, then they are not filtered out`, async () => {
-    const { entity } = profileWith(SOME_ADDRESS, { wearables: [WEARABLE_ID_1] })
-    const client = contentServerThatReturns(entity)
-    const ensOwnership = noNFTs(EnsOwnership)
-    const wearablesOwnership = noNFTs(WearablesOwnership)
+  // it(`When some of the worn wearables are not owned but sanitization is off, then they are not filtered out`, async () => {
+  //   const { entity } = profileWith(SOME_ADDRESS, { wearables: [WEARABLE_ID_1] })
+  //   const client = contentServerThatReturns(entity)
+  //   const ensOwnership = noNFTs(EnsOwnership)
+  //   const wearablesOwnership = noNFTs(WearablesOwnership)
 
-    const profiles = (await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership, undefined, false))!
+  //   const profiles = (await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership, undefined, false))!
 
-    expect(profiles.length).toEqual(1)
-    expect(profiles[0].avatars[0].avatar.wearables).toEqual([WEARABLE_ID_1])
-  })
+  //   expect(profiles.length).toEqual(1)
+  //   expect(profiles[0].avatars[0].avatar.wearables).toEqual([WEARABLE_ID_1])
+  // })
 
   it(`When the is no profile with that address, then an empty list is returned`, async () => {
     const client = contentServerThatReturns()
