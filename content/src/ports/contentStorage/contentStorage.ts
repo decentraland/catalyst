@@ -21,10 +21,6 @@ export type RawContent = {
 
 export interface ContentItem {
   /**
-   * Size in bytes of the item, if known.
-   */
-  size?: number
-  /**
    * Gets the readable stream, uncompressed if necessary.
    */
   asStream(): Promise<Readable>
@@ -40,7 +36,7 @@ export interface ContentItem {
 export class SimpleContentItem implements ContentItem {
   constructor(
     private streamCreator: () => Promise<Readable>,
-    public size?: number,
+    private length?: number,
     private encoding?: ContentEncoding | null
   ) {}
 
@@ -70,7 +66,7 @@ export class SimpleContentItem implements ContentItem {
     return {
       stream: await this.streamCreator(),
       encoding: this.encoding || null,
-      size: this.size || null
+      size: this.length || null
     }
   }
 }

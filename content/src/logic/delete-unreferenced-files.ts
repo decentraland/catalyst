@@ -39,19 +39,14 @@ export async function deleteUnreferencedFiles(
 
   const queue = new PQueue({ concurrency: 1000 })
   let numberOfDeletedFiles = 0
-  let numberOfBytesReleased = 0
-
   for await (const storageFileId of components.storage.allFileIds()) {
     if (!referencedHashesBloom.has(storageFileId)) {
       await queue.add(async () => {
         logger.debug(`Deleting file by bloom filter: ${storageFileId}`)
-        const content = await components.storage.retrieve(storageFileId)
         // await components.storage.delete([storageFileId])
-        numberOfBytesReleased += content?.size ?? 0
         numberOfDeletedFiles++
       })
     }
   }
   logger.info(`Deleted ${numberOfDeletedFiles} files`)
-  logger.info(`Released ${(numberOfBytesReleased / 1048576).toFixed(5)} MB`)
 }
