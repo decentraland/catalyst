@@ -61,6 +61,7 @@ type ThirdPartyId = {
 const parseCollectionId = (collectionId: string): ThirdPartyId => {
   const parts = collectionId.split(':')
 
+  // TODO: Use urn parser here
   if (!(parts.length === 5 || parts.length === 6)) {
     throw new Error(`Couldn't parse collectionId ${collectionId}, valid ones are like:
     \n - urn:decentraland:{protocol}:collections-thirdparty:{third-party-name}
@@ -88,8 +89,10 @@ export async function checkForThirdPartyWearablesOwnership(
       console.log(`[TPW-DEBUG] About to check ownership of '${wearable}'`)
       const parsedUrn: DecentralandAssetIdentifier | null = await parseUrn(wearable)
       if (parsedUrn?.type === 'blockchain-collection-third-party') {
-        console.log(`[TPW-DEBUG] Added '${parsedUrn.collectionId}' to third-party collection`)
-        collectionsForAddress.add(parsedUrn.collectionId)
+        // TODO: Do this with urn-resolver
+        const collectionId = parsedUrn.uri.toString().split(':').slice(0, -1).join(':')
+        console.log(`[TPW-DEBUG] Added '${collectionId}' to third-party collection`)
+        collectionsForAddress.add(collectionId)
       }
     })
     collectionsForAddress.forEach(async (collectionId) => {
