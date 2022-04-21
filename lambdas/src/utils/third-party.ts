@@ -85,8 +85,10 @@ export async function checkForThirdPartyWearablesOwnership(
     const wearables: string[] = entry[1]
     const collectionsForAddress: Set<string> = new Set()
     wearables.forEach(async (wearable) => {
+      console.log(`[TPW-DEBUG] About to check ownership of '${wearable}'`)
       const parsedUrn: DecentralandAssetIdentifier | null = await parseUrn(wearable)
       if (parsedUrn?.type === 'blockchain-collection-third-party') {
+        console.log(`[TPW-DEBUG] Added '${parsedUrn.collectionId}' to third-party collection`)
         collectionsForAddress.add(parsedUrn.collectionId)
       }
     })
