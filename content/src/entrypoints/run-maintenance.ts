@@ -29,13 +29,12 @@ void Lifecycle.run({
 
   async initComponents() {
     const logs = createLogComponent()
-    // Change metrics declaration ?
     const metrics = createTestMetricsComponent(metricsDeclaration)
     const env = await new EnvironmentBuilder().build()
     const database = await createDatabaseComponent({ logs, env, metrics })
     const fs = createFsComponent()
-    const contentFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
-    const storage = await createFileSystemContentStorage({ fs }, contentFolder)
+    const contentStorageFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
+    const storage = await createFileSystemContentStorage({ fs }, contentStorageFolder)
     const migrationManager = MigrationManagerFactory.create({ logs, env })
     env.logConfigValues(logs.getLogger('Environment'))
     return { logs, metrics, env, database, migrationManager, fs, storage }
