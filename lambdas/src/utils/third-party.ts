@@ -82,7 +82,7 @@ export async function checkForThirdPartyWearablesOwnership(
 ): Promise<{ owner: EthAddress; urns: string[] }[]> {
   const response: { owner: EthAddress; urns: string[] }[] = []
   nftsToCheck.map((entry) => {
-    const wearablesForCurrentAddress: string[] = []
+    let wearablesForCurrentAddress: string[] = []
     const address: EthAddress = entry[0]
     const wearables: string[] = entry[1]
     const collectionsForAddress: Set<string> = new Set()
@@ -90,6 +90,7 @@ export async function checkForThirdPartyWearablesOwnership(
       console.log(`[TPW-DEBUG] About to check ownership of '${wearable}'`)
       const parsedUrn: DecentralandAssetIdentifier | null = await parseUrn(wearable)
       if (parsedUrn?.type === 'blockchain-collection-third-party') {
+        console.log(`[TPW-DEBUG] ${wearable} is third-party`)
         // TODO: Do this with urn-resolver
         const collectionId = parsedUrn.uri.toString().split(':').slice(0, -1).join(':')
         console.log(`[TPW-DEBUG] Added '${collectionId}' to third-party collection`)
@@ -109,7 +110,7 @@ export async function checkForThirdPartyWearablesOwnership(
       const onlyAskedWearables = wearablesByOwner.map((a) => a.urn).filter((a) => !!wearables.find((b) => b === a))
 
       console.log(`[TPW-DEBUG] Using wearables are: ${onlyAskedWearables.length} '${onlyAskedWearables.join(',')}'`)
-      wearablesForCurrentAddress.concat(onlyAskedWearables)
+      wearablesForCurrentAddress = wearablesForCurrentAddress.concat(onlyAskedWearables)
     })
     response.push({ owner: address, urns: wearablesForCurrentAddress })
   })
