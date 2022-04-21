@@ -82,6 +82,7 @@ export async function checkForThirdPartyWearablesOwnership(
 ): Promise<{ owner: EthAddress; urns: string[] }[]> {
   const response: { owner: EthAddress; urns: string[] }[] = []
   nftsToCheck.map((entry) => {
+    const wearablesForCurrentAddress: string[] = []
     const address: EthAddress = entry[0]
     const wearables: string[] = entry[1]
     const collectionsForAddress: Set<string> = new Set()
@@ -102,9 +103,15 @@ export async function checkForThirdPartyWearablesOwnership(
         smartContentClient,
         await createThirdPartyResolver(theGraphClient, createThirdPartyFetcher(), collectionId)
       )
-      // const onlyAskedWearables = wearablesByOwner.map((a) => a.urn).filter((a) => !!wearables.find((b) => b === a))
-      response.push({ owner: address, urns: wearablesByOwner.map((a) => a.urn) })
+      console.log(
+        `[TPW-DEBUG] Owned wearables are: ${wearablesByOwner.length} '${wearablesByOwner.map((a) => a.urn).join(',')}'`
+      )
+      const onlyAskedWearables = wearablesByOwner.map((a) => a.urn).filter((a) => !!wearables.find((b) => b === a))
+
+      console.log(`[TPW-DEBUG] Using wearables are: ${onlyAskedWearables.length} '${onlyAskedWearables.join(',')}'`)
+      wearablesForCurrentAddress.concat(onlyAskedWearables)
     })
+    response.push({ owner: address, urns: wearablesForCurrentAddress })
   })
   return response
 }
