@@ -39,12 +39,16 @@ export async function deleteUnreferencedFiles(
 
   const queue = new PQueue({ concurrency: 1000 })
   let numberOfDeletedFiles = 0
+  logger.info(`Deleting files...`)
   for await (const storageFileId of components.storage.allFileIds()) {
     if (!referencedHashesBloom.has(storageFileId)) {
       await queue.add(async () => {
-        logger.debug(`Deleting file by bloom filter: ${storageFileId}`)
-        // await components.storage.delete([storageFileId])
-        numberOfDeletedFiles++
+        try {
+          await components.storage.delete([storageFileId])
+          numberOfDeletedFiles++
+        } catch (error) {
+          logger.error(error, { storageFileId })
+        }
       })
     }
   }
