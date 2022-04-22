@@ -90,6 +90,7 @@ export class Server {
       '/profile',
       initializeIndividualProfileRoutes(
         express.Router(),
+        theGraphClient,
         contentClient,
         ensOwnership,
         wearablesOwnership,
@@ -98,7 +99,14 @@ export class Server {
     )
     this.app.use(
       '/profiles',
-      initializeProfilesRoutes(express.Router(), contentClient, ensOwnership, wearablesOwnership, profilesCacheTTL)
+      initializeProfilesRoutes(
+        express.Router(),
+        theGraphClient,
+        contentClient,
+        ensOwnership,
+        wearablesOwnership,
+        profilesCacheTTL
+      )
     )
 
     // DCL-Crypto API implementation

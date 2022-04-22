@@ -10,6 +10,7 @@ import { EnsOwnership } from '../../../../src/apis/profiles/EnsOwnership'
 import { NFTOwnership } from '../../../../src/apis/profiles/NFTOwnership'
 import { WearablesOwnership } from '../../../../src/apis/profiles/WearablesOwnership'
 import { SmartContentClient } from '../../../../src/utils/SmartContentClient'
+import { TheGraphClient } from '../../../../src/utils/TheGraphClient'
 
 const EXTERNAL_URL = 'https://content-url.com'
 
@@ -17,6 +18,7 @@ describe('profiles', () => {
   const SOME_ADDRESS = '0x079bed9c31cb772c4c156f86e1cff15bf751add0'
   const SOME_NAME = 'NFTName'
   const WEARABLE_ID_1 = 'someCollection-someWearable'
+  const theGraphClient = theGraph()
 
 
   // TODO: Add a test for TPW here
@@ -26,7 +28,7 @@ describe('profiles', () => {
     const ensOwnership = ownedNFTs(EnsOwnership, SOME_ADDRESS, SOME_NAME)
     const wearablesOwnership = ownedNFTs(WearablesOwnership, SOME_ADDRESS, WEARABLE_ID_1)
 
-    const profiles = (await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership))!
+    const profiles = (await fetchProfiles([SOME_ADDRESS], theGraphClient, client, ensOwnership, wearablesOwnership))!
 
     expect(profiles.length).toEqual(1)
     expect(profiles[0]).toEqual(metadata)
@@ -38,7 +40,7 @@ describe('profiles', () => {
     const ensOwnership = noNFTs(EnsOwnership)
     const wearablesOwnership = noNFTs(WearablesOwnership)
 
-    const profiles = (await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership))!
+    const profiles = (await fetchProfiles([SOME_ADDRESS], theGraphClient, client, ensOwnership, wearablesOwnership))!
 
     expect(profiles.length).toEqual(1)
     expect(profiles[0].avatars[0].name).toEqual(SOME_NAME)
@@ -51,7 +53,7 @@ describe('profiles', () => {
     const ensOwnership = noNFTs(EnsOwnership)
     const wearablesOwnership = noNFTs(WearablesOwnership)
 
-    const profiles = (await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership))!
+    const profiles = (await fetchProfiles([SOME_ADDRESS], theGraphClient, client, ensOwnership, wearablesOwnership))!
 
     expect(profiles.length).toEqual(1)
     expect(profiles[0].avatars[0].avatar.wearables.length).toEqual(0)
@@ -62,7 +64,7 @@ describe('profiles', () => {
     const ensOwnership = noNFTs(EnsOwnership)
     const wearablesOwnership = noNFTs(WearablesOwnership)
 
-    const profiles = (await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership))!
+    const profiles = (await fetchProfiles([SOME_ADDRESS], theGraphClient, client, ensOwnership, wearablesOwnership))!
 
     expect(profiles.length).toEqual(0)
   })
@@ -73,7 +75,7 @@ describe('profiles', () => {
     const ensOwnership = noNFTs(EnsOwnership)
     const wearablesOwnership = noNFTs(WearablesOwnership)
 
-    const profiles = (await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership))!
+    const profiles = (await fetchProfiles([SOME_ADDRESS], theGraphClient, client, ensOwnership, wearablesOwnership))!
 
     expect(profiles.length).toEqual(1)
     expect(profiles[0].avatars[0].avatar.snapshots.aKey).toEqual(`${EXTERNAL_URL}/contents/aHash`)
@@ -88,7 +90,7 @@ describe('profiles', () => {
     const ensOwnership = noNFTs(EnsOwnership)
     const wearablesOwnership = noNFTs(WearablesOwnership)
 
-    const profiles = (await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership))!
+    const profiles = (await fetchProfiles([SOME_ADDRESS], theGraphClient, client, ensOwnership, wearablesOwnership))!
 
     expect(profiles.length).toEqual(1)
     expect(profiles[0].avatars[0].avatar.snapshots.aKey).toEqual(`${EXTERNAL_URL}/contents/fileHash`)
@@ -100,8 +102,8 @@ describe('profiles', () => {
     const ensOwnership = ownedNFTs(EnsOwnership, SOME_ADDRESS, SOME_NAME)
     const wearablesOwnership = ownedNFTs(WearablesOwnership, SOME_ADDRESS, WEARABLE_ID_1)
 
-    expect(await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership, 2000)).toBe(undefined)
-    expect(await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership, 3000)).toBe(undefined)
+    expect(await fetchProfiles([SOME_ADDRESS], theGraphClient, client, ensOwnership, wearablesOwnership, 2000)).toBe(undefined)
+    expect(await fetchProfiles([SOME_ADDRESS], theGraphClient, client, ensOwnership, wearablesOwnership, 3000)).toBe(undefined)
   })
 })
 
@@ -152,6 +154,11 @@ function contentServerThatReturns(profile?: Entity): SmartContentClient {
   when(mockedClient.fetchEntitiesByPointers(anything(), anything())).thenResolve(profile ? [profile] : [])
   when(mockedClient.getExternalContentServerUrl()).thenReturn(EXTERNAL_URL)
   return instance(mockedClient)
+}
+
+function theGraph(): TheGraphClient {
+  const mockedTheGraph = mock(TheGraphClient)
+  return instance(mockedTheGraph)
 }
 
 function noNFTs<T extends NFTOwnership>(clazz: new (...args: any[]) => T): T {

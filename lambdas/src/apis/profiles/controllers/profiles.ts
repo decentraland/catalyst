@@ -4,6 +4,8 @@ import { Request, Response } from 'express'
 import log4js from 'log4js'
 import { asArray } from '../../../utils/ControllerUtils'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
+import { TheGraphClient } from '../../../utils/TheGraphClient'
+import { checkForThirdPartyWearablesOwnership } from '../../../utils/third-party'
 import { WearableId } from '../../collections/types'
 import { isBaseAvatar, translateWearablesIdFormat } from '../../collections/Utils'
 import { EnsOwnership } from '../EnsOwnership'
@@ -64,6 +66,7 @@ function sendProfilesResponse(
 }
 
 export async function getIndividualProfileById(
+  theGraphClient: TheGraphClient,
   client: SmartContentClient,
   ensOwnership: EnsOwnership,
   wearables: WearablesOwnership,
@@ -74,12 +77,20 @@ export async function getIndividualProfileById(
   // Method: GET
   // Path: /lambdas/profiles/:id
   const profileId: string = req.params.id
-  const profiles = await fetchProfiles([profileId], client, ensOwnership, wearables, getIfModifiedSinceTimestamp(req))
+  const profiles = await fetchProfiles(
+    [profileId],
+    theGraphClient,
+    client,
+    ensOwnership,
+    wearables,
+    getIfModifiedSinceTimestamp(req)
+  )
   sendProfilesResponse(res, profiles, profilesCacheTTL, true)
 }
 
 export async function getProfilesById(
-  client: SmartContentClient,
+  theGraphClient: TheGraphClient,
+  contentClient: SmartContentClient,
   ensOwnership: EnsOwnership,
   wearables: WearablesOwnership,
   profilesCacheTTL: number,
@@ -95,7 +106,14 @@ export async function getProfilesById(
   }
   // TODO: Check if anyone is using snapshots
 
-  const profiles = await fetchProfiles(profileIds, client, ensOwnership, wearables, getIfModifiedSinceTimestamp(req))
+  const profiles = await fetchProfiles(
+    profileIds,
+    theGraphClient,
+    contentClient,
+    ensOwnership,
+    wearables,
+    getIfModifiedSinceTimestamp(req)
+  )
   sendProfilesResponse(res, profiles, profilesCacheTTL)
 }
 
@@ -107,13 +125,14 @@ function roundToSeconds(timestamp: number) {
 // Visible for testing purposes
 export async function fetchProfiles(
   ethAddresses: EthAddress[],
-  client: SmartContentClient,
+  theGraphClient: TheGraphClient,
+  contentClient: SmartContentClient,
   ensOwnership: EnsOwnership,
   wearablesOwnership: WearablesOwnership,
   ifModifiedSinceTimestamp?: number | undefined
 ): Promise<ProfileMetadata[] | undefined> {
   try {
-    const profilesEntities: Entity[] = await client.fetchEntitiesByPointers(EntityType.PROFILE, ethAddresses)
+    const profilesEntities: Entity[] = await contentClient.fetchEntitiesByPointers(EntityType.PROFILE, ethAddresses)
 
     console.log('[AGUS]')
     // Avoid querying profiles if there wasn't any new deployment
@@ -144,28 +163,18 @@ export async function fetchProfiles(
     for (const k in wearablesMap.keys()) {
       console.log(`[AGUS] wearables Map: ${k} & ${wearablesMap.get(k)?.join(',')}`)
     }
-    // Check which NFTs are owned
-    // const ownedWearablesPromise = wearablesOwnership.areNFTsOwned(wearablesMap)
-    // const ownedENSPromise = ensOwnership.areNFTsOwned(namesMap)
-    // const thirdPartyWearablesPromise = checkForThirdPartyWearablesOwnership(
-    //   this.theGraphClient,
-    //   this.smartContentClient,
-    //   wearablesMap
-    // )
-    // const [ownedWearables, ownedENS, thirdPartyWearables] = await Promise.all([
-    //   ownedWearablesPromise,
-    //   ownedENSPromise,
-    //   thirdPartyWearablesPromise
-    // ])
+    //Check which NFTs are owned
 
     console.log(`[AGUS] K ONDA 1`)
-    const ownedWearables = await wearablesOwnership.areNFTsOwned(wearablesMap)
-    const ownedENS = await ensOwnership.areNFTsOwned(namesMap)
-    const thirdPartyWearables = new Map() //  await checkForThirdPartyWearablesOwnership(
-    //   this.theGraphClient,
-    //   this.smartContentClient,
-    //   wearablesMap
-    // )
+    const ownedWearablesPromise = wearablesOwnership.areNFTsOwned(wearablesMap)
+    const ownedENSPromise = ensOwnership.areNFTsOwned(namesMap)
+    const thirdPartyWearablesPromise = checkForThirdPartyWearablesOwnership(theGraphClient, contentClient, wearablesMap)
+    const [ownedWearables, ownedENS, thirdPartyWearables] = await Promise.all([
+      ownedWearablesPromise,
+      ownedENSPromise,
+      thirdPartyWearablesPromise
+    ])
+
     console.log(`[AGUS] K ONDA 2`)
     for (const k in ownedWearables.keys()) {
       console.log(`[AGUS] wearables: ${k} `)
@@ -190,7 +199,7 @@ export async function fetchProfiles(
         avatar: {
           ...profileData.avatar,
           bodyShape: await translateWearablesIdFormat(profileData.avatar.bodyShape),
-          snapshots: addBaseUrlToSnapshots(client.getExternalContentServerUrl(), profileData.avatar, content),
+          snapshots: addBaseUrlToSnapshots(contentClient.getExternalContentServerUrl(), profileData.avatar, content),
           wearables: (await sanitizeWearables(fixWearableId(profileData.avatar.wearables), wearablesOwnership)).concat(
             tpw
           )
