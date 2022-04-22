@@ -4,6 +4,7 @@ import { Request, Response } from 'express'
 import log4js from 'log4js'
 import { asArray } from '../../../utils/ControllerUtils'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
+import { checkForThirdPartyWearablesOwnership } from '../../../utils/third-party'
 import { WearableId } from '../../collections/types'
 import { isBaseAvatar, translateWearablesIdFormat } from '../../collections/Utils'
 import { EnsOwnership } from '../EnsOwnership'
@@ -141,7 +142,16 @@ export async function fetchProfiles(
     // Check which NFTs are owned
     const ownedWearablesPromise = wearablesOwnership.areNFTsOwned(wearablesMap)
     const ownedENSPromise = ensOwnership.areNFTsOwned(namesMap)
-    const [ownedWearables, ownedENS] = await Promise.all([ownedWearablesPromise, ownedENSPromise])
+    const thirdPartyWearablesPromise = checkForThirdPartyWearablesOwnership(
+      this.theGraphClient,
+      this.smartContentClient,
+      wearablesMap
+    )
+    const [ownedWearables, ownedENS, thirdPartyWearables] = await Promise.all([
+      ownedWearablesPromise,
+      ownedENSPromise,
+      thirdPartyWearablesPromise
+    ])
 
     // Add name data and snapshot urls to profiles
     const result = Array.from(profilesMap.entries()).map(async ([ethAddress, profile]) => {
