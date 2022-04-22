@@ -16,8 +16,8 @@
   },
   "dependencies": {
     "@dcl/catalyst-api-specs": "1.2.2",
-    "@dcl/catalyst-contracts": "1.0.2",
-    "@dcl/catalyst-node-commons": "1.0.1",
+    "@dcl/catalyst-contracts": "tag-use-cloudflare-eth",
+    "@dcl/catalyst-node-commons": "tag-use-cat-contracts-infura-fix",
     "@dcl/content-validator": "1.4.3",
     "@dcl/hashing": "^1.1.0",
     "@dcl/snapshots-fetcher": "3.0.2",
