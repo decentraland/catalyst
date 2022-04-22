@@ -1,6 +1,6 @@
 import { DECENTRALAND_ADDRESS } from '@dcl/catalyst-node-commons'
+import { ILoggerComponent } from '@well-known-components/interfaces'
 import { EntityType, EntityVersion } from 'dcl-catalyst-commons'
-import log4js from 'log4js'
 import ms from 'ms'
 import { initComponentsWithEnv } from './components'
 import { RepositoryQueue } from './repository/RepositoryQueue'
@@ -52,7 +52,6 @@ export const DEFAULT_DATABASE_CONFIG = {
 const DEFAULT_SYNC_STREAM_TIMEOUT = '10m'
 
 export class Environment {
-  private static readonly LOGGER = log4js.getLogger('Environment')
   private configs: Map<EnvironmentConfig, any>
 
   constructor(otherEnv?: Environment) {
@@ -68,12 +67,12 @@ export class Environment {
     return this
   }
 
-  logConfigValues() {
-    Environment.LOGGER.info('These are the configuration values:')
+  logConfigValues(logger: ILoggerComponent.ILogger): void {
+    logger.info('These are the configuration values:')
     const sensitiveEnvs = [EnvironmentConfig.PSQL_PASSWORD, EnvironmentConfig.PSQL_USER]
     for (const [config, value] of this.configs.entries()) {
       if (!sensitiveEnvs.includes(config)) {
-        Environment.LOGGER.info(`${EnvironmentConfig[config]}: ${this.printObject(value)}`)
+        logger.info(`${EnvironmentConfig[config]}: ${this.printObject(value)}`)
       }
     }
   }
@@ -165,6 +164,10 @@ export class EnvironmentBuilder {
   }
 
   async buildConfigAndComponents(): Promise<AppComponents> {
+    return await initComponentsWithEnv(await this.build())
+  }
+
+  async build(): Promise<Environment> {
     const env = new Environment()
 
     this.registerConfigIfNotAlreadySet(
@@ -436,7 +439,7 @@ export class EnvironmentBuilder {
       () => process.env.RETRY_FAILED_DEPLOYMENTS_DELAY_TIME ?? ms('15m')
     )
 
-    return await initComponentsWithEnv(env)
+    return env
   }
 
   private registerConfigIfNotAlreadySet(env: Environment, key: EnvironmentConfig, valueProvider: () => any): void {

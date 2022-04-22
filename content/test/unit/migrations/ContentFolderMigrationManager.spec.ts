@@ -55,7 +55,10 @@ async function runMigration(storage: ContentStorage) {
   fs.opendir = jest.fn().mockImplementation(function* () {
     let current = 0
     while (current < files.length) {
-      yield { name: files[current] }
+      yield {
+        name: files[current],
+        isDirectory: () => false
+      }
       current++
     }
   })

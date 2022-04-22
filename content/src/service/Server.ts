@@ -35,8 +35,6 @@ export class Server implements IBaseComponent {
       }
     })
 
-    env.logConfigValues()
-
     this.port = env.getConfig(EnvironmentConfig.SERVER_PORT)
 
     this.app = express()
