@@ -1,3 +1,4 @@
+import { WearableId } from '@dcl/schemas'
 import { DecentralandAssetIdentifier, parseUrn } from '@dcl/urn-resolver'
 import { fetchJson } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
@@ -78,13 +79,11 @@ const parseCollectionId = (collectionId: string): ThirdPartyId => {
 export async function checkForThirdPartyWearablesOwnership(
   theGraphClient: TheGraphClient,
   smartContentClient: SmartContentClient,
-  nftsToCheck: [EthAddress, string[]][]
-): Promise<{ owner: EthAddress; urns: string[] }[]> {
-  const response: { owner: EthAddress; urns: string[] }[] = []
-  nftsToCheck.map((entry) => {
-    let wearablesForCurrentAddress: string[] = []
-    const address: EthAddress = entry[0]
-    const wearables: string[] = entry[1]
+  nftsToCheck: Map<EthAddress, WearableId[]>
+): Promise<Map<EthAddress, WearableId[]>> {
+  const response: Map<EthAddress, WearableId[]> = new Map()
+
+  nftsToCheck.forEach((wearables: WearableId[], address: EthAddress) => {
     const collectionsForAddress: Set<string> = new Set()
     wearables.forEach(async (wearable) => {
       console.log(`[TPW-DEBUG] About to check ownership of '${wearable}'`)
@@ -97,6 +96,7 @@ export async function checkForThirdPartyWearablesOwnership(
         collectionsForAddress.add(collectionId)
       }
     })
+    const ownedWearables: Set<string> = new Set()
     collectionsForAddress.forEach(async (collectionId) => {
       const wearablesByOwner = await getWearablesByOwner(
         address,
@@ -107,12 +107,17 @@ export async function checkForThirdPartyWearablesOwnership(
       console.log(
         `[TPW-DEBUG] Owned wearables are: ${wearablesByOwner.length} '${wearablesByOwner.map((a) => a.urn).join(',')}'`
       )
-      const onlyAskedWearables = wearablesByOwner.map((a) => a.urn).filter((a) => !!wearables.find((b) => b === a))
-
-      console.log(`[TPW-DEBUG] Using wearables are: ${onlyAskedWearables.length} '${onlyAskedWearables.join(',')}'`)
-      wearablesForCurrentAddress = wearablesForCurrentAddress.concat(onlyAskedWearables)
+      wearablesByOwner.forEach((w) => ownedWearables.add(w.urn))
     })
-    response.push({ owner: address, urns: wearablesForCurrentAddress })
+
+    const sanitizedWearables = wearables.filter((w) => ownedWearables.has(w))
+
+    console.log(
+      `[TPW-DEBUG] Owned wearables for address ${address} are: ${sanitizedWearables.length} '${sanitizedWearables.join(
+        ','
+      )}'`
+    )
+    response.set(address, sanitizedWearables)
   })
   return response
 }

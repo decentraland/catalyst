@@ -157,6 +157,7 @@ export async function fetchProfiles(
     const result = Array.from(profilesMap.entries()).map(async ([ethAddress, profile]) => {
       const ensOwnership = ownedENS.get(ethAddress)!
       const wearablesOwnership = ownedWearables.get(ethAddress)!
+      const tpw = thirdPartyWearables.get(ethAddress) || []
       const { metadata, content } = profile
       const avatars = metadata.avatars.map(async (profileData) => ({
         ...profileData,
@@ -165,7 +166,9 @@ export async function fetchProfiles(
           ...profileData.avatar,
           bodyShape: await translateWearablesIdFormat(profileData.avatar.bodyShape),
           snapshots: addBaseUrlToSnapshots(client.getExternalContentServerUrl(), profileData.avatar, content),
-          wearables: await sanitizeWearables(fixWearableId(profileData.avatar.wearables), wearablesOwnership)
+          wearables: (await sanitizeWearables(fixWearableId(profileData.avatar.wearables), wearablesOwnership)).concat(
+            tpw
+          )
         }
       }))
       return { timestamp: profile.metadata.timestamp, avatars: await Promise.all(avatars) }
