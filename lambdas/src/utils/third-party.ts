@@ -1,9 +1,8 @@
 import { WearableId } from '@dcl/schemas'
-import { DecentralandAssetIdentifier, parseUrn } from '@dcl/urn-resolver'
 import { fetchJson } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import log4js from 'log4js'
-import { FindWearablesByOwner, getWearablesByOwner } from '../apis/collections/controllers/wearables'
+import { FindWearablesByOwner } from '../apis/collections/controllers/wearables'
 import { ThirdPartyAsset, ThirdPartyAssets } from '../apis/collections/types'
 import { SmartContentClient } from './SmartContentClient'
 import { TheGraphClient } from './TheGraphClient'
@@ -83,41 +82,41 @@ export async function checkForThirdPartyWearablesOwnership(
 ): Promise<Map<EthAddress, WearableId[]>> {
   const response: Map<EthAddress, WearableId[]> = new Map()
 
-  nftsToCheck.forEach((wearables: WearableId[], address: EthAddress) => {
-    const collectionsForAddress: Set<string> = new Set()
-    wearables.forEach(async (wearable) => {
-      console.log(`[TPW-DEBUG] About to check ownership of '${wearable}'`)
-      const parsedUrn: DecentralandAssetIdentifier | null = await parseUrn(wearable)
-      if (parsedUrn?.type === 'blockchain-collection-third-party') {
-        console.log(`[TPW-DEBUG] ${wearable} is third-party`)
-        // TODO: Do this with urn-resolver
-        const collectionId = parsedUrn.uri.toString().split(':').slice(0, -1).join(':')
-        console.log(`[TPW-DEBUG] Added '${collectionId}' to third-party collection`)
-        collectionsForAddress.add(collectionId)
-      }
-    })
-    const ownedWearables: Set<string> = new Set()
-    collectionsForAddress.forEach(async (collectionId) => {
-      const wearablesByOwner = await getWearablesByOwner(
-        address,
-        true,
-        smartContentClient,
-        await createThirdPartyResolver(theGraphClient, createThirdPartyFetcher(), collectionId)
-      )
-      console.log(
-        `[TPW-DEBUG] Owned wearables are: ${wearablesByOwner.length} '${wearablesByOwner.map((a) => a.urn).join(',')}'`
-      )
-      wearablesByOwner.forEach((w) => ownedWearables.add(w.urn))
-    })
+  // nftsToCheck.forEach((wearables: WearableId[], address: EthAddress) => {
+  //   const collectionsForAddress: Set<string> = new Set()
+  //   wearables.forEach(async (wearable) => {
+  //     console.log(`[TPW-DEBUG] About to check ownership of '${wearable}'`)
+  //     const parsedUrn: DecentralandAssetIdentifier | null = await parseUrn(wearable)
+  //     if (parsedUrn?.type === 'blockchain-collection-third-party') {
+  //       console.log(`[TPW-DEBUG] ${wearable} is third-party`)
+  //       // TODO: Do this with urn-resolver
+  //       const collectionId = parsedUrn.uri.toString().split(':').slice(0, -1).join(':')
+  //       console.log(`[TPW-DEBUG] Added '${collectionId}' to third-party collection`)
+  //       collectionsForAddress.add(collectionId)
+  //     }
+  //   })
+  //   const ownedWearables: Set<string> = new Set()
+  //   collectionsForAddress.forEach(async (collectionId) => {
+  //     const wearablesByOwner = await getWearablesByOwner(
+  //       address,
+  //       true,
+  //       smartContentClient,
+  //       await createThirdPartyResolver(theGraphClient, createThirdPartyFetcher(), collectionId)
+  //     )
+  //     console.log(
+  //       `[TPW-DEBUG] Owned wearables are: ${wearablesByOwner.length} '${wearablesByOwner.map((a) => a.urn).join(',')}'`
+  //     )
+  //     wearablesByOwner.forEach((w) => ownedWearables.add(w.urn))
+  //   })
 
-    const sanitizedWearables = wearables.filter((w) => ownedWearables.has(w))
+  //   const sanitizedWearables = wearables.filter((w) => ownedWearables.has(w))
 
-    console.log(
-      `[TPW-DEBUG] Owned wearables for address ${address} are: ${sanitizedWearables.length} '${sanitizedWearables.join(
-        ','
-      )}'`
-    )
-    response.set(address, sanitizedWearables)
-  })
+  //   console.log(
+  //     `[TPW-DEBUG] Owned wearables for address ${address} are: ${sanitizedWearables.length} '${sanitizedWearables.join(
+  //       ','
+  //     )}'`
+  //   )
+  //   response.set(address, sanitizedWearables)
+  // })
   return response
 }

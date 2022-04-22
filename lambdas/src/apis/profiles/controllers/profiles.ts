@@ -4,7 +4,6 @@ import { Request, Response } from 'express'
 import log4js from 'log4js'
 import { asArray } from '../../../utils/ControllerUtils'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
-import { checkForThirdPartyWearablesOwnership } from '../../../utils/third-party'
 import { WearableId } from '../../collections/types'
 import { isBaseAvatar, translateWearablesIdFormat } from '../../collections/Utils'
 import { EnsOwnership } from '../EnsOwnership'
@@ -142,30 +141,36 @@ export async function fetchProfiles(
       })
     await Promise.all(entityPromises)
 
-    wearablesMap.forEach((v, k) => {
-      console.log(`[AGUS] wearables Map: ${k}`)
-      v.forEach((v, k) => {
-        console.log(`[AGUS] wearables Map: ${k}, ${v}`)
-      })
-    })
+    for (const k in wearablesMap.keys()) {
+      console.log(`[AGUS] wearables Map: ${k} & ${wearablesMap.get(k)?.join(',')}`)
+    }
     // Check which NFTs are owned
-    const ownedWearablesPromise = wearablesOwnership.areNFTsOwned(wearablesMap)
-    const ownedENSPromise = ensOwnership.areNFTsOwned(namesMap)
-    const thirdPartyWearablesPromise = checkForThirdPartyWearablesOwnership(
-      this.theGraphClient,
-      this.smartContentClient,
-      wearablesMap
-    )
-    const [ownedWearables, ownedENS, thirdPartyWearables] = await Promise.all([
-      ownedWearablesPromise,
-      ownedENSPromise,
-      thirdPartyWearablesPromise
-    ])
+    // const ownedWearablesPromise = wearablesOwnership.areNFTsOwned(wearablesMap)
+    // const ownedENSPromise = ensOwnership.areNFTsOwned(namesMap)
+    // const thirdPartyWearablesPromise = checkForThirdPartyWearablesOwnership(
+    //   this.theGraphClient,
+    //   this.smartContentClient,
+    //   wearablesMap
+    // )
+    // const [ownedWearables, ownedENS, thirdPartyWearables] = await Promise.all([
+    //   ownedWearablesPromise,
+    //   ownedENSPromise,
+    //   thirdPartyWearablesPromise
+    // ])
 
-    console.log(`[AGUS] K ONDA`)
-    ownedWearables.forEach((v, k) => {
-      console.log(`[AGUS] wearables: ${k}`)
-    })
+    console.log(`[AGUS] K ONDA 1`)
+    const ownedWearables = await wearablesOwnership.areNFTsOwned(wearablesMap)
+    const ownedENS = await ensOwnership.areNFTsOwned(namesMap)
+    const thirdPartyWearables = new Map() //  await checkForThirdPartyWearablesOwnership(
+    //   this.theGraphClient,
+    //   this.smartContentClient,
+    //   wearablesMap
+    // )
+    console.log(`[AGUS] K ONDA 2`)
+    for (const k in ownedWearables.keys()) {
+      console.log(`[AGUS] wearables: ${k} `)
+    }
+
     ownedENS.forEach((v, k) => {
       console.log(`[AGUS] ens: ${k}`)
     })
@@ -177,7 +182,7 @@ export async function fetchProfiles(
     const result = Array.from(profilesMap.entries()).map(async ([ethAddress, profile]) => {
       const ensOwnership = ownedENS.get(ethAddress)!
       const wearablesOwnership = ownedWearables.get(ethAddress)!
-      const tpw = thirdPartyWearables.get(ethAddress) || []
+      const tpw = thirdPartyWearables.get(ethAddress) ?? []
       const { metadata, content } = profile
       const avatars = metadata.avatars.map(async (profileData) => ({
         ...profileData,

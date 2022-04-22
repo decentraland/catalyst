@@ -18,6 +18,8 @@ describe('profiles', () => {
   const SOME_NAME = 'NFTName'
   const WEARABLE_ID_1 = 'someCollection-someWearable'
 
+
+  // TODO: Add a test for TPW here
   it(`When profiles are fetched and NFTs are owned, then the returned profile is the same as the content server`, async () => {
     const { entity, metadata } = profileWith(SOME_ADDRESS, { name: SOME_NAME, wearables: [WEARABLE_ID_1] })
     const client = contentServerThatReturns(entity)
