@@ -65,7 +65,7 @@ const parseCollectionId = (collectionId: string): ThirdPartyId => {
   // TODO: Use urn parser here
   if (!(parts.length === 5 || parts.length === 6)) {
     throw new Error(`Couldn't parse collectionId ${collectionId}, valid ones are like:
-    \n - urn:decentraland:{protocol}:collections-thirdparty:{third-party-name} -> https://kryptokitties.org/ownership/collection
+    \n - urn:decentraland:{protocol}:collections-thirdparty:{third-party-name}
     \n - urn:decentraland:{protocol}:collections-thirdparty:{third-party-name}:{collection-id}`)
   }
 

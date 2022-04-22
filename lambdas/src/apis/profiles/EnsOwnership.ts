@@ -7,7 +7,7 @@ export class EnsOwnership extends NFTOwnership {
     super(maxSize, maxAge)
   }
 
-  protected async checkOwnership(
+  protected async querySubgraph(
     nftsToCheck: [EthAddress, Name[]][]
   ): Promise<{ ownedNFTs: string[]; owner: string }[]> {
     const result = await this.theGraphClient.checkForNamesOwnership(nftsToCheck)
