@@ -104,7 +104,6 @@ export async function getProfilesById(
   if (!profileIds) {
     return res.status(400).send({ error: 'You must specify at least one profile id' })
   }
-  // TODO: Check if anyone is using snapshots
 
   const profiles = await fetchProfiles(
     profileIds,
@@ -215,12 +214,13 @@ async function extractData(entity: Entity): Promise<{
 
 async function validateWearablesUrn(metadata: ProfileMetadata) {
   const allWearablesInProfilePromises: Promise<WearableId | undefined>[] = []
-  metadata.avatars.forEach(({ avatar }) =>
-    avatar.wearables
-      .filter((wearableId) => !isBaseAvatar(wearableId))
-      .map(translateWearablesIdFormat)
-      .forEach((wearableId) => allWearablesInProfilePromises.push(wearableId))
-  )
+  for (const avatar of metadata.avatars) {
+    for (const wearableId of avatar.avatar.wearables) {
+      if (!isBaseAvatar(wearableId)) {
+        allWearablesInProfilePromises.push(translateWearablesIdFormat(wearableId))
+      }
+    }
+  }
   const filteredWearables = (await Promise.all(allWearablesInProfilePromises)).filter(
     (wearableId): wearableId is WearableId => !!wearableId
   )
