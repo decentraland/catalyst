@@ -10,7 +10,9 @@ export class WearablesOwnership extends NFTOwnership {
     super(maxSize, maxAge)
   }
 
-  protected async querySubgraph(nftsToCheck: [EthAddress, string[]][]) {
+  protected async querySubgraph(
+    nftsToCheck: [EthAddress, string[]][]
+  ): Promise<{ ownedNFTs: string[]; owner: string }[]> {
     const result = await this.theGraphClient.checkForWearablesOwnership(nftsToCheck)
     return result.map(({ urns, owner }) => ({ ownedNFTs: urns, owner }))
   }

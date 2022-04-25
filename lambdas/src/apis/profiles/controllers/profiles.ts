@@ -4,6 +4,8 @@ import { Request, Response } from 'express'
 import log4js from 'log4js'
 import { asArray } from '../../../utils/ControllerUtils'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
+import { TheGraphClient } from '../../../utils/TheGraphClient'
+import { checkForThirdPartyWearablesOwnership } from '../../../utils/third-party'
 import { WearableId } from '../../collections/types'
 import { isBaseAvatar, translateWearablesIdFormat } from '../../collections/Utils'
 import { EnsOwnership } from '../EnsOwnership'
@@ -64,6 +66,7 @@ function sendProfilesResponse(
 }
 
 export async function getIndividualProfileById(
+  theGraphClient: TheGraphClient,
   client: SmartContentClient,
   ensOwnership: EnsOwnership,
   wearables: WearablesOwnership,
@@ -72,40 +75,45 @@ export async function getIndividualProfileById(
   res: Response
 ): Promise<void> {
   // Method: GET
-  // Path: /:id
+  // Path: /lambdas/profiles/:id
   const profileId: string = req.params.id
   const profiles = await fetchProfiles(
     [profileId],
+    theGraphClient,
     client,
     ensOwnership,
     wearables,
-    getIfModifiedSinceTimestamp(req),
-    false
+    getIfModifiedSinceTimestamp(req)
   )
   sendProfilesResponse(res, profiles, profilesCacheTTL, true)
 }
 
 export async function getProfilesById(
-  client: SmartContentClient,
+  theGraphClient: TheGraphClient,
+  contentClient: SmartContentClient,
   ensOwnership: EnsOwnership,
   wearables: WearablesOwnership,
   profilesCacheTTL: number,
   req: Request,
   res: Response
 ): Promise<Response<any, Record<string, any>> | undefined> {
+  // Method: GET
+  // Path: /lambdas/profiles?id={ids}
   const profileIds: EthAddress[] | undefined = asArray(req.query.id as string)
-  const fields: string[] | undefined = asArray(req.query.field as string)
+
   if (!profileIds) {
     return res.status(400).send({ error: 'You must specify at least one profile id' })
   }
 
-  if (fields && fields.includes('snapshots')) {
-    const profiles = await fetchProfilesForSnapshots(profileIds, client)
-    res.send(profiles)
-  } else {
-    const profiles = await fetchProfiles(profileIds, client, ensOwnership, wearables, getIfModifiedSinceTimestamp(req))
-    sendProfilesResponse(res, profiles, profilesCacheTTL)
-  }
+  const profiles = await fetchProfiles(
+    profileIds,
+    theGraphClient,
+    contentClient,
+    ensOwnership,
+    wearables,
+    getIfModifiedSinceTimestamp(req)
+  )
+  sendProfilesResponse(res, profiles, profilesCacheTTL)
 }
 
 // Dates received from If-Modified-Since headers have precisions of seconds, so we need to round
@@ -116,71 +124,64 @@ function roundToSeconds(timestamp: number) {
 // Visible for testing purposes
 export async function fetchProfiles(
   ethAddresses: EthAddress[],
-  client: SmartContentClient,
+  theGraphClient: TheGraphClient,
+  contentClient: SmartContentClient,
   ensOwnership: EnsOwnership,
   wearablesOwnership: WearablesOwnership,
-  ifModifiedSinceTimestamp?: number | undefined,
-  performWearableSanitization: boolean = true
+  ifModifiedSinceTimestamp?: number | undefined
 ): Promise<ProfileMetadata[] | undefined> {
   try {
-    const entities: Entity[] = await client.fetchEntitiesByPointers(EntityType.PROFILE, ethAddresses)
+    const profilesEntities: Entity[] = await contentClient.fetchEntitiesByPointers(EntityType.PROFILE, ethAddresses)
 
-    if (ifModifiedSinceTimestamp && entities.every((it) => roundToSeconds(it.timestamp) <= ifModifiedSinceTimestamp))
+    // Avoid querying profiles if there wasn't any new deployment
+    if (
+      ifModifiedSinceTimestamp &&
+      profilesEntities.every((it) => roundToSeconds(it.timestamp) <= ifModifiedSinceTimestamp)
+    )
       return
 
-    const profiles: Map<EthAddress, { metadata: ProfileMetadata; content: Map<string, ContentFileHash> }> = new Map()
-    const names: Map<EthAddress, string[]> = new Map()
-    const wearables: Map<EthAddress, WearableId[]> = new Map()
+    const profilesMap: Map<EthAddress, { metadata: ProfileMetadata; content: Map<string, ContentFileHash> }> = new Map()
+    const namesMap: Map<EthAddress, string[]> = new Map()
+    const wearablesMap: Map<EthAddress, WearableId[]> = new Map()
 
     // Group nfts and profile metadata by ethAddress
-    const entityPromises = entities
+    const entityPromises = profilesEntities
       .filter((entity) => !!entity.metadata)
       .map(async (entity) => {
-        const ethAddress = entity.pointers[0]
-        const metadata: ProfileMetadata = entity.metadata
-        metadata.timestamp = entity.timestamp
-        const content = new Map((entity.content ?? []).map(({ file, hash }) => [file, hash]))
-        profiles.set(ethAddress, { metadata, content })
-        const filteredNames = metadata.avatars.map(({ name }) => name).filter((name) => name && name.trim().length > 0)
-        names.set(ethAddress, filteredNames)
-        const allWearablesInProfilePromises: Promise<WearableId | undefined>[] = []
-        metadata.avatars.forEach(({ avatar }) =>
-          avatar.wearables
-            .filter((wearableId) => !isBaseAvatar(wearableId))
-            .map(translateWearablesIdFormat)
-            .forEach((wearableId) => allWearablesInProfilePromises.push(wearableId))
-        )
-        const filtered = (await Promise.all(allWearablesInProfilePromises)).filter(
-          (wearableId): wearableId is WearableId => !!wearableId
-        )
-        wearables.set(ethAddress, filtered)
+        const { ethAddress, metadata, content, names, wearables } = await extractData(entity)
+
+        profilesMap.set(ethAddress, { metadata, content })
+        namesMap.set(ethAddress, names)
+        wearablesMap.set(ethAddress, wearables)
       })
     await Promise.all(entityPromises)
 
-    // Check which NFTs are owned
-    const ownedWearablesPromise = performWearableSanitization
-      ? wearablesOwnership.areNFTsOwned(wearables)
-      : Promise.resolve(new Map())
-    const ownedENSPromise = ensOwnership.areNFTsOwned(names)
-    const [ownedWearables, ownedENS] = await Promise.all([ownedWearablesPromise, ownedENSPromise])
+    //Check which NFTs are owned
+    const ownedWearablesPromise = wearablesOwnership.areNFTsOwned(wearablesMap)
+    const ownedENSPromise = ensOwnership.areNFTsOwned(namesMap)
+    const thirdPartyWearablesPromise = checkForThirdPartyWearablesOwnership(theGraphClient, contentClient, wearablesMap)
+    const [ownedWearables, ownedENS, thirdPartyWearables] = await Promise.all([
+      ownedWearablesPromise,
+      ownedENSPromise,
+      thirdPartyWearablesPromise
+    ])
 
     // Add name data and snapshot urls to profiles
-    const result = Array.from(profiles.entries()).map(async ([ethAddress, profile]) => {
+    const result = Array.from(profilesMap.entries()).map(async ([ethAddress, profile]) => {
       const ensOwnership = ownedENS.get(ethAddress)!
       const wearablesOwnership = ownedWearables.get(ethAddress)!
+      const tpw = thirdPartyWearables.get(ethAddress) ?? []
       const { metadata, content } = profile
       const avatars = metadata.avatars.map(async (profileData) => ({
         ...profileData,
         hasClaimedName: ensOwnership.get(profileData.name) ?? false,
         avatar: {
           ...profileData.avatar,
-          bodyShape: performWearableSanitization
-            ? await translateWearablesIdFormat(profileData.avatar.bodyShape)
-            : profileData.avatar.bodyShape,
-          snapshots: addBaseUrlToSnapshots(client.getExternalContentServerUrl(), profileData.avatar, content),
-          wearables: performWearableSanitization
-            ? await sanitizeWearables(fixWearableId(profileData.avatar.wearables), wearablesOwnership)
-            : fixWearableId(profileData.avatar.wearables)
+          bodyShape: await translateWearablesIdFormat(profileData.avatar.bodyShape),
+          snapshots: addBaseUrlToSnapshots(contentClient.getExternalContentServerUrl(), profileData.avatar, content),
+          wearables: (await sanitizeWearables(fixWearableId(profileData.avatar.wearables), wearablesOwnership)).concat(
+            tpw
+          )
         }
       }))
       return { timestamp: profile.metadata.timestamp, avatars: await Promise.all(avatars) }
@@ -192,39 +193,38 @@ export async function fetchProfiles(
   }
 }
 
-// Visible for testing purposes
-export async function fetchProfilesForSnapshots(
-  ethAddresses: EthAddress[],
-  client: SmartContentClient
-): Promise<ProfileMetadataForSnapshots[]> {
-  try {
-    const entities: Entity[] = await client.fetchEntitiesByPointers(EntityType.PROFILE, ethAddresses)
+async function extractData(entity: Entity): Promise<{
+  ethAddress: string
+  metadata: ProfileMetadata
+  content: Map<string, ContentFileHash>
+  names: string[]
+  wearables: WearableId[]
+}> {
+  const ethAddress = entity.pointers[0]
+  const metadata: ProfileMetadata = entity.metadata
+  const content = new Map((entity.content ?? []).map(({ file, hash }) => [file, hash]))
+  const filteredNames = metadata.avatars.map(({ name }) => name).filter((name) => name && name.trim().length > 0)
+  // Add timestamp to the metadata
+  metadata.timestamp = entity.timestamp
+  // Validate wearables urn
+  const filteredWearables = await validateWearablesUrn(metadata)
 
-    const profilesMetadataForSnapshots: ProfileMetadataForSnapshots[] = entities
-      .filter((entity) => !!entity.metadata)
-      .map((entity) => {
-        const ethAddress: EthAddress = entity.pointers[0]
-        const metadata: ProfileMetadata = entity.metadata
-        const avatar: Avatar = metadata.avatars[0].avatar
-        const content = new Map((entity.content ?? []).map(({ file, hash }) => [file, hash]))
-        const profileMetadataForSnapshots: ProfileMetadataForSnapshots = {
-          ethAddress,
-          avatars: [
-            {
-              avatar: {
-                snapshots: addBaseUrlToSnapshots(client.getExternalContentServerUrl(), avatar, content)
-              }
-            }
-          ]
-        }
-        return profileMetadataForSnapshots
-      })
-    return profilesMetadataForSnapshots
-  } catch (error) {
-    console.log(error)
-    LOGGER.warn(error)
-    return []
+  return { ethAddress, metadata, content, names: filteredNames, wearables: filteredWearables }
+}
+
+async function validateWearablesUrn(metadata: ProfileMetadata) {
+  const allWearablesInProfilePromises: Promise<WearableId | undefined>[] = []
+  for (const avatar of metadata.avatars) {
+    for (const wearableId of avatar.avatar.wearables) {
+      if (!isBaseAvatar(wearableId)) {
+        allWearablesInProfilePromises.push(translateWearablesIdFormat(wearableId))
+      }
+    }
   }
+  const filteredWearables = (await Promise.all(allWearablesInProfilePromises)).filter(
+    (wearableId): wearableId is WearableId => !!wearableId
+  )
+  return filteredWearables
 }
 
 /**
@@ -237,7 +237,8 @@ function fixWearableId(wearableIds: WearableId[]): WearableId[] {
   return wearableIds.map(fixId)
 }
 /**
- * We are sanitizing the wearables that are being worn. This includes removing any wearables that is not currently owned, and transforming all of them into the new format
+ * We are sanitizing the wearables that are being worn. This includes removing any wearables that is not currently owned,
+ * and transforming all of them into the new format
  */
 async function sanitizeWearables(
   wearablesInProfile: WearableId[],
