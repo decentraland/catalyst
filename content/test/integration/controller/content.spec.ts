@@ -26,8 +26,6 @@ loadStandaloneTestEnvironment()('Integration - Get Content', (testEnv) => {
     const url = server.getUrl() + `/contents/${id}`
     const res = await fetch(url, { method: 'HEAD' })
 
-    let text = (await res.buffer()).toString()
-
     expect(res.status).toBe(200)
     expect(res.headers.get('content-length')).toBe(content.length.toString())
 
@@ -45,8 +43,6 @@ loadStandaloneTestEnvironment()('Integration - Get Content', (testEnv) => {
     const url = server.getUrl() + `/contents/non-existent-file`
     const res = await fetch(url)
 
-    let text = (await res.buffer()).toString()
-
     expect(res.status).toBe(404)
   })
 
@@ -59,8 +55,6 @@ loadStandaloneTestEnvironment()('Integration - Get Content', (testEnv) => {
 
     const url = server.getUrl() + `/contents/non-existent-file`
     const res = await fetch(url, { method: 'HEAD' })
-
-    let text = (await res.buffer()).toString()
 
     expect(res.status).toBe(404)
   })

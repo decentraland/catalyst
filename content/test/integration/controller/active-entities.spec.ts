@@ -272,16 +272,17 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       expect(newEntityId).not.toBe(entityId)
       expect(newEntityId).not.toBe('NOT_ACTIVE_ENTITY')
       expect(activeEntities.getCachedEntity('0,1')).toBe(newEntityId)
-
-      const notActiveEntity = activeEntities.getCachedEntity(entityId)
-      expect(notActiveEntity).toBe('NOT_ACTIVE_ENTITY')
+      expect(entityId).toBeDefined()
+      if(entityId) {
+        const notActiveEntity = activeEntities.getCachedEntity(entityId)
+        expect(notActiveEntity).toBe('NOT_ACTIVE_ENTITY')
+      }
     })
 
     it('when fetching multiple active entities, all are cached', async () => {
       const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
       makeNoopValidator(server.components)
       await server.startProgram()
-      const activeEntities = server.components.activeEntities
       const firstPointers = ['0,0', '0,1']
       const { deployData } = await buildDeployData(firstPointers, {
         metadata: 'this is just some metadata',

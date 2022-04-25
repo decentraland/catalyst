@@ -69,7 +69,8 @@ describe('fileSystemContentStorage', () => {
     const goodCompresstionRatioContent = Buffer.from(new Uint8Array(100).fill(0))
     await fileSystemContentStorage.storeStreamAndCompress(id, bufferToStream(goodCompresstionRatioContent))
     const compressedFile = await fileSystemContentStorage.retrieve(id)
-    expect((await compressedFile.asRawStream()).encoding).toBe('gzip')
+    expect(compressedFile).toBeDefined()
+    expect((await compressedFile!.asRawStream()).encoding).toBe('gzip')
     expect(await fs.existPath(filePath)).toBeFalsy()
     expect(await fs.existPath(filePath + '.gzip')).toBeTruthy()
   })
@@ -78,7 +79,7 @@ describe('fileSystemContentStorage', () => {
     await fileSystemContentStorage.storeStream(id, bufferToStream(content))
     await fileSystemContentStorage.storeStream(id2, bufferToStream(content2))
     const fileIds = fileSystemContentStorage.allFileIds()
-    const seenIds = []
+    const seenIds: string[] = []
     for await (const fileId of fileIds) seenIds.push(fileId)
     expect(seenIds).toEqual(expect.arrayContaining([id, id2]))
   })
@@ -88,7 +89,7 @@ describe('fileSystemContentStorage', () => {
     await fileSystemContentStorage.storeStreamAndCompress(id, bufferToStream(goodCompresstionRatioContent))
     await fileSystemContentStorage.storeStream(id2, bufferToStream(content2))
     const fileIds = fileSystemContentStorage.allFileIds()
-    const seenIds = []
+    const seenIds: string[] = []
     for await (const fileId of fileIds) seenIds.push(fileId)
     expect(seenIds).toEqual(expect.arrayContaining([id, id2]))
   })

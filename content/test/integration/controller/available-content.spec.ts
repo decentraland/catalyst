@@ -14,8 +14,6 @@ loadStandaloneTestEnvironment()('Integration - Available Content', (testEnv) => 
     const url = server.getUrl() + `/available-content`
     const res = await fetch(url)
 
-    let text = (await res.buffer()).toString()
-
     expect(res.status).toBe(400)
   })
 })
