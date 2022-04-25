@@ -237,6 +237,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const migrationManager = MigrationManagerFactory.create({ logs, env })
 
+  env.logConfigValues(logs.getLogger('Environment'))
+
   const server = new Server({ controller, metrics, env, logs, fs })
 
   return {

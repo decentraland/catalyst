@@ -80,6 +80,16 @@ export type AppComponents = {
   repository: Repository
 }
 
+export type MaintenanceComponents = {
+  env: Environment
+  metrics: IMetricsComponent<keyof typeof metricsDeclaration>
+  logs: ILoggerComponent
+  database: IDatabaseComponent
+  storage: ContentStorage
+  fs: FSComponent
+  migrationManager: MigrationManager
+}
+
 export type Timestamp = number
 
 export enum EntityVersion {
