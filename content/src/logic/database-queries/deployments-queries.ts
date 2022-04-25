@@ -43,7 +43,10 @@ export interface HistoricalDeploymentsRow {
   overwritten_by?: string
 }
 
-export async function deploymentExists(components: Pick<AppComponents, 'database'>, entityId: string) {
+export async function deploymentExists(
+  components: Pick<AppComponents, 'database'>,
+  entityId: string
+): Promise<boolean> {
   const { database } = components
 
   const result = await database.queryWithValues(SQL`
@@ -55,7 +58,9 @@ export async function deploymentExists(components: Pick<AppComponents, 'database
   return result.rowCount > 0
 }
 
-export async function* streamAllEntityIds(components: Pick<AppComponents, 'database'>) {
+export async function* streamAllEntityIds(
+  components: Pick<AppComponents, 'database'>
+): AsyncIterable<{ entityId: string }> {
   const { database } = components
 
   for await (const row of database.streamQuery(
