@@ -415,10 +415,10 @@
   dependencies:
     ajv "^7.1.0"
 
-"@dcl/schemas@4.5.1", "@dcl/schemas@^4.0.0":
-  version "4.5.1"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-4.5.1.tgz#483a7e1a409e3503f01b341d1a578f215a36abb3"
-  integrity sha512-Z0jHcLXLfAvpEXlwCMJs+X/X61qCgaHzQUVTf5WyxRE3hWS+AF0lWXgQ8980jATH0BC+e/apvbY9FCGycvsipQ==
+"@dcl/schemas@4.6.0", "@dcl/schemas@^4.0.0":
+  version "4.6.0"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-4.6.0.tgz#1896d5ec2975e2626af0c388f896a1ff2e5bdee7"
+  integrity sha512-2+HV4QsnfQqL1bU8OQyPF6WHRIxariZfIH+iWkSKc2hg1QLUkioPKsfWvhBtC18Uwl+loKQGuoslYB+cWQATVg==
   dependencies:
     ajv "^7.1.0"
 
