@@ -15,7 +15,7 @@ import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
 import { createActiveEntitiesComponent } from './ports/activeEntities'
 import { createFileSystemContentStorage } from './ports/contentStorage/fileSystemContentStorage'
 import { createDenylist } from './ports/denylist'
-import { createDeploymentListComponent } from './ports/deploymentListComponent'
+import { createDeployedEntitiesFilter } from './ports/deployedEntitiesFilter'
 import { createDeployRateLimiter } from './ports/deployRateLimiterComponent'
 import { createFailedDeploymentsCache } from './ports/failedDeploymentsCache'
 import { createFetchComponent } from './ports/fetcher'
@@ -103,7 +103,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const validator = createValidator({ storage, authenticator, catalystFetcher, env, logs })
   const serverValidator = createServerValidator({ failedDeploymentsCache, metrics })
 
-  const deployedEntitiesFilter = createDeploymentListComponent({ database, logs })
+  const deployedEntitiesFilter = createDeployedEntitiesFilter({ database, logs })
   const activeEntities = createActiveEntitiesComponent({ database, env, logs, metrics, denylist, sequentialExecutor })
 
   const deployer: MetaverseContentService = new ServiceImpl({

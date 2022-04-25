@@ -1,18 +1,19 @@
 import { IBaseComponent } from '@well-known-components/interfaces'
 import * as bf from 'bloom-filters'
 import future from 'fp-future'
+import { runLoggingPerformance } from '../instrument'
 import { streamAllEntityIds } from '../logic/database-queries/deployments-queries'
 import { AppComponents } from '../types'
 
-export type DeploymentListComponent = {
+export type DeployedEntitiesFilter = {
   add(entityId: string): void
-  has(entityId: string): Promise<boolean>
+  check(entityId: string): Promise<boolean>
 }
 
-export function createDeploymentListComponent(
+export function createDeployedEntitiesFilter(
   components: Pick<AppComponents, 'database' | 'logs'>
-): DeploymentListComponent & IBaseComponent {
-  const logger = components.logs.getLogger('DeploymentListComponent')
+): DeployedEntitiesFilter & IBaseComponent {
+  const logger = components.logs.getLogger('DeployedEntitiesFilter')
 
   const deploymentsBloomFilter = bf.BloomFilter.create(5_000_000, 0.001)
 
@@ -37,12 +38,12 @@ export function createDeploymentListComponent(
     add(entityId: string) {
       deploymentsBloomFilter.add(entityId)
     },
-    async has(entityId: string) {
+    async check(entityId: string) {
       await initialized
       return deploymentsBloomFilter.has(entityId)
     },
     async start() {
-      await addFromDb()
+      await runLoggingPerformance(logger, 'Populate Bloom Filter', async () => await addFromDb())
       initialized.resolve()
     }
   }
