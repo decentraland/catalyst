@@ -11,6 +11,7 @@ import { NFTOwnership } from '../../../../src/apis/profiles/NFTOwnership'
 import { WearablesOwnership } from '../../../../src/apis/profiles/WearablesOwnership'
 import { SmartContentClient } from '../../../../src/utils/SmartContentClient'
 import { TheGraphClient } from '../../../../src/utils/TheGraphClient'
+import * as thirdParty from '../../../../src/utils/third-party'
 
 const EXTERNAL_URL = 'https://content-url.com'
 
@@ -18,10 +19,9 @@ describe('profiles', () => {
   const SOME_ADDRESS = '0x079bed9c31cb772c4c156f86e1cff15bf751add0'
   const SOME_NAME = 'NFTName'
   const WEARABLE_ID_1 = 'someCollection-someWearable'
+  const TPW_ID = 'urn:decentraland:mumbai:collections-thirdparty:jean-pier:testing-deployment-6:eed7e679-4b5b-455a-a76b-7ce6c0e3bee3'
   const theGraphClient = theGraph()
 
-
-  // TODO: Add a test for TPW here
   it(`When profiles are fetched and NFTs are owned, then the returned profile is the same as the content server`, async () => {
     const { entity, metadata } = profileWith(SOME_ADDRESS, { name: SOME_NAME, wearables: [WEARABLE_ID_1] })
     const client = contentServerThatReturns(entity)
@@ -58,6 +58,35 @@ describe('profiles', () => {
     expect(profiles.length).toEqual(1)
     expect(profiles[0].avatars[0].avatar.wearables.length).toEqual(0)
   })
+
+  it(`When having TPW owned, then they are shown`, async () => {
+    const { entity, metadata } = profileWith(SOME_ADDRESS, { name: SOME_NAME, wearables: [TPW_ID] })
+    const client = contentServerThatReturns(entity)
+    const ensOwnership = ownedNFTs(EnsOwnership, SOME_ADDRESS, SOME_NAME)
+    const wearablesOwnership = noNFTs(WearablesOwnership)
+    const checkTPWOwnership = jest.spyOn(thirdParty, 'checkForThirdPartyWearablesOwnership')
+    checkTPWOwnership.mockReturnValue(Promise.resolve(new Map([[SOME_ADDRESS, [TPW_ID]]])))
+
+    const profiles = (await fetchProfiles([SOME_ADDRESS], theGraphClient, client, ensOwnership, wearablesOwnership))!
+
+    expect(profiles.length).toEqual(1)
+    expect(profiles[0]).toEqual(metadata)
+  })
+
+  it(`When some of the 3TPW worn wearables are not owned, then they are filtered out`, async () => {
+    const { entity } = profileWith(SOME_ADDRESS, { wearables: [TPW_ID] })
+    const client = contentServerThatReturns(entity)
+    const ensOwnership = noNFTs(EnsOwnership)
+    const wearablesOwnership = noNFTs(WearablesOwnership)
+    const checkTPWOwnership = jest.spyOn(thirdParty, 'checkForThirdPartyWearablesOwnership')
+    checkTPWOwnership.mockReturnValue(Promise.resolve(new Map()))
+
+    const profiles = (await fetchProfiles([SOME_ADDRESS], theGraphClient, client, ensOwnership, wearablesOwnership))!
+
+    expect(profiles.length).toEqual(1)
+    expect(profiles[0].avatars[0].avatar.wearables.length).toEqual(0)
+  })
+
 
   it(`When the is no profile with that address, then an empty list is returned`, async () => {
     const client = contentServerThatReturns()

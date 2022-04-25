@@ -134,7 +134,6 @@ export async function fetchProfiles(
   try {
     const profilesEntities: Entity[] = await contentClient.fetchEntitiesByPointers(EntityType.PROFILE, ethAddresses)
 
-    console.log('[AGUS]')
     // Avoid querying profiles if there wasn't any new deployment
     if (
       ifModifiedSinceTimestamp &&
@@ -142,7 +141,6 @@ export async function fetchProfiles(
     )
       return
 
-    console.log('[TINA]')
     const profilesMap: Map<EthAddress, { metadata: ProfileMetadata; content: Map<string, ContentFileHash> }> = new Map()
     const namesMap: Map<EthAddress, string[]> = new Map()
     const wearablesMap: Map<EthAddress, WearableId[]> = new Map()
@@ -153,19 +151,13 @@ export async function fetchProfiles(
       .map(async (entity) => {
         const { ethAddress, metadata, content, names, wearables } = await extractData(entity)
 
-        console.log(`[AGUS] address: ${ethAddress} with wearables: ${wearables.join(',')}`)
         profilesMap.set(ethAddress, { metadata, content })
         namesMap.set(ethAddress, names)
         wearablesMap.set(ethAddress, wearables)
       })
     await Promise.all(entityPromises)
 
-    for (const k in wearablesMap.keys()) {
-      console.log(`[AGUS] wearables Map: ${k} & ${wearablesMap.get(k)?.join(',')}`)
-    }
     //Check which NFTs are owned
-
-    console.log(`[AGUS] K ONDA 1`)
     const ownedWearablesPromise = wearablesOwnership.areNFTsOwned(wearablesMap)
     const ownedENSPromise = ensOwnership.areNFTsOwned(namesMap)
     const thirdPartyWearablesPromise = checkForThirdPartyWearablesOwnership(theGraphClient, contentClient, wearablesMap)
@@ -174,18 +166,6 @@ export async function fetchProfiles(
       ownedENSPromise,
       thirdPartyWearablesPromise
     ])
-
-    console.log(`[AGUS] K ONDA 2`)
-    for (const k in ownedWearables.keys()) {
-      console.log(`[AGUS] wearables: ${k} `)
-    }
-
-    ownedENS.forEach((v, k) => {
-      console.log(`[AGUS] ens: ${k}`)
-    })
-    thirdPartyWearables.forEach((v, k) => {
-      console.log(`[AGUS] tpw: ${k}`)
-    })
 
     // Add name data and snapshot urls to profiles
     const result = Array.from(profilesMap.entries()).map(async ([ethAddress, profile]) => {

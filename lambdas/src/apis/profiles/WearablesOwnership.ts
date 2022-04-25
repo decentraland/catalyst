@@ -13,7 +13,6 @@ export class WearablesOwnership extends NFTOwnership {
   protected async querySubgraph(
     nftsToCheck: [EthAddress, string[]][]
   ): Promise<{ ownedNFTs: string[]; owner: string }[]> {
-    console.log(`[holi] nfts: ${nftsToCheck.join(',')}`)
     const result = await this.theGraphClient.checkForWearablesOwnership(nftsToCheck)
     return result.map(({ urns, owner }) => ({ ownedNFTs: urns, owner }))
   }
