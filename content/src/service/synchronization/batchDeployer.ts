@@ -106,7 +106,6 @@ export function createBatchDeployerComponent(
               DeploymentContext.SYNCED
             )
 
-            components.deployedEntitiesFilter.add(entity.entityId)
             successfulDeployments.add(entity.entityId)
             deploymentsMap.delete(entity.entityId)
           } catch (err: any) {
