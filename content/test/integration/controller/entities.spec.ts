@@ -15,8 +15,6 @@ loadStandaloneTestEnvironment()('Integration - Entities', (testEnv) => {
     const url = server.getUrl() + `/entities`
     const res = await fetch(url, {method: 'POST'})
 
-    let text = (await res.buffer()).toString()
-
     expect(res.status).toBe(500)
   })
 })

@@ -19,8 +19,6 @@ loadStandaloneTestEnvironment()('Integration - Audit', (testEnv) => {
     const url = server.getUrl() + `/audit/profile/${entity.entity.id}`
     const res = await fetch(url)
 
-    let text = (await res.buffer()).toString()
-
     expect(res.status).toBe(200)
   })
 
@@ -34,8 +32,6 @@ loadStandaloneTestEnvironment()('Integration - Audit', (testEnv) => {
     const url = server.getUrl() + `/audit/non-existent-type/non-existent-entity`
     const res = await fetch(url)
 
-    let text = (await res.buffer()).toString()
-
     expect(res.status).toBe(400)
   })
 
@@ -48,8 +44,6 @@ loadStandaloneTestEnvironment()('Integration - Audit', (testEnv) => {
 
     const url = server.getUrl() + `/audit/profile/non-existent-entity`
     const res = await fetch(url)
-
-    let text = (await res.buffer()).toString()
 
     expect(res.status).toBe(404)
   })

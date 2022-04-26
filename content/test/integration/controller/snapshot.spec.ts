@@ -15,8 +15,6 @@ loadStandaloneTestEnvironment()('Integration - Snapshot', (testEnv) => {
     const url = server.getUrl() + `/snapshot`
     const res = await fetch(url)
 
-    let text = (await res.buffer()).toString()
-
     expect(res.status).toBe(503)
   })
 })

@@ -58,7 +58,6 @@ loadTestEnvironment()('End 2 end - Error handling', (testEnv) => {
       metadata: 'metadata',
       contentPaths: ['test/integration/resources/some-binary-file.png']
     })
-    const entity1Content = entityBeingDeployed1.content![0].hash
 
     // Deploy entity 1
     await server1.deploy(deployData1)

@@ -14,8 +14,6 @@ loadStandaloneTestEnvironment()('Integration - Status', (testEnv) => {
     const url = server.getUrl() + `/status`
     const res = await fetch(url)
 
-    let text = (await res.buffer()).toString()
-
     expect(res.status).toBe(200)
   })
 })

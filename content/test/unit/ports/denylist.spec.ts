@@ -70,7 +70,7 @@ describe('when creating a denylist', () => {
           { text: () => Promise.resolve(`denied3\ndenied4`)} as Partial<Response>
         )
       }
-      const denylist = await createDenylist({ env, logs, fs, fetcher })
+      await createDenylist({ env, logs, fs, fetcher })
       expect(fetcher.fetch).toBeCalledWith('https://config.decentraland.org/denylist')
       expect(fetcher.fetch).not.toBeCalledWith('invalidUrl')
     })
@@ -146,7 +146,7 @@ describe('when the denylist is stopped', () => {
     env.setConfig(EnvironmentConfig.DENYLIST_FILE_NAME, 'denylist.txt')
     beforeAll(() => jest.useFakeTimers())
     afterAll(() => jest.useRealTimers())
-    it ('should not reaload and add new elements after two minutes', async () => {
+    it ('should not reload and add new elements after two minutes', async () => {
       const fs = {
         createReadStream: jest.fn()
         .mockReturnValueOnce(Readable.from(`# Denylisted items:
@@ -160,7 +160,7 @@ describe('when the denylist is stopped', () => {
       }
       const denylist = await createDenylist({ env, logs, fs, fetcher })
       expect(['denied1', 'denied2'].every((item) => denylist.isDenylisted(item))).toBe(true)
-      denylist.stop()
+      denylist.stop && denylist.stop()
       jest.advanceTimersByTime(120_00)
       await flushPromises()
       expect(denylist.isDenylisted('denied3')).toBe(false)
