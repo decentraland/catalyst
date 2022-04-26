@@ -24,7 +24,6 @@ describe('isEntityDeployed', () => {
   it('when deployedEntitiesBloomFilter returns false, then it should not call the database', async () => {
     const database = createTestDatabaseComponent()
     database.queryWithValues = jest.fn().mockResolvedValue({rowCount: 1})
-    const metricsSpy = jest.spyOn(metrics, 'increment')
     const components = {
       metrics,
       database,
