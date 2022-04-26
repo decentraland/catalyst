@@ -22,7 +22,7 @@
     "dcl-catalyst-client": "^11.3.0",
     "dcl-catalyst-commons": "^8.2.0",
     "dcl-crypto": "2.3.0",
-    "express": "4.17.1",
+    "express": "4.18.0",
     "express-openapi-validator": "4.13.7",
     "fp-future": "1.0.1",
     "log4js": "6.4.6",
