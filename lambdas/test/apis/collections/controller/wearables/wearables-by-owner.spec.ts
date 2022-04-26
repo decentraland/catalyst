@@ -9,6 +9,7 @@ import { createThirdPartyResolver, ThirdPartyFetcher } from '../../../../../src/
 const SOME_ADDRESS = '0x079bed9c31cb772c4c156f86e1cff15bf751add0'
 const WEARABLE_ID_1 = 'someCollection-someWearable'
 const WEARABLE_ID_2 = 'someOtherCollection-someOtherWearable'
+const TPW_WEARABLE_ID = 'urn:decentraland:mumbai:collections-thirdparty:some-third-party:someWearable'
 const WEARABLE_METADATA = {
   id: 'someId',
   someProperty: 'someValue',
@@ -76,9 +77,9 @@ describe('wearables by owner', () => {
   it(`When third party wearable collectionId is present, it should return the corresponding one`, async () => {
     const { instance: thirdPartyFetcherInstance, mock: thirdPartyFetcherMock } = thirdPartyFetcher([
       {
-        id: WEARABLE_ID_1,
+        id: TPW_WEARABLE_ID,
         amount: 1,
-        urn: { decentraland: WEARABLE_ID_1 }
+        urn: { decentraland: TPW_WEARABLE_ID }
       }
     ])
     const { instance: thirdPartyGraphClientInstance, mock: thirdPartyGraphClientMock } = thirdPartyGraphClient()
@@ -88,15 +89,15 @@ describe('wearables by owner', () => {
       thirdPartyFetcherInstance,
       'urn:decentraland:mumbai:collections-thirdparty:some-third-party'
     )
-    const { instance: contentClient, mock: contentClientMock } = contentServerThatReturns(WEARABLE_ID_1)
+    const { instance: contentClient, mock: contentClientMock } = contentServerThatReturns(TPW_WEARABLE_ID)
 
     const wearables = await getWearablesByOwner(SOME_ADDRESS, true, contentClient, resolver)
 
     expect(wearables.length).toEqual(1)
     const [wearable] = wearables
-    expect(wearable.urn).toBe(WEARABLE_ID_1)
+    expect(wearable.urn).toBe(TPW_WEARABLE_ID)
     expect(wearable.amount).toBe(1)
-    expect(wearable.definition).toEqual({ ...WEARABLE_METADATA, id: WEARABLE_ID_1 })
+    expect(wearable.definition).toEqual({ ...WEARABLE_METADATA, id: TPW_WEARABLE_ID })
     verify(contentClientMock.fetchEntitiesByPointers(anything(), anything())).once()
     verify(thirdPartyFetcherMock.fetchAssets(anything(), anything(), anything())).once()
     verify(thirdPartyGraphClientMock.findThirdPartyResolver(anything(), anything())).once()
