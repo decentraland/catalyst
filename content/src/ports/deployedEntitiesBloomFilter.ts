@@ -5,15 +5,15 @@ import { runLoggingPerformance } from '../instrument'
 import { streamAllEntityIds } from '../logic/database-queries/deployments-queries'
 import { AppComponents } from '../types'
 
-export type DeployedEntitiesFilter = {
+export type DeployedEntitiesBloomFilter = {
   add(entityId: string): void
   check(entityId: string): Promise<boolean>
 }
 
-export function createDeployedEntitiesFilter(
+export function createDeployedEntitiesBloomFilter(
   components: Pick<AppComponents, 'database' | 'logs'>
-): DeployedEntitiesFilter & IBaseComponent {
-  const logger = components.logs.getLogger('DeployedEntitiesFilter')
+): DeployedEntitiesBloomFilter & IBaseComponent {
+  const logger = components.logs.getLogger('DeployedEntitiesBloomFilter')
 
   const deploymentsBloomFilter = bf.BloomFilter.create(5_000_000, 0.001)
 

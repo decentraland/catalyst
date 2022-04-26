@@ -25,7 +25,7 @@ export function createBatchDeployerComponent(
     | 'downloadQueue'
     | 'staticConfigs'
     | 'database'
-    | 'deployedEntitiesFilter'
+    | 'deployedEntitiesBloomFilter'
     | 'storage'
   >,
   syncOptions: {

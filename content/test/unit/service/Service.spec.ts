@@ -11,7 +11,7 @@ import * as pointers from '../../../src/logic/database-queries/pointers-queries'
 import { metricsDeclaration } from '../../../src/metrics'
 import { createActiveEntitiesComponent } from '../../../src/ports/activeEntities'
 import { Denylist } from '../../../src/ports/denylist'
-import { createDeployedEntitiesFilter } from '../../../src/ports/deployedEntitiesFilter'
+import { createDeployedEntitiesBloomFilter } from '../../../src/ports/deployedEntitiesBloomFilter'
 import { createDeployRateLimiter } from '../../../src/ports/deployRateLimiterComponent'
 import { createFailedDeploymentsCache } from '../../../src/ports/failedDeploymentsCache'
 import { createFetchComponent } from '../../../src/ports/fetcher'
@@ -236,7 +236,7 @@ describe('Service', function() {
     const pointerManager = NoOpPointerManager.build()
     const authenticator = new ContentAuthenticator('', DECENTRALAND_ADDRESS)
     const database = await createDatabaseComponent({ logs, env, metrics })
-    const deployedEntitiesFilter = createDeployedEntitiesFilter({ database, logs })
+    const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs })
     env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)
     const fs = createFsComponent()
     const fetcher = createFetchComponent()
@@ -258,7 +258,7 @@ describe('Service', function() {
       logs,
       authenticator,
       database,
-      deployedEntitiesFilter,
+      deployedEntitiesBloomFilter: deployedEntitiesBloomFilter,
       activeEntities,
       denylist
     })

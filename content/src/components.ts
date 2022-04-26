@@ -15,7 +15,7 @@ import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
 import { createActiveEntitiesComponent } from './ports/activeEntities'
 import { createFileSystemContentStorage } from './ports/contentStorage/fileSystemContentStorage'
 import { createDenylist } from './ports/denylist'
-import { createDeployedEntitiesFilter } from './ports/deployedEntitiesFilter'
+import { createDeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
 import { createDeployRateLimiter } from './ports/deployRateLimiterComponent'
 import { createFailedDeploymentsCache } from './ports/failedDeploymentsCache'
 import { createFetchComponent } from './ports/fetcher'
@@ -103,7 +103,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const validator = createValidator({ storage, authenticator, catalystFetcher, env, logs })
   const serverValidator = createServerValidator({ failedDeploymentsCache, metrics })
 
-  const deployedEntitiesFilter = createDeployedEntitiesFilter({ database, logs })
+  const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs })
   const activeEntities = createActiveEntitiesComponent({ database, env, logs, metrics, denylist, sequentialExecutor })
 
   const deployer: MetaverseContentService = new ServiceImpl({
@@ -120,7 +120,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     logs,
     authenticator,
     database,
-    deployedEntitiesFilter,
+    deployedEntitiesBloomFilter,
     activeEntities,
     denylist
   })
@@ -155,7 +155,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       metrics,
       deployer,
       staticConfigs,
-      deployedEntitiesFilter,
+      deployedEntitiesBloomFilter: deployedEntitiesBloomFilter,
       storage
     },
     {
@@ -252,7 +252,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     batchDeployer,
     downloadQueue,
     synchronizationJobManager,
-    deployedEntitiesFilter,
+    deployedEntitiesBloomFilter: deployedEntitiesBloomFilter,
     controller,
     repository,
     synchronizationManager,

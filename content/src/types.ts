@@ -13,7 +13,7 @@ import { MigrationManager } from './migrations/MigrationManager'
 import { ActiveEntities } from './ports/activeEntities'
 import { ContentStorage } from './ports/contentStorage/contentStorage'
 import { Denylist } from './ports/denylist'
-import { DeployedEntitiesFilter } from './ports/deployedEntitiesFilter'
+import { DeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
 import { IDeployRateLimiterComponent } from './ports/deployRateLimiterComponent'
 import { IFailedDeploymentsCacheComponent } from './ports/failedDeploymentsCache'
 import { FSComponent } from './ports/fs'
@@ -51,7 +51,7 @@ export type AppComponents = {
   batchDeployer: IDeployerComponent
   synchronizationJobManager: JobLifecycleManagerComponent
   synchronizationManager: ISynchronizationManager
-  deployedEntitiesFilter: DeployedEntitiesFilter
+  deployedEntitiesBloomFilter: DeployedEntitiesBloomFilter
   controller: Controller
   snapshotManager: ISnapshotManager
   challengeSupervisor: IChallengeSupervisor

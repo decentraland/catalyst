@@ -8,22 +8,22 @@ import { AppComponents } from '../types'
 import { deploymentExists } from './database-queries/deployments-queries'
 
 export async function isEntityDeployed(
-  components: Pick<AppComponents, 'deployedEntitiesFilter' | 'database' | 'metrics'>,
+  components: Pick<AppComponents, 'deployedEntitiesBloomFilter' | 'database' | 'metrics'>,
   entityId: string
 ): Promise<boolean> {
   // this condition should be carefully handled:
   // 1) it first uses the bloom filter to know wheter or not an entity may exist or definitely don't exist (.check)
   // 2) then it checks against the DB (deploymentExists)
-  if (await components.deployedEntitiesFilter.check(entityId)) {
+  if (await components.deployedEntitiesBloomFilter.check(entityId)) {
     if (await deploymentExists(components, entityId)) {
-      components.metrics.increment('dcl_deployed_entities_filter_checks_total', { false_positive: 'no' })
+      components.metrics.increment('dcl_deployed_entities_bloom_filter_checks_total', { hit: 'true' })
       return true
     } else {
-      components.metrics.increment('dcl_deployed_entities_filter_checks_total', { false_positive: 'yes' })
+      components.metrics.increment('dcl_deployed_entities_bloom_filter_checks_total', { hit: 'false' })
       return false
     }
   } else {
-    components.metrics.increment('dcl_deployed_entities_filter_checks_total', { false_positive: 'no' })
+    components.metrics.increment('dcl_deployed_entities_bloom_filter_checks_total', { hit: 'true' })
     return false
   }
 }

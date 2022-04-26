@@ -55,7 +55,7 @@ export class ServiceImpl implements MetaverseContentService {
       | 'logs'
       | 'authenticator'
       | 'database'
-      | 'deployedEntitiesFilter'
+      | 'deployedEntitiesBloomFilter'
       | 'env'
       | 'activeEntities'
       | 'denylist'
@@ -180,7 +180,7 @@ export class ServiceImpl implements MetaverseContentService {
       }
 
       // add the entity to the bloom filter to prevent expensive operations during the sync
-      this.components.deployedEntitiesFilter.add(entity.id)
+      this.components.deployedEntitiesBloomFilter.add(entity.id)
 
       if (!storeResult.auditInfoComplete.localTimestamp) {
         ServiceImpl.LOGGER.error(`auditInfoComplete is misbehaving`, {
