@@ -25,7 +25,7 @@ export function createBatchDeployerComponent(
     | 'downloadQueue'
     | 'staticConfigs'
     | 'database'
-    | 'deployedEntitiesFilter'
+    | 'deployedEntitiesBloomFilter'
     | 'storage'
   >,
   syncOptions: {
@@ -106,7 +106,6 @@ export function createBatchDeployerComponent(
               DeploymentContext.SYNCED
             )
 
-            components.deployedEntitiesFilter.add(entity.entityId)
             successfulDeployments.add(entity.entityId)
             deploymentsMap.delete(entity.entityId)
           } catch (err: any) {
