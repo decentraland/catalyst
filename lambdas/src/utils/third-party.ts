@@ -46,7 +46,11 @@ export const createThirdPartyResolver = async (
     findWearablesByOwner: async (owner) => {
       const assetsByOwner = await thirdPartyFetcher.fetchAssets(thirdPartyResolverAPI, thirdPartyId.registryId, owner)
       if (!assetsByOwner) throw new Error(`Could not fetch assets for owner: ${owner}`)
-      return assetsByOwner?.map((asset) => asset.urn.decentraland) ?? []
+      return (
+        assetsByOwner
+          ?.filter((asset) => asset.urn.decentraland.startsWith(collectionId))
+          .map((asset) => asset.urn.decentraland) ?? []
+      )
     }
   }
 }
