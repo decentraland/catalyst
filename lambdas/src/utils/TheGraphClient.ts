@@ -380,7 +380,7 @@ export class TheGraphClient {
 
 const QUERY_THIRD_PARTIES = `
 {
-  thirdParties {
+  thirdParties(where: {isApproved: true}) {
     id
 		metadata {
       thirdParty {
