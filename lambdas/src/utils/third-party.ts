@@ -48,7 +48,7 @@ export const createThirdPartyResolver = async (
       if (!assetsByOwner) throw new Error(`Could not fetch assets for owner: ${owner}`)
       return (
         assetsByOwner
-          ?.filter((asset) => asset.urn.decentraland.startsWith(collectionId))
+          ?.filter((asset) => asset.urn.decentraland.startsWith(thirdPartyId.thirdPartyId))
           .map((asset) => asset.urn.decentraland) ?? []
       )
     }
