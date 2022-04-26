@@ -1,8 +1,11 @@
+import { WearableId } from '@dcl/schemas'
+import { DecentralandAssetIdentifier, parseUrn } from '@dcl/urn-resolver'
 import { fetchJson } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import log4js from 'log4js'
-import { FindWearablesByOwner } from '../apis/collections/controllers/wearables'
+import { FindWearablesByOwner, getWearablesByOwner } from '../apis/collections/controllers/wearables'
 import { ThirdPartyAsset, ThirdPartyAssets } from '../apis/collections/types'
+import { SmartContentClient } from './SmartContentClient'
 import { TheGraphClient } from './TheGraphClient'
 
 const LOGGER = log4js.getLogger('ThirdPartyResolver')
@@ -14,13 +17,13 @@ export interface ThirdPartyFetcher {
 export const createThirdPartyFetcher = (): ThirdPartyFetcher => ({
   fetchAssets: async (url: string, registryId: string, owner: EthAddress): Promise<ThirdPartyAsset[]> => {
     try {
-      const assetsByOnwer = (await fetchJson(`${url}/registry/${registryId}/address/${owner}/assets`, {
+      const assetsByOwner = (await fetchJson(`${url}/registry/${registryId}/address/${owner}/assets`, {
         timeout: '5000'
       })) as ThirdPartyAssets
 
-      if (!assetsByOnwer)
+      if (!assetsByOwner)
         LOGGER.debug(`No assets found with owner: ${owner}, url: ${url} and registryId: ${registryId}`)
-      return assetsByOnwer?.assets ?? []
+      return assetsByOwner?.assets ?? []
     } catch (e) {
       throw new Error(`Error fetching assets with owner: ${owner}, url: ${url} and registryId: ${registryId}`)
     }
@@ -59,6 +62,7 @@ type ThirdPartyId = {
 const parseCollectionId = (collectionId: string): ThirdPartyId => {
   const parts = collectionId.split(':')
 
+  // TODO: [TPW] Use urn parser here
   if (!(parts.length === 5 || parts.length === 6)) {
     throw new Error(`Couldn't parse collectionId ${collectionId}, valid ones are like:
     \n - urn:decentraland:{protocol}:collections-thirdparty:{third-party-name}
@@ -70,4 +74,40 @@ const parseCollectionId = (collectionId: string): ThirdPartyId => {
     thirdPartyId: parts.slice(0, 5).join(':'),
     registryId: parts[4]
   }
+}
+
+export async function checkForThirdPartyWearablesOwnership(
+  theGraphClient: TheGraphClient,
+  smartContentClient: SmartContentClient,
+  nftsToCheck: Map<EthAddress, WearableId[]>
+): Promise<Map<EthAddress, WearableId[]>> {
+  const response: Map<EthAddress, WearableId[]> = new Map()
+
+  for (const [address, wearables] of nftsToCheck) {
+    const collectionsForAddress: Set<WearableId> = new Set()
+    for (const wearable of wearables) {
+      try {
+        const parsedUrn: DecentralandAssetIdentifier | null = await parseUrn(wearable)
+        if (parsedUrn?.type === 'blockchain-collection-third-party') {
+          // TODO: [TPW] Do this with urn-resolver
+          const collectionId = parsedUrn.uri.toString().split(':').slice(0, -1).join(':')
+          collectionsForAddress.add(collectionId)
+        }
+      } catch (error) {
+        LOGGER.debug(`There was an error parsing the urn: ${wearable}`)
+      }
+    }
+    const ownedWearables: Set<string> = new Set()
+    for (const collectionId of collectionsForAddress.values()) {
+      const resolver = await createThirdPartyResolver(theGraphClient, createThirdPartyFetcher(), collectionId)
+      const wearablesByOwner = await getWearablesByOwner(address, true, smartContentClient, resolver)
+
+      for (const w of wearablesByOwner) {
+        ownedWearables.add(w.urn)
+      }
+    }
+    const sanitizedWearables = wearables.filter((w) => ownedWearables.has(w))
+    response.set(address, sanitizedWearables)
+  }
+  return response
 }
