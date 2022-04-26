@@ -11,7 +11,7 @@ import * as pointers from '../../../src/logic/database-queries/pointers-queries'
 import { metricsDeclaration } from '../../../src/metrics'
 import { createActiveEntitiesComponent } from '../../../src/ports/activeEntities'
 import { Denylist } from '../../../src/ports/denylist'
-import { createDeploymentListComponent } from '../../../src/ports/deploymentListComponent'
+import { createDeployedEntitiesBloomFilter } from '../../../src/ports/deployedEntitiesBloomFilter'
 import { createDeployRateLimiter } from '../../../src/ports/deployRateLimiterComponent'
 import { createFailedDeploymentsCache } from '../../../src/ports/failedDeploymentsCache'
 import { createDatabaseComponent } from '../../../src/ports/postgres'
@@ -234,7 +234,7 @@ describe('Service', function() {
     const pointerManager = NoOpPointerManager.build()
     const authenticator = new ContentAuthenticator('', DECENTRALAND_ADDRESS)
     const database = await createDatabaseComponent({ logs, env, metrics })
-    const deployedEntitiesFilter = createDeploymentListComponent({ database, logs })
+    const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs })
     env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)
     const denylist: Denylist = { isDenylisted: () => false }
     const sequentialExecutor = createSequentialTaskExecutor({ logs, metrics })
@@ -254,7 +254,7 @@ describe('Service', function() {
       logs,
       authenticator,
       database,
-      deployedEntitiesFilter,
+      deployedEntitiesBloomFilter: deployedEntitiesBloomFilter,
       activeEntities,
       denylist
     })

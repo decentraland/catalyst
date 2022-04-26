@@ -119,5 +119,10 @@ export const metricsDeclaration = validateMetricsDeclaration({
     help: 'Histogram of query duration to the database in seconds per query',
     type: 'histogram',
     labelNames: ['query', 'status'] // status=(success|error)
+  },
+  dcl_deployed_entities_bloom_filter_checks_total: {
+    help: 'Total number of deployments existence checks to the deployment list filter',
+    type: 'counter',
+    labelNames: ['hit'] // false_positive=(true|false)
   }
 })
