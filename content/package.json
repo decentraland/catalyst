@@ -72,7 +72,7 @@
     "jest-extra-utils": "^0.1.0",
     "jest-junit": "^13.0.0",
     "on-finished": "2.4.1",
-    "testcontainers": "2.8.1",
+    "testcontainers": "8.9.0",
     "ts-jest": "27.1.4"
   }
 }

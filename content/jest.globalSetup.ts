@@ -1,9 +1,10 @@
 import { CONTENT_API } from '@dcl/catalyst-api-specs'
 import { exec } from 'child_process'
+import Dockerode from "dockerode"
 import fs from 'fs'
 import path from 'path'
+import { PassThrough } from 'stream'
 import { GenericContainer } from 'testcontainers'
-import { Container } from 'testcontainers/dist/container'
 import { LogWaitStrategy } from 'testcontainers/dist/wait-strategy'
 import { promisify } from 'util'
 import { DEFAULT_DATABASE_CONFIG } from './src/Environment'
@@ -28,12 +29,14 @@ const globalSetup = async (): Promise<void> => {
     await deletePreviousPsql()
 
     // start postgres container and wait for it to be ready
-    const container = await new GenericContainer('postgres', '12')
+    // const container = await new GenericContainer('postgres', '12')
+    const container = await new GenericContainer('postgres:12')
       .withName(postgresContainerName)
       .withEnv('POSTGRES_PASSWORD', DEFAULT_DATABASE_CONFIG.password)
       .withEnv('POSTGRES_USER', DEFAULT_DATABASE_CONFIG.user)
       .withExposedPorts(E2ETestEnvironment.POSTGRES_PORT)
       .withWaitStrategy(new PostgresWaitStrategy())
+      // .withWaitStrategy(Wait.forLogMessage('database system is ready to accept connections'))
       .start()
 
     globalThis.__POSTGRES_CONTAINER__ = container
@@ -50,15 +53,19 @@ const globalSetup = async (): Promise<void> => {
 /** During startup, the db is restarted, so we need to wait for the log message twice */
 class PostgresWaitStrategy extends LogWaitStrategy {
   private static LOG = 'database system is ready to accept connections'
+  private static DOCKERODE = new Dockerode()
   constructor() {
     super(PostgresWaitStrategy.LOG)
   }
 
-  public async waitUntilReady(container: Container): Promise<void> {
+  public async waitUntilReady(container: Dockerode.Container): Promise<void> {
     let counter = 0
     return new Promise(async (resolve, reject) => {
-      const stream = await container.logs()
-      stream
+      const stream = await container.logs({ stdout: true, stderr: true, follow: true })
+      const demuxedStream = new PassThrough({ autoDestroy: true, encoding: "utf-8" });
+      PostgresWaitStrategy.DOCKERODE.modem.demuxStream(stream, demuxedStream, demuxedStream);
+      stream.on("end", () => demuxedStream.end());
+      demuxedStream
         .on('data', (line) => {
           if (line.toString().includes(PostgresWaitStrategy.LOG)) {
             counter++

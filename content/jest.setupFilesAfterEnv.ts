@@ -68,7 +68,6 @@ async function setupApiCoverage() {
   // Write API Coverage results to disk in order to let the Reporter read it
   // Jest tests run in a sandbox environment and it is not possible to pass data programatically
   afterAll(async () => {
-    const coverageDir = path.join(__dirname, 'coverage')
     await fs.promises.writeFile(coverageFilePath, JSON.stringify(coverage))
   })
 }
