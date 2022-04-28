@@ -59,7 +59,6 @@
     "@types/lru-cache": "5.1.1",
     "@types/morgan": "^1",
     "@types/multer": "^1",
-    "@types/node": "16.7.10",
     "@types/node-fetch": "3.0.3",
     "@types/on-finished": "2.3.1",
     "@types/pg": "^8",
