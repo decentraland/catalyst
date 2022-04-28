@@ -41,7 +41,7 @@
     "@types/on-finished": "2.3.1",
     "@types/pg": "^8",
     "@types/uuid": "^8",
-    "chalk": "4.1.2",
+    "chalk": "5.0.1",
     "columnify": "1.6.0",
     "destroy": "1.2.0",
     "faker": "5.5.3",
