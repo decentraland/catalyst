@@ -377,14 +377,14 @@
   resolved "https://registry.yarnpkg.com/@dcl/content-hash-tree/-/content-hash-tree-1.1.2.tgz#a7677825183605e8011a8efe45912c64486a0b7f"
   integrity sha512-uX3LfF844r7eBxmd6wE8uYU1as/MQfmTov2im6PXu/nI+AMxF+YNzLKDQ4mB0OVtAL3Yy0SEQpAPQgs3GbraXA==
 
-"@dcl/content-validator@1.4.3":
-  version "1.4.3"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-1.4.3.tgz#ec4c9fd2d11d132ff5160bdecef6bb53c64e5343"
-  integrity sha512-cDu0Sv8BzvNzpiUOcW1dg3MJucFTmcWd4VzMVGE8nH+HlDFY6+7sN0ceRbgTPmmIyEEhAPFvKJE+pPVB5OXoqw==
+"@dcl/content-validator@1.4.4":
+  version "1.4.4"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-1.4.4.tgz#22bd765c75ffcacfa68da0521e216dcd7faf2f9b"
+  integrity sha512-NJvfzL0iCqTAgTR7VDprhG8AlJ1SA/V95dRwkyZW6+Tn09ZXFICuKxsBw3HfhQp6QI/qqU/Ovr7PovfHOo5tRg==
   dependencies:
     "@dcl/content-hash-tree" "1.1.2"
     "@dcl/hashing" "1.1.0"
-    "@dcl/schemas" "4.3.0"
+    "@dcl/schemas" "4.7.0"
     "@dcl/urn-resolver" "1.3.1"
     "@ethersproject/address" "5.5.0"
     "@well-known-components/interfaces" "1.1.1"
@@ -405,13 +405,6 @@
   version "4.2.0"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-4.2.0.tgz#3bfb90bbd46a9a469c45ab30d4c77e0c5d13f48c"
   integrity sha512-+YwEYRkUPtDuGhUFKSEKZxMe+ETqdIn0TBMyY8cJt+FijalXzOEFAPVj17TTCxz4V8SOW5qj2022N7FYzM/Qew==
-  dependencies:
-    ajv "^7.1.0"
-
-"@dcl/schemas@4.3.0":
-  version "4.3.0"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-4.3.0.tgz#eff43dd0338b8b45f3ae57bf1b0b8f9434ba0b36"
-  integrity sha512-r82OdfnFOgoiO41ASxPofzNsngKs8UbySF7rV3QwYXzRsKcphkPxlXee6isA4IJaxVwkWTeuVTDw3VDLWlF0Jg==
   dependencies:
     ajv "^7.1.0"
 
