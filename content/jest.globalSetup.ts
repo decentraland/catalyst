@@ -1,7 +1,10 @@
 import { CONTENT_API } from '@dcl/catalyst-api-specs'
 import fs from 'fs'
 import path from 'path'
+import { GenericContainer } from 'testcontainers'
 import { isCI } from './test/integration/E2ETestUtils'
+console.log('everything imported')
+console.log(GenericContainer)
 
 // const execute = promisify(exec)
 // const postgresContainerName = 'postgres_test'
