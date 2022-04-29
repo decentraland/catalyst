@@ -48,6 +48,7 @@
     "jest-extra-utils": "^0.1.0",
     "jest-junit": "^13.0.0",
     "on-finished": "2.4.1",
-    "testcontainers": "8.9.0"
+    "testcontainers": "8.9.0",
+    "nyc": "^15.1.0"
   }
 }
