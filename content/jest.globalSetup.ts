@@ -1,11 +1,12 @@
 import { CONTENT_API } from '@dcl/catalyst-api-specs'
 import fs from 'fs'
 import path from 'path'
+import * as tsNode from 'ts-node'
 import { isCI } from './test/integration/E2ETestUtils'
-require('ts-node').register({ transpileOnly: true })
 
 const globalSetup = async (): Promise<void> => {
   if (!isCI()) {
+    tsNode.register({ transpileOnly: true })
     const { initializePostgresContainer } = await import('./test/postgres-test-container')
     await initializePostgresContainer('postgres_test')
   }
