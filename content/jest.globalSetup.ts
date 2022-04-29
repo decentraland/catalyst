@@ -4,12 +4,13 @@ import Dockerode from "dockerode"
 import fs from 'fs'
 import path from 'path'
 import { PassThrough } from 'stream'
-import { GenericContainer } from 'testcontainers'
+// import { GenericContainer } from 'testcontainers'
 import { LogWaitStrategy } from 'testcontainers/dist/wait-strategy'
 import { promisify } from 'util'
 import { DEFAULT_DATABASE_CONFIG } from './src/Environment'
 import { E2ETestEnvironment } from './test/integration/E2ETestEnvironment'
 import { isCI } from './test/integration/E2ETestUtils'
+const testcontainers = 'testcontainers'
 
 const execute = promisify(exec)
 const postgresContainerName = 'postgres_test'
@@ -29,7 +30,7 @@ const globalSetup = async (): Promise<void> => {
     await deletePreviousPsql()
 
     // start postgres container and wait for it to be ready
-    // const container = await new GenericContainer('postgres', '12')
+    const { GenericContainer } = await import(testcontainers)
     const container = await new GenericContainer('postgres:12')
       .withName(postgresContainerName)
       .withEnv('POSTGRES_PASSWORD', DEFAULT_DATABASE_CONFIG.password)
