@@ -303,11 +303,6 @@
     "@babel/helper-validator-identifier" "^7.16.7"
     to-fast-properties "^2.0.0"
 
-"@balena/dockerignore@^1.0.2":
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/@balena/dockerignore/-/dockerignore-1.0.2.tgz#9ffe4726915251e8eb69f44ef3547e0da2c03e0d"
-  integrity sha512-wMue2Sy4GAVTk6Ic4tJVcnfdau+gx2EnG7S+uAEe+TWJFqE4YoWN4/H8MSLj4eYJKxGg26lZwboEniNiNwZQ6Q==
-
 "@bcoe/v8-coverage@^0.2.3":
   version "0.2.3"
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
@@ -1553,7 +1548,7 @@
   resolved "https://registry.yarnpkg.com/@tsconfig/node16/-/node16-1.0.2.tgz#423c77877d0569db20e1fc80885ac4118314010e"
   integrity sha512-eZxlbI8GZscaGS7kkc/trHTT5xgrjH3/1n2JDwusC9iahPKWMRvRjJSAN5mCXviuTGQ/lHnhvv8Q1YTpnfz9gA==
 
-"@types/archiver@^5.3.1":
+"@types/archiver@^5.1.1":
   version "5.3.1"
   resolved "https://registry.yarnpkg.com/@types/archiver/-/archiver-5.3.1.tgz#02991e940a03dd1a32678fead4b4ca03d0e387ca"
   integrity sha512-wKYZaSXaDvTZuInAWjCeGG7BEAgTWG2zZW0/f7IYFcoHB2X2d9lkVFnrOlXl3W6NrvO6Ml3FLLu8Uksyymcpnw==
@@ -1649,7 +1644,7 @@
     "@types/node" "*"
     "@types/ssh2" "*"
 
-"@types/dockerode@^3.3.8":
+"@types/dockerode@^3.2.5":
   version "3.3.8"
   resolved "https://registry.yarnpkg.com/@types/dockerode/-/dockerode-3.3.8.tgz#afb844b8e8cf54160e1686832903a1444912ff79"
   integrity sha512-/Hip29GzPBWfbSS87lyQDVoB7Ja+kr8oOFWXsySxNFa7jlyj3Yws8LaZRmn1xZl7uJH3Xxsg0oI09GHpT1pIBw==
@@ -2243,7 +2238,7 @@ archiver-utils@^2.1.0:
     normalize-path "^3.0.0"
     readable-stream "^2.0.0"
 
-archiver@^5.3.1:
+archiver@^5.3.0:
   version "5.3.1"
   resolved "https://registry.yarnpkg.com/archiver/-/archiver-5.3.1.tgz#21e92811d6f09ecfce649fbefefe8c79e57cbbb6"
   integrity sha512-8KyabkmbYrH+9ibcTScQ1xCJC/CGcugdVIwB+53f5sZziXgwUh3iXlAlANMxcZyDEfTHMe6+Z5FofV8nopXP7w==
@@ -3374,7 +3369,7 @@ dir-glob@^3.0.1:
   dependencies:
     path-type "^4.0.0"
 
-docker-compose@^0.23.17:
+docker-compose@^0.23.13:
   version "0.23.17"
   resolved "https://registry.yarnpkg.com/docker-compose/-/docker-compose-0.23.17.tgz#8816bef82562d9417dc8c790aa4871350f93a2ba"
   integrity sha512-YJV18YoYIcxOdJKeFcCFihE6F4M2NExWM/d4S1ITcS9samHKnNUihz9kjggr0dNtsrbpFNc7/Yzd19DWs+m1xg==
@@ -4426,7 +4421,7 @@ glob-parent@^6.0.1:
   dependencies:
     is-glob "^4.0.3"
 
-glob@^7.0.0, glob@^7.1.1, glob@^7.1.2, glob@^7.1.3, glob@^7.1.4:
+glob@^7.0.0, glob@^7.1.1, glob@^7.1.2, glob@^7.1.3, glob@^7.1.4, glob@^7.2.0:
   version "7.2.0"
   resolved "https://registry.yarnpkg.com/glob/-/glob-7.2.0.tgz#d15535af7732e02e948f4c41628bd910293f6023"
   integrity sha512-lmLf6gtyrPq8tTjSmrO94wBeQbFR3HbLHbuyD69wuyQkImp2hWqMGB47OX65FBkPffO641IP9jWa1z4ivqG26Q==
@@ -6895,13 +6890,6 @@ prompts@^2.0.1:
     kleur "^3.0.3"
     sisteransi "^1.0.5"
 
-properties-reader@^2.2.0:
-  version "2.2.0"
-  resolved "https://registry.yarnpkg.com/properties-reader/-/properties-reader-2.2.0.tgz#41d837fe143d8d5f2386b6a869a1975c0b2c595c"
-  integrity sha512-CgVcr8MwGoBKK24r9TwHfZkLLaNFHQ6y4wgT9w/XzdpacOOi5ciH4hcuLechSDAwXsfrGQtI2JTutY2djOx2Ow==
-  dependencies:
-    mkdirp "^1.0.4"
-
 protobufjs@^6.10.2:
   version "6.11.2"
   resolved "https://registry.yarnpkg.com/protobufjs/-/protobufjs-6.11.2.tgz#de39fabd4ed32beaa08e9bb1e30d08544c1edf8b"
@@ -8028,21 +8016,21 @@ test-exclude@^6.0.0:
     glob "^7.1.4"
     minimatch "^3.0.4"
 
-testcontainers@8.9.0:
-  version "8.9.0"
-  resolved "https://registry.yarnpkg.com/testcontainers/-/testcontainers-8.9.0.tgz#20665caa7618e565e1d82850e73d658a0dfef010"
-  integrity sha512-q46N+P9wyLXmQ8QPM6+NxvvLW+A+0FxIPHl5/GF0s9mKApWB6eCGj73BMT+x7qv0/1JdtxKhcPNOYWTrfS2GeA==
+testcontainers@7.24.0:
+  version "7.24.0"
+  resolved "https://registry.yarnpkg.com/testcontainers/-/testcontainers-7.24.0.tgz#67a9ae756b7fa6a239fead80aaff78e46800808a"
+  integrity sha512-/Hm/iUc2F6cPYh84abVPiy/suW9D9SseKq/RAZpZqYFxJ0VuETnzzZ/KRtf3o9b35G0xOuxSKRISomTXiIUr8Q==
   dependencies:
-    "@balena/dockerignore" "^1.0.2"
-    "@types/archiver" "^5.3.1"
-    "@types/dockerode" "^3.3.8"
-    archiver "^5.3.1"
+    "@types/archiver" "^5.1.1"
+    "@types/dockerode" "^3.2.5"
+    archiver "^5.3.0"
     byline "^5.0.0"
-    debug "^4.3.4"
-    docker-compose "^0.23.17"
+    debug "^4.3.2"
+    docker-compose "^0.23.13"
     dockerode "^3.3.1"
     get-port "^5.1.1"
-    properties-reader "^2.2.0"
+    glob "^7.2.0"
+    slash "^3.0.0"
     ssh-remote-port-forward "^1.0.4"
     tar-fs "^2.1.1"
 
