@@ -19,9 +19,9 @@ import { isCI } from './test/integration/E2ETestUtils'
 const globalSetup = async (): Promise<void> => {
   if (!isCI()) {
 
-    const { GenericContainer } = await import('testcontainers')
+    // const { GenericContainer } = await import('testcontainers')
+    const { LogWaitStrategy } = await import('testcontainers/dist/wait-strategy')
     console.log('everything imported')
-    console.log(GenericContainer)
     // delete postgres_test container if it exists
     // await deletePreviousPsql()
 
@@ -39,7 +39,7 @@ const globalSetup = async (): Promise<void> => {
     // process.env.MAPPED_POSTGRES_PORT = container.getMappedPort(E2ETestEnvironment.POSTGRES_PORT).toString()
     console.log('im not CI!')
   }
-  console.log('im in CI')
+
   // Initialize API Coverage Report
   if (process.env.API_COVERAGE === 'true' || isCI()) {
     await initializeApiCoverage()
