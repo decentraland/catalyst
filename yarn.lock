@@ -3505,11 +3505,11 @@ create-require@^1.1.0:
   integrity sha512-dcKFX3jn0MpIaXjisoRvexIJVEKzaq7z2rZKxf+MSr9TkdmHmsU4m2lcLojrj/FHl8mk5VxMmYA+ftRkP/3oKQ==
 
 cross-fetch@^3.1.4:
-  version "3.1.4"
-  resolved "https://registry.npmjs.org/cross-fetch/-/cross-fetch-3.1.4.tgz"
-  integrity sha512-1eAtFWdIubi6T4XPy6ei9iUFoKpUkIF971QLN8lIvvvwueI65+Nw5haMNKUwfJxabqlIIDODJKGrQ66gxC0PbQ==
+  version "3.1.5"
+  resolved "https://registry.yarnpkg.com/cross-fetch/-/cross-fetch-3.1.5.tgz#e1389f44d9e7ba767907f7af8454787952ab534f"
+  integrity sha512-lvb1SBsI0Z7GDwmuid+mU3kWVBwTVUbe7S0H52yaaAdQOXq2YktTCZdlAcNKFzE6QtRz0snpw9bNiPeOIkkQvw==
   dependencies:
-    node-fetch "2.6.1"
+    node-fetch "2.6.7"
 
 cross-spawn@^6.0.5:
   version "6.0.5"
@@ -7076,11 +7076,6 @@ node-fetch@*, node-fetch@^3.0.0:
     data-uri-to-buffer "^4.0.0"
     fetch-blob "^3.1.2"
     formdata-polyfill "^4.0.10"
-
-node-fetch@2.6.1:
-  version "2.6.1"
-  resolved "https://registry.npmjs.org/node-fetch/-/node-fetch-2.6.1.tgz"
-  integrity sha512-V4aYg89jEoVRxRb2fJdAg8FHvI7cEyYdVAh94HH0UIK8oJxUfkjlDQN9RbMx+bEjP7+ggMiFRprSti032Oipxw==
 
 node-fetch@2.6.7, node-fetch@^2.6.1, node-fetch@^2.6.2:
   version "2.6.7"
