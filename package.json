@@ -9,9 +9,9 @@
     "lambdas"
   ],
   "scripts": {
-    "build": "yarn workspaces run build",
-    "build:content": "yarn workspace @catalyst/content-server build",
-    "build:lambdas": "yarn workspace @catalyst/lambdas-server build",
+    "build": "yarn list-mismatches && yarn workspaces run build",
+    "build:content": "yarn list-mismatches && yarn workspace @catalyst/content-server build",
+    "build:lambdas": "yarn list-mismatches && yarn workspace @catalyst/lambdas-server build",
     "cleanup": "yarn workspaces run cleanup && shx rm -rf node_modules",
     "lint:check": "eslint '**/*.{js,ts}'",
     "lint:fix": "eslint '**/*.{js,ts}' --fix",
