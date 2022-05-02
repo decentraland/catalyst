@@ -146,12 +146,13 @@ export class Controller {
 
     const parsedUrn = await isUrnPrefixValid(collectionUrn)
     if (!parsedUrn) {
-      return res
+      res
         .status(400)
         .send({
           errors: `Invalid collection urn param, it should be a valid urn prefix of a 3rd party collection, instead: '${collectionUrn}'`
         })
         .end()
+      return
     }
 
     const entities: { pointer: string; entityId: EntityId }[] = await this.components.activeEntities.withPrefix(
