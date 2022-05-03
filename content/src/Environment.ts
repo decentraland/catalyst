@@ -111,7 +111,6 @@ export enum EnvironmentConfig {
   COLLECTIONS_L1_SUBGRAPH_URL,
   COLLECTIONS_L2_SUBGRAPH_URL,
   THIRD_PARTY_REGISTRY_L2_SUBGRAPH_URL,
-  PROOF_OF_WORK,
   PSQL_PASSWORD,
   PSQL_USER,
   PSQL_DATABASE,
@@ -305,7 +304,6 @@ export class EnvironmentBuilder {
           ? DEFAULT_BLOCKS_SUBGRAPH_MATIC_MAINNET
           : DEFAULT_BLOCKS_SUBGRAPH_MATIC_MUMBAI)
     )
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PROOF_OF_WORK, () => process.env.PROOF_OF_WORK === 'true')
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.PSQL_PASSWORD,
