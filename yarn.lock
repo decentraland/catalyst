@@ -341,10 +341,10 @@
     dcl-crypto "2.3.0"
     web3x "4.0.6"
 
-"@dcl/catalyst-node-commons@tag-test-bump-libs-2":
-  version "1.0.4-20220503203904.commit-2170913"
-  resolved "https://registry.yarnpkg.com/@dcl/catalyst-node-commons/-/catalyst-node-commons-1.0.4-20220503203904.commit-2170913.tgz#31d76766d9d666621e853643939cba3a381634c8"
-  integrity sha512-+NbnL7MjKMKvSfTOixlW8qit/9CXCSb0mBZ36o1sfe2wpPWYtgi1KRbAqQRihg6n/4ITLLt9WQgmz9B9JHYJGw==
+"@dcl/catalyst-node-commons@1.0.4":
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-node-commons/-/catalyst-node-commons-1.0.4.tgz#4f806ca49b5a12683fbe07130d2a525825ea5073"
+  integrity sha512-S0AIOQwNO3wb8w9BwAeYKhaw4SYqxiiyqOWnAtuznPX+/2aVVXCndk+sbOII9xT+zfiYQHRluBjbH/gUiHnr1A==
   dependencies:
     "@dcl/catalyst-contracts" "1.0.2"
     "@typescript-eslint/parser" "5.21.0"
