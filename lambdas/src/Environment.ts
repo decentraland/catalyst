@@ -96,7 +96,6 @@ export const enum EnvironmentConfig {
   PROFILE_NAMES_CACHE_TIMEOUT,
   PROFILE_WEARABLES_CACHE_MAX,
   PROFILE_WEARABLES_CACHE_TIMEOUT,
-  PROOF_OF_WORK,
   MAX_SYNCHRONIZATION_TIME,
   MAX_DEPLOYMENT_OBTENTION_TIME,
   METRICS,
@@ -218,8 +217,6 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PROFILE_WEARABLES_CACHE_TIMEOUT, () =>
       ms(process.env.PROFILE_WEARABLES_CACHE_TIMEOUT ?? '30m')
     )
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PROOF_OF_WORK, () => process.env.PROOF_OF_WORK === 'true')
-
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.MAX_SYNCHRONIZATION_TIME,
