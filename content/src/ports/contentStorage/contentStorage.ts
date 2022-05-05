@@ -12,14 +12,9 @@ export interface ContentStorage {
   existMultiple(fileIds: string[]): Promise<Map<string, boolean>>
   allFileIds(): AsyncIterable<string>
 }
-
-export type RawContent = {
-  stream: Readable
+export interface ContentItem {
   encoding: ContentEncoding | null
   size: number | null
-}
-
-export interface ContentItem {
   /**
    * Gets the readable stream, uncompressed if necessary.
    */
@@ -27,17 +22,16 @@ export interface ContentItem {
 
   /**
    * Used to get the raw stream, no matter how it is stored.
-   * That may imply that the stream may be compressed, if so, the
-   * compression encoding should be available in "content".
+   * That may imply that the stream may be compressed.
    */
-  asRawStream(): Promise<RawContent>
+  asRawStream(): Promise<Readable>
 }
 
 export class SimpleContentItem implements ContentItem {
   constructor(
     private streamCreator: () => Promise<Readable>,
-    private length?: number,
-    private encoding?: ContentEncoding | null
+    public size: number | null,
+    public encoding: ContentEncoding | null
   ) {}
 
   static fromBuffer(buffer: Uint8Array): SimpleContentItem {
@@ -62,12 +56,8 @@ export class SimpleContentItem implements ContentItem {
    * That may imply that the stream may be compressed, if so, the
    * compression encoding should be available in "content".
    */
-  async asRawStream(): Promise<RawContent> {
-    return {
-      stream: await this.streamCreator(),
-      encoding: this.encoding || null,
-      size: this.length || null
-    }
+  async asRawStream(): Promise<Readable> {
+    return await this.streamCreator()
   }
 }
 
