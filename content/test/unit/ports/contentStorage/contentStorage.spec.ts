@@ -121,7 +121,7 @@ describe('ContentStorage', () => {
   it(`When a content with bad compression ratio is stored and compressed, then it is not stored compressed`, async () => {
     await storage.storeStreamAndCompress(id, bufferToStream(content))
     const retrievedContent = (await storage.retrieve(id))
-    expect((await retrievedContent!.asRawStream()).encoding).toBeNull()
+    expect(retrievedContent?.encoding).toBeNull()
     expect(await streamToBuffer(await retrievedContent!.asStream())).toEqual(content)
 
   })
@@ -130,7 +130,7 @@ describe('ContentStorage', () => {
     const goodCompresstionRatioContent = Buffer.from(new Uint8Array(100).fill(0))
     await storage.storeStreamAndCompress(id, bufferToStream(goodCompresstionRatioContent))
     const retrievedContent = (await storage.retrieve(id))
-    expect((await retrievedContent!.asRawStream()).encoding).toBe('gzip')
+    expect(retrievedContent?.encoding).toBe('gzip')
     expect(await streamToBuffer(await retrievedContent!.asStream())).toEqual(goodCompresstionRatioContent)
   })
 

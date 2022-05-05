@@ -78,12 +78,9 @@ export async function createFileSystemContentStorage(
       await storeStream(id, stream)
       if (await compressContentFile(await getFilePath(id))) {
         // try to remove original file if present
-        const compressed = await retrieve(id)
-        if (compressed) {
-          const raw = await compressed.asRawStream()
-          if (raw.encoding) {
-            await noFailUnlink(await getFilePath(id))
-          }
+        const contentItem = await retrieve(id)
+        if (contentItem?.encoding) {
+          await noFailUnlink(await getFilePath(id))
         }
       }
     },
