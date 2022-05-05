@@ -35,11 +35,14 @@ jobs:
         id: PR
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          # Verbose setting SHA when using Pull_Request event trigger to fix #16
           sha: ${{ github.event.pull_request.head.sha }}
-          # Only return if PR is still open
-          filterOutClosed: true
-      - run: echo "::error file={name},line={line},endLine={endLine},title={title}::PR's title does not match the convention" && exit 1
-        if: ${{ '0' =~ '1' }}
+      - uses: actions-ecosystem/action-regex-match@v2
+        id: regex-match
+        with:
+          text: ${{ prTitle }}
+          regex: 'chore: '
+          flags: gm
         env:
           prTitle: ${{ steps.PR.outputs.pr_title }}
+      - run: echo "::error file={name},line={line},endLine={endLine},title={title}::PR's title does not match the convention" && exit 1
+        if: ${{ steps.regex-match.outputs.match != '' }}
