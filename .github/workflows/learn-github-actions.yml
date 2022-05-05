@@ -4,4 +4,18 @@ jobs:
   check-bats-version:
     runs-on: ubuntu-latest
     steps:
-      - run: env
+      - uses: 8BitJonny/gh-get-current-pr@1.4.0
+      - run: echo "Your PR is ${prNumber} and its JSON is ${prJSON}"
+        if: success() && steps.PR.outputs.number
+        env:
+          prNumber: ${{ steps.PR.outputs.number }}
+          # JSON object with the full PR object
+          prJSON: ${{ steps.PR.outputs.pr }}
+          # Direct access to common PR properties
+          prUrl: ${{ steps.PR.outputs.pr_url }}
+          prTitle: ${{ steps.PR.outputs.pr_title }}
+          prBody: ${{ steps.PR.outputs.pr_body }}
+          prCreatedAt: ${{ steps.PR.outputs.pr_created_at }}
+          prMergedAt: ${{ steps.PR.outputs.pr_merged_at }}
+          prClosedAt: ${{ steps.PR.outputs.pr_closed_at }}
+          prLabel: ${{ steps.PR.outputs.pr_labels }}
