@@ -24,11 +24,18 @@ Pull requests are the best way to propose changes to the codebase (we use [Githu
 
 ## Creating a pull request
 
-We follow [this](https://github.com/decentraland/adr/blob/main/docs/ADR-6-git-style-guide.md) guideline for git usage
+We follow the [Git style guide](https://github.com/decentraland/adr/blob/main/docs/ADR-6-git-style-guide.md) for git usage
 
 1. In case that the pr is done using a branch within the service, it should have the semantic prefix.
-1. Before merging into main make sure the squash commit has the correct semantic type prefix.
-1. If the pull request is related to a issue, link it in the description of the pull request.
+2. Before merging into main make sure the squash commit has the correct semantic type prefix.
+3. If the pull request is related to a issue, link it in the description of the pull request.
+
+Adopting this convention helps us keep the commit history tidy and easier to understand, but also makes it easier to write automated tools on top of.
+
+### Automatic version bumping
+
+Following the naming convention enables us to bump the version automatically. Check the [Automatic version bumping](AUTOMATIC_VERSION_BUMPING.md) guide to know how your pull request's title should be.
+
 
 ## Any contributions you make will be under the Apache 2.0 Software License
 
@@ -58,6 +65,7 @@ People _love_ thorough bug reports. We'm not even kidding.
 
 - You can try running `yarn run lint:check` for style verification and `yarn run lint:fix` for a best-effort fix of any style errors.
 - Follow as best as possible the current code architecture, but don't hesitate to propose a change if you see a place for improvement.
+
 
 ## References
 
