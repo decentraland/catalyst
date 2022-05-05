@@ -12,7 +12,7 @@ jobs:
         sha: ${{ github.event.pull_request.head.sha }}
         # Only return if PR is still open
         filterOutClosed: true
-    - run: echo "Your PR is ${prNumber} and its JSON is ${prJSON}"
+    - run: echo "The pr title is ${prTitle}"
       if: success() && steps.PR.outputs.number
       env:
         prNumber: ${{ steps.PR.outputs.number }}
