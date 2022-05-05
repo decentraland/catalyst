@@ -27,4 +27,21 @@ jobs:
         prClosedAt: ${{ steps.PR.outputs.pr_closed_at }}
         prLabel: ${{ steps.PR.outputs.pr_labels }}
     - run: echo "::warning file=app.js,line=1,col=5,endColumn=7::Missing semicolon"
-    - run: echo "::error file={name},line={line},endLine={endLine},title={title}::{message}" && exit 1
+    # - run: echo "::error file={name},line={line},endLine={endLine},title={title}::{message}" && exit 1
+  validate-title:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: 8BitJonny/gh-get-current-pr@1.4.0
+      id: PR
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        # Verbose setting SHA when using Pull_Request event trigger to fix #16
+        sha: ${{ github.event.pull_request.head.sha }}
+        # Only return if PR is still open
+        filterOutClosed: true
+    - run: |
+      if [[ ${prTitle} =~ a ]]; then
+        echo "::error file={name},line={line},endLine={endLine},title={title}::{message}" && exit 1
+      fi
+      env:
+        prTitle: ${{ steps.PR.outputs.pr_title }}
