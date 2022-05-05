@@ -26,11 +26,11 @@ Pull requests are the best way to propose changes to the codebase (we use [Githu
 
 We follow the [Git style guide](https://github.com/decentraland/adr/blob/main/docs/ADR-6-git-style-guide.md) for git usage
 
-1. In case that the pr is done using a branch within the service, it should have the semantic prefix.
-2. Before merging into main make sure the squash commit has the correct semantic type prefix.
-3. If the pull request is related to a issue, link it in the description of the pull request.
+1. In case the PR is done using a branch within the service, it should have the semantic prefix.
+2. Before merging into `main` make sure the squash commit has the correct semantic type prefix.
+3. If the pull request is related to an issue, link it in the description of the pull request.
 
-Adopting this convention helps us keep the commit history tidy and easier to understand, but also makes it easier to write automated tools on top of.
+Adopting this convention helps us keep the commit history tidy and easier to understand, but also makes it easier to write automated tools on top.
 
 ### Automatic version bumping
 
