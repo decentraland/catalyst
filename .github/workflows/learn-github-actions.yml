@@ -7,8 +7,7 @@ jobs:
     - uses: 8BitJonny/gh-get-current-pr@1.4.0
       id: PR
       with:
-        # github-token: ${{ secrets.GITHUB_TOKEN }}
-        github-token: asdfffdsa
+        github-token: ${{ secrets.GITHUB_TOKEN }}
         # Verbose setting SHA when using Pull_Request event trigger to fix #16
         sha: ${{ github.event.pull_request.head.sha }}
         # Only return if PR is still open
