@@ -8,7 +8,7 @@ The architecture of the server is as follows:
 ![Server](architecture/architecture.svg)
 
 
-- [Comms](comms): The Communication Service, also known as Lighthouse, is in charge of orchestrating the P2P networks between users connected to Decentraland.
+- [Comms](https://github.com/decentraland/lighthouse): The Communication Service, also known as Lighthouse, is in charge of orchestrating the P2P networks between users connected to Decentraland.
 It needs to determine which are the candidates for a P2P connection and do the WebRTC signaling to establish the connection. Most of this logic is done through 2 external components: the [PeerJS Server](https://github.com/decentraland/peerjs-server) (connects WebRTC peers) and [Archipelago](https://github.com/decentraland/archipelago) (receives users positions and groups them in islands)
 
 - [Lambdas](lambdas): This service provides a set of utilities required by the Catalyst Server Clients/Consumers in order to retrieve or validate data.
