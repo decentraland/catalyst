@@ -34,7 +34,9 @@ Adopting this convention helps us keep the commit history tidy and easier to und
 
 ### Automatic version bumping
 
-Following the naming convention enables us to bump the version automatically. Check the [Automatic version bumping](AUTOMATIC_VERSION_BUMPING.md) guide to know how your pull request's title should be.
+Following the naming convention enables us to bump the version automatically. Any commit pushed to `main` that doesn't respect the convention will be ignored when determining the new version number.
+
+Check the [Automatic version bumping](AUTOMATIC_VERSION_BUMPING.md) guide to know how your pull request's title should be.
 
 
 ## Any contributions you make will be under the Apache 2.0 Software License

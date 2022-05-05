@@ -2,7 +2,7 @@
 
 ## Following the convention
 
-Whenever a pull request is merged to `main`, the Github workflow will release a new version, bumping the current version depending on the pull request's title (which will be the message of the commit when merging).
+We use <LINK TO GITHUB ACTION> to release a new version bumping the current version depending on the pull request's title (which will be the message of the commit when merging).
 
 This is only possible if your pull request's title follows the convention set in the [Git Style Guide](https://github.com/decentraland/adr/blob/main/docs/ADR-6-git-style-guide.md) which is based on [semantic commits](https://sparkbox.com/foundry/semantic_commit_messages).
 
