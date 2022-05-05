@@ -16,7 +16,7 @@ This chart reflects which type of message bumps `patch`, `minor` or `mayor`.
 
 | type      | bumps |
 | --------- | ----- |
-| break     | mayor |
+| break     | major |
 | feat      | minor |
 | chore     | patch |
 | docs      | patch |
