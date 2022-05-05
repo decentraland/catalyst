@@ -40,6 +40,6 @@ jobs:
           # Only return if PR is still open
           filterOutClosed: true
      - run: echo "::error file={name},line={line},endLine={endLine},title={title}::{message}" && exit 1
-        if: ${{ ab =~ a }}
+        if: ${{ 0 == 0 }}
         env:
           prTitle: ${{ steps.PR.outputs.pr_title }}
