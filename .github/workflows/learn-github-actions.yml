@@ -28,7 +28,7 @@ jobs:
           prLabel: ${{ steps.PR.outputs.pr_labels }}
       - run: echo "::warning file=app.js,line=1,col=5,endColumn=7::Missing semicolon"
       # - run: echo "::error file={name},line={line},endLine={endLine},title={title}::{message}" && exit 1
-  validate-title:
+  pr-title-matches-convention:
     runs-on: ubuntu-latest
     steps:
       - uses: 8BitJonny/gh-get-current-pr@1.4.0
@@ -39,7 +39,7 @@ jobs:
           sha: ${{ github.event.pull_request.head.sha }}
           # Only return if PR is still open
           filterOutClosed: true
-      - run: echo "::error file={name},line={line},endLine={endLine},title={title}::{message}" && exit 1
-        if: ${{ 0 == 0 }}
+      - run: echo "::error file={name},line={line},endLine={endLine},title={title}::PR's title does not match the convention" && exit 1
+        if: ${{ 0 == 1 }}
         env:
           prTitle: ${{ steps.PR.outputs.pr_title }}
