@@ -40,7 +40,7 @@ jobs:
         id: regex-match
         with:
           text: ${{ steps.PR.outputs.pr_title }}
-          regex: 'chore: '
+          regex: '^chore: $'
           flags: gm
         env:
           prTitle: ${{ steps.PR.outputs.pr_title }}
