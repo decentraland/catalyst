@@ -27,5 +27,4 @@ jobs:
         prClosedAt: ${{ steps.PR.outputs.pr_closed_at }}
         prLabel: ${{ steps.PR.outputs.pr_labels }}
     - run: echo "::warning file=app.js,line=1,col=5,endColumn=7::Missing semicolon"
-    - run: echo "::error file={name},line={line},endLine={endLine},title={title}::{message}"
-    - run: exit 1
+    - run: echo "::error file={name},line={line},endLine={endLine},title={title}::{message}" && exit 1
