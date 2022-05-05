@@ -40,6 +40,6 @@ jobs:
           # Only return if PR is still open
           filterOutClosed: true
       - run: echo "::error file={name},line={line},endLine={endLine},title={title}::PR's title does not match the convention" && exit 1
-        if: ${{ "0" =~ "1" }}
+        if: ${{ "0" == "1" }}
         env:
           prTitle: ${{ steps.PR.outputs.pr_title }}
