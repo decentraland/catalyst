@@ -1,0 +1,51 @@
+name: learn-github-actions
+on:
+  pull_request:
+    types: [opened, edited, reopened]
+jobs:
+  pr-title-matches-convention:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: 8BitJonny/gh-get-current-pr@1.4.0
+        id: PR
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          sha: ${{ github.event.pull_request.head.sha }}
+      - uses: actions-ecosystem/action-regex-match@v2
+        id: regex-match
+        with:
+          text: ${{ steps.PR.outputs.pr_title }}
+          regex: '^(break|chore|docs|feat|fix|refactor|revert|style|test): .*$'
+          flags: gs
+        env:
+          prTitle: ${{ steps.PR.outputs.pr_title }}
+      - run: echo "${{ steps.regex-match.outputs.match }}"
+      - run: echo "::error title=PR's title does not match the convention::Please check this guide to know how it should be https://github.com/decentraland/adr/blob/main/docs/ADR-6-git-style-guide.md. Please change it and then re-run this Github Action or make another commit" && exit 1
+        if: ${{ steps.regex-match.outputs.match == '' }}
+  check-bats-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: 8BitJonny/gh-get-current-pr@1.4.0
+        id: PR
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # Verbose setting SHA when using Pull_Request event trigger to fix #16
+          sha: ${{ github.event.pull_request.head.sha }}
+          # Only return if PR is still open
+          filterOutClosed: true
+      - run: echo "The pr title is ${prTitle}"
+        if: success() && steps.PR.outputs.numberr
+        env:
+          prNumber: ${{ steps.PR.outputs.number }}
+          # JSON object with the full PR object
+          prJSON: ${{ steps.PR.outputs.pr }}
+          # Direct access to common PR properties
+          prUrl: ${{ steps.PR.outputs.pr_url }}
+          prTitle: ${{ steps.PR.outputs.pr_title }}
+          prBody: ${{ steps.PR.outputs.pr_body }}
+          prCreatedAt: ${{ steps.PR.outputs.pr_created_at }}
+          prMergedAt: ${{ steps.PR.outputs.pr_merged_at }}
+          prClosedAt: ${{ steps.PR.outputs.pr_closed_at }}
+          prLabel: ${{ steps.PR.outputs.pr_labels }}
+      - run: echo "::warning file=app.js,line=1,col=5,endColumn=7::Missing semicolon"
+      # - run: echo "::error file={name},line={line},endLine={endLine},title={title}::{message}" && exit 1

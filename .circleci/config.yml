@@ -103,7 +103,6 @@ jobs:
           paths:
             - ~/.cache/yarn
 
-      # persist to workspace to use in downstream jobs
       - persist_to_workspace:
           root: *workspace_root
           paths:
