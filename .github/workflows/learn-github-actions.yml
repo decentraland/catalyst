@@ -4,4 +4,4 @@ jobs:
   check-bats-version:
     runs-on: ubuntu-latest
     steps:
-      - run: echo ${{GITHUB_HEAD_REF}}
+      - run: env
