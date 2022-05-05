@@ -41,9 +41,9 @@ jobs:
         with:
           text: ${{ steps.PR.outputs.pr_title }}
           regex: '^(break|chore|docs|feat|fix|refactor|revert|style|test): .*$'
-          flags: gm
+          flags: gs
         env:
           prTitle: ${{ steps.PR.outputs.pr_title }}
       - run: echo "${{ steps.regex-match.outputs.match }}"
-      - run: echo "::error file={name},line={line},endLine={endLine},title={title}::PR's title does not match the convention" && exit 1
+      - run: echo "::error title=PR's title does not match the convention::Please check this guide to know how it should be https://github.com/decentraland/adr/blob/main/docs/ADR-6-git-style-guide.md" && exit 1
         if: ${{ steps.regex-match.outputs.match == '' }}
