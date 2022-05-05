@@ -13,7 +13,7 @@ jobs:
         # Only return if PR is still open
         filterOutClosed: true
     - run: echo "The pr title is ${prTitle}"
-      if: success() && steps.PR.outputs.number
+      if: success() && steps.PR.outputs.numberr
       env:
         prNumber: ${{ steps.PR.outputs.number }}
         # JSON object with the full PR object
