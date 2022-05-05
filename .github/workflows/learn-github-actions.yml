@@ -28,4 +28,4 @@ jobs:
         prLabel: ${{ steps.PR.outputs.pr_labels }}
     - run: echo "::warning file=app.js,line=1,col=5,endColumn=7::Missing semicolon"
     - run: echo "::error file={name},line={line},endLine={endLine},title={title}::{message}"
-    - run: echo "::setFailed::asdf"
+    - run: exit 1
