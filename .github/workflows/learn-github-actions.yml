@@ -46,4 +46,4 @@ jobs:
           prTitle: ${{ steps.PR.outputs.pr_title }}
       - run: echo "${{ steps.regex-match.outputs.match }}"
       - run: echo "::error file={name},line={line},endLine={endLine},title={title}::PR's title does not match the convention" && exit 1
-        if: ${{ steps.regex-match.outputs.match != '' }}
+        if: ${{ steps.regex-match.outputs.match == '' }}
