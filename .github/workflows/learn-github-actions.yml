@@ -39,7 +39,7 @@ jobs:
       - uses: actions-ecosystem/action-regex-match@v2
         id: regex-match
         with:
-          text: ${{ prTitle }}
+          text: ${{ steps.PR.outputs.pr_title }}
           regex: 'chore: '
           flags: gm
         env:
