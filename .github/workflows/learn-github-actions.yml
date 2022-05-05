@@ -1,5 +1,7 @@
 name: learn-github-actions
-on: [pull_request]
+on:
+  pull_request:
+    types: [opened, edited, reopened]
 jobs:
   pr-title-matches-convention:
     runs-on: ubuntu-latest
