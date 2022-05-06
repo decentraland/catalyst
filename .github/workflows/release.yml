@@ -5,9 +5,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/github-script@v6
-        id: tags-url
+        id: tags
         with:
           result-encoding: string
           script: |
             return context.payload.repository.tags_url
-      - run: echo "${steps.tags-url.outputs.result}"
+      - run: echo "${{steps.tags.outputs.result}}"
