@@ -9,4 +9,4 @@ jobs:
         with:
           script: |
             return context.payload.repository.tags_url
-      - run: echo ${steps.tags-url.outputs}
+      - run: echo "${steps.tags-url.outputs.result}""
