@@ -11,7 +11,6 @@ jest.mock('@dcl/catalyst-node-commons', () => ({
   ...jest.requireActual('@dcl/catalyst-node-commons'),
   delay: jest.fn()
 }));
-console.log(delay)
 
 describe('ContentCluster', function() {
   const address1: ServerBaseUrl = 'http://address1'

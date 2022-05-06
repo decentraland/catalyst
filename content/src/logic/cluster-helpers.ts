@@ -29,12 +29,11 @@ export async function determineCatalystIdentity(
   const normalizedContentServerAddress = normalizeContentBaseUrl(
     components.env.getConfig<string>(EnvironmentConfig.CONTENT_SERVER_ADDRESS)
   )
+  // Attempts exist for a _good reason_, when the catalyst or NGINX or cloudflare or whatever proxying this service
+  // is still warming up, there is a small chance that challenge based requests may be unreachable, thus we have attempts
+  let attempts = 0
   try {
     logger.info('Attempting to determine my identity')
-
-    // Attempts exist for a _good reason_, when the catalyst or NGINX or cloudflare or whatever proxying this service
-    // is still warming up, there is a small chance that challenge based requests may be unreachable, thus we have attempts
-    let attempts = 0
     while (attempts < maxAttemps) {
       logger.info(`Attempt to determine my identity #${attempts + 1}`)
       const response = await getChallengeInServer(components, normalizedContentServerAddress)
@@ -63,7 +62,7 @@ export async function determineCatalystIdentity(
       attempts++
     }
   } catch (error) {
-    logger.error(`Failed to detect my own identity \n${error}`)
+    logger.error(`Failed to detect my own identity after ${attempts} attempts \n${error}`)
     throw error
   }
 }
