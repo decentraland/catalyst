@@ -4,10 +4,5 @@ jobs:
   diff:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/github-script@v6
-        with:
-          script: |
-            console.log(context)
-            console.log(context.payload)
-            console.log(context.payload.pull_request)
-            console.log(context.payload.pull_request.diff_url)
+      - uses: actions/checkout@v2
+      - uses: ./
