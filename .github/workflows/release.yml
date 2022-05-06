@@ -10,4 +10,4 @@ jobs:
           result-encoding: string
           script: |
             return context.payload.repository.tags_url
-      - run: echo "${steps.tags-url.outputs.result}""
+      - run: echo "${steps.tags-url.outputs.result}"
