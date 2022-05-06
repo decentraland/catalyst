@@ -1,10 +1,12 @@
 name: release
 on: [workflow_dispatch]
 jobs:
-  diff:
+  release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/github-script@v6
+        id: tags-url
         with:
           script: |
-            console.log(context.payload.repository.tags_url)
+            return context.payload.repository.tags_url
+      - runs: echo ${steps.tags-url.outputs}
