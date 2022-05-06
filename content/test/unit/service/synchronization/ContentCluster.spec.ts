@@ -1,4 +1,4 @@
-import { ServerBaseUrl } from '@dcl/catalyst-node-commons'
+import { delay, ServerBaseUrl } from '@dcl/catalyst-node-commons'
 import { createLogComponent } from '@well-known-components/logger'
 import { Response } from 'node-fetch'
 import { stub } from 'sinon'
@@ -7,11 +7,17 @@ import { createFetchComponent } from '../../../../src/ports/fetcher'
 import { ChallengeSupervisor, IChallengeSupervisor } from '../../../../src/service/synchronization/ChallengeSupervisor'
 import { ContentCluster } from '../../../../src/service/synchronization/ContentCluster'
 import { MockedDAOClient } from '../../../helpers/service/synchronization/clients/MockedDAOClient'
+jest.mock('@dcl/catalyst-node-commons', () => ({
+  ...jest.requireActual('@dcl/catalyst-node-commons'),
+  delay: jest.fn()
+}));
+console.log(delay)
 
 describe('ContentCluster', function() {
   const address1: ServerBaseUrl = 'http://address1'
   const address2: ServerBaseUrl = 'http://address2'
   const challengeText: string = 'Some challenge text'
+  beforeEach(() => jest.clearAllMocks())
 
   // TODO: review this test, there is no real-world case in which the DAO has no servers
   xit(`When there are no servers on the DAO, then no identity is assigned`, async () => {
@@ -45,8 +51,12 @@ describe('ContentCluster', function() {
   it(`When I'm not on the DAO and get no response, then no identity is assigned`, async () => {
     const contentCluster = new ContentClusterBuilder().addLocalChallenge(address2, challengeText).build(address1)
 
+    // Force the attemp interval to be 1000ms and match CI interval
+    process.env.CI = 'true'
     // Check that no identity was detected
     expect(await contentCluster.getIdentity()).toBeUndefined()
+    expect(delay).toBeCalledTimes(10)
+    expect(delay).toHaveBeenCalledWith(1000)
   })
 })
 

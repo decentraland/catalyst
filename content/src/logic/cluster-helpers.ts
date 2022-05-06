@@ -2,9 +2,6 @@ import { delay, ServerBaseUrl, ServerMetadata } from '@dcl/catalyst-node-commons
 import { EnvironmentConfig } from '../Environment'
 import { AppComponents } from '../types'
 
-const IDENTITY_DETERMINATION_MAX_ATTEMPTS = 10
-const IDENTITY_DETERMINATION_ATTEMPTS_INTERVAL = process.env.CI ? 1_000 /* 1sec */ : 5_000 /* 5sec */
-
 export async function getChallengeInServer(
   components: Pick<AppComponents, 'fetcher'>,
   catalystBaseUrl: ServerBaseUrl
@@ -24,7 +21,9 @@ export async function getChallengeInServer(
  * Returns id != 0x0 && owner != 0x0000000000000000000000000000000000000000 then this catalyst belongs to the DAO
  */
 export async function determineCatalystIdentity(
-  components: Pick<AppComponents, 'logs' | 'daoClient' | 'challengeSupervisor' | 'env' | 'fetcher'>
+  components: Pick<AppComponents, 'logs' | 'daoClient' | 'challengeSupervisor' | 'env' | 'fetcher'>,
+  maxAttemps: number = 10,
+  attempIntervalMs: number = process.env.CI ? 1_000 /* 1sec */ : 5_000 /* 5sec */
 ): Promise<ServerMetadata | undefined> {
   const logger = components.logs.getLogger('CatalystIdentityProvider')
   const normalizedContentServerAddress = normalizeContentBaseUrl(
@@ -35,8 +34,9 @@ export async function determineCatalystIdentity(
 
     // Attempts exist for a _good reason_, when the catalyst or NGINX or cloudflare or whatever proxying this service
     // is still warming up, there is a small chance that challenge based requests may be unreachable, thus we have attempts
-    let attempts = IDENTITY_DETERMINATION_MAX_ATTEMPTS
-    while (attempts > 0) {
+    let attempts = 0
+    while (attempts < maxAttemps) {
+      logger.info(`Attempt to determine my identity #${attempts + 1}`)
       const response = await getChallengeInServer(components, normalizedContentServerAddress)
 
       if (response && components.challengeSupervisor.isChallengeOk(response)) {
@@ -59,11 +59,8 @@ export async function determineCatalystIdentity(
         return myIdentity
       }
 
-      attempts--
-      if (attempts > 0) {
-        logger.debug(`Retrying`, { attempts })
-        await delay(IDENTITY_DETERMINATION_ATTEMPTS_INTERVAL)
-      }
+      await delay(attempIntervalMs)
+      attempts++
     }
   } catch (error) {
     logger.error(`Failed to detect my own identity \n${error}`)
