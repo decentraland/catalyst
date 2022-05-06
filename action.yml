@@ -3,7 +3,7 @@ description: 'Provide a description here'
 author: 'Your name or organization here'
 inputs:
   milliseconds: # change this
-    required: true
+    required: false
     description: 'input description here'
     default: 'default value if applicable'
 runs:
