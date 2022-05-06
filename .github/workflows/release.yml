@@ -4,5 +4,7 @@ jobs:
   diff:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: ./
+      - uses: actions/github-script@v6
+        with:
+          script: |
+            console.log(context.payload.repository.tags_url)
