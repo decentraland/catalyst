@@ -15,7 +15,7 @@ jobs:
         id: regex-match
         with:
           text: ${{ steps.PR.outputs.pr_title }}
-          regex: '^(break|chore|docs|feat|fix|refactor|revert|style|test): .*$'
+          regex: '^(break|chore|docs|feat|fix|refactor|revert|style|test): .+$'
           flags: gs
         env:
           prTitle: ${{ steps.PR.outputs.pr_title }}
