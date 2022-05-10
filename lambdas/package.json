@@ -7,7 +7,7 @@
   "scripts": {
     "build": "tsc -b",
     "cleanup": "shx rm -rf dist node_modules",
-    "start": "node ./dist/src/entrypoints/run-server.js",
+    "start:server": "node ./dist/src/entrypoints/run-server.js",
     "test": "jest --runInBand --forceExit --coverage"
   },
   "dependencies": {
