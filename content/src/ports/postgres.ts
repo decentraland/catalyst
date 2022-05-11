@@ -47,6 +47,7 @@ export async function createDatabaseComponent(
     idleTimeoutMillis: components.env.getConfig<number>(EnvironmentConfig.PG_IDLE_TIMEOUT),
     query_timeout: components.env.getConfig<number>(EnvironmentConfig.PG_QUERY_TIMEOUT)
   }
+  const streamQueryTimeout = components.env.getConfig<number>(EnvironmentConfig.PG_STREAM_QUERY_TIMEOUT)
 
   const finalOptions = { ...defaultOptions, ...options }
 
@@ -89,7 +90,7 @@ export async function createDatabaseComponent(
   async function* streamQuery<T>(sql: SQLStatement, config?: { batchSize?: number }): AsyncGenerator<T> {
     const client = new Client({
       ...finalOptions,
-      query_timeout: components.env.getConfig<number>(EnvironmentConfig.PG_STREAM_QUERY_TIMEOUT)
+      query_timeout: streamQueryTimeout
     })
     await client.connect()
 
