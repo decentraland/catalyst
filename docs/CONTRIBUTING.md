@@ -68,7 +68,6 @@ People _love_ thorough bug reports. We'm not even kidding.
 - You can try running `yarn run lint:check` for style verification and `yarn run lint:fix` for a best-effort fix of any style errors.
 - Follow as best as possible the current code architecture, but don't hesitate to propose a change if you see a place for improvement.
 
-
 ## References
 
 This document was adapted from [this](https://gist.github.com/briandk/3d2e8b3ec8daf5a27a62) open-source contribution guideline
