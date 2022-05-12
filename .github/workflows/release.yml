@@ -11,8 +11,16 @@ jobs:
           script: |
             return context.payload.repository.tags_url
       - run: echo "${{steps.tags.outputs.result}}"
-      - uses: manumena/gh-action-fork@0.0.0
+      - uses: manumena/gh-action-fork@1.1.0
         id: result
         with:
-          milliseconds: 1000
-      - run: echo "${{ steps.result.outputs.time}}"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: echo "${{ steps.result.outputs.payload}}"
+      - run: echo "${{ steps.result.outputs.context}}"
+      - run: echo "${{ steps.result.outputs.latestRelease}}"
+      - run: echo "${{ steps.result.outputs.commits}}"
+      - run: echo "${{ steps.result.outputs.bumpMajor}}"
+      - run: echo "${{ steps.result.outputs.bumpMinor}}"
+      - run: echo "${{ steps.result.outputs.bumpPatch}}"
+      - run: echo "${{ steps.result.outputs.newTag}}"
+      - run: echo "${{ steps.result.outputs.releaseResponse}}"
