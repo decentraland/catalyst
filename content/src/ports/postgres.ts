@@ -1,6 +1,6 @@
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { IBaseComponent, IDatabase } from '@well-known-components/interfaces'
-import { Pool, PoolConfig } from 'pg'
+import { Client, Pool, PoolConfig } from 'pg'
 import QueryStream from 'pg-query-stream'
 import { SQLStatement } from 'sql-template-strings'
 import { EnvironmentConfig } from '../Environment'
@@ -47,6 +47,7 @@ export async function createDatabaseComponent(
     idleTimeoutMillis: components.env.getConfig<number>(EnvironmentConfig.PG_IDLE_TIMEOUT),
     query_timeout: components.env.getConfig<number>(EnvironmentConfig.PG_QUERY_TIMEOUT)
   }
+  const streamQueryTimeout = components.env.getConfig<number>(EnvironmentConfig.PG_STREAM_QUERY_TIMEOUT)
 
   const finalOptions = { ...defaultOptions, ...options }
 
@@ -87,7 +88,12 @@ export async function createDatabaseComponent(
   }
 
   async function* streamQuery<T>(sql: SQLStatement, config?: { batchSize?: number }): AsyncGenerator<T> {
-    const client = await pool.connect()
+    const client = new Client({
+      ...finalOptions,
+      query_timeout: streamQueryTimeout
+    })
+    await client.connect()
+
     try {
       const stream: any = new QueryStream(sql.text, sql.values, config)
 
@@ -113,7 +119,7 @@ export async function createDatabaseComponent(
         throw err
       }
     } finally {
-      client.release()
+      await client.end()
     }
   }
 
