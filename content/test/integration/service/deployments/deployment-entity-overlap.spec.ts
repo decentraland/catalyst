@@ -41,34 +41,13 @@ loadStandaloneTestEnvironment()("Integration - Deployment with Entity Overlaps",
       // make noop server validator
       makeNoopServerValidator(components);
 
+      stub(components.externalCalls, 'queryGraph')
+        .callsFake((...args: any) => {
+          console.log("queryGraph called with", args);
+          return Promise.resolve({});
+        });
+
       // make stub validator
-      // TODO The real validator is built in a way we have no access to mock its externalCalls, so
-      //  we can't mock queryGraph responses.
-      //  Only option I found is by mocking the responses this way
-      stub(components.validator, "validate")
-        .onFirstCall()
-        .resolves({ok: true})
-        .onSecondCall()
-        .resolves({ok: true})
-        // .callThrough()
-        // .resolves({
-        //   ok: false,
-        //   errors: [
-        //     `The provided Eth Address does not have access to the following parcel: (${P2})`,
-        //     `The provided Eth Address does not have access to the following parcel: (${P3})`
-        //   ]
-        // })
-        // .callsFake((args: any) => {
-        //   console.log("validator called with", args);
-        //   return Promise.resolve({
-        //     ok: false,
-        //     errors: [
-        //       `The provided Eth Address does not have access to the following parcel: (${P2})`,
-        //       `The provided Eth Address does not have access to the following parcel: (${P3})`
-        //     ]
-        //   });
-        //   // return Promise.resolve({ ok: true })
-        // });
 
       // Deploy E1 on P1, P2
       await deploy(components, E1);
