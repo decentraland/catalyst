@@ -2,13 +2,13 @@
 
 ## Following the convention
 
-We use <LINK TO GITHUB ACTION> to release a new version bumping the current version depending on the pull request's title (which will be the message of the commit when merging).
+We use <LINK TO GITHUB ACTION>, which traverse the commits from the last tagged to the most recent one, and releases a new version bumping the current version depending on the keywords found in the commits' messages.
 
-This is only possible if your pull request's title follows the convention set in the [Git Style Guide](https://github.com/decentraland/adr/blob/main/docs/ADR-6-git-style-guide.md) which is based on [semantic commits](https://sparkbox.com/foundry/semantic_commit_messages).
+This is only possible if your commits follows the convention set in the [Git Style Guide](https://github.com/decentraland/adr/blob/main/docs/ADR-6-git-style-guide.md) which is based on [semantic commits](https://sparkbox.com/foundry/semantic_commit_messages).
 
 ### Validation
 
- It is crucial to ensure that this convention is being embraced. There is a validation in the Github workflow that will make your pull request's build fail if its title doesn't follow it.
+ It is crucial to ensure that this convention is being embraced. There is a validation in the Github workflow that won't allow you to merge your pull request if its title doesn't follow it.
 
 ## Version bumping
 
