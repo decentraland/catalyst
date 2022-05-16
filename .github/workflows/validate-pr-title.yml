@@ -1,7 +1,7 @@
 name: validate-pr-title
 on:
   pull_request:
-    types: [edited, opened, reopened]
+    types: [edited, opened, reopened, synchronize]
 jobs:
   title-matches-convention:
     runs-on: ubuntu-latest
