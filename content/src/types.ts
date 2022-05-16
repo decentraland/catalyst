@@ -1,5 +1,5 @@
 import { DAOClient } from '@dcl/catalyst-node-commons'
-import { Validator } from '@dcl/content-validator'
+import { ExternalCalls, Validator } from '@dcl/content-validator'
 import { JobLifecycleManagerComponent } from '@dcl/snapshots-fetcher/dist/job-lifecycle-manager'
 import { IJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { IDeployerComponent, RemoteEntityDeployment } from '@dcl/snapshots-fetcher/dist/types'
@@ -64,6 +64,7 @@ export type AppComponents = {
   authenticator: ContentAuthenticator
   migrationManager: MigrationManager
   serverValidator: ServerValidator
+  externalCalls: ExternalCalls
   validator: Validator
   garbageCollectionManager: GarbageCollectionManager
   systemPropertiesManager: SystemPropertiesManager

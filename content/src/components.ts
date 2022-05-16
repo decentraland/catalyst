@@ -39,7 +39,7 @@ import { createRetryFailedDeployments } from './service/synchronization/retryFai
 import { createSynchronizationManager } from './service/synchronization/SynchronizationManager'
 import { SystemPropertiesManager } from './service/system-properties/SystemProperties'
 import { createServerValidator } from './service/validations/server'
-import { createValidator } from './service/validations/validator'
+import { createExternalCalls, createValidator } from './service/validations/validator'
 import { AppComponents } from './types'
 
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
@@ -100,7 +100,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     }
   )
 
-  const validator = createValidator({ storage, authenticator, catalystFetcher, env, logs })
+  const externalCalls = createExternalCalls({ storage, authenticator, catalystFetcher, env, logs })
+  const validator = createValidator({ externalCalls, logs })
   const serverValidator = createServerValidator({ failedDeploymentsCache, metrics })
 
   const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs })
@@ -266,6 +267,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     storage,
     authenticator,
     migrationManager,
+    externalCalls,
     validator,
     serverValidator,
     garbageCollectionManager,
