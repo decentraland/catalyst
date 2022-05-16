@@ -69,8 +69,8 @@ describe('ContentStorage', () => {
     await storage.storeStreamAndCompress(id, bufferToStream(newContent))
 
     const retrievedContent = await storage.retrieve(id)
-    const rawStream = await retrievedContent!.asRawStream()
-    expect({ encoding: rawStream.encoding, size: rawStream.size }).toEqual({ encoding: 'gzip', size: 45 })
+
+    expect({ encoding: retrievedContent?.encoding, size: retrievedContent?.size }).toEqual({ encoding: 'gzip', size: 45 })
     expect(await streamToBuffer(await retrievedContent!.asStream())).toEqual(newContent)
   })
 })
