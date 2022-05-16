@@ -6,14 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions: write-all
     steps:
-      - uses: actions/github-script@v6
-        id: tags
-        with:
-          result-encoding: string
-          script: |
-            return context.payload.repository.tags_url
-      - run: echo "${{steps.tags.outputs.result}}"
-      - uses: manumena/gh-action-fork@1.1.0
+      - uses: decentraland/gh-action-release@0.1.0
         id: result
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
