@@ -1,7 +1,7 @@
 name: learn-github-actions
 on:
   pull_request:
-    types: [opened, edited, reopened]
+    types: [opened, edited, reopened, synchronize]
 jobs:
   pr-title-matches-convention:
     runs-on: ubuntu-latest
@@ -20,7 +20,7 @@ jobs:
         env:
           prTitle: ${{ steps.PR.outputs.pr_title }}
       - run: echo "${{ steps.regex-match.outputs.match }}"
-      - run: echo "::error title=PR's title does not match the convention::Please check this guide to know how it should be https://github.com/decentraland/adr/blob/main/docs/ADR-6-git-style-guide.md. Please change it and then re-run this Github Action or make another commit" && exit 1
+      - run: echo "::error title=PR's title (${{steps.PR.outputs.pr_title}})does not match the convention::Please check this guide to know how it should be https://github.com/decentraland/adr/blob/main/docs/ADR-6-git-style-guide.md. Please change it and then re-run this Github Action or make another commit" && exit 1
         if: ${{ steps.regex-match.outputs.match == '' }}
   check-bats-version:
     runs-on: ubuntu-latest

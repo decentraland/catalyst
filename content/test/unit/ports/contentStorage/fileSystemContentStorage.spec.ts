@@ -1,3 +1,4 @@
+import { streamToBuffer } from '@dcl/snapshots-fetcher/dist/utils'
 import { mkdtempSync, rmSync } from 'fs'
 import os from 'os'
 import path from 'path'
@@ -70,7 +71,7 @@ describe('fileSystemContentStorage', () => {
     await fileSystemContentStorage.storeStreamAndCompress(id, bufferToStream(goodCompresstionRatioContent))
     const compressedFile = await fileSystemContentStorage.retrieve(id)
     expect(compressedFile).toBeDefined()
-    expect((await compressedFile!.asRawStream()).encoding).toBe('gzip')
+    expect(compressedFile?.encoding).toBe('gzip')
     expect(await fs.existPath(filePath)).toBeFalsy()
     expect(await fs.existPath(filePath + '.gzip')).toBeTruthy()
   })
@@ -92,5 +93,19 @@ describe('fileSystemContentStorage', () => {
     const seenIds: string[] = []
     for await (const fileId of fileIds) seenIds.push(fileId)
     expect(seenIds).toEqual(expect.arrayContaining([id, id2]))
+  })
+
+  it(`When content is stored compressed, then the raw content stream has the uncompressed data`, async () => {
+    const itemSize = 100
+    const goodCompresstionRatioContent = Buffer.from(new Uint8Array(itemSize).fill(0))
+    await fileSystemContentStorage.storeStreamAndCompress(id, bufferToStream(goodCompresstionRatioContent))
+    const compressedItem = await fileSystemContentStorage.retrieve(id)
+    const compressedItemSize = compressedItem?.size
+    expect(compressedItemSize).toBeDefined()
+    if (compressedItemSize) {
+      expect(compressedItemSize < 100).toBeTruthy()
+      const buffer = await streamToBuffer(await compressedItem?.asRawStream())
+      expect(buffer.length).toBe(compressedItemSize)
+    }
   })
 })
