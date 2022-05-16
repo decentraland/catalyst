@@ -20,5 +20,5 @@ jobs:
         env:
           prTitle: ${{ steps.PR.outputs.pr_title }}
       - run: echo "${{ steps.regex-match.outputs.match }}"
-      - run: echo "::error title=PR's title does not match the convention::Please refer to https://github.com/decentraland/catalyst/blob/main/docs/CONTRIBUTING.md#creating-a-pull-request and change the PR's title" && exit 1
+      - run: echo "::error title=PR's title (${{steps.PR.outputs.pr_title}}) does not match the convention::Please refer to https://github.com/decentraland/catalyst/blob/main/docs/CONTRIBUTING.md#creating-a-pull-request and change the PR's title" && exit 1
         if: ${{ steps.regex-match.outputs.match == '' }}
