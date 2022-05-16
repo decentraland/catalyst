@@ -2,7 +2,7 @@
 
 ## Following the convention
 
-We use <LINK TO GITHUB ACTION>, which traverse the commits from the last tagged to the most recent one, and releases a new version bumping the current version depending on the keywords found in the commits' messages.
+We use the [release Github action](https://github.com/decentraland/catalyst/actions/workflows/release.yml) to release, which traverse the commits from the last tagged to the most recent one, and releases a new version bumping the current version depending on the keywords found in the commits' messages.
 
 This is only possible if your commits follows the convention set in the [Git Style Guide](https://github.com/decentraland/adr/blob/main/docs/ADR-6-git-style-guide.md) which is based on [semantic commits](https://sparkbox.com/foundry/semantic_commit_messages).
 
