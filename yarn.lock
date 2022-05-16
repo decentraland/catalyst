@@ -362,10 +362,10 @@
   resolved "https://registry.yarnpkg.com/@dcl/content-hash-tree/-/content-hash-tree-1.1.2.tgz#a7677825183605e8011a8efe45912c64486a0b7f"
   integrity sha512-uX3LfF844r7eBxmd6wE8uYU1as/MQfmTov2im6PXu/nI+AMxF+YNzLKDQ4mB0OVtAL3Yy0SEQpAPQgs3GbraXA==
 
-"@dcl/content-validator@1.4.8":
-  version "1.4.8"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-1.4.8.tgz#917bcfe9cb5aa574f5e01cef539040fad0081ffb"
-  integrity sha512-v/zLp6miQOXVNs/dPjYIq4axDELbzR2bMzGXCbwXYJB6k1nUlGCZzoE68WjQReQLWLP+kNLLjxHpPJmrY1ByOA==
+"@dcl/content-validator@1.4.9-20220516172120.commit-892ece9":
+  version "1.4.9-20220516172120.commit-892ece9"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-1.4.9-20220516172120.commit-892ece9.tgz#1f455352d4c464bae9e30801c373d91999a92edd"
+  integrity sha512-6aDRvMHTZWMC4wso4cc8vbd9hOg8MbLWfX1b1So5zebQmfFitYEObenLIi2yojUBFpZGDqoXs0LO1QTmv7zuzg==
   dependencies:
     "@dcl/content-hash-tree" "1.1.2"
     "@dcl/hashing" "1.1.0"
