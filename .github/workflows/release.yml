@@ -13,7 +13,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: echo "Github context ${{ steps.result.outputs.context}}"
       - run: echo "Last tag ${{ steps.result.outputs.lastTag}}"
-      - run: echo "Commits found ${{ steps.result.outputs.commits}}"
+      - run: echo "Commits found ${{ steps.result.outputs.commitsLength}}"
       - run: echo "Major being bumped ${{ steps.result.outputs.bumpMajor}}"
       - run: echo "Minor being bumped ${{ steps.result.outputs.bumpMinor}}"
       - run: echo "Patch being bumped ${{ steps.result.outputs.bumpPatch}}"
