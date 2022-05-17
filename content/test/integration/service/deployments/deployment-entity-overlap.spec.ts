@@ -146,7 +146,7 @@ loadStandaloneTestEnvironment()("Integration - Deployment with Entity Overlaps",
     components: Pick<AppComponents, "deployer">,
     ...expectedEntities: EntityCombo[]
   ) {
-    const actualDeployments = await components.deployer.getDeployments();
+    const actualDeployments = await components.deployer.getDeployments({ filters: {onlyCurrentlyPointed: true}});
     const expectedEntityIds = expectedEntities.map((entityCombo) => entityCombo.entity.id).sort();
     const actualEntityIds = actualDeployments.deployments.map(({ entityId }) => entityId).sort();
     expect({ deployedEntityIds: actualEntityIds }).toEqual({ deployedEntityIds: expectedEntityIds });
