@@ -62,7 +62,15 @@ export const createActiveEntitiesComponent = (
 ): ActiveEntities => {
   const logger = components.logs.getLogger('ActiveEntities')
   const cache = new LRU<EntityId, Entity | NotActiveEntity>({
-    max: components.env.getConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE)
+    max: components.env.getConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE),
+    fetchMethod: async (entityId, staleValue) => {
+      logger.debug('Entity not found on cache', { entityId })
+
+      const entities = await findEntities({ entityIds: [entityId] })
+      reportCacheAccess(entities[0].type, 'miss')
+
+      return Promise.resolve(entities[0])
+    }
   })
   const entityIdByPointers = new Map<Pointer, EntityId | NotActiveEntity>()
 
@@ -183,7 +191,7 @@ export const createActiveEntitiesComponent = (
     const onCache: (Entity | NotActiveEntity)[] = []
     const remaining: EntityId[] = []
     for (const entityId of uniqueEntityIds) {
-      const entity = cache.get(entityId)
+      const entity = await cache.fetch(entityId)
       if (entity) {
         onCache.push(entity)
         if (isEntityPresent(entity)) {
