@@ -4,10 +4,10 @@ import { EnvironmentConfig } from '../../Environment'
 import { streamToBuffer } from '../../ports/contentStorage/contentStorage'
 import { AppComponents } from '../../types'
 
-export function createValidator(
+export function createExternalCalls(
   components: Pick<AppComponents, 'storage' | 'catalystFetcher' | 'authenticator' | 'env' | 'logs'>
-): IValidatorComponent {
-  const externalCalls: ExternalCalls = {
+): ExternalCalls {
+  return {
     isContentStoredAlready: (hashes) => components.storage.existMultiple(hashes),
     fetchContentFileSize: async (hash) => {
       const maybeFile = await components.storage.retrieve(hash)
@@ -36,6 +36,8 @@ export function createValidator(
       }
     }
   }
+}
 
-  return validator(externalCalls, components)
+export function createValidator(components: Pick<AppComponents, 'externalCalls' | 'logs'>): IValidatorComponent {
+  return validator(components.externalCalls, components)
 }
