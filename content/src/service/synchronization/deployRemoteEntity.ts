@@ -28,10 +28,10 @@ export async function deployEntityFromRemoteServer(
   entityType: string,
   authChain: AuthChain,
   servers: string[],
-  kind: DeploymentContext
+  context: DeploymentContext
 ): Promise<void> {
   await downloadFullEntity(components, entityId, entityType, servers)
-  await deployDownloadedEntity(components, entityId, entityType, { authChain }, kind)
+  await deployDownloadedEntity(components, entityId, entityType, { authChain }, context)
 }
 
 async function downloadFullEntity(
@@ -62,7 +62,7 @@ export async function deployDownloadedEntity(
   entityId: string,
   entityType: string,
   auditInfo: LocalDeploymentAuditInfo,
-  kind: DeploymentContext
+  context: DeploymentContext
 ): Promise<void> {
   const { metrics } = components
   const deploymentTimeTimer = metrics.startTimer('dcl_deployment_time', { entity_type: entityType })
@@ -78,7 +78,7 @@ export async function deployDownloadedEntity(
       throw new Error('Trying to deploy empty entityFile')
     }
 
-    const deploymentResult = await components.deployer.deployEntity([entityFile], entityId, auditInfo, kind)
+    const deploymentResult = await components.deployer.deployEntity([entityFile], entityId, auditInfo, context)
     if (isInvalidDeployment(deploymentResult)) {
       throw new Error(
         `Errors deploying entity(${entityId}):\n${deploymentResult.errors.map(($) => ' - ' + $).join('\n')}`

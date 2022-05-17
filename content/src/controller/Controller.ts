@@ -171,7 +171,6 @@ export class Controller {
     const ethAddress: EthAddress = req.body.ethAddress
     const signature: Signature = req.body.signature
     const files = req.files
-    const fixAttempt: boolean = req.query.fix === 'true'
 
     let deployFiles: ContentFile[] = []
     try {
@@ -182,7 +181,7 @@ export class Controller {
         deployFiles.map(({ content }) => content),
         entityId,
         auditInfo,
-        fixAttempt ? DeploymentContext.FIX_ATTEMPT : DeploymentContext.LOCAL
+        DeploymentContext.LOCAL
       )
 
       if (isSuccessfulDeployment(deploymentResult)) {
