@@ -112,18 +112,12 @@ loadStandaloneTestEnvironment()("Integration - Deployment with Entity Overlaps",
       makeNoopValidator(components);
       makeNoopServerValidator(components);
 
-      // stub(components.externalCalls, 'queryGraph')
-      //   .callsFake((...args: any) => {
-      //     console.log("queryGraph called with", args);
-      //     return Promise.resolve({});
-      //   });
-
       // Deploy E1 on P1, P2
       await deploy(components, E1);
       await assertDeploymentsAre(components, E1);
 
       // Change ownership of P2
-      // Nothing to do really, as the mock above already allows it
+      // Nothing to do really, as the mock above already allows the new deployment
 
       // Deploy E2 on P2, P3
       E2 = await buildDeployDataAfterEntity(E1, [P2, P3], {
