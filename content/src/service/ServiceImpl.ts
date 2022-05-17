@@ -169,7 +169,11 @@ export class ServiceImpl implements MetaverseContentService {
           entityId,
           pointers: entity.pointers.join(' ')
         })
-        this.components.metrics.increment('total_deployments_count', { entity_type: entity.type }, 1)
+        this.components.metrics.increment(
+          'total_deployments_count',
+          { entity_type: entity.type, deployment_context: context },
+          1
+        )
 
         // Insert in deployments cache the updated entities
         this.components.deployRateLimiter.newDeployment(

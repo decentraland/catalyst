@@ -10,7 +10,7 @@ export const metricsDeclaration = validateMetricsDeclaration({
   total_deployments_count: {
     help: 'Total number of deployments made to the content server',
     type: 'counter',
-    labelNames: ['entity_type']
+    labelNames: ['entity_type', 'deployment_context']
   },
 
   db_queued_queries_count: {
