@@ -1,17 +1,18 @@
 name: 'release'
-on: [workflow_dispatch]
-
+on:
+  workflow_dispatch:
+    inputs:
+        dry_run:
+          description: dry run
+          type: boolean
+          required: false
+          default: false
 jobs:
   release:
     runs-on: ubuntu-latest
     permissions: write-all
     steps:
-      - uses: actions/checkout@v2
-      - uses: decentraland/gh-action-release@0.1.1
-        id: result
+      - uses: decentraland/gh-action-release@0.2.0
         with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - run: echo "Github context ${{ steps.result.outputs.context}}"
-      - run: echo "Last tag ${{ steps.result.outputs.lastTag}}"
-      - run: echo "Commits found ${{ steps.result.outputs.commitsLength}}"
-      - run: echo "New tag ${{ steps.result.outputs.newTag}}"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          dry_run: ${{ github.event.inputs.dry_run }}
