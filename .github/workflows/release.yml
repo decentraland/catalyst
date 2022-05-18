@@ -7,7 +7,7 @@ jobs:
     permissions: write-all
     steps:
       - uses: actions/checkout@v2
-      - uses: decentraland/gh-action-release@0.1.0
+      - uses: decentraland/gh-action-release@0.1.1
         id: result
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
