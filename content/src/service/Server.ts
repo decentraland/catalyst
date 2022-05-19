@@ -75,6 +75,9 @@ export class Server implements IBaseComponent {
       )
     }
 
+    if (env.getConfig(EnvironmentConfig.READ_ONLY)) {
+      this.LOGGER.info(`Content Server running with READ_ONLY`)
+    }
     this.registerRoute('/entities/:type', controller, controller.getEntities) // TODO: Deprecate
     this.registerRoute('/entities/active/collections/:collectionUrn', controller, controller.filterByUrn)
     this.registerRoute('/entities', controller, controller.createEntity, HttpMethod.POST, upload.any())
