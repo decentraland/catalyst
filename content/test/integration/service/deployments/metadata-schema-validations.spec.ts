@@ -77,6 +77,7 @@ loadStandaloneTestEnvironment()("Integration - Deployment with metadata validati
         });
     }
   );
+
   testCaseWithComponents(
     testEnv,
     "When scene metadata is present and ok, deployment fail because of permissions validator",
@@ -104,6 +105,52 @@ loadStandaloneTestEnvironment()("Integration - Deployment with metadata validati
           errors: [
             "The provided Eth Address does not have access to the following parcel: (0,0)",
             "The provided Eth Address does not have access to the following parcel: (0,1)"
+          ]
+        });
+    }
+  );
+
+  testCaseWithComponents(
+    testEnv,
+    "When profile metadata is missing, deployment result should include the proper error",
+    async (components) => {
+      makeNoopServerValidator(components);
+
+      const P1 = "0,0";
+      const P2 = "0,1";
+      let E1: EntityCombo = await buildDeployData([P1, P2], {
+        type: EntityType.PROFILE
+      });
+
+      expect(await deployEntity(components, E1))
+        .toEqual({
+          errors: [
+            "The metadata for this entity type (profile) is not valid.",
+            "should be object"
+          ]
+        });
+    }
+  );
+
+  testCaseWithComponents(
+    testEnv,
+    "When profile metadata is present but incomplete (missing avatars), deployment result should include the proper error",
+    async (components) => {
+      makeNoopServerValidator(components);
+
+      const P1 = "0,0";
+      const P2 = "0,1";
+      let E1: EntityCombo = await buildDeployData([P1, P2], {
+        type: EntityType.PROFILE,
+        metadata: {
+        }
+      });
+
+      expect(await deployEntity(components, E1))
+        .toEqual({
+          errors: [
+            "The metadata for this entity type (profile) is not valid.",
+            "should have required property 'avatars'"
           ]
         });
     }
