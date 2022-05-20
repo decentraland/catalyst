@@ -1,8 +1,8 @@
-import { EntityId, EntityType, Pointer } from 'dcl-catalyst-commons'
+import { EntityType } from 'dcl-catalyst-commons'
 import { MigrationBuilder } from 'node-pg-migrate'
 import { FailureReason } from '../ports/failedDeploymentsCache'
 
-export function deleteFailedDeployments(pgm: MigrationBuilder, ...entityIds: EntityId[]): void {
+export function deleteFailedDeployments(pgm: MigrationBuilder, ...entityIds: string[]): void {
   const inClause = entityIds.map((entityId) => `'${entityId}'`).join(',')
   pgm.sql(`DELETE FROM failed_deployments WHERE entity_id IN (${inClause})`)
 }
@@ -24,7 +24,7 @@ const SUPPORTED_TYPES = [EntityType.WEARABLE] // This has only been tested on we
 export async function considerDeploymentsOnPointersAsFailed(
   pgm: MigrationBuilder,
   entityType: EntityType,
-  ...pointers: Pointer[]
+  ...pointers: string[]
 ): Promise<void> {
   if (!SUPPORTED_TYPES.includes(entityType)) {
     throw new Error(`${entityType} is not supported right now`)
@@ -34,7 +34,7 @@ export async function considerDeploymentsOnPointersAsFailed(
   }
 }
 
-async function considerDeploymentsOnPointerAsFailed(pgm: MigrationBuilder, entityType: EntityType, pointer: Pointer) {
+async function considerDeploymentsOnPointerAsFailed(pgm: MigrationBuilder, entityType: EntityType, pointer: string) {
   const now = Date.now()
   const { rows } = await pgm.db.query(`
     SELECT id, entity_id, entity_pointers

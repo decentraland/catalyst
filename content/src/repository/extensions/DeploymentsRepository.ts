@@ -1,19 +1,11 @@
-import { AuditInfo, Entity, EntityId, EntityType, Pointer, Timestamp } from 'dcl-catalyst-commons'
-import { AuthChain, Authenticator } from 'dcl-crypto'
+import { AuditInfo, Entity, EntityType } from 'dcl-catalyst-commons'
+import { Authenticator } from 'dcl-crypto'
 import { Database } from '../../repository/Database'
-
-export type FullSnapshot = {
-  entityId: EntityId
-  entityType: EntityType
-  pointers: Pointer[]
-  localTimestamp: Timestamp
-  authChain: AuthChain
-}
 
 export class DeploymentsRepository {
   constructor(private readonly db: Database) {}
 
-  async getEntityById(entityId: EntityId) {
+  async getEntityById(entityId: string) {
     const result = await this.db.map(
       `
         SELECT
@@ -41,7 +33,7 @@ export class DeploymentsRepository {
     return new Map(entries)
   }
 
-  deploymentsSince(entityType: EntityType, timestamp: Timestamp): Promise<number> {
+  deploymentsSince(entityType: EntityType, timestamp: number): Promise<number> {
     return this.db.one(
       `SELECT COUNT(*) AS count ` +
         `FROM deployments ` +

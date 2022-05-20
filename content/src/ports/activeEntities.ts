@@ -1,4 +1,4 @@
-import { Entity, EntityId, EntityType, Pointer } from 'dcl-catalyst-commons'
+import { Entity, EntityType } from 'dcl-catalyst-commons'
 import LRU from 'lru-cache'
 import { EnvironmentConfig } from '../Environment'
 import {
@@ -14,7 +14,7 @@ export type NotActiveEntity = 'NOT_ACTIVE_ENTITY'
 
 export const isEntityPresent = (result: Entity | NotActiveEntity | undefined): result is Entity =>
   result !== undefined && result !== 'NOT_ACTIVE_ENTITY'
-export const isPointingToEntity = (result: EntityId | NotActiveEntity | undefined): result is EntityId =>
+export const isPointingToEntity = (result: string | NotActiveEntity | undefined): result is string =>
   result !== undefined && result !== 'NOT_ACTIVE_ENTITY'
 
 export type ActiveEntities = {
@@ -22,25 +22,25 @@ export type ActiveEntities = {
    * Retrieve active entities that are pointed by the given pointers
    * Note: result is cached, even if the pointer has no active entity
    */
-  withPointers(pointers: Pointer[]): Promise<Entity[]>
+  withPointers(pointers: string[]): Promise<Entity[]>
   /**
    * Retrieve active entities which their pointers match the given urn prefix
    */
-  withPrefix(collectionUrn: string): Promise<{ pointer: Pointer; entityId: EntityId }[]>
+  withPrefix(collectionUrn: string): Promise<{ pointer: string; entityId: string }[]>
   /**
    * Retrieve active entities by their ids
    * Note: result is cached, even if the id has no active entity
    */
-  withIds(entityIds: EntityId[]): Promise<Entity[]>
+  withIds(entityIds: string[]): Promise<Entity[]>
   /**
    * Save entityId for given pointer and store the entity in the cache,
    * useful to retrieve entities by pointers
    */
-  update(pointers: Pointer[], entity: Entity | NotActiveEntity): void
+  update(pointers: string[], entity: Entity | NotActiveEntity): void
   /**
    * Set pointers and entity as NOT_ACTIVE
    */
-  clear(pointers: Pointer[]): void
+  clear(pointers: string[]): void
   /**
    * Returns the cached result:
    *  - entity id if there is an active entity
@@ -48,7 +48,7 @@ export type ActiveEntities = {
    *  - undefined if there is no cached result
    * Note: testing purposes
    */
-  getCachedEntity(idOrPointer: EntityId | Pointer): EntityId | NotActiveEntity | undefined
+  getCachedEntity(idOrPointer: string | string): string | NotActiveEntity | undefined
 }
 
 /**
@@ -61,10 +61,10 @@ export const createActiveEntitiesComponent = (
   components: Pick<AppComponents, 'database' | 'env' | 'logs' | 'metrics' | 'denylist' | 'sequentialExecutor'>
 ): ActiveEntities => {
   const logger = components.logs.getLogger('ActiveEntities')
-  const cache = new LRU<EntityId, Entity | NotActiveEntity>({
+  const cache = new LRU<string, Entity | NotActiveEntity>({
     max: components.env.getConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE)
   })
-  const entityIdByPointers = new Map<Pointer, EntityId | NotActiveEntity>()
+  const entityIdByPointers = new Map<string, string | NotActiveEntity>()
 
   // init gauge metrics
   components.metrics.observe('dcl_entities_cache_storage_max_size', {}, cache.max)
@@ -79,7 +79,7 @@ export const createActiveEntitiesComponent = (
     })
   }
 
-  const setPreviousEntityAsNone = (pointer: Pointer): void => {
+  const setPreviousEntityAsNone = (pointer: string): void => {
     if (entityIdByPointers.has(pointer)) {
       // pointer now have a different active entity, let's update the old one
       const entityId = entityIdByPointers.get(pointer)
@@ -95,7 +95,7 @@ export const createActiveEntitiesComponent = (
     }
   }
 
-  const clear = async (pointers: Pointer[]) => {
+  const clear = async (pointers: string[]) => {
     await update(pointers, 'NOT_ACTIVE_ENTITY')
   }
 
@@ -103,7 +103,7 @@ export const createActiveEntitiesComponent = (
    * Save entityId for given pointer and store the entity in the cache,
    * useful to retrieve entities by pointers
    */
-  const update = async (pointers: Pointer[], entity: Entity | NotActiveEntity) => {
+  const update = async (pointers: string[], entity: Entity | NotActiveEntity) => {
     for (const pointer of pointers) {
       setPreviousEntityAsNone(pointer)
       entityIdByPointers.set(pointer, isEntityPresent(entity) ? entity.id : entity)
@@ -157,8 +157,8 @@ export const createActiveEntitiesComponent = (
     entityIds,
     pointers
   }: {
-    entityIds?: EntityId[]
-    pointers?: Pointer[]
+    entityIds?: string[]
+    pointers?: string[]
   }): Promise<Entity[]> => {
     const filters = entityIds ? { entityIds } : { pointers }
     const { deployments } = await getDeployments(components, {
@@ -177,11 +177,11 @@ export const createActiveEntitiesComponent = (
   /**
    * Retrieve active entities by their ids
    */
-  const withIds = async (entityIds: EntityId[]): Promise<Entity[]> => {
+  const withIds = async (entityIds: string[]): Promise<Entity[]> => {
     // check what is on the cache
     const uniqueEntityIds = new Set(entityIds)
     const onCache: (Entity | NotActiveEntity)[] = []
-    const remaining: EntityId[] = []
+    const remaining: string[] = []
     for (const entityId of uniqueEntityIds) {
       const entity = cache.get(entityId)
       if (entity) {
@@ -204,10 +204,10 @@ export const createActiveEntitiesComponent = (
   /**
    * Retrieve active entities that are pointed by the given pointers
    */
-  const withPointers = async (pointers: Pointer[]) => {
+  const withPointers = async (pointers: string[]) => {
     const uniquePointers = new Set(pointers)
-    const uniqueEntityIds = new Set<EntityId>() // entityIds that are associated to the given pointers
-    const remaining: Pointer[] = [] // pointers that are not associated to any entity
+    const uniqueEntityIds = new Set<string>() // entityIds that are associated to the given pointers
+    const remaining: string[] = [] // pointers that are not associated to any entity
 
     // get associated entity ids to pointers or save for later
     for (const pointer of uniquePointers) {

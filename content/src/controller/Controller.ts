@@ -1,4 +1,5 @@
 import { toQueryParams } from '@dcl/catalyst-node-commons'
+import { DeploymentWithAuthChain } from '@dcl/schemas'
 import { DecentralandAssetIdentifier, parseUrn } from '@dcl/urn-resolver'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import {
@@ -6,12 +7,9 @@ import {
   ContentFileHash,
   Deployment,
   Entity,
-  EntityId,
   EntityType,
-  Pointer,
   SortingField,
-  SortingOrder,
-  Timestamp
+  SortingOrder
 } from 'dcl-catalyst-commons'
 import { AuthChain, Authenticator, AuthLink, EthAddress, Signature } from 'dcl-crypto'
 import destroy from 'destroy'
@@ -19,7 +17,6 @@ import express from 'express'
 import onFinished from 'on-finished'
 import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
 import { getActiveDeploymentsByContentHash } from '../logic/database-queries/deployments-queries'
-import { DeploymentWithAuthChain } from '../logic/database-queries/snapshots-queries'
 import { statusResponseFromComponents } from '../logic/status-checks'
 import { ContentItem } from '../ports/contentStorage/contentStorage'
 import { getDeployments } from '../service/deployments/deployments'
@@ -68,8 +65,8 @@ export class Controller {
     // Path: /entities/:type
     // Query String: ?{filter}&fields={fieldList}
     const type: EntityType = parseEntityType(req.params.type)
-    const pointers: Pointer[] = this.asArray<Pointer>(req.query.pointer as string)?.map((p) => p.toLowerCase()) ?? []
-    const ids: EntityId[] = this.asArray<EntityId>(req.query.id as string) ?? []
+    const pointers: string[] = this.asArray<string>(req.query.pointer as string)?.map((p) => p.toLowerCase()) ?? []
+    const ids: string[] = this.asArray<string>(req.query.id as string) ?? []
     const fields: string = req.query.fields as string
 
     // Validate type is valid
@@ -108,8 +105,8 @@ export class Controller {
     // Path: /entities/active
     // Body: { ids: string[], pointers: string[]}
 
-    const ids: EntityId[] = req.body.ids
-    const pointers: Pointer[] = req.body.pointers
+    const ids: string[] = req.body.ids
+    const pointers: string[] = req.body.pointers
 
     const idsPresent = ids?.length > 0
     const pointersPresent = pointers?.length > 0
@@ -155,9 +152,7 @@ export class Controller {
       return
     }
 
-    const entities: { pointer: string; entityId: EntityId }[] = await this.components.activeEntities.withPrefix(
-      parsedUrn
-    )
+    const entities: { pointer: string; entityId: string }[] = await this.components.activeEntities.withPrefix(parsedUrn)
 
     res.send(entities)
   }
@@ -166,7 +161,7 @@ export class Controller {
     // Method: POST
     // Path: /entities
     // Body: JSON with entityId,ethAddress,signature; and a set of files
-    const entityId: EntityId = req.body.entityId
+    const entityId: string = req.body.entityId
     const authChain: AuthLink[] = req.body.authChain
     const ethAddress: EthAddress = req.body.ethAddress
     const signature: Signature = req.body.signature
@@ -343,8 +338,8 @@ export class Controller {
     const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes
       ? stringEntityTypes.map((type) => parseEntityType(type))
       : undefined
-    const from: Timestamp | undefined = this.asInt(req.query.from)
-    const to: Timestamp | undefined = this.asInt(req.query.to)
+    const from: number | undefined = this.asInt(req.query.from)
+    const to: number | undefined = this.asInt(req.query.to)
     const offset: number | undefined = this.asInt(req.query.offset)
     const limit: number | undefined = this.asInt(req.query.limit)
     const lastId: string | undefined = (req.query.lastId as string)?.toLowerCase()
@@ -461,9 +456,9 @@ export class Controller {
     const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes
       ? stringEntityTypes.map((type) => parseEntityType(type))
       : undefined
-    const entityIds: EntityId[] | undefined = this.asArray<EntityId>(req.query.entityId)
+    const entityIds: string[] | undefined = this.asArray<string>(req.query.entityId)
     const onlyCurrentlyPointed: boolean | undefined = this.asBoolean(req.query.onlyCurrentlyPointed)
-    const pointers: Pointer[] | undefined = this.asArray<Pointer>(req.query.pointer)?.map((p) => p.toLowerCase())
+    const pointers: string[] | undefined = this.asArray<string>(req.query.pointer)?.map((p) => p.toLowerCase())
     const offset: number | undefined = this.asInt(req.query.offset)
     const limit: number | undefined = this.asInt(req.query.limit)
     const fields: string | undefined = req.query.fields as string | undefined
@@ -719,7 +714,7 @@ export type ControllerDenylistData = {
     id: string
   }
   metadata: {
-    timestamp: Timestamp
+    timestamp: number
     authChain: AuthChain
   }
 }

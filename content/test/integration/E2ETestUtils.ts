@@ -1,5 +1,5 @@
 import { DeploymentBuilder, DeploymentData } from 'dcl-catalyst-client'
-import { Entity as ControllerEntity, Entity, EntityType, EntityVersion, Pointer, Timestamp } from 'dcl-catalyst-commons'
+import { Entity as ControllerEntity, Entity, EntityType, EntityVersion } from 'dcl-catalyst-commons'
 import { Authenticator, EthAddress } from 'dcl-crypto'
 import EthCrypto from 'eth-crypto'
 import fs from 'fs'
@@ -15,8 +15,8 @@ import {
 } from '../../src/service/Service'
 
 export async function buildDeployDataAfterEntity(
-  afterEntity: { timestamp: Timestamp } | { entity: { timestamp: Timestamp } },
-  pointers: Pointer[],
+  afterEntity: { timestamp: number } | { entity: { timestamp: number } },
+  pointers: string[],
   options?: Exclude<DeploymentOptions, 'timestamp'>
 ): Promise<EntityCombo> {
   const after = 'timestamp' in afterEntity ? afterEntity.timestamp : afterEntity.entity.timestamp
@@ -25,7 +25,7 @@ export async function buildDeployDataAfterEntity(
   return buildDeployData(pointers, opts)
 }
 
-export async function buildDeployData(pointers: Pointer[], options?: DeploymentOptions): Promise<EntityCombo> {
+export async function buildDeployData(pointers: string[], options?: DeploymentOptions): Promise<EntityCombo> {
   const opts = Object.assign(
     {
       version: EntityVersion.V3,
@@ -145,7 +145,7 @@ export type Identity = {
 
 type DeploymentOptions = {
   type?: EntityType
-  timestamp?: Timestamp
+  timestamp?: number
   metadata?: any
   contentPaths?: string[]
   identity?: Identity

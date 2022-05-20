@@ -1,4 +1,4 @@
-import { EntityId, EntityType, Pointer, Timestamp } from 'dcl-catalyst-commons'
+import { EntityType } from 'dcl-catalyst-commons'
 import { Database } from '../Database'
 import { DeploymentId } from './DeploymentsRepository'
 
@@ -8,9 +8,9 @@ export class LastDeployedPointersRepository {
   /** Returns the last deployments that were active on the given pointers (could be active or not right now) */
   getLastActiveDeploymentsOnPointers(
     entityType: EntityType,
-    pointers: Pointer[]
+    pointers: string[]
   ): Promise<
-    { deployment: DeploymentId; entityId: EntityId; timestamp: Timestamp; pointers: Pointer[]; deleted: boolean }[]
+    { deployment: DeploymentId; entityId: string; timestamp: number; pointers: string[]; deleted: boolean }[]
   > {
     if (pointers.length === 0) {
       return Promise.resolve([])
@@ -45,7 +45,7 @@ export class LastDeployedPointersRepository {
   async setAsLastActiveDeploymentsOnPointers(
     deploymentId: DeploymentId,
     entityType: EntityType,
-    pointers: Pointer[]
+    pointers: string[]
   ): Promise<void> {
     if (pointers.length > 0) {
       await this.db.txIf((transaction) => {

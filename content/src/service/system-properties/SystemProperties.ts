@@ -1,5 +1,5 @@
 import { ServerBaseUrl } from '@dcl/catalyst-node-commons'
-import { EntityType, Timestamp } from 'dcl-catalyst-commons'
+import { EntityType } from 'dcl-catalyst-commons'
 import { Database } from '../../repository/Database'
 import { Repository } from '../../repository/Repository'
 import { DB_REQUEST_PRIORITY } from '../../repository/RepositoryQueue'
@@ -7,7 +7,7 @@ import { SnapshotMetadata } from '../snapshots/SnapshotManager'
 import { IntPropertyMapper, JSONPropertyMapper, SystemPropertyMapper } from './SystemPropertyMappers'
 
 export class SystemProperty<PropertyType> {
-  static readonly LAST_KNOWN_LOCAL_DEPLOYMENTS: SystemProperty<[ServerBaseUrl, Timestamp][]> = new SystemProperty(
+  static readonly LAST_KNOWN_LOCAL_DEPLOYMENTS: SystemProperty<[ServerBaseUrl, number][]> = new SystemProperty(
     'last_known_local_deployments',
     new JSONPropertyMapper()
   )
@@ -15,7 +15,7 @@ export class SystemProperty<PropertyType> {
     'last_full_snapshot_per_entity',
     new JSONPropertyMapper()
   )
-  static readonly LAST_GARBAGE_COLLECTION_TIME: SystemProperty<Timestamp> = new SystemProperty(
+  static readonly LAST_GARBAGE_COLLECTION_TIME: SystemProperty<number> = new SystemProperty(
     'last_garbage_collection_time',
     new IntPropertyMapper()
   )

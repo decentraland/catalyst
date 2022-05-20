@@ -1,4 +1,4 @@
-import { EntityId, EntityType, Timestamp } from 'dcl-catalyst-commons'
+import { EntityType } from 'dcl-catalyst-commons'
 import { AuthChain } from 'dcl-crypto'
 
 export enum FailureReason {
@@ -13,8 +13,8 @@ export type DeploymentStatus = FailureReason | NoFailure
 
 export type FailedDeployment = {
   entityType: EntityType
-  entityId: EntityId
-  failureTimestamp: Timestamp
+  entityId: string
+  failureTimestamp: number
   reason: FailureReason
   authChain: AuthChain
   errorDescription?: string
@@ -22,28 +22,28 @@ export type FailedDeployment = {
 
 export type IFailedDeploymentsCacheComponent = {
   getAllFailedDeployments(): FailedDeployment[]
-  findFailedDeployment(entityId: EntityId): FailedDeployment | undefined
-  removeFailedDeployment(entityId: EntityId): boolean
+  findFailedDeployment(entityId: string): FailedDeployment | undefined
+  removeFailedDeployment(entityId: string): boolean
   reportFailure(failedDeployment: FailedDeployment): void
-  getDeploymentStatus(entityId: EntityId): DeploymentStatus
+  getDeploymentStatus(entityId: string): DeploymentStatus
 }
 
 export function createFailedDeploymentsCache(): IFailedDeploymentsCacheComponent {
-  const failedDeployments: Map<EntityId, FailedDeployment> = new Map()
+  const failedDeployments: Map<string, FailedDeployment> = new Map()
   return {
     getAllFailedDeployments() {
       return Array.from(failedDeployments.values())
     },
-    findFailedDeployment(entityId: EntityId) {
+    findFailedDeployment(entityId: string) {
       return failedDeployments.get(entityId)
     },
-    removeFailedDeployment(entityId: EntityId) {
+    removeFailedDeployment(entityId: string) {
       return failedDeployments.delete(entityId)
     },
     reportFailure(failedDeployment: FailedDeployment) {
       failedDeployments.set(failedDeployment.entityId, failedDeployment)
     },
-    getDeploymentStatus(entityId: EntityId) {
+    getDeploymentStatus(entityId: string) {
       return failedDeployments.get(entityId)?.reason ?? NoFailure.NOT_MARKED_AS_FAILED
     }
   }

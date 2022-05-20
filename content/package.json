@@ -21,7 +21,7 @@
     "@dcl/catalyst-node-commons": "1.0.4",
     "@dcl/content-validator": "1.4.8",
     "@dcl/hashing": "^1.1.0",
-    "@dcl/schemas": "4.8.0",
+    "@dcl/schemas": "^4.10.0",
     "@dcl/snapshots-fetcher": "3.0.2",
     "@dcl/urn-resolver": "1.3.1",
     "@well-known-components/http-server": "^1.0.0",

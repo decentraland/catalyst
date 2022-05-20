@@ -1,4 +1,4 @@
-import { Entity, EntityId, Pointer } from 'dcl-catalyst-commons'
+import { Entity } from 'dcl-catalyst-commons'
 import fetch from 'node-fetch'
 import { EnvironmentConfig } from '../../../src/Environment'
 import * as deployments from '../../../src/service/deployments/deployments'
@@ -8,16 +8,15 @@ import { buildDeployData } from '../E2ETestUtils'
 import { TestProgram } from '../TestProgram'
 
 loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) => {
-
   it('when asking without params, it returns client error', async () => {
     const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
     makeNoopValidator(server.components)
     await server.startProgram()
 
     const result = await fetch(server.getUrl() + `/entities/active`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      })
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    })
 
     expect(result.status).toBe(400)
   })
@@ -273,7 +272,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       expect(newEntityId).not.toBe('NOT_ACTIVE_ENTITY')
       expect(activeEntities.getCachedEntity('0,1')).toBe(newEntityId)
       expect(entityId).toBeDefined()
-      if(entityId) {
+      if (entityId) {
         const notActiveEntity = activeEntities.getCachedEntity(entityId)
         expect(notActiveEntity).toBe('NOT_ACTIVE_ENTITY')
       }
@@ -350,7 +349,6 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     })
   })
 
-
   describe('Urn Prefix', () => {
     it('when fetching entities with invalid chars urn prefix, then a client error is returned', async () => {
       const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
@@ -358,8 +356,8 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       await server.startProgram()
 
       const response = await fetch(server.getUrl() + `/entities/active/collections/in!valid`, {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' }
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
       })
 
       expect(response.status).toBe(400)
@@ -369,10 +367,14 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       makeNoopValidator(server.components)
       await server.startProgram()
 
-      const response = await fetch(server.getUrl() + `/entities/active/collections/urn:decentraland:ethereum:collections-v1:0x32b7495895264ac9d0b12d32afd435453458b1c6`, {
+      const response = await fetch(
+        server.getUrl() +
+          `/entities/active/collections/urn:decentraland:ethereum:collections-v1:0x32b7495895264ac9d0b12d32afd435453458b1c6`,
+        {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' }
-      })
+        }
+      )
 
       expect(response.status).toBe(400)
     })
@@ -387,7 +389,10 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
 
       // Deploy entity
       await server.deploy(deployResult.deployData)
-      const response = await fetchActiveEntityByUrnPrefix(server, 'urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1')
+      const response = await fetchActiveEntityByUrnPrefix(
+        server,
+        'urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1'
+      )
 
       expect(response).toBeDefined()
       expect(response.length).toBe(1)
@@ -405,14 +410,17 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
 
       // Deploy entity
       await server.deploy(deployResult.deployData)
-      const response = await fetchActiveEntityByUrnPrefix(server, 'urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection')
+      const response = await fetchActiveEntityByUrnPrefix(
+        server,
+        'urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection'
+      )
 
       expect(response).toBeDefined()
       expect(response.length).toBe(1)
       expect(response[0].entityId).toBe(deployResult.controllerEntity.id)
       expect(response[0].pointer).toBe('urn:decentraland:mumbai:collections-thirdparty:athirdparty:wintercollection:1')
     })
-        it('when fetching entities by third party name, then matching entity is retrieved', async () => {
+    it('when fetching entities by third party name, then matching entity is retrieved', async () => {
       const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
       makeNoopValidator(server.components)
       await server.startProgram()
@@ -423,7 +431,10 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
 
       // Deploy entity
       await server.deploy(deployResult.deployData)
-      const response = await fetchActiveEntityByUrnPrefix(server, 'urn:decentraland:mumbai:collections-thirdparty:aThirdParty')
+      const response = await fetchActiveEntityByUrnPrefix(
+        server,
+        'urn:decentraland:mumbai:collections-thirdparty:aThirdParty'
+      )
 
       expect(response).toBeDefined()
       expect(response.length).toBe(1)
@@ -442,12 +453,14 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
 
       // Deploy entity
       await server.deploy(deployResult.deployData)
-      const response = await fetchActiveEntityByUrnPrefix(server, 'urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection')
+      const response = await fetchActiveEntityByUrnPrefix(
+        server,
+        'urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection'
+      )
 
       expect(response).toBeDefined()
       expect(response.length).toBe(0)
     })
-
 
     it('when pointer is updated and getting by prefix, the new one is retrieved', async () => {
       const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
@@ -466,15 +479,17 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       // Deploy entity
       await server.deploy(firstDeploy.deployData)
       await server.deploy(secondDeploy.deployData)
-      const response = await fetchActiveEntityByUrnPrefix(server, 'urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection')
+      const response = await fetchActiveEntityByUrnPrefix(
+        server,
+        'urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection'
+      )
 
       expect(response).toBeDefined()
       expect(response.length).toBe(1)
       expect(response[0].entityId).toBe(secondDeploy.controllerEntity.id)
       expect(response[0].pointer).toBe('urn:decentraland:mumbai:collections-thirdparty:athirdparty:wintercollection:1')
     })
-
-   })
+  })
 
   async function fetchActiveEntityByIds(server: TestProgram, ...ids: string[]): Promise<Entity[]> {
     return (
@@ -496,7 +511,10 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     ).json()
   }
 
-  async function fetchActiveEntityByUrnPrefix(server: TestProgram, collectionUrn: string): Promise<{ pointer: Pointer; entityId: EntityId }[]> {
+  async function fetchActiveEntityByUrnPrefix(
+    server: TestProgram,
+    collectionUrn: string
+  ): Promise<{ pointer: string; entityId: string }[]> {
     return (
       await fetch(`${server.getUrl()}/entities/active/collections/${collectionUrn}`, {
         method: 'GET',
@@ -504,5 +522,4 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       })
     ).json()
   }
-
 })

@@ -1,4 +1,3 @@
-import { EntityId } from 'dcl-catalyst-commons'
 import fetch from 'node-fetch'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
@@ -50,7 +49,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities By Content Ha
     expect(result).toEqual([deployResult.entity.id, secondDeployResult.entity.id])
   })
 
-  async function fetchActiveEntity(server: TestProgram, contentHash: string): Promise<EntityId[]> {
+  async function fetchActiveEntity(server: TestProgram, contentHash: string): Promise<string[]> {
     const url = server.getUrl() + `/contents/${contentHash}/active-entities`
 
     return (await fetch(url)).json()
