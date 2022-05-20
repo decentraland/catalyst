@@ -3200,6 +3200,21 @@ dcl-catalyst-commons@8.2.1, dcl-catalyst-commons@^8.2.0, dcl-catalyst-commons@^8
     ms "^2.1.2"
     node-fetch "^3.0.0"
 
+dcl-catalyst-commons@^8.2.2-20220520145059.commit-5a001e2:
+  version "8.2.2-20220520145059.commit-5a001e2"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-8.2.2-20220520145059.commit-5a001e2.tgz#f898c1fc8736d8fc058ef8316e92b4c8948beb5b"
+  integrity sha512-iEEJ2w+MH7jD+XleO6EzzdwbzxMr/XITuPNmR67O9rlaPImnzTyLURIJK0Foa93durRzmc7ZJsZOKBO7CjDj8Q==
+  dependencies:
+    "@dcl/hashing" "^1.1.0"
+    "@dcl/schemas" "4.9.1-20220520134944.commit-db15ef1"
+    abort-controller "^3.0.0"
+    cids "^1.1.9"
+    cookie "^0.4.1"
+    cross-fetch "^3.1.4"
+    dcl-crypto "^2.1.0"
+    ms "^2.1.2"
+    node-fetch "^3.0.0"
+
 dcl-crypto@2.3.0, dcl-crypto@^2.1.0, dcl-crypto@^2.2.0:
   version "2.3.0"
   resolved "https://registry.yarnpkg.com/dcl-crypto/-/dcl-crypto-2.3.0.tgz#a223b1513888a359ff93b302b0d5a045edff5a79"
