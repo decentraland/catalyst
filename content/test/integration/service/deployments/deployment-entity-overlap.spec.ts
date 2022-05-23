@@ -142,7 +142,7 @@ loadStandaloneTestEnvironment()('Integration - Deployment with Entity Overlaps',
     expect({ deployedEntityIds: actualEntityIds }).toEqual({ deployedEntityIds: expectedEntityIds })
   }
 
-  async function deploy(components: Pick<AppComponents, 'deployer'>, ...entities: EntityCombo[]): Promise<Timestamp[]> {
+  async function deploy(components: Pick<AppComponents, 'deployer'>, ...entities: EntityCombo[]): Promise<number[]> {
     return deployWithAuditInfo(components, entities, {})
   }
 
