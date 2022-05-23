@@ -3172,12 +3172,12 @@ date-format@^4.0.9:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-4.0.9.tgz#4788015ac56dedebe83b03bc361f00c1ddcf1923"
   integrity sha512-+8J+BOUpSrlKLQLeF8xJJVTxS8QfRSuJgwxSVvslzgO3E6khbI0F5mMEPf5mTYhCCm4h99knYP6H3W9n3BQFrg==
 
-dcl-catalyst-client@^11.3.0:
-  version "11.3.0"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-11.3.0.tgz#4709b1b3950bd2384736b1b9d86d46e2c2724815"
-  integrity sha512-1332euZ2lrwpyuinxZhT8kfoAYgYvQ12oxBdU59NZ7jE7hLD8DlC/LKv2h16lFqgQX/RCQrVMngaK5+z+3i1sg==
+dcl-catalyst-client@^11.3.2:
+  version "11.3.2"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-11.3.2.tgz#4882780176b7c76c5fb56772f28ccb57271c60f2"
+  integrity sha512-tc5dliQvMKD2XQlf96AMjrHOQHKrbC+z0veEh5sNqbkD44HlIZw36Sb4O65Te1VmouziKHt7EkxiLqyXP6jxVg==
   dependencies:
-    "@dcl/hashing" "^1.0.0"
+    "@dcl/hashing" "^1.1.0"
     "@dcl/schemas" "^4.0.0"
     "@types/form-data" "^2.5.0"
     cookie "^0.4.1"
