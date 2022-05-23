@@ -20,7 +20,8 @@ export const createThirdPartyFetcher = (): ThirdPartyFetcher => ({
       const response = await fetchJson(`${url}/registry/${registryId}/address/${owner}/assets`, {
         timeout: '5000'
       })
-      LOGGER.debug('[TPW-LOG] response: ', response)
+      LOGGER.debug('[TPW-LOG] response: ')
+      console.debug(response)
       const assetsByOwner = response as ThirdPartyAssets
 
       if (!assetsByOwner)
@@ -28,6 +29,7 @@ export const createThirdPartyFetcher = (): ThirdPartyFetcher => ({
       return assetsByOwner?.assets ?? []
     } catch (e) {
       LOGGER.debug(e)
+      console.debug(e)
       throw new Error(`Error fetching assets with owner: ${owner}, url: ${url} and registryId: ${registryId}`)
     }
   }
