@@ -260,13 +260,13 @@ export function createOrClause(
 export async function getActiveDeploymentsByContentHash(
   components: Pick<AppComponents, 'database'>,
   contentHash: string
-): Promise<EntityId[]> {
+): Promise<string[]> {
   const query = SQL`SELECT deployment.entity_id FROM deployments as deployment INNER JOIN content_files ON content_files.deployment=deployment.id
     WHERE content_hash=${contentHash} AND deployment.deleter_deployment IS NULL;`
 
   const queryResult = (await components.database.queryWithValues(query)).rows
 
-  const entities = queryResult.map((deployment: { entity_id: EntityId }) => deployment.entity_id)
+  const entities = queryResult.map((deployment: { entity_id: string }) => deployment.entity_id)
 
   return entities
 }
