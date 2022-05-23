@@ -17,9 +17,11 @@ export interface ThirdPartyFetcher {
 export const createThirdPartyFetcher = (): ThirdPartyFetcher => ({
   fetchAssets: async (url: string, registryId: string, owner: EthAddress): Promise<ThirdPartyAsset[]> => {
     try {
-      const assetsByOwner = (await fetchJson(`${url}/registry/${registryId}/address/${owner}/assets`, {
+      const response = await fetchJson(`${url}/registry/${registryId}/address/${owner}/assets`, {
         timeout: '5000'
-      })) as ThirdPartyAssets
+      })
+      LOGGER.debug('[TPW-LOG] response: ', response)
+      const assetsByOwner = response as ThirdPartyAssets
 
       if (!assetsByOwner)
         LOGGER.debug(`No assets found with owner: ${owner}, url: ${url} and registryId: ${registryId}`)
