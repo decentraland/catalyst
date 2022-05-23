@@ -25,6 +25,7 @@ export const createThirdPartyFetcher = (): ThirdPartyFetcher => ({
         LOGGER.debug(`No assets found with owner: ${owner}, url: ${url} and registryId: ${registryId}`)
       return assetsByOwner?.assets ?? []
     } catch (e) {
+      LOGGER.debug(e)
       throw new Error(`Error fetching assets with owner: ${owner}, url: ${url} and registryId: ${registryId}`)
     }
   }
