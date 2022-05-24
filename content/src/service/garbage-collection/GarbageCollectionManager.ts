@@ -1,5 +1,5 @@
 import { ILoggerComponent } from '@well-known-components/interfaces'
-import { ContentFileHash, delay, Timestamp } from 'dcl-catalyst-commons'
+import { ContentFileHash, delay } from 'dcl-catalyst-commons'
 import { DB_REQUEST_PRIORITY } from '../../repository/RepositoryQueue'
 import { SystemProperty } from '../../service/system-properties/SystemProperties'
 import { AppComponents } from '../../types'
@@ -7,7 +7,7 @@ import { AppComponents } from '../../types'
 export class GarbageCollectionManager {
   private LOGGER: ILoggerComponent.ILogger
   private hashesDeletedInLastSweep: Set<ContentFileHash> = new Set()
-  private lastTimeOfCollection: Timestamp
+  private lastTimeOfCollection: number
   private nextGarbageCollectionTimeout: NodeJS.Timeout
   private stopping = false
   private sweeping = false
@@ -47,7 +47,7 @@ export class GarbageCollectionManager {
    * If they are not being used, then we will delete them.
    */
   async performSweep() {
-    const newTimeOfCollection: Timestamp = Date.now()
+    const newTimeOfCollection: number = Date.now()
     this.sweeping = true
     try {
       await this.components.repository.tx(

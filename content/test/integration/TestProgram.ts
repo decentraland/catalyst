@@ -6,11 +6,8 @@ import {
   ContentFileHash,
   Deployment,
   Entity as ControllerEntity,
-  EntityId,
   EntityType,
-  Pointer,
-  ServerStatus,
-  Timestamp
+  ServerStatus
 } from 'dcl-catalyst-commons'
 import fetch from 'node-fetch'
 import { EnvironmentConfig } from '../../src/Environment'
@@ -71,7 +68,7 @@ export class TestProgram {
     }
   }
 
-  async deploy(deployData: DeploymentData, fix: boolean = false): Promise<Timestamp> {
+  async deploy(deployData: DeploymentData, fix: boolean = false): Promise<number> {
     this.logger.info('Deploying entity ' + deployData.entityId)
     const returnValue = await this.client.deployEntity(deployData, fix)
     if (isInvalidDeployment(returnValue)) {
@@ -85,7 +82,7 @@ export class TestProgram {
     return this.makeRequest(`${this.getUrl()}/failed-deployments`)
   }
 
-  getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<ControllerEntity[]> {
+  getEntitiesByPointers(type: EntityType, pointers: string[]): Promise<ControllerEntity[]> {
     return this.client.fetchEntitiesByPointers(type, pointers)
   }
 
@@ -93,11 +90,11 @@ export class TestProgram {
     return this.client.fetchContentStatus()
   }
 
-  getEntitiesByIds(type: EntityType, ...ids: EntityId[]): Promise<ControllerEntity[]> {
+  getEntitiesByIds(type: EntityType, ...ids: string[]): Promise<ControllerEntity[]> {
     return this.client.fetchEntitiesByIds(type, ids)
   }
 
-  getEntityById(type: EntityType, id: EntityId): Promise<ControllerEntity> {
+  getEntityById(type: EntityType, id: string): Promise<ControllerEntity> {
     return this.client.fetchEntityById(type, id)
   }
 

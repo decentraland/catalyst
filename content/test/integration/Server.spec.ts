@@ -2,7 +2,7 @@ import { Entity as ControllerEntity, Entity, EntityType } from 'dcl-catalyst-com
 import fetch from 'node-fetch'
 import { stub } from 'sinon'
 import { EnvironmentConfig } from '../../src/Environment'
-import { DeploymentWithAuthChain } from '../../src/logic/database-queries/snapshots-queries'
+import { DeploymentWithAuthChain } from '@dcl/schemas'
 import { SimpleContentItem } from '../../src/ports/contentStorage/contentStorage'
 import { Server } from '../../src/service/Server'
 import { randomEntity } from '../helpers/service/EntityTestFactory'
