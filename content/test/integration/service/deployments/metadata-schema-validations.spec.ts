@@ -31,7 +31,7 @@ loadStandaloneTestEnvironment()("Integration - Deployment with metadata validati
 
   testCaseWithComponents(
     testEnv,
-    "When scene metadata is present but incomplete (missing main), deployment result should include the proper error",
+    "When scene metadata is present but incomplete, deployment result should include the proper errors",
     async (components) => {
       makeNoopServerValidator(components);
 
@@ -47,7 +47,8 @@ loadStandaloneTestEnvironment()("Integration - Deployment with metadata validati
         .toEqual({
           errors: [
             "The metadata for this entity type (scene) is not valid.",
-            "should have required property 'main'"
+            "should have required property 'main'",
+            "should have required property 'scene'"
           ]
         });
     }
@@ -174,7 +175,8 @@ loadStandaloneTestEnvironment()("Integration - Deployment with metadata validati
         .toEqual({
           errors: [
             "The metadata for this entity type (wearable) is not valid.",
-            "should be object"
+            "should match exactly one schema in oneOf",
+            "should be object",
           ]
         });
     }
@@ -182,7 +184,7 @@ loadStandaloneTestEnvironment()("Integration - Deployment with metadata validati
 
   testCaseWithComponents(
     testEnv,
-    "When wearable metadata is present but incomplete (missing id), deployment result should include the proper error",
+    "When wearable metadata is present but incomplete, deployment result should include the proper error",
     async (components) => {
       makeNoopServerValidator(components);
 
@@ -198,7 +200,16 @@ loadStandaloneTestEnvironment()("Integration - Deployment with metadata validati
         .toEqual({
           errors: [
             "The metadata for this entity type (wearable) is not valid.",
-            "should have required property 'id'"
+            "for standard wearables \"merkleProof\" and \"content\" are not allowed",
+            "for third party wearables \"collectionAddress\" and \"rarity\" are not allowed",
+            "should match exactly one schema in oneOf",
+            "should have required property 'id'",
+            "should have required property 'description'",
+            "should have required property 'name'",
+            "should have required property 'data'",
+            "should have required property 'thumbnail'",
+            "should have required property 'image'",
+            "should have required property 'i18n'",
           ]
         });
     }
