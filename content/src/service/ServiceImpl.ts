@@ -5,11 +5,10 @@ import {
   ContentFileHash,
   Deployment,
   Entity,
-  EntityId,
   EntityType,
+  // TODO: replace this Hashing by the new lib
   Hashing,
-  PartialDeploymentHistory,
-  Pointer
+  PartialDeploymentHistory
 } from 'dcl-catalyst-commons'
 import { AuthChain, Authenticator } from 'dcl-crypto'
 import { EnvironmentConfig } from '../Environment'
@@ -36,7 +35,7 @@ import { happenedBefore } from './time/TimeSorting'
 
 export class ServiceImpl implements MetaverseContentService {
   private static LOGGER: ILoggerComponent.ILogger
-  private readonly pointersBeingDeployed: Map<EntityType, Set<Pointer>> = new Map()
+  private readonly pointersBeingDeployed: Map<EntityType, Set<string>> = new Map()
 
   private readonly LEGACY_CONTENT_MIGRATION_TIMESTAMP: Date = new Date(1582167600000) // DCL Launch Day
 
@@ -66,7 +65,7 @@ export class ServiceImpl implements MetaverseContentService {
 
   async deployEntity(
     files: DeploymentFiles,
-    entityId: EntityId,
+    entityId: string,
     auditInfo: LocalDeploymentAuditInfo,
     context: DeploymentContext,
     task?: Database
@@ -339,7 +338,7 @@ export class ServiceImpl implements MetaverseContentService {
 
   reportErrorDuringSync(
     entityType: EntityType,
-    entityId: EntityId,
+    entityId: string,
     reason: FailureReason,
     authChain: AuthChain,
     errorDescription?: string
@@ -391,7 +390,7 @@ export class ServiceImpl implements MetaverseContentService {
    * They could come hashed because the denylist decorator might have already hashed them for its own validations. In order to avoid re-hashing
    * them in the service (because there might be hundreds of files), we will send the hash result.
    */
-  static async hashFiles(files: DeploymentFiles, entityId: EntityId): Promise<Map<ContentFileHash, Uint8Array>> {
+  static async hashFiles(files: DeploymentFiles, entityId: string): Promise<Map<ContentFileHash, Uint8Array>> {
     if (files instanceof Map) {
       return files
     } else {
@@ -414,10 +413,7 @@ export class ServiceImpl implements MetaverseContentService {
     return this.components.storage.existMultiple(fileHashes)
   }
 
-  async getEntityById(
-    entityId: EntityId,
-    task?: Database
-  ): Promise<{ entityId: EntityId; localTimestamp: number } | void> {
+  async getEntityById(entityId: string, task?: Database): Promise<{ entityId: string; localTimestamp: number } | void> {
     return this.components.repository.reuseIfPresent(
       task,
       (db) => this.components.deploymentManager.getEntityById(db.deployments, entityId),

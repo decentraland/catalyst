@@ -1,5 +1,10 @@
-import { AuditInfo, DeploymentFilters, EntityType, EntityVersion, Timestamp } from 'dcl-catalyst-commons'
-import { DeploymentContext, DeploymentResult, isInvalidDeployment, isSuccessfulDeployment } from '../../../../src/service/Service'
+import { AuditInfo, DeploymentFilters, EntityType, EntityVersion } from 'dcl-catalyst-commons'
+import {
+  DeploymentContext,
+  DeploymentResult,
+  isInvalidDeployment,
+  isSuccessfulDeployment
+} from '../../../../src/service/Service'
 import { AppComponents } from '../../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { loadStandaloneTestEnvironment, testCaseWithComponents } from '../../E2ETestEnvironment'
@@ -124,7 +129,7 @@ loadStandaloneTestEnvironment()('Integration - Deployment Filters', (testEnv) =>
     expect({ filter, deployedEntityIds: actualEntityIds }).toEqual({ filter, deployedEntityIds: expectedEntityIds })
   }
 
-  async function deploy(components: Pick<AppComponents, 'deployer'>, ...entities: EntityCombo[]): Promise<Timestamp[]> {
+  async function deploy(components: Pick<AppComponents, 'deployer'>, ...entities: EntityCombo[]): Promise<number[]> {
     return deployWithAuditInfo(components, entities, {})
   }
 
@@ -133,7 +138,7 @@ loadStandaloneTestEnvironment()('Integration - Deployment Filters', (testEnv) =>
     entities: EntityCombo[],
     overrideAuditInfo?: Partial<AuditInfo>
   ) {
-    const result: Timestamp[] = []
+    const timestamps: number[] = []
     for (const { deployData } of entities) {
       const newAuditInfo = { version: EntityVersion.V3, authChain: deployData.authChain, ...overrideAuditInfo }
       const deploymentResult: DeploymentResult = await components.deployer.deployEntity(
@@ -143,13 +148,13 @@ loadStandaloneTestEnvironment()('Integration - Deployment Filters', (testEnv) =>
         DeploymentContext.LOCAL
       )
       if (isSuccessfulDeployment(deploymentResult)) {
-        result.push(deploymentResult)
+        timestamps.push(deploymentResult)
       } else if (isInvalidDeployment(deploymentResult)) {
         throw new Error(deploymentResult.errors.join(','))
       } else {
         throw new Error('deployEntity returned invalid result' + JSON.stringify(deploymentResult))
       }
     }
-    return result
+    return timestamps
   }
 })

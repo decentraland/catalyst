@@ -1,13 +1,13 @@
 import { DeploymentBuilder } from 'dcl-catalyst-client'
-import { ContentFileHash, Entity, EntityType, EntityVersion, Pointer, Timestamp } from 'dcl-catalyst-commons'
+import { ContentFileHash, Entity, EntityType, EntityVersion } from 'dcl-catalyst-commons'
 import { random } from 'faker'
 import { EntityFactory } from '../../../src/service/EntityFactory'
 
 /** Builds an entity with the given params, and also the file what represents it */
 export async function buildEntityAndFile(
   type: EntityType,
-  pointers: Pointer[],
-  timestamp: Timestamp,
+  pointers: string[],
+  timestamp: number,
   content?: Map<string, ContentFileHash>,
   metadata?: any
 ): Promise<[Entity, Uint8Array]> {

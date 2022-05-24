@@ -1,4 +1,4 @@
-import { Entity as ControllerEntity, Timestamp } from 'dcl-catalyst-commons'
+import { Entity as ControllerEntity } from 'dcl-catalyst-commons'
 import ms from 'ms'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { FailedDeployment, FailureReason } from '../../../src/ports/failedDeploymentsCache'
@@ -138,7 +138,7 @@ loadTestEnvironment()('End 2 end - Error handling', (testEnv) => {
     })
 
     // Deploy the entity
-    const deploymentTimestamp: Timestamp = await server1.deploy(deployData)
+    const deploymentTimestamp = await server1.deploy(deployData)
 
     // Cause failure
     await causeOfFailure(entityBeingDeployed)

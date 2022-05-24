@@ -1,5 +1,5 @@
 import { toQueryParams } from '@dcl/catalyst-node-commons'
-import { EntityType, fetchJson, SortingField, SortingOrder, Timestamp } from 'dcl-catalyst-commons'
+import { EntityType, fetchJson, SortingField, SortingOrder } from 'dcl-catalyst-commons'
 import { DeploymentField } from '../../../src/controller/Controller'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { DeploymentOptions } from '../../../src/service/deployments/types'
@@ -220,13 +220,13 @@ loadStandaloneTestEnvironment()('Integration - Deployment Pagination', (testEnv)
     expect(pointerChanges.pagination.next).toContain(`lastId=${E2.entity.id}`)
   })
 
-  async function deploy(...entities: EntityCombo[]): Promise<Timestamp[]> {
-    const result: Timestamp[] = []
+  async function deploy(...entities: EntityCombo[]): Promise<number[]> {
+    const timestamps: number[] = []
     for (const { deployData } of entities) {
       const deploymentResult = await server.deploy(deployData)
-      result.push(deploymentResult)
+      timestamps.push(deploymentResult)
     }
-    return result
+    return timestamps
   }
 
   async function fetchDeployments(options: DeploymentOptions) {

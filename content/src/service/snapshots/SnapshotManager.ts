@@ -1,7 +1,7 @@
 import { delay } from '@dcl/catalyst-node-commons'
 import { hashV1 } from '@dcl/hashing'
 import { ILoggerComponent } from '@well-known-components/interfaces'
-import { ContentFileHash, EntityType, Hashing, Timestamp } from 'dcl-catalyst-commons'
+import { ContentFileHash, EntityType, Hashing } from 'dcl-catalyst-commons'
 import future from 'fp-future'
 import * as fs from 'fs'
 import { streamActiveDeployments } from '../../logic/database-queries/snapshots-queries'
@@ -296,5 +296,5 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
   }
 }
 
-export type SnapshotMetadata = { hash: ContentFileHash; lastIncludedDeploymentTimestamp: Timestamp }
+export type SnapshotMetadata = { hash: ContentFileHash; lastIncludedDeploymentTimestamp: number }
 export type FullSnapshotMetadata = SnapshotMetadata & { entities: Record<string, SnapshotMetadata> }

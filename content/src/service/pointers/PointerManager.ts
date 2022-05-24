@@ -1,4 +1,4 @@
-import { Entity, Pointer } from 'dcl-catalyst-commons'
+import { Entity } from 'dcl-catalyst-commons'
 import { DeploymentId } from '../../repository/extensions/DeploymentsRepository'
 import { LastDeployedPointersRepository } from '../../repository/extensions/LastDeployedPointersRepository'
 import { PointerHistoryRepository } from '../../repository/extensions/PointerHistoryRepository'
@@ -42,11 +42,11 @@ export class PointerManager {
 
     // Prepare variables
     const result: DeploymentResult = new Map()
-    const overwrite: Set<Pointer> = new Set()
+    const overwrite: Set<string> = new Set()
 
     lastDeployments.forEach((lastDeployment) => {
       // Calculate the intersection of pointers between the last deployment and the new one
-      const intersection: Set<Pointer> = intersect(lastDeployment.pointers, entity.pointers)
+      const intersection: Set<string> = intersect(lastDeployment.pointers, entity.pointers)
 
       if (happenedBefore(lastDeployment, entity)) {
         intersection.forEach((pointer) => {
@@ -64,7 +64,7 @@ export class PointerManager {
 
         // If the last deployment wasn't already deleted, then the pointers not pointing to the new entity will point to nothing
         if (!lastDeployment.deleted) {
-          const onlyOnLastDeployed: Set<Pointer> = diff(lastDeployment.pointers, entity.pointers)
+          const onlyOnLastDeployed: Set<string> = diff(lastDeployment.pointers, entity.pointers)
           onlyOnLastDeployed.forEach((pointer) =>
             result.set(pointer, { before: lastDeployment.deployment, after: DELTA_POINTER_RESULT.CLEARED })
           )
@@ -94,17 +94,17 @@ export class PointerManager {
   }
 }
 
-export type DeploymentResult = Map<Pointer, { before: DeploymentId | undefined; after: DELTA_POINTER_RESULT }>
+export type DeploymentResult = Map<string, { before: DeploymentId | undefined; after: DELTA_POINTER_RESULT }>
 
 export enum DELTA_POINTER_RESULT {
   SET = 'set',
   CLEARED = 'cleared'
 }
 
-function intersect(pointers1: Pointer[], pointers2: Pointer[]): Set<Pointer> {
+function intersect(pointers1: string[], pointers2: string[]): Set<string> {
   return new Set(pointers1.filter((pointer) => pointers2.includes(pointer)))
 }
 
-function diff(pointers1: Pointer[], pointers2: Pointer[]): Set<Pointer> {
+function diff(pointers1: string[], pointers2: string[]): Set<string> {
   return new Set(pointers1.filter((pointer) => !pointers2.includes(pointer)))
 }

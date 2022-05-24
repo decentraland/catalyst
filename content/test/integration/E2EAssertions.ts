@@ -6,8 +6,7 @@ import {
   Deployment as ControllerDeployment,
   Entity as ControllerEntity,
   EntityContentItemReference,
-  EntityVersion,
-  Timestamp
+  EntityVersion
 } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
 import { Response } from 'node-fetch'
@@ -243,7 +242,7 @@ export async function assertContentIsDenylisted(
 export function buildDeployment(
   deployData: DeploymentData,
   entity: ControllerEntity,
-  deploymentTimestamp: Timestamp
+  deploymentTimestamp: number
 ): ControllerDeployment {
   return {
     ...entity,
@@ -318,7 +317,7 @@ export async function assertResponseIsOkOrThrow(response: Response) {
   }
 }
 
-export function assertResultIsSuccessfulWithTimestamp(result: DeploymentResult, expectedTimestamp: Timestamp): void {
+export function assertResultIsSuccessfulWithTimestamp(result: DeploymentResult, expectedTimestamp: number): void {
   if (isSuccessfulDeployment(result)) {
     expect(result).toEqual(expectedTimestamp)
   } else {

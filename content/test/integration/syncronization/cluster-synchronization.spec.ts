@@ -1,4 +1,3 @@
-import { Timestamp } from 'dcl-catalyst-commons'
 import ms from 'ms'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import {
@@ -40,7 +39,7 @@ loadTestEnvironment()('End 2 end synchronization tests', function (testEnv) {
     await assertDeploymentsAreReported(server2)
 
     // Deploy the entity to server 1
-    const deploymentTimestamp: Timestamp = await server1.deploy(deployData)
+    const deploymentTimestamp = await server1.deploy(deployData)
     const deployment = buildDeployment(deployData, entityBeingDeployed, deploymentTimestamp)
 
     // Assert that the entity was deployed on server 1
@@ -117,7 +116,7 @@ loadTestEnvironment()('End 2 end synchronization tests', function (testEnv) {
     )
 
     // Deploy entity 2
-    const deploymentTimestamp2: Timestamp = await server2.deploy(deployData2)
+    const deploymentTimestamp2 = await server2.deploy(deployData2)
     const deployment2 = buildDeployment(deployData2, entity2, deploymentTimestamp2)
     await awaitUntil(() => assertDeploymentsAreReported(server2, deployment2))
 
@@ -129,10 +128,10 @@ loadTestEnvironment()('End 2 end synchronization tests', function (testEnv) {
     await Promise.all([server1.startProgram(), server3.startProgram()])
 
     // Deploy entities 1 and 3
-    const deploymentTimestamp1: Timestamp = await server1.deploy(deployData1)
+    const deploymentTimestamp1 = await server1.deploy(deployData1)
     const deployment1 = buildDeployment(deployData1, entity1, deploymentTimestamp1)
 
-    const deploymentTimestamp3: Timestamp = await server3.deploy(deployData3)
+    const deploymentTimestamp3 = await server3.deploy(deployData3)
     const deployment3 = buildDeployment(deployData3, entity3, deploymentTimestamp3)
 
     // Wait for servers 1 and 3 to sync

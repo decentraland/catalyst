@@ -1,4 +1,4 @@
-import { Entity, EntityId, EntityType } from 'dcl-catalyst-commons'
+import { Entity, EntityType } from 'dcl-catalyst-commons'
 import { EntityFactory } from '../../../src/service/EntityFactory'
 import { buildEntityAndFile, entityToFile } from '../../helpers/service/EntityTestFactory'
 
@@ -100,7 +100,7 @@ describe('Service', () => {
     assertInvalidFile(entityToFile(invalidEntity), invalidEntity.id, errorMessage)
   }
 
-  function assertInvalidFile(file: Buffer, entityId: EntityId, errorMessage: string) {
+  function assertInvalidFile(file: Buffer, entityId: string, errorMessage: string) {
     expect(() => {
       EntityFactory.fromBufferWithId(file, entityId)
     }).toThrowError(errorMessage)

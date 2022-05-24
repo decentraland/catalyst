@@ -1,19 +1,16 @@
+import { DeploymentWithAuthChain } from '@dcl/schemas'
 import {
   AuditInfo,
   ContentFileHash,
   Deployment,
   Entity,
-  EntityId,
   EntityType,
   EntityVersion,
-  PartialDeploymentHistory,
-  Pointer,
-  Timestamp
+  PartialDeploymentHistory
 } from 'dcl-catalyst-commons'
 import { AuthChain, AuthLinkType } from 'dcl-crypto'
 import { random } from 'faker'
 import { CURRENT_CONTENT_VERSION } from '../../../src/Environment'
-import { DeploymentWithAuthChain } from '../../../src/logic/database-queries/snapshots-queries'
 import { ContentItem, SimpleContentItem } from '../../../src/ports/contentStorage/contentStorage'
 import { FailedDeployment } from '../../../src/ports/failedDeploymentsCache'
 import { DeploymentOptions, PointerChangesOptions } from '../../../src/service/deployments/types'
@@ -70,7 +67,7 @@ export class MockedMetaverseContentService implements MetaverseContentService, I
     throw new Error('Method not implemented.')
   }
 
-  getEntityById(entityId: EntityId): Promise<{ entityId: string; localTimestamp: number } | void> {
+  getEntityById(entityId: string): Promise<{ entityId: string; localTimestamp: number } | void> {
     throw new Error('Method not implemented.')
   }
 
@@ -108,10 +105,10 @@ export class MockedMetaverseContentService implements MetaverseContentService, I
 
   deployEntity(
     files: Buffer[],
-    entityId: EntityId,
+    entityId: string,
     auditInfo: LocalDeploymentAuditInfo,
     context: DeploymentContext
-  ): Promise<Timestamp> {
+  ): Promise<number> {
     return Promise.resolve(Date.now())
   }
 
@@ -163,7 +160,7 @@ export class MockedMetaverseContentService implements MetaverseContentService, I
     }
   }
 
-  private isThereAnEntityWithId(entityId: EntityId): boolean {
+  private isThereAnEntityWithId(entityId: string): boolean {
     return this.entities.map((entity) => entity.id == entityId).reduce((accum, currentValue) => accum || currentValue)
   }
 }
@@ -194,7 +191,7 @@ export class MockedMetaverseContentServiceBuilder {
 }
 
 export function buildEntity(
-  pointers: Pointer[],
+  pointers: string[],
   ...content: { hash: ContentFileHash; buffer: Buffer }[]
 ): Promise<[Entity, Uint8Array]> {
   const entityContent: Map<string, ContentFileHash> = new Map(
