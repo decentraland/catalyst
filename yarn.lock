@@ -3197,13 +3197,28 @@ dcl-catalyst-client@^11.3.2:
     dcl-crypto "^2.2.0"
     form-data "^4.0.0"
 
-dcl-catalyst-commons@8.2.2, dcl-catalyst-commons@^8.2.0, dcl-catalyst-commons@^8.2.2:
+dcl-catalyst-commons@8.2.2:
   version "8.2.2"
   resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-8.2.2.tgz#924c933b575f6fd874387e9847699a4a8e447180"
   integrity sha512-50kl9Q6Dp7fh4Rp2BOHHT+Jz/T8rVX8QLWr3DOQucCBJviD7m5OOinNjjlDcAjzB9s/shTX+DFg3daa9doIYag==
   dependencies:
     "@dcl/hashing" "^1.1.0"
     "@dcl/schemas" "4.11.0"
+    abort-controller "^3.0.0"
+    cids "^1.1.9"
+    cookie "^0.4.1"
+    cross-fetch "^3.1.4"
+    dcl-crypto "^2.1.0"
+    ms "^2.1.2"
+    node-fetch "^3.0.0"
+
+dcl-catalyst-commons@^8.2.0, dcl-catalyst-commons@^8.3.0:
+  version "8.3.0"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-8.3.0.tgz#8b49fbc748bc9bce6b21d71f9cca1d40c2cd238d"
+  integrity sha512-QZGSEYX1nsVatX/ljjwlBMfHzEJGDpU2Oe4v7bQRQKXK+qOqQcwavpAyPSGq/d5ZwacWdJnwvy6eARncimcqaA==
+  dependencies:
+    "@dcl/hashing" "^1.1.0"
+    "@dcl/schemas" "4.13.0"
     abort-controller "^3.0.0"
     cids "^1.1.9"
     cookie "^0.4.1"
