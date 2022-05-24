@@ -17,7 +17,8 @@ export interface ThirdPartyFetcher {
 export const createThirdPartyFetcher = (): ThirdPartyFetcher => ({
   fetchAssets: async (url: string, registryId: string, owner: EthAddress): Promise<ThirdPartyAsset[]> => {
     try {
-      const response = await fetchJson(`${url}/registry/${registryId}/address/${owner}/assets`, {
+      const baseUrl = new URL(`/registry/${registryId}/address/${owner}/assets`, url)
+      const response = await fetchJson(baseUrl.href, {
         timeout: '5000'
       })
       LOGGER.debug('[TPW-LOG] response: ')
