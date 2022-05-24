@@ -17,14 +17,17 @@ export interface ThirdPartyFetcher {
 export const createThirdPartyFetcher = (): ThirdPartyFetcher => ({
   fetchAssets: async (url: string, registryId: string, owner: EthAddress): Promise<ThirdPartyAsset[]> => {
     try {
-      const assetsByOwner = (await fetchJson(`${url}/registry/${registryId}/address/${owner}/assets`, {
+      const baseUrl = new URL(`/registry/${registryId}/address/${owner}/assets`, url)
+      const response = await fetchJson(baseUrl.href, {
         timeout: '5000'
-      })) as ThirdPartyAssets
+      })
+      const assetsByOwner = response as ThirdPartyAssets
 
       if (!assetsByOwner)
         LOGGER.debug(`No assets found with owner: ${owner}, url: ${url} and registryId: ${registryId}`)
       return assetsByOwner?.assets ?? []
     } catch (e) {
+      LOGGER.debug(e)
       throw new Error(`Error fetching assets with owner: ${owner}, url: ${url} and registryId: ${registryId}`)
     }
   }
