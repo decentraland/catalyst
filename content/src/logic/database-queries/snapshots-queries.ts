@@ -1,15 +1,6 @@
-import { EntityId, EntityType, Pointer, Timestamp } from 'dcl-catalyst-commons'
-import { AuthChain } from 'dcl-crypto'
+import { DeploymentWithAuthChain } from '@dcl/schemas'
 import SQL from 'sql-template-strings'
 import { AppComponents } from '../../types'
-
-export type DeploymentWithAuthChain = {
-  entityId: EntityId
-  entityType: EntityType
-  pointers: Pointer[]
-  localTimestamp: Timestamp
-  authChain: AuthChain
-}
 
 export async function* streamActiveDeployments(
   components: Pick<AppComponents, 'database'>

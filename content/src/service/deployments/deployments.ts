@@ -1,4 +1,4 @@
-import { Deployment, EntityVersion, PartialDeploymentHistory } from 'dcl-catalyst-commons'
+import { Deployment, EntityType, EntityVersion, PartialDeploymentHistory } from 'dcl-catalyst-commons'
 import { getContentFiles } from '../../logic/database-queries/content-files-queries'
 import { getHistoricalDeployments } from '../../logic/database-queries/deployments-queries'
 import { AppComponents } from '../../types'
@@ -43,7 +43,7 @@ export async function getDeployments(
 
   const deployments: Deployment[] = deploymentsResult.map((result) => ({
     entityVersion: result.version as EntityVersion,
-    entityType: result.entityType,
+    entityType: result.entityType as EntityType,
     entityId: result.entityId,
     pointers: result.pointers,
     entityTimestamp: result.entityTimestamp,

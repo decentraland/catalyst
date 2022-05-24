@@ -1,7 +1,7 @@
-import { Entity, EntityContentItemReference, EntityId, EntityType, EntityVersion, Pointer } from 'dcl-catalyst-commons'
+import { Entity, EntityContentItemReference, EntityType, EntityVersion } from 'dcl-catalyst-commons'
 
 export class EntityFactory {
-  static fromBufferWithId(buffer: Uint8Array, id: EntityId): Entity {
+  static fromBufferWithId(buffer: Uint8Array, id: string): Entity {
     const object = EntityFactory.parseJsonIntoObject(buffer)
     return EntityFactory.fromObject(object, id)
   }
@@ -21,7 +21,7 @@ export class EntityFactory {
     }
   }
 
-  private static fromObject(object: any, id: EntityId): Entity {
+  private static fromObject(object: any, id: string): Entity {
     if (!object.type || !Object.values(EntityType).includes(object.type)) {
       throw new Error(
         `Please set a valid type. It must be one of ${Object.values(EntityType)}. We got '${object.type}'`
@@ -53,7 +53,7 @@ export class EntityFactory {
     return {
       id,
       type,
-      pointers: object.pointers.map((pointer: Pointer) => pointer.toLowerCase()),
+      pointers: object.pointers.map((pointer: string) => pointer.toLowerCase()),
       timestamp: object.timestamp,
       version,
       content,

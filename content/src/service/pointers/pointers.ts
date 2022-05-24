@@ -1,5 +1,5 @@
+import { DeploymentWithAuthChain } from '@dcl/schemas'
 import { getHistoricalDeployments, HistoricalDeployment } from '../../logic/database-queries/deployments-queries'
-import { DeploymentWithAuthChain } from '../../logic/database-queries/snapshots-queries'
 import { AppComponents } from '../../types'
 import { PointerChangesOptions } from '../deployments/types'
 import { DeploymentPointerChanges } from './types'

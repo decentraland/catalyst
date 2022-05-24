@@ -1,18 +1,17 @@
-import { EntityId, Pointer } from 'dcl-catalyst-commons'
 import SQL from 'sql-template-strings'
 import { AppComponents } from '../../types'
 
 export async function getActiveDeploymentsByUrnPrefix(
   components: Pick<AppComponents, 'database'>,
   collectionUrn: string
-): Promise<{ pointer: Pointer; entityId: EntityId }[]> {
+): Promise<{ pointer: string; entityId: string }[]> {
   // sql-template-strings doesn't allow ' in the query string
   const matchingString = `${collectionUrn}%`
   const query = SQL`SELECT * FROM active_pointers as p WHERE p.pointer LIKE ${matchingString};`
 
   const queryResult = (await components.database.queryWithValues(query, 'filter_by_urn_prefix')).rows
 
-  const entities = queryResult.map((deployment: { entity_id: EntityId; pointer: Pointer }) => {
+  const entities = queryResult.map((deployment: { entity_id: string; pointer: string }) => {
     return {
       entityId: deployment.entity_id,
       pointer: deployment.pointer
@@ -24,8 +23,8 @@ export async function getActiveDeploymentsByUrnPrefix(
 
 export async function updateActiveDeployments(
   components: Pick<AppComponents, 'database'>,
-  pointers: Pointer[],
-  entityId: EntityId
+  pointers: string[],
+  entityId: string
 ): Promise<void> {
   const value_list = pointers.map((p, i) => {
     if (i < pointers.length - 1) {
@@ -44,7 +43,7 @@ export async function updateActiveDeployments(
 
 export async function removeActiveDeployments(
   components: Pick<AppComponents, 'database'>,
-  pointers: Pointer[]
+  pointers: string[]
 ): Promise<void> {
   const value_list = pointers.map((p, i) => {
     if (i < pointers.length - 1) {

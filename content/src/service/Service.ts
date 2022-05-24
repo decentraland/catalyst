@@ -1,13 +1,4 @@
-import {
-  AuditInfo,
-  ContentFileHash,
-  Deployment,
-  Entity,
-  EntityId,
-  EntityType,
-  PartialDeploymentHistory,
-  Timestamp
-} from 'dcl-catalyst-commons'
+import { AuditInfo, ContentFileHash, Deployment, EntityType, PartialDeploymentHistory } from 'dcl-catalyst-commons'
 import { AuthChain } from 'dcl-crypto'
 import { ContentItem } from '../ports/contentStorage/contentStorage'
 import { FailedDeployment } from '../ports/failedDeploymentsCache'
@@ -21,7 +12,7 @@ import { DeploymentOptions } from './deployments/types'
 export interface MetaverseContentService {
   deployEntity(
     files: DeploymentFiles,
-    entityId: EntityId,
+    entityId: string,
     auditInfo: LocalDeploymentAuditInfo,
     context: DeploymentContext,
     task?: Database
@@ -32,31 +23,26 @@ export interface MetaverseContentService {
   getAllFailedDeployments(): FailedDeployment[]
   reportErrorDuringSync(
     entityType: EntityType,
-    entityId: EntityId,
+    entityId: string,
     reason: string,
     authChain: AuthChain,
     errorDescription?: string
   ): void
-  getEntityById(entityId: EntityId): Promise<{ entityId: string; localTimestamp: number } | void>
+  getEntityById(entityId: string): Promise<{ entityId: string; localTimestamp: number } | void>
 }
 
 export type LocalDeploymentAuditInfo = Pick<AuditInfo, 'authChain'>
-
-export type DeploymentEvent = {
-  entity: Entity
-  auditInfo: AuditInfo
-}
 
 export type InvalidResult = { errors: string[] }
 export function InvalidResult(val: InvalidResult): InvalidResult {
   return val
 }
 
-export type DeploymentResult = Timestamp | InvalidResult
+export type DeploymentResult = number | InvalidResult
 
 export type DeploymentFiles = Uint8Array[] | Map<ContentFileHash, Uint8Array>
 
-export function isSuccessfulDeployment(deploymentResult: DeploymentResult): deploymentResult is Timestamp {
+export function isSuccessfulDeployment(deploymentResult: DeploymentResult): deploymentResult is number {
   return typeof deploymentResult === 'number'
 }
 

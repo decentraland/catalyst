@@ -1,5 +1,5 @@
 import { processDeploymentsInStream } from '@dcl/snapshots-fetcher/dist/file-processor'
-import { EntityId, EntityType, Pointer } from 'dcl-catalyst-commons'
+import { EntityType } from 'dcl-catalyst-commons'
 import { inspect } from 'util'
 import { EnvironmentBuilder } from '../../../../src/Environment'
 import { stopAllComponents } from '../../../../src/logic/components-lifecycle'
@@ -116,22 +116,22 @@ loadStandaloneTestEnvironment()('Integration - Snapshot Manager', (testEnv) => {
     const { hash } = snapshotMetadata!
     const content: ContentItem = (await components.storage.retrieve(hash))!
 
-    const snapshot: Map<EntityId, Pointer[]> = new Map()
+    const entityToPointersSnapshot: Map<string, string[]> = new Map()
 
     const readStream = await content.asStream()
 
     for await (const deployment of processDeploymentsInStream(readStream)) {
-      snapshot.set(deployment.entityId, (deployment as any).pointers)
+      entityToPointersSnapshot.set(deployment.entityId, (deployment as any).pointers)
     }
 
     try {
-      expect(snapshot.size).toBe(entitiesCombo.length)
+      expect(entityToPointersSnapshot.size).toBe(entitiesCombo.length)
 
       for (const { entity } of entitiesCombo) {
-        expect(snapshot.get(entity.id)).toEqual(entity.pointers)
+        expect(entityToPointersSnapshot.get(entity.id)).toEqual(entity.pointers)
       }
     } catch (e) {
-      process.stderr.write(inspect({ hash, content, snapshot }) + '\n')
+      process.stderr.write(inspect({ hash, content, snapshot: entityToPointersSnapshot }) + '\n')
       throw e
     }
   }

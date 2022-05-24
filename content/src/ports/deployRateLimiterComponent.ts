@@ -1,12 +1,12 @@
 import { ILoggerComponent } from '@well-known-components/interfaces'
-import { EntityType, Pointer, Timestamp } from 'dcl-catalyst-commons'
+import { EntityType } from 'dcl-catalyst-commons'
 import ms from 'ms'
 import NodeCache from 'node-cache'
 import { AppComponents } from '../types'
 
 export type IDeployRateLimiterComponent = {
-  newDeployment(entityType: EntityType, pointers: Pointer[], localTimestamp: Timestamp): void
-  isRateLimited(entityType: EntityType, pointers: Pointer[]): boolean
+  newDeployment(entityType: EntityType, pointers: string[], localTimestamp: number): void
+  isRateLimited(entityType: EntityType, pointers: string[]): boolean
 }
 
 export type DeploymentRateLimitConfig = {
@@ -36,7 +36,7 @@ export function createDeployRateLimiter(
   }
 
   return {
-    newDeployment(entityType: EntityType, pointers: Pointer[], localTimestamp: Timestamp): void {
+    newDeployment(entityType: EntityType, pointers: string[], localTimestamp: number): void {
       const cacheByEntityType = getCacheFromEntityType(entityType)
       for (const pointer in pointers) {
         cacheByEntityType.cache.set(pointer, localTimestamp)
@@ -45,7 +45,7 @@ export function createDeployRateLimiter(
 
     /** Check if the entity should be rate limit: no deployment has been made for the same pointer in the last ttl
      * and no more than max size of deployments were made either   */
-    isRateLimited(entityType: EntityType, pointers: Pointer[]): boolean {
+    isRateLimited(entityType: EntityType, pointers: string[]): boolean {
       const cacheByEntityType = getCacheFromEntityType(entityType)
       return (
         pointers.some((p) => !!cacheByEntityType.cache.get(p)) ||

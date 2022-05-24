@@ -1,11 +1,11 @@
-import { ContentFileHash, DeploymentContent, EntityContentItemReference, Timestamp } from 'dcl-catalyst-commons'
+import { ContentFileHash, DeploymentContent, EntityContentItemReference } from 'dcl-catalyst-commons'
 import { Database } from '../../repository/Database'
 import { DeploymentId } from './DeploymentsRepository'
 
 export class ContentFilesRepository {
   constructor(private readonly db: Database) {}
 
-  findContentHashesNotBeingUsedAnymore(lastGarbageCollection: Timestamp): Promise<ContentFileHash[]> {
+  findContentHashesNotBeingUsedAnymore(lastGarbageCollectionTimestamp: number): Promise<ContentFileHash[]> {
     return this.db.map(
       `
             SELECT content_files.content_hash
@@ -16,7 +16,7 @@ export class ContentFilesRepository {
             GROUP BY content_files.content_hash
             HAVING bool_or(deployments.deleter_deployment IS NULL) = FALSE
             `,
-      [lastGarbageCollection],
+      [lastGarbageCollectionTimestamp],
       (row) => row.content_hash
     )
   }
