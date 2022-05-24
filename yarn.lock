@@ -386,12 +386,21 @@
     ipfs-unixfs-importer "^7.0.3"
     multiformats "^9.6.3"
 
-"@dcl/schemas@4.11.0", "@dcl/schemas@^4.0.0", "@dcl/schemas@^4.11.0":
+"@dcl/schemas@4.11.0":
   version "4.11.0"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-4.11.0.tgz#321b45e231784ceb84b39d88f7380f0d23c23042"
   integrity sha512-D31OvYmz3JrBLRf6ibpPC+K4zry8OUXn5/0tWQDgMH26XxsbOWxsRfREqbSmj8fv9SQMjbgSHBfmL2VEi+s73Q==
   dependencies:
     ajv "^7.1.0"
+
+"@dcl/schemas@4.13.0", "@dcl/schemas@^4.0.0", "@dcl/schemas@^4.11.0":
+  version "4.13.0"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-4.13.0.tgz#75c6dd6f394e8439aac4e27947a163d7792486bb"
+  integrity sha512-Pb2PZ+4JmqosmcF2q0hojBEW2KNUcxQ7a0mpfANnIHALygjgUZmNrN03a3RzXB5U0SztJAvto1AVEnptg1lKLg==
+  dependencies:
+    ajv "^7.1.0"
+    ajv-errors "^2.0.1"
+    ajv-keywords "^4.0.1"
 
 "@dcl/snapshots-fetcher@3.0.2":
   version "3.0.2"
@@ -2120,6 +2129,16 @@ aggregate-error@^3.0.0:
     clean-stack "^2.0.0"
     indent-string "^4.0.0"
 
+ajv-errors@^2.0.1:
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/ajv-errors/-/ajv-errors-2.0.1.tgz#af5a199a0de65e6c5be738e108ad480578898a9f"
+  integrity sha512-hGH2npS6nUdBr61gf3rcG8R04DwwgQsdt6goZGmaZHYRHtLF948Emsdta/bcP9AD6/X1jnHm9lMbgujOQG7W6A==
+
+ajv-keywords@^4.0.1:
+  version "4.0.1"
+  resolved "https://registry.yarnpkg.com/ajv-keywords/-/ajv-keywords-4.0.1.tgz#3fcd1988846b741ec958b2555c96ccecce2b3a59"
+  integrity sha512-vPmwZT6AL4R7kKrjKOMoKgnompJJS8MUgTB7dPBEknSSv4ahKgu046H+bGOH2eMRbAcz5pYz3fwaSwrCGNvuxA==
+
 ajv@^6.10.0, ajv@^6.12.3, ajv@^6.12.4, ajv@^6.12.6:
   version "6.12.6"
   resolved "https://registry.yarnpkg.com/ajv/-/ajv-6.12.6.tgz#baf5a62e802b07d977034586f8c3baf5adf26df4"
@@ -3178,13 +3197,28 @@ dcl-catalyst-client@^11.3.2:
     dcl-crypto "^2.2.0"
     form-data "^4.0.0"
 
-dcl-catalyst-commons@8.2.2, dcl-catalyst-commons@^8.2.0, dcl-catalyst-commons@^8.2.2:
+dcl-catalyst-commons@8.2.2:
   version "8.2.2"
   resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-8.2.2.tgz#924c933b575f6fd874387e9847699a4a8e447180"
   integrity sha512-50kl9Q6Dp7fh4Rp2BOHHT+Jz/T8rVX8QLWr3DOQucCBJviD7m5OOinNjjlDcAjzB9s/shTX+DFg3daa9doIYag==
   dependencies:
     "@dcl/hashing" "^1.1.0"
     "@dcl/schemas" "4.11.0"
+    abort-controller "^3.0.0"
+    cids "^1.1.9"
+    cookie "^0.4.1"
+    cross-fetch "^3.1.4"
+    dcl-crypto "^2.1.0"
+    ms "^2.1.2"
+    node-fetch "^3.0.0"
+
+dcl-catalyst-commons@^8.2.0, dcl-catalyst-commons@^8.3.0:
+  version "8.3.0"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-8.3.0.tgz#8b49fbc748bc9bce6b21d71f9cca1d40c2cd238d"
+  integrity sha512-QZGSEYX1nsVatX/ljjwlBMfHzEJGDpU2Oe4v7bQRQKXK+qOqQcwavpAyPSGq/d5ZwacWdJnwvy6eARncimcqaA==
+  dependencies:
+    "@dcl/hashing" "^1.1.0"
+    "@dcl/schemas" "4.13.0"
     abort-controller "^3.0.0"
     cids "^1.1.9"
     cookie "^0.4.1"
