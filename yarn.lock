@@ -395,10 +395,10 @@
     ajv-errors "^2.0.1"
     ajv-keywords "^4.0.1"
 
-"@dcl/snapshots-fetcher@3.0.2":
-  version "3.0.2"
-  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-3.0.2.tgz#a8cc70481b775b1f4cb5e254dc0167a80a98c5b7"
-  integrity sha512-W0M8NoGJ2iBuxxu6beF3iZI2dT4gFcSfrJJM45QhMoa5/kTaDgShYIeIBkv2N+9rC6xZw+U57+KMNhFkshNKZw==
+"@dcl/snapshots-fetcher@3.0.3-20220526205835.commit-1fb9419":
+  version "3.0.3-20220526205835.commit-1fb9419"
+  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-3.0.3-20220526205835.commit-1fb9419.tgz#8095ef24ef3db5f44deba37cd3a78772d87d28ab"
+  integrity sha512-PZPyuMhEdirHIMztoM8Y8bVmh3xSnFULc4l8m/ofNSX+t3VAbh0FrQSau13PP0A0iKiMbkwDIz9lfyQd8xg2hg==
   dependencies:
     "@dcl/hashing" "^1.0.0"
     "@well-known-components/interfaces" "^1.1.0"
