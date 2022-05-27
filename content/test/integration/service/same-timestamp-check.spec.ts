@@ -1,4 +1,4 @@
-import { AuditInfo, EntityType } from 'dcl-catalyst-commons'
+import { EntityType } from 'dcl-catalyst-commons'
 import { AppComponents } from '../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { loadStandaloneTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
@@ -27,7 +27,7 @@ loadStandaloneTestEnvironment()('Integration - Same Timestamp Check', (testEnv) 
 
   testCaseWithComponents(
     testEnv,
-    `When oldest is deployed first, they overwrites are calculated correctly correctly`,
+    `When oldest is deployed first, the active is the newest`,
     async ({ deployer, validator, serverValidator }) => {
       // make noop validator
       makeNoopValidator({ validator })
@@ -36,10 +36,6 @@ loadStandaloneTestEnvironment()('Integration - Same Timestamp Check', (testEnv) 
       // Deploy the entities
       await deployEntitiesCombo(deployer, oldestEntity)
       await deployEntitiesCombo(deployer, newestEntity)
-
-      // Verify overwrites
-      await assertOverwrittenBy(deployer, oldestEntity, newestEntity)
-      await assertNotOverwritten(deployer, newestEntity)
 
       // Assert newest entity is active
       await assertIsActive(deployer, newestEntity)
@@ -48,7 +44,7 @@ loadStandaloneTestEnvironment()('Integration - Same Timestamp Check', (testEnv) 
 
   testCaseWithComponents(
     testEnv,
-    `When newest is deployed first, they overwrites are calculated correctly correctly`,
+    `When newest is deployed first, the active is the newest`,
     async ({ deployer, validator, serverValidator }) => {
       // make noop validator
       makeNoopValidator({ validator })
@@ -56,10 +52,6 @@ loadStandaloneTestEnvironment()('Integration - Same Timestamp Check', (testEnv) 
       // Deploy the entities
       await deployEntitiesCombo(deployer, newestEntity)
       await deployEntitiesCombo(deployer, oldestEntity)
-
-      // Verify overwrites
-      await assertOverwrittenBy(deployer, oldestEntity, newestEntity)
-      await assertNotOverwritten(deployer, newestEntity)
 
       // Assert newest entity is active
       await assertIsActive(deployer, newestEntity)
@@ -75,28 +67,4 @@ loadStandaloneTestEnvironment()('Integration - Same Timestamp Check', (testEnv) 
     expect(activeEntity.entityId).toEqual(entityCombo.entity.id)
   }
 
-  async function assertOverwrittenBy(
-    deployer: AppComponents['deployer'],
-    overwritten: EntityCombo,
-    overwrittenBy: EntityCombo
-  ) {
-    const auditInfo = await getAuditInfo(deployer, overwritten)
-    expect(auditInfo?.overwrittenBy).toEqual(overwrittenBy.entity.id)
-  }
-
-  async function assertNotOverwritten(deployer: AppComponents['deployer'], entity: EntityCombo) {
-    const auditInfo = await getAuditInfo(deployer, entity)
-    expect(auditInfo?.overwrittenBy).toBeUndefined()
-  }
-
-  async function getAuditInfo(deployer: AppComponents['deployer'], entity: EntityCombo): Promise<AuditInfo> {
-    const { deployments } = await deployer.getDeployments({
-      filters: {
-        entityTypes: [entity.controllerEntity.type],
-        entityIds: [entity.controllerEntity.id],
-        includeOverwrittenInfo: true
-      }
-    })
-    return deployments[0].auditInfo
-  }
 })

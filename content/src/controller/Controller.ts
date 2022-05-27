@@ -310,7 +310,7 @@ export class Controller {
 
     const { deployments } = await getDeployments(this.components, {
       fields: [DeploymentField.AUDIT_INFO],
-      filters: { entityIds: [entityId], entityTypes: [type], includeOverwrittenInfo: true },
+      filters: { entityIds: [entityId], entityTypes: [type] },
       includeDenylisted: true
     })
 
@@ -389,8 +389,7 @@ export class Controller {
       entityTypes: entityTypes as EntityType[] | undefined,
       from,
       to,
-      includeAuthChain,
-      includeOverwrittenInfo: includeAuthChain
+      includeAuthChain
     }
 
     const { pointerChanges, filters, pagination } = await this.components.sequentialExecutor.run(
