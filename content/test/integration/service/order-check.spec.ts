@@ -1,4 +1,3 @@
-import { AuditInfo } from 'dcl-catalyst-commons'
 import { AppComponents } from '../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { loadStandaloneTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
@@ -45,12 +44,6 @@ loadStandaloneTestEnvironment()('Integration - Order Check', (testEnv) => {
     expect(activeEntities.length).toEqual(1)
     const activeEntity = activeEntities[0]
     expect(activeEntity.entityId).toEqual(E5.entity.id)
-
-    await assertOverwrittenBy(components, E1, E3)
-    await assertOverwrittenBy(components, E2, E3)
-    await assertOverwrittenBy(components, E3, E4)
-    await assertOverwrittenBy(components, E4, E5)
-    await assertNotOverwritten(components, E5)
   }
 
   async function getActiveDeployments(components: Pick<AppComponents, 'deployer'>) {
@@ -62,29 +55,6 @@ loadStandaloneTestEnvironment()('Integration - Order Check', (testEnv) => {
     return deployments
   }
 
-  async function assertOverwrittenBy(
-    components: Pick<AppComponents, 'deployer'>,
-    overwritten: EntityCombo,
-    overwrittenBy: EntityCombo
-  ) {
-    const auditInfo = await getAuditInfo(components, overwritten)
-    expect(auditInfo?.overwrittenBy).toEqual(overwrittenBy.entity.id)
-  }
-
-  async function assertNotOverwritten(components: Pick<AppComponents, 'deployer'>, entity: EntityCombo) {
-    const auditInfo = await getAuditInfo(components, entity)
-    expect(auditInfo?.overwrittenBy).toBeUndefined()
-  }
-
-  async function getAuditInfo(components: Pick<AppComponents, 'deployer'>, entity: EntityCombo): Promise<AuditInfo> {
-    const { deployments } = await components.deployer.getDeployments({
-      filters: {
-        entityTypes: [entity.controllerEntity.type],
-        entityIds: [entity.controllerEntity.id]
-      }
-    })
-    return deployments[0].auditInfo
-  }
 
   function permutator<T>(array: Array<T>): Array<Array<T>> {
     const result: Array<Array<T>> = []
