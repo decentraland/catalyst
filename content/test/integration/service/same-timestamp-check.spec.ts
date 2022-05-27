@@ -93,8 +93,7 @@ loadStandaloneTestEnvironment()('Integration - Same Timestamp Check', (testEnv) 
     const { deployments } = await deployer.getDeployments({
       filters: {
         entityTypes: [entity.controllerEntity.type],
-        entityIds: [entity.controllerEntity.id],
-        includeOverwrittenInfo: true
+        entityIds: [entity.controllerEntity.id]
       }
     })
     return deployments[0].auditInfo
