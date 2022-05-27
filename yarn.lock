@@ -332,21 +332,21 @@
   dependencies:
     yaml "1.10.2"
 
-"@dcl/catalyst-contracts@1.0.2":
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/@dcl/catalyst-contracts/-/catalyst-contracts-1.0.2.tgz#c381b10fe7640f9abba33e8d0e87b05ddaa12ced"
-  integrity sha512-70iqpqsM0DYAMBxRVhRn4HIMm5NDql3nJL5HVvSxB8Kg2utuODCsRUYL8Ngk7BWVh3UM33eiSm75OLwtjTnwBA==
+"@dcl/catalyst-contracts@tag-use-rpc-worker":
+  version "1.0.3-20220527190536.commit-ac3e852"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-contracts/-/catalyst-contracts-1.0.3-20220527190536.commit-ac3e852.tgz#528e422aa8c83665d00e657c167912a00496d7f4"
+  integrity sha512-oAjw0nuad30M485YtCDsr1ktaV3YC72s5Je2/Nl1/w4pgVEDMsJk/CrLFDlYKZNWIDUkX5j/Yri+c4qY9SUfdw==
   dependencies:
     bn.js "5.2.0"
     dcl-crypto "2.3.0"
     web3x "4.0.6"
 
-"@dcl/catalyst-node-commons@1.0.4":
-  version "1.0.4"
-  resolved "https://registry.yarnpkg.com/@dcl/catalyst-node-commons/-/catalyst-node-commons-1.0.4.tgz#4f806ca49b5a12683fbe07130d2a525825ea5073"
-  integrity sha512-S0AIOQwNO3wb8w9BwAeYKhaw4SYqxiiyqOWnAtuznPX+/2aVVXCndk+sbOII9xT+zfiYQHRluBjbH/gUiHnr1A==
+"@dcl/catalyst-node-commons@tag-use-rpc-worker":
+  version "1.0.5-20220527192039.commit-89c1c43"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-node-commons/-/catalyst-node-commons-1.0.5-20220527192039.commit-89c1c43.tgz#743fa887169c67a40a71ef7c0873af5e6ad3f673"
+  integrity sha512-//lijjQfcXwIvI2FAgXgNaDriKT5UFs11E0/orqlriKgLKgio/ICETE4S5Orb4vxmJj/8z8TOxVKVtyT+7uF+Q==
   dependencies:
-    "@dcl/catalyst-contracts" "1.0.2"
+    "@dcl/catalyst-contracts" tag-use-rpc-worker
     "@typescript-eslint/parser" "5.21.0"
     "@well-known-components/http-server" "^1.0.0"
     "@well-known-components/interfaces" "^1.1.1"
