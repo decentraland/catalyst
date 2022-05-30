@@ -19,7 +19,7 @@ loadStandaloneTestEnvironment()('Integration - Deployment Fields', (testEnv) => 
 
   it('When deployments fields filter is used, then the result is the expected', async () => {
     const { deployData } = await buildDeployData(['0,0', '0,1'], {
-      metadata: 'this is just some metadata',
+      metadata: { a: 'this is just some metadata' },
       contentPaths: ['test/integration/resources/some-binary-file.png']
     })
 

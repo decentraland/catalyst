@@ -51,7 +51,7 @@ export async function getDeployments(
     metadata: result.metadata,
     deployedBy: result.deployerAddress,
     auditInfo: {
-      version: result.version,
+      version: result.version as EntityVersion,
       authChain: result.authChain,
       localTimestamp: result.localTimestamp,
       overwrittenBy: result.overwrittenBy

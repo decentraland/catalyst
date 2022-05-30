@@ -1,4 +1,4 @@
-import { EntityType } from 'dcl-catalyst-commons'
+import { EntityType } from '@dcl/schemas'
 import { MetaverseContentService } from '../../../src/service/Service'
 import { AppComponents } from '../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
@@ -18,7 +18,7 @@ loadStandaloneTestEnvironment()('Integration - Concurrent deployments', (testEnv
   it('creates initial entities', async () => {
     entities = []
     for (let i = 0; i < AMOUNT_OF_DEPLOYMENTS; i++) {
-      entities[i] = await buildDeployData([P1], { type })
+      entities[i] = await buildDeployData([P1], { type, metadata: { a: 'metadata' } })
     }
   })
 

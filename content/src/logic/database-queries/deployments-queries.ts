@@ -1,13 +1,6 @@
-import { DeploymentWithAuthChain } from '@dcl/schemas'
-import {
-  DeploymentFilters,
-  DeploymentSorting,
-  EntityType,
-  EntityVersion,
-  SortingField,
-  SortingOrder
-} from 'dcl-catalyst-commons'
-import { AuthChain } from 'dcl-crypto'
+import { AuthChain } from '@dcl/crypto'
+import { DeploymentWithAuthChain, EntityType } from '@dcl/schemas'
+import { DeploymentFilters, DeploymentSorting, SortingField, SortingOrder } from 'dcl-catalyst-commons'
 import pg from 'pg'
 import SQL, { SQLStatement } from 'sql-template-strings'
 import { AppComponents } from '../../types'
@@ -17,14 +10,14 @@ export type HistoricalDeployment = DeploymentWithAuthChain & {
   entityTimestamp: number
   metadata: any
   deployerAddress: string
-  version: EntityVersion
+  version: string
   overwrittenBy?: string
 }
 
 export interface HistoricalDeploymentsRow {
   id: number
   deployer_address: string
-  version: EntityVersion
+  version: string
   entity_type: EntityType
   entity_id: string
   entity_metadata: any

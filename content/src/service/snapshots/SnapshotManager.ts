@@ -1,7 +1,7 @@
 import { delay } from '@dcl/catalyst-node-commons'
 import { hashV1 } from '@dcl/hashing'
+import { EntityType } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
-import { ContentFileHash, EntityType, Hashing } from 'dcl-catalyst-commons'
 import future from 'fp-future'
 import * as fs from 'fs'
 import { streamActiveDeployments } from '../../logic/database-queries/snapshots-queries'
@@ -137,7 +137,7 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
     const buffer = Buffer.from(JSON.stringify(inArrayFormat))
 
     // Calculate the snapshot's hash
-    const hash = await Hashing.calculateIPFSHash(buffer)
+    const hash = await hashV1(buffer)
 
     // Store the new snapshot
     await this.components.storage.storeStream(hash, bufferToStream(buffer))
@@ -222,7 +222,7 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
     // update the snapshot sizes
     this.statusEndpointData.lastUpdatedTime = Date.now()
     for (const key in inMemoryArrays) {
-      this.statusEndpointData.entities[key] = inMemoryArrays[key]!.length
+      this.statusEndpointData.entities[key] = inMemoryArrays[key].length
     }
 
     // Phase 3) hash generated files and move them to content folder
@@ -296,5 +296,5 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
   }
 }
 
-export type SnapshotMetadata = { hash: ContentFileHash; lastIncludedDeploymentTimestamp: number }
+export type SnapshotMetadata = { hash: string; lastIncludedDeploymentTimestamp: number }
 export type FullSnapshotMetadata = SnapshotMetadata & { entities: Record<string, SnapshotMetadata> }

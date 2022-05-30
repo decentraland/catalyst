@@ -1,4 +1,4 @@
-import { Entity, EntityType } from 'dcl-catalyst-commons'
+import { Entity, EntityType } from '@dcl/schemas'
 import LRU from 'lru-cache'
 import { EnvironmentConfig } from '../Environment'
 import {

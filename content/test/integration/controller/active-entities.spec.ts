@@ -1,4 +1,4 @@
-import { Entity } from 'dcl-catalyst-commons'
+import { Entity } from '@dcl/schemas'
 import fetch from 'node-fetch'
 import { EnvironmentConfig } from '../../../src/Environment'
 import * as deployments from '../../../src/service/deployments/deployments'
@@ -28,7 +28,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     await server.startProgram()
 
     const deployResult = await buildDeployData(['0,0', '0,1'], {
-      metadata: 'this is just some metadata',
+      metadata: { a: 'this is just some metadata' },
       contentPaths: ['test/integration/resources/some-binary-file.png']
     })
 
@@ -48,7 +48,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     await server.startProgram()
 
     const deployResult = await buildDeployData(['0,0', '0,1'], {
-      metadata: 'this is just some metadata',
+      metadata: { a: 'this is just some metadata' },
       contentPaths: ['test/integration/resources/some-binary-file.png']
     })
 
@@ -70,7 +70,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     await server.startProgram()
 
     const deployResult = await buildDeployData(['0,0', '0,1'], {
-      metadata: 'this is just some metadata',
+      metadata: { a: 'this is just some metadata' },
       contentPaths: ['test/integration/resources/some-binary-file.png']
     })
 
@@ -78,7 +78,9 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     await server.deploy(deployResult.deployData)
 
     const newDeployResult = await buildDeployData(['0,0', '0,1'], {
-      metadata: 'this is just some metadata 2',
+      metadata: {
+        a: 'this is just some metadata 2'
+      },
       contentPaths: ['test/integration/resources/some-binary-file.png']
     })
 
@@ -98,7 +100,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     await server.startProgram()
 
     const deployResult = await buildDeployData(['0,0', '0,1'], {
-      metadata: 'this is just some metadata',
+      metadata: { a: 'this is just some metadata' },
       contentPaths: ['test/integration/resources/some-binary-file.png']
     })
 
@@ -106,7 +108,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     await server.deploy(deployResult.deployData)
 
     const deployResult2 = await buildDeployData(['2,0', '2,1'], {
-      metadata: 'this is just some metadata',
+      metadata: { a: 'this is just some metadata' },
       contentPaths: ['test/integration/resources/some-binary-file.png']
     })
 
@@ -127,7 +129,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     await server.startProgram()
 
     const deployResult = await buildDeployData(['0,0', '0,1'], {
-      metadata: 'this is just some metadata',
+      metadata: { a: 'this is just some metadata' },
       contentPaths: ['test/integration/resources/some-binary-file.png']
     })
 
@@ -148,7 +150,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
 
     const pointers = ['0,0', '0,1']
     const deployResult = await buildDeployData(pointers, {
-      metadata: 'this is just some metadata',
+      metadata: { a: 'this is just some metadata' },
       contentPaths: ['test/integration/resources/some-binary-file.png']
     })
 
@@ -167,7 +169,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       await server.startProgram()
       const pointers = ['0,0', '0,1']
       const deployResult = await buildDeployData(pointers, {
-        metadata: 'this is just some metadata',
+        metadata: { a: 'this is just some metadata' },
         contentPaths: ['test/integration/resources/some-binary-file.png']
       })
 
@@ -216,7 +218,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       await server.startProgram()
       const pointers = ['0,0', '0,1']
       const { deployData } = await buildDeployData(pointers, {
-        metadata: 'this is just some metadata',
+        metadata: { a: 'this is just some metadata' },
         contentPaths: ['test/integration/resources/some-binary-file.png']
       })
 
@@ -224,7 +226,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       await server.deploy(deployData)
 
       const { deployData: secondDeployData } = await buildDeployData(['0,1'], {
-        metadata: 'this is just some metadata',
+        metadata: { a: 'this is just some metadata' },
         contentPaths: ['test/integration/resources/some-binary-file.png']
       })
       // Deploy entity with pointer ['0,1']
@@ -244,7 +246,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       const activeEntities = server.components.activeEntities
       const pointers = ['0,0', '0,1']
       const { deployData } = await buildDeployData(pointers, {
-        metadata: 'this is just some metadata',
+        metadata: { a: 'this is just some metadata' },
         contentPaths: ['test/integration/resources/some-binary-file.png']
       })
 
@@ -261,7 +263,9 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       expect(entityId).not.toBe('NOT_ACTIVE_ENTITY')
 
       const { deployData: secondDeployData } = await buildDeployData(pointers, {
-        metadata: 'this is just some metadata 2',
+        metadata: {
+          a: 'this is just some metadata'
+        },
         contentPaths: ['test/integration/resources/some-binary-file.png']
       })
       // Deploy new entity with pointers ['0,0', '0,1']
@@ -284,13 +288,13 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       await server.startProgram()
       const firstPointers = ['0,0', '0,1']
       const { deployData } = await buildDeployData(firstPointers, {
-        metadata: 'this is just some metadata',
+        metadata: { a: 'this is just some metadata' },
         contentPaths: ['test/integration/resources/some-binary-file.png']
       })
 
       const secondPointers = ['0,2', '0,3']
       const { deployData: secondDeployData } = await buildDeployData(secondPointers, {
-        metadata: 'this is just some metadata',
+        metadata: { a: 'this is just some metadata' },
         contentPaths: ['test/integration/resources/some-binary-file.png']
       })
 
@@ -327,7 +331,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       await server.startProgram()
       const pointers = ['0,0', '0,1']
       const { deployData } = await buildDeployData(pointers, {
-        metadata: 'this is just some metadata',
+        metadata: { a: 'this is just some metadata' },
         contentPaths: ['test/integration/resources/some-binary-file.png']
       })
 
@@ -335,7 +339,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       await server.deploy(deployData)
 
       const { deployData: secondDeployData } = await buildDeployData(['0,1'], {
-        metadata: 'this is just some metadata',
+        metadata: { a: 'this is just some metadata' },
         contentPaths: ['test/integration/resources/some-binary-file.png']
       })
       // Deploy entity with pointer ['0,1']
@@ -369,7 +373,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
 
       const response = await fetch(
         server.getUrl() +
-          `/entities/active/collections/urn:decentraland:ethereum:collections-v1:0x32b7495895264ac9d0b12d32afd435453458b1c6`,
+        `/entities/active/collections/urn:decentraland:ethereum:collections-v1:0x32b7495895264ac9d0b12d32afd435453458b1c6`,
         {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' }
@@ -384,7 +388,9 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       await server.startProgram()
       const pointer = ['urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1']
       const deployResult = await buildDeployData(pointer, {
-        metadata: 'this is just some metadata'
+        metadata: {
+          a: 'this is just some metadata'
+        }
       })
 
       // Deploy entity
@@ -405,7 +411,9 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       await server.startProgram()
       const pointer = ['urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1']
       const deployResult = await buildDeployData(pointer, {
-        metadata: 'this is just some metadata'
+        metadata: {
+          a: 'this is just some metadata'
+        }
       })
 
       // Deploy entity
@@ -426,7 +434,9 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       await server.startProgram()
       const pointer = ['urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1']
       const deployResult = await buildDeployData(pointer, {
-        metadata: 'this is just some metadata'
+        metadata: {
+          a: 'this is just some metadata'
+        }
       })
 
       // Deploy entity
@@ -447,7 +457,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       await server.startProgram()
       const pointer = ['urn:dcl:collection:itemId']
       const deployResult = await buildDeployData(pointer, {
-        metadata: 'this is just some metadata',
+        metadata: { a: 'this is just some metadata' },
         contentPaths: ['test/integration/resources/some-binary-file.png']
       })
 
@@ -468,11 +478,11 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       await server.startProgram()
       const pointer = ['urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1']
       const firstDeploy = await buildDeployData(pointer, {
-        metadata: 'this is just some metadata',
+        metadata: { a: 'this is just some metadata' },
         contentPaths: ['test/integration/resources/some-binary-file.png']
       })
       const secondDeploy = await buildDeployData(pointer, {
-        metadata: 'this is just some metadata',
+        metadata: { a: 'this is just some metadata' },
         contentPaths: ['test/integration/resources/some-binary-file.png']
       })
 

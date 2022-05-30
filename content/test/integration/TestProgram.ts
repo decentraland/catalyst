@@ -1,12 +1,11 @@
 import { ServerBaseUrl } from '@dcl/catalyst-node-commons'
+import { Entity, EntityType } from '@dcl/schemas'
 import { ILoggerComponent, Lifecycle } from '@well-known-components/interfaces'
 import { ContentClient, DeploymentData } from 'dcl-catalyst-client'
 import {
   AuditInfo,
   ContentFileHash,
   Deployment,
-  Entity as ControllerEntity,
-  EntityType,
   ServerStatus
 } from 'dcl-catalyst-commons'
 import fetch from 'node-fetch'
@@ -82,7 +81,7 @@ export class TestProgram {
     return this.makeRequest(`${this.getUrl()}/failed-deployments`)
   }
 
-  getEntitiesByPointers(type: EntityType, pointers: string[]): Promise<ControllerEntity[]> {
+  getEntitiesByPointers(type: EntityType, pointers: string[]): Promise<Entity[]> {
     return this.client.fetchEntitiesByPointers(type, pointers)
   }
 
@@ -90,11 +89,11 @@ export class TestProgram {
     return this.client.fetchContentStatus()
   }
 
-  getEntitiesByIds(type: EntityType, ...ids: string[]): Promise<ControllerEntity[]> {
+  getEntitiesByIds(type: EntityType, ...ids: string[]): Promise<Entity[]> {
     return this.client.fetchEntitiesByIds(type, ids)
   }
 
-  getEntityById(type: EntityType, id: string): Promise<ControllerEntity> {
+  getEntityById(type: EntityType, id: string): Promise<Entity> {
     return this.client.fetchEntityById(type, id)
   }
 
@@ -102,7 +101,7 @@ export class TestProgram {
     return this.client.downloadContent(fileHash)
   }
 
-  async getAuditInfo(entity: ControllerEntity): Promise<AuditInfo> {
+  async getAuditInfo(entity: Entity): Promise<AuditInfo> {
     const legacyAuditInfo = await this.client.fetchAuditInfo(entity.type, entity.id)
     return { ...legacyAuditInfo, localTimestamp: 0 }
   }

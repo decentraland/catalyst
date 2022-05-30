@@ -1,15 +1,14 @@
-import { DAOClient, DAOContractClient } from '@dcl/catalyst-node-commons'
-import { DAOContract } from '@dcl/catalyst-contracts'
 import { Environment, EnvironmentConfig } from '../../../Environment'
-import { DAOHardcodedClient } from './HardcodedDAOClient'
+import { DAOClient, DaoComponent, DAOHardcodedClient } from './HardcodedDAOClient'
+import { HTTPProvider } from 'eth-connect'
 
 export class DAOClientFactory {
-  static create(env: Environment): DAOClient {
+  static async create(env: Environment, ethereumProvider: HTTPProvider): Promise<DaoComponent> {
     const customDAO: string = env.getConfig(EnvironmentConfig.CUSTOM_DAO) ?? ''
     if (customDAO && customDAO.trim().length !== 0) {
       return new DAOHardcodedClient(customDAO.split(','))
     }
-    const contract = DAOContract.withNetwork(env.getConfig(EnvironmentConfig.ETH_NETWORK))
-    return new DAOContractClient(contract)
+
+    return new DAOClient(ethereumProvider)
   }
 }

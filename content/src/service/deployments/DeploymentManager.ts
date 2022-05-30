@@ -1,4 +1,5 @@
-import { AuditInfo, Entity } from 'dcl-catalyst-commons'
+import { AuditInfo } from 'dcl-catalyst-commons'
+import { Entity } from '@dcl/schemas'
 import { ContentFilesRepository } from '../../repository/extensions/ContentFilesRepository'
 import { DeploymentId, DeploymentsRepository } from '../../repository/extensions/DeploymentsRepository'
 

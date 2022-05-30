@@ -1,5 +1,6 @@
 import { noReject, ServerMetadata } from '@dcl/catalyst-node-commons'
-import { Entity, EntityType, Fetcher } from 'dcl-catalyst-commons'
+import { Entity, EntityType } from '@dcl/schemas'
+import { Fetcher } from 'dcl-catalyst-commons'
 import { Request, Response } from 'express'
 import { DAOCache } from '../../../service/dao/DAOCache'
 import { SmartContentClient } from '../../../utils/SmartContentClient'

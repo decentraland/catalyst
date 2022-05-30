@@ -1,14 +1,11 @@
-import { DeploymentWithAuthChain } from '@dcl/schemas'
+import { AuthChain, AuthLinkType } from '@dcl/crypto'
+import { DeploymentWithAuthChain, Entity, EntityType } from '@dcl/schemas'
 import {
   AuditInfo,
-  ContentFileHash,
   Deployment,
-  Entity,
-  EntityType,
   EntityVersion,
   PartialDeploymentHistory
 } from 'dcl-catalyst-commons'
-import { AuthChain, AuthLinkType } from 'dcl-crypto'
 import { random } from 'faker'
 import { CURRENT_CONTENT_VERSION } from '../../../src/Environment'
 import { ContentItem, SimpleContentItem } from '../../../src/ports/contentStorage/contentStorage'
@@ -34,16 +31,16 @@ export class MockedMetaverseContentService implements MetaverseContentService, I
     localTimestamp: Date.now(),
     authChain: [
       {
-        type: AuthLinkType.ECDSA_PERSONAL_SIGNED_ENTITY,
+        type: AuthLinkType.ECDSA_PERSONAL_SIGNED_ENTITY as AuthLinkType,
         signature: random.alphaNumeric(10),
         payload: random.alphaNumeric(10)
       }
     ],
-    version: CURRENT_CONTENT_VERSION
+    version: CURRENT_CONTENT_VERSION as EntityVersion
   }
 
   private readonly entities: Entity[]
-  private readonly content: Map<ContentFileHash, Buffer>
+  private readonly content: Map<string, Buffer>
   private readonly pointerChanges: DeploymentWithAuthChain[]
 
   constructor(builder: MockedMetaverseContentServiceBuilder) {
@@ -112,8 +109,8 @@ export class MockedMetaverseContentService implements MetaverseContentService, I
     return Promise.resolve(Date.now())
   }
 
-  isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>> {
-    const entries: [ContentFileHash, boolean][] = fileHashes.map((fileHash) => [
+  isContentAvailable(fileHashes: string[]): Promise<Map<string, boolean>> {
+    const entries: [string, boolean][] = fileHashes.map((fileHash) => [
       fileHash,
       this.content.has(fileHash) || this.isThereAnEntityWithId(fileHash)
     ])
@@ -167,7 +164,7 @@ export class MockedMetaverseContentService implements MetaverseContentService, I
 
 export class MockedMetaverseContentServiceBuilder {
   readonly entities: Entity[] = []
-  readonly content: Map<ContentFileHash, Buffer> = new Map()
+  readonly content: Map<string, Buffer> = new Map()
   readonly pointerChanges: DeploymentWithAuthChain[] = []
 
   withEntity(newEntity: Entity): MockedMetaverseContentServiceBuilder {
@@ -175,7 +172,7 @@ export class MockedMetaverseContentServiceBuilder {
     return this
   }
 
-  withContent(...content: { hash: ContentFileHash; buffer: Buffer }[]): MockedMetaverseContentServiceBuilder {
+  withContent(...content: { hash: string; buffer: Buffer }[]): MockedMetaverseContentServiceBuilder {
     content.forEach(({ hash, buffer }) => this.content.set(hash, buffer))
     return this
   }
@@ -192,9 +189,9 @@ export class MockedMetaverseContentServiceBuilder {
 
 export function buildEntity(
   pointers: string[],
-  ...content: { hash: ContentFileHash; buffer: Buffer }[]
+  ...content: { hash: string; buffer: Buffer }[]
 ): Promise<[Entity, Uint8Array]> {
-  const entityContent: Map<string, ContentFileHash> = new Map(
+  const entityContent: Map<string, string> = new Map(
     content.map((aContent) => [random.alphaNumeric(10), aContent.hash])
   )
   return buildEntityAndFile(
@@ -202,11 +199,11 @@ export function buildEntity(
     pointers,
     random.number({ min: 5, max: 10 }),
     entityContent,
-    random.alphaNumeric(10)
+    { metadata: random.alphaNumeric(10) }
   )
 }
 
-export function buildContent(): { hash: ContentFileHash; buffer: Buffer } {
+export function buildContent(): { hash: string; buffer: Buffer } {
   return {
     hash: random.alphaNumeric(10),
     buffer: Buffer.from(random.alphaNumeric(10))

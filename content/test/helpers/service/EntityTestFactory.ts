@@ -1,5 +1,5 @@
 import { DeploymentBuilder } from 'dcl-catalyst-client'
-import { ContentFileHash, Entity, EntityType, EntityVersion } from 'dcl-catalyst-commons'
+import { Entity, EntityType } from '@dcl/schemas'
 import { random } from 'faker'
 import { EntityFactory } from '../../../src/service/EntityFactory'
 
@@ -8,7 +8,7 @@ export async function buildEntityAndFile(
   type: EntityType,
   pointers: string[],
   timestamp: number,
-  content?: Map<string, ContentFileHash>,
+  content?: Map<string, string>,
   metadata?: any
 ): Promise<[Entity, Uint8Array]> {
   const newContent = Array.from((content ?? new Map()).entries()).map(([file, hash]) => ({ file, hash }))
@@ -35,11 +35,12 @@ export function entityToFile(entity: Entity): Buffer {
 
 export function randomEntity(type?: EntityType): Entity {
   return {
-    version: EntityVersion.V3,
+    version: 'v3',
     id: random.alphaNumeric(10),
     type: type ?? EntityType.PROFILE,
     pointers: [random.alphaNumeric(1)],
     timestamp: random.number(10),
-    metadata: random.alphaNumeric(10)
+    metadata: random.alphaNumeric(10),
+    content: []
   }
 }

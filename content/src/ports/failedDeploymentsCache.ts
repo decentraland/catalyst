@@ -1,5 +1,5 @@
-import { EntityType } from 'dcl-catalyst-commons'
-import { AuthChain } from 'dcl-crypto'
+import { AuthChain } from '@dcl/crypto'
+import { EntityType } from '@dcl/schemas'
 
 export enum FailureReason {
   DEPLOYMENT_ERROR = 'Deployment error' // During sync, there was an error during deployment. Could be due to a validation

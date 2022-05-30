@@ -1,10 +1,11 @@
-import { delay, ServerBaseUrl, ServerMetadata } from '@dcl/catalyst-node-commons'
+import { CatalystByIdResult } from '@dcl/catalyst-contracts'
+import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { EnvironmentConfig } from '../Environment'
 import { AppComponents } from '../types'
 
 export async function getChallengeInServer(
   components: Pick<AppComponents, 'fetcher'>,
-  catalystBaseUrl: ServerBaseUrl
+  catalystBaseUrl: string
 ): Promise<string | undefined> {
   try {
     const response = await components.fetcher.fetch(`${catalystBaseUrl}/challenge`)
@@ -24,7 +25,7 @@ export async function determineCatalystIdentity(
   components: Pick<AppComponents, 'logs' | 'daoClient' | 'challengeSupervisor' | 'env' | 'fetcher'>,
   maxAttemps: number = 10,
   attempIntervalMs: number = process.env.CI ? 1_000 /* 1sec */ : 5_000 /* 5sec */
-): Promise<ServerMetadata | undefined> {
+): Promise<CatalystByIdResult | undefined> {
   const logger = components.logs.getLogger('CatalystIdentityProvider')
   const normalizedContentServerAddress = normalizeContentBaseUrl(
     components.env.getConfig<string>(EnvironmentConfig.CONTENT_SERVER_ADDRESS)
@@ -42,23 +43,23 @@ export async function determineCatalystIdentity(
         const daoServers = await components.daoClient.getAllContentServers()
 
         for (const server of daoServers) {
-          if (normalizeContentBaseUrl(server.baseUrl) == normalizedContentServerAddress) {
-            logger.info(`Calculated my identity in the DAO.`, server)
+          if (normalizeContentBaseUrl(server.domain) == normalizedContentServerAddress) {
+            logger.info(`Calculated my identity in the DAO.`, server as any)
             return server
           }
         }
 
         // if there are servers in the DAO and this catalyst is not part of those. We still have an identity
-        const myIdentity: ServerMetadata = {
-          id: '0x0',
-          baseUrl: normalizedContentServerAddress,
+        const myIdentity: CatalystByIdResult = {
+          id: new Uint8Array(),
+          domain: normalizedContentServerAddress,
           owner: '0x0000000000000000000000000000000000000000'
         }
-        logger.info(`Calculated my identity, not part of the DAO.`, myIdentity)
+        logger.info(`Calculated my identity, not part of the DAO.`, myIdentity as any)
         return myIdentity
       }
 
-      await delay(attempIntervalMs)
+      await sleep(attempIntervalMs)
       attempts++
     }
   } catch (error) {

@@ -1,5 +1,6 @@
 import { toQueryParams } from '@dcl/catalyst-node-commons'
-import { EntityType, fetchJson, SortingField, SortingOrder } from 'dcl-catalyst-commons'
+import { EntityType } from '@dcl/schemas'
+import { fetchJson, SortingField, SortingOrder } from 'dcl-catalyst-commons'
 import { DeploymentField } from '../../../src/controller/Controller'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { DeploymentOptions } from '../../../src/service/deployments/types'
@@ -27,8 +28,8 @@ loadStandaloneTestEnvironment()('Integration - Deployment Pagination', (testEnv)
     const type = EntityType.PROFILE
 
     const timestamp = Date.now()
-    const a = await buildDeployData([P1], { type, timestamp, metadata: 'metadata1' })
-    const b = await buildDeployData([P2], { type, timestamp, metadata: 'metadata2' })
+    const a = await buildDeployData([P1], { type, timestamp, metadata: { a: 'metadata1' } })
+    const b = await buildDeployData([P2], { type, timestamp, metadata: { a: 'metadata2' } })
     if (a.entity.id.toLowerCase() < b.entity.id.toLowerCase()) {
       E1 = a
       E2 = b
@@ -36,7 +37,7 @@ loadStandaloneTestEnvironment()('Integration - Deployment Pagination', (testEnv)
       E1 = b
       E2 = a
     }
-    E3 = await buildDeployData([P3], { type, timestamp: timestamp + 1, metadata: 'metadata3' })
+    E3 = await buildDeployData([P3], { type, timestamp: timestamp + 1, metadata: { a: 'metadata3' } })
   })
 
   it('given local timestamp and asc when getting two elements the next link page is correct', async () => {

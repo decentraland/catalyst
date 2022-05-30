@@ -1,4 +1,5 @@
-import { Entity, EntityType, EntityVersion } from 'dcl-catalyst-commons'
+import { Entity, EntityType } from '@dcl/schemas'
+import { AuditInfo, EntityVersion } from 'dcl-catalyst-commons'
 import { anything, capture, deepEqual, instance, mock, spy, verify, when } from 'ts-mockito'
 import { DeploymentsRepository } from '../../../src/repository/extensions/DeploymentsRepository'
 import MockedDataBase from './MockedDataBase'
@@ -49,13 +50,14 @@ describe('DeploymentRepository', () => {
     describe('when there is no metadata', () => {
       it('should call the db with the expected query and null metadata', async () => {
         const entity: Entity = {
-          version: EntityVersion.V3,
+          version: 'v3',
           id: '1',
           pointers: [],
           timestamp: 1,
-          type: EntityType.PROFILE
+          type: EntityType.PROFILE,
+          content: []
         }
-        const auditInfo = { authChain: [], localTimestamp: 2, version: EntityVersion.V3 }
+        const auditInfo: AuditInfo = { authChain: [], localTimestamp: 2, version: EntityVersion.V3 }
         const overwrittenBy = 10
         await repository.saveDeployment(entity, auditInfo, overwrittenBy)
 
@@ -84,14 +86,15 @@ describe('DeploymentRepository', () => {
       it('should call the db with the expected query and the metadata value', async () => {
         const metadata = { aField: 'aValue' }
         const entity: Entity = {
-          version: EntityVersion.V3,
+          version: 'v3',
           id: '1',
           pointers: [],
           timestamp: 1,
           type: EntityType.PROFILE,
-          metadata
+          metadata,
+          content: []
         }
-        const auditInfo = { authChain: [], localTimestamp: 2, version: EntityVersion.V3 }
+        const auditInfo: AuditInfo = { authChain: [], localTimestamp: 2, version: EntityVersion.V3 }
         const overwrittenBy = 10
         await repository.saveDeployment(entity, auditInfo, overwrittenBy)
 
@@ -135,7 +138,7 @@ describe('DeploymentRepository', () => {
       when(db.none(anything(), anything(), anything()))
         .thenReturn(...overwrittenDeployments.map((x) => x as any))
         .thenThrow(new Error('Unexpected call'))
-      ;(dbInstance as any).txIf = (callBack) => callBack({ batch: dbInstance.batch })
+        ; (dbInstance as any).txIf = (callBack) => callBack({ batch: dbInstance.batch })
     })
 
     it('should call the update for each override', async () => {

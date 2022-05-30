@@ -1,5 +1,6 @@
 import { createTestMetricsComponent } from '@well-known-components/metrics'
-import { Deployment, EntityType, EntityVersion, PartialDeploymentHistory } from 'dcl-catalyst-commons'
+import { Deployment, PartialDeploymentHistory } from 'dcl-catalyst-commons'
+import { EntityType } from '@dcl/schemas'
 import { safe } from 'jest-extra-utils'
 import { restore, stub } from 'sinon'
 import { ContentFilesRow } from '../../../../src/logic/database-queries/content-files-queries'
@@ -7,10 +8,10 @@ import { HistoricalDeploymentsRow } from '../../../../src/logic/database-queries
 import { MigrationDataRow } from '../../../../src/logic/database-queries/migration-data-queries'
 import { metricsDeclaration } from '../../../../src/metrics'
 import {
-    getCuratedLimit,
-    getCuratedOffset,
-    getDeployments,
-    MAX_HISTORY_LIMIT
+  getCuratedLimit,
+  getCuratedOffset,
+  getDeployments,
+  MAX_HISTORY_LIMIT
 } from '../../../../src/service/deployments/deployments'
 import { DeploymentOptions } from '../../../../src/service/deployments/types'
 import { AppComponents } from '../../../../src/types'
@@ -34,7 +35,7 @@ describe('deployments service', () => {
         entity_type: EntityType.SCENE,
         id: deploymentIds[0],
         local_timestamp: Date.now(),
-        version: EntityVersion.V3
+        version: 'v3'
       },
       {
         auth_chain: [],
@@ -47,7 +48,7 @@ describe('deployments service', () => {
         entity_type: EntityType.SCENE,
         id: deploymentIds[1],
         local_timestamp: Date.now(),
-        version: EntityVersion.V3
+        version: 'v3'
       }
     ]
 
@@ -85,7 +86,7 @@ describe('deployments service', () => {
     describe('when no item is denylisted', () => {
       beforeAll(() => {
         components = {
-          database: safe({ queryWithValues: () => {} }),
+          database: safe({ queryWithValues: () => { } }),
           denylist: { isDenylisted: () => false },
           metrics: createTestMetricsComponent(metricsDeclaration)
         }
@@ -120,7 +121,7 @@ describe('deployments service', () => {
     describe('with a denylisted item', () => {
       beforeAll(() => {
         components = {
-          database: safe({ queryWithValues: () => {} }),
+          database: safe({ queryWithValues: () => { } }),
           denylist: { isDenylisted: () => false },
           metrics: createTestMetricsComponent(metricsDeclaration)
         }
@@ -155,7 +156,7 @@ describe('deployments service', () => {
     describe('with a denylisted item but with includeDenylisted param', () => {
       beforeAll(() => {
         components = {
-          database: safe({ queryWithValues: () => {} }),
+          database: safe({ queryWithValues: () => { } }),
           denylist: { isDenylisted: () => false },
           metrics: createTestMetricsComponent(metricsDeclaration)
         }

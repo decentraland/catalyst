@@ -1,4 +1,5 @@
-import { AuditInfo, EntityType, EntityVersion } from 'dcl-catalyst-commons'
+import { EntityType } from '@dcl/schemas'
+import { AuditInfo } from 'dcl-catalyst-commons'
 import { stub } from 'sinon'
 import {
   DeploymentContext,
@@ -153,7 +154,7 @@ loadStandaloneTestEnvironment()('Integration - Deployment with Entity Overlaps',
   ) {
     const timestamps: number[] = []
     for (const { deployData } of entities) {
-      const newAuditInfo = { version: EntityVersion.V3, authChain: deployData.authChain, ...overrideAuditInfo }
+      const newAuditInfo = { version: 'v3', authChain: deployData.authChain, ...overrideAuditInfo }
       const deploymentResult: DeploymentResult = await components.deployer.deployEntity(
         Array.from(deployData.files.values()),
         deployData.entityId,

@@ -1,7 +1,7 @@
+import { Authenticator, EthAddress, IdentityType } from '@dcl/crypto'
+import { createUnsafeIdentity } from '@dcl/crypto/dist/crypto'
+import { Entity, EntityType } from '@dcl/schemas'
 import { DeploymentBuilder, DeploymentData } from 'dcl-catalyst-client'
-import { Entity as ControllerEntity, Entity, EntityType, EntityVersion } from 'dcl-catalyst-commons'
-import { Authenticator, EthAddress } from 'dcl-crypto'
-import EthCrypto from 'eth-crypto'
 import fs from 'fs'
 import path from 'path'
 import { ControllerEntityFactory } from '../../src/controller/ControllerEntityFactory'
@@ -28,10 +28,10 @@ export async function buildDeployDataAfterEntity(
 export async function buildDeployData(pointers: string[], options?: DeploymentOptions): Promise<EntityCombo> {
   const opts = Object.assign(
     {
-      version: EntityVersion.V3,
+      version: 'v3',
       type: EntityType.SCENE,
       timestamp: Date.now(),
-      metadata: 'metadata',
+      metadata: {},
       contentPaths: [],
       identity: createIdentity()
     },
@@ -59,10 +59,6 @@ export async function buildDeployData(pointers: string[], options?: DeploymentOp
     deploymentPreparationData.entityId
   )
 
-  if (!entity.content || entity.content.length === 0) {
-    delete entity.content
-  }
-
   const deployData: DeploymentData = {
     entityId: entity.id,
     authChain: authChain,
@@ -71,21 +67,16 @@ export async function buildDeployData(pointers: string[], options?: DeploymentOp
 
   const controllerEntity = ControllerEntityFactory.maskEntity(entity)
 
-  if (!controllerEntity.content || controllerEntity.content.length === 0) {
-    delete controllerEntity.content
-  }
-
   return { deployData, entity, controllerEntity }
 }
 
-export function hashAndSignMessage(message: string, identity: Identity = createIdentity()) {
-  const messageHash = Authenticator.createEthereumMessageHash(message)
-  const signature = EthCrypto.sign(identity.privateKey, messageHash)
+export function hashAndSignMessage(message: string, identity: IdentityType = createUnsafeIdentity()) {
+  const signature = Authenticator.createSignature(identity, message)
   return [identity.address, signature]
 }
 
-export function createIdentity(): Identity {
-  return EthCrypto.createIdentity()
+export function createIdentity(): IdentityType {
+  return createUnsafeIdentity()
 }
 
 export function deleteFolderRecursive(pathToDelete: string) {
@@ -146,14 +137,14 @@ export type Identity = {
 type DeploymentOptions = {
   type?: EntityType
   timestamp?: number
-  metadata?: any
+  metadata: Record<any, any>
   contentPaths?: string[]
   identity?: Identity
 }
 
 export type EntityCombo = {
   deployData: DeploymentData
-  controllerEntity: ControllerEntity
+  controllerEntity: Entity
   entity: Entity
 }
 

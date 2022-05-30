@@ -1,5 +1,5 @@
 import { processDeploymentsInStream } from '@dcl/snapshots-fetcher/dist/file-processor'
-import { EntityType } from 'dcl-catalyst-commons'
+import { EntityType } from '@dcl/schemas'
 import { inspect } from 'util'
 import { EnvironmentBuilder } from '../../../../src/Environment'
 import { stopAllComponents } from '../../../../src/logic/components-lifecycle'
@@ -19,8 +19,8 @@ loadStandaloneTestEnvironment()('Integration - Snapshot Manager', (testEnv) => {
   let components: AppComponents
 
   beforeAll(async () => {
-    E1 = await buildDeployData([P1], { type: EntityType.SCENE })
-    E2 = await buildDeployDataAfterEntity(E1, [P2], { type: EntityType.SCENE })
+    E1 = await buildDeployData([P1], { type: EntityType.SCENE, metadata: {} })
+    E2 = await buildDeployDataAfterEntity(E1, [P2], { type: EntityType.SCENE, metadata: {} })
   })
 
   beforeEach(async () => {

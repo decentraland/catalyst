@@ -1,6 +1,6 @@
+import { Entity, EntityType } from '@dcl/schemas'
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { DeploymentData } from 'dcl-catalyst-client'
-import { Entity as ControllerEntity, EntityType } from 'dcl-catalyst-commons'
 import { makeNoopSynchronizationManager } from '../helpers/service/synchronization/MockedSynchronizationManager'
 import { makeNoopValidator } from '../helpers/service/validations/NoOpValidator'
 import { assertDeploymentsAreReported, buildDeployment } from './E2EAssertions'
@@ -22,7 +22,7 @@ loadStandaloneTestEnvironment()('End 2 end deploy test', (testEnv) => {
 
   it('When a user tries to deploy the same entity twice, then an exception is thrown', async () => {
     // Build data for deployment
-    const { deployData } = await buildDeployData([POINTER0, POINTER1], { metadata: 'this is just some metadata"' })
+    const { deployData } = await buildDeployData([POINTER0, POINTER1], { metadata: { a: 'this is just some metadata"' } })
 
     // Execute first deploy
     const ret1 = await server.deploy(deployData)
@@ -40,7 +40,7 @@ loadStandaloneTestEnvironment()('End 2 end deploy test', (testEnv) => {
     // Deploy the content
     //------------------------------
     const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData([POINTER0, POINTER1], {
-      metadata: 'this is just some metadata',
+      metadata: { a: 'this is just some metadata' },
       contentPaths: ['test/integration/resources/some-binary-file.png', 'test/integration/resources/some-text-file.txt']
     })
 
@@ -53,23 +53,23 @@ loadStandaloneTestEnvironment()('End 2 end deploy test', (testEnv) => {
     //------------------------------
     // Retrieve the entity by id
     //------------------------------
-    const scenesById: ControllerEntity[] = await server.getEntitiesByIds(EntityType.SCENE, deployData.entityId)
+    const scenesById: Entity[] = await server.getEntitiesByIds(EntityType.SCENE, deployData.entityId)
     await validateReceivedData(scenesById, deployData)
 
     //------------------------------
     // Retrieve the entity by pointer
     //------------------------------
-    const scenesByPointer: ControllerEntity[] = await server.getEntitiesByPointers(EntityType.SCENE, [POINTER0])
+    const scenesByPointer: Entity[] = await server.getEntitiesByPointers(EntityType.SCENE, [POINTER0])
     await validateReceivedData(scenesByPointer, deployData)
 
     await assertDeploymentsAreReported(server, deployment)
   })
 
-  async function validateReceivedData(receivedScenes: ControllerEntity[], deployData: DeploymentData) {
+  async function validateReceivedData(receivedScenes: Entity[], deployData: DeploymentData) {
     expect(receivedScenes.length).toBe(1)
-    const scene: ControllerEntity = receivedScenes[0]
+    const scene: Entity = receivedScenes[0]
     expect(scene.id).toBe(deployData.entityId)
-    expect(scene.metadata).toBe('this is just some metadata')
+    expect(scene.metadata).toEqual({ a: 'this is just some metadata' })
 
     expect(scene.pointers.length).toBe(2)
     expect(equalsCaseInsensitive(scene.pointers[0], POINTER0)).toBeTruthy()

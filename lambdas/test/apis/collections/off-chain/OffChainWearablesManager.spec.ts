@@ -1,4 +1,4 @@
-import { EntityType, EntityVersion } from 'dcl-catalyst-commons'
+import { Entity, EntityType } from '@dcl/schemas'
 import { anything, deepEqual, instance, mock, objectContaining, resetCalls, verify, when } from 'ts-mockito'
 import { OffChainWearablesManager } from '../../../../src/apis/collections/off-chain/OffChainWearablesManager'
 import { Wearable, WearableId } from '../../../../src/apis/collections/types'
@@ -58,7 +58,7 @@ describe('OffChainWearablesManager', () => {
       .thenResolve([buildEntityWithTimestampInMetadata(WEARABLE_ID_3, t1)])
       .thenResolve([buildEntityWithTimestampInMetadata(WEARABLE_ID_3, t2)])
 
-    const manager = new OffChainWearablesManager({ client: contentClient, collections: {[COLLECTION_ID_2]: [WEARABLE_ID_3]}, refreshTime: '2s' })
+    const manager = new OffChainWearablesManager({ client: contentClient, collections: { [COLLECTION_ID_2]: [WEARABLE_ID_3] }, refreshTime: '2s' })
 
     const firstWearables = await manager.find({ collectionIds: [COLLECTION_ID_2] })
     expect(firstWearables.length).toBe(1)
@@ -145,22 +145,24 @@ function contentServer() {
 function buildEntity(id: WearableId) {
   return {
     id: '',
-    version: EntityVersion.V2,
+    version: 'v2',
     type: EntityType.WEARABLE,
     pointers: [id],
     timestamp: 10,
-    metadata: buildMetadata(id, 10)
+    metadata: buildMetadata(id, 10),
+    content: []
   }
 }
 
-function buildEntityWithTimestampInMetadata(id: WearableId, timestamp: number) {
+function buildEntityWithTimestampInMetadata(id: WearableId, timestamp: number): Entity {
   return {
     id: '',
-    version: EntityVersion.V2,
+    version: 'v2',
     type: EntityType.WEARABLE,
     pointers: [id],
     timestamp: timestamp,
-    metadata: buildMetadata(id, timestamp)
+    metadata: buildMetadata(id, timestamp),
+    content: []
   }
 }
 

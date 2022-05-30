@@ -1,4 +1,5 @@
-import { AuditInfo, EntityType, EntityVersion } from "dcl-catalyst-commons";
+import { EntityType } from "@dcl/schemas";
+import { AuditInfo, EntityVersion } from "dcl-catalyst-commons";
 import { DeploymentContext, DeploymentResult } from "../../../../src/service/Service";
 import { AppComponents } from "../../../../src/types";
 import { makeNoopServerValidator } from "../../../helpers/service/validations/NoOpValidator";
@@ -16,7 +17,8 @@ loadStandaloneTestEnvironment()("Integration - Deployment with metadata validati
       const P1 = "0,0";
       const P2 = "0,1";
       let E1: EntityCombo = await buildDeployData([P1, P2], {
-        type: EntityType.SCENE
+        type: EntityType.SCENE,
+        metadata: {a:'metadata'}
       });
 
       expect(await deployEntity(components, E1))
@@ -120,7 +122,7 @@ loadStandaloneTestEnvironment()("Integration - Deployment with metadata validati
       const identity = createIdentity();
       let E1: EntityCombo = await buildDeployData([identity.address], {
         type: EntityType.PROFILE,
-        metadata: undefined,
+        metadata: {a:'metadata'},
         identity,
       });
 
@@ -167,7 +169,7 @@ loadStandaloneTestEnvironment()("Integration - Deployment with metadata validati
       const identity = createIdentity();
       let E1: EntityCombo = await buildDeployData([identity.address], {
         type: EntityType.WEARABLE,
-        metadata: undefined,
+        metadata: {a:'metadata'},
         identity,
       });
 

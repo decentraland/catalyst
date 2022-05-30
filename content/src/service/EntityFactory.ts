@@ -1,4 +1,5 @@
-import { Entity, EntityContentItemReference, EntityType, EntityVersion } from 'dcl-catalyst-commons'
+import { EntityContentItemReference } from '@dcl/hashing'
+import { Entity, EntityType } from '@dcl/schemas'
 
 export class EntityFactory {
   static fromBufferWithId(buffer: Uint8Array, id: string): Entity {
@@ -34,19 +35,16 @@ export class EntityFactory {
       throw new Error(`Please set a valid timestamp. We got ${object.timestamp}`)
     }
 
-    let content: EntityContentItemReference[] | undefined = undefined
+    let content: EntityContentItemReference[] = []
     if (object.content) {
       if (!Array.isArray(object.content)) {
         throw new Error(`Expected an array as content`)
       }
-      content = this.parseContent(object.content)
+      content = this.parseContent(object.content) || []
     }
 
-    let version: EntityVersion
-    if (!object.version || !Object.values(EntityVersion).includes(object.version)) {
-      version = EntityVersion.V3
-    } else {
-      version = object.version
+    if (object.version != 'v3') {
+      throw new Error('Object has an invalid version')
     }
 
     const type: EntityType = EntityType[object.type.toUpperCase().trim()]
@@ -55,7 +53,7 @@ export class EntityFactory {
       type,
       pointers: object.pointers.map((pointer: string) => pointer.toLowerCase()),
       timestamp: object.timestamp,
-      version,
+      version: 'v3',
       content,
       metadata: object.metadata
     }

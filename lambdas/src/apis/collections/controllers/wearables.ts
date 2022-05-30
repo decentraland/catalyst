@@ -1,6 +1,6 @@
 import { toQueryParams } from '@dcl/catalyst-node-commons'
-import { EntityType } from 'dcl-catalyst-commons'
-import { EthAddress } from 'dcl-crypto'
+import { EthAddress } from '@dcl/crypto'
+import { EntityType } from '@dcl/schemas'
 import { Request, Response } from 'express'
 import log4js from 'log4js'
 import { asArray, asInt } from '../../../utils/ControllerUtils'

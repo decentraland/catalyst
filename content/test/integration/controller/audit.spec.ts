@@ -1,4 +1,4 @@
-import { EntityType } from 'dcl-catalyst-commons'
+import { EntityType } from '@dcl/schemas'
 import fetch from 'node-fetch'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
@@ -13,7 +13,7 @@ loadStandaloneTestEnvironment()('Integration - Audit', (testEnv) => {
 
     await server.startProgram()
 
-    const entity = await buildDeployData(['profileId'], { type: EntityType.PROFILE })
+    const entity = await buildDeployData(['profileId'], { type: EntityType.PROFILE, metadata: { a: 'metadata' } })
     await deployEntitiesCombo(server.components.deployer, entity)
 
     const url = server.getUrl() + `/audit/profile/${entity.entity.id}`

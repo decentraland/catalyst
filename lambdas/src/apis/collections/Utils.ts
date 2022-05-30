@@ -1,5 +1,5 @@
 import { parseUrn } from '@dcl/urn-resolver'
-import { Entity } from 'dcl-catalyst-commons'
+import { Entity } from '@dcl/schemas'
 import { SmartContentClient } from '../../utils/SmartContentClient'
 import {
   I18N,

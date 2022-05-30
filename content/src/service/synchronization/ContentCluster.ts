@@ -1,4 +1,4 @@
-import { ServerBaseUrl, ServerMetadata } from '@dcl/catalyst-node-commons'
+import { CatalystByIdResult } from '@dcl/catalyst-contracts'
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import future from 'fp-future'
@@ -10,13 +10,13 @@ export interface IdentityProvider {
   /**
    * Returns undefined when this servers configured CONTENT_SERVER_URL is unreachable or missconfigured
    */
-  getIdentity(): Promise<ServerMetadata | undefined>
+  getIdentity(): Promise<CatalystByIdResult | undefined>
 }
 
 function shuffleArray<T>(arr: T[]): T[] {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
-    ;[arr[i], arr[j]] = [arr[j], arr[i]]
+      ;[arr[i], arr[j]] = [arr[j], arr[i]]
   }
   return arr
 }
@@ -25,13 +25,13 @@ export class ContentCluster implements IdentityProvider {
   private static LOGGER: ILoggerComponent.ILogger
 
   // Servers that were reached at least once
-  private serverClients: Set<ServerBaseUrl> = new Set()
+  private serverClients: Set<string> = new Set()
   // Time of last sync with the DAO
   private timeOfLastSync: number = 0
 
   private syncFinishedEventCallbacks: Array<() => void> = []
 
-  private identityFuture: Promise<ServerMetadata | undefined> | undefined
+  private identityFuture: Promise<CatalystByIdResult | undefined> | undefined
 
   // this future is a signal to stop the synchronization
   private stoppedFuture = future<void>()
@@ -71,11 +71,11 @@ export class ContentCluster implements IdentityProvider {
     return { lastSyncWithDAO: this.timeOfLastSync }
   }
 
-  getAllServersInCluster(): ServerBaseUrl[] {
+  getAllServersInCluster(): string[] {
     return Array.from(this.serverClients)
   }
 
-  getIdentity(): Promise<ServerMetadata | undefined> {
+  async getIdentity(): Promise<CatalystByIdResult | undefined> {
     if (!this.identityFuture) {
       this.identityFuture = determineCatalystIdentity(this.components)
     }
@@ -99,7 +99,7 @@ export class ContentCluster implements IdentityProvider {
       const allServersInDAO = await this.components.daoClient.getAllContentServers()
 
       // Get all addresses in cluster (except this one)
-      const allServerBaseUrls: ServerBaseUrl[] = this.getAllOtherAddressesOnDAO(allServersInDAO)
+      const allServerBaseUrls: string[] = this.getAllOtherAddressesOnDAO(allServersInDAO)
 
       // Remove servers
       for (const serverBaseUrl of this.serverClients) {
@@ -131,15 +131,15 @@ export class ContentCluster implements IdentityProvider {
   }
 
   /** Returns all the addresses on the DAO, except for the current server's */
-  private getAllOtherAddressesOnDAO(allServers: Set<ServerMetadata>): ServerBaseUrl[] {
+  private getAllOtherAddressesOnDAO(allServers: Set<CatalystByIdResult>): string[] {
     const normalizedContentServerAddress = normalizeContentBaseUrl(
       this.components.env.getConfig<string>(EnvironmentConfig.CONTENT_SERVER_ADDRESS)
     )
 
     // Filter myself out
     const serverUrls = Array.from(allServers)
-      .map(({ baseUrl }) => baseUrl)
-      .filter((baseUrl) => normalizeContentBaseUrl(baseUrl) != normalizedContentServerAddress)
+      .map(({ domain }) => domain)
+      .filter((domain) => normalizeContentBaseUrl(domain) != normalizedContentServerAddress)
 
     // We are sorting the array, so when we query the servers, we will choose a different one each time
     return shuffleArray(serverUrls)

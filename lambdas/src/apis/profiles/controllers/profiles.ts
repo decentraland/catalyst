@@ -1,5 +1,5 @@
-import { ContentFileHash, Entity, EntityType } from 'dcl-catalyst-commons'
-import { EthAddress } from 'dcl-crypto'
+import { EthAddress } from '@dcl/crypto'
+import { Entity, EntityType } from '@dcl/schemas'
 import { Request, Response } from 'express'
 import log4js from 'log4js'
 import { asArray } from '../../../utils/ControllerUtils'
@@ -140,7 +140,7 @@ export async function fetchProfiles(
     )
       return
 
-    const profilesMap: Map<EthAddress, { metadata: ProfileMetadata; content: Map<string, ContentFileHash> }> = new Map()
+    const profilesMap: Map<EthAddress, { metadata: ProfileMetadata; content: Map<string, string> }> = new Map()
     const namesMap: Map<EthAddress, string[]> = new Map()
     const wearablesMap: Map<EthAddress, WearableId[]> = new Map()
 
@@ -196,7 +196,7 @@ export async function fetchProfiles(
 async function extractData(entity: Entity): Promise<{
   ethAddress: string
   metadata: ProfileMetadata
-  content: Map<string, ContentFileHash>
+  content: Map<string, string>
   names: string[]
   wearables: WearableId[]
 }> {
@@ -254,11 +254,7 @@ async function sanitizeWearables(
  * The content server provides the snapshots' hashes, but clients expect a full url. So in this
  * method, we replace the hashes by urls that would trigger the snapshot download.
  */
-function addBaseUrlToSnapshots(
-  baseUrl: string,
-  avatar: Avatar,
-  content: Map<string, ContentFileHash>
-): AvatarSnapshots {
+function addBaseUrlToSnapshots(baseUrl: string, avatar: Avatar, content: Map<string, string>): AvatarSnapshots {
   const original = avatar.snapshots
   const snapshots: AvatarSnapshots = {}
 

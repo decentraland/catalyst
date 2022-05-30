@@ -1,6 +1,6 @@
-import { EthAddress } from 'dcl-crypto'
-import { TheGraphClient } from '../../utils/TheGraphClient'
-import { NFTOwnership } from './NFTOwnership'
+import { EthAddress } from '@dcl/crypto';
+import { TheGraphClient } from '../../utils/TheGraphClient';
+import { NFTOwnership } from './NFTOwnership';
 
 export class EnsOwnership extends NFTOwnership {
   constructor(private readonly theGraphClient: TheGraphClient, maxSize: number, maxAge: number) {

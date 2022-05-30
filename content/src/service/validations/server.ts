@@ -1,4 +1,4 @@
-import { Entity } from 'dcl-catalyst-commons'
+import { Entity } from '@dcl/schemas'
 import ms from 'ms'
 import { AppComponents } from '../../types'
 import { DeploymentContext } from '../Service'
