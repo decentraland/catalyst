@@ -1,11 +1,10 @@
-import { DECENTRALAND_ADDRESS } from '@dcl/catalyst-node-commons'
 import { Authenticator } from '@dcl/crypto'
 import { hashV1 } from '@dcl/hashing'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import assert from 'assert'
 import { Deployment, EntityVersion } from 'dcl-catalyst-commons'
-import { Entity, EntityType } from '@dcl/schemas'
+import { Entity, EntityType, EthAddress } from '@dcl/schemas'
 import ms from 'ms'
 import { DEFAULT_ENTITIES_CACHE_SIZE, Environment, EnvironmentConfig } from '../../../src/Environment'
 import * as pointers from '../../../src/logic/database-queries/pointers-queries'
@@ -34,6 +33,8 @@ import { NoOpServerValidator, NoOpValidator } from '../../helpers/service/valida
 import { MockedStorage } from '../ports/contentStorage/MockedStorage'
 import { NoOpPointerManager } from './pointers/NoOpPointerManager'
 import { HTTPProvider } from 'eth-connect'
+
+export const DECENTRALAND_ADDRESS: EthAddress = '0x1337e0507eb4ab47e08a179573ed4533d9e22a7b'
 
 describe('Service', function () {
   const POINTERS = ['X1,Y1', 'X2,Y2']

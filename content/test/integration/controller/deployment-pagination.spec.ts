@@ -1,6 +1,6 @@
-import { toQueryParams } from '@dcl/catalyst-node-commons'
 import { EntityType } from '@dcl/schemas'
 import { fetchJson, SortingField, SortingOrder } from 'dcl-catalyst-commons'
+import { URLSearchParams } from 'url'
 import { DeploymentField } from '../../../src/controller/Controller'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { DeploymentOptions } from '../../../src/service/deployments/types'
@@ -243,15 +243,15 @@ loadStandaloneTestEnvironment()('Integration - Deployment Pagination', (testEnv)
     const url =
       server.getUrl() +
       `/deployments?` +
-      toQueryParams({
+      new URLSearchParams({
         ...newOptions,
         ...composedOptions
-      })
+      } as any)
     return fetchJson(url) as any
   }
 
   async function fetchPointerChanges(filters: PointerChangesFilters, limit: number) {
-    const url = server.getUrl() + `/pointer-changes?` + toQueryParams({ ...filters, limit: limit })
+    const url = server.getUrl() + `/pointer-changes?` + new URLSearchParams({ ...filters, limit: limit } as any).toString()
     return fetchJson(url) as any
   }
 })

@@ -1,7 +1,7 @@
-import { ensureDirectoryExists } from '@dcl/catalyst-node-commons'
 import destroy from 'destroy'
 import { Request, Response } from 'express'
 import fs from 'fs'
+import { mkdir } from 'fs/promises'
 import log4js from 'log4js'
 import fetch from 'node-fetch'
 import onFinished from 'on-finished'
@@ -32,7 +32,7 @@ async function getStorageLocation(root: string): Promise<string> {
     root = root.slice(0, -1)
   }
 
-  await ensureDirectoryExists(root)
+  await mkdir(root, { recursive: true })
 
   return root
 }

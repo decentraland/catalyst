@@ -1,4 +1,3 @@
-import { ServerBaseUrl } from '@dcl/catalyst-node-commons'
 import { Entity, EntityType } from '@dcl/schemas'
 import { ILoggerComponent, Lifecycle } from '@well-known-components/interfaces'
 import { ContentClient, DeploymentData } from 'dcl-catalyst-client'
@@ -51,7 +50,7 @@ export class TestProgram {
     })
   }
 
-  getUrl(): ServerBaseUrl {
+  getUrl(): string {
     const port = this.components.env.getConfig(EnvironmentConfig.SERVER_PORT)
     return `http://localhost:${port}`
   }

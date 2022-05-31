@@ -60,7 +60,7 @@ loadStandaloneTestEnvironment()('Integration - Deployment Fields', (testEnv) => 
 
     if (opts.auditInfo) expect(deployment.auditInfo).toBeDefined()
     else expect(deployment.auditInfo).toBeUndefined()
-    expect(deployment.content).toBeDefined()
+    if (check.content) expect(deployment.content).toBeDefined()
     if (opts.metadata) expect(deployment.metadata).toBeDefined()
     else expect(deployment.metadata).toBeUndefined()
     if (opts.pointers) expect(deployment.pointers).toBeDefined()

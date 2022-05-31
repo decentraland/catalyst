@@ -72,7 +72,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK)
   const ethereumProvider = new HTTPProvider(
-    `https://rpc.decentraland.org/${encodeURIComponent(ethNetwork)}?project=catalyst`
+    `https://rpc.decentraland.org/${encodeURIComponent(ethNetwork)}?project=catalyst-content`
   )
   const daoClient = await DAOClientFactory.create(env, ethereumProvider)
   const authenticator = new ContentAuthenticator(
