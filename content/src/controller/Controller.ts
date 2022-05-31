@@ -10,6 +10,7 @@ import { URLSearchParams } from 'url'
 import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
 import { getActiveDeploymentsByContentHash } from '../logic/database-queries/deployments-queries'
 import { statusResponseFromComponents } from '../logic/status-checks'
+import { toQueryParams } from '../logic/toQueryParams'
 import { ContentItem } from '../ports/contentStorage/contentStorage'
 import { getDeployments } from '../service/deployments/deployments'
 import { DeploymentOptions } from '../service/deployments/types'
@@ -413,11 +414,11 @@ export class Controller {
     // It will always use toLocalTimestamp as this endpoint is always sorted with the default config: local and DESC
     nextFilters.to = lastPointerChange.localTimestamp
 
-    const nextQueryParams = new URLSearchParams({
+    const nextQueryParams = toQueryParams({
       ...nextFilters,
       limit: limit,
       lastId: lastPointerChange.entityId
-    } as any).toString()
+    })
 
     return '?' + nextQueryParams
   }
@@ -562,14 +563,15 @@ export class Controller {
 
     const fields = !options.fields || options.fields === DEFAULT_FIELDS_ON_DEPLOYMENTS ? '' : options.fields.join(',')
 
-    const nextQueryParams = new URLSearchParams({
+    const nextQueryParams = toQueryParams({
       ...nextFilters,
       fields,
       sortingField: field,
       sortingOrder: order,
       lastId: lastDeployment.entityId,
       limit: options?.limit
-    } as any).toString()
+    })
+
     return '?' + nextQueryParams
   }
 

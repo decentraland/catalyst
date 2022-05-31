@@ -1,8 +1,8 @@
-import { httpProviderForNetwork } from '@dcl/catalyst-contracts'
 import { Authenticator, AuthLink, ValidationResult } from '@dcl/crypto'
 import { Request, Response } from 'express'
+import { HTTPProvider } from 'eth-connect'
 
-export async function validateSignature(networkKey: string, req: Request, res: Response) {
+export async function validateSignature(ethereumProvider: HTTPProvider, req: Request, res: Response) {
   // Method: POST
   // Path: /validate-signature
   try {
@@ -14,11 +14,7 @@ export async function validateSignature(networkKey: string, req: Request, res: R
       return res.status(400).send(`Expected 'signedMessage' property to be set`)
     }
 
-    const result: ValidationResult = await Authenticator.validateSignature(
-      finalAuthority,
-      authChain,
-      httpProviderForNetwork(networkKey)
-    )
+    const result: ValidationResult = await Authenticator.validateSignature(finalAuthority, authChain, ethereumProvider)
 
     res.send({
       valid: result.ok,

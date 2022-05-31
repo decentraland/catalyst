@@ -1,3 +1,4 @@
+import { Entity } from '@dcl/schemas'
 import { EntityType, EntityVersion } from 'dcl-catalyst-commons'
 import { anything, instance, mock, verify, when } from 'ts-mockito'
 import { FindWearablesByOwner, getWearablesByOwner } from '../../../../../src/apis/collections/controllers/wearables'
@@ -135,12 +136,13 @@ function emptyContentServer() {
 }
 
 function contentServerThatReturns(id?: WearableId) {
-  const entity = {
+  const entity: Entity = {
     version: EntityVersion.V3,
     id: '',
     type: EntityType.WEARABLE,
     pointers: [id ?? ''],
     timestamp: 10,
+    content: [],
     metadata: {
       id,
       someProperty: 'someValue',

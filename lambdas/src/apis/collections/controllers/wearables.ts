@@ -2,7 +2,7 @@ import { EthAddress } from '@dcl/crypto'
 import { EntityType } from '@dcl/schemas'
 import { Request, Response } from 'express'
 import log4js from 'log4js'
-import { URLSearchParams } from 'url'
+import { toQueryParams } from '../../../logic/toQueryParams'
 import { asArray, asInt } from '../../../utils/ControllerUtils'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TheGraphClient } from '../../../utils/TheGraphClient'
@@ -124,11 +124,11 @@ export async function getWearablesEndpoint(
       offChainManager
     )
 
-    const nextQueryParams = new URLSearchParams({
+    const nextQueryParams = toQueryParams({
       ...requestFilters,
       lastId: nextLastId?.toString(),
       limit: sanitizedLimit.toString()
-    } as any).toString()
+    })
     const next = nextLastId ? '?' + nextQueryParams : undefined
 
     res.send({ wearables, filters: requestFilters, pagination: { limit: sanitizedLimit, lastId, next } })

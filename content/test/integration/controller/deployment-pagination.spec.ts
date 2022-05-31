@@ -1,8 +1,8 @@
 import { EntityType } from '@dcl/schemas'
 import { fetchJson, SortingField, SortingOrder } from 'dcl-catalyst-commons'
-import { URLSearchParams } from 'url'
 import { DeploymentField } from '../../../src/controller/Controller'
 import { EnvironmentConfig } from '../../../src/Environment'
+import { toQueryParams } from '../../../src/logic/toQueryParams'
 import { DeploymentOptions } from '../../../src/service/deployments/types'
 import { PointerChangesFilters } from '../../../src/service/pointers/types'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
@@ -243,15 +243,15 @@ loadStandaloneTestEnvironment()('Integration - Deployment Pagination', (testEnv)
     const url =
       server.getUrl() +
       `/deployments?` +
-      new URLSearchParams({
+      toQueryParams({
         ...newOptions,
         ...composedOptions
-      } as any)
+      })
     return fetchJson(url) as any
   }
 
   async function fetchPointerChanges(filters: PointerChangesFilters, limit: number) {
-    const url = server.getUrl() + `/pointer-changes?` + new URLSearchParams({ ...filters, limit: limit } as any).toString()
+    const url = server.getUrl() + `/pointer-changes?` + toQueryParams({ ...filters, limit: limit })
     return fetchJson(url) as any
   }
 })
