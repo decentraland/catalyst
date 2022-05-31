@@ -279,12 +279,8 @@ function assertEntityIsTheSameAsDeployment(entity: Entity, deployment: Controlle
   assert.strictEqual(entity.timestamp, deployment.entityTimestamp)
   assert.deepStrictEqual(entity.pointers, deployment.pointers)
   assert.deepStrictEqual(entity.metadata, deployment.metadata)
-  const mappedContent = entity.content?.map(({ file, hash }) => ({ key: file, hash }))
-  if (mappedContent) {
-    assert.deepStrictEqual(mappedContent, deployment.content)
-  } else {
-    assert.ok(deployment.content === undefined || deployment.content.length === 0)
-  }
+  const mappedContent = entity.content?.map(({ file, hash }) => ({ key: file, hash })) || []
+  assert.deepStrictEqual(mappedContent, deployment.content)
 }
 
 async function getEntitiesDeployment(server: TestProgram, entity: Entity): Promise<ControllerDeployment> {

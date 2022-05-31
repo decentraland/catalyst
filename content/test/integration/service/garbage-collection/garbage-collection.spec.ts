@@ -1,4 +1,4 @@
-import { delay } from '@dcl/catalyst-node-commons'
+import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import assert from 'assert'
 import ms from 'ms'
 import { EnvironmentBuilder, EnvironmentConfig } from '../../../../src/Environment'
@@ -82,7 +82,7 @@ loadStandaloneTestEnvironment({
     await deployEntitiesCombo(components.deployer, E2)
 
     // Wait a little
-    await delay(ms('4s'))
+    await sleep(ms('4s'))
 
     // Assert all content is still available
     await assertContentIsAvailable(sharedContent, onlyE1Content)
@@ -109,7 +109,7 @@ loadStandaloneTestEnvironment({
     await components.garbageCollectionManager.start()
 
     // Wait a little
-    await delay(ms('4s'))
+    await sleep(ms('4s'))
 
     // Assert nothing was deleted
     await assertReportedAsDeletedAre()

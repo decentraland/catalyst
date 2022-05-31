@@ -1,6 +1,12 @@
-import { ServerMetadata } from '@dcl/catalyst-node-commons'
+import { EthAddress } from '@dcl/schemas'
 import { Request, Response } from 'express'
 import { DAOCache } from '../../../service/dao/DAOCache'
+
+export type ServerMetadata = {
+  baseUrl: string
+  owner: EthAddress
+  id: string
+}
 
 export async function getCatalystServersList(dao: DAOCache, req: Request, res: Response) {
   // Method: GET

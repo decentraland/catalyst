@@ -11,7 +11,7 @@ describe('Service', () => {
       EntityType.SCENE,
       ['X1,Y1'],
       123456,
-      new Map([['name', 'hash']]),
+      new Map([['name', 'bafkreico6luxnkk5vxuxvmpsg7hva4upamyz3br2b6ucc7rf3hdlcaehha']]),
       { 'metadata': 'metadata' }
     )
   })

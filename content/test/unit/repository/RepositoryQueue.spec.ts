@@ -1,4 +1,4 @@
-import { delay } from '@dcl/catalyst-node-commons'
+import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import future from 'fp-future'
 import { metricsDeclaration } from '../../../src/metrics'
@@ -16,7 +16,7 @@ describe('RepositoryQueue', () => {
     const requestResult = queue.addDatabaseRequest(DB_REQUEST_PRIORITY.HIGH, caller(request))
 
     // Wait a bit
-    await delay(100)
+    await sleep(100)
 
     // See that it has started
     expect(request.started).toBe(true)
@@ -37,7 +37,7 @@ describe('RepositoryQueue', () => {
     const requestResult = queue.addDatabaseRequest(DB_REQUEST_PRIORITY.HIGH, caller(request))
 
     // Wait a bit
-    await delay(100)
+    await sleep(100)
 
     // See that it hasn't been started
     expect(request.started).toBe(false)

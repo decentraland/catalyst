@@ -1,11 +1,10 @@
-import { createIdentity } from 'eth-crypto'
 import { stub } from 'sinon'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { retryFailedDeploymentExecution } from '../../../src/logic/deployments'
 import { FailedDeployment, FailureReason } from '../../../src/ports/failedDeploymentsCache'
 import { assertDeploymentFailed, assertDeploymentFailsWith, assertEntitiesAreActiveOnServer } from '../E2EAssertions'
 import { loadTestEnvironment } from '../E2ETestEnvironment'
-import { awaitUntil, buildDeployData, buildDeployDataAfterEntity } from '../E2ETestUtils'
+import { awaitUntil, buildDeployData, buildDeployDataAfterEntity, createIdentity } from '../E2ETestUtils'
 
 loadTestEnvironment()('Errors during sync', (testEnv) => {
   describe('Deploy an entity on server 1', function () {

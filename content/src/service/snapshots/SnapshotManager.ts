@@ -1,6 +1,6 @@
-import { delay } from '@dcl/catalyst-node-commons'
 import { hashV1 } from '@dcl/hashing'
 import { EntityType } from '@dcl/schemas'
+import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import future from 'fp-future'
 import * as fs from 'fs'
@@ -70,7 +70,7 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
     const stopped = new Promise<boolean>(async (resolve) => {
       while (stopPromise.isPending) {
         // use race to not wait for the delay to stop when stopping the job
-        await Promise.race([delay(this.snapshotFrequencyInMilliSeconds), stopPromise])
+        await Promise.race([sleep(this.snapshotFrequencyInMilliSeconds), stopPromise])
 
         // actually do the generation
         try {

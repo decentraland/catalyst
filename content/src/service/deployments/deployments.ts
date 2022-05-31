@@ -47,7 +47,7 @@ export async function getDeployments(
     entityId: result.entityId,
     pointers: result.pointers,
     entityTimestamp: result.entityTimestamp,
-    content: content.get(result.deploymentId),
+    content: content.get(result.deploymentId) || [],
     metadata: result.metadata,
     deployedBy: result.deployerAddress,
     auditInfo: {

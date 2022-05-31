@@ -18,14 +18,15 @@ loadStandaloneTestEnvironment()("Integration - Deployment with metadata validati
       const P2 = "0,1";
       let E1: EntityCombo = await buildDeployData([P1, P2], {
         type: EntityType.SCENE,
-        metadata: {a:'metadata'}
+        metadata: { a: 'metadata' }
       });
 
       expect(await deployEntity(components, E1))
         .toEqual({
           errors: [
             "The metadata for this entity type (scene) is not valid.",
-            "should be object"
+            "should have required property 'main'",
+            "should have required property 'scene'"
           ]
         });
     }
@@ -122,7 +123,7 @@ loadStandaloneTestEnvironment()("Integration - Deployment with metadata validati
       const identity = createIdentity();
       let E1: EntityCombo = await buildDeployData([identity.address], {
         type: EntityType.PROFILE,
-        metadata: {a:'metadata'},
+        metadata: { a: 'metadata' },
         identity,
       });
 
@@ -130,7 +131,7 @@ loadStandaloneTestEnvironment()("Integration - Deployment with metadata validati
         .toEqual({
           errors: [
             "The metadata for this entity type (profile) is not valid.",
-            "should be object"
+            "should have required property 'avatars'"
           ]
         });
     }
@@ -162,14 +163,14 @@ loadStandaloneTestEnvironment()("Integration - Deployment with metadata validati
 
   testCaseWithComponents(
     testEnv,
-    "When wearable metadata is missing, deployment result should include the proper error",
+    "When wearable metadata is wrong, deployment result should include the proper error",
     async (components) => {
       makeNoopServerValidator(components);
 
       const identity = createIdentity();
       let E1: EntityCombo = await buildDeployData([identity.address], {
         type: EntityType.WEARABLE,
-        metadata: {a:'metadata'},
+        metadata: { a: 'metadata' },
         identity,
       });
 
@@ -177,8 +178,16 @@ loadStandaloneTestEnvironment()("Integration - Deployment with metadata validati
         .toEqual({
           errors: [
             "The metadata for this entity type (wearable) is not valid.",
+            "for standard wearables \"merkleProof\" and \"content\" are not allowed",
+            "for third party wearables \"collectionAddress\" and \"rarity\" are not allowed",
             "should match exactly one schema in oneOf",
-            "should be object",
+            "should have required property 'id'",
+            "should have required property 'description'",
+            "should have required property 'name'",
+            "should have required property 'data'",
+            "should have required property 'thumbnail'",
+            "should have required property 'image'",
+            "should have required property 'i18n'",
           ]
         });
     }
