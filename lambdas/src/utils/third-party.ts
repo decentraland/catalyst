@@ -30,9 +30,7 @@ export const createThirdPartyFetcher = (): ThirdPartyFetcher => ({
       return assetsByOwner?.assets ?? []
     } catch (e) {
       console.error(e)
-      throw new Error(
-        `Error fetching assets with owner: ${owner}, url: ${url} and registryId: ${registryId} at ${baseUrl}`
-      )
+      throw new Error(`Error fetching assets with owner: ${owner}, url: ${url} and registryId: ${registryId}`)
     }
   }
 })
