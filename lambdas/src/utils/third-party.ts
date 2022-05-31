@@ -12,7 +12,8 @@ export interface ThirdPartyFetcher {
 }
 
 export function buildRegistryOwnerUrl(url: string, registryId: string, owner: string): string {
-  return new URL(`/registry/${registryId}/address/${owner}/assets`, url).href
+  const baseUrl = new URL(url).href.replace(/\/$/, '')
+  return `${baseUrl}/registry/${registryId}/address/${owner}/assets`
 }
 
 export const createThirdPartyFetcher = (): ThirdPartyFetcher => ({
@@ -25,11 +26,13 @@ export const createThirdPartyFetcher = (): ThirdPartyFetcher => ({
       const assetsByOwner = response as ThirdPartyAssets
 
       if (!assetsByOwner)
-        console.error(`No assets found with owner: ${owner}, url: ${url} and registryId: ${registryId}`)
+        console.error(`No assets found with owner: ${owner}, url: ${url} and registryId: ${registryId} at ${baseUrl}`)
       return assetsByOwner?.assets ?? []
     } catch (e) {
       console.error(e)
-      throw new Error(`Error fetching assets with owner: ${owner}, url: ${url} and registryId: ${registryId}`)
+      throw new Error(
+        `Error fetching assets with owner: ${owner}, url: ${url} and registryId: ${registryId} at ${baseUrl}`
+      )
     }
   }
 })
