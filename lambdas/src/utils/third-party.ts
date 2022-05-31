@@ -2,32 +2,34 @@ import { EthAddress } from '@dcl/crypto'
 import { WearableId } from '@dcl/schemas'
 import { DecentralandAssetIdentifier, parseUrn } from '@dcl/urn-resolver'
 import { fetchJson } from 'dcl-catalyst-commons'
-import log4js from 'log4js'
 import { FindWearablesByOwner, getWearablesByOwner } from '../apis/collections/controllers/wearables'
 import { ThirdPartyAsset, ThirdPartyAssets } from '../apis/collections/types'
 import { SmartContentClient } from './SmartContentClient'
 import { TheGraphClient } from './TheGraphClient'
 
-const LOGGER = log4js.getLogger('ThirdPartyResolver')
-
 export interface ThirdPartyFetcher {
   fetchAssets: (url: string, collectionId: string, owner: EthAddress) => Promise<ThirdPartyAsset[] | undefined>
+}
+
+export function buildRegistryOwnerUrl(url: string, registryId: string, owner: string): string {
+  const baseUrl = new URL(url).href.replace(/\/$/, '')
+  return `${baseUrl}/registry/${registryId}/address/${owner}/assets`
 }
 
 export const createThirdPartyFetcher = (): ThirdPartyFetcher => ({
   fetchAssets: async (url: string, registryId: string, owner: EthAddress): Promise<ThirdPartyAsset[]> => {
     try {
-      const baseUrl = new URL(`/registry/${registryId}/address/${owner}/assets`, url)
-      const response = await fetchJson(baseUrl.href, {
+      const baseUrl = buildRegistryOwnerUrl(url, registryId, owner)
+      const response = await fetchJson(baseUrl, {
         timeout: '5000'
       })
       const assetsByOwner = response as ThirdPartyAssets
 
       if (!assetsByOwner)
-        LOGGER.debug(`No assets found with owner: ${owner}, url: ${url} and registryId: ${registryId}`)
+        console.error(`No assets found with owner: ${owner}, url: ${url} and registryId: ${registryId} at ${baseUrl}`)
       return assetsByOwner?.assets ?? []
     } catch (e) {
-      LOGGER.debug(e)
+      console.error(e)
       throw new Error(`Error fetching assets with owner: ${owner}, url: ${url} and registryId: ${registryId}`)
     }
   }
@@ -101,7 +103,7 @@ export async function checkForThirdPartyWearablesOwnership(
           collectionsForAddress.add(collectionId)
         }
       } catch (error) {
-        LOGGER.debug(`There was an error parsing the urn: ${wearable}`)
+        console.debug(`There was an error parsing the urn: ${wearable}`)
       }
     }
     const ownedWearables: Set<string> = new Set()
