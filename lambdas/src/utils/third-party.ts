@@ -11,11 +11,15 @@ export interface ThirdPartyFetcher {
   fetchAssets: (url: string, collectionId: string, owner: EthAddress) => Promise<ThirdPartyAsset[] | undefined>
 }
 
+export function buildRegistryOwnerUrl(url: string, registryId: string, owner: string): string {
+  return new URL(`/registry/${registryId}/address/${owner}/assets`, url).href
+}
+
 export const createThirdPartyFetcher = (): ThirdPartyFetcher => ({
   fetchAssets: async (url: string, registryId: string, owner: EthAddress): Promise<ThirdPartyAsset[]> => {
     try {
-      const baseUrl = new URL(`/registry/${registryId}/address/${owner}/assets`, url)
-      const response = await fetchJson(baseUrl.href, {
+      const baseUrl = buildRegistryOwnerUrl(url, registryId, owner)
+      const response = await fetchJson(baseUrl, {
         timeout: '5000'
       })
       const assetsByOwner = response as ThirdPartyAssets
