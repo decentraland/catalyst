@@ -6,7 +6,6 @@ import { AuditInfo, Deployment, SortingField, SortingOrder } from 'dcl-catalyst-
 import destroy from 'destroy'
 import express from 'express'
 import onFinished from 'on-finished'
-import { URLSearchParams } from 'url'
 import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
 import { getActiveDeploymentsByContentHash } from '../logic/database-queries/deployments-queries'
 import { statusResponseFromComponents } from '../logic/status-checks'
