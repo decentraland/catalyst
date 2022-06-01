@@ -115,7 +115,8 @@ export function createBatchDeployerComponent(
               entity.entityId,
               FailureReason.DEPLOYMENT_ERROR,
               entity.authChain,
-              err.toString()
+              err.toString(),
+              elementInMap!.servers
             )
           } finally {
             // decrement the gauge of enqueued deployments

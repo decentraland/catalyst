@@ -341,10 +341,11 @@ export class ServiceImpl implements MetaverseContentService {
     entityId: string,
     reason: FailureReason,
     authChain: AuthChain,
-    errorDescription?: string
+    errorDescription?: string,
+    servers?: string[]
   ): void {
     ServiceImpl.LOGGER.warn(
-      `Deployment of entity (${entityType}, ${entityId}) failed. Reason was: '${errorDescription}'`
+      `Deployment of entity (${entityType}, ${entityId}) from ${servers} failed. Reason was: '${errorDescription}'`
     )
     return this.components.failedDeploymentsCache.reportFailure({
       entityType,

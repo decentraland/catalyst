@@ -26,7 +26,8 @@ export interface MetaverseContentService {
     entityId: string,
     reason: string,
     authChain: AuthChain,
-    errorDescription?: string
+    errorDescription?: string,
+    servers?: string[]
   ): void
   getEntityById(entityId: string): Promise<{ entityId: string; localTimestamp: number } | void>
 }
