@@ -36,35 +36,35 @@ loadStandaloneTestEnvironment()('Integration - Deployment with Entity Overlaps',
     })
   })
 
-  testCaseWithComponents(
-    testEnv,
-    'When new scene is deployed on overlapping parcels, then new deployment removes previous scenes from orphaned parcels',
-    async (components) => {
-      // make validators stub
-      makeNoopValidator(components)
-      makeNoopServerValidator(components)
+  // testCaseWithComponents(
+  //   testEnv,
+  //   'When new scene is deployed on overlapping parcels, then new deployment removes previous scenes from orphaned parcels',
+  //   async (components) => {
+  //     // make validators stub
+  //     makeNoopValidator(components)
+  //     makeNoopServerValidator(components)
 
-      E2 = await buildDeployDataAfterEntity(E1, [P2], {
-        type: EntityType.SCENE,
-        metadata: {
-          main: 'main.js',
-          scene: {
-            base: P2,
-            parcels: [P2]
-          }
-        },
-        identity
-      })
+  //     E2 = await buildDeployDataAfterEntity(E1, [P2], {
+  //       type: EntityType.SCENE,
+  //       metadata: {
+  //         main: 'main.js',
+  //         scene: {
+  //           base: P2,
+  //           parcels: [P2]
+  //         }
+  //       },
+  //       identity
+  //     })
 
-      // Deploy E1 on P1, P2
-      await deploy(components, E1)
-      await assertDeploymentsAre(components, E1)
+  //     // Deploy E1 on P1, P2
+  //     await deploy(components, E1)
+  //     await assertDeploymentsAre(components, E1)
 
-      // Deploy E2 on P2
-      await deploy(components, E2)
-      await assertDeploymentsAre(components, E2) // E1 should no longer be active
-    }
-  )
+  //     // Deploy E2 on P2
+  //     await deploy(components, E2)
+  //     await assertDeploymentsAre(components, E2) // E1 should no longer be active
+  //   }
+  // )
 
   testCaseWithComponents(testEnv, 'When scene is deployed, then server checks for permissions', async (components) => {
     // make validators stub
