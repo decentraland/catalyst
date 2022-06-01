@@ -77,7 +77,7 @@ export class E2ETestEnvironment {
 
   configServer(syncInternal?: number | string): ServerBuilder {
     const asTestEnvCall: TestEnvCalls = {
-      addToDAO: (address: string) => this.dao.add(address),
+      addToDAO: (domain: string) => this.dao.add(domain),
       createDatabases: (amount: number) => this.createDatabases(amount),
       registerServer: (server: TestProgram) => this.runningServers.push(server)
     }
@@ -131,7 +131,7 @@ export class E2ETestEnvironment {
 }
 
 type TestEnvCalls = {
-  addToDAO: (address: string) => void
+  addToDAO: (domain: string) => void
   createDatabases: (amount: number) => Promise<string[]>
   registerServer: (servers: TestProgram) => void
 }
@@ -166,8 +166,8 @@ export class ServerBuilder {
     const servers: TestProgram[] = []
     for (let i = 0; i < ports.length; i++) {
       const port = ports[i]
-      const address = `http://localhost:${port}`
-      this.testEnvCalls.addToDAO(address)
+      const domain = `http://localhost:${port}`
+      this.testEnvCalls.addToDAO(domain)
       const components = await this.builder
         .withConfig(EnvironmentConfig.SERVER_PORT, port)
         .withConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, `${this.storageBaseFolder}/${port}`)
