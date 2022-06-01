@@ -1,4 +1,3 @@
-import { mkdir } from 'fs/promises'
 import PQueue from 'p-queue'
 import { join, resolve } from 'path'
 import { AppComponents } from '../../src/types'
@@ -18,7 +17,7 @@ export async function migrateContentFolderStructure(components: ContentFolderMig
     contentsFolder = contentsFolder.slice(0, -1)
   }
 
-  await mkdir(contentsFolder, { recursive: true })
+  await components.fs.ensureDirectoryExists(contentsFolder)
 
   logs.debug('Running folder migration')
 
