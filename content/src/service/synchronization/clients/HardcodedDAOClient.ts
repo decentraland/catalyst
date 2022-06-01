@@ -7,7 +7,7 @@ export interface DaoComponent {
 }
 
 export class DAOClient implements DaoComponent {
-  constructor(private provider: HTTPProvider) { }
+  constructor(private provider: HTTPProvider) {}
 
   async getAllContentServers(): Promise<Array<CatalystByIdResult>> {
     const servers = await this.getAllServers()
@@ -20,7 +20,7 @@ export class DAOClient implements DaoComponent {
 }
 
 export class DAOHardcodedClient implements DaoComponent {
-  constructor(private readonly servers: string[]) { }
+  constructor(private readonly servers: string[]) {}
 
   async getAllContentServers(): Promise<Array<CatalystByIdResult>> {
     const servers = await this.getAllServers()
