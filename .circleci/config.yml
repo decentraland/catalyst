@@ -150,31 +150,31 @@ jobs:
       #       - content/reports
       #       - content/api-coverage
 
-  report-content-coverage:
-    <<: *base_env
-    steps:
-      - <<: *attach_root
-      - run:
-          name: Report coverage
-          command: |
-            cd content
-            yarn nyc merge reports
-            mkdir .nyc_output/
-            mv coverage.json .nyc_output/coverage.json
-            yarn nyc report --reporter=lcov --reporter=text
-      - store_test_results:
-          path: content/coverage
-      - store_artifacts:
-          path: content/coverage
-  report-content-api-coverage:
-    <<: *base_env
-    steps:
-      - <<: *attach_root
-      - run:
-          name: Report API coverage
-          command: |
-            cd content
-            yarn report-api-coverage
+  # report-content-coverage:
+  #   <<: *base_env
+  #   steps:
+  #     - <<: *attach_root
+  #     - run:
+  #         name: Report coverage
+  #         command: |
+  #           cd content
+  #           yarn nyc merge reports
+  #           mkdir .nyc_output/
+  #           mv coverage.json .nyc_output/coverage.json
+  #           yarn nyc report --reporter=lcov --reporter=text
+  #     - store_test_results:
+  #         path: content/coverage
+  #     - store_artifacts:
+  #         path: content/coverage
+  # report-content-api-coverage:
+  #   <<: *base_env
+  #   steps:
+  #     - <<: *attach_root
+  #     - run:
+  #         name: Report API coverage
+  #         command: |
+  #           cd content
+  #           yarn report-api-coverage
   build-lambdas:
     <<: *base_env
     steps:
@@ -263,14 +263,14 @@ workflows:
           <<: *all_branches_and_tags
           requires:
             - checkout
-      - report-content-coverage:
-          <<: *all_branches_and_tags
-          requires:
-            - build-content
-      - report-content-api-coverage:
-          <<: *all_branches_and_tags
-          requires:
-            - build-content
+      # - report-content-coverage:
+      #     <<: *all_branches_and_tags
+      #     requires:
+      #       - build-content
+      # - report-content-api-coverage:
+      #     <<: *all_branches_and_tags
+      #     requires:
+      #       - build-content
       - build-lambdas:
           <<: *all_branches_and_tags
           requires:
