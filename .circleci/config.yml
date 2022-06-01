@@ -283,8 +283,8 @@ workflows:
           <<: *main_and_tags
           requires:
             - build-content
-            - report-content-coverage
-            - report-content-api-coverage
+            # - report-content-coverage
+            # - report-content-api-coverage
 
       - publish-lambdas-docker:
           <<: *main_and_tags
