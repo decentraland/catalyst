@@ -5,6 +5,7 @@ import { EnsOwnershipFactory } from './apis/profiles/EnsOwnershipFactory'
 import { WearablesOwnershipFactory } from './apis/profiles/WearablesOwnershipFactory'
 import { DAOCache } from './service/dao/DAOCache'
 import { HTTPProvider } from 'eth-connect'
+import fetch from 'node-fetch'
 import { getCommsServerUrl } from './utils/commons'
 import { SmartContentClientFactory } from './utils/SmartContentClientFactory'
 import { SmartContentServerFetcherFactory } from './utils/SmartContentServerFetcherFactory'
@@ -254,7 +255,8 @@ export class EnvironmentBuilder {
 
     const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK)
     const ethereumProvider = new HTTPProvider(
-      `https://rpc.decentraland.org/${encodeURIComponent(ethNetwork)}?project=catalyst-lambdas`
+      `https://rpc.decentraland.org/${encodeURIComponent(ethNetwork)}?project=catalyst-lambdas`,
+      { fetch }
     )
 
     this.registerBeanIfNotAlreadySet(env, Bean.ETHEREUM_PROVIDER, () => ethereumProvider)

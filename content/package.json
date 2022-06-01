@@ -33,6 +33,7 @@
     "cors": "2.8.5",
     "dcl-catalyst-client": "^12.0.1",
     "dcl-catalyst-commons": "9.0.1",
+    "eth-connect": "^6.0.3",
     "express": "4.18.0",
     "express-openapi-validator": "4.13.7",
     "fp-future": "^1.0.1",
