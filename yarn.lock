@@ -1586,7 +1586,7 @@
     "@typescript-eslint/types" "5.21.0"
     eslint-visitor-keys "^3.0.0"
 
-"@well-known-components/http-server@^1.0.0":
+"@well-known-components/http-server@^1.0.0", "@well-known-components/http-server@^1.1.1":
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/@well-known-components/http-server/-/http-server-1.1.1.tgz#dc6622c26090771e4d30c25047b9664403e479fe"
   integrity sha512-4m/IztehCfne/YNNmw4enCuSJbtGyouQwZ8HMyWQ2dylRgH2s016t4jgUJOTtnOwRMn0tbVtCpDpFEG/FpB24g==

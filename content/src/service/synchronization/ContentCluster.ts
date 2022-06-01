@@ -131,13 +131,13 @@ export class ContentCluster implements IdentityProvider {
   }
 
   /** Returns all the addresses on the DAO, except for the current server's */
-  private getAllOtherAddressesOnDAO(allServers: Set<CatalystByIdResult>): string[] {
+  private getAllOtherAddressesOnDAO(allServers: Array<CatalystByIdResult>): string[] {
     const normalizedContentServerAddress = normalizeContentBaseUrl(
       this.components.env.getConfig<string>(EnvironmentConfig.CONTENT_SERVER_ADDRESS)
     )
 
     // Filter myself out
-    const serverUrls = Array.from(allServers)
+    const serverUrls = allServers
       .map(({ domain }) => domain)
       .filter((domain) => normalizeContentBaseUrl(domain) != normalizedContentServerAddress)
 

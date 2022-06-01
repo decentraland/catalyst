@@ -9,11 +9,11 @@ export class MockedDAOClient implements DaoComponent {
     this.serversByAddress = new Map(servers.map((server) => [server.domain, { ...server, id: new Uint8Array() }]))
   }
 
-  async getAllContentServers(): Promise<Set<CatalystByIdResult>> {
-    return new Set(this.serversByAddress.values())
+  async getAllContentServers(): Promise<Array<CatalystByIdResult>> {
+    return Array.from(this.serversByAddress.values())
   }
 
-  async getAllServers(): Promise<Set<CatalystByIdResult>> {
+  async getAllServers(): Promise<Array<CatalystByIdResult>> {
     throw new Error('Not Implemented')
   }
 
