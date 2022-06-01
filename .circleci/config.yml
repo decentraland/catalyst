@@ -128,27 +128,27 @@ jobs:
     working_directory: *workspace_root
     steps:
       - <<: *attach_root
-      - run:
-          name: Run tests
-          command: |
-            cd content
-            TESTFILES=$(circleci tests glob "test/**/*.spec.ts" | circleci tests split --split-by=timings)
-            yarn test $TESTFILES --coverageDirectory=reports --reporters=jest-junit --reporters=default
-            mv reports/coverage-final.json reports/coverage-${CIRCLE_NODE_INDEX:-0}.json
-            mv api-coverage/api-coverage.json api-coverage/api-coverage-${CIRCLE_NODE_INDEX:-0}.json
-          environment:
-            CI: 'true'
-            JEST_JUNIT_OUTPUT_DIR: './test-result'
-            JEST_JUNIT_ADD_FILE_ATTRIBUTE: 'true'
-      - store_test_results:
-          path: content/test-result
-      - store_artifacts:
-          path: content/test-result
-      - persist_to_workspace:
-          root: *workspace_root
-          paths:
-            - content/reports
-            - content/api-coverage
+      # - run:
+      #     name: Run tests
+      #     command: |
+      #       cd content
+      #       TESTFILES=$(circleci tests glob "test/**/*.spec.ts" | circleci tests split --split-by=timings)
+      #       yarn test $TESTFILES --coverageDirectory=reports --reporters=jest-junit --reporters=default
+      #       mv reports/coverage-final.json reports/coverage-${CIRCLE_NODE_INDEX:-0}.json
+      #       mv api-coverage/api-coverage.json api-coverage/api-coverage-${CIRCLE_NODE_INDEX:-0}.json
+      #     environment:
+      #       CI: 'true'
+      #       JEST_JUNIT_OUTPUT_DIR: './test-result'
+      #       JEST_JUNIT_ADD_FILE_ATTRIBUTE: 'true'
+      # - store_test_results:
+      #     path: content/test-result
+      # - store_artifacts:
+      #     path: content/test-result
+      # - persist_to_workspace:
+      #     root: *workspace_root
+      #     paths:
+      #       - content/reports
+      #       - content/api-coverage
 
   report-content-coverage:
     <<: *base_env
