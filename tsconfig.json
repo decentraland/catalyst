@@ -19,7 +19,6 @@
     "skipLibCheck": true,
     "lib": [
       "es2020",
-      "dom",
       "esnext.asynciterable",
       "esnext"
     ]

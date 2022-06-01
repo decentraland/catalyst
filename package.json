@@ -12,7 +12,7 @@
     "build": "yarn list-mismatches && yarn workspaces run build",
     "build:content": "yarn list-mismatches && yarn workspace @catalyst/content-server build",
     "build:lambdas": "yarn list-mismatches && yarn workspace @catalyst/lambdas-server build",
-    "cleanup": "yarn workspaces run cleanup && shx rm -rf node_modules",
+    "cleanup": "yarn workspaces run cleanup && rm -rf node_modules",
     "lint:check": "eslint '**/*.{js,ts}'",
     "lint:fix": "eslint '**/*.{js,ts}' --fix",
     "list-mismatches": "npx syncpack list-mismatches --source 'package.json' --source 'lambdas/package.json' --source 'content/package.json'",
