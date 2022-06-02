@@ -30,41 +30,66 @@ digraph G {
         bgcolor=4
         fontsize=24.0
         URL="https://github.com/decentraland/catalyst"
-        Comms [
-            label=<Comms<BR /> <FONT POINT-SIZE="10">Users P2P networks</FONT>>
-            URL="https://github.com/decentraland/catalyst/tree/main/comms/lighthouse"
+        BFF [
+            label=<BFF<BR /> <FONT POINT-SIZE="10">P2P Signaling and <br/>Client entry point</FONT>>
+            URL="https://github.com/decentraland/explorer-bff"
         ]
         edge [
             style = "invis"
         ]
         Nginx [
             label=<Nginx<BR/> <FONT POINT-SIZE="10">Reverse Proxy</FONT>>
-        ]
-        Comms -> Lambdas -> Content
+        ]      
+        Archipelago [
+            label=<Archipelago<BR/> <FONT POINT-SIZE="10">Groups peers in islands</FONT>>
+            URL="https://github.com/decentraland/archipelago-service"
+        ]    
+        NATS [
+            label=<NATS<BR/> <FONT POINT-SIZE="10">Message Broker</FONT>>
+            URL="https://nats.io/"
+        ]        
+
+        BFF -> Archipelago -> Lambdas -> Content
         edge [
             style = "normal"
             dir=both
         ]
+        
         Content:e -> Nginx [constraint=false]
         Content [
             label=<Content Server<BR/> <FONT POINT-SIZE="10">Assets Storage</FONT>>
             URL="https://github.com/decentraland/catalyst/tree/main/content"
         ]
-        Lambdas -> Nginx [constraint=false]
+        Lambdas:e -> Nginx [constraint=false]
         Lambdas [
             label=<Lambdas<BR/> <FONT POINT-SIZE="10">Utilities to retrieve and validate data</FONT>>
             URL="https://github.com/decentraland/catalyst/tree/main/lambdas"
         ]
-        Comms -> Nginx [constraint=false]
+        BFF -> Nginx [constraint=false]        
+        
+        BFF -> NATS[constraint=false]        
+        Archipelago -> NATS[constraint=false]
+        edge [
+            style = "invis"
+        ]
+        Nginx -> NATS
+
     }
 
     TheGraph [
         label=<The Graph<BR/> <FONT POINT-SIZE="10">Query the Blockchain</FONT>>
         URL="https://thegraph.com/hosted-service/subgraph/decentraland/collections-matic-mainnet"
     ]
+    LiveKit [
+        label=<LiveKit<BR/> <FONT POINT-SIZE="10">High Quality Media Server</FONT>>
+        URL="https://livekit.io/"
+    ]
     Lambdas:ne -> TheGraph [ltail=cluster_catalyst]
 
     edge [dir=both]
-    Nginx -> CatalystClient
-
+    Nginx -> CatalystClient    
+    edge [ style = "invis"]
+    CatalystClient -> LiveKit
+    
+    
 }
