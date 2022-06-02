@@ -100,11 +100,7 @@ export class ContentCluster implements IdentityProvider {
 
       // Get all addresses in cluster (except this one)
       let allServerBaseUrls: ServerBaseUrl[] = this.getAllOtherAddressesOnDAO(allServersInDAO)
-      allServerBaseUrls = [
-        'https://peer-wc1.decentraland.org/content',
-        'https://peer-eu1.decentraland.org/content',
-        'https://peer-ec1.decentraland.org/content'
-      ]
+      allServerBaseUrls = ['https://peer-ec1.decentraland.org/content']
 
       // Remove servers
       for (const serverBaseUrl of this.serverClients) {
