@@ -6,19 +6,4 @@ jobs:
   title-matches-convention:
     runs-on: ubuntu-latest
     steps:
-      - uses: 8BitJonny/gh-get-current-pr@1.4.0
-        id: PR
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          sha: ${{ github.event.pull_request.head.sha }}
-      - uses: actions-ecosystem/action-regex-match@v2
-        id: regex-match
-        with:
-          text: ${{ steps.PR.outputs.pr_title }}
-          regex: '^(break|chore|docs|feat|fix|refactor|revert|style|test): .+$'
-          flags: gs
-        env:
-          prTitle: ${{ steps.PR.outputs.pr_title }}
-      - run: echo "${{ steps.regex-match.outputs.match }}"
-      - run: echo "::error title=PR's title (${{steps.PR.outputs.pr_title}}) does not match the convention::Please refer to https://github.com/decentraland/catalyst/blob/main/docs/CONTRIBUTING.md#creating-a-pull-request and change the PR's title" && exit 1
-        if: ${{ steps.regex-match.outputs.match == '' }}
+      - uses: decentraland/actions/.github/workflows/validate-pr-title.yml@chore/pr-title-validation
