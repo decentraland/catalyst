@@ -386,10 +386,19 @@
     ipfs-unixfs-importer "^7.0.3"
     multiformats "^9.6.3"
 
-"@dcl/schemas@4.13.0", "@dcl/schemas@^4.0.0", "@dcl/schemas@^4.11.0":
+"@dcl/schemas@4.13.0":
   version "4.13.0"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-4.13.0.tgz#75c6dd6f394e8439aac4e27947a163d7792486bb"
   integrity sha512-Pb2PZ+4JmqosmcF2q0hojBEW2KNUcxQ7a0mpfANnIHALygjgUZmNrN03a3RzXB5U0SztJAvto1AVEnptg1lKLg==
+  dependencies:
+    ajv "^7.1.0"
+    ajv-errors "^2.0.1"
+    ajv-keywords "^4.0.1"
+
+"@dcl/schemas@^4.0.0", "@dcl/schemas@^4.11.0", "@dcl/schemas@^4.14.0":
+  version "4.14.1"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-4.14.1.tgz#be50ac93d2668e51cd3d92aee68fd9aefb1d405d"
+  integrity sha512-c0mD4hrFZs+fEweaag3J0VlPRSasTMUbxn9Oj/vZUe8oO8KzObvxpXH2eCkPosX5pu1TqdIAUsOEouDghUmzlA==
   dependencies:
     ajv "^7.1.0"
     ajv-errors "^2.0.1"
@@ -3190,7 +3199,7 @@ dcl-catalyst-client@^11.3.2:
     dcl-crypto "^2.2.0"
     form-data "^4.0.0"
 
-dcl-catalyst-commons@8.3.0, dcl-catalyst-commons@^8.2.0, dcl-catalyst-commons@^8.3.0:
+dcl-catalyst-commons@8.3.0, dcl-catalyst-commons@^8.2.0:
   version "8.3.0"
   resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-8.3.0.tgz#8b49fbc748bc9bce6b21d71f9cca1d40c2cd238d"
   integrity sha512-QZGSEYX1nsVatX/ljjwlBMfHzEJGDpU2Oe4v7bQRQKXK+qOqQcwavpAyPSGq/d5ZwacWdJnwvy6eARncimcqaA==
@@ -3204,6 +3213,17 @@ dcl-catalyst-commons@8.3.0, dcl-catalyst-commons@^8.2.0, dcl-catalyst-commons@^8
     dcl-crypto "^2.1.0"
     ms "^2.1.2"
     node-fetch "^3.0.0"
+
+dcl-catalyst-commons@^9.0.1:
+  version "9.0.1"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-9.0.1.tgz#315ef14f774dcdb6f07147865a967ca0b25648e7"
+  integrity sha512-9BfHnGR9YHe/FkqVKgpBwXMjwI53DtuPn1kBWFyStI4I/F0W2/iG/LzoHLcHB1gzvj3JHaSK+Du0o9HWHIMPiQ==
+  dependencies:
+    "@dcl/schemas" "^4.14.0"
+    abort-controller "^3.0.0"
+    cookie "^0.4.1"
+    cross-fetch "^3.1.4"
+    ms "^2.1.2"
 
 dcl-crypto@2.3.0, dcl-crypto@^2.1.0, dcl-crypto@^2.2.0:
   version "2.3.0"
