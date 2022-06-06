@@ -6,4 +6,4 @@ on:
 
 jobs:
   title-matches-convention:
-    uses: decentraland/actions/.github/workflows/validate-pr-title.yml@chore/pr-title-validation
+    uses: decentraland/actions/.github/workflows/validate-pr-title.yml@main
