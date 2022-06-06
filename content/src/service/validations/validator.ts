@@ -39,5 +39,5 @@ export function createExternalCalls(
 }
 
 export function createValidator(components: Pick<AppComponents, 'externalCalls' | 'logs'>): IValidatorComponent {
-  return validator(components.externalCalls, components)
+  return validator(components)
 }
