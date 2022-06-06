@@ -341,6 +341,13 @@
     dcl-crypto "2.3.0"
     web3x "4.0.6"
 
+"@dcl/catalyst-contracts@2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-contracts/-/catalyst-contracts-2.0.0.tgz#0cd74e13e625e3b39f834a9bb81f290196ef0c19"
+  integrity sha512-5DIrA4J3W5qknfdHCx66zuc5SYo0+a4CD3qZLFqU4IzfvbYUsR9r3RBXdAja9orqNVRg5yDo5X3lFT7B4FB8UA==
+  dependencies:
+    eth-connect "^6.0.2"
+
 "@dcl/catalyst-node-commons@1.0.4":
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/@dcl/catalyst-node-commons/-/catalyst-node-commons-1.0.4.tgz#4f806ca49b5a12683fbe07130d2a525825ea5073"
@@ -3747,6 +3754,11 @@ etag@~1.8.1:
   version "1.8.1"
   resolved "https://registry.yarnpkg.com/etag/-/etag-1.8.1.tgz#41ae2eeb65efa62268aebfea83ac7d79299b0887"
   integrity sha1-Qa4u62XvpiJorr/qg6x9eSmbCIc=
+
+eth-connect@^6.0.2:
+  version "6.0.3"
+  resolved "https://registry.yarnpkg.com/eth-connect/-/eth-connect-6.0.3.tgz#dd903bea5a75083ebb010216549e427f2db90fce"
+  integrity sha512-jK+zqIhMuZe6RlHkEKOXSZDKgZQw/mPTLlysdFYQsxaJlZtaB1EQSTgY/DrHhOc2wUUmB97raAftmhC8Wk/o7Q==
 
 eth-crypto@2.3.0:
   version "2.3.0"
