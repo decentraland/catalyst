@@ -1,16 +1,16 @@
-import { DECENTRALAND_ADDRESS } from '@dcl/catalyst-node-commons'
 import { ILoggerComponent } from '@well-known-components/interfaces'
-import { EntityType, EntityVersion } from 'dcl-catalyst-commons'
+import { EntityType, EthAddress } from '@dcl/schemas'
 import ms from 'ms'
 import { initComponentsWithEnv } from './components'
 import { RepositoryQueue } from './repository/RepositoryQueue'
 import { AppComponents, parseEntityType } from './types'
 
-export const CURRENT_CONTENT_VERSION: EntityVersion = EntityVersion.V3
+export const CURRENT_CONTENT_VERSION = 'v3'
 const DEFAULT_STORAGE_ROOT_FOLDER = 'storage'
 const DEFAULT_SERVER_PORT = 6969
 const DEFAULT_DENYLIST_FILE_NAME = 'denylist.txt'
 const DEFAULT_DENYLIST_URLS = 'https://config.decentraland.org/denylist'
+const DECENTRALAND_ADDRESS: EthAddress = '0x1337e0507eb4ab47e08a179573ed4533d9e22a7b'
 
 const DEFAULT_FOLDER_MIGRATION_MAX_CONCURRENCY = 1000
 export const DEFAULT_ENTITIES_CACHE_SIZE = 150000

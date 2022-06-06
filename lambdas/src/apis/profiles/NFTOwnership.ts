@@ -1,4 +1,4 @@
-import { EthAddress } from 'dcl-crypto'
+import { EthAddress } from '@dcl/crypto'
 import log4js from 'log4js'
 import LRU from 'lru-cache'
 

@@ -1,11 +1,11 @@
-import { DAOClient } from '@dcl/catalyst-node-commons'
 import { ExternalCalls, Validator } from '@dcl/content-validator'
 import { JobLifecycleManagerComponent } from '@dcl/snapshots-fetcher/dist/job-lifecycle-manager'
 import { IJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { IDeployerComponent, RemoteEntityDeployment } from '@dcl/snapshots-fetcher/dist/types'
 import { IFetchComponent } from '@well-known-components/http-server'
 import { ILoggerComponent, IMetricsComponent } from '@well-known-components/interfaces'
-import { EntityType, Fetcher } from 'dcl-catalyst-commons'
+import { EntityType } from '@dcl/schemas'
+import { Fetcher } from 'dcl-catalyst-commons'
 import { Controller } from './controller/Controller'
 import { Environment } from './Environment'
 import { metricsDeclaration } from './metrics'
@@ -33,6 +33,8 @@ import { IRetryFailedDeploymentsComponent } from './service/synchronization/retr
 import { ISynchronizationManager } from './service/synchronization/SynchronizationManager'
 import { SystemPropertiesManager } from './service/system-properties/SystemProperties'
 import { ServerValidator } from './service/validations/server'
+import { HTTPProvider } from 'eth-connect'
+import { DaoComponent } from './service/synchronization/clients/HardcodedDAOClient'
 
 // Minimum amount of needed stuff to make the sync work
 
@@ -69,13 +71,14 @@ export type AppComponents = {
   garbageCollectionManager: GarbageCollectionManager
   systemPropertiesManager: SystemPropertiesManager
   catalystFetcher: Fetcher
-  daoClient: DAOClient
+  daoClient: DaoComponent
   server: Server
   retryFailedDeployments: IRetryFailedDeploymentsComponent
   activeEntities: ActiveEntities
   sequentialExecutor: ISequentialTaskExecutorComponent
   denylist: Denylist
   fs: FSComponent
+  ethereumProvider: HTTPProvider
 
   // this will be replaced by `database` and removed from here
   repository: Repository

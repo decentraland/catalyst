@@ -1,3 +1,4 @@
+import { Entity, EntityType } from '@dcl/schemas'
 import {
   BuildEntityOptions,
   BuildEntityWithoutFilesOptions,
@@ -7,18 +8,11 @@ import {
   DeploymentPreparationData
 } from 'dcl-catalyst-client'
 import {
-  AuditInfo,
   AvailableContentResult,
   CompleteRequestOptions,
-  ContentFileHash,
-  Entity,
-  EntityId,
-  EntityType,
   Fetcher,
-  Pointer,
   RequestOptions,
-  ServerStatus,
-  Timestamp
+  ServerStatus
 } from 'dcl-catalyst-commons'
 import future, { IFuture } from 'fp-future'
 import log4js from 'log4js'
@@ -34,22 +28,22 @@ export class SmartContentClient implements ContentAPI {
 
   constructor(private readonly externalContentServerUrl: string) {}
 
-  async fetchEntitiesByPointers(type: EntityType, pointers: Pointer[], options?: RequestOptions): Promise<Entity[]> {
+  async fetchEntitiesByPointers(type: EntityType, pointers: string[], options?: RequestOptions): Promise<Entity[]> {
     const client = await this.getClient()
     return client.fetchEntitiesByPointers(type, pointers, options)
   }
 
-  async fetchEntitiesByIds(type: EntityType, ids: EntityId[], options?: RequestOptions): Promise<Entity[]> {
+  async fetchEntitiesByIds(type: EntityType, ids: string[], options?: RequestOptions): Promise<Entity[]> {
     const client = await this.getClient()
     return client.fetchEntitiesByIds(type, ids, options)
   }
 
-  async fetchEntityById(type: EntityType, id: EntityId, options?: RequestOptions): Promise<Entity> {
+  async fetchEntityById(type: EntityType, id: string, options?: RequestOptions): Promise<Entity> {
     const client = await this.getClient()
     return client.fetchEntityById(type, id, options)
   }
 
-  async fetchAuditInfo(type: EntityType, id: EntityId, options?: RequestOptions): Promise<AuditInfo> {
+  async fetchAuditInfo(type: EntityType, id: string, options?: RequestOptions) {
     const client = await this.getClient()
     return client.fetchAuditInfo(type, id, options)
   }
@@ -59,7 +53,7 @@ export class SmartContentClient implements ContentAPI {
     return client.fetchContentStatus(options)
   }
 
-  async downloadContent(contentHash: ContentFileHash, options?: RequestOptions): Promise<Buffer> {
+  async downloadContent(contentHash: string, options?: RequestOptions): Promise<Buffer> {
     const client = await this.getClient()
     return client.downloadContent(contentHash, options)
   }
@@ -73,12 +67,12 @@ export class SmartContentClient implements ContentAPI {
     return await client.pipeContent(contentHash, responseTo, options)
   }
 
-  async isContentAvailable(cids: ContentFileHash[], options?: RequestOptions): Promise<AvailableContentResult> {
+  async isContentAvailable(cids: string[], options?: RequestOptions): Promise<AvailableContentResult> {
     const client = await this.getClient()
     return client.isContentAvailable(cids, options)
   }
 
-  deployEntity(deployData: DeploymentData, fix?: boolean, options?: RequestOptions): Promise<Timestamp> {
+  deployEntity(deployData: DeploymentData, fix?: boolean, options?: RequestOptions): Promise<number> {
     throw new Error('New deployments are currently not supported')
   }
 

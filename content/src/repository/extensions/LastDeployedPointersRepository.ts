@@ -1,4 +1,4 @@
-import { EntityType } from 'dcl-catalyst-commons'
+import { EntityType } from '@dcl/schemas'
 import { Database } from '../Database'
 import { DeploymentId } from './DeploymentsRepository'
 

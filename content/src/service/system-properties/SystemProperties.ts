@@ -1,4 +1,3 @@
-import { ServerBaseUrl } from '@dcl/catalyst-node-commons'
 import { EntityType } from 'dcl-catalyst-commons'
 import { Database } from '../../repository/Database'
 import { Repository } from '../../repository/Repository'
@@ -7,7 +6,7 @@ import { SnapshotMetadata } from '../snapshots/SnapshotManager'
 import { IntPropertyMapper, JSONPropertyMapper, SystemPropertyMapper } from './SystemPropertyMappers'
 
 export class SystemProperty<PropertyType> {
-  static readonly LAST_KNOWN_LOCAL_DEPLOYMENTS: SystemProperty<[ServerBaseUrl, number][]> = new SystemProperty(
+  static readonly LAST_KNOWN_LOCAL_DEPLOYMENTS: SystemProperty<[string, number][]> = new SystemProperty(
     'last_known_local_deployments',
     new JSONPropertyMapper()
   )

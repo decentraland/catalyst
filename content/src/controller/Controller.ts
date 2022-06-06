@@ -1,23 +1,15 @@
-import { toQueryParams } from '@dcl/catalyst-node-commons'
-import { DeploymentWithAuthChain } from '@dcl/schemas'
+import { AuthChain, Authenticator, AuthLink, EthAddress, Signature } from '@dcl/crypto'
+import { DeploymentWithAuthChain, Entity, EntityType } from '@dcl/schemas'
 import { DecentralandAssetIdentifier, parseUrn } from '@dcl/urn-resolver'
 import { ILoggerComponent } from '@well-known-components/interfaces'
-import {
-  AuditInfo,
-  ContentFileHash,
-  Deployment,
-  Entity,
-  EntityType,
-  SortingField,
-  SortingOrder
-} from 'dcl-catalyst-commons'
-import { AuthChain, Authenticator, AuthLink, EthAddress, Signature } from 'dcl-crypto'
+import { AuditInfo, Deployment, SortingField, SortingOrder } from 'dcl-catalyst-commons'
 import destroy from 'destroy'
 import express from 'express'
 import onFinished from 'on-finished'
 import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
 import { getActiveDeploymentsByContentHash } from '../logic/database-queries/deployments-queries'
 import { statusResponseFromComponents } from '../logic/status-checks'
+import { toQueryParams } from '../logic/toQueryParams'
 import { ContentItem } from '../ports/contentStorage/contentStorage'
 import { getDeployments } from '../service/deployments/deployments'
 import { DeploymentOptions } from '../service/deployments/types'
@@ -280,7 +272,7 @@ export class Controller {
     // Method: GET
     // Path: /available-content
     // Query String: ?cid={hashId1}&cid={hashId2}
-    const cids = this.asArray<ContentFileHash>(req.query.cid)
+    const cids = this.asArray<string>(req.query.cid)
 
     if (!cids) {
       res.status(400).send('Please set at least one cid.')
@@ -423,10 +415,10 @@ export class Controller {
 
     const nextQueryParams = toQueryParams({
       ...nextFilters,
-
       limit: limit,
       lastId: lastPointerChange.entityId
     })
+
     return '?' + nextQueryParams
   }
 
@@ -578,6 +570,7 @@ export class Controller {
       lastId: lastDeployment.entityId,
       limit: options?.limit
     })
+
     return '?' + nextQueryParams
   }
 

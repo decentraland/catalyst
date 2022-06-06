@@ -1,22 +1,37 @@
-import { DAOClient, ServerBaseUrl, ServerMetadata } from '@dcl/catalyst-node-commons'
+import { CatalystByIdResult, getAllCatalystFromProvider } from '@dcl/catalyst-contracts'
+import { HTTPProvider, hexToBytes } from 'eth-connect'
 
-export class DAOHardcodedClient implements DAOClient {
-  constructor(private readonly servers: ServerBaseUrl[]) {}
+export interface DaoComponent {
+  getAllContentServers(): Promise<Array<CatalystByIdResult>>
+  getAllServers(): Promise<Array<CatalystByIdResult>>
+}
 
-  async getAllContentServers(): Promise<Set<ServerMetadata>> {
-    const servers: Set<ServerMetadata> = await this.getAllServers()
-    return new Set(Array.from(servers.values()).map((server) => ({ ...server, address: server.baseUrl + '/content' })))
+export class DAOClient implements DaoComponent {
+  constructor(private provider: HTTPProvider) {}
+
+  async getAllContentServers(): Promise<Array<CatalystByIdResult>> {
+    const servers = await this.getAllServers()
+    return servers.map((server) => ({ ...server, domain: server.domain + '/content' }))
   }
 
-  getAllServers(): Promise<Set<ServerMetadata>> {
-    return Promise.resolve(
-      new Set(
-        this.servers.map((server, index) => ({
-          baseUrl: server,
-          owner: '0x0000000000000000000000000000000000000000',
-          id: `${index}`
-        }))
-      )
-    )
+  async getAllServers(): Promise<Array<CatalystByIdResult>> {
+    return await getAllCatalystFromProvider(this.provider)
+  }
+}
+
+export class DAOHardcodedClient implements DaoComponent {
+  constructor(private readonly servers: string[]) {}
+
+  async getAllContentServers(): Promise<Array<CatalystByIdResult>> {
+    const servers = await this.getAllServers()
+    return servers.map((server) => ({ ...server, address: server.domain + '/content' }))
+  }
+
+  async getAllServers(): Promise<Array<CatalystByIdResult>> {
+    return this.servers.map((server, index) => ({
+      domain: server,
+      owner: '0x0000000000000000000000000000000000000000',
+      id: hexToBytes(`${index.toString(16)}`)
+    }))
   }
 }

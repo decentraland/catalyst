@@ -1,4 +1,4 @@
-import { EthAddress } from 'dcl-crypto'
+import { EthAddress } from '@dcl/crypto'
 
 export type Collection = {
   id: string

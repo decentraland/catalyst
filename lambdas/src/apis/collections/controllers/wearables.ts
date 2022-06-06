@@ -1,8 +1,8 @@
-import { toQueryParams } from '@dcl/catalyst-node-commons'
-import { EntityType } from 'dcl-catalyst-commons'
-import { EthAddress } from 'dcl-crypto'
+import { EthAddress } from '@dcl/crypto'
+import { EntityType } from '@dcl/schemas'
 import { Request, Response } from 'express'
 import log4js from 'log4js'
+import { toQueryParams } from '../../../logic/toQueryParams'
 import { asArray, asInt } from '../../../utils/ControllerUtils'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TheGraphClient } from '../../../utils/TheGraphClient'
@@ -124,7 +124,11 @@ export async function getWearablesEndpoint(
       offChainManager
     )
 
-    const nextQueryParams = toQueryParams({ ...requestFilters, lastId: nextLastId, limit: sanitizedLimit })
+    const nextQueryParams = toQueryParams({
+      ...requestFilters,
+      lastId: nextLastId?.toString(),
+      limit: sanitizedLimit.toString()
+    })
     const next = nextLastId ? '?' + nextQueryParams : undefined
 
     res.send({ wearables, filters: requestFilters, pagination: { limit: sanitizedLimit, lastId, next } })
@@ -153,9 +157,9 @@ export async function getWearables(
     const offChain = await offChainManager.find(filters)
 
     let onChain: Wearable[] = []
-    if (offChain.length < filters.wearableIds!.length) {
+    if (filters.wearableIds && offChain.length < filters.wearableIds.length) {
       // It looks like we do need to query the content server after all
-      const onChainIds = filters.wearableIds!.filter((wearableId) => !isBaseAvatar(wearableId))
+      const onChainIds = filters.wearableIds.filter((wearableId) => !isBaseAvatar(wearableId))
       onChain = await fetchWearables(onChainIds, client)
     }
 

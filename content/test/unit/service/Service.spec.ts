@@ -1,10 +1,10 @@
-import { DECENTRALAND_ADDRESS } from '@dcl/catalyst-node-commons'
+import { Authenticator } from '@dcl/crypto'
 import { hashV1 } from '@dcl/hashing'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import assert from 'assert'
-import { ContentFileHash, Deployment, Entity, EntityType, EntityVersion } from 'dcl-catalyst-commons'
-import { Authenticator } from 'dcl-crypto'
+import { Deployment, EntityVersion } from 'dcl-catalyst-commons'
+import { Entity, EntityType, EthAddress } from '@dcl/schemas'
 import ms from 'ms'
 import { DEFAULT_ENTITIES_CACHE_SIZE, Environment, EnvironmentConfig } from '../../../src/Environment'
 import * as pointers from '../../../src/logic/database-queries/pointers-queries'
@@ -32,8 +32,11 @@ import { buildEntityAndFile } from '../../helpers/service/EntityTestFactory'
 import { NoOpServerValidator, NoOpValidator } from '../../helpers/service/validations/NoOpValidator'
 import { MockedStorage } from '../ports/contentStorage/MockedStorage'
 import { NoOpPointerManager } from './pointers/NoOpPointerManager'
+import { HTTPProvider } from 'eth-connect'
 
-describe('Service', function() {
+export const DECENTRALAND_ADDRESS: EthAddress = '0x1337e0507eb4ab47e08a179573ed4533d9e22a7b'
+
+describe('Service', function () {
   const POINTERS = ['X1,Y1', 'X2,Y2']
   const auditInfo: LocalDeploymentAuditInfo = {
     authChain: Authenticator.createSimpleAuthChain('entityId', 'ethAddress', 'signature')
@@ -42,7 +45,7 @@ describe('Service', function() {
   const initialAmountOfDeployments: number = 15
 
   const randomFile = Buffer.from('1234')
-  let randomFileHash: ContentFileHash
+  let randomFileHash: string
   let entity: Entity
   let entityFile: Uint8Array
 
@@ -54,7 +57,7 @@ describe('Service', function() {
         POINTERS,
         Date.now(),
         new Map([['file', randomFileHash]]),
-        'metadata'
+        { 'metadata': 'metadata' }
       )
 
     jest.spyOn(pointers, 'updateActiveDeployments').mockImplementation(() =>
@@ -232,7 +235,7 @@ describe('Service', function() {
     const metrics = createTestMetricsComponent(metricsDeclaration)
     const storage = new MockedStorage()
     const pointerManager = NoOpPointerManager.build()
-    const authenticator = new ContentAuthenticator('', DECENTRALAND_ADDRESS)
+    const authenticator = new ContentAuthenticator(new HTTPProvider("https://rpc.decentraland.org/mainnet?project=catalyst-ci"), DECENTRALAND_ADDRESS)
     const database = await createDatabaseComponent({ logs, env, metrics })
     const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs })
     env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)

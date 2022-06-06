@@ -47,11 +47,11 @@ export async function getDeployments(
     entityId: result.entityId,
     pointers: result.pointers,
     entityTimestamp: result.entityTimestamp,
-    content: content.get(result.deploymentId),
+    content: content.get(result.deploymentId) || [],
     metadata: result.metadata,
     deployedBy: result.deployerAddress,
     auditInfo: {
-      version: result.version,
+      version: result.version as EntityVersion,
       authChain: result.authChain,
       localTimestamp: result.localTimestamp,
       overwrittenBy: result.overwrittenBy

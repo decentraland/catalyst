@@ -1,4 +1,4 @@
-import { EntityType } from 'dcl-catalyst-commons'
+import { EntityType } from '@dcl/schemas'
 import { AppComponents } from '../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { loadStandaloneTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
@@ -14,8 +14,8 @@ loadStandaloneTestEnvironment()('Integration - Same Timestamp Check', (testEnv) 
 
   beforeAll(async () => {
     const timestamp = Date.now()
-    const e1 = await buildDeployData([P1], { type, timestamp, metadata: 'metadata1' })
-    const e2 = await buildDeployData([P1], { type, timestamp, metadata: 'metadata2' })
+    const e1 = await buildDeployData([P1], { type, timestamp, metadata: { a: 'metadata1' } })
+    const e2 = await buildDeployData([P1], { type, timestamp, metadata: { a: 'metadata2' } })
     if (e1.entity.id.toLowerCase() < e2.entity.id.toLowerCase()) {
       oldestEntity = e1
       newestEntity = e2

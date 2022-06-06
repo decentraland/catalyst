@@ -1,4 +1,4 @@
-import { EthAddress } from 'dcl-crypto'
+import { EthAddress } from '@dcl/crypto'
 import { TheGraphClient } from '../../utils/TheGraphClient'
 import { NFTOwnership } from './NFTOwnership'
 

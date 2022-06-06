@@ -1,4 +1,4 @@
-import { Entity } from 'dcl-catalyst-commons'
+import { Entity } from '@dcl/schemas'
 import { DeploymentId } from '../../repository/extensions/DeploymentsRepository'
 import { LastDeployedPointersRepository } from '../../repository/extensions/LastDeployedPointersRepository'
 import { PointerHistoryRepository } from '../../repository/extensions/PointerHistoryRepository'

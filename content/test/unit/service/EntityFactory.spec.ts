@@ -1,4 +1,4 @@
-import { Entity, EntityType } from 'dcl-catalyst-commons'
+import { Entity, EntityType } from '@dcl/schemas'
 import { EntityFactory } from '../../../src/service/EntityFactory'
 import { buildEntityAndFile, entityToFile } from '../../helpers/service/EntityTestFactory'
 
@@ -11,8 +11,8 @@ describe('Service', () => {
       EntityType.SCENE,
       ['X1,Y1'],
       123456,
-      new Map([['name', 'hash']]),
-      'metadata'
+      new Map([['name', 'bafkreico6luxnkk5vxuxvmpsg7hva4upamyz3br2b6ucc7rf3hdlcaehha']]),
+      { 'metadata': 'metadata' }
     )
   })
 

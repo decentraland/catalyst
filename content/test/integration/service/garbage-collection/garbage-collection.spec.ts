@@ -1,6 +1,5 @@
-import { delay } from '@dcl/catalyst-node-commons'
+import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import assert from 'assert'
-import { ContentFileHash } from 'dcl-catalyst-commons'
 import ms from 'ms'
 import { EnvironmentBuilder, EnvironmentConfig } from '../../../../src/Environment'
 import { stopAllComponents } from '../../../../src/logic/components-lifecycle'
@@ -22,17 +21,19 @@ loadStandaloneTestEnvironment({
   const P1 = 'X1,Y1',
     P2 = 'X2,Y2'
   let E1: EntityCombo, E2: EntityCombo, E3: EntityCombo
-  let onlyE1Content: ContentFileHash
-  let sharedContent: ContentFileHash
+  let onlyE1Content: string
+  let sharedContent: string
 
   let components: AppComponents
 
   beforeAll(async () => {
     E1 = await buildDeployData([P1], {
-      contentPaths: ['test/integration/resources/some-binary-file.png', 'test/integration/resources/some-text-file.txt']
+      contentPaths: ['test/integration/resources/some-binary-file.png', 'test/integration/resources/some-text-file.txt'],
+      metadata: {a:'metadata'}
     })
     E2 = await buildDeployDataAfterEntity(E1, [P1], {
-      contentPaths: ['test/integration/resources/some-binary-file.png']
+      contentPaths: ['test/integration/resources/some-binary-file.png'],
+      metadata: {a:'metadata'}
     })
     E3 = await buildDeployDataAfterEntity(E2, [P2])
       ;[sharedContent, onlyE1Content] = E1.entity.content?.map(({ hash }) => hash) ?? []
@@ -81,7 +82,7 @@ loadStandaloneTestEnvironment({
     await deployEntitiesCombo(components.deployer, E2)
 
     // Wait a little
-    await delay(ms('4s'))
+    await sleep(ms('4s'))
 
     // Assert all content is still available
     await assertContentIsAvailable(sharedContent, onlyE1Content)
@@ -108,19 +109,19 @@ loadStandaloneTestEnvironment({
     await components.garbageCollectionManager.start()
 
     // Wait a little
-    await delay(ms('4s'))
+    await sleep(ms('4s'))
 
     // Assert nothing was deleted
     await assertReportedAsDeletedAre()
     await assertContentIsAvailable(sharedContent, onlyE1Content)
   })
 
-  function assertReportedAsDeletedAre(...fileHashes: ContentFileHash[]) {
+  function assertReportedAsDeletedAre(...fileHashes: string[]) {
     assert.deepEqual(components.garbageCollectionManager.deletedInLastSweep(), new Set(fileHashes))
     return Promise.resolve()
   }
 
-  async function assertContentIsAvailable(...hashes: ContentFileHash[]) {
+  async function assertContentIsAvailable(...hashes: string[]) {
     const result = await components.deployer.isContentAvailable(hashes)
     const allAvailable = Array.from(result.values()).every((available) => available)
     assert.ok(allAvailable)

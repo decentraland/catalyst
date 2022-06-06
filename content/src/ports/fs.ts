@@ -1,13 +1,32 @@
-import { ensureDirectoryExists, existPath } from '@dcl/catalyst-node-commons'
 import fs from 'fs'
 import * as fsPromises from 'fs/promises'
+
+async function existPath(path: string): Promise<boolean> {
+  try {
+    await fs.promises.access(path, fs.constants.F_OK | fs.constants.R_OK)
+    return true
+  } catch (error) {
+    return false
+  }
+}
+
+async function ensureDirectoryExists(directory: string): Promise<void> {
+  const alreadyExist = await existPath(directory)
+  if (!alreadyExist) {
+    try {
+      await fs.promises.mkdir(directory, { recursive: true })
+    } catch (error) {
+      // Ignore these errors
+    }
+  }
+}
 
 export type FSComponent = Pick<typeof fs, 'createReadStream'> &
   Pick<typeof fs, 'createWriteStream'> &
   Pick<typeof fsPromises, 'access' | 'opendir' | 'stat' | 'unlink' | 'mkdir' | 'readdir' | 'readFile'> & {
     constants: Pick<typeof fs.constants, 'F_OK' | 'R_OK'>
-    ensureDirectoryExists: typeof ensureDirectoryExists
-    existPath: typeof existPath
+    ensureDirectoryExists: (path: string) => Promise<void>
+    existPath: (path: string) => Promise<boolean>
   }
 
 export function createFsComponent(): FSComponent {
@@ -25,7 +44,7 @@ export function createFsComponent(): FSComponent {
       F_OK: fs.constants.F_OK,
       R_OK: fs.constants.R_OK
     },
-    ensureDirectoryExists: ensureDirectoryExists,
-    existPath: existPath
+    ensureDirectoryExists,
+    existPath
   }
 }

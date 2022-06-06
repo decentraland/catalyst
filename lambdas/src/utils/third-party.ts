@@ -1,7 +1,7 @@
+import { EthAddress } from '@dcl/crypto'
 import { WearableId } from '@dcl/schemas'
 import { DecentralandAssetIdentifier, parseUrn } from '@dcl/urn-resolver'
 import { fetchJson } from 'dcl-catalyst-commons'
-import { EthAddress } from 'dcl-crypto'
 import { FindWearablesByOwner, getWearablesByOwner } from '../apis/collections/controllers/wearables'
 import { ThirdPartyAsset, ThirdPartyAssets } from '../apis/collections/types'
 import { SmartContentClient } from './SmartContentClient'

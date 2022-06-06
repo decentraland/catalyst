@@ -1,5 +1,4 @@
-import { ChainId } from '@dcl/schemas'
-import { Entity, EntityType } from 'dcl-catalyst-commons'
+import { ChainId, Entity, EntityType } from '@dcl/schemas'
 import { Request, Response } from 'express'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TheGraphClient } from '../../../utils/TheGraphClient'

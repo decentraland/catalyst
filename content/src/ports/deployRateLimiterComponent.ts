@@ -1,5 +1,5 @@
 import { ILoggerComponent } from '@well-known-components/interfaces'
-import { EntityType } from 'dcl-catalyst-commons'
+import { EntityType } from '@dcl/schemas'
 import ms from 'ms'
 import NodeCache from 'node-cache'
 import { AppComponents } from '../types'

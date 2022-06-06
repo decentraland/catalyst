@@ -1,4 +1,3 @@
-import { DAOClient, ServerBaseUrl } from '@dcl/catalyst-node-commons'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { random } from 'faker'
@@ -9,6 +8,7 @@ import { stopAllComponents } from '../../src/logic/components-lifecycle'
 import { metricsDeclaration } from '../../src/metrics'
 import { MigrationManagerFactory } from '../../src/migrations/MigrationManagerFactory'
 import { createDatabaseComponent, IDatabaseComponent } from '../../src/ports/postgres'
+import { DaoComponent } from '../../src/service/synchronization/clients/HardcodedDAOClient'
 import { AppComponents } from '../../src/types'
 import { MockedDAOClient } from '../helpers/service/synchronization/clients/MockedDAOClient'
 import { TestProgram } from './TestProgram'
@@ -77,7 +77,7 @@ export class E2ETestEnvironment {
 
   configServer(syncInternal?: number | string): ServerBuilder {
     const asTestEnvCall: TestEnvCalls = {
-      addToDAO: (address: string) => this.dao.add(address),
+      addToDAO: (domain: string) => this.dao.add(domain),
       createDatabases: (amount: number) => this.createDatabases(amount),
       registerServer: (server: TestProgram) => this.runningServers.push(server)
     }
@@ -110,8 +110,8 @@ export class E2ETestEnvironment {
     return components
   }
 
-  removeFromDAO(address: ServerBaseUrl) {
-    this.dao.remove(address)
+  removeFromDAO(domain: string) {
+    this.dao.remove(domain)
   }
 
   buildMany(amount: number): Promise<TestProgram[]> {
@@ -131,7 +131,7 @@ export class E2ETestEnvironment {
 }
 
 type TestEnvCalls = {
-  addToDAO: (address: string) => void
+  addToDAO: (domain: string) => void
   createDatabases: (amount: number) => Promise<string[]>
   registerServer: (servers: TestProgram) => void
 }
@@ -140,7 +140,7 @@ export class ServerBuilder {
   private readonly builder: EnvironmentBuilder
   private readonly storageBaseFolder: string
 
-  constructor(private readonly testEnvCalls: TestEnvCalls, env: Environment, public dao: DAOClient) {
+  constructor(private readonly testEnvCalls: TestEnvCalls, env: Environment, public dao: DaoComponent) {
     this.builder = new EnvironmentBuilder(env)
     this.storageBaseFolder = env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER) ?? 'storage'
   }
@@ -166,8 +166,8 @@ export class ServerBuilder {
     const servers: TestProgram[] = []
     for (let i = 0; i < ports.length; i++) {
       const port = ports[i]
-      const address = `http://localhost:${port}`
-      this.testEnvCalls.addToDAO(address)
+      const domain = `http://localhost:${port}`
+      this.testEnvCalls.addToDAO(domain)
       const components = await this.builder
         .withConfig(EnvironmentConfig.SERVER_PORT, port)
         .withConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, `${this.storageBaseFolder}/${port}`)

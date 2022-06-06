@@ -4,8 +4,8 @@
  *   2) Deploy the downloaded entity locally
  */
 
+import { AuthChain } from '@dcl/crypto'
 import { downloadEntityAndContentFiles } from '@dcl/snapshots-fetcher'
-import { AuthChain } from 'dcl-crypto'
 import { streamToBuffer } from '../../ports/contentStorage/contentStorage'
 import { AppComponents } from '../../types'
 import { DeploymentContext, isInvalidDeployment, LocalDeploymentAuditInfo } from '../Service'

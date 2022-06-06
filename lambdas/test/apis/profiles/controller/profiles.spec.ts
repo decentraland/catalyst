@@ -1,5 +1,5 @@
-import { Entity, EntityType, EntityVersion } from 'dcl-catalyst-commons'
-import { EthAddress } from 'dcl-crypto'
+import { EthAddress } from '@dcl/crypto'
+import { Entity, EntityType } from '@dcl/schemas'
 import { anything, instance, mock, when } from 'ts-mockito'
 import { WearableId } from '../../../../src/apis/collections/types'
 import {
@@ -167,7 +167,7 @@ function profileWith(
 
   const entity = {
     id: '',
-    version: EntityVersion.V3,
+    version: 'v3',
     type: EntityType.PROFILE,
     pointers: [ethAddress],
     timestamp: 2100,

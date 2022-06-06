@@ -1,8 +1,7 @@
-import { Entity as ControllerEntity, Entity, EntityType } from 'dcl-catalyst-commons'
 import fetch from 'node-fetch'
 import { stub } from 'sinon'
 import { EnvironmentConfig } from '../../src/Environment'
-import { DeploymentWithAuthChain } from '@dcl/schemas'
+import { DeploymentWithAuthChain, Entity, EntityType } from '@dcl/schemas'
 import { SimpleContentItem } from '../../src/ports/contentStorage/contentStorage'
 import { Server } from '../../src/service/Server'
 import { randomEntity } from '../helpers/service/EntityTestFactory'
@@ -45,7 +44,7 @@ describe('Integration - Server', () => {
   it(`Get all scenes by id`, async () => {
     const response = await fetch(`${address}/entities/scenes?id=${entity1.id}&id=${entity2.id}`)
     expect(response.ok).toBe(true)
-    const scenes: ControllerEntity[] = await response.json()
+    const scenes: Entity[] = await response.json()
     expect(scenes.length).toBe(2)
   })
 

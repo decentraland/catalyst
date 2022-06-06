@@ -1,10 +1,11 @@
-import { Entity, EntityContentItemReference } from 'dcl-catalyst-commons'
+import { EntityContentItemReference } from '@dcl/hashing'
+import { Entity } from '@dcl/schemas'
 import { EntityField } from './Controller'
 
 export class ControllerEntityFactory {
   static maskEntity(fullEntity: Entity, fields?: EntityField[]): Entity {
     const { id, type, timestamp, version } = fullEntity
-    let content: EntityContentItemReference[] | undefined = undefined
+    let content: EntityContentItemReference[] = []
     let metadata: any
     let pointers: string[] = []
     if ((!fields || fields.includes(EntityField.CONTENT)) && fullEntity.content) {

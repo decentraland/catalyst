@@ -1,4 +1,5 @@
-import { AuditInfo, DeploymentFilters, EntityType, EntityVersion } from 'dcl-catalyst-commons'
+import { EntityType } from '@dcl/schemas'
+import { AuditInfo, DeploymentFilters } from 'dcl-catalyst-commons'
 import {
   DeploymentContext,
   DeploymentResult,
@@ -20,9 +21,9 @@ loadStandaloneTestEnvironment()('Integration - Deployment Filters', (testEnv) =>
   let E1: EntityCombo, E2: EntityCombo, E3: EntityCombo
 
   it('creates and deploys the initial entities', async () => {
-    E1 = await buildDeployData([P1], { type: EntityType.PROFILE })
-    E2 = await buildDeployDataAfterEntity(E1, [P2], { type: EntityType.SCENE })
-    E3 = await buildDeployDataAfterEntity(E2, [P1, P2, P3], { type: EntityType.PROFILE })
+    E1 = await buildDeployData([P1], { type: EntityType.PROFILE, metadata: { a: 'metadata' } })
+    E2 = await buildDeployDataAfterEntity(E1, [P2], { type: EntityType.SCENE, metadata: { a: 'metadata' } })
+    E3 = await buildDeployDataAfterEntity(E2, [P1, P2, P3], { type: EntityType.PROFILE, metadata: { a: 'metadata' } })
   })
 
   testCaseWithComponents(
@@ -140,7 +141,7 @@ loadStandaloneTestEnvironment()('Integration - Deployment Filters', (testEnv) =>
   ) {
     const timestamps: number[] = []
     for (const { deployData } of entities) {
-      const newAuditInfo = { version: EntityVersion.V3, authChain: deployData.authChain, ...overrideAuditInfo }
+      const newAuditInfo = { version: 'v3', authChain: deployData.authChain, ...overrideAuditInfo }
       const deploymentResult: DeploymentResult = await components.deployer.deployEntity(
         Array.from(deployData.files.values()),
         deployData.entityId,

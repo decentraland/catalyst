@@ -1,4 +1,4 @@
-import { EntityType, EntityVersion } from 'dcl-catalyst-commons'
+import { Entity, EntityType } from '@dcl/schemas'
 import { anything, deepEqual, instance, mock, verify, when } from 'ts-mockito'
 import { getWearables } from '../../../../../src/apis/collections/controllers/wearables'
 import {
@@ -140,12 +140,13 @@ function offChainManagerWith(...wearables: Wearable[]): {
 }
 
 function contentServerThatReturns(id?: WearableId) {
-  const entity = {
-    version: EntityVersion.V3,
+  const entity: Entity = {
+    version: 'v3',
     id: '',
     type: EntityType.WEARABLE,
     pointers: [id ?? ''],
     timestamp: 10,
+    content: [],
     metadata: {
       id,
       someProperty: 'someValue',

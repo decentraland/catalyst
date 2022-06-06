@@ -1,4 +1,4 @@
-import { EntityType } from 'dcl-catalyst-commons'
+import { EntityType } from '@dcl/schemas'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TimeRefreshedDataHolder } from '../../../utils/TimeRefreshedDataHolder'
 import { Wearable, WearableId, WearablesFilters } from '../types'

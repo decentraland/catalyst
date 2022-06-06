@@ -1,4 +1,4 @@
-import { delay, ServerBaseUrl } from '@dcl/catalyst-node-commons'
+import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { createLogComponent } from '@well-known-components/logger'
 import { Response } from 'node-fetch'
 import { stub } from 'sinon'
@@ -7,14 +7,15 @@ import { createFetchComponent } from '../../../../src/ports/fetcher'
 import { ChallengeSupervisor, IChallengeSupervisor } from '../../../../src/service/synchronization/ChallengeSupervisor'
 import { ContentCluster } from '../../../../src/service/synchronization/ContentCluster'
 import { MockedDAOClient } from '../../../helpers/service/synchronization/clients/MockedDAOClient'
-jest.mock('@dcl/catalyst-node-commons', () => ({
-  ...jest.requireActual('@dcl/catalyst-node-commons'),
-  delay: jest.fn()
+
+jest.mock('@dcl/snapshots-fetcher/dist/utils', () => ({
+  ...jest.requireActual('@dcl/snapshots-fetcher/dist/utils'),
+  sleep: jest.fn()
 }));
 
-describe('ContentCluster', function() {
-  const address1: ServerBaseUrl = 'http://address1'
-  const address2: ServerBaseUrl = 'http://address2'
+describe('ContentCluster', function () {
+  const address1: string = 'http://address1'
+  const address2: string = 'http://address2'
   const challengeText: string = 'Some challenge text'
   beforeEach(() => jest.clearAllMocks())
 
@@ -33,7 +34,7 @@ describe('ContentCluster', function() {
 
     // Check that identity was detected
     const identity = await contentCluster.getIdentity()
-    expect(identity?.baseUrl).toEqual(address1)
+    expect(identity?.domain).toEqual(address1)
   })
 
   it(`When I'm not on the DAO, then blank identity is assigned`, async () => {
@@ -41,8 +42,8 @@ describe('ContentCluster', function() {
 
     // Check that no identity was detected
     expect(await contentCluster.getIdentity()).toEqual({
-      baseUrl: address1,
-      id: '0x0',
+      domain: address1,
+      id: new Uint8Array(),
       owner: '0x0000000000000000000000000000000000000000'
     })
   })
@@ -54,22 +55,22 @@ describe('ContentCluster', function() {
     process.env.CI = 'true'
     // Check that no identity was detected
     expect(await contentCluster.getIdentity()).toBeUndefined()
-    expect(delay).toBeCalledTimes(10)
-    expect(delay).toHaveBeenCalledWith(1000)
+    expect(sleep).toBeCalledTimes(10)
+    expect(sleep).toHaveBeenCalledWith(1000)
   })
 })
 
 class ContentClusterBuilder {
-  readonly servers: Set<ServerBaseUrl> = new Set()
+  readonly servers: Set<string> = new Set()
   readonly fetcher = stub(createFetchComponent())
   localChallenge: string | undefined
 
-  addAddress(baseUrl: ServerBaseUrl): ContentClusterBuilder {
+  addAddress(baseUrl: string): ContentClusterBuilder {
     this.servers.add(baseUrl)
     return this
   }
 
-  addLocalChallenge(baseUrl: ServerBaseUrl, challengeText: string): ContentClusterBuilder {
+  addLocalChallenge(baseUrl: string, challengeText: string): ContentClusterBuilder {
     this.fetcher.fetch
       .withArgs(`${baseUrl}/challenge`)
       .callsFake(async () => new Response(JSON.stringify({ challengeText })))
@@ -77,17 +78,17 @@ class ContentClusterBuilder {
     return this
   }
 
-  addAddressWithEndpoints(baseUrl: ServerBaseUrl, challengeText: string): ContentClusterBuilder {
+  addAddressWithEndpoints(domain: string, challengeText: string): ContentClusterBuilder {
     this.fetcher.fetch
-      .withArgs(`${baseUrl}/challenge`)
+      .withArgs(`${domain}/challenge`)
       .callsFake(async () => new Response(JSON.stringify({ challengeText })))
-    this.servers.add(baseUrl)
+    this.servers.add(domain)
     return this
   }
 
-  addAddressWithLocalChallenge(baseUrl: ServerBaseUrl, challengeText: string): ContentClusterBuilder {
+  addAddressWithLocalChallenge(domain: string, challengeText: string): ContentClusterBuilder {
     this.localChallenge = challengeText
-    return this.addAddressWithEndpoints(baseUrl, challengeText)
+    return this.addAddressWithEndpoints(domain, challengeText)
   }
 
   build(localAddress: string): ContentCluster {

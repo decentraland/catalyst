@@ -1,5 +1,6 @@
+import { Entity } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
-import { Deployment, Entity } from 'dcl-catalyst-commons'
+import { Deployment } from 'dcl-catalyst-commons'
 import { FailedDeployment } from '../ports/failedDeploymentsCache'
 import { DeploymentContext } from '../service/Service'
 import { deployEntityFromRemoteServer } from '../service/synchronization/deployRemoteEntity'
@@ -89,7 +90,7 @@ export function mapDeploymentsToEntities(deployments: Deployment[]): Entity[] {
     type: entityType,
     pointers,
     timestamp: entityTimestamp,
-    content: content?.map(({ key, hash }) => ({ file: key, hash })),
+    content: content?.map(({ key, hash }) => ({ file: key, hash })) || [],
     metadata
   }))
 }

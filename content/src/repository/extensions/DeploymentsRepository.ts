@@ -1,5 +1,6 @@
-import { AuditInfo, Entity, EntityType } from 'dcl-catalyst-commons'
-import { Authenticator } from 'dcl-crypto'
+import { Authenticator } from '@dcl/crypto'
+import { Entity, EntityType } from '@dcl/schemas'
+import { AuditInfo } from 'dcl-catalyst-commons'
 import { Database } from '../../repository/Database'
 
 export class DeploymentsRepository {

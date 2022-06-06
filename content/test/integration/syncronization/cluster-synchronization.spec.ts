@@ -29,7 +29,7 @@ loadTestEnvironment()('End 2 end synchronization tests', function (testEnv) {
 
     // Prepare data to be deployed
     const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(['X1,Y1'], {
-      metadata: 'metadata'
+      metadata: { a: 'metadata' }
     })
 
     // Make sure there are no deployments on server 1
@@ -56,14 +56,14 @@ loadTestEnvironment()('End 2 end synchronization tests', function (testEnv) {
 
     // Prepare data to be deployed
     const { deployData: deployData1, controllerEntity: entityBeingDeployed1 } = await buildDeployData(['X1,Y1'], {
-      metadata: 'metadata',
+      metadata: { a: 'metadata' },
       contentPaths: ['test/integration/resources/some-binary-file.png']
     })
     const { deployData: deployData2, controllerEntity: entityBeingDeployed2 } = await buildDeployDataAfterEntity(
       entityBeingDeployed1,
       ['X2,Y2'],
       {
-        metadata: 'metadata',
+        metadata: { a: 'metadata' },
         contentPaths: ['test/integration/resources/some-binary-file.png']
       }
     )
@@ -102,17 +102,17 @@ loadTestEnvironment()('End 2 end synchronization tests', function (testEnv) {
 
     // Prepare data to be deployed
     const { deployData: deployData1, controllerEntity: entity1 } = await buildDeployData(['X1,Y1', 'X2,Y2'], {
-      metadata: 'metadata'
+      metadata: { a: 'metadata' }
     })
     const { deployData: deployData2, controllerEntity: entity2 } = await buildDeployDataAfterEntity(
       entity1,
       ['X2,Y2', 'X3,Y3'],
-      { metadata: 'metadata2' }
+      { metadata: { a: 'metadata2' } }
     )
     const { deployData: deployData3, controllerEntity: entity3 } = await buildDeployDataAfterEntity(
       entity2,
       ['X3,Y3', 'X4,Y4'],
-      { metadata: 'metadata3' }
+      { metadata: { a: 'metadata3' } }
     )
 
     // Deploy entity 2

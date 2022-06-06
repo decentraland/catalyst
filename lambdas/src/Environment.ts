@@ -3,7 +3,9 @@ import ms from 'ms'
 import { OffChainWearablesManagerFactory } from './apis/collections/off-chain/OffChainWearablesManagerFactory'
 import { EnsOwnershipFactory } from './apis/profiles/EnsOwnershipFactory'
 import { WearablesOwnershipFactory } from './apis/profiles/WearablesOwnershipFactory'
-import { DAOCacheFactory } from './service/dao/DAOCacheFactory'
+import { DAOCache } from './service/dao/DAOCache'
+import { HTTPProvider } from 'eth-connect'
+import fetch from 'node-fetch'
 import { getCommsServerUrl } from './utils/commons'
 import { SmartContentClientFactory } from './utils/SmartContentClientFactory'
 import { SmartContentServerFetcherFactory } from './utils/SmartContentServerFetcherFactory'
@@ -74,7 +76,8 @@ export const enum Bean {
   ENS_OWNERSHIP,
   WEARABLES_OWNERSHIP,
   THE_GRAPH_CLIENT,
-  OFF_CHAIN_MANAGER
+  OFF_CHAIN_MANAGER,
+  ETHEREUM_PROVIDER
 }
 
 export const enum EnvironmentConfig {
@@ -249,7 +252,15 @@ export class EnvironmentBuilder {
     this.registerBeanIfNotAlreadySet(env, Bean.SMART_CONTENT_SERVER_CLIENT, () => SmartContentClientFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.THE_GRAPH_CLIENT, () => TheGraphClientFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.OFF_CHAIN_MANAGER, () => OffChainWearablesManagerFactory.create(env))
-    this.registerBeanIfNotAlreadySet(env, Bean.DAO, () => DAOCacheFactory.create(env))
+
+    const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK)
+    const ethereumProvider = new HTTPProvider(
+      `https://rpc.decentraland.org/${encodeURIComponent(ethNetwork)}?project=catalyst-lambdas`,
+      { fetch }
+    )
+
+    this.registerBeanIfNotAlreadySet(env, Bean.ETHEREUM_PROVIDER, () => ethereumProvider)
+    this.registerBeanIfNotAlreadySet(env, Bean.DAO, () => new DAOCache(ethereumProvider))
     this.registerBeanIfNotAlreadySet(env, Bean.ENS_OWNERSHIP, () => EnsOwnershipFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.WEARABLES_OWNERSHIP, () => WearablesOwnershipFactory.create(env))
 

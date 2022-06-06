@@ -1,10 +1,8 @@
-import { httpProviderForNetwork } from '@dcl/catalyst-contracts'
-import { AuthChain, Authenticator, EthAddress, ValidationResult } from 'dcl-crypto'
+import { AuthChain, Authenticator, EthAddress, ValidationResult } from '@dcl/crypto'
+import { HTTPProvider } from 'eth-connect'
 
-export class ContentAuthenticator extends Authenticator {
-  constructor(private readonly network: string, private readonly decentralandAddress: EthAddress) {
-    super()
-  }
+export class ContentAuthenticator {
+  constructor(private readonly provider: HTTPProvider, private readonly decentralandAddress: EthAddress) {}
 
   /** Return whether the given address used is owned by Decentraland */
   isAddressOwnedByDecentraland(address: EthAddress): boolean {
@@ -20,7 +18,7 @@ export class ContentAuthenticator extends Authenticator {
     return Authenticator.validateSignature(
       expectedFinalAuthority,
       authChain,
-      httpProviderForNetwork(this.network),
+      this.provider,
       dateToValidateExpirationInMillis
     )
   }

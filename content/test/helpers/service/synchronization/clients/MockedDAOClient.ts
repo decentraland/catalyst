@@ -1,34 +1,35 @@
-import { DAOClient, ServerBaseUrl, ServerMetadata } from '@dcl/catalyst-node-commons'
-import { EthAddress } from 'dcl-crypto'
+import { CatalystByIdResult } from '@dcl/catalyst-contracts';
+import { EthAddress } from '@dcl/crypto';
+import { DaoComponent } from '../../../../../src/service/synchronization/clients/HardcodedDAOClient';
 
-export class MockedDAOClient implements DAOClient {
-  private readonly serversByAddress: Map<ServerBaseUrl, ServerMetadata>
+export class MockedDAOClient implements DaoComponent {
+  private readonly serversByAddress: Map<string, CatalystByIdResult>
 
-  private constructor(servers: { baseUrl: ServerBaseUrl; owner: EthAddress }[]) {
-    this.serversByAddress = new Map(servers.map((server) => [server.baseUrl, { ...server, id: 'Id' }]))
+  private constructor(servers: { domain: string; owner: EthAddress }[]) {
+    this.serversByAddress = new Map(servers.map((server) => [server.domain, { ...server, id: new Uint8Array() }]))
   }
 
-  async getAllContentServers(): Promise<Set<ServerMetadata>> {
-    return new Set(this.serversByAddress.values())
+  async getAllContentServers(): Promise<Array<CatalystByIdResult>> {
+    return Array.from(this.serversByAddress.values())
   }
 
-  async getAllServers(): Promise<Set<ServerMetadata>> {
+  async getAllServers(): Promise<Array<CatalystByIdResult>> {
     throw new Error('Not Implemented')
   }
 
-  add(baseUrl: ServerBaseUrl) {
-    this.serversByAddress.set(baseUrl, { baseUrl, owner: '0xCatalyst_owner_address_1', id: 'Id' })
+  add(baseUrl: string) {
+    this.serversByAddress.set(baseUrl, { domain: baseUrl, owner: '0xCatalyst_owner_address_1', id: new Uint8Array() })
   }
 
-  remove(baseUrl: ServerBaseUrl) {
+  remove(baseUrl: string) {
     this.serversByAddress.delete(baseUrl)
   }
 
-  static withAddresses(...servers: ServerBaseUrl[]): MockedDAOClient {
-    return new MockedDAOClient(servers.map((baseUrl) => ({ baseUrl, owner: '0xCatalyst_owner_address_0' })))
+  static withAddresses(...servers: string[]): MockedDAOClient {
+    return new MockedDAOClient(servers.map((domain) => ({ domain, owner: '0xCatalyst_owner_address_0' })))
   }
 
-  static with(baseUrl: ServerBaseUrl, owner: EthAddress): MockedDAOClient {
-    return new MockedDAOClient([{ baseUrl, owner }])
+  static with(baseUrl: string, owner: EthAddress): MockedDAOClient {
+    return new MockedDAOClient([{ domain: baseUrl, owner }])
   }
 }

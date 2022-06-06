@@ -1,4 +1,4 @@
-import { Entity, EntityType, EntityVersion } from 'dcl-catalyst-commons'
+import { Entity, EntityType } from '@dcl/schemas'
 import { instance, mock, when } from 'ts-mockito'
 import { WearableMetadata } from '../../../src/apis/collections/types'
 import { translateEntityIntoWearable } from '../../../src/apis/collections/Utils'
@@ -54,7 +54,7 @@ describe('Collection Utils', () => {
 
 function buildEntity(): Entity {
   return {
-    version: EntityVersion.V3,
+    version: 'v3',
     id: '',
     type: EntityType.WEARABLE,
     pointers: [],

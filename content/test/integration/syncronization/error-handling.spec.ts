@@ -1,4 +1,4 @@
-import { Entity as ControllerEntity } from 'dcl-catalyst-commons'
+import { Entity } from '@dcl/schemas'
 import ms from 'ms'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { FailedDeployment, FailureReason } from '../../../src/ports/failedDeploymentsCache'
@@ -55,7 +55,7 @@ loadTestEnvironment()('End 2 end - Error handling', (testEnv) => {
 
     // Prepare entity to deploy
     const { deployData: deployData1, controllerEntity: entityBeingDeployed1 } = await buildDeployData(['0,0', '0,1'], {
-      metadata: 'metadata',
+      metadata: { a: 'metadata' },
       contentPaths: ['test/integration/resources/some-binary-file.png']
     })
 
@@ -72,7 +72,7 @@ loadTestEnvironment()('End 2 end - Error handling', (testEnv) => {
     const { deployData: deployData2, controllerEntity: entityBeingDeployed2 } = await buildDeployDataAfterEntity(
       entityBeingDeployed1,
       ['0,1'],
-      { metadata: 'metadata2' }
+      { metadata: { a: 'metadata2' } }
     )
 
     // Deploy entity 2 on server 2
@@ -97,7 +97,7 @@ loadTestEnvironment()('End 2 end - Error handling', (testEnv) => {
     await server1.startProgram()
 
     // Prepare entity to deploy
-    const { deployData, controllerEntity } = await buildDeployData(['0,0', '0,1'], { metadata: 'metadata' })
+    const { deployData, controllerEntity } = await buildDeployData(['0,0', '0,1'], { metadata: { a: 'metadata' } })
 
     // Try to deploy the entity, and fail
     await server1.deploy(deployData, true)
@@ -111,7 +111,7 @@ loadTestEnvironment()('End 2 end - Error handling', (testEnv) => {
     await server1.startProgram()
 
     // Prepare entity to deploy
-    const { deployData } = await buildDeployData(['0,0', '0,1'], { metadata: 'metadata' })
+    const { deployData } = await buildDeployData(['0,0', '0,1'], { metadata: { a: 'metadata' } })
 
     // Deploy the entity
     const firstDeploymentDatetime = await server1.deploy(deployData)
@@ -125,7 +125,7 @@ loadTestEnvironment()('End 2 end - Error handling', (testEnv) => {
 
   async function runTest(
     errorType: FailureReason,
-    causeOfFailure: (entity: ControllerEntity) => Promise<void>,
+    causeOfFailure: (entity: Entity) => Promise<void>,
     removeCauseOfFailure?: () => Promise<void>
   ) {
     // Start server1
@@ -133,7 +133,7 @@ loadTestEnvironment()('End 2 end - Error handling', (testEnv) => {
 
     // Prepare entity to deploy
     const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(['0,0', '0,1'], {
-      metadata: 'metadata',
+      metadata: { a: 'metadata' },
       contentPaths: ['test/integration/resources/some-binary-file.png']
     })
 

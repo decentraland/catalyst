@@ -1,5 +1,6 @@
-import { AuditInfo, ContentFileHash, Deployment, EntityType, PartialDeploymentHistory } from 'dcl-catalyst-commons'
-import { AuthChain } from 'dcl-crypto'
+import { AuthChain } from '@dcl/crypto'
+import { EntityType } from '@dcl/schemas'
+import { AuditInfo, Deployment, PartialDeploymentHistory } from 'dcl-catalyst-commons'
 import { ContentItem } from '../ports/contentStorage/contentStorage'
 import { FailedDeployment } from '../ports/failedDeploymentsCache'
 import { Database } from '../repository/Database'
@@ -17,8 +18,8 @@ export interface MetaverseContentService {
     context: DeploymentContext,
     task?: Database
   ): Promise<DeploymentResult>
-  isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>
-  getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined>
+  isContentAvailable(fileHashes: string[]): Promise<Map<string, boolean>>
+  getContent(fileHash: string): Promise<ContentItem | undefined>
   getDeployments(options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>>
   getAllFailedDeployments(): FailedDeployment[]
   reportErrorDuringSync(
@@ -40,7 +41,7 @@ export function InvalidResult(val: InvalidResult): InvalidResult {
 
 export type DeploymentResult = number | InvalidResult
 
-export type DeploymentFiles = Uint8Array[] | Map<ContentFileHash, Uint8Array>
+export type DeploymentFiles = Uint8Array[] | Map<string, Uint8Array>
 
 export function isSuccessfulDeployment(deploymentResult: DeploymentResult): deploymentResult is number {
   return typeof deploymentResult === 'number'

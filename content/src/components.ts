@@ -3,7 +3,7 @@ import { createJobLifecycleManagerComponent } from '@dcl/snapshots-fetcher/dist/
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
-import { EntityType } from 'dcl-catalyst-commons'
+import { EntityType } from '@dcl/schemas'
 import ms from 'ms'
 import path from 'path'
 import { Controller } from './controller/Controller'
@@ -23,7 +23,6 @@ import { createFsComponent } from './ports/fs'
 import { createDatabaseComponent } from './ports/postgres'
 import { createSequentialTaskExecutor } from './ports/sequecuentialTaskExecutor'
 import { RepositoryFactory } from './repository/RepositoryFactory'
-import { AuthenticatorFactory } from './service/auth/AuthenticatorFactory'
 import { DeploymentManager } from './service/deployments/DeploymentManager'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { PointerManager } from './service/pointers/PointerManager'
@@ -41,6 +40,8 @@ import { SystemPropertiesManager } from './service/system-properties/SystemPrope
 import { createServerValidator } from './service/validations/server'
 import { createExternalCalls, createValidator } from './service/validations/validator'
 import { AppComponents } from './types'
+import { HTTPProvider } from 'eth-connect'
+import { ContentAuthenticator } from './service/auth/Authenticator'
 
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
   const metrics = createTestMetricsComponent(metricsDeclaration)
@@ -66,10 +67,21 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const challengeSupervisor = new ChallengeSupervisor()
 
   const catalystFetcher = FetcherFactory.create({ env })
-  const daoClient = DAOClientFactory.create(env)
-  const authenticator = AuthenticatorFactory.create(env)
   const contentFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
   const storage = await createFileSystemContentStorage({ fs }, contentFolder)
+
+  const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK)
+  const ethereumProvider = new HTTPProvider(
+    `https://rpc.decentraland.org/${encodeURIComponent(ethNetwork)}?project=catalyst-content`,
+    {
+      fetch: fetcher.fetch
+    }
+  )
+  const daoClient = await DAOClientFactory.create(env, ethereumProvider)
+  const authenticator = new ContentAuthenticator(
+    ethereumProvider,
+    env.getConfig(EnvironmentConfig.DECENTRALAND_ADDRESS)
+  )
 
   const contentCluster = new ContentCluster(
     {
@@ -217,8 +229,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     retryFailedDeployments
   })
 
-  const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK)
-
   const controller = new Controller(
     {
       synchronizationManager,
@@ -279,6 +289,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     activeEntities,
     sequentialExecutor,
     denylist,
+    ethereumProvider,
     fs
   }
 }

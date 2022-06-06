@@ -1,4 +1,4 @@
-import { EntityType } from 'dcl-catalyst-commons'
+import { EntityType } from '@dcl/schemas'
 import { MigrationBuilder } from 'node-pg-migrate'
 import { FailureReason } from '../ports/failedDeploymentsCache'
 

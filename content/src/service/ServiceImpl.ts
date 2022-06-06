@@ -1,18 +1,16 @@
-import { IPFSv2 } from '@dcl/schemas'
+import { AuthChain, Authenticator } from '@dcl/crypto'
+import { Entity, EntityType, IPFSv2 } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import {
   AuditInfo,
-  ContentFileHash,
   Deployment,
-  Entity,
-  EntityType,
+  EntityVersion,
   // TODO: replace this Hashing by the new lib
-  Hashing,
   PartialDeploymentHistory
 } from 'dcl-catalyst-commons'
-import { AuthChain, Authenticator } from 'dcl-crypto'
 import { EnvironmentConfig } from '../Environment'
 import { runReportingQueryDurationMetric } from '../instrument'
+import { calculateIPFSHashes } from '../logic/hashing'
 import { bufferToStream, ContentItem } from '../ports/contentStorage/contentStorage'
 import { FailedDeployment, FailureReason } from '../ports/failedDeploymentsCache'
 import { Database } from '../repository/Database'
@@ -82,7 +80,7 @@ export class ServiceImpl implements MetaverseContentService {
     }
 
     // Hash all files
-    const hashes: Map<ContentFileHash, Uint8Array> = await ServiceImpl.hashFiles(files, entityId)
+    const hashes: Map<string, Uint8Array> = await ServiceImpl.hashFiles(files)
 
     // Find entity file
     const entityFile = hashes.get(entityId)
@@ -200,8 +198,9 @@ export class ServiceImpl implements MetaverseContentService {
       })
     } finally {
       // Remove the updated pointer from the list of current being deployed
-      const pointersCurrentlyBeingDeployed = this.pointersBeingDeployed.get(entity.type)!
-      entity.pointers.forEach((pointer) => pointersCurrentlyBeingDeployed.delete(pointer))
+      const pointersCurrentlyBeingDeployed = this.pointersBeingDeployed.get(entity.type)
+      if (pointersCurrentlyBeingDeployed)
+        entity.pointers.forEach((pointer) => pointersCurrentlyBeingDeployed.delete(pointer))
     }
   }
 
@@ -244,9 +243,14 @@ export class ServiceImpl implements MetaverseContentService {
       }
     }
 
+    if (entity.version !== 'v3')
+      return {
+        errors: ['Only entities v3 are allowed']
+      }
+
     const auditInfoComplete: AuditInfo = {
       ...auditInfo,
-      version: entity.version,
+      version: EntityVersion.V3,
       localTimestamp: Date.now()
     }
 
@@ -371,9 +375,9 @@ export class ServiceImpl implements MetaverseContentService {
     return false
   }
 
-  private async storeEntityContent(hashes: Map<ContentFileHash, Uint8Array>): Promise<any> {
+  private async storeEntityContent(hashes: Map<string, Uint8Array>): Promise<any> {
     // Check for if content is already stored
-    const alreadyStoredHashes: Map<ContentFileHash, boolean> = await this.components.storage.existMultiple(
+    const alreadyStoredHashes: Map<string, boolean> = await this.components.storage.existMultiple(
       Array.from(hashes.keys())
     )
 
@@ -390,13 +394,11 @@ export class ServiceImpl implements MetaverseContentService {
    * They could come hashed because the denylist decorator might have already hashed them for its own validations. In order to avoid re-hashing
    * them in the service (because there might be hundreds of files), we will send the hash result.
    */
-  static async hashFiles(files: DeploymentFiles, entityId: string): Promise<Map<ContentFileHash, Uint8Array>> {
+  static async hashFiles(files: DeploymentFiles): Promise<Map<string, Uint8Array>> {
     if (files instanceof Map) {
       return files
     } else {
-      const hashEntries = this.isIPFSHash(entityId)
-        ? await Hashing.calculateIPFSHashes(files)
-        : await Hashing.calculateHashes(files)
+      const hashEntries = await calculateIPFSHashes(files)
       return new Map(hashEntries.map(({ hash, file }) => [hash, file]))
     }
   }
@@ -405,11 +407,11 @@ export class ServiceImpl implements MetaverseContentService {
     return IPFSv2.validate(hash)
   }
 
-  getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined> {
+  getContent(fileHash: string): Promise<ContentItem | undefined> {
     return this.components.storage.retrieve(fileHash)
   }
 
-  isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>> {
+  isContentAvailable(fileHashes: string[]): Promise<Map<string, boolean>> {
     return this.components.storage.existMultiple(fileHashes)
   }
 
@@ -459,7 +461,8 @@ export class ServiceImpl implements MetaverseContentService {
     }
 
     return await this.components.validator.validate({
-      entity,
+      // TODO: remove as any after fixing content validator
+      entity: entity as any,
       auditInfo,
       files: hashes
     })

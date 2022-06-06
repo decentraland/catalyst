@@ -1,5 +1,5 @@
 import { LAMBDAS_API } from '@dcl/catalyst-api-specs'
-import { initializeMetricsServer } from '@dcl/catalyst-node-commons'
+import { initializeMetricsServer } from './MetricsServer'
 import compression from 'compression'
 import cors from 'cors'
 import express from 'express'
@@ -110,7 +110,7 @@ export class Server {
     )
 
     // DCL-Crypto API implementation
-    this.app.use('/crypto', initializeCryptoRoutes(express.Router(), env.getConfig(EnvironmentConfig.ETH_NETWORK)))
+    this.app.use('/crypto', initializeCryptoRoutes(express.Router(), env.getBean(Bean.ETHEREUM_PROVIDER)))
 
     // Images API for resizing contents
     this.app.use(

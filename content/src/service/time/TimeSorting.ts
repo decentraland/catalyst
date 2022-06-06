@@ -1,4 +1,5 @@
-import { Deployment, Entity } from 'dcl-catalyst-commons'
+import { Deployment } from 'dcl-catalyst-commons'
+import { Entity } from '@dcl/schemas'
 
 /** Return true if the first object happened before the second one */
 function happenedBeforeComparable(comparable1: EntityComparable, comparable2: EntityComparable): boolean {

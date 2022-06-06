@@ -1,4 +1,4 @@
-import { delay } from '@dcl/catalyst-node-commons'
+import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import { DEFAULT_DATABASE_CONFIG } from '../Environment'
@@ -53,7 +53,7 @@ async function runNewPsql() {
     const shortContainer = container.slice(0, 12)
     if (await containerExists(shortContainer)) {
       console.log(`Container created: ${shortContainer}. Waiting to its start...`)
-      await delay(5000)
+      await sleep(5000)
       if (!(await containerIsRunning(shortContainer))) {
         throw new Error(`Container ${shortContainer} is not running. Logs: \n${await getContainerLogs(shortContainer)}`)
       }

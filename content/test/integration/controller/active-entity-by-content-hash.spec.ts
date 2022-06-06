@@ -28,12 +28,12 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities By Content Ha
     await server.startProgram()
 
     const deployResult = await buildDeployData(['0,0', '0,1'], {
-      metadata: 'this is just some metadata',
+      metadata: {a:'this is just some metadata'},
       contentPaths: ['test/integration/resources/some-binary-file.png']
     })
 
     const secondDeployResult = await buildDeployData(['0,3', '0,2'], {
-      metadata: 'this is just some metadata',
+      metadata: {a:'this is just some metadata'},
       contentPaths: ['test/integration/resources/some-binary-file.png']
     })
 

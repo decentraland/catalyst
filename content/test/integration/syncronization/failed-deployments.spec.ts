@@ -1,20 +1,19 @@
-import { createIdentity } from 'eth-crypto'
 import { stub } from 'sinon'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { retryFailedDeploymentExecution } from '../../../src/logic/deployments'
 import { FailedDeployment, FailureReason } from '../../../src/ports/failedDeploymentsCache'
 import { assertDeploymentFailed, assertDeploymentFailsWith, assertEntitiesAreActiveOnServer } from '../E2EAssertions'
 import { loadTestEnvironment } from '../E2ETestEnvironment'
-import { awaitUntil, buildDeployData, buildDeployDataAfterEntity } from '../E2ETestUtils'
+import { awaitUntil, buildDeployData, buildDeployDataAfterEntity, createIdentity } from '../E2ETestUtils'
 
 loadTestEnvironment()('Errors during sync', (testEnv) => {
   describe('Deploy an entity on server 1', function () {
     beforeEach(async function () {
       this.identity = createIdentity()
-      ;[this.server1, this.server2] = await testEnv
-        .configServer('2s')
-        .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, this.identity.address)
-        .andBuildMany(2)
+        ;[this.server1, this.server2] = await testEnv
+          .configServer('2s')
+          .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, this.identity.address)
+          .andBuildMany(2)
 
       // Start server1
       await this.server1.startProgram()
@@ -32,7 +31,7 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
 
       // Prepare entity to deploy
       const entityCombo = await buildDeployData(['0,0', '0,1'], {
-        metadata: 'metadata',
+        metadata: { a: 'metadata' },
         contentPaths: ['test/integration/resources/some-binary-file.png']
       })
       this.deployData = entityCombo.deployData
@@ -88,7 +87,7 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
 
         // Deploy a new entity for the same pointer
         this.anotherEntityCombo = await buildDeployDataAfterEntity(this.controllerEntity, ['0,1'], {
-          metadata: 'metadata2'
+          metadata: { a: 'metadata2' }
         })
         // Deploy entity 2 on server 2
         await this.server2.deploy(this.anotherEntityCombo.deployData)
@@ -114,7 +113,7 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
       beforeEach(async function () {
         // Deploy a new entity for the same pointer
         this.anotherEntityCombo = await buildDeployDataAfterEntity(this.controllerEntity, ['0,1'], {
-          metadata: 'metadata2'
+          metadata: { a: 'metadata2' }
         })
         // Deploy entity 2 on server 2
         await this.server2.deploy(this.anotherEntityCombo.deployData)
@@ -157,7 +156,7 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
 
       // Prepare entity to deploy
       const entityCombo = await buildDeployData(['0,0', '0,1'], {
-        metadata: 'metadata',
+        metadata: { a: 'metadata' },
         contentPaths: ['test/integration/resources/some-binary-file.png']
       })
       this.deployData = entityCombo.deployData

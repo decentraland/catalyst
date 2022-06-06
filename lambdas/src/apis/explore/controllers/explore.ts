@@ -1,5 +1,5 @@
-import { noReject, ServerMetadata } from '@dcl/catalyst-node-commons'
-import { Entity, EntityType, Fetcher } from 'dcl-catalyst-commons'
+import { Entity, EntityType, EthAddress } from '@dcl/schemas'
+import { Fetcher } from 'dcl-catalyst-commons'
 import { Request, Response } from 'express'
 import { DAOCache } from '../../../service/dao/DAOCache'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
@@ -7,6 +7,13 @@ import { TimeRefreshedDataHolder } from '../../../utils/TimeRefreshedDataHolder'
 
 // The maximum amount of hot scenes returned
 const HOT_SCENES_LIMIT = 100
+
+// This is the contract of the API response, do not change this type
+type ServerMetadata = {
+  baseUrl: string
+  owner: EthAddress
+  id: string
+}
 
 type ParcelCoord = [number, number]
 
@@ -62,6 +69,13 @@ function isLayerBased(status: ServerStatus): status is LayersBasedServerStatus {
 }
 
 let realmsStatusCache: TimeRefreshedDataHolder<RealmInfo[]>
+
+function noReject<T>(promise: Promise<T>): Promise<['fulfilled' | 'rejected', any]> {
+  return promise.then(
+    (value) => ['fulfilled', value],
+    (error) => ['rejected', error]
+  )
+}
 
 export async function realmsStatus(daoCache: DAOCache, req: Request, res: Response) {
   // Method: GET
