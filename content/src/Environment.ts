@@ -140,6 +140,7 @@ export enum EnvironmentConfig {
   DEPLOYMENT_RATE_LIMIT_MAX,
   DENYLIST_FILE_NAME,
   DENYLIST_URLS,
+  READ_ONLY,
 
   // List of entity types ignored during the synchronization
   SYNC_IGNORED_ENTITY_TYPES
@@ -440,6 +441,8 @@ export class EnvironmentBuilder {
       EnvironmentConfig.RETRY_FAILED_DEPLOYMENTS_DELAY_TIME,
       () => process.env.RETRY_FAILED_DEPLOYMENTS_DELAY_TIME ?? ms('15m')
     )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.READ_ONLY, () => process.env.READ_ONLY == 'true')
 
     return env
   }
