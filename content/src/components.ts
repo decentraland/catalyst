@@ -1,9 +1,10 @@
+import { EntityType } from '@dcl/schemas'
 import { createCatalystDeploymentStream } from '@dcl/snapshots-fetcher'
 import { createJobLifecycleManagerComponent } from '@dcl/snapshots-fetcher/dist/job-lifecycle-manager'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
-import { EntityType } from '@dcl/schemas'
+import { HTTPProvider } from 'eth-connect'
 import ms from 'ms'
 import path from 'path'
 import { Controller } from './controller/Controller'
@@ -22,7 +23,9 @@ import { createFetchComponent } from './ports/fetcher'
 import { createFsComponent } from './ports/fs'
 import { createDatabaseComponent } from './ports/postgres'
 import { createSequentialTaskExecutor } from './ports/sequecuentialTaskExecutor'
+import { createSystemProperties } from './ports/system-properties'
 import { RepositoryFactory } from './repository/RepositoryFactory'
+import { ContentAuthenticator } from './service/auth/Authenticator'
 import { DeploymentManager } from './service/deployments/DeploymentManager'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { PointerManager } from './service/pointers/PointerManager'
@@ -36,12 +39,9 @@ import { DAOClientFactory } from './service/synchronization/clients/DAOClientFac
 import { ContentCluster } from './service/synchronization/ContentCluster'
 import { createRetryFailedDeployments } from './service/synchronization/retryFailedDeployments'
 import { createSynchronizationManager } from './service/synchronization/SynchronizationManager'
-import { SystemPropertiesManager } from './service/system-properties/SystemProperties'
 import { createServerValidator } from './service/validations/server'
 import { createExternalCalls, createValidator } from './service/validations/validator'
 import { AppComponents } from './types'
-import { HTTPProvider } from 'eth-connect'
-import { ContentAuthenticator } from './service/auth/Authenticator'
 
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
   const metrics = createTestMetricsComponent(metricsDeclaration)
@@ -62,7 +62,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const sequentialExecutor = createSequentialTaskExecutor({ metrics, logs })
 
-  const systemPropertiesManager = new SystemPropertiesManager(repository)
+  const systemProperties = createSystemProperties({ database })
 
   const challengeSupervisor = new ChallengeSupervisor()
 
@@ -144,7 +144,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   )
 
   const garbageCollectionManager = new GarbageCollectionManager(
-    { repository, deployer, systemPropertiesManager, metrics, logs, storage },
+    { repository, deployer, systemProperties, metrics, logs, storage },
     env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION),
     env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL)
   )
@@ -281,7 +281,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     validator,
     serverValidator,
     garbageCollectionManager,
-    systemPropertiesManager,
+    systemProperties,
     catalystFetcher,
     daoClient,
     server,

@@ -4,7 +4,6 @@ import { ContentFilesRepository } from './extensions/ContentFilesRepository'
 import { DeploymentsRepository } from './extensions/DeploymentsRepository'
 import { LastDeployedPointersRepository } from './extensions/LastDeployedPointersRepository'
 import { PointerHistoryRepository } from './extensions/PointerHistoryRepository'
-import { SystemPropertiesRepository } from './extensions/SystemPropertiesRepository'
 
 export type Database = IBaseProtocol<IExtensions> & IExtensions
 export type FullDatabase = IDatabase<IExtensions> & Database
@@ -14,7 +13,6 @@ export interface IExtensions {
   content: ContentFilesRepository
   pointerHistory: PointerHistoryRepository
   lastDeployedPointers: LastDeployedPointersRepository
-  systemProperties: SystemPropertiesRepository
 }
 
 type DBConnection = {
@@ -54,7 +52,6 @@ async function connectTo(
       obj.content = new ContentFilesRepository(obj)
       obj.pointerHistory = new PointerHistoryRepository(obj)
       obj.lastDeployedPointers = new LastDeployedPointersRepository(obj)
-      obj.systemProperties = new SystemPropertiesRepository(obj)
     },
 
     error(err, e) {
