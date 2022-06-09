@@ -42,6 +42,7 @@ import { createExternalCalls, createValidator } from './service/validations/vali
 import { AppComponents } from './types'
 import { HTTPProvider } from 'eth-connect'
 import { ContentAuthenticator } from './service/auth/Authenticator'
+import { createTheGraphClient } from '@dcl/content-validator'
 
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
   const metrics = createTestMetricsComponent(metricsDeclaration)
@@ -113,7 +114,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   )
 
   const externalCalls = createExternalCalls({ storage, authenticator, catalystFetcher, env, logs })
-  const validator = createValidator({ externalCalls, logs })
+  const theGraphClient = createTheGraphClient({ externalCalls, logs })
+  const validator = createValidator({ externalCalls, logs, theGraphClient })
   const serverValidator = createServerValidator({ failedDeploymentsCache, metrics })
 
   const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs })
