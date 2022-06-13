@@ -1,7 +1,6 @@
 import { Entity } from '@dcl/schemas'
 import { Database } from '../../repository/Database'
 import { DeploymentId } from '../../repository/extensions/DeploymentsRepository'
-
 export class PointerHistoryRepository {
   constructor(private readonly db: Database) {}
 

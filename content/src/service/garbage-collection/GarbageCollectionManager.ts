@@ -1,7 +1,7 @@
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { ContentFileHash, delay } from 'dcl-catalyst-commons'
+import { SYSTEM_PROPERTIES } from '../../ports/system-properties'
 import { DB_REQUEST_PRIORITY } from '../../repository/RepositoryQueue'
-import { SystemProperty } from '../../service/system-properties/SystemProperties'
 import { AppComponents } from '../../types'
 
 export class GarbageCollectionManager {
@@ -15,7 +15,7 @@ export class GarbageCollectionManager {
   constructor(
     private readonly components: Pick<
       AppComponents,
-      'systemPropertiesManager' | 'repository' | 'deployer' | 'metrics' | 'logs' | 'storage'
+      'systemProperties' | 'repository' | 'deployer' | 'metrics' | 'logs' | 'storage'
     >,
     private readonly performGarbageCollection: boolean,
     private readonly sweepInterval: number
@@ -26,9 +26,7 @@ export class GarbageCollectionManager {
   async start(): Promise<void> {
     if (this.performGarbageCollection) {
       this.stopping = false
-      const lastCollectionTime = await this.components.systemPropertiesManager.getSystemProperty(
-        SystemProperty.LAST_GARBAGE_COLLECTION_TIME
-      )
+      const lastCollectionTime = await this.components.systemProperties.get(SYSTEM_PROPERTIES.lastGarbageCollectionTime)
       this.lastTimeOfCollection = lastCollectionTime ?? 0
       await this.performSweep()
     }
@@ -60,11 +58,7 @@ export class GarbageCollectionManager {
 
           this.LOGGER.debug(`Hashes to delete are: (${hashes.join(',')})`)
           await this.components.storage.delete(hashes)
-          await this.components.systemPropertiesManager.setSystemProperty(
-            SystemProperty.LAST_GARBAGE_COLLECTION_TIME,
-            newTimeOfCollection,
-            transaction
-          )
+          await this.components.systemProperties.set(SYSTEM_PROPERTIES.lastGarbageCollectionTime, newTimeOfCollection)
           this.hashesDeletedInLastSweep = new Set(hashes)
 
           endTimer()

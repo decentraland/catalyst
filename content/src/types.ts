@@ -1,11 +1,12 @@
 import { ExternalCalls, Validator } from '@dcl/content-validator'
+import { EntityType } from '@dcl/schemas'
 import { JobLifecycleManagerComponent } from '@dcl/snapshots-fetcher/dist/job-lifecycle-manager'
 import { IJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { IDeployerComponent, RemoteEntityDeployment } from '@dcl/snapshots-fetcher/dist/types'
 import { IFetchComponent } from '@well-known-components/http-server'
 import { ILoggerComponent, IMetricsComponent } from '@well-known-components/interfaces'
-import { EntityType } from '@dcl/schemas'
 import { Fetcher } from 'dcl-catalyst-commons'
+import { HTTPProvider } from 'eth-connect'
 import { Controller } from './controller/Controller'
 import { Environment } from './Environment'
 import { metricsDeclaration } from './metrics'
@@ -19,6 +20,7 @@ import { IFailedDeploymentsCacheComponent } from './ports/failedDeploymentsCache
 import { FSComponent } from './ports/fs'
 import { IDatabaseComponent } from './ports/postgres'
 import { ISequentialTaskExecutorComponent } from './ports/sequecuentialTaskExecutor'
+import { SystemProperties } from './ports/system-properties'
 import { Repository } from './repository/Repository'
 import { ContentAuthenticator } from './service/auth/Authenticator'
 import { DeploymentManager } from './service/deployments/DeploymentManager'
@@ -28,13 +30,11 @@ import { Server } from './service/Server'
 import { MetaverseContentService } from './service/Service'
 import { ISnapshotManager } from './service/snapshots/SnapshotManager'
 import { IChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
+import { DaoComponent } from './service/synchronization/clients/HardcodedDAOClient'
 import { ContentCluster } from './service/synchronization/ContentCluster'
 import { IRetryFailedDeploymentsComponent } from './service/synchronization/retryFailedDeployments'
 import { ISynchronizationManager } from './service/synchronization/SynchronizationManager'
-import { SystemPropertiesManager } from './service/system-properties/SystemProperties'
 import { ServerValidator } from './service/validations/server'
-import { HTTPProvider } from 'eth-connect'
-import { DaoComponent } from './service/synchronization/clients/HardcodedDAOClient'
 
 // Minimum amount of needed stuff to make the sync work
 
@@ -69,7 +69,7 @@ export type AppComponents = {
   externalCalls: ExternalCalls
   validator: Validator
   garbageCollectionManager: GarbageCollectionManager
-  systemPropertiesManager: SystemPropertiesManager
+  systemProperties: SystemProperties
   catalystFetcher: Fetcher
   daoClient: DaoComponent
   server: Server
