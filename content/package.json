@@ -18,7 +18,7 @@
   "dependencies": {
     "@dcl/catalyst-api-specs": "1.2.2",
     "@dcl/catalyst-contracts": "^2.0.0",
-    "@dcl/content-validator": "2.0.1-20220615151302.commit-8b14ea7",
+    "@dcl/content-validator": "2.0.1-20220615162003.commit-630ab02",
     "@dcl/crypto": "^3.0.1",
     "@dcl/hashing": "^1.1.0",
     "@dcl/schemas": "^4.14.0",
