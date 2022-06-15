@@ -109,8 +109,6 @@ export function createBatchDeployerComponent(
             successfulDeployments.add(entity.entityId)
             deploymentsMap.delete(entity.entityId)
           } catch (err: any) {
-            console.log(err)
-            components.logs.getLogger('mariano').error(err)
             // failed deployments are automatically rescheduled
             components.deployer.reportErrorDuringSync(
               entity.entityType as any,
