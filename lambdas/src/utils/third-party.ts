@@ -19,15 +19,27 @@ export function buildRegistryOwnerUrl(url: string, registryId: string, owner: st
 export const createThirdPartyFetcher = (): ThirdPartyFetcher => ({
   fetchAssets: async (url: string, registryId: string, owner: EthAddress): Promise<ThirdPartyAsset[]> => {
     try {
-      const baseUrl = buildRegistryOwnerUrl(url, registryId, owner)
-      const response = await fetchJson(baseUrl, {
-        timeout: '5000'
-      })
-      const assetsByOwner = response as ThirdPartyAssets
+      let baseUrl: string | undefined = buildRegistryOwnerUrl(url, registryId, owner)
+      const allAssets: ThirdPartyAsset[] = []
 
-      if (!assetsByOwner)
-        console.error(`No assets found with owner: ${owner}, url: ${url} and registryId: ${registryId} at ${baseUrl}`)
-      return assetsByOwner?.assets ?? []
+      do {
+        const response = await fetchJson(baseUrl, {
+          timeout: '5000'
+        })
+        const assetsByOwner = response as ThirdPartyAssets
+
+        if (!assetsByOwner) {
+          console.error(`No assets found with owner: ${owner}, url: ${url} and registryId: ${registryId} at ${baseUrl}`)
+          break
+        }
+        for (const asset of assetsByOwner?.assets ?? []) {
+          allAssets.push(asset)
+        }
+
+        baseUrl = assetsByOwner?.next
+      } while (baseUrl)
+
+      return allAssets
     } catch (e) {
       console.error(e)
       throw new Error(`Error fetching assets with owner: ${owner}, url: ${url} and registryId: ${registryId}`)
