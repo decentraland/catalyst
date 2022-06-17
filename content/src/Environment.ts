@@ -15,6 +15,9 @@ const DECENTRALAND_ADDRESS: EthAddress = '0x1337e0507eb4ab47e08a179573ed4533d9e2
 const DEFAULT_FOLDER_MIGRATION_MAX_CONCURRENCY = 1000
 export const DEFAULT_ENTITIES_CACHE_SIZE = 150000
 export const DEFAULT_ETH_NETWORK = 'ropsten'
+export const DEFAULT_ENS_OWNER_PROVIDER_URL_ROPSTEN =
+  'https://api.thegraph.com/subgraphs/name/decentraland/marketplace-ropsten'
+const DEFAULT_ENS_OWNER_PROVIDER_URL_MAINNET = 'https://api.thegraph.com/subgraphs/name/decentraland/marketplace'
 export const DEFAULT_LAND_MANAGER_SUBGRAPH_ROPSTEN =
   'https://api.thegraph.com/subgraphs/name/decentraland/land-manager-ropsten'
 export const DEFAULT_LAND_MANAGER_SUBGRAPH_MAINNET = 'https://api.thegraph.com/subgraphs/name/decentraland/land-manager'
@@ -107,6 +110,7 @@ export enum EnvironmentConfig {
   USE_COMPRESSION_MIDDLEWARE,
   BOOTSTRAP_FROM_SCRATCH,
   REQUEST_TTL_BACKWARDS,
+  ENS_OWNER_PROVIDER_URL,
   LAND_MANAGER_SUBGRAPH_URL,
   COLLECTIONS_L1_SUBGRAPH_URL,
   COLLECTIONS_L2_SUBGRAPH_URL,

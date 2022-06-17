@@ -1,4 +1,9 @@
-import { createValidator as validator, ExternalCalls, Validator as IValidatorComponent } from '@dcl/content-validator'
+import {
+  ContentValidatorComponents,
+  createValidator as validator,
+  ExternalCalls,
+  Validator as IValidatorComponent
+} from '@dcl/content-validator'
 import { Authenticator } from '@dcl/crypto'
 import { EnvironmentConfig } from '../../Environment'
 import { streamToBuffer } from '../../ports/contentStorage/contentStorage'
@@ -27,7 +32,8 @@ export function createExternalCalls(
       L1: {
         landManager: components.env.getConfig(EnvironmentConfig.LAND_MANAGER_SUBGRAPH_URL),
         blocks: components.env.getConfig(EnvironmentConfig.BLOCKS_L1_SUBGRAPH_URL),
-        collections: components.env.getConfig(EnvironmentConfig.COLLECTIONS_L1_SUBGRAPH_URL)
+        collections: components.env.getConfig(EnvironmentConfig.COLLECTIONS_L1_SUBGRAPH_URL),
+        ensOwner: components.env.getConfig(EnvironmentConfig.ENS_OWNER_PROVIDER_URL)
       },
       L2: {
         blocks: components.env.getConfig(EnvironmentConfig.BLOCKS_L2_SUBGRAPH_URL),
@@ -38,6 +44,8 @@ export function createExternalCalls(
   }
 }
 
-export function createValidator(components: Pick<AppComponents, 'externalCalls' | 'logs'>): IValidatorComponent {
+export function createValidator(
+  components: Pick<ContentValidatorComponents, 'externalCalls' | 'logs' | 'theGraphClient'>
+): IValidatorComponent {
   return validator(components)
 }
