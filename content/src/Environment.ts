@@ -254,6 +254,15 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.REQUEST_TTL_BACKWARDS, () => ms('20m'))
     this.registerConfigIfNotAlreadySet(
       env,
+      EnvironmentConfig.ENS_OWNER_PROVIDER_URL,
+      () =>
+        process.env.ENS_OWNER_PROVIDER_URL ??
+        (process.env.ETH_NETWORK === 'mainnet'
+          ? DEFAULT_ENS_OWNER_PROVIDER_URL_MAINNET
+          : DEFAULT_ENS_OWNER_PROVIDER_URL_ROPSTEN)
+    )
+    this.registerConfigIfNotAlreadySet(
+      env,
       EnvironmentConfig.LAND_MANAGER_SUBGRAPH_URL,
       () =>
         process.env.LAND_MANAGER_SUBGRAPH_URL ??
