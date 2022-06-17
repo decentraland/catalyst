@@ -339,7 +339,7 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@2.1.0":
+"@dcl/content-validator@^2.1.0":
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-2.1.0.tgz#a634b1f743552e26f753f5d872a90d9d609ca891"
   integrity sha512-hY1elDc8vLkiqEfvTVkjCdz0VrRZC8gEyawbhgQk4it5wKfHwjFSX+xdDWQFBUe1+3U4Ji7VZhBkve7mA3Qi7g==
