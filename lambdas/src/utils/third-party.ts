@@ -23,6 +23,7 @@ export const createThirdPartyFetcher = (): ThirdPartyFetcher => ({
       const allAssets: ThirdPartyAsset[] = []
 
       do {
+        console.debug(`Fetching 3rd party assets from ${baseUrl}`)
         const response = await fetchJson(baseUrl, {
           timeout: '5000'
         })
@@ -36,7 +37,7 @@ export const createThirdPartyFetcher = (): ThirdPartyFetcher => ({
           allAssets.push(asset)
         }
 
-        baseUrl = assetsByOwner?.next
+        baseUrl = assetsByOwner.next
       } while (baseUrl)
 
       return allAssets
