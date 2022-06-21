@@ -13,13 +13,13 @@ export interface ThirdPartyFetcher {
 
 export function buildRegistryOwnerUrl(url: string, registryId: string, owner: string): string {
   const baseUrl = new URL(url).href.replace(/\/$/, '')
-  return `${baseUrl}/registry/${registryId}/address/${owner}/assets?limit=10`
+  return `${baseUrl}/registry/${registryId}/address/${owner}/assets`
 }
 
 export const createThirdPartyFetcher = (): ThirdPartyFetcher => ({
   fetchAssets: async (url: string, registryId: string, owner: EthAddress): Promise<ThirdPartyAsset[]> => {
     try {
-      let baseUrl: string | undefined = buildRegistryOwnerUrl(url, registryId, owner)
+      let baseUrl: string | undefined = buildRegistryOwnerUrl(url, registryId, owner) + '?limit=10'
       const allAssets: ThirdPartyAsset[] = []
 
       do {
