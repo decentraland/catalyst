@@ -6,7 +6,7 @@ import { toQueryParams } from '../../../logic/toQueryParams'
 import { asArray, asInt } from '../../../utils/ControllerUtils'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TheGraphClient } from '../../../utils/TheGraphClient'
-import { createThirdPartyFetcher, createThirdPartyResolver } from '../../../utils/third-party'
+import { createFetchComponent, createThirdPartyFetcher, createThirdPartyResolver } from '../../../utils/third-party'
 import { BASE_AVATARS_COLLECTION_ID, OffChainWearablesManager } from '../off-chain/OffChainWearablesManager'
 import { Wearable, WearableId, WearablesFilters, WearablesPagination } from '../types'
 import { isBaseAvatar, translateEntityIntoWearable } from '../Utils'
@@ -40,7 +40,11 @@ export async function getWearablesByOwnerEndpoint(
       includeDefinition,
       client,
       collectionId
-        ? await createThirdPartyResolver(theGraphClient, createThirdPartyFetcher(), collectionId as string)
+        ? await createThirdPartyResolver(
+            theGraphClient,
+            createThirdPartyFetcher(createFetchComponent()),
+            collectionId as string
+          )
         : theGraphClient
     )
     res.send(wearablesByOwner)

@@ -1,11 +1,21 @@
 import { EthAddress } from '@dcl/crypto'
 import { WearableId } from '@dcl/schemas'
 import { DecentralandAssetIdentifier, parseUrn } from '@dcl/urn-resolver'
-import { fetchJson } from 'dcl-catalyst-commons'
 import { FindWearablesByOwner, getWearablesByOwner } from '../apis/collections/controllers/wearables'
 import { ThirdPartyAsset, ThirdPartyAssets } from '../apis/collections/types'
 import { SmartContentClient } from './SmartContentClient'
 import { TheGraphClient } from './TheGraphClient'
+import { IFetchComponent } from '@well-known-components/http-server'
+import * as nodeFetch from 'node-fetch'
+
+export function createFetchComponent(): IFetchComponent {
+  const fetch: IFetchComponent = {
+    async fetch(url: nodeFetch.RequestInfo, init?: nodeFetch.RequestInit): Promise<nodeFetch.Response> {
+      return nodeFetch.default(url, init)
+    }
+  }
+  return fetch
+}
 
 export interface ThirdPartyFetcher {
   fetchAssets: (url: string, collectionId: string, owner: EthAddress) => Promise<ThirdPartyAsset[] | undefined>
@@ -16,7 +26,7 @@ export function buildRegistryOwnerUrl(url: string, registryId: string, owner: st
   return `${baseUrl}/registry/${registryId}/address/${owner}/assets`
 }
 
-export const createThirdPartyFetcher = (): ThirdPartyFetcher => ({
+export const createThirdPartyFetcher = (fetcher: IFetchComponent): ThirdPartyFetcher => ({
   fetchAssets: async (url: string, registryId: string, owner: EthAddress): Promise<ThirdPartyAsset[]> => {
     try {
       let baseUrl: string | undefined = buildRegistryOwnerUrl(url, registryId, owner) + '?limit=10'
@@ -24,15 +34,14 @@ export const createThirdPartyFetcher = (): ThirdPartyFetcher => ({
 
       do {
         console.debug(`Fetching 3rd party assets from ${baseUrl}`)
-        const response = await fetchJson(baseUrl, {
-          timeout: '5000'
-        })
-        const assetsByOwner = response as ThirdPartyAssets
+        const response = await fetcher.fetch(baseUrl)
 
+        const assetsByOwner = (await response.json()) as ThirdPartyAssets
         if (!assetsByOwner) {
           console.error(`No assets found with owner: ${owner}, url: ${url} and registryId: ${registryId} at ${baseUrl}`)
           break
         }
+
         for (const asset of assetsByOwner?.assets ?? []) {
           allAssets.push(asset)
         }
@@ -121,7 +130,11 @@ export async function checkForThirdPartyWearablesOwnership(
     }
     const ownedWearables: Set<string> = new Set()
     for (const collectionId of collectionsForAddress.values()) {
-      const resolver = await createThirdPartyResolver(theGraphClient, createThirdPartyFetcher(), collectionId)
+      const resolver = await createThirdPartyResolver(
+        theGraphClient,
+        createThirdPartyFetcher(createFetchComponent()),
+        collectionId
+      )
       const wearablesByOwner = await getWearablesByOwner(address, true, smartContentClient, resolver)
 
       for (const w of wearablesByOwner) {
