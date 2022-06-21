@@ -29,7 +29,7 @@ export function buildRegistryOwnerUrl(url: string, registryId: string, owner: st
 export const createThirdPartyFetcher = (fetcher: IFetchComponent): ThirdPartyFetcher => ({
   fetchAssets: async (url: string, registryId: string, owner: EthAddress): Promise<ThirdPartyAsset[]> => {
     try {
-      let baseUrl: string | undefined = buildRegistryOwnerUrl(url, registryId, owner) + '?limit=10'
+      let baseUrl: string | undefined = buildRegistryOwnerUrl(url, registryId, owner)
       const allAssets: ThirdPartyAsset[] = []
 
       do {
