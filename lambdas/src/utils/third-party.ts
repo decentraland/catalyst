@@ -13,7 +13,7 @@ export interface ThirdPartyFetcher {
 
 export function buildRegistryOwnerUrl(url: string, registryId: string, owner: string): string {
   const baseUrl = new URL(url).href.replace(/\/$/, '')
-  return `${baseUrl}/registry/${registryId}/address/${owner}/assets`
+  return `${baseUrl}/registry/${registryId}/address/${owner}/assets?limit=10`
 }
 
 export const createThirdPartyFetcher = (): ThirdPartyFetcher => ({
