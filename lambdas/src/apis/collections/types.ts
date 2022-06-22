@@ -95,4 +95,5 @@ export type ThirdPartyAssets = {
   total: number
   page: number
   assets: ThirdPartyAsset[]
+  next?: string
 }
