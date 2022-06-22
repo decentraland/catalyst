@@ -1579,6 +1579,24 @@
     on-finished "^2.3.0"
     path-to-regexp "^6.2.0"
 
+"@well-known-components/http-server@^1.1.0":
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/@well-known-components/http-server/-/http-server-1.1.2.tgz#39d038da07efd3c1a3bc9a7edab5418c8162910f"
+  integrity sha512-kkx34LjUSt3jhRDKK09yzkIr8NLp6fnPHTJXkaO3EEv7a0ERnsSFIM0AQjfRBS4CG283b0EgbTUmQnxxaXRHrg==
+  dependencies:
+    "@types/compression" "^1.7.0"
+    "@types/cors" "^2.8.9"
+    "@types/http-errors" "^1.8.1"
+    compression "^1.7.4"
+    cors "^2.8.5"
+    destroy "^1.1.0"
+    express "^4.17.1"
+    fp-future "^1.0.1"
+    http-errors "^1.8.0"
+    node-fetch "^2.6.7"
+    on-finished "^2.3.0"
+    path-to-regexp "^6.2.0"
+
 "@well-known-components/interfaces@1.1.1", "@well-known-components/interfaces@^1.1.0":
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/@well-known-components/interfaces/-/interfaces-1.1.1.tgz#d7e6552dd9ebee9ff9a2c9b5e1a88fc8247eb106"
@@ -1599,6 +1617,14 @@
   integrity sha512-kPTH2Xqkll3RW+OtC+Ra9u1t5ZcQQ7U6H4YGMs9cg9kvOvohBeJt9MV+fbC5/gznitNGxxm6hG1z6Vim6Gm2HQ==
   dependencies:
     prom-client "^14.0.1"
+
+"@well-known-components/thegraph-component@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@well-known-components/thegraph-component/-/thegraph-component-1.1.0.tgz#5e4c9faa5cec76334b0b1a951becdb27b936255a"
+  integrity sha512-I+O4gMQzQzd5dh8P7qMzpNiY2NVFtCzXbdEhLn6vFjXnz1Zq9YXerwIC4cHefnR+5VcfNeJvLwh8MYJnzwpjtA==
+  dependencies:
+    "@well-known-components/http-server" "^1.1.0"
+    "@well-known-components/interfaces" "^1.1.0"
 
 abab@^2.0.3, abab@^2.0.5:
   version "2.0.6"
@@ -2676,7 +2702,7 @@ depd@~1.1.2:
   resolved "https://registry.yarnpkg.com/depd/-/depd-1.1.2.tgz#9bcd52e14c097763e749b274c4346ed2e560b5a9"
   integrity sha1-m81S4UwJd2PnSbJ0xDRu0uVgtak=
 
-destroy@1.2.0, destroy@^1.0.4:
+destroy@1.2.0, destroy@^1.0.4, destroy@^1.1.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/destroy/-/destroy-1.2.0.tgz#4803735509ad8be552934c67df614f94e66fa015"
   integrity sha512-2sJGJTaXIIaR1w4iJSNoN0hnMY7Gpc/n8D4qSCJw8QqFWXf7cuAgnEHxBpweaVcPevC2l3KpjYCx3NypQQgaJg==
@@ -4924,7 +4950,7 @@ node-cache@^5.1.2:
   dependencies:
     clone "2.x"
 
-node-fetch@2.6.7, node-fetch@^2.6.1, node-fetch@^2.6.2:
+node-fetch@2.6.7, node-fetch@^2.6.1, node-fetch@^2.6.2, node-fetch@^2.6.7:
   version "2.6.7"
   resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.6.7.tgz#24de9fba827e3b4ae44dc8b20256a379160052ad"
   integrity sha512-ZjMPFEfVx5j+y2yF35Kzx5sF7kDzxuDj6ziH4FFbOp87zKDZNx8yExJIb05OGF4Nlt9IHFIMBkRl41VdvcNdbQ==
