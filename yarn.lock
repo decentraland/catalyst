@@ -1561,6 +1561,13 @@
     "@typescript-eslint/types" "5.21.0"
     eslint-visitor-keys "^3.0.0"
 
+"@well-known-components/env-config-provider@^1.1.1":
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/@well-known-components/env-config-provider/-/env-config-provider-1.1.1.tgz#d04215847fcab83a1ab05e375df8e2141dae23cd"
+  integrity sha512-toj2HcxYZRf9UuBqEC9mrej9yyQlGU/15oGtShrDtNC9/OVLBNY3q8cNgLLKbPOMLaRJkjdQvIvpjb+Q+E+PFQ==
+  dependencies:
+    dotenv "^8.2.0"
+
 "@well-known-components/http-server@1.1.1":
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/@well-known-components/http-server/-/http-server-1.1.1.tgz#dc6622c26090771e4d30c25047b9664403e479fe"
@@ -2785,6 +2792,11 @@ domexception@^2.0.1:
   integrity sha512-yxJ2mFy/sibVQlu5qHjOkf9J3K6zgmCxgJ94u2EdvDOV09H+32LtRswEcUsmUWN72pVLOEnTSRaIVVzVQgS0dg==
   dependencies:
     webidl-conversions "^5.0.0"
+
+dotenv@^8.2.0:
+  version "8.6.0"
+  resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-8.6.0.tgz#061af664d19f7f4d8fc6e4ff9b584ce237adcb8b"
+  integrity sha512-IrPdXQsk2BbzvCBGBOTmmSH5SodmqZNt4ERAZDmW4CT+tL8VtvinqywuANaFu4bOMWki16nqf0e4oC0QIaDr/g==
 
 eastasianwidth@^0.2.0:
   version "0.2.0"

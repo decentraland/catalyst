@@ -43,6 +43,10 @@ import { createServerValidator } from './service/validations/server'
 import { createExternalCalls, createValidator } from './service/validations/validator'
 import { AppComponents } from './types'
 import { createTheGraphClient } from '@dcl/content-validator'
+import { createSubgraphComponent } from '@well-known-components/thegraph-component'
+import { createConfigComponent } from '@well-known-components/env-config-provider'
+import { ISubgraphComponent } from '@well-known-components/thegraph-component/dist/types'
+import { IConfigComponent } from '@well-known-components/interfaces'
 
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
   const metrics = createTestMetricsComponent(metricsDeclaration)
@@ -113,6 +117,10 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     }
   )
 
+  const url = 'https://mariano'
+  const config: IConfigComponent = createConfigComponent({})
+  const theGraph: ISubgraphComponent = await createSubgraphComponent({ config, logs, metrics, fetch: fetcher }, url)
+  console.log(await theGraph.query(''))
   const externalCalls = createExternalCalls({ storage, authenticator, catalystFetcher, env, logs })
   const theGraphClient = createTheGraphClient({ externalCalls, logs })
   const validator = createValidator({ externalCalls, logs, theGraphClient })
