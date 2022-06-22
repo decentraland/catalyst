@@ -28,12 +28,11 @@ export function buildRegistryOwnerUrl(url: string, registryId: string, owner: st
 
 export const createThirdPartyFetcher = (fetcher: IFetchComponent): ThirdPartyFetcher => ({
   fetchAssets: async (url: string, registryId: string, owner: EthAddress): Promise<ThirdPartyAsset[]> => {
-    try {
-      let baseUrl: string | undefined = buildRegistryOwnerUrl(url, registryId, owner)
-      const allAssets: ThirdPartyAsset[] = []
+    let baseUrl: string | undefined = buildRegistryOwnerUrl(url, registryId, owner)
+    const allAssets: ThirdPartyAsset[] = []
 
+    try {
       do {
-        console.debug(`Fetching 3rd party assets from ${baseUrl}`)
         const response = await fetcher.fetch(baseUrl)
 
         const assetsByOwner = (await response.json()) as ThirdPartyAssets
@@ -52,7 +51,9 @@ export const createThirdPartyFetcher = (fetcher: IFetchComponent): ThirdPartyFet
       return allAssets
     } catch (e) {
       console.error(e)
-      throw new Error(`Error fetching assets with owner: ${owner}, url: ${url} and registryId: ${registryId}`)
+      throw new Error(
+        `Error fetching assets with owner: ${owner}, url: ${url} and registryId: ${registryId} (${baseUrl})`
+      )
     }
   }
 })
