@@ -25,8 +25,8 @@ loadStandaloneTestEnvironment()("Integration - Deployment with metadata validati
         .toEqual({
           errors: [
             "The metadata for this entity type (scene) is not valid.",
-            "should have required property 'main'",
-            "should have required property 'scene'"
+            "must have required property 'main'",
+            "must have required property 'scene'"
           ]
         });
     }
@@ -50,8 +50,8 @@ loadStandaloneTestEnvironment()("Integration - Deployment with metadata validati
         .toEqual({
           errors: [
             "The metadata for this entity type (scene) is not valid.",
-            "should have required property 'main'",
-            "should have required property 'scene'"
+            "must have required property 'main'",
+            "must have required property 'scene'"
           ]
         });
     }
@@ -76,7 +76,7 @@ loadStandaloneTestEnvironment()("Integration - Deployment with metadata validati
         .toEqual({
           errors: [
             "The metadata for this entity type (scene) is not valid.",
-            "should have required property 'scene'"
+            "must have required property 'scene'"
           ]
         });
     }
@@ -131,7 +131,7 @@ loadStandaloneTestEnvironment()("Integration - Deployment with metadata validati
         .toEqual({
           errors: [
             "The metadata for this entity type (profile) is not valid.",
-            "should have required property 'avatars'"
+            "must have required property 'avatars'"
           ]
         });
     }
@@ -155,7 +155,7 @@ loadStandaloneTestEnvironment()("Integration - Deployment with metadata validati
         .toEqual({
           errors: [
             "The metadata for this entity type (profile) is not valid.",
-            "should have required property 'avatars'"
+            "must have required property 'avatars'"
           ]
         });
     }
@@ -180,14 +180,14 @@ loadStandaloneTestEnvironment()("Integration - Deployment with metadata validati
             "The metadata for this entity type (wearable) is not valid.",
             "for standard wearables \"merkleProof\" and \"content\" are not allowed",
             "for third party wearables \"collectionAddress\" and \"rarity\" are not allowed",
-            "should match exactly one schema in oneOf",
-            "should have required property 'id'",
-            "should have required property 'description'",
-            "should have required property 'name'",
-            "should have required property 'data'",
-            "should have required property 'thumbnail'",
-            "should have required property 'image'",
-            "should have required property 'i18n'",
+            "must match exactly one schema in oneOf",
+            "must have required property 'id'",
+            "must have required property 'description'",
+            "must have required property 'name'",
+            "must have required property 'data'",
+            "must have required property 'thumbnail'",
+            "must have required property 'image'",
+            "must have required property 'i18n'",
           ]
         });
     }
