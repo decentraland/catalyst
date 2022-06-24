@@ -326,9 +326,14 @@ export class TheGraphClient {
     let offset = 0
     while (shouldContinue) {
       console.log(
-        `about to query: ${query.description}, query: ${query.query}, variables: ${JSON.stringify(variables)}`
+        `about to query: ${query.description}, query: ${query.query}, variables: ${JSON.stringify({
+          ...variables,
+          first: TheGraphClient.MAX_PAGE_SIZE,
+          skip: offset
+        })}`
       )
       const queried = await this.runQuery(query, { ...variables, first: TheGraphClient.MAX_PAGE_SIZE, skip: offset })
+      console.log(`result ${JSON.stringify(result)}`)
       if (!result) {
         result = queried
       } else {
