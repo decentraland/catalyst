@@ -341,7 +341,9 @@ export class TheGraphClient {
       }
       shouldContinue = queried.length === TheGraphClient.MAX_PAGE_SIZE
       offset += TheGraphClient.MAX_PAGE_SIZE
-      console.log(`shouldContinue: ${shouldContinue}, offset: ${offset}, so far: ${result.length}`)
+      console.log(
+        `shouldContinue: ${shouldContinue}, offset: ${offset}, this query: ${queried.length} so far: ${result.length}`
+      )
     }
     return result!
   }
