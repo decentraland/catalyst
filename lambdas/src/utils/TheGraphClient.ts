@@ -325,7 +325,9 @@ export class TheGraphClient {
     let shouldContinue = true
     let offset = 0
     while (shouldContinue) {
-      console.log(`about to query: ${query.description}, query: ${query.query}, variables: ${variables}`)
+      console.log(
+        `about to query: ${query.description}, query: ${query.query}, variables: ${JSON.stringify(variables)}`
+      )
       const queried = await this.runQuery(query, { ...variables, first: TheGraphClient.MAX_PAGE_SIZE, skip: offset })
       if (!result) {
         result = queried
@@ -334,7 +336,7 @@ export class TheGraphClient {
       }
       shouldContinue = queried.length === TheGraphClient.MAX_PAGE_SIZE
       offset += TheGraphClient.MAX_PAGE_SIZE
-      console.log(`shouldContinue: ${shouldContinue}, offset: ${offset}`)
+      console.log(`shouldContinue: ${shouldContinue}, offset: ${offset}, so far: ${result.length}`)
     }
     return result!
   }
