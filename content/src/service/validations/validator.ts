@@ -16,29 +16,38 @@ import { createConfigComponent } from '@well-known-components/env-config-provide
 export async function createSubGraphsComponent(
   components: Pick<AppComponents, 'env' | 'logs' | 'metrics' | 'fetcher'>
 ): Promise<SubGraphs> {
-  const config: IConfigComponent = createConfigComponent({})
-  const compo = { config, fetch: components.fetcher, metrics: components.metrics, logs: components.logs }
+  const config: IConfigComponent = createConfigComponent({}) // TODO Get config from higher level
+  const baseComponents = { config, fetch: components.fetcher, metrics: components.metrics, logs: components.logs }
   return {
     L1: {
       landManager: await createSubgraphComponent(
-        compo,
+        baseComponents,
         components.env.getConfig(EnvironmentConfig.LAND_MANAGER_SUBGRAPH_URL)
       ),
-      blocks: await createSubgraphComponent(compo, components.env.getConfig(EnvironmentConfig.BLOCKS_L1_SUBGRAPH_URL)),
+      blocks: await createSubgraphComponent(
+        baseComponents,
+        components.env.getConfig(EnvironmentConfig.BLOCKS_L1_SUBGRAPH_URL)
+      ),
       collections: await createSubgraphComponent(
-        compo,
+        baseComponents,
         components.env.getConfig(EnvironmentConfig.COLLECTIONS_L1_SUBGRAPH_URL)
       ),
-      ensOwner: await createSubgraphComponent(compo, components.env.getConfig(EnvironmentConfig.ENS_OWNER_PROVIDER_URL))
+      ensOwner: await createSubgraphComponent(
+        baseComponents,
+        components.env.getConfig(EnvironmentConfig.ENS_OWNER_PROVIDER_URL)
+      )
     },
     L2: {
-      blocks: await createSubgraphComponent(compo, components.env.getConfig(EnvironmentConfig.BLOCKS_L2_SUBGRAPH_URL)),
+      blocks: await createSubgraphComponent(
+        baseComponents,
+        components.env.getConfig(EnvironmentConfig.BLOCKS_L2_SUBGRAPH_URL)
+      ),
       collections: await createSubgraphComponent(
-        compo,
+        baseComponents,
         components.env.getConfig(EnvironmentConfig.COLLECTIONS_L2_SUBGRAPH_URL)
       ),
       thirdPartyRegistry: await createSubgraphComponent(
-        compo,
+        baseComponents,
         components.env.getConfig(EnvironmentConfig.THIRD_PARTY_REGISTRY_L2_SUBGRAPH_URL)
       )
     }
