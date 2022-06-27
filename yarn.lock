@@ -1588,10 +1588,10 @@
     "@types/node-fetch" "^2.5.12"
     typed-url-params "^1.0.1"
 
-"@well-known-components/logger@^1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@well-known-components/logger/-/logger-1.1.0.tgz#d752aaf66e5afad59f0e73b20422131d1673da47"
-  integrity sha512-2yU5elo5V/0jSTdFKGXco+EIkx00XKKIxnw1MzYyrd/j4YQX/74StnDJR5l4h1DwTPERp4nR7d+7pLRZ6QDJVw==
+"@well-known-components/logger@^2.1.0":
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/@well-known-components/logger/-/logger-2.1.0.tgz#2d2e74be3275ccbcf31dbd0f8157c1f01c83a596"
+  integrity sha512-PG8eL8aOD7CDp7N2I91d6f3jiFxrA/i0HQB7192GIIMvCULiwz2aIXYw0GfG5BD+TaFfvC/P7s5YcMAiiW3oLw==
 
 "@well-known-components/metrics@1.1.3", "@well-known-components/metrics@^1.1.2":
   version "1.1.3"
