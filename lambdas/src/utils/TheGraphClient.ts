@@ -194,16 +194,17 @@ export class TheGraphClient {
 
   private async getWearablesByOwner(subgraph: keyof URLs, owner: string) {
     const query: Query<
-      { nfts: { urn: string; collection: { isApproved: boolean } }[] },
-      { id: WearableId; isApproved: boolean }[]
+      { nfts: { id: string; urn: string; collection: { isApproved: boolean } }[] },
+      { id: string; urn: WearableId; isApproved: boolean }[]
     > = {
       description: 'fetch wearables by owner',
       subgraph: subgraph,
       query: QUERY_WEARABLES_BY_OWNER,
-      mapper: (response) => response.nfts.map(({ urn, collection }) => ({ id: urn, isApproved: collection.isApproved }))
+      mapper: (response) =>
+        response.nfts.map(({ id, urn, collection }) => ({ id: id, urn: urn, isApproved: collection.isApproved }))
     }
     const wearables = await this.paginatableQuery(query, { owner: owner.toLowerCase() })
-    return wearables.filter((wearable) => wearable.isApproved).map((wearable) => wearable.id)
+    return wearables.filter((wearable) => wearable.isApproved).map((wearable) => wearable.urn)
   }
 
   public async findWearablesByFilters(
@@ -333,18 +334,19 @@ export class TheGraphClient {
         })}`
       )
       const queried = await this.runQuery(query, { ...variables, first: TheGraphClient.MAX_PAGE_SIZE, start: start })
-      console.log(`result ${JSON.stringify(result)}`)
+      console.log(`queried ${JSON.stringify(queried)}`)
       if (!result) {
         result = queried
       } else {
         result.push(...queried)
       }
       shouldContinue = queried.length === TheGraphClient.MAX_PAGE_SIZE
-      start = result[result.length - 1].id
+      start = queried[queried.length - 1].id
       console.log(
         `shouldContinue: ${shouldContinue}, start: ${start}, this query: ${queried.length} so far: ${result.length}`
       )
     }
+    console.log(`total ${result?.length}`)
     return result!
   }
 
