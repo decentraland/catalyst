@@ -333,13 +333,13 @@ export class TheGraphClient {
         })}`
       )
       const queried = await this.runQuery(query, { ...variables, first: TheGraphClient.MAX_PAGE_SIZE, skip: offset })
-      console.log(`result ${JSON.stringify(result)}`)
+      console.log(`result ${JSON.stringify(result).substring(0, 2000)}`)
       if (!result) {
         result = queried
       } else {
         result.push(...queried)
       }
-      shouldContinue = queried.length === TheGraphClient.MAX_PAGE_SIZE && offset <= 5000
+      shouldContinue = queried.length === TheGraphClient.MAX_PAGE_SIZE && offset < 5000
       offset += TheGraphClient.MAX_PAGE_SIZE
       console.log(
         `shouldContinue: ${shouldContinue}, offset: ${offset}, this query: ${queried.length} so far: ${result.length}`
