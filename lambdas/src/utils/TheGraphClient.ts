@@ -340,7 +340,7 @@ export class TheGraphClient {
         result.push(...queried)
       }
       shouldContinue = queried.length === TheGraphClient.MAX_PAGE_SIZE
-      start = queried[queried.length - 1].urn
+      start = result[result.length - 1].id
       console.log(
         `shouldContinue: ${shouldContinue}, start: ${start}, this query: ${queried.length} so far: ${result.length}`
       )
