@@ -333,7 +333,7 @@ export class TheGraphClient {
         })}`
       )
       const queried = await this.runQuery(query, { ...variables, first: TheGraphClient.MAX_PAGE_SIZE, skip: offset })
-      console.log(`result ${JSON.stringify(result).substring(0, 2000)}`)
+      console.log(`result ${JSON.stringify(result)}`)
       if (!result) {
         result = queried
       } else {
