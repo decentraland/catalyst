@@ -316,33 +316,33 @@ export class TheGraphClient {
     }
   }
 
-  /** This method takes a query that could be paginated and performs the pagination internally */
+  /** This method takes a query that could be paginated and performs the pagination internally based on ids for support for large result sets */
   private async paginatableQuery<QueryResult, ReturnType extends Array<any>>(
     query: Query<QueryResult, ReturnType>,
     variables: Record<string, any>
   ): Promise<ReturnType> {
     let result: ReturnType | undefined = undefined
     let shouldContinue = true
-    let offset = 0
+    let start = ''
     while (shouldContinue) {
       console.log(
         `about to query: ${query.description}, query: ${query.query}, variables: ${JSON.stringify({
           ...variables,
           first: TheGraphClient.MAX_PAGE_SIZE,
-          skip: offset
+          start: start
         })}`
       )
-      const queried = await this.runQuery(query, { ...variables, first: TheGraphClient.MAX_PAGE_SIZE, skip: offset })
+      const queried = await this.runQuery(query, { ...variables, first: TheGraphClient.MAX_PAGE_SIZE, start: start })
       console.log(`result ${JSON.stringify(result)}`)
       if (!result) {
         result = queried
       } else {
         result.push(...queried)
       }
-      shouldContinue = queried.length === TheGraphClient.MAX_PAGE_SIZE && offset < 5000
-      offset += TheGraphClient.MAX_PAGE_SIZE
+      shouldContinue = queried.length === TheGraphClient.MAX_PAGE_SIZE
+      start = queried[queried.length - 1].urn
       console.log(
-        `shouldContinue: ${shouldContinue}, offset: ${offset}, this query: ${queried.length} so far: ${result.length}`
+        `shouldContinue: ${shouldContinue}, start: ${start}, this query: ${queried.length} so far: ${result.length}`
       )
     }
     return result!
@@ -413,9 +413,10 @@ query ThirdPartyResolver($id: String!) {
 `
 
 const QUERY_WEARABLES_BY_OWNER: string = `
-  query WearablesByOwner($owner: String, $first: Int, $skip: Int) {
-    nfts(where: {owner: $owner, searchItemType_in: ["wearable_v1", "wearable_v2", "smart_wearable_v1", "emote_v1"]}, first: $first, skip: $skip) {
-      urn,
+  query WearablesByOwner($owner: String, $first: Int, $start: String) {
+    nfts(where: {owner: $owner, searchItemType_in: ["wearable_v1", "wearable_v2", "smart_wearable_v1", "emote_v1"], id_gt: $start}, first: $first) {
+      id
+      urn
       collection {
         isApproved
       }
