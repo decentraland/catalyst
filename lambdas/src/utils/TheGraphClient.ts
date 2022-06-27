@@ -326,15 +326,7 @@ export class TheGraphClient {
     let shouldContinue = true
     let start = ''
     while (shouldContinue) {
-      console.log(
-        `about to query: ${query.description}, query: ${query.query}, variables: ${JSON.stringify({
-          ...variables,
-          first: TheGraphClient.MAX_PAGE_SIZE,
-          start: start
-        })}`
-      )
       const queried = await this.runQuery(query, { ...variables, first: TheGraphClient.MAX_PAGE_SIZE, start: start })
-      console.log(`queried ${JSON.stringify(queried)}`)
       if (!result) {
         result = queried
       } else {
@@ -342,11 +334,7 @@ export class TheGraphClient {
       }
       shouldContinue = queried.length === TheGraphClient.MAX_PAGE_SIZE
       start = queried[queried.length - 1].id
-      console.log(
-        `shouldContinue: ${shouldContinue}, start: ${start}, this query: ${queried.length} so far: ${result.length}`
-      )
     }
-    console.log(`total ${result?.length}`)
     return result!
   }
 
