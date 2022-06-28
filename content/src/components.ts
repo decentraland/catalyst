@@ -117,9 +117,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     }
   )
 
-  // const config: IConfigComponent = createConfigComponent({})
   const subGraphs = await createSubGraphsComponent({ env, metrics, logs, fetcher })
-
   const externalCalls = await createExternalCalls({
     storage,
     authenticator,
