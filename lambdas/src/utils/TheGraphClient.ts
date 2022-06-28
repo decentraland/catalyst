@@ -194,16 +194,17 @@ export class TheGraphClient {
 
   private async getWearablesByOwner(subgraph: keyof URLs, owner: string) {
     const query: Query<
-      { nfts: { urn: string; collection: { isApproved: boolean } }[] },
-      { id: WearableId; isApproved: boolean }[]
+      { nfts: { id: string; urn: string; collection: { isApproved: boolean } }[] },
+      { id: string; urn: WearableId; isApproved: boolean }[]
     > = {
       description: 'fetch wearables by owner',
       subgraph: subgraph,
       query: QUERY_WEARABLES_BY_OWNER,
-      mapper: (response) => response.nfts.map(({ urn, collection }) => ({ id: urn, isApproved: collection.isApproved }))
+      mapper: (response) =>
+        response.nfts.map(({ id, urn, collection }) => ({ id: id, urn: urn, isApproved: collection.isApproved }))
     }
     const wearables = await this.paginatableQuery(query, { owner: owner.toLowerCase() })
-    return wearables.filter((wearable) => wearable.isApproved).map((wearable) => wearable.id)
+    return wearables.filter((wearable) => wearable.isApproved).map((wearable) => wearable.urn)
   }
 
   public async findWearablesByFilters(
@@ -316,23 +317,23 @@ export class TheGraphClient {
     }
   }
 
-  /** This method takes a query that could be paginated and performs the pagination internally */
+  /** This method takes a query that could be paginated and performs the pagination internally based on ids for support for large result sets */
   private async paginatableQuery<QueryResult, ReturnType extends Array<any>>(
     query: Query<QueryResult, ReturnType>,
     variables: Record<string, any>
   ): Promise<ReturnType> {
     let result: ReturnType | undefined = undefined
     let shouldContinue = true
-    let offset = 0
+    let start = ''
     while (shouldContinue) {
-      const queried = await this.runQuery(query, { ...variables, first: TheGraphClient.MAX_PAGE_SIZE, skip: offset })
+      const queried = await this.runQuery(query, { ...variables, first: TheGraphClient.MAX_PAGE_SIZE, start: start })
       if (!result) {
         result = queried
       } else {
         result.push(...queried)
       }
-      shouldContinue = queried.length === TheGraphClient.MAX_PAGE_SIZE
-      offset += TheGraphClient.MAX_PAGE_SIZE
+      start = queried[queried.length - 1]?.id
+      shouldContinue = queried.length === TheGraphClient.MAX_PAGE_SIZE && !!start
     }
     return result!
   }
@@ -402,9 +403,10 @@ query ThirdPartyResolver($id: String!) {
 `
 
 const QUERY_WEARABLES_BY_OWNER: string = `
-  query WearablesByOwner($owner: String, $first: Int, $skip: Int) {
-    nfts(where: {owner: $owner, searchItemType_in: ["wearable_v1", "wearable_v2", "smart_wearable_v1", "emote_v1"]}, first: $first, skip: $skip) {
-      urn,
+  query WearablesByOwner($owner: String, $first: Int, $start: String) {
+    nfts(where: {owner: $owner, searchItemType_in: ["wearable_v1", "wearable_v2", "smart_wearable_v1", "emote_v1"], id_gt: $start}, first: $first) {
+      id
+      urn
       collection {
         isApproved
       }
