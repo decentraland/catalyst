@@ -39,18 +39,18 @@ loadStandaloneTestEnvironment()('Integration - Create entities', (testEnv) => {
     expect(response.status).toBe(200)
     expect(await response.json()).toHaveProperty('creationTimestamp')
 
-    // Check that entity_id match only with the profile pointer
+    // Check that entity_id matches only with the profile pointer
     let queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where entity_id='bafkreigiffn5v5j5o2rd24dvirirggghisva44owomrl65dqg5flan47le'")
     expect(queryResult.rowCount).toBe(1)
     expect(queryResult.rows[0].pointer).toBe('0x31a19cb92ac89f1aa62fa72da5f52521daf130b0')
 
-    // Check that profile pointer match only with the entity_id
+    // Check that profile pointer matches only with the entity_id
     queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where pointer='0x31a19cb92ac89f1aa62fa72da5f52521daf130b0'")
     expect(queryResult.rowCount).toBe(1)
     expect(queryResult.rows[0].entity_id).toBe('bafkreigiffn5v5j5o2rd24dvirirggghisva44owomrl65dqg5flan47le')
   })
 
-  it('when overwirtting a profile, entity id should be replaced in active-pointers table', async () => {
+  it('when overwirting a profile, entity id should be replaced in active-pointers table', async () => {
     // Create profile
     let form = createForm('bafkreigiffn5v5j5o2rd24dvirirggghisva44owomrl65dqg5flan47le', 'profile_original.json');
     let response = await callCreateEntityEndpoint(server, form)
@@ -67,12 +67,12 @@ loadStandaloneTestEnvironment()('Integration - Create entities', (testEnv) => {
     expect(response.status).toBe(200)
     expect(await response.json()).toHaveProperty('creationTimestamp')
 
-    // Check that entity_id match only with the profile pointer
+    // Check that entity_id matches only with the profile pointer
     let queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where entity_id='bafkreiczclosnorj7bzibuvotiwf2gyvtmnxmyvl62nacpxhluqsi72bxq'")
     expect(queryResult.rowCount).toBe(1)
     expect(queryResult.rows[0].pointer).toBe('0x31a19cb92ac89f1aa62fa72da5f52521daf130b0')
 
-    // Check that profile pointer match only with the entity_id
+    // Check that profile pointer matches only with the entity_id
     queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where pointer='0x31a19cb92ac89f1aa62fa72da5f52521daf130b0'")
     expect(queryResult.rowCount).toBe(1)
     expect(queryResult.rows[0].entity_id).toBe('bafkreiczclosnorj7bzibuvotiwf2gyvtmnxmyvl62nacpxhluqsi72bxq')
@@ -82,7 +82,7 @@ loadStandaloneTestEnvironment()('Integration - Create entities', (testEnv) => {
     expect(queryResult.rowCount).toBe(0)
   })
 
-  it('when overwirtting a profile, new profile must be ignored if its timestamp is older', async () => {
+  it('when overwriting a profile, new profile must be ignored if its timestamp is older', async () => {
     // Create profile
     let form = createForm('bafkreiczclosnorj7bzibuvotiwf2gyvtmnxmyvl62nacpxhluqsi72bxq', 'profile_overwrite.json');
     let response = await callCreateEntityEndpoint(server, form)
@@ -99,12 +99,12 @@ loadStandaloneTestEnvironment()('Integration - Create entities', (testEnv) => {
     expect(response.status).toBe(200)
     expect(await response.json()).toHaveProperty('creationTimestamp')
 
-    // Check that entity_id match only with the profile pointer
+    // Check that entity_id matches only with the profile pointer
     let queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where entity_id='bafkreiczclosnorj7bzibuvotiwf2gyvtmnxmyvl62nacpxhluqsi72bxq'")
     expect(queryResult.rowCount).toBe(1)
     expect(queryResult.rows[0].pointer).toBe('0x31a19cb92ac89f1aa62fa72da5f52521daf130b0')
 
-    // Check that profile pointer match only with the entity_id
+    // Check that profile pointer matches only with the entity_id
     queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where pointer='0x31a19cb92ac89f1aa62fa72da5f52521daf130b0'")
     expect(queryResult.rowCount).toBe(1)
     expect(queryResult.rows[0].entity_id).toBe('bafkreiczclosnorj7bzibuvotiwf2gyvtmnxmyvl62nacpxhluqsi72bxq')
@@ -123,7 +123,7 @@ loadStandaloneTestEnvironment()('Integration - Create entities', (testEnv) => {
     expect(response.status).toBe(200)
     expect(await response.json()).toHaveProperty('creationTimestamp')
 
-    // Check that entity_id match only with the scene pointers
+    // Check that entity_id matches only with the scene pointers
     let queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where entity_id='bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy'")
     expect(queryResult.rowCount).toBe(2)
     expect(queryResult.rows[0].pointer).toBe('0,0')
@@ -138,7 +138,7 @@ loadStandaloneTestEnvironment()('Integration - Create entities', (testEnv) => {
     expect(queryResult.rows[0].entity_id).toBe('bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy')
   })
 
-  it('when overwritting a scene, unused pointers should be deleted from active-pointers table', async () => {
+  it('when overwriting a scene, unused pointers should be deleted from active-pointers table', async () => {
     // Create scene
     let form = createForm('bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy', 'scene_original.json');
     let response = await callCreateEntityEndpoint(server, form)
@@ -177,7 +177,7 @@ loadStandaloneTestEnvironment()('Integration - Create entities', (testEnv) => {
     expect(queryResult.rowCount).toBe(0)
   })
 
-  it('when overwritting a scene, new scene must be ignored if its timestamp is older', async () => {
+  it('when overwriting a scene, new scene must be ignored if its timestamp is older', async () => {
     // Create scene
     let form = createForm('bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq', 'scene_overwrite.json');
     let response = await callCreateEntityEndpoint(server, form)
