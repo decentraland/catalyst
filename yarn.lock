@@ -1578,25 +1578,7 @@
   dependencies:
     dotenv "^8.2.0"
 
-"@well-known-components/http-server@1.1.1":
-  version "1.1.1"
-  resolved "https://registry.yarnpkg.com/@well-known-components/http-server/-/http-server-1.1.1.tgz#dc6622c26090771e4d30c25047b9664403e479fe"
-  integrity sha512-4m/IztehCfne/YNNmw4enCuSJbtGyouQwZ8HMyWQ2dylRgH2s016t4jgUJOTtnOwRMn0tbVtCpDpFEG/FpB24g==
-  dependencies:
-    "@types/compression" "^1.7.0"
-    "@types/cors" "^2.8.9"
-    "@types/http-errors" "^1.8.1"
-    compression "^1.7.4"
-    cors "^2.8.5"
-    destroy "^1.0.4"
-    express "^4.17.1"
-    fp-future "^1.0.1"
-    http-errors "^1.8.0"
-    node-fetch "^2.6.2"
-    on-finished "^2.3.0"
-    path-to-regexp "^6.2.0"
-
-"@well-known-components/http-server@^1.1.0":
+"@well-known-components/http-server@1.1.2", "@well-known-components/http-server@^1.1.0":
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/@well-known-components/http-server/-/http-server-1.1.2.tgz#39d038da07efd3c1a3bc9a7edab5418c8162910f"
   integrity sha512-kkx34LjUSt3jhRDKK09yzkIr8NLp6fnPHTJXkaO3EEv7a0ERnsSFIM0AQjfRBS4CG283b0EgbTUmQnxxaXRHrg==
@@ -2749,7 +2731,7 @@ depd@~1.1.2:
   resolved "https://registry.yarnpkg.com/depd/-/depd-1.1.2.tgz#9bcd52e14c097763e749b274c4346ed2e560b5a9"
   integrity sha1-m81S4UwJd2PnSbJ0xDRu0uVgtak=
 
-destroy@1.2.0, destroy@^1.0.4, destroy@^1.1.0:
+destroy@1.2.0, destroy@^1.1.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/destroy/-/destroy-1.2.0.tgz#4803735509ad8be552934c67df614f94e66fa015"
   integrity sha512-2sJGJTaXIIaR1w4iJSNoN0hnMY7Gpc/n8D4qSCJw8QqFWXf7cuAgnEHxBpweaVcPevC2l3KpjYCx3NypQQgaJg==
@@ -5002,7 +4984,7 @@ node-cache@^5.1.2:
   dependencies:
     clone "2.x"
 
-node-fetch@2.6.7, node-fetch@^2.6.1, node-fetch@^2.6.2, node-fetch@^2.6.7:
+node-fetch@2.6.7, node-fetch@^2.6.1, node-fetch@^2.6.7:
   version "2.6.7"
   resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.6.7.tgz#24de9fba827e3b4ae44dc8b20256a379160052ad"
   integrity sha512-ZjMPFEfVx5j+y2yF35Kzx5sF7kDzxuDj6ziH4FFbOp87zKDZNx8yExJIb05OGF4Nlt9IHFIMBkRl41VdvcNdbQ==
