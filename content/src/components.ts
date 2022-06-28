@@ -47,7 +47,11 @@ import { createTheGraphClient } from '@dcl/content-validator'
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
   const metrics = createTestMetricsComponent(metricsDeclaration)
   const repository = await RepositoryFactory.create({ env, metrics })
-  const logs = createLogComponent()
+  const logs = createLogComponent({
+    config: {
+      logLevel: env.getConfig(EnvironmentConfig.LOG_LEVEL)
+    }
+  })
   const fetcher = createFetchComponent()
   const fs = createFsComponent()
   const denylist = await createDenylist({ env, logs, fs, fetcher })

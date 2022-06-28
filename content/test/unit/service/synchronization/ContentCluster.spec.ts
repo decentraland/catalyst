@@ -106,7 +106,11 @@ class ContentClusterBuilder {
       }
       : new ChallengeSupervisor()
 
-    const logs = createLogComponent()
+    const logs = createLogComponent({
+      config: {
+        logLevel: 'DEBUG'
+      }
+    })
 
     return new ContentCluster(
       { daoClient, logs, challengeSupervisor, fetcher: this.fetcher, env },

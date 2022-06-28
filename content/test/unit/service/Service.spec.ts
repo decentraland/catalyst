@@ -227,7 +227,11 @@ describe('Service', function () {
     const serverValidator = new NoOpServerValidator()
     const deploymentManager = new DeploymentManager()
     const failedDeploymentsCache = createFailedDeploymentsCache()
-    const logs = createLogComponent()
+    const logs = createLogComponent({
+      config: {
+        logLevel: 'DEBUG'
+      }
+    })
     const deployRateLimiter = createDeployRateLimiter(
       { logs },
       { defaultMax: 300, defaultTtl: ms('1m'), entitiesConfigMax: new Map(), entitiesConfigTtl: new Map() }

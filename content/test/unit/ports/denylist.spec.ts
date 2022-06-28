@@ -6,7 +6,11 @@ import { createDenylist } from '../../../src/ports/denylist'
 
 describe('when creating a denylist', () => {
   const env = new Environment()
-  const logs = createLogComponent()
+  const logs = createLogComponent({
+    config: {
+      logLevel: 'DEBUG'
+    }
+  })
   const fetcher = { fetch: jest.fn() }
   env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, 'storage')
   env.setConfig(EnvironmentConfig.DENYLIST_FILE_NAME, 'denylist.txt')
@@ -112,7 +116,11 @@ describe('when creating a denylist', () => {
 
 describe('when two minutes pass after the denylist was loaded', () => {
   const env = new Environment()
-  const logs = createLogComponent()
+  const logs = createLogComponent({
+    config: {
+      logLevel: 'DEBUG'
+    }
+  })
   const fetcher = { fetch: jest.fn() }
   env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, 'storage')
   env.setConfig(EnvironmentConfig.DENYLIST_FILE_NAME, 'denylist.txt')
@@ -140,7 +148,11 @@ describe('when two minutes pass after the denylist was loaded', () => {
 
 describe('when the denylist is stopped', () => {
     const env = new Environment()
-    const logs = createLogComponent()
+    const logs = createLogComponent({
+      config: {
+        logLevel: 'DEBUG'
+      }
+    })
     const fetcher = { fetch: jest.fn() }
     env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, 'storage')
     env.setConfig(EnvironmentConfig.DENYLIST_FILE_NAME, 'denylist.txt')

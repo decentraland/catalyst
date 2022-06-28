@@ -28,7 +28,11 @@ void Lifecycle.run({
   },
 
   async initComponents() {
-    const logs = createLogComponent()
+    const logs = createLogComponent({
+      config: {
+        logLevel: 'INFO'
+      }
+    })
     const metrics = createTestMetricsComponent(metricsDeclaration)
     const env = await new EnvironmentBuilder().build()
     const database = await createDatabaseComponent({ logs, env, metrics })
