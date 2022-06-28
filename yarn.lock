@@ -339,16 +339,17 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@^2.1.0":
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-2.1.0.tgz#a634b1f743552e26f753f5d872a90d9d609ca891"
-  integrity sha512-hY1elDc8vLkiqEfvTVkjCdz0VrRZC8gEyawbhgQk4it5wKfHwjFSX+xdDWQFBUe1+3U4Ji7VZhBkve7mA3Qi7g==
+"@dcl/content-validator@^2.2.0":
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-2.2.0.tgz#8abacdca79e9b329e3838520b9557becd93fcee0"
+  integrity sha512-DfQ7QOybUTnDVvkUa3Q4Z43+AbPKxRqLbXUIqAontEqr+UXnnP1lS/C+QsPM/65N/N6A8oFjTyS5ShomAnMnqQ==
   dependencies:
     "@dcl/content-hash-tree" "^1.1.3"
     "@dcl/hashing" "1.1.0"
-    "@dcl/schemas" "^4.14.0"
+    "@dcl/schemas" "^5.0.3"
     "@dcl/urn-resolver" "1.3.1"
     "@well-known-components/interfaces" "1.1.1"
+    "@well-known-components/thegraph-component" "^1.2.0"
     ms "2.1.3"
     sharp "^0.30.6"
 
@@ -378,6 +379,15 @@
     ajv "^7.1.0"
     ajv-errors "^2.0.1"
     ajv-keywords "^4.0.1"
+
+"@dcl/schemas@^5.0.3":
+  version "5.0.3"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-5.0.3.tgz#aba986dae25423ce36d7b87f0280dd2923b58818"
+  integrity sha512-FvG9jNBXLj+08RltM98LA0BTw7nSQtzwlghy1DqaqspoT7LhxDol7uWP/CZ1RuyT0x4KnN0E9VYnS9hVAtMi+Q==
+  dependencies:
+    ajv "^8.11.0"
+    ajv-errors "^3.0.0"
+    ajv-keywords "^5.1.0"
 
 "@dcl/snapshots-fetcher@3.0.2":
   version "3.0.2"
@@ -1561,6 +1571,13 @@
     "@typescript-eslint/types" "5.21.0"
     eslint-visitor-keys "^3.0.0"
 
+"@well-known-components/env-config-provider@^1.1.1":
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/@well-known-components/env-config-provider/-/env-config-provider-1.1.1.tgz#d04215847fcab83a1ab05e375df8e2141dae23cd"
+  integrity sha512-toj2HcxYZRf9UuBqEC9mrej9yyQlGU/15oGtShrDtNC9/OVLBNY3q8cNgLLKbPOMLaRJkjdQvIvpjb+Q+E+PFQ==
+  dependencies:
+    dotenv "^8.2.0"
+
 "@well-known-components/http-server@1.1.1":
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/@well-known-components/http-server/-/http-server-1.1.1.tgz#dc6622c26090771e4d30c25047b9664403e479fe"
@@ -1579,6 +1596,24 @@
     on-finished "^2.3.0"
     path-to-regexp "^6.2.0"
 
+"@well-known-components/http-server@^1.1.0":
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/@well-known-components/http-server/-/http-server-1.1.2.tgz#39d038da07efd3c1a3bc9a7edab5418c8162910f"
+  integrity sha512-kkx34LjUSt3jhRDKK09yzkIr8NLp6fnPHTJXkaO3EEv7a0ERnsSFIM0AQjfRBS4CG283b0EgbTUmQnxxaXRHrg==
+  dependencies:
+    "@types/compression" "^1.7.0"
+    "@types/cors" "^2.8.9"
+    "@types/http-errors" "^1.8.1"
+    compression "^1.7.4"
+    cors "^2.8.5"
+    destroy "^1.1.0"
+    express "^4.17.1"
+    fp-future "^1.0.1"
+    http-errors "^1.8.0"
+    node-fetch "^2.6.7"
+    on-finished "^2.3.0"
+    path-to-regexp "^6.2.0"
+
 "@well-known-components/interfaces@1.1.1", "@well-known-components/interfaces@^1.1.0":
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/@well-known-components/interfaces/-/interfaces-1.1.1.tgz#d7e6552dd9ebee9ff9a2c9b5e1a88fc8247eb106"
@@ -1588,10 +1623,10 @@
     "@types/node-fetch" "^2.5.12"
     typed-url-params "^1.0.1"
 
-"@well-known-components/logger@^1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@well-known-components/logger/-/logger-1.1.0.tgz#d752aaf66e5afad59f0e73b20422131d1673da47"
-  integrity sha512-2yU5elo5V/0jSTdFKGXco+EIkx00XKKIxnw1MzYyrd/j4YQX/74StnDJR5l4h1DwTPERp4nR7d+7pLRZ6QDJVw==
+"@well-known-components/logger@^2.1.0":
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/@well-known-components/logger/-/logger-2.1.0.tgz#2d2e74be3275ccbcf31dbd0f8157c1f01c83a596"
+  integrity sha512-PG8eL8aOD7CDp7N2I91d6f3jiFxrA/i0HQB7192GIIMvCULiwz2aIXYw0GfG5BD+TaFfvC/P7s5YcMAiiW3oLw==
 
 "@well-known-components/metrics@1.1.3", "@well-known-components/metrics@^1.1.2":
   version "1.1.3"
@@ -1599,6 +1634,22 @@
   integrity sha512-kPTH2Xqkll3RW+OtC+Ra9u1t5ZcQQ7U6H4YGMs9cg9kvOvohBeJt9MV+fbC5/gznitNGxxm6hG1z6Vim6Gm2HQ==
   dependencies:
     prom-client "^14.0.1"
+
+"@well-known-components/thegraph-component@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@well-known-components/thegraph-component/-/thegraph-component-1.1.0.tgz#5e4c9faa5cec76334b0b1a951becdb27b936255a"
+  integrity sha512-I+O4gMQzQzd5dh8P7qMzpNiY2NVFtCzXbdEhLn6vFjXnz1Zq9YXerwIC4cHefnR+5VcfNeJvLwh8MYJnzwpjtA==
+  dependencies:
+    "@well-known-components/http-server" "^1.1.0"
+    "@well-known-components/interfaces" "^1.1.0"
+
+"@well-known-components/thegraph-component@^1.2.0":
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/@well-known-components/thegraph-component/-/thegraph-component-1.2.0.tgz#bb24e7b1572a10734fdfaac57892a71320de404f"
+  integrity sha512-fi+9oc+4pWaLXc0axFJfVVJO/j28D8/VlDbUuXg3351p2KHsAfs65pYnaHZNfCyw+OhOgBsmUTdJFucB3PAAZQ==
+  dependencies:
+    "@well-known-components/http-server" "^1.1.0"
+    "@well-known-components/interfaces" "^1.1.0"
 
 abab@^2.0.3, abab@^2.0.5:
   version "2.0.6"
@@ -1678,10 +1729,22 @@ ajv-errors@^2.0.1:
   resolved "https://registry.yarnpkg.com/ajv-errors/-/ajv-errors-2.0.1.tgz#af5a199a0de65e6c5be738e108ad480578898a9f"
   integrity sha512-hGH2npS6nUdBr61gf3rcG8R04DwwgQsdt6goZGmaZHYRHtLF948Emsdta/bcP9AD6/X1jnHm9lMbgujOQG7W6A==
 
+ajv-errors@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/ajv-errors/-/ajv-errors-3.0.0.tgz#e54f299f3a3d30fe144161e5f0d8d51196c527bc"
+  integrity sha512-V3wD15YHfHz6y0KdhYFjyy9vWtEVALT9UrxfN3zqlI6dMioHnJrqOYfyPKol3oqrnCM9uwkcdCwkJ0WUcbLMTQ==
+
 ajv-keywords@^4.0.1:
   version "4.0.1"
   resolved "https://registry.yarnpkg.com/ajv-keywords/-/ajv-keywords-4.0.1.tgz#3fcd1988846b741ec958b2555c96ccecce2b3a59"
   integrity sha512-vPmwZT6AL4R7kKrjKOMoKgnompJJS8MUgTB7dPBEknSSv4ahKgu046H+bGOH2eMRbAcz5pYz3fwaSwrCGNvuxA==
+
+ajv-keywords@^5.1.0:
+  version "5.1.0"
+  resolved "https://registry.yarnpkg.com/ajv-keywords/-/ajv-keywords-5.1.0.tgz#69d4d385a4733cdbeab44964a1170a88f87f0e16"
+  integrity sha512-YCS/JNFAUyr5vAuhk1DWm1CBxRHW9LbJ2ozWeemrIqpbsqKjHVxYPyi5GC0rjZIT5JxJ3virVTS8wk4i/Z+krw==
+  dependencies:
+    fast-deep-equal "^3.1.3"
 
 ajv@^6.10.0, ajv@^6.12.4, ajv@^6.12.6:
   version "6.12.6"
@@ -1697,6 +1760,16 @@ ajv@^7.1.0:
   version "7.2.4"
   resolved "https://registry.yarnpkg.com/ajv/-/ajv-7.2.4.tgz#8e239d4d56cf884bccca8cca362f508446dc160f"
   integrity sha512-nBeQgg/ZZA3u3SYxyaDvpvDtgZ/EZPF547ARgZBrG9Bhu1vKDwAIjtIf+sDtJUKa2zOcEbmRLBRSyMraS/Oy1A==
+  dependencies:
+    fast-deep-equal "^3.1.1"
+    json-schema-traverse "^1.0.0"
+    require-from-string "^2.0.2"
+    uri-js "^4.2.2"
+
+ajv@^8.11.0:
+  version "8.11.0"
+  resolved "https://registry.yarnpkg.com/ajv/-/ajv-8.11.0.tgz#977e91dd96ca669f54a11e23e378e33b884a565f"
+  integrity sha512-wGgprdCvMalC0BztXvitD2hC04YffAvtsUn93JbGXYLAtCUO4xd17mCCZQxUOItiBwZvJScWo8NIvQMQ71rdpg==
   dependencies:
     fast-deep-equal "^3.1.1"
     json-schema-traverse "^1.0.0"
@@ -2676,7 +2749,7 @@ depd@~1.1.2:
   resolved "https://registry.yarnpkg.com/depd/-/depd-1.1.2.tgz#9bcd52e14c097763e749b274c4346ed2e560b5a9"
   integrity sha1-m81S4UwJd2PnSbJ0xDRu0uVgtak=
 
-destroy@1.2.0, destroy@^1.0.4:
+destroy@1.2.0, destroy@^1.0.4, destroy@^1.1.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/destroy/-/destroy-1.2.0.tgz#4803735509ad8be552934c67df614f94e66fa015"
   integrity sha512-2sJGJTaXIIaR1w4iJSNoN0hnMY7Gpc/n8D4qSCJw8QqFWXf7cuAgnEHxBpweaVcPevC2l3KpjYCx3NypQQgaJg==
@@ -2759,6 +2832,11 @@ domexception@^2.0.1:
   integrity sha512-yxJ2mFy/sibVQlu5qHjOkf9J3K6zgmCxgJ94u2EdvDOV09H+32LtRswEcUsmUWN72pVLOEnTSRaIVVzVQgS0dg==
   dependencies:
     webidl-conversions "^5.0.0"
+
+dotenv@^8.2.0:
+  version "8.6.0"
+  resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-8.6.0.tgz#061af664d19f7f4d8fc6e4ff9b584ce237adcb8b"
+  integrity sha512-IrPdXQsk2BbzvCBGBOTmmSH5SodmqZNt4ERAZDmW4CT+tL8VtvinqywuANaFu4bOMWki16nqf0e4oC0QIaDr/g==
 
 eastasianwidth@^0.2.0:
   version "0.2.0"
@@ -4924,7 +5002,7 @@ node-cache@^5.1.2:
   dependencies:
     clone "2.x"
 
-node-fetch@2.6.7, node-fetch@^2.6.1, node-fetch@^2.6.2:
+node-fetch@2.6.7, node-fetch@^2.6.1, node-fetch@^2.6.2, node-fetch@^2.6.7:
   version "2.6.7"
   resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.6.7.tgz#24de9fba827e3b4ae44dc8b20256a379160052ad"
   integrity sha512-ZjMPFEfVx5j+y2yF35Kzx5sF7kDzxuDj6ziH4FFbOp87zKDZNx8yExJIb05OGF4Nlt9IHFIMBkRl41VdvcNdbQ==
