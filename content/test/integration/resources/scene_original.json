@@ -1,0 +1,13 @@
+{
+    "type": "scene",
+    "content" : [
+        {
+            "file" : "file_name1",
+            "hash" : "file_hash1"
+        }
+    ],
+    "metadata": {},
+    "pointers": ["0,0", "0,1"],
+    "timestamp" : 150000000,
+    "version": "v3"
+}

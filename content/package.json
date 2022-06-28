@@ -52,7 +52,8 @@
     "pg-promise": "10.11.1",
     "pg-query-stream": "^4.2.1",
     "sql-template-strings": "^2.2.2",
-    "uuid": "8.3.2"
+    "uuid": "8.3.2",
+    "form-data": "^4.0.0"
   },
   "devDependencies": {
     "@types/compression": "^1",
