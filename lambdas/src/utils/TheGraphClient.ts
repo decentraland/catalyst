@@ -332,8 +332,8 @@ export class TheGraphClient {
       } else {
         result.push(...queried)
       }
-      shouldContinue = queried.length === TheGraphClient.MAX_PAGE_SIZE
-      start = queried[queried.length - 1].id
+      start = queried[queried.length - 1]?.id
+      shouldContinue = queried.length === TheGraphClient.MAX_PAGE_SIZE && !!start
     }
     return result!
   }
