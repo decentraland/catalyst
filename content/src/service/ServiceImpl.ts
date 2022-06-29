@@ -294,7 +294,7 @@ export class ServiceImpl implements MetaverseContentService {
             )
 
             // Update pointers and active entities
-            this.updateActiveEntities(pointersFromEntity, entity)
+            await this.updateActiveEntities(pointersFromEntity, entity)
 
             // Add to pointer history
             await runReportingQueryDurationMetric(this.components, 'add_pointer_history', () =>
@@ -323,7 +323,7 @@ export class ServiceImpl implements MetaverseContentService {
     return { auditInfoComplete, wasEntityDeployed: !isEntityAlreadyDeployed }
   }
 
-  private updateActiveEntities(pointersFromEntity: DeploymentPointersResult, entity: Entity) {
+  private async updateActiveEntities(pointersFromEntity: DeploymentPointersResult, entity: Entity) {
     const { clearedPointers, setPointers } = Array.from(pointersFromEntity).reduce(
       (acc, current) => {
         if (current[1].after === DELTA_POINTER_RESULT.CLEARED) acc.clearedPointers.push(current[0])
@@ -334,10 +334,10 @@ export class ServiceImpl implements MetaverseContentService {
     )
     // invalidate pointers (points to an entity that is no longer active)
     // this case happen when the entity is overwritten
-    if (clearedPointers.length > 0) this.components.activeEntities.clear(clearedPointers)
+    if (clearedPointers.length > 0) await this.components.activeEntities.clear(clearedPointers)
 
     // update pointer (points to the new entity that is active)
-    if (setPointers.length > 0) this.components.activeEntities.update(setPointers, entity)
+    if (setPointers.length > 0) await this.components.activeEntities.update(setPointers, entity)
   }
 
   reportErrorDuringSync(

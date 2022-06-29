@@ -143,8 +143,7 @@ loadStandaloneTestEnvironment()('Integration - Create entities', (testEnv) => {
     let form = createForm('bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy', 'scene_original.json');
     let response = await callCreateEntityEndpoint(server, form)
 
-    let queryResultt = await server.components.database.query<ActivePointersRow>("select * from active_pointers where entity_id='bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy'")
-    console.log(queryResultt)
+    await server.components.database.query<ActivePointersRow>("select * from active_pointers where entity_id='bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy'")
 
     // Assert response
     expect(response.status).toBe(200)
@@ -160,25 +159,20 @@ loadStandaloneTestEnvironment()('Integration - Create entities', (testEnv) => {
 
     // Check that scene pointers match only with the entity_id
     let queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where pointer='0,0'")
-    console.log(queryResult)
     expect(queryResult.rowCount).toBe(1)
     expect(queryResult.rows[0].entity_id).toBe('bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq')
     queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where pointer='1,0'")
-    console.log(queryResult)
     expect(queryResult.rowCount).toBe(1)
     expect(queryResult.rows[0].entity_id).toBe('bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq')
 
     // Check that old pointers were deleted
     queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where entity_id='bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy'")
-    console.log(queryResult)
     expect(queryResult.rowCount).toBe(0)
     queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where pointer='0,1'")
-    console.log(queryResult)
     expect(queryResult.rowCount).toBe(0)
 
     // Check that entity_id matches scene pointers
     queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where entity_id='bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq'")
-    console.log(queryResult)
     expect(queryResult.rowCount).toBe(2)
     expect(queryResult.rows[0].pointer).toBe('0,0')
     expect(queryResult.rows[1].pointer).toBe('1,0')
