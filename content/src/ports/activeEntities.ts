@@ -40,7 +40,7 @@ export type ActiveEntities = {
   /**
    * Set pointers and entity as NOT_ACTIVE
    */
-  clear(pointers: string[]): void
+  clear(pointers: string[]): Promise<void>
   /**
    * Returns the cached result:
    *  - entity id if there is an active entity

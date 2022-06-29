@@ -334,7 +334,7 @@ export class ServiceImpl implements MetaverseContentService {
     )
     // invalidate pointers (points to an entity that is no longer active)
     // this case happen when the entity is overwritten
-    if (clearedPointers.length > 0) this.components.activeEntities.clear(clearedPointers)
+    if (clearedPointers.length > 0) await this.components.activeEntities.clear(clearedPointers)
 
     // update pointer (points to the new entity that is active)
     if (setPointers.length > 0) await this.components.activeEntities.update(setPointers, entity)
