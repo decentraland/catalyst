@@ -1,7 +1,7 @@
 import { EntityType } from '@dcl/schemas'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TimeRefreshedDataHolder } from '../../../utils/TimeRefreshedDataHolder'
-import { Wearable, WearableId, WearablesFilters } from '../types'
+import { LambdasWearable, WearableId, WearablesFilters } from '../types'
 import { preferEnglish, translateEntityIntoWearable } from '../Utils'
 import baseAvatars from './base-avatars'
 
@@ -27,7 +27,7 @@ export class OffChainWearablesManager {
     )
   }
 
-  public async find(filters: WearablesFilters, lastId?: string): Promise<Wearable[]> {
+  public async find(filters: WearablesFilters, lastId?: string): Promise<LambdasWearable[]> {
     const definitions = await this.definitions.get()
     return definitions.filter(this.buildFilter(filters, lastId)).map(({ wearable }) => wearable)
   }
@@ -82,6 +82,6 @@ const DEFAULT_COLLECTIONS: OffChainCollections = {
 }
 
 type LocalOffChainWearables = LocalOffChainWearable[]
-type LocalOffChainWearable = { collectionId: OffChainCollectionId; wearable: Wearable }
+type LocalOffChainWearable = { collectionId: OffChainCollectionId; wearable: LambdasWearable }
 type OffChainCollections = { [collectionId: string]: WearableId[] }
 type OffChainCollectionId = string

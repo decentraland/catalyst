@@ -20,6 +20,8 @@ export function initializeCollectionsRoutes(
   router.get('/', (req, res) => getCollectionsHandler(theGraphClient, req, res))
   router.get('/wearables-by-owner/:owner', (req, res) => getWearablesByOwnerHandler(client, theGraphClient, req, res))
   router.get('/wearables', (req, res) => getWearablesEndpoint(client, theGraphClient, offChainManager, req, res))
+  router.get('/emotes-by-owner/:owner', (req, res) => getWearablesByOwnerHandler(client, theGraphClient, req, res))
+  router.get('/emotes', (req, res) => getWearablesEndpoint(client, theGraphClient, offChainManager, req, res))
   return router
 }
 

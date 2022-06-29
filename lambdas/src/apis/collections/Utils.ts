@@ -1,13 +1,8 @@
+import { Entity, I18N, Wearable, WearableRepresentation } from '@dcl/schemas'
 import { parseUrn } from '@dcl/urn-resolver'
-import { Entity } from '@dcl/schemas'
 import { SmartContentClient } from '../../utils/SmartContentClient'
 import {
-  I18N,
-  Wearable,
-  WearableId,
-  WearableMetadata,
-  WearableMetadataRepresentation,
-  WearableRepresentation
+  LambdasWearable, LambdasWearableRepresentation, WearableId
 } from './types'
 
 /**
@@ -32,8 +27,8 @@ export function preferEnglish(i18ns: I18N[]): string | undefined {
   return (i18nInEnglish ?? i18ns[0])?.text
 }
 
-export function translateEntityIntoWearable(client: SmartContentClient, entity: Entity): Wearable {
-  const metadata: WearableMetadata = entity.metadata!
+export function translateEntityIntoWearable(client: SmartContentClient, entity: Entity): LambdasWearable {
+  const metadata: Wearable = entity.metadata!
   const representations = metadata.data.representations.map((representation) =>
     mapRepresentation(representation, client, entity)
   )
@@ -52,10 +47,10 @@ export function translateEntityIntoWearable(client: SmartContentClient, entity: 
 }
 
 function mapRepresentation(
-  metadataRepresentation: WearableMetadataRepresentation,
+  metadataRepresentation: WearableRepresentation,
   client: SmartContentClient,
   entity: Entity
-): WearableRepresentation {
+): LambdasWearableRepresentation {
   const newContents = metadataRepresentation.contents.map((fileName) => ({
     key: fileName,
     url: createExternalContentUrl(client, entity, fileName)!

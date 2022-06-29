@@ -1,74 +1,39 @@
 import { EthAddress } from '@dcl/crypto'
+import { Wearable, WearableRepresentation } from '@dcl/schemas'
 
 export type Collection = {
   id: string
   name: string
 }
 
-export type WearableMetadata = {
-  id: WearableId
-  description: string
-  thumbnail: string
+export type WearableMetadata = Omit<Wearable, 'image'> & {
   image?: string
-  collectionAddress?: EthAddress
-  rarity: Rarity
-  i18n: I18N[]
-  data: WearableMetadataData
-  metrics?: Metrics
-  createdAt: number
-  updatedAt: number
 }
 
-export type WearableMetadataRepresentation = {
-  bodyShapes: WearableBodyShape[]
-  mainFile: string
-  contents: string[]
-  overrideHides: WearableCategory[]
-  overrideReplaces: WearableCategory[]
+export type LambdasWearable = Omit<WearableMetadata, 'data'> & {
+  data: Omit<Wearable['data'], 'representations'> & {
+    representations: LambdasWearableRepresentation[]
+  }
 }
-
-type WearableMetadataData = {
-  replaces: WearableCategory[]
-  hides: WearableCategory[]
-  tags: string[]
-  representations: WearableMetadataRepresentation[]
-  category: WearableCategory
-}
-export type WearableBodyShape = WearableId
-type WearableCategory = string
-type Rarity = string
-export type I18N = {
-  code: LanguageCode
-  text: string
-}
-type Metrics = {
-  triangles: number
-  materials: number
-  textures: number
-  meshes: number
-  bodies: number
-  entities: number
-}
-
-type LanguageCode = string
-
-export type Wearable = Omit<WearableMetadata, 'data'> & { data: WearableData }
-type WearableData = Omit<WearableMetadataData, 'representations'> & { representations: WearableRepresentation[] }
-export type WearableRepresentation = Omit<WearableMetadataRepresentation, 'contents'> & {
+export type LambdasWearableRepresentation = Omit<WearableRepresentation, 'contents'> & {
   contents: { key: string; url: string }[]
 }
 
 export type WearableId = string // These ids are used as pointers on the content server
+export type EmoteId = string // These ids are used as pointers on the content server
 
-export type WearablesFilters = {
+export type ItemFilters = {
   collectionIds?: string[]
-  wearableIds?: string[]
   textSearch?: string
 }
 
-export type WearablesPagination = {
+export type WearablesFilters = ItemFilters & {
+  wearableIds?: string[]
+}
+
+export type ItemPagination = {
   limit: number
-  lastId: WearableId | undefined
+  lastId: WearableId | EmoteId | undefined
 }
 
 export type ERC721StandardTrait = {
@@ -90,7 +55,7 @@ export type ThirdPartyAsset = {
   }
 }
 
-export type ThirdPartyAssets = {
+export type ThirdPartyAPIResponse = {
   address: EthAddress
   total: number
   page: number

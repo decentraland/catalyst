@@ -5,10 +5,10 @@ import log4js from 'log4js'
 import { asArray } from '../../../utils/ControllerUtils'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TheGraphClient } from '../../../utils/TheGraphClient'
-import { checkForThirdPartyWearablesOwnership } from '../../../utils/third-party'
 import { WearableId } from '../../collections/types'
 import { isBaseAvatar, translateWearablesIdFormat } from '../../collections/Utils'
 import { EnsOwnership } from '../EnsOwnership'
+import { checkForThirdPartyWearablesOwnership } from '../tp-wearables-ownership'
 import { WearablesOwnership } from '../WearablesOwnership'
 
 const LOGGER = log4js.getLogger('profiles')
@@ -304,3 +304,42 @@ export type ProfileMetadataForSnapshots = {
 type AvatarForSnapshots = {
   snapshots: AvatarSnapshots
 }
+// getOwnedThirdPartyWearablesByOwner
+// export async function checkForThirdPartyWearablesOwnership(
+//   theGraphClient: TheGraphClient,
+//   smartContentClient: SmartContentClient,
+//   nftsToCheck: Map<EthAddress, WearableId[]>
+// ): Promise<Map<EthAddress, WearableId[]>> {
+//   const response: Map<EthAddress, WearableId[]> = new Map()
+
+//   for (const [address, wearables] of nftsToCheck) {
+//     const collectionsForAddress: Set<WearableId> = new Set()
+//     for (const wearable of wearables) {
+//       try {
+//         const parsedUrn: DecentralandAssetIdentifier | null = await parseUrn(wearable)
+//         if (parsedUrn?.type === 'blockchain-collection-third-party') {
+//           // TODO: [TPW] Do this with urn-resolver
+//           const collectionId = parsedUrn.uri.toString().split(':').slice(0, -1).join(':')
+//           collectionsForAddress.add(collectionId)
+//         }
+//       } catch (error) {
+//         console.debug(`There was an error parsing the urn: ${wearable}`)
+//       }
+//     }
+//     const ownedWearables: Set<string> = new Set()
+//     for (const collectionId of collectionsForAddress.values()) {
+//       const resolver = await createThirdPartyResolverAux(
+//         theGraphClient,
+//         collectionId
+//       )
+//       const wearablesByOwner = await getWearablesByOwner(address, true, smartContentClient, resolver)
+
+//       for (const w of wearablesByOwner) {
+//         ownedWearables.add(w.urn)
+//       }
+//     }
+//     const sanitizedWearables = wearables.filter((w) => ownedWearables.has(w))
+//     response.set(address, sanitizedWearables)
+//   }
+//   return response
+// }

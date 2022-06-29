@@ -1,5 +1,5 @@
 import { EthAddress } from '@dcl/crypto'
-import { EntityType } from '@dcl/schemas'
+import { Emote, EntityType } from '@dcl/schemas'
 import { Request, Response } from 'express'
 import log4js from 'log4js'
 import { toQueryParams } from '../../../logic/toQueryParams'
@@ -7,9 +7,8 @@ import { asArray, asInt } from '../../../utils/ControllerUtils'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TheGraphClient } from '../../../utils/TheGraphClient'
 import { createThirdPartyResolverAux } from '../../../utils/third-party'
-import { BASE_AVATARS_COLLECTION_ID, OffChainWearablesManager } from '../off-chain/OffChainWearablesManager'
-import { ItemPagination, LambdasWearable, WearableId, WearablesFilters } from '../types'
-import { isBaseAvatar, translateEntityIntoWearable } from '../Utils'
+import { OffChainWearablesManager } from '../off-chain/OffChainWearablesManager'
+import { EmoteId, ItemFilters, ItemPagination } from '../types'
 
 // Different versions of the same query param
 const INCLUDE_DEFINITION_VERSIONS = [
@@ -21,21 +20,21 @@ const INCLUDE_DEFINITION_VERSIONS = [
 
 const LOGGER = log4js.getLogger('TheGraphClient')
 
-export async function getWearablesByOwnerEndpoint(
+export async function getEmotesByOwnerEndpoint(
   client: SmartContentClient,
   theGraphClient: TheGraphClient,
   req: Request,
   res: Response
 ): Promise<void> {
   // Method: GET
-  // Path: /wearables-by-owner/:owner?collectionId={string}
+  // Path: /emotes-by-owner/:owner?collectionId={string}
 
   const { owner } = req.params
   const { collectionId } = req.query
   const includeDefinition = INCLUDE_DEFINITION_VERSIONS.some((version) => version in req.query)
 
   try {
-    const wearablesByOwner = await getWearablesByOwner(
+    const wearablesByOwner = await getEmotesByOwner(
       owner,
       includeDefinition,
       client,
@@ -49,27 +48,27 @@ export async function getWearablesByOwnerEndpoint(
     res.send(wearablesByOwner)
   } catch (e) {
     LOGGER.error(e)
-    res.status(500).send(`Failed to fetch wearables by owner.`)
+    res.status(500).send(`Failed to fetch emotes by owner.`)
   }
 }
 export interface FindWearablesByOwner {
-  findWearablesByOwner: (owner: EthAddress) => Promise<WearableId[]>
+  findWearablesByOwner: (owner: EthAddress) => Promise<EmoteId[]>
 }
 
-export async function getWearablesByOwner(
+export async function getEmotesByOwner(
   owner: EthAddress,
   includeDefinition: boolean,
   client: SmartContentClient,
   wearablesResolver: FindWearablesByOwner
-): Promise<{ urn: WearableId; amount: number; definition?: LambdasWearable | undefined }[]> {
+): Promise<{ urn: EmoteId; amount: number; definition?: Emote | undefined }[]> {
   // Fetch wearables & definitions (if needed)
   const wearablesByOwner = await wearablesResolver.findWearablesByOwner(owner)
-  const definitions: Map<WearableId, LambdasWearable> = includeDefinition
+  const definitions: Map<EmoteId, Emote> = includeDefinition
     ? await fetchDefinitions(wearablesByOwner, client)
     : new Map()
 
   // Count wearables by user
-  const count: Map<WearableId, number> = new Map()
+  const count: Map<EmoteId, number> = new Map()
   for (const wearableId of wearablesByOwner) {
     const amount = count.get(wearableId) ?? 0
     count.set(wearableId, amount + 1)
@@ -85,7 +84,7 @@ export async function getWearablesByOwner(
 
 const MAX_LIMIT = 500
 
-export async function getWearablesEndpoint(
+export async function getEmotesEndpoint(
   client: SmartContentClient,
   theGraphClient: TheGraphClient,
   offChainManager: OffChainWearablesManager,
@@ -119,12 +118,11 @@ export async function getWearablesEndpoint(
   const sanitizedLimit = !limit || limit <= 0 || limit > MAX_LIMIT ? MAX_LIMIT : limit
 
   try {
-    const { wearables, lastId: nextLastId } = await getWearables(
+    const { emotes, lastId: nextLastId } = await getEmotes(
       requestFilters,
       { limit: sanitizedLimit, lastId },
       client,
-      theGraphClient,
-      offChainManager
+      theGraphClient
     )
 
     const nextQueryParams = toQueryParams({
@@ -134,7 +132,7 @@ export async function getWearablesEndpoint(
     })
     const next = nextLastId ? '?' + nextQueryParams : undefined
 
-    res.send({ wearables, filters: requestFilters, pagination: { limit: sanitizedLimit, lastId, next } })
+    res.send({ emotes, filters: requestFilters, pagination: { limit: sanitizedLimit, lastId, next } })
   } catch (error) {
     res.status(500)
   }
@@ -144,68 +142,37 @@ export async function getWearablesEndpoint(
  * This function will return a list of wearables that matches the given filters. It will check off-chain, L1 and L2 wearables.
  * The order will be off-chain > L1 > L2.
  */
-export async function getWearables(
-  filters: WearablesFilters,
+export async function getEmotes(
+  filters: ItemFilters,
   pagination: ItemPagination,
   client: SmartContentClient,
-  theGraphClient: TheGraphClient,
-  offChainManager: OffChainWearablesManager
-): Promise<{ wearables: LambdasWearable[]; lastId: string | undefined }> {
-  let result: LambdasWearable[] = []
+  theGraphClient: TheGraphClient
+): Promise<{ emotes: Emote[]; lastId: string | undefined }> {
+  let result: Emote[] = []
 
-  if (!filters.collectionIds && !filters.textSearch) {
-    // Since we only have ids, we don't need to query the subgraph at all
+  if (filters.collectionIds || filters.textSearch) {
+    const limit = pagination.limit
+    const lastId: string | undefined = pagination.lastId
 
-    // Check off-chain first. Maybe we don't need to go to the content server
-    const offChain = await offChainManager.find(filters)
-
-    let onChain: LambdasWearable[] = []
-    if (filters.wearableIds && offChain.length < filters.wearableIds.length) {
-      // It looks like we do need to query the content server after all
-      const onChainIds = filters.wearableIds.filter((wearableId) => !isBaseAvatar(wearableId))
-      onChain = await fetchWearables(onChainIds, client)
-    }
-
-    result = offChain.concat(onChain)
-  } else {
-    let limit = pagination.limit
-    let lastId: string | undefined = pagination.lastId
-
-    if (!lastId || isBaseAvatar(lastId)) {
-      const offChainResult = await offChainManager.find(filters, lastId)
-      result = offChainResult
-      limit -= offChainResult.length
-      lastId = undefined
-    }
-
-    // Check if maybe we don't have to check for on-chain wearables, based on the filters
-    const onlyBaseAvatars =
-      filters.collectionIds &&
-      filters.collectionIds.length === 1 &&
-      filters.collectionIds[0] === BASE_AVATARS_COLLECTION_ID
-
-    if (!onlyBaseAvatars) {
-      const onChainIds = await theGraphClient.findWearablesByFilters(filters, { limit, lastId })
-      const onChain = await fetchWearables(onChainIds, client)
-      result.push(...onChain)
-    }
+    const onChainIds = await theGraphClient.findWearablesByFilters(filters, { limit, lastId })
+    const onChain = await fetchEmotes(onChainIds, client)
+    result.push(...onChain)
   }
 
   const moreData = result.length > pagination.limit
   const slice = moreData ? result.slice(0, pagination.limit) : result
-  return { wearables: slice, lastId: moreData ? slice[slice.length - 1]?.id : undefined }
+  return { emotes: slice, lastId: moreData ? slice[slice.length - 1]?.id : undefined }
 }
 
-async function fetchWearables(wearableIds: WearableId[], client: SmartContentClient): Promise<LambdasWearable[]> {
+async function fetchEmotes(wearableIds: EmoteId[], client: SmartContentClient): Promise<Emote[]> {
   if (wearableIds.length === 0) {
     return []
   }
-  const entities = await client.fetchEntitiesByPointers(EntityType.WEARABLE, wearableIds)
-  const wearables = entities.map((entity) => translateEntityIntoWearable(client, entity))
-  return wearables.sort((wearable1, wearable2) => wearable1.id.toLowerCase().localeCompare(wearable2.id.toLowerCase()))
+  const entities = await client.fetchEntitiesByPointers(EntityType.EMOTE, wearableIds)
+  return entities.map((entity) => entity.metadata)
 }
 
-async function fetchDefinitions(wearableIds: WearableId[], client: SmartContentClient): Promise<Map<string, LambdasWearable>> {
-  const wearables = await fetchWearables(wearableIds, client)
+async function fetchDefinitions(wearableIds: EmoteId[], client: SmartContentClient): Promise<Map<string, Emote>> {
+  const wearables = await fetchEmotes(wearableIds, client)
   return new Map(wearables.map((wearable) => [wearable.id.toLowerCase(), wearable]))
 }

@@ -5,7 +5,7 @@ import {
   BASE_AVATARS_COLLECTION_ID,
   OffChainWearablesManager
 } from '../../../../../src/apis/collections/off-chain/OffChainWearablesManager'
-import { Wearable, WearableId } from '../../../../../src/apis/collections/types'
+import { LambdasWearable, WearableId } from '../../../../../src/apis/collections/types'
 import { SmartContentClient } from '../../../../../src/utils/SmartContentClient'
 import { TheGraphClient } from '../../../../../src/utils/TheGraphClient'
 
@@ -120,7 +120,7 @@ function emptyContentServer() {
   return contentServerThatReturns()
 }
 
-function expectWearablesToBe(response: { wearables: Wearable[] }, ...expectedIds: WearableId[]) {
+function expectWearablesToBe(response: { wearables: LambdasWearable[] }, ...expectedIds: WearableId[]) {
   const ids = response.wearables.map(({ id }) => id)
   expect(ids).toEqual(expectedIds)
 }
@@ -129,7 +129,7 @@ function emptyOffChainManager(): { instance: OffChainWearablesManager; mock: Off
   return offChainManagerWith()
 }
 
-function offChainManagerWith(...wearables: Wearable[]): {
+function offChainManagerWith(...wearables: LambdasWearable[]): {
   instance: OffChainWearablesManager
   mock: OffChainWearablesManager
 } {

@@ -26,7 +26,7 @@ export class SmartContentClient implements ContentAPI {
 
   private contentClient: IFuture<ContentAPI> | undefined
 
-  constructor(private readonly externalContentServerUrl: string) {}
+  constructor(private readonly externalContentServerUrl: string) { }
 
   async fetchEntitiesByPointers(type: EntityType, pointers: string[], options?: RequestOptions): Promise<Entity[]> {
     const client = await this.getClient()
@@ -73,6 +73,10 @@ export class SmartContentClient implements ContentAPI {
   }
 
   deployEntity(deployData: DeploymentData, fix?: boolean, options?: RequestOptions): Promise<number> {
+    throw new Error('New deployments are currently not supported')
+  }
+
+  deploy(deployData: DeploymentData, options?: RequestOptions): Promise<unknown> {
     throw new Error('New deployments are currently not supported')
   }
 
