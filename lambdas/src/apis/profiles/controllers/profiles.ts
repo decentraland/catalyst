@@ -99,7 +99,7 @@ export async function getProfilesByIdPost(
 ): Promise<Response<any, Record<string, any>> | undefined> {
   // Method: POST
   // Path: /lambdas/profiles
-  // Body: { ids: string[]}
+  // Body: { ids: string[] }
 
   const profileIds: string[] = req.body.ids ?? []
 
