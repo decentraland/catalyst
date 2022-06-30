@@ -178,6 +178,65 @@ loadStandaloneTestEnvironment()('Integration - Create entities', (testEnv) => {
     expect(queryResult.rows[1].pointer).toBe('1,0')
   })
 
+
+  it('when overwriting multiple scenes, unused pointers should be deleted from active-pointers table', async () => {
+    // Create scene
+    let form = createForm('bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy', 'scene_original.json');
+    let response = await callCreateEntityEndpoint(server, form)
+    expect(response.status).toBe(200)
+    expect(await response.json()).toHaveProperty('creationTimestamp')
+
+    let queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where entity_id='bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy'")
+    expect(queryResult.rowCount).toBe(2)
+    expect(queryResult.rows[0].pointer).toBe('0,0')
+    expect(queryResult.rows[1].pointer).toBe('0,1')
+
+
+    // new non-overlapping scene
+    form = createForm('bafkreihubgrgjjz55sbzd5jq5fr4qucz37preqnwcggznzrlatpmz4n3sa', 'another_scene.json');
+    response = await callCreateEntityEndpoint(server, form)
+    expect(response.status).toBe(200)
+    expect(await response.json()).toHaveProperty('creationTimestamp')
+
+    queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where entity_id='bafkreihubgrgjjz55sbzd5jq5fr4qucz37preqnwcggznzrlatpmz4n3sa'")
+    expect(queryResult.rowCount).toBe(2)
+    expect(queryResult.rows[0].pointer).toBe('1,0')
+    expect(queryResult.rows[1].pointer).toBe('1,1')
+
+
+    // Overwrite scene
+    form = createForm('bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq', 'scene_overwrite.json');
+    response = await callCreateEntityEndpoint(server, form)
+
+    // Assert response
+    expect(response.status).toBe(200)
+    expect(await response.json()).toHaveProperty('creationTimestamp')
+
+    // Check that scene pointers match only with the entity_id
+    queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where pointer='0,0'")
+    expect(queryResult.rowCount).toBe(1)
+    expect(queryResult.rows[0].entity_id).toBe('bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq')
+    queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where pointer='1,0'")
+    expect(queryResult.rowCount).toBe(1)
+    expect(queryResult.rows[0].entity_id).toBe('bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq')
+
+    // Check that old pointers were deleted
+    queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where entity_id='bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy'")
+    expect(queryResult.rowCount).toBe(0)
+    queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where pointer='0,1'")
+    expect(queryResult.rowCount).toBe(0)
+    queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where entity_id='bafkreihubgrgjjz55sbzd5jq5fr4qucz37preqnwcggznzrlatpmz4n3sa'")
+    expect(queryResult.rowCount).toBe(0)
+    queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where pointer='1,1'")
+    expect(queryResult.rowCount).toBe(0)
+
+    // Check that entity_id matches scene pointers
+    queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where entity_id='bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq'")
+    expect(queryResult.rowCount).toBe(2)
+    expect(queryResult.rows[0].pointer).toBe('0,0')
+    expect(queryResult.rows[1].pointer).toBe('1,0')
+  })
+
   it('when overwriting a scene, new scene must be ignored if its timestamp is older', async () => {
     // Create scene
     let form = createForm('bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq', 'scene_overwrite.json');
