@@ -1,7 +1,6 @@
 import { Entity } from '@dcl/schemas'
-import { DeploymentId } from '../../repository/extensions/DeploymentsRepository'
+import { DeploymentId, DeploymentsRepository } from '../../repository/extensions/DeploymentsRepository'
 import { LastDeployedPointersRepository } from '../../repository/extensions/LastDeployedPointersRepository'
-import { PointerHistoryRepository } from '../../repository/extensions/PointerHistoryRepository'
 import { happenedBefore } from '../../service/time/TimeSorting'
 
 /**
@@ -83,14 +82,10 @@ export class PointerManager {
   }
 
   calculateOverwrites(
-    pointerHistoryRepo: PointerHistoryRepository,
+    deploymentsRepo: DeploymentsRepository,
     entity: Entity
   ): Promise<{ overwrote: Set<DeploymentId>; overwrittenBy: DeploymentId | null }> {
-    return pointerHistoryRepo.calculateOverwrites(entity)
-  }
-
-  addToHistory(pointerHistoryRepo: PointerHistoryRepository, deploymentId: DeploymentId, entity: Entity) {
-    return pointerHistoryRepo.addToHistory(deploymentId, entity)
+    return deploymentsRepo.calculateOverwrites(entity)
   }
 }
 
