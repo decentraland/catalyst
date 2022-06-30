@@ -103,9 +103,6 @@ export async function getProfilesByIdPost(
 
   const profileIds: string[] = req.body.ids ?? []
 
-  console.debug(req.body)
-  console.log(`ids: ${profileIds}`)
-
   if (!profileIds) {
     return res.status(400).send({ error: 'You must specify at least one profile id' })
   }
