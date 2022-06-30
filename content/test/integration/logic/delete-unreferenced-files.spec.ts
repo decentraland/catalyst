@@ -42,7 +42,7 @@ loadStandaloneTestEnvironment({ [EnvironmentConfig.STORAGE_ROOT_FOLDER]: tmpRoot
 
     await server.deploy(deployResult.deployData)
 
-    const contentsByHash: Map<string, Uint8Array> = await ServiceImpl.hashFiles(deployResult.deployData.files)
+    const contentsByHash: Map<string, Uint8Array> = await ServiceImpl.hashFiles(deployResult.deployData.files, deployResult.deployData.entityId)
     const contentFileHashes = Array.from(contentsByHash.keys())
 
     await deleteUnreferencedFiles(components)
@@ -63,7 +63,7 @@ loadStandaloneTestEnvironment({ [EnvironmentConfig.STORAGE_ROOT_FOLDER]: tmpRoot
 
     await server.deploy(deployResult.deployData)
 
-    const contentsByHash: Map<string, Uint8Array> = await ServiceImpl.hashFiles(deployResult.deployData.files)
+    const contentsByHash: Map<string, Uint8Array> = await ServiceImpl.hashFiles(deployResult.deployData.files, deployResult.deployData.entityId)
     const contentFileHashes = Array.from(contentsByHash.keys())
 
     await deleteUnreferencedFiles(components)
@@ -86,7 +86,7 @@ loadStandaloneTestEnvironment({ [EnvironmentConfig.STORAGE_ROOT_FOLDER]: tmpRoot
 
     await server.deploy(deployResult.deployData)
 
-    const contentsByHash: Map<string, Uint8Array> = await ServiceImpl.hashFiles(deployResult.deployData.files)
+    const contentsByHash: Map<string, Uint8Array> = await ServiceImpl.hashFiles(deployResult.deployData.files, deployResult.deployData.entityId)
     const contentFileHashes = Array.from(contentsByHash.keys())
 
     const unreferencedFileHash = 'a-hash'
