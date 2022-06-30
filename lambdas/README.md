@@ -25,7 +25,7 @@ yarn test
 - Start the content server
 
 - Start lambdas server
-  `CONTENT_SERVER_ADDRESS=localhost:6969 SERVER_PORT=9091 METRICS_PORT=9092 yarn start:server`
+  `CONTENT_SERVER_ADDRESS=peer.decentraland.org/content SERVER_PORT=9091 METRICS_PORT=9092 yarn start:server`
 
 ## Configuration
 

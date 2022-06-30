@@ -88,6 +88,39 @@ export async function getIndividualProfileById(
   sendProfilesResponse(res, profiles, profilesCacheTTL, true)
 }
 
+export async function getProfilesByIdPost(
+  theGraphClient: TheGraphClient,
+  contentClient: SmartContentClient,
+  ensOwnership: EnsOwnership,
+  wearables: WearablesOwnership,
+  profilesCacheTTL: number,
+  req: Request,
+  res: Response
+): Promise<Response<any, Record<string, any>> | undefined> {
+  // Method: POST
+  // Path: /lambdas/profiles
+  // Body: { ids: string[]}
+
+  const profileIds: string[] = req.body.ids ?? []
+
+  console.debug(req.body)
+  console.log(`ids: ${profileIds}`)
+
+  if (!profileIds) {
+    return res.status(400).send({ error: 'You must specify at least one profile id' })
+  }
+
+  const profiles = await fetchProfiles(
+    profileIds,
+    theGraphClient,
+    contentClient,
+    ensOwnership,
+    wearables,
+    getIfModifiedSinceTimestamp(req)
+  )
+  sendProfilesResponse(res, profiles, profilesCacheTTL)
+}
+
 export async function getProfilesById(
   theGraphClient: TheGraphClient,
   contentClient: SmartContentClient,
