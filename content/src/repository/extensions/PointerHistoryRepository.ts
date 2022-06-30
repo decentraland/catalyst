@@ -1,6 +1,7 @@
 import { Entity } from '@dcl/schemas'
 import { Database } from '../../repository/Database'
 import { DeploymentId } from '../../repository/extensions/DeploymentsRepository'
+
 export class PointerHistoryRepository {
   constructor(private readonly db: Database) {}
 
@@ -10,18 +11,18 @@ export class PointerHistoryRepository {
     return this.db.taskIf(async (task) => {
       const overwrote: DeploymentId[] = await task.map(
         `
-                SELECT DISTINCT ON (pointer_history.pointer) dep1.id
-                FROM pointer_history
-                LEFT JOIN deployments AS dep1 ON pointer_history.deployment = dep1.id
-                LEFT JOIN deployments AS dep2 ON dep1.deleter_deployment = dep2.id
-                WHERE pointer_history.entity_type = $1 AND
-                    pointer_history.pointer IN ($2:list) AND
-                    (dep1.entity_timestamp < to_timestamp($3 / 1000.0) OR (dep1.entity_timestamp = to_timestamp($3 / 1000.0) AND dep1.entity_id < $4)) AND
-                    (dep2.id IS NULL OR dep2.entity_timestamp > to_timestamp($3 / 1000.0) OR (dep2.entity_timestamp = to_timestamp($3 / 1000.0) AND dep2.entity_id > $4))
-                ORDER BY pointer_history.pointer, dep1.entity_timestamp DESC, dep1.entity_id DESC`,
+              SELECT dep1.id
+              FROM deployments AS dep1
+              LEFT JOIN deployments AS dep2 ON dep1.deleter_deployment = dep2.id
+              WHERE dep1.entity_type = $1 AND
+                  dep1.entity_pointers && ARRAY[$2:list] AND
+                  (dep1.entity_timestamp < to_timestamp($3 / 1000.0) OR (dep1.entity_timestamp = to_timestamp($3 / 1000.0) AND dep1.entity_id < $4)) AND
+                  (dep2.id IS NULL OR dep2.entity_timestamp > to_timestamp($3 / 1000.0) OR (dep2.entity_timestamp = to_timestamp($3 / 1000.0) AND dep2.entity_id > $4))
+              ORDER BY dep1.entity_timestamp DESC, dep1.entity_id DESC`,
         [entity.type, entity.pointers, entity.timestamp, entity.id],
         (row) => row.id
       )
+      console.log([entity.type, entity.pointers, entity.timestamp, entity.id], 'overwrote', overwrote)
 
       const overwrittenByMany = await task.manyOrNone(
         `
