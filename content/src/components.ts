@@ -40,14 +40,18 @@ import { ContentCluster } from './service/synchronization/ContentCluster'
 import { createRetryFailedDeployments } from './service/synchronization/retryFailedDeployments'
 import { createSynchronizationManager } from './service/synchronization/SynchronizationManager'
 import { createServerValidator } from './service/validations/server'
-import { createExternalCalls, createValidator } from './service/validations/validator'
+import { createExternalCalls, createSubGraphsComponent, createValidator } from './service/validations/validator'
 import { AppComponents } from './types'
 import { createTheGraphClient } from '@dcl/content-validator'
 
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
   const metrics = createTestMetricsComponent(metricsDeclaration)
   const repository = await RepositoryFactory.create({ env, metrics })
-  const logs = createLogComponent()
+  const logs = createLogComponent({
+    config: {
+      logLevel: env.getConfig(EnvironmentConfig.LOG_LEVEL)
+    }
+  })
   const fetcher = createFetchComponent()
   const fs = createFsComponent()
   const denylist = await createDenylist({ env, logs, fs, fetcher })
@@ -113,9 +117,16 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     }
   )
 
-  const externalCalls = createExternalCalls({ storage, authenticator, catalystFetcher, env, logs })
-  const theGraphClient = createTheGraphClient({ externalCalls, logs })
-  const validator = createValidator({ externalCalls, logs, theGraphClient })
+  const subGraphs = await createSubGraphsComponent({ env, metrics, logs, fetcher })
+  const externalCalls = await createExternalCalls({
+    storage,
+    authenticator,
+    catalystFetcher,
+    env,
+    logs
+  })
+  const theGraphClient = createTheGraphClient({ subGraphs, logs })
+  const validator = createValidator({ externalCalls, logs, theGraphClient, subGraphs })
   const serverValidator = createServerValidator({ failedDeploymentsCache, metrics })
 
   const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs })

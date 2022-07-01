@@ -235,7 +235,7 @@ export class EnvironmentBuilder {
       EnvironmentConfig.ETH_NETWORK,
       () => process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
     )
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_LEVEL, () => process.env.LOG_LEVEL ?? 'info')
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_LEVEL, () => process.env.LOG_LEVEL ?? 'INFO')
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.FETCH_REQUEST_TIMEOUT,

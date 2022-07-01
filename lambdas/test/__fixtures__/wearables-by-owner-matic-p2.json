@@ -1,0 +1,11 @@
+{
+  "nfts": [
+    {
+      "id": "0x4f0a8e5f8e0e22137833bf708b98ae77aeb03334-275",
+      "urn": "urn:decentraland:matic:collections-v2:0x4f0a8e5f8e0e22137833bf708b98ae77aeb03334:0",
+      "collection": {
+        "isApproved": true
+      }
+    }
+  ]
+}

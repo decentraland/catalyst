@@ -16,7 +16,11 @@ if (process.env.LOG_LEVEL === 'off') {
     // Mock logger implementation
     const createLogComponent = logger.createConsoleLogComponent
     jest.spyOn(logger, 'createLogComponent').mockImplementation(() => {
-      const logComponentMock = createLogComponent()
+      const logComponentMock = createLogComponent({
+        config: {
+          logLevel: 'DEBUG'
+        }
+      })
       const loggerMock = logComponentMock.getLogger('__test__')
       loggerMock.debug = () => {}
       loggerMock.error = () => {}

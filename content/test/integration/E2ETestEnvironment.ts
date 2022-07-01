@@ -42,7 +42,11 @@ export class E2ETestEnvironment {
       }
     }
     const metrics = createTestMetricsComponent(metricsDeclaration)
-    const logs = createLogComponent()
+    const logs = createLogComponent({
+      config: {
+        logLevel: 'DEBUG'
+      }
+    })
     this.database = await createDatabaseComponent({ logs, env: this.sharedEnv, metrics })
     this.database.start()
   }
@@ -97,7 +101,14 @@ export class E2ETestEnvironment {
   async getEnvForNewDatabase(): Promise<Environment> {
     const [dbName] = await this.createDatabases(1)
     const env = new Environment(this.sharedEnv).setConfig(EnvironmentConfig.PSQL_DATABASE, dbName)
-    const migrationManager = MigrationManagerFactory.create({ logs: createLogComponent(), env })
+    const migrationManager = MigrationManagerFactory.create({
+      logs: createLogComponent({
+        config: {
+          logLevel: 'DEBUG'
+        }
+      }),
+      env
+    })
     await migrationManager.run()
     await stopAllComponents({ migrationManager })
     return env
@@ -202,11 +213,13 @@ export function loadStandaloneTestEnvironment(overrideConfigs?: Record<number, a
 export function loadTestEnvironment(
   overrideConfigs?: Record<number, any>
 ): (name: string, test: (testEnv: E2ETestEnvironment) => void) => void {
-  return function(name, test) {
+  return function (name, test) {
     describe(name, () => {
       const testEnv = new E2ETestEnvironment()
 
-      beforeAll(async () => { await testEnv.start(overrideConfigs) })
+      beforeAll(async () => {
+        await testEnv.start(overrideConfigs)
+      })
 
       describe('use cases for test environment', () => {
         beforeEach(() => {
@@ -221,7 +234,9 @@ export function loadTestEnvironment(
         test(testEnv)
       })
 
-      afterAll(async () => { await testEnv.stop() })
+      afterAll(async () => {
+        await testEnv.stop()
+      })
     })
   }
 }
