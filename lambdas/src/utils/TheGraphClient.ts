@@ -237,6 +237,47 @@ export class TheGraphClient {
     return result
   }
 
+  public async findEmoteUrnsByFilters(
+    filters: ItemFilters,
+    pagination: { limit: number; lastId: string | undefined }
+  ): Promise<EmoteId[]> {
+    // Order will be L1 > L2
+    const L1_NETWORKS = ['mainnet', 'ropsten', 'kovan', 'rinkeby', 'goerli']
+    const L2_NETWORKS = ['matic', 'mumbai']
+    const emoteTypes: BlockchainItemType[] = ["emote_v1"]
+
+    let limit = pagination.limit
+    let lastId = pagination.lastId
+    let lastIdLayer: string | undefined = lastId ? await this.getProtocol(lastId) : undefined
+
+    const result: WearableId[] = []
+
+    if (limit >= 0 && (!lastIdLayer || L1_NETWORKS.includes(lastIdLayer))) {
+      const l1Result = await this.findItemUrnsByFiltersInSubgraph(
+        'collectionsSubgraph',
+        { ...filters, lastId },
+        limit + 1,
+        emoteTypes
+      )
+      result.push(...l1Result)
+      limit -= l1Result.length
+      lastId = undefined
+      lastIdLayer = undefined
+    }
+
+    if (limit >= 0 && (!lastIdLayer || L2_NETWORKS.includes(lastIdLayer))) {
+      const l2Result = await this.findItemUrnsByFiltersInSubgraph(
+        'maticCollectionsSubgraph',
+        { ...filters, lastId },
+        limit + 1,
+        emoteTypes
+      )
+      result.push(...l2Result)
+    }
+
+    return result
+  }
+
   private async getProtocol(urn: string) {
     const parsed = await parseUrn(urn)
     return parsed?.type === 'blockchain-collection-v1-asset' || parsed?.type === 'blockchain-collection-v2-asset'

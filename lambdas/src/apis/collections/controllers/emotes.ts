@@ -7,9 +7,8 @@ import { ThirdPartyAssetFetcher } from '../../../ports/third-party/third-party-f
 import { asArray, asInt } from '../../../utils/ControllerUtils'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TheGraphClient } from '../../../utils/TheGraphClient'
-import { BASE_AVATARS_COLLECTION_ID, OffChainWearablesManager } from '../off-chain/OffChainWearablesManager'
-import { ItemFilters, ItemPagination, LambdasWearable } from '../types'
-import { isBaseAvatar, translateEntityIntoWearable } from '../Utils'
+import { ItemFilters, ItemPagination, LambdasEmote } from '../types'
+import { translateEntityIntoEmote } from '../Utils'
 
 // Different versions of the same query param
 const INCLUDE_DEFINITION_VERSIONS = [
@@ -21,7 +20,7 @@ const INCLUDE_DEFINITION_VERSIONS = [
 
 const LOGGER = log4js.getLogger('TheGraphClient')
 
-export async function getEmotesByOwnerEndpoint(
+export async function getEmotesByOwnerHandler(
   client: SmartContentClient,
   theGraphClient: TheGraphClient,
   thirdPartyFetcher: ThirdPartyAssetFetcher,
@@ -29,7 +28,7 @@ export async function getEmotesByOwnerEndpoint(
   res: Response
 ): Promise<void> {
   // Method: GET
-  // Path: /wearables-by-owner/:owner?collectionId={string}
+  // Path: /emotes-by-owner/:owner?collectionId={string}
   const { owner } = req.params
   const collectionId = req.query.collectionId
   if (collectionId && typeof collectionId !== 'string') {
@@ -41,7 +40,7 @@ export async function getEmotesByOwnerEndpoint(
     res.send(await getEmotesByOwner(includeDefinition, client, theGraphClient, thirdPartyFetcher, collectionId, owner))
   } catch (e) {
     LOGGER.error(e)
-    res.status(500).send(`Failed to fetch wearables by owner.`)
+    res.status(500).send(`Failed to fetch emotes by owner.`)
   }
 }
 
@@ -52,26 +51,26 @@ export async function getEmotesByOwner(
   thirdPartyFetcher: ThirdPartyAssetFetcher,
   thirdPartyCollectionId: string | undefined,
   owner: string
-): Promise<{ urn: string; amount: number; definition?: LambdasWearable | undefined }[]> {
-  const ownedWearableUrns = thirdPartyCollectionId
+): Promise<{ urn: string; amount: number; definition?: LambdasEmote | undefined }[]> {
+  const ownedEmoteUrns = thirdPartyCollectionId
     ? await findThirdPartyItemUrns(theGraphClient, thirdPartyFetcher, owner, thirdPartyCollectionId)
     : await theGraphClient.findEmoteUrnsByOwner(owner)
-  return getEmotesByOwnerFromUrns(includeDefinition, client, ownedWearableUrns)
+  return getEmotesByOwnerFromUrns(includeDefinition, client, ownedEmoteUrns)
 }
 
 export async function getEmotesByOwnerFromUrns(
   includeDefinition: boolean,
   client: SmartContentClient,
-  wearableUrns: string[],
-): Promise<{ urn: string; amount: number; definition?: LambdasWearable | undefined }[]> {
+  emoteUrns: string[],
+): Promise<{ urn: string; amount: number; definition?: LambdasEmote | undefined }[]> {
   // Fetch definitions (if needed)
-  const emotes = includeDefinition ? await fetchEmotes(wearableUrns, client) : []
-  const emotesByUrn: Map<string, LambdasWearable> =
+  const emotes = includeDefinition ? await fetchEmotes(emoteUrns, client) : []
+  const emotesByUrn: Map<string, LambdasEmote> =
     new Map(emotes.map((emote) => [emote.id.toLowerCase(), emote]))
 
-  // Count wearables by id
+  // Count emotes by id
   const countByUrn: Map<string, number> = new Map()
-  for (const urn of wearableUrns) {
+  for (const urn of emoteUrns) {
     const amount = countByUrn.get(urn) ?? 0
     countByUrn.set(urn, amount + 1)
   }
@@ -86,46 +85,44 @@ export async function getEmotesByOwnerFromUrns(
 
 const MAX_LIMIT = 500
 
-export async function getEmotesEndpoint(
+export async function getEmotesHandler(
   client: SmartContentClient,
   theGraphClient: TheGraphClient,
-  offChainManager: OffChainWearablesManager,
   req: Request,
   res: Response
 ): Promise<unknown> {
   // Method: GET
-  // Path: /wearables/?filters&limit={number}&lastId={string}
+  // Path: /emotes/?filters&limit={number}&lastId={string}
 
   const collectionIds: string[] = asArray<string>(req.query.collectionId as string).map((id) => id.toLowerCase())
-  const wearableIds: string[] = asArray<string>(req.query.wearableId as string).map((id) => id.toLowerCase())
+  const emoteIds: string[] = asArray<string>(req.query.emoteId as string).map((id) => id.toLowerCase())
   const textSearch: string | undefined = (req.query.textSearch as string | undefined)?.toLowerCase()
   const limit: number | undefined = asInt(req.query.limit)
   const lastId: string | undefined = (req.query.lastId as string | undefined)?.toLowerCase()
 
-  if (collectionIds.length === 0 && wearableIds.length === 0 && !textSearch) {
-    return res.status(400).send(`You must use one of the filters: 'textSearch', 'collectionId' or 'wearableId'`)
+  if (collectionIds.length === 0 && emoteIds.length === 0 && !textSearch) {
+    return res.status(400).send(`You must use one of the filters: 'textSearch', 'collectionId' or 'emoteId'`)
   } else if (textSearch && textSearch.length < 3) {
     return res.status(400).send(`The text search must be at least 3 characters long`)
-  } else if (wearableIds && wearableIds.length > MAX_LIMIT) {
-    return res.status(400).send(`You can't ask for more than ${MAX_LIMIT} wearables`)
+  } else if (emoteIds && emoteIds.length > MAX_LIMIT) {
+    return res.status(400).send(`You can't ask for more than ${MAX_LIMIT} emotes`)
   } else if (collectionIds && collectionIds.length > MAX_LIMIT) {
     return res.status(400).send(`You can't filter for more than ${MAX_LIMIT} collection ids`)
   }
 
   const requestFilters = {
     collectionIds: collectionIds.length > 0 ? collectionIds : undefined,
-    wearableIds: wearableIds.length > 0 ? wearableIds : undefined,
+    itemIds: emoteIds.length > 0 ? emoteIds : undefined,
     textSearch
   }
   const sanitizedLimit = !limit || limit <= 0 || limit > MAX_LIMIT ? MAX_LIMIT : limit
 
   try {
-    const { wearables, lastId: nextLastId } = await getEmotes(
+    const { emotes, lastId: nextLastId } = await getEmotes(
       requestFilters,
       { limit: sanitizedLimit, lastId },
       client,
       theGraphClient,
-      offChainManager
     )
 
     const nextQueryParams = toQueryParams({
@@ -135,74 +132,47 @@ export async function getEmotesEndpoint(
     })
     const next = nextLastId ? '?' + nextQueryParams : undefined
 
-    res.send({ wearables, filters: requestFilters, pagination: { limit: sanitizedLimit, lastId, next } })
+    res.send({ emotes, filters: requestFilters, pagination: { limit: sanitizedLimit, lastId, next } })
   } catch (error) {
     res.status(500)
   }
 }
 
 /**
- * This function will return a list of wearables that matches the given filters. It will check off-chain, L1 and L2 wearables.
- * The order will be off-chain > L1 > L2.
+ * This function will return a list of emotes that matches the given filters. It will check L1 and L2 emotes.
+ * The order will be L1 > L2.
  */
 export async function getEmotes(
   filters: ItemFilters,
   pagination: ItemPagination,
   client: SmartContentClient,
   theGraphClient: TheGraphClient,
-  offChainManager: OffChainWearablesManager
-): Promise<{ wearables: LambdasWearable[]; lastId: string | undefined }> {
-  let result: LambdasWearable[] = []
+): Promise<{ emotes: LambdasEmote[]; lastId: string | undefined }> {
+  let result: LambdasEmote[] = []
 
   if (!filters.collectionIds && !filters.textSearch) {
     // Since we only have ids, we don't need to query the subgraph at all
-
-    // Check off-chain first. Maybe we don't need to go to the content server
-    const offChain = await offChainManager.find(filters)
-
-    let onChain: LambdasWearable[] = []
-    if (filters.itemIds && offChain.length < filters.itemIds.length) {
-      // It looks like we do need to query the content server after all
-      const onChainIds = filters.itemIds.filter((emoteUrn) => !isBaseAvatar(emoteUrn))
-      onChain = await fetchEmotes(onChainIds, client)
-    }
-
-    result = offChain.concat(onChain)
+    // But there is not off-chain Emotes
   } else {
     let limit = pagination.limit
     let lastId: string | undefined = pagination.lastId
 
-    if (!lastId || isBaseAvatar(lastId)) {
-      const offChainResult = await offChainManager.find(filters, lastId)
-      result = offChainResult
-      limit -= offChainResult.length
-      lastId = undefined
-    }
-
-    // Check if maybe we don't have to check for on-chain wearables, based on the filters
-    const onlyBaseAvatars =
-      filters.collectionIds &&
-      filters.collectionIds.length === 1 &&
-      filters.collectionIds[0] === BASE_AVATARS_COLLECTION_ID
-
-    if (!onlyBaseAvatars) {
-      const onChainIds = await theGraphClient.findWearableUrnsByFilters(filters, { limit, lastId })
-      const onChain = await fetchEmotes(onChainIds, client)
-      result.push(...onChain)
-    }
+    const onChainUrns = await theGraphClient.findEmoteUrnsByFilters(filters, { limit, lastId })
+    const onChain = await fetchEmotes(onChainUrns, client)
+    result.push(...onChain)
   }
 
   const moreData = result.length > pagination.limit
   const slice = moreData ? result.slice(0, pagination.limit) : result
-  return { wearables: slice, lastId: moreData ? slice[slice.length - 1]?.id : undefined }
+  return { emotes: slice, lastId: moreData ? slice[slice.length - 1]?.id : undefined }
 }
 
-async function fetchEmotes(wearableUrns: string[], client: SmartContentClient): Promise<LambdasWearable[]> {
-  if (wearableUrns.length === 0) {
+async function fetchEmotes(emoteUrns: string[], client: SmartContentClient): Promise<LambdasEmote[]> {
+  if (emoteUrns.length === 0) {
     return []
   }
 
-  const entities = await client.fetchEntitiesByPointers(EntityType.WEARABLE, wearableUrns)
-  const wearables = entities.map((entity) => translateEntityIntoWearable(client, entity))
-  return wearables.sort((wearable1, wearable2) => wearable1.id.toLowerCase().localeCompare(wearable2.id.toLowerCase()))
+  const entities = await client.fetchEntitiesByPointers(EntityType.EMOTE, emoteUrns)
+  const emotes = entities.map((entity) => translateEntityIntoEmote(client, entity))
+  return emotes.sort((emote1, emote2) => emote1.id.toLowerCase().localeCompare(emote2.id.toLowerCase()))
 }

@@ -3,9 +3,10 @@ import { ThirdPartyAssetFetcher } from '../../ports/third-party/third-party-fetc
 import { SmartContentClient } from '../../utils/SmartContentClient'
 import { TheGraphClient } from '../../utils/TheGraphClient'
 import { contentsImage, contentsThumbnail, getCollectionsHandler, getStandardErc721 } from './controllers/collections'
+import { getEmotesByOwnerHandler, getEmotesHandler } from './controllers/emotes'
 import {
-  getWearablesByOwnerEndpoint as getWearablesByOwnerHandler,
-  getWearablesEndpoint
+  getWearablesByOwnerHandler,
+  getWearablesHandler
 } from './controllers/wearables'
 import { OffChainWearablesManager } from './off-chain/OffChainWearablesManager'
 
@@ -21,9 +22,9 @@ export function initializeCollectionsRoutes(
   router.get('/contents/:urn/thumbnail', createHandler(client, contentsThumbnail))
   router.get('/', (req, res) => getCollectionsHandler(theGraphClient, req, res))
   router.get('/wearables-by-owner/:owner', (req, res) => getWearablesByOwnerHandler(client, theGraphClient, thirdPartyFetcher, req, res))
-  router.get('/wearables', (req, res) => getWearablesEndpoint(client, theGraphClient, offChainManager, req, res))
-  router.get('/emotes-by-owner/:owner', (req, res) => getWearablesByOwnerHandler(client, theGraphClient, thirdPartyFetcher, req, res))
-  router.get('/emotes', (req, res) => getWearablesEndpoint(client, theGraphClient, offChainManager, req, res))
+  router.get('/wearables', (req, res) => getWearablesHandler(client, theGraphClient, offChainManager, req, res))
+  router.get('/emotes-by-owner/:owner', (req, res) => getEmotesByOwnerHandler(client, theGraphClient, thirdPartyFetcher, req, res))
+  router.get('/emotes', (req, res) => getEmotesHandler(client, theGraphClient, req, res))
   return router
 }
 

@@ -21,7 +21,7 @@ const INCLUDE_DEFINITION_VERSIONS = [
 
 const LOGGER = log4js.getLogger('TheGraphClient')
 
-export async function getWearablesByOwnerEndpoint(
+export async function getWearablesByOwnerHandler(
   client: SmartContentClient,
   theGraphClient: TheGraphClient,
   thirdPartyFetcher: ThirdPartyAssetFetcher,
@@ -86,7 +86,7 @@ export async function getWearablesByOwnerFromUrns(
 
 const MAX_LIMIT = 500
 
-export async function getWearablesEndpoint(
+export async function getWearablesHandler(
   client: SmartContentClient,
   theGraphClient: TheGraphClient,
   offChainManager: OffChainWearablesManager,
@@ -114,7 +114,7 @@ export async function getWearablesEndpoint(
 
   const requestFilters = {
     collectionIds: collectionIds.length > 0 ? collectionIds : undefined,
-    wearableIds: wearableIds.length > 0 ? wearableIds : undefined,
+    itemIds: wearableIds.length > 0 ? wearableIds : undefined,
     textSearch
   }
   const sanitizedLimit = !limit || limit <= 0 || limit > MAX_LIMIT ? MAX_LIMIT : limit

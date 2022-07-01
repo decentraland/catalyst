@@ -1,8 +1,9 @@
-import { Entity, I18N, Wearable, WearableRepresentation } from '@dcl/schemas'
+import { Emote, Entity, I18N, Wearable } from '@dcl/schemas'
 import { parseUrn } from '@dcl/urn-resolver'
 import { SmartContentClient } from '../../utils/SmartContentClient'
 import {
-  LambdasWearable, LambdasWearableRepresentation, WearableId
+  LambdasEmote,
+  LambdasWearable, WearableId
 } from './types'
 
 /**
@@ -30,15 +31,15 @@ export function preferEnglish(i18ns: I18N[]): string | undefined {
 export function translateEntityIntoWearable(client: SmartContentClient, entity: Entity): LambdasWearable {
   const metadata: Wearable = entity.metadata!
   const representations = metadata.data.representations.map((representation) =>
-    mapRepresentation(representation, client, entity)
-  )
-  const image = createExternalContentUrl(client, entity, metadata.image)
-  const thumbnail = createExternalContentUrl(client, entity, metadata.thumbnail)!
+    mapRepresentation(representation, client, entity))
 
+  const externalImage = createExternalContentUrl(client, entity, metadata.image)
+  const thumbnail = createExternalContentUrl(client, entity, metadata.thumbnail)!
+  const image = externalImage ?? metadata.image
   return {
     ...metadata,
-    image,
     thumbnail,
+    image,
     data: {
       ...metadata.data,
       representations
@@ -46,11 +47,30 @@ export function translateEntityIntoWearable(client: SmartContentClient, entity: 
   }
 }
 
-function mapRepresentation(
-  metadataRepresentation: WearableRepresentation,
+export function translateEntityIntoEmote(client: SmartContentClient, entity: Entity): LambdasEmote {
+  const metadata: Emote = entity.metadata!
+  const representations = metadata.emoteDataADR74.representations.map((representation) =>
+    mapRepresentation(representation, client, entity))
+
+  const externalImage = createExternalContentUrl(client, entity, metadata.image)
+  const thumbnail = createExternalContentUrl(client, entity, metadata.thumbnail)!
+  const image = externalImage ?? metadata.image
+  return {
+    ...metadata,
+    thumbnail,
+    image,
+    emoteDataADR74: {
+      ...metadata.emoteDataADR74,
+      representations
+    }
+  }
+}
+
+function mapRepresentation<T>(
+  metadataRepresentation: T & { contents: string[] },
   client: SmartContentClient,
   entity: Entity
-): LambdasWearableRepresentation {
+): T & { contents: { key: string, url: string }[] } {
   const newContents = metadataRepresentation.contents.map((fileName) => ({
     key: fileName,
     url: createExternalContentUrl(client, entity, fileName)!
