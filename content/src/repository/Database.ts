@@ -50,6 +50,7 @@ async function connectTo(
     extend(obj: Database) {
       obj.deployments = new DeploymentsRepository(obj)
       obj.content = new ContentFilesRepository(obj)
+      obj.pointerHistory = new PointerHistoryRepository(obj)
       obj.lastDeployedPointers = new LastDeployedPointersRepository(obj)
     },
 
