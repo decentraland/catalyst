@@ -12,6 +12,11 @@ interface ActivePointersRow {
   pointer: string
 }
 
+interface DeploymentsRow {
+  entity_id: string,
+  deleter_entity_id: string
+}
+
 const fs = createFsComponent()
 
 loadStandaloneTestEnvironment()('Integration - Create entities', (testEnv) => {
@@ -30,191 +35,174 @@ loadStandaloneTestEnvironment()('Integration - Create entities', (testEnv) => {
     await server.stopProgram()
   })
 
+  const profileAddress = '0x31a19cb92ac89f1aa62fa72da5f52521daf130b0'
+  const originalProfileEntityId = 'bafkreigiffn5v5j5o2rd24dvirirggghisva44owomrl65dqg5flan47le'
+  const profileOverwriteEntityId = 'bafkreiczclosnorj7bzibuvotiwf2gyvtmnxmyvl62nacpxhluqsi72bxq';
+
   it('when creating a profile, pointer should be stored in active-pointers table', async () => {
     // Create profile
-    const form = createForm('bafkreigiffn5v5j5o2rd24dvirirggghisva44owomrl65dqg5flan47le', 'profile_original.json');
-    const response = await callCreateEntityEndpoint(server, form)
-
-    // Check that response is correct
-    expect(response.status).toBe(200)
-    expect(await response.json()).toHaveProperty('creationTimestamp')
+    const form = createForm(originalProfileEntityId, 'profile_original.json');
+    await callCreateEntityEndpoint(server, form)
 
     // Check that entity_id matches only with the profile pointer
-    let queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where entity_id='bafkreigiffn5v5j5o2rd24dvirirggghisva44owomrl65dqg5flan47le'")
-    expect(queryResult.rowCount).toBe(1)
-    expect(queryResult.rows[0].pointer).toBe('0x31a19cb92ac89f1aa62fa72da5f52521daf130b0')
+    await assertQueryResultPointers(originalProfileEntityId, [profileAddress])
 
     // Check that profile pointer matches only with the entity_id
-    queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where pointer='0x31a19cb92ac89f1aa62fa72da5f52521daf130b0'")
-    expect(queryResult.rowCount).toBe(1)
-    expect(queryResult.rows[0].entity_id).toBe('bafkreigiffn5v5j5o2rd24dvirirggghisva44owomrl65dqg5flan47le')
+    await assertQueryResultEntityIds(profileAddress, [originalProfileEntityId])
   })
 
   it('when overwriting a profile, entity id should be replaced in active-pointers table', async () => {
     // Create profile
-    let form = createForm('bafkreigiffn5v5j5o2rd24dvirirggghisva44owomrl65dqg5flan47le', 'profile_original.json');
-    let response = await callCreateEntityEndpoint(server, form)
-
-    // Check that response is correct
-    expect(response.status).toBe(200)
-    expect(await response.json()).toHaveProperty('creationTimestamp')
+    let form = createForm(originalProfileEntityId, 'profile_original.json');
+    await callCreateEntityEndpoint(server, form)
 
     // Overwrite profile
-    form = createForm('bafkreiczclosnorj7bzibuvotiwf2gyvtmnxmyvl62nacpxhluqsi72bxq', 'profile_overwrite.json');
-    response = await callCreateEntityEndpoint(server, form)
-
-    // Check that response is correct
-    expect(response.status).toBe(200)
-    expect(await response.json()).toHaveProperty('creationTimestamp')
+    form = createForm(profileOverwriteEntityId, 'profile_overwrite.json');
+    await callCreateEntityEndpoint(server, form)
 
     // Check that entity_id matches only with the profile pointer
-    let queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where entity_id='bafkreiczclosnorj7bzibuvotiwf2gyvtmnxmyvl62nacpxhluqsi72bxq'")
-    expect(queryResult.rowCount).toBe(1)
-    expect(queryResult.rows[0].pointer).toBe('0x31a19cb92ac89f1aa62fa72da5f52521daf130b0')
+    await assertQueryResultPointers(profileOverwriteEntityId, [profileAddress])
 
     // Check that profile pointer matches only with the entity_id
-    queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where pointer='0x31a19cb92ac89f1aa62fa72da5f52521daf130b0'")
-    expect(queryResult.rowCount).toBe(1)
-    expect(queryResult.rows[0].entity_id).toBe('bafkreiczclosnorj7bzibuvotiwf2gyvtmnxmyvl62nacpxhluqsi72bxq')
+    await assertQueryResultEntityIds(profileAddress, [profileOverwriteEntityId])
 
     // Check that old pointers were deleted
-    queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where entity_id='bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy'")
-    expect(queryResult.rowCount).toBe(0)
+    await assertQueryResultPointers(originalProfileEntityId, [])
   })
 
   it('when overwriting a profile, new profile must be ignored if its timestamp is older', async () => {
     // Create profile
-    let form = createForm('bafkreiczclosnorj7bzibuvotiwf2gyvtmnxmyvl62nacpxhluqsi72bxq', 'profile_overwrite.json');
-    let response = await callCreateEntityEndpoint(server, form)
-
-    // Check that response is correct
-    expect(response.status).toBe(200)
-    expect(await response.json()).toHaveProperty('creationTimestamp')
+    let form = createForm(profileOverwriteEntityId, 'profile_overwrite.json');
+    await callCreateEntityEndpoint(server, form)
 
     // Try to overwrite it with a profile with older timestamp
-    form = createForm('bafkreigiffn5v5j5o2rd24dvirirggghisva44owomrl65dqg5flan47le', 'profile_original.json');
-    response = await callCreateEntityEndpoint(server, form)
-
-    // Check that response is correct
-    expect(response.status).toBe(200)
-    expect(await response.json()).toHaveProperty('creationTimestamp')
+    form = createForm(originalProfileEntityId, 'profile_original.json');
+    await callCreateEntityEndpoint(server, form)
 
     // Check that entity_id matches only with the profile pointer
-    let queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where entity_id='bafkreiczclosnorj7bzibuvotiwf2gyvtmnxmyvl62nacpxhluqsi72bxq'")
-    expect(queryResult.rowCount).toBe(1)
-    expect(queryResult.rows[0].pointer).toBe('0x31a19cb92ac89f1aa62fa72da5f52521daf130b0')
+    await assertQueryResultPointers(profileOverwriteEntityId, [profileAddress])
 
     // Check that profile pointer matches only with the entity_id
-    queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where pointer='0x31a19cb92ac89f1aa62fa72da5f52521daf130b0'")
-    expect(queryResult.rowCount).toBe(1)
-    expect(queryResult.rows[0].entity_id).toBe('bafkreiczclosnorj7bzibuvotiwf2gyvtmnxmyvl62nacpxhluqsi72bxq')
+    await assertQueryResultEntityIds(profileAddress, [profileOverwriteEntityId])
 
     // Check that old pointer was never added
-    queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where entity_id='bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy'")
-    expect(queryResult.rowCount).toBe(0)
+    await assertQueryResultPointers(originalProfileEntityId, [])
   })
+
+  const originalSceneEntityId = 'bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy';
+  const overwriteSceneEntityId = 'bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq';
+  const anotherSceneEntityId = 'bafkreihubgrgjjz55sbzd5jq5fr4qucz37preqnwcggznzrlatpmz4n3sa';
 
   it('when creating a scene, pointers should be stored in active-pointers table', async () => {
     // Create scene
-    const form = createForm('bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy', 'scene_original.json');
-    const response = await callCreateEntityEndpoint(server, form)
-
-    // Assert response
-    expect(response.status).toBe(200)
-    expect(await response.json()).toHaveProperty('creationTimestamp')
+    const form = createForm(originalSceneEntityId, 'scene_original.json');
+    await callCreateEntityEndpoint(server, form)
 
     // Check that entity_id matches only with the scene pointers
-    let queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where entity_id='bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy'")
-    expect(queryResult.rowCount).toBe(2)
-    expect(queryResult.rows[0].pointer).toBe('0,0')
-    expect(queryResult.rows[1].pointer).toBe('0,1')
+    await assertQueryResultPointers(originalSceneEntityId, ['0,0', '0,1'])
 
     // Check that scene pointers match only with the entity_id
-    queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where pointer='0,0'")
-    expect(queryResult.rowCount).toBe(1)
-    expect(queryResult.rows[0].entity_id).toBe('bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy')
-    queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where pointer='0,1'")
-    expect(queryResult.rowCount).toBe(1)
-    expect(queryResult.rows[0].entity_id).toBe('bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy')
+    await assertQueryResultEntityIds('0,0', [originalSceneEntityId])
+
+    await assertQueryResultEntityIds('0,1', [originalSceneEntityId])
   })
 
   it('when overwriting a scene, unused pointers should be deleted from active-pointers table', async () => {
     // Create scene
-    let form = createForm('bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy', 'scene_original.json');
-    let response = await callCreateEntityEndpoint(server, form)
-
-    await server.components.database.query<ActivePointersRow>("select * from active_pointers where entity_id='bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy'")
-
-    // Assert response
-    expect(response.status).toBe(200)
-    expect(await response.json()).toHaveProperty('creationTimestamp')
+    let form = createForm(originalSceneEntityId, 'scene_original.json');
+    await callCreateEntityEndpoint(server, form)
 
     // Overwrite scene
-    form = createForm('bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq', 'scene_overwrite.json');
-    response = await callCreateEntityEndpoint(server, form)
-
-    // Assert response
-    expect(response.status).toBe(200)
-    expect(await response.json()).toHaveProperty('creationTimestamp')
+    form = createForm(overwriteSceneEntityId, 'scene_overwrite.json');
+    await callCreateEntityEndpoint(server, form)
 
     // Check that scene pointers match only with the entity_id
-    let queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where pointer='0,0'")
-    expect(queryResult.rowCount).toBe(1)
-    expect(queryResult.rows[0].entity_id).toBe('bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq')
-    queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where pointer='1,0'")
-    expect(queryResult.rowCount).toBe(1)
-    expect(queryResult.rows[0].entity_id).toBe('bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq')
+    await assertQueryResultEntityIds('0,0', [overwriteSceneEntityId])
+    await assertQueryResultEntityIds('1,0', [overwriteSceneEntityId])
 
     // Check that old pointers were deleted
-    queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where entity_id='bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy'")
-    expect(queryResult.rowCount).toBe(0)
-    queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where pointer='0,1'")
-    expect(queryResult.rowCount).toBe(0)
+    await assertQueryResultPointers(originalSceneEntityId, [])
+    await assertQueryResultEntityIds('0,1', [])
 
     // Check that entity_id matches scene pointers
-    queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where entity_id='bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq'")
-    expect(queryResult.rowCount).toBe(2)
-    expect(queryResult.rows[0].pointer).toBe('0,0')
-    expect(queryResult.rows[1].pointer).toBe('1,0')
+    await assertQueryResultPointers(overwriteSceneEntityId, ['0,0', '1,0'])
+  })
+
+
+  it('when overwriting multiple scenes, unused pointers should be deleted from active-pointers table', async () => {
+    // Create scene
+    let form = createForm(originalSceneEntityId, 'scene_original.json');
+    await callCreateEntityEndpoint(server, form)
+
+    // Check that scene pointers match only with the entity_id
+    await assertQueryResultPointers(originalSceneEntityId, ['0,0', '0,1'])
+
+    // Create a second scene (non-overlapping)
+    form = createForm(anotherSceneEntityId, 'another_scene.json');
+    await callCreateEntityEndpoint(server, form)
+
+    // Check that scene pointers match only with the entity_id
+    await assertQueryResultPointers(anotherSceneEntityId, ['1,0', '1,1'])
+
+    // Create a scene that overwrites the two previous ones
+    form = createForm(overwriteSceneEntityId, 'scene_overwrite.json');
+    await callCreateEntityEndpoint(server, form)
+
+    // Check that scene pointers match only with the entity_id
+    await assertQueryResultEntityIds('0,0', [overwriteSceneEntityId])
+    await assertQueryResultEntityIds('1,0', [overwriteSceneEntityId])
+
+    // Check that entity_id matches scene pointers
+    await assertQueryResultPointers(overwriteSceneEntityId, ['0,0', '1,0'])
+
+    // Check that old pointers were deleted
+    await assertQueryResultPointers(originalSceneEntityId, [])
+    await assertQueryResultEntityIds('0,1', [])
+    await assertQueryResultPointers(anotherSceneEntityId, [])
+    await assertQueryResultEntityIds('1,1', [])
+
+    await assertDeleterDeployment(originalSceneEntityId, overwriteSceneEntityId)
+    await assertDeleterDeployment(anotherSceneEntityId, overwriteSceneEntityId)
   })
 
   it('when overwriting a scene, new scene must be ignored if its timestamp is older', async () => {
     // Create scene
-    let form = createForm('bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq', 'scene_overwrite.json');
-    let response = await callCreateEntityEndpoint(server, form)
-
-    // Assert response
-    expect(response.status).toBe(200)
-    expect(await response.json()).toHaveProperty('creationTimestamp')
+    let form = createForm(overwriteSceneEntityId, 'scene_overwrite.json');
+    await callCreateEntityEndpoint(server, form)
 
     // Try to overwrite it with a scene with older timestamp
-    form = createForm('bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy', 'scene_original.json');
-    response = await callCreateEntityEndpoint(server, form)
-
-    // Assert response
-    expect(response.status).toBe(200)
-    expect(await response.json()).toHaveProperty('creationTimestamp')
+    form = createForm(originalSceneEntityId, 'scene_original.json');
+    await callCreateEntityEndpoint(server, form)
 
     // Check that entity_id matches scene pointers
-    let queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where entity_id='bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq'")
-    expect(queryResult.rowCount).toBe(2)
-    expect(queryResult.rows[0].pointer).toBe('0,0')
-    expect(queryResult.rows[1].pointer).toBe('1,0')
+    await assertQueryResultPointers(overwriteSceneEntityId, ['0,0', '1,0'])
 
     // Check that scene pointers match only with the entity_id
-    queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where pointer='0,0'")
-    expect(queryResult.rowCount).toBe(1)
-    expect(queryResult.rows[0].entity_id).toBe('bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq')
-    queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where pointer='1,0'")
-    expect(queryResult.rowCount).toBe(1)
-    expect(queryResult.rows[0].entity_id).toBe('bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq')
+    await assertQueryResultEntityIds('0,0', [overwriteSceneEntityId])
+    await assertQueryResultEntityIds('1,0', [overwriteSceneEntityId])
 
     // Check that old pointers were never added
-    queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where entity_id='bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy'")
-    expect(queryResult.rowCount).toBe(0)
-    queryResult = await server.components.database.query<ActivePointersRow>("select * from active_pointers where pointer='0,1'")
-    expect(queryResult.rowCount).toBe(0)
+    await assertQueryResultPointers(originalSceneEntityId, [])
+    await assertQueryResultEntityIds('0,1', [])
   })
+
+  async function assertQueryResultPointers(entityId: string, pointers: string[]) {
+    let queryResult = await server.components.database.query<ActivePointersRow>(`select * from active_pointers where entity_id='${entityId}'`)
+    expect(queryResult.rowCount).toBe(pointers.length)
+    pointers.forEach((pointer, index) => expect(queryResult.rows[index].pointer).toBe(pointer))
+  }
+
+  async function assertQueryResultEntityIds(pointer: string, entityIds: string[]) {
+    let queryResult = await server.components.database.query<ActivePointersRow>(`select * from active_pointers where pointer='${pointer}'`)
+    expect(queryResult.rowCount).toBe(entityIds.length)
+    entityIds.forEach((entityId, index) => expect(queryResult.rows[index].entity_id).toBe(entityId))
+  }
+
+  async function assertDeleterDeployment(entityId: string, deleterDeploymentId: string) {
+    let queryResult = await server.components.database.query<DeploymentsRow>(`select dep1.*, dep2.entity_id as deleter_entity_id from deployments dep1 inner join deployments dep2 on dep1.deleter_deployment = dep2.id where dep1.entity_id='${entityId}'`)
+    expect(queryResult.rowCount).toBe(1)
+    expect(queryResult.rows[0].deleter_entity_id).toBe(deleterDeploymentId)
+  }
 })
 
 function createForm(entityId: string, filename: string) {
@@ -251,5 +239,7 @@ function createForm(entityId: string, filename: string) {
 }
 
 async function callCreateEntityEndpoint(server: TestProgram, form: FormData) {
-  return await fetch(`${server.getUrl()}/entities`, { method: 'POST', body: form});
+  const response = await fetch(`${server.getUrl()}/entities`, { method: 'POST', body: form});
+  expect(response.status).toBe(200)
+  expect(await response.json()).toHaveProperty('creationTimestamp')
 }
