@@ -18,7 +18,15 @@ export class PointerManager {
     entity: Entity
   ): Promise<DeploymentResult> {
     // Fetch active last deployments on pointers
-    const lastDeployments = await deploymentsRepo.getLastActiveDeploymentsOnPointers(entity.type, entity.pointers)
+    const lastDeployments = await lastDeployedPointersRepo.getLastActiveDeploymentsOnPointers(
+      entity.type,
+      entity.pointers
+    )
+    const lastDeployments2 = await deploymentsRepo.getLastActiveDeploymentsOnPointers(entity.type, entity.pointers)
+
+    if (lastDeployments !== lastDeployments2) {
+      console.log('DIFFERENT: ', lastDeployments, lastDeployments2)
+    }
 
     // Add a made up deployments for the pointers where there was no deployment yet
     const pointersWithDeployments = lastDeployments
