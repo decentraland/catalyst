@@ -1,10 +1,7 @@
 import { Emote, Entity, I18N, Wearable } from '@dcl/schemas'
 import { parseUrn } from '@dcl/urn-resolver'
 import { SmartContentClient } from '../../utils/SmartContentClient'
-import {
-  LambdasEmote,
-  LambdasWearable, WearableId
-} from './types'
+import { LambdasEmote, LambdasWearable, WearableId } from './types'
 
 /**
  * We are translating from the old id format into the new one.
@@ -31,7 +28,8 @@ export function preferEnglish(i18ns: I18N[]): string | undefined {
 export function translateEntityIntoWearable(client: SmartContentClient, entity: Entity): LambdasWearable {
   const metadata: Wearable = entity.metadata!
   const representations = metadata.data.representations.map((representation) =>
-    mapRepresentation(representation, client, entity))
+    mapRepresentation(representation, client, entity)
+  )
 
   const externalImage = createExternalContentUrl(client, entity, metadata.image)
   const thumbnail = createExternalContentUrl(client, entity, metadata.thumbnail)!
@@ -50,7 +48,8 @@ export function translateEntityIntoWearable(client: SmartContentClient, entity: 
 export function translateEntityIntoEmote(client: SmartContentClient, entity: Entity): LambdasEmote {
   const metadata: Emote = entity.metadata!
   const representations = metadata.emoteDataADR74.representations.map((representation) =>
-    mapRepresentation(representation, client, entity))
+    mapRepresentation(representation, client, entity)
+  )
 
   const externalImage = createExternalContentUrl(client, entity, metadata.image)
   const thumbnail = createExternalContentUrl(client, entity, metadata.thumbnail)!
@@ -70,7 +69,7 @@ function mapRepresentation<T>(
   metadataRepresentation: T & { contents: string[] },
   client: SmartContentClient,
   entity: Entity
-): T & { contents: { key: string, url: string }[] } {
+): T & { contents: { key: string; url: string }[] } {
   const newContents = metadataRepresentation.contents.map((fileName) => ({
     key: fileName,
     url: createExternalContentUrl(client, entity, fileName)!

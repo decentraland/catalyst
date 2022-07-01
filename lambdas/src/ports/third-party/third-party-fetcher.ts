@@ -1,4 +1,3 @@
-
 import { EthAddress } from '@dcl/crypto'
 import { IFetchComponent } from '@well-known-components/http-server'
 import { ThirdPartyAPIResponse, ThirdPartyAsset } from '../../apis/collections/types'
@@ -19,7 +18,9 @@ export function createThirdPartyAssetFetcher(fetcher: IFetchComponent) {
 
           const assetsByOwner = (await response.json()) as ThirdPartyAPIResponse
           if (!assetsByOwner) {
-            console.error(`No assets found with owner: ${owner}, url: ${url} and registryId: ${registryId} at ${registryUrl}`)
+            console.error(
+              `No assets found with owner: ${owner}, url: ${url} and registryId: ${registryId} at ${registryUrl}`
+            )
             break
           }
 

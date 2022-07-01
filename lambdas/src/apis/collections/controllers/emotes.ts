@@ -61,12 +61,11 @@ export async function getEmotesByOwner(
 export async function getEmotesByOwnerFromUrns(
   includeDefinition: boolean,
   client: SmartContentClient,
-  emoteUrns: string[],
+  emoteUrns: string[]
 ): Promise<{ urn: string; amount: number; definition?: LambdasEmote | undefined }[]> {
   // Fetch definitions (if needed)
   const emotes = includeDefinition ? await fetchEmotes(emoteUrns, client) : []
-  const emotesByUrn: Map<string, LambdasEmote> =
-    new Map(emotes.map((emote) => [emote.id.toLowerCase(), emote]))
+  const emotesByUrn: Map<string, LambdasEmote> = new Map(emotes.map((emote) => [emote.id.toLowerCase(), emote]))
 
   // Count emotes by id
   const countByUrn: Map<string, number> = new Map()
@@ -122,7 +121,7 @@ export async function getEmotesHandler(
       requestFilters,
       { limit: sanitizedLimit, lastId },
       client,
-      theGraphClient,
+      theGraphClient
     )
 
     const nextQueryParams = toQueryParams({
@@ -146,16 +145,16 @@ export async function getEmotes(
   filters: ItemFilters,
   pagination: ItemPagination,
   client: SmartContentClient,
-  theGraphClient: TheGraphClient,
+  theGraphClient: TheGraphClient
 ): Promise<{ emotes: LambdasEmote[]; lastId: string | undefined }> {
-  let result: LambdasEmote[] = []
+  const result: LambdasEmote[] = []
 
   if (!filters.collectionIds && !filters.textSearch) {
     // Since we only have ids, we don't need to query the subgraph at all
     // But there is not off-chain Emotes
   } else {
-    let limit = pagination.limit
-    let lastId: string | undefined = pagination.lastId
+    const limit = pagination.limit
+    const lastId: string | undefined = pagination.lastId
 
     const onChainUrns = await theGraphClient.findEmoteUrnsByFilters(filters, { limit, lastId })
     const onChain = await fetchEmotes(onChainUrns, client)

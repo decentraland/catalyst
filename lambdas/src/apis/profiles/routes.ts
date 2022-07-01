@@ -26,7 +26,15 @@ export function initializeIndividualProfileRoutes(
 ): Router {
   router.get(
     '/:id',
-    createHandler(theGraphClient, client, ensOwnership, wearablesOwnership, profilesCacheTTL, thirdPartyFetcher, getIndividualProfileById)
+    createHandler(
+      theGraphClient,
+      client,
+      ensOwnership,
+      wearablesOwnership,
+      profilesCacheTTL,
+      thirdPartyFetcher,
+      getIndividualProfileById
+    )
   )
   return router
 }
@@ -38,15 +46,31 @@ export function initializeProfilesRoutes(
   ensOwnership: EnsOwnership,
   wearablesOwnership: WearablesOwnership,
   profilesCacheTTL: number,
-  thirdPartyFetcher: ThirdPartyAssetFetcher,
+  thirdPartyFetcher: ThirdPartyAssetFetcher
 ): Router {
   router.get(
     '/',
-    createHandler(theGraphClient, client, ensOwnership, wearablesOwnership, profilesCacheTTL, thirdPartyFetcher, getProfilesById)
+    createHandler(
+      theGraphClient,
+      client,
+      ensOwnership,
+      wearablesOwnership,
+      profilesCacheTTL,
+      thirdPartyFetcher,
+      getProfilesById
+    )
   )
   router.get(
     '/:id',
-    createHandler(theGraphClient, client, ensOwnership, wearablesOwnership, profilesCacheTTL, thirdPartyFetcher, getIndividualProfileById)
+    createHandler(
+      theGraphClient,
+      client,
+      ensOwnership,
+      wearablesOwnership,
+      profilesCacheTTL,
+      thirdPartyFetcher,
+      getIndividualProfileById
+    )
   )
   return router
 }
@@ -71,6 +95,15 @@ function createHandler(
 ): RequestHandler {
   return asyncHandler(
     async (req, res) =>
-      await originalHandler(theGraphClient, client, ensOwnership, wearablesOwnership, profilesCacheTTL, thirdPartyFetcher, req, res)
+      await originalHandler(
+        theGraphClient,
+        client,
+        ensOwnership,
+        wearablesOwnership,
+        profilesCacheTTL,
+        thirdPartyFetcher,
+        req,
+        res
+      )
   )
 }

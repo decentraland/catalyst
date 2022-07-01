@@ -8,7 +8,7 @@ export class TheGraphClient {
   public static readonly MAX_PAGE_SIZE = 1000
   private static readonly LOGGER = log4js.getLogger('TheGraphClient')
 
-  constructor(private readonly urls: URLs, private readonly fetcher: Fetcher) { }
+  constructor(private readonly urls: URLs, private readonly fetcher: Fetcher) {}
 
   public async findOwnersByName(names: string[]): Promise<{ name: string; owner: EthAddress }[]> {
     const query: Query<
@@ -203,7 +203,7 @@ export class TheGraphClient {
     // Order will be L1 > L2
     const L1_NETWORKS = ['mainnet', 'ropsten', 'kovan', 'rinkeby', 'goerli']
     const L2_NETWORKS = ['matic', 'mumbai']
-    const wearableTypes: BlockchainItemType[] = ["wearable_v1", "wearable_v2", "smart_wearable_v1", "emote_v1"]
+    const wearableTypes: BlockchainItemType[] = ['wearable_v1', 'wearable_v2', 'smart_wearable_v1', 'emote_v1']
 
     let limit = pagination.limit
     let lastId = pagination.lastId
@@ -244,7 +244,7 @@ export class TheGraphClient {
     // Order will be L1 > L2
     const L1_NETWORKS = ['mainnet', 'ropsten', 'kovan', 'rinkeby', 'goerli']
     const L2_NETWORKS = ['matic', 'mumbai']
-    const emoteTypes: BlockchainItemType[] = ["emote_v1"]
+    const emoteTypes: BlockchainItemType[] = ['emote_v1']
 
     let limit = pagination.limit
     let lastId = pagination.lastId
@@ -351,7 +351,10 @@ export class TheGraphClient {
     }
   }
 
-  private async findItemsByOwner(owner: EthAddress, itemTypes: BlockchainItemType[]): Promise<(WearableId | EmoteId)[]> {
+  private async findItemsByOwner(
+    owner: EthAddress,
+    itemTypes: BlockchainItemType[]
+  ): Promise<(WearableId | EmoteId)[]> {
     const ethereumWearablesPromise = this.getItemsByOwner('collectionsSubgraph', owner, itemTypes)
     const maticWearablesPromise = this.getItemsByOwner('maticCollectionsSubgraph', owner, itemTypes)
     const [ethereumWearables, maticWearables] = await Promise.all([ethereumWearablesPromise, maticWearablesPromise])

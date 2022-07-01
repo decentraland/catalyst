@@ -36,10 +36,7 @@ export class OffChainWearablesManager {
    * Note: So far, we have few off-chain wearables and no plans to add more. If we do add more in the future, then it
    * might make sense to modify this filter, since many optimizations could be added
    */
-  private buildFilter(
-    filters: ItemFilters,
-    lastId: string | undefined
-  ): (wearable: LocalOffChainWearable) => boolean {
+  private buildFilter(filters: ItemFilters, lastId: string | undefined): (wearable: LocalOffChainWearable) => boolean {
     return ({ collectionId, wearable }) => {
       const lowerCaseWearableId = wearable.id.toLowerCase()
       const okByLastId = !lastId || lowerCaseWearableId > lastId

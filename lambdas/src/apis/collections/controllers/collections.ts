@@ -3,10 +3,7 @@ import { Request, Response } from 'express'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TheGraphClient } from '../../../utils/TheGraphClient'
 import { BASE_AVATARS_COLLECTION_ID } from '../off-chain/OffChainWearablesManager'
-import {
-  Collection,
-  ERC721StandardTrait
-} from '../types'
+import { Collection, ERC721StandardTrait } from '../types'
 import { createExternalContentUrl, findHashForFile, preferEnglish } from '../Utils'
 
 export async function getStandardErc721(client: SmartContentClient, req: Request, res: Response) {

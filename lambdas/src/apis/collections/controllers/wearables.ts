@@ -38,7 +38,9 @@ export async function getWearablesByOwnerHandler(
   const includeDefinition = INCLUDE_DEFINITION_VERSIONS.some((version) => version in req.query)
 
   try {
-    res.send(await getWearablesByOwner(includeDefinition, client, theGraphClient, thirdPartyFetcher, collectionId, owner))
+    res.send(
+      await getWearablesByOwner(includeDefinition, client, theGraphClient, thirdPartyFetcher, collectionId, owner)
+    )
   } catch (e) {
     LOGGER.error(e)
     res.status(500).send(`Failed to fetch wearables by owner.`)
@@ -62,12 +64,13 @@ export async function getWearablesByOwner(
 export async function getWearablesByOwnerFromUrns(
   includeDefinition: boolean,
   client: SmartContentClient,
-  wearableUrns: string[],
+  wearableUrns: string[]
 ): Promise<{ urn: string; amount: number; definition?: LambdasWearable | undefined }[]> {
   // Fetch definitions (if needed)
   const wearables = includeDefinition ? await fetchWearables(wearableUrns, client) : []
-  const wearablesByUrn: Map<string, LambdasWearable> =
-    new Map(wearables.map((wearable) => [wearable.id.toLowerCase(), wearable]))
+  const wearablesByUrn: Map<string, LambdasWearable> = new Map(
+    wearables.map((wearable) => [wearable.id.toLowerCase(), wearable])
+  )
 
   // Count wearables by id
   const countByUrn: Map<string, number> = new Map()

@@ -165,7 +165,11 @@ export async function fetchProfiles(
     //Check which NFTs are owned
     const ownedWearablesPromise = wearablesOwnership.areNFTsOwned(wearablesMap)
     const ownedENSPromise = ensOwnership.areNFTsOwned(namesMap)
-    const thirdPartyWearablesPromise = checkForThirdPartyWearablesOwnership(theGraphClient, thirdPartyFetcher, wearablesMap)
+    const thirdPartyWearablesPromise = checkForThirdPartyWearablesOwnership(
+      theGraphClient,
+      thirdPartyFetcher,
+      wearablesMap
+    )
     const [ownedWearables, ownedENS, thirdPartyWearables] = await Promise.all([
       ownedWearablesPromise,
       ownedENSPromise,

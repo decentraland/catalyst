@@ -1,4 +1,3 @@
-
 import { EthAddress } from '@dcl/crypto'
 import { ThirdPartyAssetFetcher } from '../ports/third-party/third-party-fetcher'
 import { TheGraphClient } from '../utils/TheGraphClient'
@@ -7,7 +6,8 @@ export async function findThirdPartyItemUrns(
   theGraphClient: TheGraphClient,
   thirdPartyAssetFetcher: ThirdPartyAssetFetcher,
   owner: EthAddress,
-  collectionId: string) {
+  collectionId: string
+) {
   const thirdPartyId = parseCollectionId(collectionId)
   const thirdPartyResolverAPI = await theGraphClient.findThirdPartyResolver(
     'thirdPartyRegistrySubgraph',
@@ -21,7 +21,6 @@ export async function findThirdPartyItemUrns(
       .map((asset) => asset.urn.decentraland) ?? []
   )
 }
-
 
 // urn:decentraland:{protocol}:collections-thirdparty:{third-party-name}
 // urn:decentraland:{protocol}:collections-thirdparty:{third-party-name}:{collection-id}
