@@ -26,9 +26,10 @@ export class LastDeployedPointersRepository {
                     THEN FALSE
                     ELSE TRUE
                 END AS deleted
-            FROM deployments
-            WHERE deployments.entity_pointers && ARRAY[$2:list] AND
-                deployments.entity_type = $1
+            FROM last_deployed_pointers
+            JOIN deployments ON last_deployed_pointers.deployment = deployments.id
+            WHERE last_deployed_pointers.pointer IN ($2:list) AND
+                last_deployed_pointers.entity_type = $1
             ORDER BY deployments.id`,
       [entityType, pointers],
       (row) => ({

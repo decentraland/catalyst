@@ -22,10 +22,14 @@ export class PointerManager {
       entity.type,
       entity.pointers
     )
-    const lastDeployments2 = await deploymentsRepo.getLastActiveDeploymentsOnPointers(entity.type, entity.pointers)
 
-    if (lastDeployments !== lastDeployments2) {
-      console.log('DIFFERENT: ', lastDeployments, lastDeployments2)
+    try {
+      const lastDeployments2 = await deploymentsRepo.getLastActiveDeploymentsOnPointers(entity.type, entity.pointers)
+      if (lastDeployments !== lastDeployments2) {
+        console.log('DIFFERENT: ', lastDeployments, lastDeployments2)
+      }
+    } catch (e) {
+      console.log('ERROR', e)
     }
 
     // Add a made up deployments for the pointers where there was no deployment yet
