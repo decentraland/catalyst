@@ -3,6 +3,7 @@ import { retry } from '../helpers/RetryHelper'
 import { ContentFilesRepository } from './extensions/ContentFilesRepository'
 import { DeploymentsRepository } from './extensions/DeploymentsRepository'
 import { LastDeployedPointersRepository } from './extensions/LastDeployedPointersRepository'
+import { PointerHistoryRepository } from './extensions/PointerHistoryRepository'
 
 export type Database = IBaseProtocol<IExtensions> & IExtensions
 export type FullDatabase = IDatabase<IExtensions> & Database
@@ -10,6 +11,7 @@ export type FullDatabase = IDatabase<IExtensions> & Database
 export interface IExtensions {
   deployments: DeploymentsRepository
   content: ContentFilesRepository
+  pointerHistory: PointerHistoryRepository
   lastDeployedPointers: LastDeployedPointersRepository
 }
 
