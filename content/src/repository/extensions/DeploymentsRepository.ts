@@ -87,7 +87,6 @@ export class DeploymentsRepository {
         [entity.type, entity.pointers, entity.timestamp, entity.id],
         (row) => row.id
       )
-      console.log([entity.type, entity.pointers, entity.timestamp, entity.id], 'overwrote', overwrote)
 
       const overwrittenByMany = await task.manyOrNone(
         `
