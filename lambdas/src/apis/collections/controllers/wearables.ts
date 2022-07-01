@@ -32,22 +32,13 @@ export async function getWearablesByOwnerEndpoint(
   // Path: /wearables-by-owner/:owner?collectionId={string}
   const { owner } = req.params
   const collectionId = req.query.collectionId
-  if (typeof collectionId !== 'string') {
+  if (collectionId && typeof collectionId !== 'string') {
     throw new Error('Bad input. CollectionId must be a string.')
   }
   const includeDefinition = INCLUDE_DEFINITION_VERSIONS.some((version) => version in req.query)
 
   try {
-    const ownedWearableUrns = collectionId
-      ? await findThirdPartyItemUrns(theGraphClient, thirdPartyFetcher, owner, collectionId)
-      : await theGraphClient.findWearableUrnsByOwner(owner)
-
-    const ownedWearables = await getWearablesByOwner(
-      includeDefinition,
-      client,
-      ownedWearableUrns
-    )
-    res.send(ownedWearables)
+    res.send(await getWearablesByOwner(includeDefinition, client, theGraphClient, thirdPartyFetcher, collectionId, owner))
   } catch (e) {
     LOGGER.error(e)
     res.status(500).send(`Failed to fetch wearables by owner.`)
@@ -55,6 +46,20 @@ export async function getWearablesByOwnerEndpoint(
 }
 
 export async function getWearablesByOwner(
+  includeDefinition: boolean,
+  client: SmartContentClient,
+  theGraphClient: TheGraphClient,
+  thirdPartyFetcher: ThirdPartyAssetFetcher,
+  thirdPartyCollectionId: string | undefined,
+  owner: string
+): Promise<{ urn: string; amount: number; definition?: LambdasWearable | undefined }[]> {
+  const ownedWearableUrns = thirdPartyCollectionId
+    ? await findThirdPartyItemUrns(theGraphClient, thirdPartyFetcher, owner, thirdPartyCollectionId)
+    : await theGraphClient.findWearableUrnsByOwner(owner)
+  return getWearablesByOwnerFromUrns(includeDefinition, client, ownedWearableUrns)
+}
+
+export async function getWearablesByOwnerFromUrns(
   includeDefinition: boolean,
   client: SmartContentClient,
   wearableUrns: string[],
@@ -196,7 +201,10 @@ async function fetchWearables(wearableUrns: string[], client: SmartContentClient
   if (wearableUrns.length === 0) {
     return []
   }
+
   const entities = await client.fetchEntitiesByPointers(EntityType.WEARABLE, wearableUrns)
+  console.log(entities)
   const wearables = entities.map((entity) => translateEntityIntoWearable(client, entity))
+  console.log(wearables)
   return wearables.sort((wearable1, wearable2) => wearable1.id.toLowerCase().localeCompare(wearable2.id.toLowerCase()))
 }

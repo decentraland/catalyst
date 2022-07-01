@@ -42,6 +42,6 @@ export function createThirdPartyAssetFetcher(fetcher: IFetchComponent) {
 }
 
 export function buildRegistryOwnerUrl(baseUrl: string, registryId: string, owner: string): string {
-  const cleanedBaseUrl = new URL(baseUrl).href.replace(/\/$/, '')
-  return `${cleanedBaseUrl}/registry/${registryId}/address/${owner}/assets`
+  const sanitizedBaseUrl = new URL(baseUrl).href.replace(/\/$/, '')
+  return `${sanitizedBaseUrl}/registry/${registryId}/address/${owner}/assets`
 }
