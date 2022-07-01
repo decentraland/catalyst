@@ -1,4 +1,5 @@
-import { Deployment, EntityType, EntityVersion, PartialDeploymentHistory } from 'dcl-catalyst-commons'
+import { EntityType } from '@dcl/schemas'
+import { Deployment, EntityVersion, PartialDeploymentHistory } from 'dcl-catalyst-commons'
 import { getContentFiles } from '../../logic/database-queries/content-files-queries'
 import { getHistoricalDeployments } from '../../logic/database-queries/deployments-queries'
 import { AppComponents } from '../../types'

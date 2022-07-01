@@ -1,4 +1,5 @@
-import { EntityType, SortingField, SortingOrder } from 'dcl-catalyst-commons'
+import { EntityType } from '@dcl/schemas'
+import { SortingField, SortingOrder } from 'dcl-catalyst-commons'
 import { createOrClause, getHistoricalDeploymentsQuery } from '../../../src/logic/database-queries/deployments-queries'
 
 describe('deployments-queries', () => {
@@ -78,8 +79,8 @@ describe('deployments-queries', () => {
           expect(result.text).toContain(`((LOWER(dep1.entity_id) > LOWER($1)`)
           expect(result.text).toContain(
             `dep1."entity_timestamp" = to_timestamp($2 / 1000.0)) OR ` +
-              `(dep1."entity_timestamp" > to_timestamp($3 / 1000.0))) ` +
-              `AND dep1.entity_timestamp <= to_timestamp($4 / 1000.0)`
+            `(dep1."entity_timestamp" > to_timestamp($3 / 1000.0))) ` +
+            `AND dep1.entity_timestamp <= to_timestamp($4 / 1000.0)`
           )
 
           expect(result.values).toEqual([lastId, from, from, to, limit, offset])
@@ -94,8 +95,8 @@ describe('deployments-queries', () => {
           expect(result.text).toContain(`((LOWER(dep1.entity_id) < LOWER($2)`)
           expect(result.text).toContain(
             `dep1.local_timestamp >= to_timestamp($1 / 1000.0) AND ` +
-              `((LOWER(dep1.entity_id) < LOWER($2) AND dep1."local_timestamp" = to_timestamp($3 / 1000.0)) ` +
-              `OR (dep1."local_timestamp" < to_timestamp($4 / 1000.0)))`
+            `((LOWER(dep1.entity_id) < LOWER($2) AND dep1."local_timestamp" = to_timestamp($3 / 1000.0)) ` +
+            `OR (dep1."local_timestamp" < to_timestamp($4 / 1000.0)))`
           )
 
           expect(result.values).toEqual([from, lastId, to, to, limit, offset])
