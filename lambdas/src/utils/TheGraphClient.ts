@@ -8,7 +8,7 @@ export class TheGraphClient {
   public static readonly MAX_PAGE_SIZE = 1000
   private static readonly LOGGER = log4js.getLogger('TheGraphClient')
 
-  constructor(private readonly urls: URLs, private readonly fetcher: Fetcher) {}
+  constructor(private readonly urls: URLs, private readonly fetcher: Fetcher) { }
 
   public async findOwnersByName(names: string[]): Promise<{ name: string; owner: EthAddress }[]> {
     const query: Query<
@@ -364,16 +364,17 @@ export class TheGraphClient {
 
   private async getItemsByOwner(subgraph: keyof URLs, owner: string, itemTypes: BlockchainItemType[]) {
     const query: Query<
-      { nfts: { urn: string; collection: { isApproved: boolean } }[] },
-      { id: WearableId | EmoteId; isApproved: boolean }[]
+      { nfts: { id: string; urn: string; collection: { isApproved: boolean } }[] },
+      { id: string; urn: string; isApproved: boolean }[]
     > = {
       description: `fetch items (${itemTypes}) by owner`,
       subgraph: subgraph,
       query: QUERY_ITEMS_BY_OWNER,
-      mapper: (response) => response.nfts.map(({ urn, collection }) => ({ id: urn, isApproved: collection.isApproved }))
+      mapper: (response) =>
+        response.nfts.map(({ id, urn, collection }) => ({ id: id, urn: urn, isApproved: collection.isApproved }))
     }
     const items = await this.paginatableQuery(query, { owner: owner.toLowerCase(), itemTypes })
-    return items.filter((wearable) => wearable.isApproved).map((wearable) => wearable.id)
+    return items.filter((item) => item.isApproved).map((item) => item.urn)
   }
 
   /** This method takes a query that could be paginated and performs the pagination internally */
@@ -383,16 +384,16 @@ export class TheGraphClient {
   ): Promise<ReturnType> {
     let result: ReturnType | undefined = undefined
     let shouldContinue = true
-    let offset = 0
+    let start = ''
     while (shouldContinue) {
-      const queried = await this.runQuery(query, { ...variables, first: TheGraphClient.MAX_PAGE_SIZE, skip: offset })
+      const queried = await this.runQuery(query, { ...variables, first: TheGraphClient.MAX_PAGE_SIZE, start: start })
       if (!result) {
         result = queried
       } else {
         result.push(...queried)
       }
-      shouldContinue = queried.length === TheGraphClient.MAX_PAGE_SIZE
-      offset += TheGraphClient.MAX_PAGE_SIZE
+      start = queried[queried.length - 1]?.id
+      shouldContinue = queried.length === TheGraphClient.MAX_PAGE_SIZE && !!start
     }
     return result!
   }
@@ -461,29 +462,14 @@ query ThirdPartyResolver($id: String!) {
 }
 `
 
-// const QUERY_WEARABLES_BY_OWNER: string = `
-//   query WearablesByOwner($owner: String, $first: Int, $skip: Int) {
-//     nfts(where: {owner: $owner, searchItemType_in: ["wearable_v1", "wearable_v2", "smart_wearable_v1", "emote_v1"]}, first: $first, skip: $skip) {
-//       urn,
-//       collection {
-//         isApproved
-//       }
-//     }
-//   }`
-
 const QUERY_ITEMS_BY_OWNER: string = `
-query itemsByOwner($owner: String, $item_types:[String], $first: Int, $skip: Int) {
-  nfts(
-    where: {
-      owner: $owner,
-      searchItemType_in: $item_types
-    },
-    first: $first,
-    skip: $skip) {
-      urn,
-      collection {
-        isApproved
-      }
+query itemsByOwner($owner: String, $item_types:[String], $first: Int, $start: String) {
+  nfts(where: {owner: $owner, searchItemType_in: $item_types, id_gt: $start}, first: $first) {
+    id
+    urn
+    collection {
+      isApproved
+    }
   }
 }`
 
