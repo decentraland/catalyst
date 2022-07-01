@@ -196,14 +196,14 @@ export class TheGraphClient {
     return this.findItemsByOwner(owner, ['emote_v1'])
   }
 
-
-  public async findWearablesByFilters(
+  public async findWearableUrnsByFilters(
     filters: WearablesFilters,
     pagination: { limit: number; lastId: string | undefined }
   ): Promise<WearableId[]> {
     // Order will be L1 > L2
     const L1_NETWORKS = ['mainnet', 'ropsten', 'kovan', 'rinkeby', 'goerli']
     const L2_NETWORKS = ['matic', 'mumbai']
+    const wearableTypes: BlockchainItemType[] = ["wearable_v1", "wearable_v2", "smart_wearable_v1", "emote_v1"]
 
     let limit = pagination.limit
     let lastId = pagination.lastId
@@ -212,10 +212,11 @@ export class TheGraphClient {
     const result: WearableId[] = []
 
     if (limit >= 0 && (!lastIdLayer || L1_NETWORKS.includes(lastIdLayer))) {
-      const l1Result = await this.findWearablesByFiltersInSubgraph(
+      const l1Result = await this.findItemUrnsByFiltersInSubgraph(
         'collectionsSubgraph',
         { ...filters, lastId },
-        limit + 1
+        limit + 1,
+        wearableTypes
       )
       result.push(...l1Result)
       limit -= l1Result.length
@@ -224,10 +225,11 @@ export class TheGraphClient {
     }
 
     if (limit >= 0 && (!lastIdLayer || L2_NETWORKS.includes(lastIdLayer))) {
-      const l2Result = await this.findWearablesByFiltersInSubgraph(
+      const l2Result = await this.findItemUrnsByFiltersInSubgraph(
         'maticCollectionsSubgraph',
         { ...filters, lastId },
-        limit + 1
+        limit + 1,
+        wearableTypes
       )
       result.push(...l2Result)
     }
@@ -242,12 +244,13 @@ export class TheGraphClient {
       : undefined
   }
 
-  private findWearablesByFiltersInSubgraph(
+  private findItemUrnsByFiltersInSubgraph(
     subgraph: keyof URLs,
     filters: WearablesFilters & { lastId?: string },
-    limit: number
-  ): Promise<WearableId[]> {
-    const subgraphQuery = this.buildFilterQuery(filters)
+    limit: number,
+    itemTypes: BlockchainItemType[]
+  ): Promise<(WearableId | EmoteId)[]> {
+    const subgraphQuery = this.buildFilterQuery(filters, itemTypes)
     let mapper: (response: any) => WearableId[]
     if (filters.collectionIds) {
       mapper = (response: { collections: { items: { urn: string }[] }[] }) =>
@@ -266,8 +269,8 @@ export class TheGraphClient {
     return this.runQuery(query, { ...filters, lastId: filters.lastId ?? '', first: limit })
   }
 
-  private buildFilterQuery(filters: WearablesFilters & { lastId?: string }): string {
-    const whereClause: string[] = [`searchItemType_in: ["wearable_v1", "wearable_v2", "smart_wearable_v1", "emote_v1"]`]
+  private buildFilterQuery(filters: WearablesFilters & { lastId?: string }, itemTypes: BlockchainItemType[]): string {
+    const whereClause: string[] = [`searchItemType_in: ${JSON.stringify(itemTypes)}`]
     const params: string[] = []
     if (filters.textSearch) {
       params.push('$textSearch: String')

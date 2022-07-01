@@ -186,7 +186,7 @@ export async function getWearables(
       filters.collectionIds[0] === BASE_AVATARS_COLLECTION_ID
 
     if (!onlyBaseAvatars) {
-      const onChainIds = await theGraphClient.findWearablesByFilters(filters, { limit, lastId })
+      const onChainIds = await theGraphClient.findWearableUrnsByFilters(filters, { limit, lastId })
       const onChain = await fetchWearables(onChainIds, client)
       result.push(...onChain)
     }
