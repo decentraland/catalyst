@@ -2,7 +2,7 @@ import { Entity } from '@dcl/schemas'
 import { DeploymentId, DeploymentsRepository } from '../../repository/extensions/DeploymentsRepository'
 import { LastDeployedPointersRepository } from '../../repository/extensions/LastDeployedPointersRepository'
 import { PointerHistoryRepository } from '../../repository/extensions/PointerHistoryRepository'
-import { happenedBefore } from '../../service/time/TimeSorting'
+import { happenedBefore } from '../time/TimeSorting'
 
 /**
  * Manage all pointer data
