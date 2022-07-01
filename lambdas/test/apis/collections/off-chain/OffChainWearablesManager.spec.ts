@@ -101,7 +101,7 @@ describe('OffChainWearablesManager', () => {
     const { instance: contentClient } = contentServer()
     const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS, refreshTime: '2s' })
 
-    const wearables = await manager.find({ wearableIds: [WEARABLE_ID_2, WEARABLE_ID_3] })
+    const wearables = await manager.find({ itemIds: [WEARABLE_ID_2, WEARABLE_ID_3] })
 
     assertReturnWearablesAre(wearables, WEARABLE_ID_2, WEARABLE_ID_3)
   })

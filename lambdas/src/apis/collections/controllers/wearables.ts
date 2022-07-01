@@ -8,7 +8,7 @@ import { asArray, asInt } from '../../../utils/ControllerUtils'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TheGraphClient } from '../../../utils/TheGraphClient'
 import { BASE_AVATARS_COLLECTION_ID, OffChainWearablesManager } from '../off-chain/OffChainWearablesManager'
-import { ItemPagination, LambdasWearable, WearablesFilters } from '../types'
+import { ItemFilters, ItemPagination, LambdasWearable } from '../types'
 import { isBaseAvatar, translateEntityIntoWearable } from '../Utils'
 
 // Different versions of the same query param
@@ -146,7 +146,7 @@ export async function getWearablesEndpoint(
  * The order will be off-chain > L1 > L2.
  */
 export async function getWearables(
-  filters: WearablesFilters,
+  filters: ItemFilters,
   pagination: ItemPagination,
   client: SmartContentClient,
   theGraphClient: TheGraphClient,
@@ -161,9 +161,9 @@ export async function getWearables(
     const offChain = await offChainManager.find(filters)
 
     let onChain: LambdasWearable[] = []
-    if (filters.wearableIds && offChain.length < filters.wearableIds.length) {
+    if (filters.itemIds && offChain.length < filters.itemIds.length) {
       // It looks like we do need to query the content server after all
-      const onChainIds = filters.wearableIds.filter((wearableId) => !isBaseAvatar(wearableId))
+      const onChainIds = filters.itemIds.filter((wearableId) => !isBaseAvatar(wearableId))
       onChain = await fetchWearables(onChainIds, client)
     }
 
@@ -203,8 +203,6 @@ async function fetchWearables(wearableUrns: string[], client: SmartContentClient
   }
 
   const entities = await client.fetchEntitiesByPointers(EntityType.WEARABLE, wearableUrns)
-  console.log(entities)
   const wearables = entities.map((entity) => translateEntityIntoWearable(client, entity))
-  console.log(wearables)
   return wearables.sort((wearable1, wearable2) => wearable1.id.toLowerCase().localeCompare(wearable2.id.toLowerCase()))
 }

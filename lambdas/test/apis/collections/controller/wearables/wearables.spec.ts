@@ -24,7 +24,7 @@ describe('wearables', () => {
 
     const pagination = { limit: 3, lastId: undefined }
     const response = await getWearables(
-      { wearableIds: [OFF_CHAIN_WEARABLE_ID] },
+      { itemIds: [OFF_CHAIN_WEARABLE_ID] },
       pagination,
       contentClient,
       graphClient,
@@ -45,7 +45,7 @@ it(`When on-chain ids are requested, then content servers is queried, but subgra
 
   const pagination = { limit: 3, lastId: undefined }
   const response = await getWearables(
-    { wearableIds: [OFF_CHAIN_WEARABLE_ID, ON_CHAIN_WEARABLE_ID] },
+    { itemIds: [OFF_CHAIN_WEARABLE_ID, ON_CHAIN_WEARABLE_ID] },
     pagination,
     contentClient,
     graphClient,

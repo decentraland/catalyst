@@ -1,7 +1,7 @@
 import { EntityType } from '@dcl/schemas'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TimeRefreshedDataHolder } from '../../../utils/TimeRefreshedDataHolder'
-import { LambdasWearable, WearableId, WearablesFilters } from '../types'
+import { ItemFilters, LambdasWearable, WearableId } from '../types'
 import { preferEnglish, translateEntityIntoWearable } from '../Utils'
 import baseAvatars from './base-avatars'
 
@@ -27,7 +27,7 @@ export class OffChainWearablesManager {
     )
   }
 
-  public async find(filters: WearablesFilters, lastId?: string): Promise<LambdasWearable[]> {
+  public async find(filters: ItemFilters, lastId?: string): Promise<LambdasWearable[]> {
     const definitions = await this.definitions.get()
     return definitions.filter(this.buildFilter(filters, lastId)).map(({ wearable }) => wearable)
   }
@@ -37,7 +37,7 @@ export class OffChainWearablesManager {
    * might make sense to modify this filter, since many optimizations could be added
    */
   private buildFilter(
-    filters: WearablesFilters,
+    filters: ItemFilters,
     lastId: string | undefined
   ): (wearable: LocalOffChainWearable) => boolean {
     return ({ collectionId, wearable }) => {
@@ -48,7 +48,7 @@ export class OffChainWearablesManager {
       const okByCollection = !filters.collectionIds || filters.collectionIds.includes(collectionId)
       if (!okByCollection) return false
 
-      const okByIds = !filters.wearableIds || filters.wearableIds.includes(lowerCaseWearableId)
+      const okByIds = !filters.itemIds || filters.itemIds.includes(lowerCaseWearableId)
       if (!okByIds) return false
 
       const text = preferEnglish(wearable.i18n)?.toLowerCase()

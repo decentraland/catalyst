@@ -25,10 +25,7 @@ export type EmoteId = string // These ids are used as pointers on the content se
 export type ItemFilters = {
   collectionIds?: string[]
   textSearch?: string
-}
-
-export type WearablesFilters = ItemFilters & {
-  wearableIds?: string[]
+  itemIds?: string[]
 }
 
 export type ItemPagination = {

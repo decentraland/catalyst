@@ -2,7 +2,7 @@ import { EthAddress } from '@dcl/crypto'
 import { parseUrn } from '@dcl/urn-resolver'
 import { Fetcher } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
-import { EmoteId, ThirdPartyIntegration, WearableId, WearablesFilters } from '../apis/collections/types'
+import { EmoteId, ItemFilters, ThirdPartyIntegration, WearableId } from '../apis/collections/types'
 
 export class TheGraphClient {
   public static readonly MAX_PAGE_SIZE = 1000
@@ -192,12 +192,12 @@ export class TheGraphClient {
    * Given an ethereum address, this method returns all wearables from ethereum and matic that are asociated to it.
    * @param owner
    */
-  public async findEmoteIdsByOwner(owner: EthAddress): Promise<EmoteId[]> {
+  public async findEmoteUrnsByOwner(owner: EthAddress): Promise<EmoteId[]> {
     return this.findItemsByOwner(owner, ['emote_v1'])
   }
 
   public async findWearableUrnsByFilters(
-    filters: WearablesFilters,
+    filters: ItemFilters,
     pagination: { limit: number; lastId: string | undefined }
   ): Promise<WearableId[]> {
     // Order will be L1 > L2
@@ -246,11 +246,11 @@ export class TheGraphClient {
 
   private findItemUrnsByFiltersInSubgraph(
     subgraph: keyof URLs,
-    filters: WearablesFilters & { lastId?: string },
+    filters: ItemFilters & { lastId?: string },
     limit: number,
     itemTypes: BlockchainItemType[]
   ): Promise<(WearableId | EmoteId)[]> {
-    const subgraphQuery = this.buildFilterQuery(filters, itemTypes)
+    const subgraphQuery = this.buildItemUrnFilterQuery(filters, itemTypes)
     let mapper: (response: any) => WearableId[]
     if (filters.collectionIds) {
       mapper = (response: { collections: { items: { urn: string }[] }[] }) =>
@@ -269,7 +269,7 @@ export class TheGraphClient {
     return this.runQuery(query, { ...filters, lastId: filters.lastId ?? '', first: limit })
   }
 
-  private buildFilterQuery(filters: WearablesFilters & { lastId?: string }, itemTypes: BlockchainItemType[]): string {
+  private buildItemUrnFilterQuery(filters: ItemFilters & { lastId?: string }, itemTypes: BlockchainItemType[]): string {
     const whereClause: string[] = [`searchItemType_in: ${JSON.stringify(itemTypes)}`]
     const params: string[] = []
     if (filters.textSearch) {
@@ -277,9 +277,9 @@ export class TheGraphClient {
       whereClause.push(`searchText_contains: $textSearch`)
     }
 
-    if (filters.wearableIds) {
-      params.push('$wearableIds: [String]!')
-      whereClause.push(`urn_in: $wearableIds`)
+    if (filters.itemIds) {
+      params.push('$ids: [String]!')
+      whereClause.push(`urn_in: $ids`)
     }
 
     if (filters.lastId) {
