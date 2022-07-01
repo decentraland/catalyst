@@ -2,6 +2,7 @@ import { EthAddress } from '@dcl/crypto'
 import { Entity, EntityType } from '@dcl/schemas'
 import { Request, Response } from 'express'
 import log4js from 'log4js'
+import { ThirdPartyAssetFetcher } from '../../../ports/third-party/third-party-fetcher'
 import { asArray } from '../../../utils/ControllerUtils'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TheGraphClient } from '../../../utils/TheGraphClient'
@@ -71,6 +72,7 @@ export async function getIndividualProfileById(
   ensOwnership: EnsOwnership,
   wearables: WearablesOwnership,
   profilesCacheTTL: number,
+  thirdPartyFetcher: ThirdPartyAssetFetcher,
   req: Request,
   res: Response
 ): Promise<void> {
@@ -83,6 +85,7 @@ export async function getIndividualProfileById(
     client,
     ensOwnership,
     wearables,
+    thirdPartyFetcher,
     getIfModifiedSinceTimestamp(req)
   )
   sendProfilesResponse(res, profiles, profilesCacheTTL, true)
@@ -94,6 +97,7 @@ export async function getProfilesById(
   ensOwnership: EnsOwnership,
   wearables: WearablesOwnership,
   profilesCacheTTL: number,
+  thirdPartyFetcher: ThirdPartyAssetFetcher,
   req: Request,
   res: Response
 ): Promise<Response<any, Record<string, any>> | undefined> {
@@ -111,6 +115,7 @@ export async function getProfilesById(
     contentClient,
     ensOwnership,
     wearables,
+    thirdPartyFetcher,
     getIfModifiedSinceTimestamp(req)
   )
   sendProfilesResponse(res, profiles, profilesCacheTTL)
@@ -128,6 +133,7 @@ export async function fetchProfiles(
   contentClient: SmartContentClient,
   ensOwnership: EnsOwnership,
   wearablesOwnership: WearablesOwnership,
+  thirdPartyFetcher: ThirdPartyAssetFetcher,
   ifModifiedSinceTimestamp?: number | undefined
 ): Promise<ProfileMetadata[] | undefined> {
   try {
@@ -159,7 +165,7 @@ export async function fetchProfiles(
     //Check which NFTs are owned
     const ownedWearablesPromise = wearablesOwnership.areNFTsOwned(wearablesMap)
     const ownedENSPromise = ensOwnership.areNFTsOwned(namesMap)
-    const thirdPartyWearablesPromise = checkForThirdPartyWearablesOwnership(theGraphClient, contentClient, wearablesMap)
+    const thirdPartyWearablesPromise = checkForThirdPartyWearablesOwnership(theGraphClient, thirdPartyFetcher, wearablesMap)
     const [ownedWearables, ownedENS, thirdPartyWearables] = await Promise.all([
       ownedWearablesPromise,
       ownedENSPromise,
@@ -304,42 +310,3 @@ export type ProfileMetadataForSnapshots = {
 type AvatarForSnapshots = {
   snapshots: AvatarSnapshots
 }
-// getOwnedThirdPartyWearablesByOwner
-// export async function checkForThirdPartyWearablesOwnership(
-//   theGraphClient: TheGraphClient,
-//   smartContentClient: SmartContentClient,
-//   nftsToCheck: Map<EthAddress, WearableId[]>
-// ): Promise<Map<EthAddress, WearableId[]>> {
-//   const response: Map<EthAddress, WearableId[]> = new Map()
-
-//   for (const [address, wearables] of nftsToCheck) {
-//     const collectionsForAddress: Set<WearableId> = new Set()
-//     for (const wearable of wearables) {
-//       try {
-//         const parsedUrn: DecentralandAssetIdentifier | null = await parseUrn(wearable)
-//         if (parsedUrn?.type === 'blockchain-collection-third-party') {
-//           // TODO: [TPW] Do this with urn-resolver
-//           const collectionId = parsedUrn.uri.toString().split(':').slice(0, -1).join(':')
-//           collectionsForAddress.add(collectionId)
-//         }
-//       } catch (error) {
-//         console.debug(`There was an error parsing the urn: ${wearable}`)
-//       }
-//     }
-//     const ownedWearables: Set<string> = new Set()
-//     for (const collectionId of collectionsForAddress.values()) {
-//       const resolver = await createThirdPartyResolverAux(
-//         theGraphClient,
-//         collectionId
-//       )
-//       const wearablesByOwner = await getWearablesByOwner(address, true, smartContentClient, resolver)
-
-//       for (const w of wearablesByOwner) {
-//         ownedWearables.add(w.urn)
-//       }
-//     }
-//     const sanitizedWearables = wearables.filter((w) => ownedWearables.has(w))
-//     response.set(address, sanitizedWearables)
-//   }
-//   return response
-// }

@@ -2,13 +2,13 @@ import { EthAddress } from '@dcl/crypto'
 import { parseUrn } from '@dcl/urn-resolver'
 import { Fetcher } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
-import { ThirdPartyIntegration, WearableId, WearablesFilters } from '../apis/collections/types'
+import { EmoteId, ThirdPartyIntegration, WearableId, WearablesFilters } from '../apis/collections/types'
 
 export class TheGraphClient {
   public static readonly MAX_PAGE_SIZE = 1000
   private static readonly LOGGER = log4js.getLogger('TheGraphClient')
 
-  constructor(private readonly urls: URLs, private readonly fetcher: Fetcher) {}
+  constructor(private readonly urls: URLs, private readonly fetcher: Fetcher) { }
 
   public async findOwnersByName(names: string[]): Promise<{ name: string; owner: EthAddress }[]> {
     const query: Query<
@@ -184,27 +184,18 @@ export class TheGraphClient {
    * Given an ethereum address, this method returns all wearables from ethereum and matic that are asociated to it.
    * @param owner
    */
-  public async findWearablesByOwner(owner: EthAddress): Promise<WearableId[]> {
-    const ethereumWearablesPromise = this.getWearablesByOwner('collectionsSubgraph', owner)
-    const maticWearablesPromise = this.getWearablesByOwner('maticCollectionsSubgraph', owner)
-    const [ethereumWearables, maticWearables] = await Promise.all([ethereumWearablesPromise, maticWearablesPromise])
-
-    return ethereumWearables.concat(maticWearables)
+  public async findWearableUrnsByOwner(owner: EthAddress): Promise<WearableId[]> {
+    return this.findItemsByOwner(owner, ['wearable_v1', 'wearable_v2', 'smart_wearable_v1', 'emote_v1'])
   }
 
-  private async getWearablesByOwner(subgraph: keyof URLs, owner: string) {
-    const query: Query<
-      { nfts: { urn: string; collection: { isApproved: boolean } }[] },
-      { id: WearableId; isApproved: boolean }[]
-    > = {
-      description: 'fetch wearables by owner',
-      subgraph: subgraph,
-      query: QUERY_WEARABLES_BY_OWNER,
-      mapper: (response) => response.nfts.map(({ urn, collection }) => ({ id: urn, isApproved: collection.isApproved }))
-    }
-    const wearables = await this.paginatableQuery(query, { owner: owner.toLowerCase() })
-    return wearables.filter((wearable) => wearable.isApproved).map((wearable) => wearable.id)
+  /**
+   * Given an ethereum address, this method returns all wearables from ethereum and matic that are asociated to it.
+   * @param owner
+   */
+  public async findEmoteIdsByOwner(owner: EthAddress): Promise<EmoteId[]> {
+    return this.findItemsByOwner(owner, ['emote_v1'])
   }
+
 
   public async findWearablesByFilters(
     filters: WearablesFilters,
@@ -316,6 +307,28 @@ export class TheGraphClient {
     }
   }
 
+  private async findItemsByOwner(owner: EthAddress, itemTypes: BlockchainItemType[]): Promise<(WearableId | EmoteId)[]> {
+    const ethereumWearablesPromise = this.getItemsByOwner('collectionsSubgraph', owner, itemTypes)
+    const maticWearablesPromise = this.getItemsByOwner('maticCollectionsSubgraph', owner, itemTypes)
+    const [ethereumWearables, maticWearables] = await Promise.all([ethereumWearablesPromise, maticWearablesPromise])
+
+    return ethereumWearables.concat(maticWearables)
+  }
+
+  private async getItemsByOwner(subgraph: keyof URLs, owner: string, itemTypes: BlockchainItemType[]) {
+    const query: Query<
+      { nfts: { urn: string; collection: { isApproved: boolean } }[] },
+      { id: WearableId | EmoteId; isApproved: boolean }[]
+    > = {
+      description: `fetch items (${itemTypes}) by owner`,
+      subgraph: subgraph,
+      query: QUERY_ITEMS_BY_OWNER,
+      mapper: (response) => response.nfts.map(({ urn, collection }) => ({ id: urn, isApproved: collection.isApproved }))
+    }
+    const items = await this.paginatableQuery(query, { owner: owner.toLowerCase(), itemTypes })
+    return items.filter((wearable) => wearable.isApproved).map((wearable) => wearable.id)
+  }
+
   /** This method takes a query that could be paginated and performs the pagination internally */
   private async paginatableQuery<QueryResult, ReturnType extends Array<any>>(
     query: Query<QueryResult, ReturnType>,
@@ -401,15 +414,31 @@ query ThirdPartyResolver($id: String!) {
 }
 `
 
-const QUERY_WEARABLES_BY_OWNER: string = `
-  query WearablesByOwner($owner: String, $first: Int, $skip: Int) {
-    nfts(where: {owner: $owner, searchItemType_in: ["wearable_v1", "wearable_v2", "smart_wearable_v1", "emote_v1"]}, first: $first, skip: $skip) {
+// const QUERY_WEARABLES_BY_OWNER: string = `
+//   query WearablesByOwner($owner: String, $first: Int, $skip: Int) {
+//     nfts(where: {owner: $owner, searchItemType_in: ["wearable_v1", "wearable_v2", "smart_wearable_v1", "emote_v1"]}, first: $first, skip: $skip) {
+//       urn,
+//       collection {
+//         isApproved
+//       }
+//     }
+//   }`
+
+const QUERY_ITEMS_BY_OWNER: string = `
+query itemsByOwner($owner: String, $item_types:[String], $first: Int, $skip: Int) {
+  nfts(
+    where: {
+      owner: $owner,
+      searchItemType_in: $item_types
+    },
+    first: $first,
+    skip: $skip) {
       urn,
       collection {
         isApproved
       }
-    }
-  }`
+  }
+}`
 
 const QUERY_OWNER_BY_NAME = `
   query FetchOwnersByName($names: [String]) {
@@ -448,3 +477,5 @@ type URLs = {
   maticCollectionsSubgraph: string
   thirdPartyRegistrySubgraph: string
 }
+
+type BlockchainItemType = 'wearable_v1' | 'wearable_v2' | 'smart_wearable_v1' | 'emote_v1'

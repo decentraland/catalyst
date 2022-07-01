@@ -1,4 +1,5 @@
 import { NextFunction, Request, RequestHandler, Response, Router } from 'express'
+import { ThirdPartyAssetFetcher } from '../../ports/third-party/third-party-fetcher'
 import { SmartContentClient } from '../../utils/SmartContentClient'
 import { TheGraphClient } from '../../utils/TheGraphClient'
 import { getIndividualProfileById, getProfilesById } from './controllers/profiles'
@@ -20,11 +21,12 @@ export function initializeIndividualProfileRoutes(
   client: SmartContentClient,
   ensOwnership: EnsOwnership,
   wearablesOwnership: WearablesOwnership,
-  profilesCacheTTL: number
+  profilesCacheTTL: number,
+  thirdPartyFetcher: ThirdPartyAssetFetcher
 ): Router {
   router.get(
     '/:id',
-    createHandler(theGraphClient, client, ensOwnership, wearablesOwnership, profilesCacheTTL, getIndividualProfileById)
+    createHandler(theGraphClient, client, ensOwnership, wearablesOwnership, profilesCacheTTL, thirdPartyFetcher, getIndividualProfileById)
   )
   return router
 }
@@ -35,15 +37,16 @@ export function initializeProfilesRoutes(
   client: SmartContentClient,
   ensOwnership: EnsOwnership,
   wearablesOwnership: WearablesOwnership,
-  profilesCacheTTL: number
+  profilesCacheTTL: number,
+  thirdPartyFetcher: ThirdPartyAssetFetcher,
 ): Router {
   router.get(
     '/',
-    createHandler(theGraphClient, client, ensOwnership, wearablesOwnership, profilesCacheTTL, getProfilesById)
+    createHandler(theGraphClient, client, ensOwnership, wearablesOwnership, profilesCacheTTL, thirdPartyFetcher, getProfilesById)
   )
   router.get(
     '/:id',
-    createHandler(theGraphClient, client, ensOwnership, wearablesOwnership, profilesCacheTTL, getIndividualProfileById)
+    createHandler(theGraphClient, client, ensOwnership, wearablesOwnership, profilesCacheTTL, thirdPartyFetcher, getIndividualProfileById)
   )
   return router
 }
@@ -54,18 +57,20 @@ function createHandler(
   ensOwnership: EnsOwnership,
   wearablesOwnership: WearablesOwnership,
   profilesCacheTTL: number,
+  thirdPartyFetcher: ThirdPartyAssetFetcher,
   originalHandler: (
     theGraphClient: TheGraphClient,
     client: SmartContentClient,
     ensOwnership: EnsOwnership,
     wearablesOwnership: WearablesOwnership,
     profilesCacheTTL: number,
+    thirdPartyFetcher: ThirdPartyAssetFetcher,
     req: Request,
     res: Response
   ) => Promise<any>
 ): RequestHandler {
   return asyncHandler(
     async (req, res) =>
-      await originalHandler(theGraphClient, client, ensOwnership, wearablesOwnership, profilesCacheTTL, req, res)
+      await originalHandler(theGraphClient, client, ensOwnership, wearablesOwnership, profilesCacheTTL, thirdPartyFetcher, req, res)
   )
 }

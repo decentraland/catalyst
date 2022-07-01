@@ -1,5 +1,4 @@
 import { LAMBDAS_API } from '@dcl/catalyst-api-specs'
-import { initializeMetricsServer } from './MetricsServer'
 import compression from 'compression'
 import cors from 'cors'
 import express from 'express'
@@ -21,6 +20,9 @@ import statusRouter from './apis/status/routes'
 import { initializeThirdPartyIntegrationsRoutes } from './apis/third-party/routes'
 import { Bean, Environment, EnvironmentConfig } from './Environment'
 import { metricsComponent } from './metrics'
+import { initializeMetricsServer } from './MetricsServer'
+import { createFetchComponent } from './ports/fetcher'
+import { createThirdPartyAssetFetcher, ThirdPartyAssetFetcher } from './ports/third-party/third-party-fetcher'
 import { SmartContentClient } from './utils/SmartContentClient'
 import { SmartContentServerFetcher } from './utils/SmartContentServerFetcher'
 import { TheGraphClient } from './utils/TheGraphClient'
@@ -75,6 +77,7 @@ export class Server {
     const contentClient: SmartContentClient = env.getBean(Bean.SMART_CONTENT_SERVER_CLIENT)
     const theGraphClient: TheGraphClient = env.getBean(Bean.THE_GRAPH_CLIENT)
     const offChainManager: OffChainWearablesManager = env.getBean(Bean.OFF_CHAIN_MANAGER)
+    const thirdPartyFetcher: ThirdPartyAssetFetcher = createThirdPartyAssetFetcher(createFetchComponent())
 
     const profilesCacheTTL: number = env.getConfig(EnvironmentConfig.PROFILES_CACHE_TTL)
 
@@ -94,7 +97,8 @@ export class Server {
         contentClient,
         ensOwnership,
         wearablesOwnership,
-        profilesCacheTTL
+        profilesCacheTTL,
+        thirdPartyFetcher
       )
     )
     this.app.use(
@@ -105,7 +109,8 @@ export class Server {
         contentClient,
         ensOwnership,
         wearablesOwnership,
-        profilesCacheTTL
+        profilesCacheTTL,
+        thirdPartyFetcher
       )
     )
 
@@ -124,7 +129,7 @@ export class Server {
     // DAO Collections access API
     this.app.use(
       '/collections',
-      initializeCollectionsRoutes(express.Router(), contentClient, theGraphClient, offChainManager)
+      initializeCollectionsRoutes(express.Router(), contentClient, theGraphClient, offChainManager, thirdPartyFetcher)
     )
 
     // Functionality for Explore use case

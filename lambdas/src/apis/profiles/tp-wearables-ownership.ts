@@ -1,14 +1,13 @@
 import { EthAddress } from '@dcl/crypto'
 import { DecentralandAssetIdentifier, parseUrn } from '@dcl/urn-resolver'
-import { SmartContentClient } from '../../utils/SmartContentClient'
+import { findThirdPartyItemUrns } from '../../logic/third-party-urn-finder'
+import { ThirdPartyAssetFetcher } from '../../ports/third-party/third-party-fetcher'
 import { TheGraphClient } from '../../utils/TheGraphClient'
-import { createThirdPartyResolverAux } from '../../utils/third-party'
-import { getWearablesByOwner } from '../collections/controllers/wearables'
 import { WearableId } from '../collections/types'
 
 export async function checkForThirdPartyWearablesOwnership(
   theGraphClient: TheGraphClient,
-  smartContentClient: SmartContentClient,
+  thirdPartyFetcher: ThirdPartyAssetFetcher,
   nftsToCheck: Map<EthAddress, WearableId[]>
 ): Promise<Map<EthAddress, WearableId[]>> {
   const response: Map<EthAddress, WearableId[]> = new Map()
@@ -29,14 +28,10 @@ export async function checkForThirdPartyWearablesOwnership(
     }
     const ownedWearables: Set<string> = new Set()
     for (const collectionId of collectionsForAddress.values()) {
-      const resolver = await createThirdPartyResolverAux(
-        theGraphClient,
-        collectionId
-      )
-      const wearablesByOwner = await getWearablesByOwner(address, true, smartContentClient, resolver)
+      const wearableIdsByOwner = await findThirdPartyItemUrns(theGraphClient, thirdPartyFetcher, address, collectionId)
 
-      for (const w of wearablesByOwner) {
-        ownedWearables.add(w.urn)
+      for (const id of wearableIdsByOwner) {
+        ownedWearables.add(id)
       }
     }
     const sanitizedWearables = wearables.filter((w) => ownedWearables.has(w))

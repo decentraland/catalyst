@@ -1,14 +1,14 @@
-import { EthAddress } from '@dcl/crypto'
 import { EntityType } from '@dcl/schemas'
 import { Request, Response } from 'express'
 import log4js from 'log4js'
+import { findThirdPartyItemUrns } from '../../../logic/third-party-urn-finder'
 import { toQueryParams } from '../../../logic/toQueryParams'
+import { ThirdPartyAssetFetcher } from '../../../ports/third-party/third-party-fetcher'
 import { asArray, asInt } from '../../../utils/ControllerUtils'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TheGraphClient } from '../../../utils/TheGraphClient'
-import { createThirdPartyResolverAux } from '../../../utils/third-party'
 import { BASE_AVATARS_COLLECTION_ID, OffChainWearablesManager } from '../off-chain/OffChainWearablesManager'
-import { ItemPagination, LambdasWearable, WearableId, WearablesFilters } from '../types'
+import { ItemPagination, LambdasWearable, WearablesFilters } from '../types'
 import { isBaseAvatar, translateEntityIntoWearable } from '../Utils'
 
 // Different versions of the same query param
@@ -24,62 +24,58 @@ const LOGGER = log4js.getLogger('TheGraphClient')
 export async function getWearablesByOwnerEndpoint(
   client: SmartContentClient,
   theGraphClient: TheGraphClient,
+  thirdPartyFetcher: ThirdPartyAssetFetcher,
   req: Request,
   res: Response
 ): Promise<void> {
   // Method: GET
   // Path: /wearables-by-owner/:owner?collectionId={string}
-
   const { owner } = req.params
-  const { collectionId } = req.query
+  const collectionId = req.query.collectionId
+  if (typeof collectionId !== 'string') {
+    throw new Error('Bad input. CollectionId must be a string.')
+  }
   const includeDefinition = INCLUDE_DEFINITION_VERSIONS.some((version) => version in req.query)
 
   try {
-    const wearablesByOwner = await getWearablesByOwner(
-      owner,
+    const ownedWearableUrns = collectionId
+      ? await findThirdPartyItemUrns(theGraphClient, thirdPartyFetcher, owner, collectionId)
+      : await theGraphClient.findWearableUrnsByOwner(owner)
+
+    const ownedWearables = await getWearablesByOwner(
       includeDefinition,
       client,
-      collectionId
-        ? await createThirdPartyResolverAux(
-          theGraphClient,
-          collectionId as string
-        )
-        : theGraphClient
+      ownedWearableUrns
     )
-    res.send(wearablesByOwner)
+    res.send(ownedWearables)
   } catch (e) {
     LOGGER.error(e)
     res.status(500).send(`Failed to fetch wearables by owner.`)
   }
 }
-export interface FindWearablesByOwner {
-  findWearablesByOwner: (owner: EthAddress) => Promise<WearableId[]>
-}
 
 export async function getWearablesByOwner(
-  owner: EthAddress,
   includeDefinition: boolean,
   client: SmartContentClient,
-  wearablesResolver: FindWearablesByOwner
-): Promise<{ urn: WearableId; amount: number; definition?: LambdasWearable | undefined }[]> {
-  // Fetch wearables & definitions (if needed)
-  const wearablesByOwner = await wearablesResolver.findWearablesByOwner(owner)
-  const definitions: Map<WearableId, LambdasWearable> = includeDefinition
-    ? await fetchDefinitions(wearablesByOwner, client)
-    : new Map()
+  wearableUrns: string[],
+): Promise<{ urn: string; amount: number; definition?: LambdasWearable | undefined }[]> {
+  // Fetch definitions (if needed)
+  const wearables = includeDefinition ? await fetchWearables(wearableUrns, client) : []
+  const wearablesByUrn: Map<string, LambdasWearable> =
+    new Map(wearables.map((wearable) => [wearable.id.toLowerCase(), wearable]))
 
-  // Count wearables by user
-  const count: Map<WearableId, number> = new Map()
-  for (const wearableId of wearablesByOwner) {
-    const amount = count.get(wearableId) ?? 0
-    count.set(wearableId, amount + 1)
+  // Count wearables by id
+  const countByUrn: Map<string, number> = new Map()
+  for (const urn of wearableUrns) {
+    const amount = countByUrn.get(urn) ?? 0
+    countByUrn.set(urn, amount + 1)
   }
 
   // Return result
-  return Array.from(count.entries()).map(([id, amount]) => ({
-    urn: id,
+  return Array.from(countByUrn.entries()).map(([urn, amount]) => ({
+    urn,
     amount,
-    definition: definitions.get(id.toLowerCase())
+    definition: wearablesByUrn.get(urn.toLowerCase())
   }))
 }
 
@@ -196,16 +192,11 @@ export async function getWearables(
   return { wearables: slice, lastId: moreData ? slice[slice.length - 1]?.id : undefined }
 }
 
-async function fetchWearables(wearableIds: WearableId[], client: SmartContentClient): Promise<LambdasWearable[]> {
-  if (wearableIds.length === 0) {
+async function fetchWearables(wearableUrns: string[], client: SmartContentClient): Promise<LambdasWearable[]> {
+  if (wearableUrns.length === 0) {
     return []
   }
-  const entities = await client.fetchEntitiesByPointers(EntityType.WEARABLE, wearableIds)
+  const entities = await client.fetchEntitiesByPointers(EntityType.WEARABLE, wearableUrns)
   const wearables = entities.map((entity) => translateEntityIntoWearable(client, entity))
   return wearables.sort((wearable1, wearable2) => wearable1.id.toLowerCase().localeCompare(wearable2.id.toLowerCase()))
-}
-
-async function fetchDefinitions(wearableIds: WearableId[], client: SmartContentClient): Promise<Map<string, LambdasWearable>> {
-  const wearables = await fetchWearables(wearableIds, client)
-  return new Map(wearables.map((wearable) => [wearable.id.toLowerCase(), wearable]))
 }
