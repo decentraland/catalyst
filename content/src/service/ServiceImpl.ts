@@ -268,7 +268,7 @@ export class ServiceImpl implements MetaverseContentService {
             const { overwrote, overwrittenBy } = await runReportingQueryDurationMetric(
               this.components,
               'calculate_overwrites',
-              () => this.components.pointerManager.calculateOverwrites(transaction.pointerHistory, entity)
+              () => this.components.pointerManager.calculateOverwrites(transaction.deployments, entity)
             )
 
             // Store the deployment
