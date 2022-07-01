@@ -35,148 +35,154 @@ loadStandaloneTestEnvironment()('Integration - Create entities', (testEnv) => {
     await server.stopProgram()
   })
 
+  const profileAddress = '0x31a19cb92ac89f1aa62fa72da5f52521daf130b0'
+  const originalProfileEntityId = 'bafkreigiffn5v5j5o2rd24dvirirggghisva44owomrl65dqg5flan47le'
+  const profileOverwriteEntityId = 'bafkreiczclosnorj7bzibuvotiwf2gyvtmnxmyvl62nacpxhluqsi72bxq';
+
   it('when creating a profile, pointer should be stored in active-pointers table', async () => {
     // Create profile
-    const form = createForm('bafkreigiffn5v5j5o2rd24dvirirggghisva44owomrl65dqg5flan47le', 'profile_original.json');
+    const form = createForm(originalProfileEntityId, 'profile_original.json');
     await callCreateEntityEndpoint(server, form)
 
     // Check that entity_id matches only with the profile pointer
-    await assertQueryResultPointers('bafkreigiffn5v5j5o2rd24dvirirggghisva44owomrl65dqg5flan47le', ['0x31a19cb92ac89f1aa62fa72da5f52521daf130b0'])
+    await assertQueryResultPointers(originalProfileEntityId, [profileAddress])
 
     // Check that profile pointer matches only with the entity_id
-    await assertQueryResultEntityIds('0x31a19cb92ac89f1aa62fa72da5f52521daf130b0', ['bafkreigiffn5v5j5o2rd24dvirirggghisva44owomrl65dqg5flan47le'])
+    await assertQueryResultEntityIds(profileAddress, [originalProfileEntityId])
   })
 
   it('when overwriting a profile, entity id should be replaced in active-pointers table', async () => {
     // Create profile
-    let form = createForm('bafkreigiffn5v5j5o2rd24dvirirggghisva44owomrl65dqg5flan47le', 'profile_original.json');
+    let form = createForm(originalProfileEntityId, 'profile_original.json');
     await callCreateEntityEndpoint(server, form)
 
     // Overwrite profile
-    form = createForm('bafkreiczclosnorj7bzibuvotiwf2gyvtmnxmyvl62nacpxhluqsi72bxq', 'profile_overwrite.json');
+    form = createForm(profileOverwriteEntityId, 'profile_overwrite.json');
     await callCreateEntityEndpoint(server, form)
 
     // Check that entity_id matches only with the profile pointer
-    await assertQueryResultPointers('bafkreiczclosnorj7bzibuvotiwf2gyvtmnxmyvl62nacpxhluqsi72bxq', ['0x31a19cb92ac89f1aa62fa72da5f52521daf130b0'])
+    await assertQueryResultPointers(profileOverwriteEntityId, [profileAddress])
 
     // Check that profile pointer matches only with the entity_id
-    await assertQueryResultEntityIds('0x31a19cb92ac89f1aa62fa72da5f52521daf130b0', ['bafkreiczclosnorj7bzibuvotiwf2gyvtmnxmyvl62nacpxhluqsi72bxq'])
+    await assertQueryResultEntityIds(profileAddress, [profileOverwriteEntityId])
 
     // Check that old pointers were deleted
-    await assertQueryResultPointers('bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy', [])
+    await assertQueryResultPointers(originalProfileEntityId, [])
   })
 
   it('when overwriting a profile, new profile must be ignored if its timestamp is older', async () => {
     // Create profile
-    let form = createForm('bafkreiczclosnorj7bzibuvotiwf2gyvtmnxmyvl62nacpxhluqsi72bxq', 'profile_overwrite.json');
+    let form = createForm(profileOverwriteEntityId, 'profile_overwrite.json');
     await callCreateEntityEndpoint(server, form)
 
     // Try to overwrite it with a profile with older timestamp
-    form = createForm('bafkreigiffn5v5j5o2rd24dvirirggghisva44owomrl65dqg5flan47le', 'profile_original.json');
+    form = createForm(originalProfileEntityId, 'profile_original.json');
     await callCreateEntityEndpoint(server, form)
 
     // Check that entity_id matches only with the profile pointer
-    await assertQueryResultPointers('bafkreiczclosnorj7bzibuvotiwf2gyvtmnxmyvl62nacpxhluqsi72bxq', ['0x31a19cb92ac89f1aa62fa72da5f52521daf130b0'])
+    await assertQueryResultPointers(profileOverwriteEntityId, [profileAddress])
 
     // Check that profile pointer matches only with the entity_id
-    await assertQueryResultEntityIds('0x31a19cb92ac89f1aa62fa72da5f52521daf130b0', ['bafkreiczclosnorj7bzibuvotiwf2gyvtmnxmyvl62nacpxhluqsi72bxq'])
+    await assertQueryResultEntityIds(profileAddress, [profileOverwriteEntityId])
 
     // Check that old pointer was never added
-    await assertQueryResultPointers('bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy', [])
+    await assertQueryResultPointers(originalProfileEntityId, [])
   })
+
+  const originalSceneEntityId = 'bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy';
+  const overwriteSceneEntityId = 'bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq';
+  const anotherSceneEntityId = 'bafkreihubgrgjjz55sbzd5jq5fr4qucz37preqnwcggznzrlatpmz4n3sa';
 
   it('when creating a scene, pointers should be stored in active-pointers table', async () => {
     // Create scene
-    const form = createForm('bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy', 'scene_original.json');
+    const form = createForm(originalSceneEntityId, 'scene_original.json');
     await callCreateEntityEndpoint(server, form)
 
     // Check that entity_id matches only with the scene pointers
-    await assertQueryResultPointers('bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy', ['0,0', '0,1'])
+    await assertQueryResultPointers(originalSceneEntityId, ['0,0', '0,1'])
 
     // Check that scene pointers match only with the entity_id
-    await assertQueryResultEntityIds('0,0', ['bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy'])
+    await assertQueryResultEntityIds('0,0', [originalSceneEntityId])
 
-    await assertQueryResultEntityIds('0,1', ['bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy'])
+    await assertQueryResultEntityIds('0,1', [originalSceneEntityId])
   })
 
   it('when overwriting a scene, unused pointers should be deleted from active-pointers table', async () => {
     // Create scene
-    let form = createForm('bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy', 'scene_original.json');
+    let form = createForm(originalSceneEntityId, 'scene_original.json');
     await callCreateEntityEndpoint(server, form)
 
-    await server.components.database.query<ActivePointersRow>("select * from active_pointers where entity_id='bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy'")
-
     // Overwrite scene
-    form = createForm('bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq', 'scene_overwrite.json');
+    form = createForm(overwriteSceneEntityId, 'scene_overwrite.json');
     await callCreateEntityEndpoint(server, form)
 
     // Check that scene pointers match only with the entity_id
-    await assertQueryResultEntityIds('0,0', ['bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq'])
-    await assertQueryResultEntityIds('1,0', ['bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq'])
+    await assertQueryResultEntityIds('0,0', [overwriteSceneEntityId])
+    await assertQueryResultEntityIds('1,0', [overwriteSceneEntityId])
 
     // Check that old pointers were deleted
-    await assertQueryResultPointers('bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy', [])
+    await assertQueryResultPointers(originalSceneEntityId, [])
     await assertQueryResultEntityIds('0,1', [])
 
     // Check that entity_id matches scene pointers
-    await assertQueryResultPointers('bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq', ['0,0', '1,0'])
+    await assertQueryResultPointers(overwriteSceneEntityId, ['0,0', '1,0'])
   })
 
 
   it('when overwriting multiple scenes, unused pointers should be deleted from active-pointers table', async () => {
     // Create scene
-    let form = createForm('bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy', 'scene_original.json');
+    let form = createForm(originalSceneEntityId, 'scene_original.json');
     await callCreateEntityEndpoint(server, form)
 
     // Check that scene pointers match only with the entity_id
-    await assertQueryResultPointers('bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy', ['0,0', '0,1'])
+    await assertQueryResultPointers(originalSceneEntityId, ['0,0', '0,1'])
 
     // Create a second scene (non-overlapping)
-    form = createForm('bafkreihubgrgjjz55sbzd5jq5fr4qucz37preqnwcggznzrlatpmz4n3sa', 'another_scene.json');
+    form = createForm(anotherSceneEntityId, 'another_scene.json');
     await callCreateEntityEndpoint(server, form)
 
     // Check that scene pointers match only with the entity_id
-    await assertQueryResultPointers('bafkreihubgrgjjz55sbzd5jq5fr4qucz37preqnwcggznzrlatpmz4n3sa', ['1,0', '1,1'])
+    await assertQueryResultPointers(anotherSceneEntityId, ['1,0', '1,1'])
 
     // Create a scene that overwrites the two previous ones
-    form = createForm('bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq', 'scene_overwrite.json');
+    form = createForm(overwriteSceneEntityId, 'scene_overwrite.json');
     await callCreateEntityEndpoint(server, form)
 
     // Check that scene pointers match only with the entity_id
-    await assertQueryResultEntityIds('0,0', ['bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq'])
-    await assertQueryResultEntityIds('1,0', ['bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq'])
+    await assertQueryResultEntityIds('0,0', [overwriteSceneEntityId])
+    await assertQueryResultEntityIds('1,0', [overwriteSceneEntityId])
 
     // Check that entity_id matches scene pointers
-    await assertQueryResultPointers('bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq', ['0,0', '1,0'])
+    await assertQueryResultPointers(overwriteSceneEntityId, ['0,0', '1,0'])
 
     // Check that old pointers were deleted
-    await assertQueryResultPointers('bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy', [])
+    await assertQueryResultPointers(originalSceneEntityId, [])
     await assertQueryResultEntityIds('0,1', [])
-    await assertQueryResultPointers('bafkreihubgrgjjz55sbzd5jq5fr4qucz37preqnwcggznzrlatpmz4n3sa', [])
+    await assertQueryResultPointers(anotherSceneEntityId, [])
     await assertQueryResultEntityIds('1,1', [])
 
-    assertDeleterDeployment('bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy', 'bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq')
-    assertDeleterDeployment('bafkreihubgrgjjz55sbzd5jq5fr4qucz37preqnwcggznzrlatpmz4n3sa', 'bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq')
+    await assertDeleterDeployment(originalSceneEntityId, overwriteSceneEntityId)
+    await assertDeleterDeployment(anotherSceneEntityId, overwriteSceneEntityId)
   })
 
   it('when overwriting a scene, new scene must be ignored if its timestamp is older', async () => {
     // Create scene
-    let form = createForm('bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq', 'scene_overwrite.json');
+    let form = createForm(overwriteSceneEntityId, 'scene_overwrite.json');
     await callCreateEntityEndpoint(server, form)
 
     // Try to overwrite it with a scene with older timestamp
-    form = createForm('bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy', 'scene_original.json');
+    form = createForm(originalSceneEntityId, 'scene_original.json');
     await callCreateEntityEndpoint(server, form)
 
     // Check that entity_id matches scene pointers
-    await assertQueryResultPointers('bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq', ['0,0', '1,0'])
+    await assertQueryResultPointers(overwriteSceneEntityId, ['0,0', '1,0'])
 
     // Check that scene pointers match only with the entity_id
-    await assertQueryResultEntityIds('0,0', ['bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq'])
-    await assertQueryResultEntityIds('1,0', ['bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq'])
+    await assertQueryResultEntityIds('0,0', [overwriteSceneEntityId])
+    await assertQueryResultEntityIds('1,0', [overwriteSceneEntityId])
 
     // Check that old pointers were never added
-    await assertQueryResultPointers('bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy', [])
+    await assertQueryResultPointers(originalSceneEntityId, [])
     await assertQueryResultEntityIds('0,1', [])
   })
 
