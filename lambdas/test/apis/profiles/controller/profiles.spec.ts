@@ -180,7 +180,7 @@ function profileWith(
 
 function contentServerThatReturns(profile?: Entity): SmartContentClient {
   const mockedClient = mock(SmartContentClient)
-  when(mockedClient.fetchEntitiesByPointers(anything(), anything())).thenResolve(profile ? [profile] : [])
+  when(mockedClient.fetchEntitiesByPointers(anything())).thenResolve(profile ? [profile] : [])
   when(mockedClient.getExternalContentServerUrl()).thenReturn(EXTERNAL_URL)
   return instance(mockedClient)
 }

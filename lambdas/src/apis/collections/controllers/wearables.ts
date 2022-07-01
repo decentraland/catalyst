@@ -1,5 +1,4 @@
 import { EthAddress } from '@dcl/crypto'
-import { EntityType } from '@dcl/schemas'
 import { Request, Response } from 'express'
 import log4js from 'log4js'
 import { toQueryParams } from '../../../logic/toQueryParams'
@@ -201,7 +200,7 @@ async function fetchWearables(wearableIds: WearableId[], client: SmartContentCli
   if (wearableIds.length === 0) {
     return []
   }
-  const entities = await client.fetchEntitiesByPointers(EntityType.WEARABLE, wearableIds)
+  const entities = await client.fetchEntitiesByPointers(wearableIds)
   const wearables = entities.map((entity) => translateEntityIntoWearable(client, entity))
   return wearables.sort((wearable1, wearable2) => wearable1.id.toLowerCase().localeCompare(wearable2.id.toLowerCase()))
 }

@@ -1,4 +1,4 @@
-import { Entity, EntityType, EthAddress } from '@dcl/schemas'
+import { Entity, EthAddress } from '@dcl/schemas'
 import { Fetcher } from 'dcl-catalyst-commons'
 import { Request, Response } from 'express'
 import { DAOCache } from '../../../service/dao/DAOCache'
@@ -141,7 +141,7 @@ async function fetchHotScenesData(daoCache: DAOCache, contentClient: SmartConten
   const tiles = getOccupiedTiles(statuses)
 
   if (tiles.length > 0) {
-    const scenes = await contentClient.fetchEntitiesByPointers(EntityType.SCENE as any, tiles)
+    const scenes = await contentClient.fetchEntitiesByPointers(tiles)
 
     const hotScenes: HotSceneInfo[] = scenes.map((scene) =>
       getHotSceneRecordFor(scene, contentClient.getExternalContentServerUrl())

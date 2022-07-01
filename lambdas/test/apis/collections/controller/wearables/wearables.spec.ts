@@ -34,7 +34,7 @@ describe('wearables', () => {
     expect(response.wearables).toEqual([OFF_CHAIN_WEARABLE])
     expect(response.lastId).toBeUndefined()
     verify(graphClientMock.findWearablesByFilters(anything(), anything())).never()
-    verify(contentServerMock.fetchEntitiesByPointers(anything(), anything())).never()
+    verify(contentServerMock.fetchEntitiesByPointers(anything())).never()
   })
 })
 
@@ -54,7 +54,7 @@ it(`When on-chain ids are requested, then content servers is queried, but subgra
 
   expectWearablesToBe(response, OFF_CHAIN_WEARABLE_ID, ON_CHAIN_WEARABLE_ID)
   expect(response.lastId).toBeUndefined()
-  verify(contentServerMock.fetchEntitiesByPointers(EntityType.WEARABLE, deepEqual([ON_CHAIN_WEARABLE_ID]))).once()
+  verify(contentServerMock.fetchEntitiesByPointers(deepEqual([ON_CHAIN_WEARABLE_ID]))).once()
   verify(graphClientMock.findWearablesByFilters(anything(), anything())).never()
 })
 
@@ -113,7 +113,7 @@ it(`When there is more data than the one returned, then last id is included`, as
   expect(response.lastId).toEqual(OFF_CHAIN_WEARABLE_ID)
   verify(offChainMock.find(filters, undefined)).once()
   verify(graphClientMock.findWearablesByFilters(filters, deepEqual({ limit: 0, lastId: undefined }))).once()
-  verify(contentServerMock.fetchEntitiesByPointers(EntityType.WEARABLE, deepEqual([ON_CHAIN_WEARABLE_ID]))).once()
+  verify(contentServerMock.fetchEntitiesByPointers(deepEqual([ON_CHAIN_WEARABLE_ID]))).once()
 })
 
 function emptyContentServer() {
@@ -156,7 +156,7 @@ function contentServerThatReturns(id?: WearableId) {
     }
   }
   const mockedClient = mock(SmartContentClient)
-  when(mockedClient.fetchEntitiesByPointers(anything(), anything())).thenResolve(id ? [entity] : [])
+  when(mockedClient.fetchEntitiesByPointers(anything())).thenResolve(id ? [entity] : [])
   return { instance: instance(mockedClient), mock: mockedClient }
 }
 

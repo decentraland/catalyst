@@ -1,5 +1,5 @@
 import { EthAddress } from '@dcl/crypto'
-import { Entity, EntityType } from '@dcl/schemas'
+import { Entity } from '@dcl/schemas'
 import { Request, Response } from 'express'
 import log4js from 'log4js'
 import { asArray } from '../../../utils/ControllerUtils'
@@ -161,7 +161,7 @@ export async function fetchProfiles(
   ifModifiedSinceTimestamp?: number | undefined
 ): Promise<ProfileMetadata[] | undefined> {
   try {
-    const profilesEntities: Entity[] = await contentClient.fetchEntitiesByPointers(EntityType.PROFILE, ethAddresses)
+    const profilesEntities: Entity[] = await contentClient.fetchEntitiesByPointers(ethAddresses)
 
     // Avoid querying profiles if there wasn't any new deployment
     if (

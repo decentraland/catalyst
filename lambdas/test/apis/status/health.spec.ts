@@ -20,7 +20,7 @@ describe("Lambda's Controller Utils", () => {
       beforeAll(() => {
         contentClientMock = mock(SmartContentClient)
         when(contentClientMock.fetchContentStatus()).thenReturn(Promise.resolve(mockedHealthyStatus as any))
-        when(contentClientMock.fetchEntitiesByPointers(anything(), anything())).thenReturn(
+        when(contentClientMock.fetchEntitiesByPointers(anything())).thenReturn(
           Promise.resolve(mockedHealthyStatus as any)
         )
       })
@@ -46,7 +46,7 @@ describe("Lambda's Controller Utils", () => {
       beforeAll(() => {
         contentClientMock = mock(SmartContentClient)
         when(contentClientMock.fetchContentStatus()).thenReturn(Promise.resolve(mockedHealthyStatus as any))
-        when(contentClientMock.fetchEntitiesByPointers(anything(), anything())).thenReturn(
+        when(contentClientMock.fetchEntitiesByPointers(anything())).thenReturn(
           Promise.resolve(mockedHealthyStatus as any)
         )
       })
@@ -73,7 +73,7 @@ describe("Lambda's Controller Utils", () => {
       beforeAll(() => {
         contentClientMock = mock(SmartContentClient)
         when(contentClientMock.fetchContentStatus()).thenReturn(Promise.resolve(mockedHealthyStatus as any))
-        when(contentClientMock.fetchEntitiesByPointers(anything(), anything())).thenReturn(
+        when(contentClientMock.fetchEntitiesByPointers(anything())).thenReturn(
           Promise.resolve(mockedHealthyStatus as any)
         )
 
@@ -110,7 +110,7 @@ describe("Lambda's Controller Utils", () => {
       beforeAll(() => {
         contentClientMock = mock(SmartContentClient)
         when(contentClientMock.fetchContentStatus()).thenReturn(Promise.resolve(mockedUnhealthyStatus as any))
-        when(contentClientMock.fetchEntitiesByPointers(anything(), anything())).thenReturn(
+        when(contentClientMock.fetchEntitiesByPointers(anything())).thenReturn(
           Promise.resolve(mockedUnhealthyStatus as any)
         )
       })

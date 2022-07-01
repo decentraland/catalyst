@@ -1,4 +1,4 @@
-import { Entity, EntityType } from '@dcl/schemas'
+import { Entity } from '@dcl/schemas'
 import { ILoggerComponent, Lifecycle } from '@well-known-components/interfaces'
 import { ContentClient, DeploymentData } from 'dcl-catalyst-client'
 import {
@@ -80,20 +80,20 @@ export class TestProgram {
     return this.makeRequest(`${this.getUrl()}/failed-deployments`)
   }
 
-  getEntitiesByPointers(type: EntityType, pointers: string[]): Promise<Entity[]> {
-    return this.client.fetchEntitiesByPointers(type, pointers)
+  getEntitiesByPointers(pointers: string[]): Promise<any[]> {
+    return this.client.fetchEntitiesByPointers(pointers)
   }
 
   getStatus(): Promise<ServerStatus> {
     return this.client.fetchContentStatus()
   }
 
-  getEntitiesByIds(type: EntityType, ...ids: string[]): Promise<Entity[]> {
-    return this.client.fetchEntitiesByIds(type, ids)
+  getEntitiesByIds(...ids: string[]): Promise<any[]> {
+    return this.client.fetchEntitiesByIds(ids)
   }
 
-  getEntityById(type: EntityType, id: string): Promise<Entity> {
-    return this.client.fetchEntityById(type, id)
+  getEntityById(id: string): Promise<any> {
+    return this.client.fetchEntityById(id)
   }
 
   downloadContent(fileHash: ContentFileHash): Promise<Buffer> {

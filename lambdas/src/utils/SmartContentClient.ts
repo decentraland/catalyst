@@ -1,4 +1,4 @@
-import { Entity, EntityType } from '@dcl/schemas'
+import { EntityType } from '@dcl/schemas'
 import {
   BuildEntityOptions,
   BuildEntityWithoutFilesOptions,
@@ -28,19 +28,20 @@ export class SmartContentClient implements ContentAPI {
 
   constructor(private readonly externalContentServerUrl: string) {}
 
-  async fetchEntitiesByPointers(type: EntityType, pointers: string[], options?: RequestOptions): Promise<Entity[]> {
+  // TODO: Fix this when using latest version of schema
+  async fetchEntitiesByPointers(pointers: string[], options?: RequestOptions): Promise<any[]> {
     const client = await this.getClient()
-    return client.fetchEntitiesByPointers(type, pointers, options)
+    return await client.fetchEntitiesByPointers(pointers, options)
   }
 
-  async fetchEntitiesByIds(type: EntityType, ids: string[], options?: RequestOptions): Promise<Entity[]> {
+  async fetchEntitiesByIds(ids: string[], options?: RequestOptions): Promise<any[]> {
     const client = await this.getClient()
-    return client.fetchEntitiesByIds(type, ids, options)
+    return await client.fetchEntitiesByIds(ids, options)
   }
 
-  async fetchEntityById(type: EntityType, id: string, options?: RequestOptions): Promise<Entity> {
+  async fetchEntityById(id: string, options?: RequestOptions): Promise<any> {
     const client = await this.getClient()
-    return client.fetchEntityById(type, id, options)
+    return await client.fetchEntityById(id, options)
   }
 
   async fetchAuditInfo(type: EntityType, id: string, options?: RequestOptions) {
@@ -70,6 +71,10 @@ export class SmartContentClient implements ContentAPI {
   async isContentAvailable(cids: string[], options?: RequestOptions): Promise<AvailableContentResult> {
     const client = await this.getClient()
     return client.isContentAvailable(cids, options)
+  }
+
+  deploy(deployData: DeploymentData, options?: RequestOptions): Promise<unknown> {
+    throw new Error('New deployments are currently not supported')
   }
 
   deployEntity(deployData: DeploymentData, fix?: boolean, options?: RequestOptions): Promise<number> {

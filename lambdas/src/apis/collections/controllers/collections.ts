@@ -1,4 +1,4 @@
-import { ChainId, Entity, EntityType } from '@dcl/schemas'
+import { ChainId, Entity } from '@dcl/schemas'
 import { Request, Response } from 'express'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TheGraphClient } from '../../../utils/TheGraphClient'
@@ -175,7 +175,7 @@ async function internalContents(
 }
 
 async function fetchEntity(client: SmartContentClient, urn: string): Promise<Entity | undefined> {
-  const entities: Entity[] = await client.fetchEntitiesByPointers(EntityType.WEARABLE, [urn])
+  const entities: Entity[] = await client.fetchEntitiesByPointers([urn])
   return entities && entities.length > 0 && entities[0].metadata ? entities[0] : undefined
 }
 

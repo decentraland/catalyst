@@ -26,7 +26,7 @@ describe('wearables by owner', () => {
     const wearables = await getWearablesByOwner(SOME_ADDRESS, false, contentClient, graphClient)
 
     expect(wearables.length).toEqual(0)
-    verify(contentClientMock.fetchEntitiesByPointers(anything(), anything())).never()
+    verify(contentClientMock.fetchEntitiesByPointers(anything())).never()
   })
 
   it(`When user has repeated wearables, then they are grouped together`, async () => {
@@ -43,7 +43,7 @@ describe('wearables by owner', () => {
     expect(wearable2.urn).toBe(WEARABLE_ID_2)
     expect(wearable2.amount).toBe(1)
     expect(wearable2.definition).toBeUndefined()
-    verify(contentClientMock.fetchEntitiesByPointers(anything(), anything())).never()
+    verify(contentClientMock.fetchEntitiesByPointers(anything())).never()
   })
 
   it(`When user requests definitions, then they are included in the response`, async () => {
@@ -57,7 +57,7 @@ describe('wearables by owner', () => {
     expect(wearable.urn).toBe(WEARABLE_ID_1)
     expect(wearable.amount).toBe(1)
     expect(wearable.definition).toEqual({ ...WEARABLE_METADATA, id: WEARABLE_ID_1 })
-    verify(contentClientMock.fetchEntitiesByPointers(anything(), anything())).once()
+    verify(contentClientMock.fetchEntitiesByPointers(anything())).once()
   })
 
   it(`When wearable can't be found, then the definition is not returned`, async () => {
@@ -71,7 +71,7 @@ describe('wearables by owner', () => {
     expect(wearable.urn).toBe(WEARABLE_ID_1)
     expect(wearable.amount).toBe(1)
     expect(wearable.definition).toBeUndefined()
-    verify(contentClientMock.fetchEntitiesByPointers(anything(), anything())).once()
+    verify(contentClientMock.fetchEntitiesByPointers(anything())).once()
   })
 
   it(`When third party wearable collectionId is present, it should return the corresponding one`, async () => {
@@ -98,7 +98,7 @@ describe('wearables by owner', () => {
     expect(wearable.urn).toBe(TPW_WEARABLE_ID)
     expect(wearable.amount).toBe(1)
     expect(wearable.definition).toEqual({ ...WEARABLE_METADATA, id: TPW_WEARABLE_ID })
-    verify(contentClientMock.fetchEntitiesByPointers(anything(), anything())).once()
+    verify(contentClientMock.fetchEntitiesByPointers(anything())).once()
     verify(thirdPartyFetcherMock.fetchAssets(anything(), anything(), anything())).once()
     verify(thirdPartyGraphClientMock.findThirdPartyResolver(anything(), anything())).once()
   })
@@ -151,7 +151,7 @@ function contentServerThatReturns(id?: WearableId) {
     }
   }
   const mockedClient = mock(SmartContentClient)
-  when(mockedClient.fetchEntitiesByPointers(anything(), anything())).thenResolve(id ? [entity] : [])
+  when(mockedClient.fetchEntitiesByPointers(anything())).thenResolve(id ? [entity] : [])
   return { instance: instance(mockedClient), mock: mockedClient }
 }
 

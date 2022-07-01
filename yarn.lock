@@ -2606,14 +2606,14 @@ date-format@^4.0.9:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-4.0.9.tgz#4788015ac56dedebe83b03bc361f00c1ddcf1923"
   integrity sha512-+8J+BOUpSrlKLQLeF8xJJVTxS8QfRSuJgwxSVvslzgO3E6khbI0F5mMEPf5mTYhCCm4h99knYP6H3W9n3BQFrg==
 
-dcl-catalyst-client@^12.0.1:
-  version "12.0.1"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-12.0.1.tgz#034f38af44b1323906f2da4cfa21f79cb1f3ef34"
-  integrity sha512-hvIoHvKrTGP5r8VUnKwgV9I9zDUr47nL/nrQR34U4hHhfXnszKaGXIFbmEZZ9cuZmH5CfbtdchtBRSoJ8g/qfw==
+dcl-catalyst-client@12.0.4-20220701023026.commit-f27f53f:
+  version "12.0.4-20220701023026.commit-f27f53f"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-12.0.4-20220701023026.commit-f27f53f.tgz#d7e98419efcbf8fb3ce06e5c1e8977cf4b6c8d0b"
+  integrity sha512-qPisZ4Wwrwy9d4eR09n+nV6eSJXi0T7CVCYVvOqQhKEDtvsVERxrfCgpPulT4pkCRQQuAAT/Z7hQGia67c5mnQ==
   dependencies:
     "@dcl/catalyst-contracts" "^2.0.0"
     "@dcl/hashing" "^1.1.0"
-    "@dcl/schemas" "^4.14.0"
+    "@dcl/schemas" "^5.0.3"
     "@types/form-data" "^2.5.0"
     cookie "^0.4.1"
     dcl-catalyst-commons "^9.0.0"
