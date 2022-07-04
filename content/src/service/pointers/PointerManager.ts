@@ -25,8 +25,10 @@ export class PointerManager {
 
     try {
       const lastDeployments2 = await deploymentsRepo.getLastActiveDeploymentsOnPointers(entity.type, entity.pointers)
-      if (lastDeployments !== lastDeployments2) {
-        console.log('DIFFERENT: ', lastDeployments, lastDeployments2)
+      if (JSON.stringify(lastDeployments) !== JSON.stringify(lastDeployments2)) {
+        console.log('lastDeployments are different: ', lastDeployments, lastDeployments2)
+      } else {
+        console.log('lastDeployments are equal', lastDeployments)
       }
     } catch (e) {
       console.log('ERROR', e)
