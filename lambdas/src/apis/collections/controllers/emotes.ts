@@ -10,14 +10,6 @@ import { TheGraphClient } from '../../../utils/TheGraphClient'
 import { ItemFilters, ItemPagination, LambdasEmote } from '../types'
 import { translateEntityIntoEmote } from '../Utils'
 
-// Different versions of the same query param
-const INCLUDE_DEFINITION_VERSIONS = [
-  'includeDefinition',
-  'includedefinition',
-  'includeDefinitions',
-  'includedefinitions'
-]
-
 const LOGGER = log4js.getLogger('TheGraphClient')
 
 export async function getEmotesByOwnerHandler(
@@ -34,7 +26,7 @@ export async function getEmotesByOwnerHandler(
   if (collectionId && typeof collectionId !== 'string') {
     throw new Error('Bad input. CollectionId must be a string.')
   }
-  const includeDefinition = INCLUDE_DEFINITION_VERSIONS.some((version) => version in req.query)
+  const includeDefinition = 'includeDefinitions' in req.query
 
   try {
     res.send(await getEmotesByOwner(includeDefinition, client, theGraphClient, thirdPartyFetcher, collectionId, owner))
