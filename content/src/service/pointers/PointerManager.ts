@@ -95,6 +95,7 @@ export class PointerManager {
       Array.from(overwrite.values())
     )
 
+    console.log('MARIANO: result', result)
     return result
   }
 
