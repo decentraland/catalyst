@@ -9,7 +9,6 @@ import log4js from 'log4js'
 import morgan from 'morgan'
 import { OffChainWearablesManager } from './apis/collections/off-chain/OffChainWearablesManager'
 import { initializeCollectionsRoutes } from './apis/collections/routes'
-import { initializeContentV2Routes } from './apis/content-v2/routes'
 import { initializeContractRoutes } from './apis/contracts/routes'
 import { initializeCryptoRoutes } from './apis/crypto/routes'
 import { initializeExploreRoutes } from './apis/explore/routes'
@@ -79,11 +78,8 @@ export class Server {
 
     const profilesCacheTTL: number = env.getConfig(EnvironmentConfig.PROFILES_CACHE_TTL)
 
-    // Base endpoints
-    this.app.use(setupRouter(env))
-
-    // Backwards compatibility for older Content API
-    this.app.use('/contentv2', initializeContentV2Routes(express.Router(), fetcher))
+    // Setup routes
+    this.app.use(setupRouter(env, fetcher))
 
     // TODO: Remove the route /profile/{id} as it has been migrated to /profiles/{id}
     // Profile API implementation
