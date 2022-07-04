@@ -123,7 +123,7 @@ export class DeploymentsRepository {
     }
     return this.db.map(
       `
-            SELECT DISTINCT ON (deployments.id)
+            SELECT
                 deployments.id,
                 deployments.entity_id,
                 date_part('epoch', deployments.entity_timestamp) * 1000 AS entity_timestamp,
@@ -134,8 +134,10 @@ export class DeploymentsRepository {
                 END AS deleted
             FROM deployments
             WHERE deployments.entity_pointers && ARRAY[$2:list] AND
-                deployments.entity_type = $1
-            ORDER BY deployments.id`,
+                deployments.entity_type = $1 AND
+                deployments.deleter_deployment IS NULL
+            ORDER BY deployments.id
+            LIMIT 1`,
       [entityType, pointers],
       (row) => ({
         deployment: row.id,
