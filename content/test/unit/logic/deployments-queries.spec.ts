@@ -1,6 +1,6 @@
 import { EntityType } from '@dcl/schemas'
-import { SortingField, SortingOrder } from 'dcl-catalyst-commons'
 import { createOrClause, getHistoricalDeploymentsQuery } from '../../../src/logic/database-queries/deployments-queries'
+import { SortingField, SortingOrder } from '../../../src/service/deployments/types'
 
 describe('deployments-queries', () => {
   describe('createOrClause', () => {

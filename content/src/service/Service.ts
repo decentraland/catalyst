@@ -1,10 +1,9 @@
 import { AuthChain } from '@dcl/crypto'
 import { EntityType } from '@dcl/schemas'
-import { AuditInfo, Deployment, PartialDeploymentHistory } from 'dcl-catalyst-commons'
 import { ContentItem } from '../ports/contentStorage/contentStorage'
 import { FailedDeployment } from '../ports/failedDeploymentsCache'
 import { Database } from '../repository/Database'
-import { DeploymentOptions } from './deployments/types'
+import { AuditInfo, Deployment, DeploymentOptions, PartialDeploymentHistory } from './deployments/types'
 
 /**x
  * This version of the service can tell clients about the state of the Metaverse. It assumes that all deployments

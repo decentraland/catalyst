@@ -1,8 +1,8 @@
-import { Deployment, DeploymentBase as ControllerDeployment } from 'dcl-catalyst-commons'
+import { Deployment, DeploymentBase } from '../service/deployments/types'
 import { DeploymentField } from './Controller'
 
 export class ControllerDeploymentFactory {
-  static deployment2ControllerEntity<T extends ControllerDeployment>(
+  static deployment2ControllerEntity<T extends DeploymentBase>(
     deployment: Deployment,
     fields: DeploymentField[]
   ): T {

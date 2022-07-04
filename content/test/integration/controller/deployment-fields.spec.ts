@@ -1,5 +1,6 @@
-import { Deployment, Fetcher } from 'dcl-catalyst-commons'
+import { Fetcher } from 'dcl-catalyst-commons'
 import { DeploymentField } from '../../../src/controller/Controller'
+import { Deployment } from '../../../src/service/deployments/types'
 import { makeNoopSynchronizationManager } from '../../helpers/service/synchronization/MockedSynchronizationManager'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'

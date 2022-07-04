@@ -1,5 +1,5 @@
 import { EntityType } from '@dcl/schemas'
-import { AuditInfo, DeploymentFilters } from 'dcl-catalyst-commons'
+import { AuditInfo, DeploymentFilters } from '../../../../src/service/deployments/types'
 import {
   DeploymentContext,
   DeploymentResult,

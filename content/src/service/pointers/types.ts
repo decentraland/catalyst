@@ -1,5 +1,5 @@
 import { DeploymentWithAuthChain } from '@dcl/schemas'
-import { DeploymentFilters } from 'dcl-catalyst-commons'
+import { DeploymentFilters } from '../deployments/types'
 
 export type PointerChangesFilters = Pick<DeploymentFilters, 'from' | 'to' | 'entityTypes'>
 

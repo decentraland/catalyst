@@ -1,7 +1,7 @@
-import { AuditInfo } from 'dcl-catalyst-commons'
 import { Entity } from '@dcl/schemas'
 import { ContentFilesRepository } from '../../repository/extensions/ContentFilesRepository'
 import { DeploymentId, DeploymentsRepository } from '../../repository/extensions/DeploymentsRepository'
+import { AuditInfo } from './types'
 
 export class DeploymentManager {
   async getEntityById(
@@ -9,9 +9,9 @@ export class DeploymentManager {
     entityId: string
   ): Promise<
     | {
-        entityId: any
-        localTimestamp: any
-      }
+      entityId: any
+      localTimestamp: any
+    }
     | undefined
   > {
     return deploymentsRepository.getEntityById(entityId)

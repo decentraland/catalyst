@@ -1,6 +1,6 @@
-import { DeploymentContent } from 'dcl-catalyst-commons'
 import SQL from 'sql-template-strings'
 import { DeploymentId } from '../../repository/extensions/DeploymentsRepository'
+import { DeploymentContent } from '../../service/deployments/types'
 import { AppComponents } from '../../types'
 
 export interface ContentFilesRow {
