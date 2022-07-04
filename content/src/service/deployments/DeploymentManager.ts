@@ -9,9 +9,9 @@ export class DeploymentManager {
     entityId: string
   ): Promise<
     | {
-      entityId: any
-      localTimestamp: any
-    }
+        entityId: any
+        localTimestamp: any
+      }
     | undefined
   > {
     return deploymentsRepository.getEntityById(entityId)

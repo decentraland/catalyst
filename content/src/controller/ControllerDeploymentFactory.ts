@@ -2,10 +2,7 @@ import { Deployment, DeploymentBase } from '../service/deployments/types'
 import { DeploymentField } from './Controller'
 
 export class ControllerDeploymentFactory {
-  static deployment2ControllerEntity<T extends DeploymentBase>(
-    deployment: Deployment,
-    fields: DeploymentField[]
-  ): T {
+  static deployment2ControllerEntity<T extends DeploymentBase>(deployment: Deployment, fields: DeploymentField[]): T {
     const { pointers, auditInfo, content, metadata, ...other } = deployment
     const result: any = { ...other }
     if (fields.includes(DeploymentField.POINTERS)) {

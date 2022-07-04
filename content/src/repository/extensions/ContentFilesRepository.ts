@@ -4,7 +4,7 @@ import { DeploymentContent } from '../../service/deployments/types'
 import { DeploymentId } from './DeploymentsRepository'
 
 export class ContentFilesRepository {
-  constructor(private readonly db: Database) { }
+  constructor(private readonly db: Database) {}
 
   findContentHashesNotBeingUsedAnymore(lastGarbageCollectionTimestamp: number): Promise<string[]> {
     return this.db.map(
