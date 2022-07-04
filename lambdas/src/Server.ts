@@ -17,13 +17,14 @@ import { initializeImagesRoutes } from './apis/images/routes'
 import { EnsOwnership } from './apis/profiles/EnsOwnership'
 import { initializeIndividualProfileRoutes, initializeProfilesRoutes } from './apis/profiles/routes'
 import { WearablesOwnership } from './apis/profiles/WearablesOwnership'
-import statusRouter from './apis/status/routes'
 import { initializeThirdPartyIntegrationsRoutes } from './apis/third-party/routes'
 import { Bean, Environment, EnvironmentConfig } from './Environment'
 import { metricsComponent } from './metrics'
 import { SmartContentClient } from './utils/SmartContentClient'
 import { SmartContentServerFetcher } from './utils/SmartContentServerFetcher'
 import { TheGraphClient } from './utils/TheGraphClient'
+import { setupRouter } from './controllers/routes'
+
 export class Server {
   private port: number
   private app: express.Express
@@ -79,7 +80,7 @@ export class Server {
     const profilesCacheTTL: number = env.getConfig(EnvironmentConfig.PROFILES_CACHE_TTL)
 
     // Base endpoints
-    this.app.use('/', statusRouter(env))
+    this.app.use(setupRouter(env))
 
     // Backwards compatibility for older Content API
     this.app.use('/contentv2', initializeContentV2Routes(express.Router(), fetcher))
