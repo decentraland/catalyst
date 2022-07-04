@@ -10,7 +10,7 @@ import {
 } from 'dcl-catalyst-commons'
 import { EnvironmentConfig } from '../Environment'
 import { runReportingQueryDurationMetric } from '../instrument'
-import { calculateIPFSHashes } from '../logic/hashing'
+import { calculateDeprecatedHashes, calculateIPFSHashes } from '../logic/hashing'
 import { bufferToStream, ContentItem } from '../ports/contentStorage/contentStorage'
 import { FailedDeployment, FailureReason } from '../ports/failedDeploymentsCache'
 import { Database } from '../repository/Database'
@@ -80,7 +80,7 @@ export class ServiceImpl implements MetaverseContentService {
     }
 
     // Hash all files
-    const hashes: Map<string, Uint8Array> = await ServiceImpl.hashFiles(files)
+    const hashes: Map<string, Uint8Array> = await ServiceImpl.hashFiles(files, entityId)
 
     // Find entity file
     const entityFile = hashes.get(entityId)
@@ -268,7 +268,7 @@ export class ServiceImpl implements MetaverseContentService {
             const { overwrote, overwrittenBy } = await runReportingQueryDurationMetric(
               this.components,
               'calculate_overwrites',
-              () => this.components.pointerManager.calculateOverwrites(transaction.pointerHistory, entity)
+              () => this.components.pointerManager.calculateOverwrites(transaction.deployments, entity)
             )
 
             // Store the deployment
@@ -394,11 +394,13 @@ export class ServiceImpl implements MetaverseContentService {
    * They could come hashed because the denylist decorator might have already hashed them for its own validations. In order to avoid re-hashing
    * them in the service (because there might be hundreds of files), we will send the hash result.
    */
-  static async hashFiles(files: DeploymentFiles): Promise<Map<string, Uint8Array>> {
+  static async hashFiles(files: DeploymentFiles, entityId: string): Promise<Map<string, Uint8Array>> {
     if (files instanceof Map) {
       return files
     } else {
-      const hashEntries = await calculateIPFSHashes(files)
+      const hashEntries = this.isIPFSHash(entityId)
+        ? await calculateIPFSHashes(files)
+        : await calculateDeprecatedHashes(files)
       return new Map(hashEntries.map(({ hash, file }) => [hash, file]))
     }
   }

@@ -43,17 +43,13 @@ export class EntityFactory {
       content = this.parseContent(object.content) || []
     }
 
-    if (object.version != 'v3') {
-      throw new Error('Object has an invalid version')
-    }
-
     const type: EntityType = EntityType[object.type.toUpperCase().trim()]
     return {
       id,
       type,
       pointers: object.pointers.map((pointer: string) => pointer.toLowerCase()),
       timestamp: object.timestamp,
-      version: 'v3',
+      version: object.version ?? 'v3',
       content,
       metadata: object.metadata
     }
