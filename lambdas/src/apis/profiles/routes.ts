@@ -14,21 +14,6 @@ function asyncHandler(handler: (req: Request, res: Response, next: NextFunction)
   }
 }
 
-export function initializeIndividualProfileRoutes(
-  router: Router,
-  theGraphClient: TheGraphClient,
-  client: SmartContentClient,
-  ensOwnership: EnsOwnership,
-  wearablesOwnership: WearablesOwnership,
-  profilesCacheTTL: number
-): Router {
-  router.get(
-    '/:id',
-    createHandler(theGraphClient, client, ensOwnership, wearablesOwnership, profilesCacheTTL, getIndividualProfileById)
-  )
-  return router
-}
-
 export function initializeProfilesRoutes(
   router: Router,
   theGraphClient: TheGraphClient,

@@ -14,7 +14,7 @@ import { initializeCryptoRoutes } from './apis/crypto/routes'
 import { initializeExploreRoutes } from './apis/explore/routes'
 import { initializeImagesRoutes } from './apis/images/routes'
 import { EnsOwnership } from './apis/profiles/EnsOwnership'
-import { initializeIndividualProfileRoutes, initializeProfilesRoutes } from './apis/profiles/routes'
+import { initializeProfilesRoutes } from './apis/profiles/routes'
 import { WearablesOwnership } from './apis/profiles/WearablesOwnership'
 import { initializeThirdPartyIntegrationsRoutes } from './apis/third-party/routes'
 import { Bean, Environment, EnvironmentConfig } from './Environment'
@@ -81,19 +81,7 @@ export class Server {
     // Setup routes
     this.app.use(setupRouter(env, fetcher))
 
-    // TODO: Remove the route /profile/{id} as it has been migrated to /profiles/{id}
     // Profile API implementation
-    this.app.use(
-      '/profile',
-      initializeIndividualProfileRoutes(
-        express.Router(),
-        theGraphClient,
-        contentClient,
-        ensOwnership,
-        wearablesOwnership,
-        profilesCacheTTL
-      )
-    )
     this.app.use(
       '/profiles',
       initializeProfilesRoutes(
