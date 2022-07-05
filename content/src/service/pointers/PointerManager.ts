@@ -30,20 +30,20 @@ export class PointerManager {
         entity.pointers
       )
       if (JSON.stringify(lastDeployments) !== JSON.stringify(lastDeployments2)) {
-        console.log('lastDeployments are different: ', lastDeployments, lastDeployments2)
+        console.log(`MARIANO(${deploymentId}): lastDeployments are different: `, lastDeployments, lastDeployments2)
       }
     } catch (e) {
-      console.log('ERROR', e)
+      console.log(`MARIANO(${deploymentId}): ERROR`, e)
     }
-    console.log('MARIANO: lastDeployments', lastDeployments)
+    console.log(`MARIANO(${deploymentId}): lastDeployments`, lastDeployments)
 
     // Add a made up deployments for the pointers where there was no deployment yet
     const pointersWithDeployments = lastDeployments
       .map((deployment) => deployment.pointers)
       .reduce((accum, curr) => accum.concat(curr), [])
-    console.log('MARIANO: pointersWithDeployments', pointersWithDeployments)
+    console.log(`MARIANO(${deploymentId}): pointersWithDeployments`, pointersWithDeployments)
     const pointersWithoutDeployments = diff(entity.pointers, pointersWithDeployments)
-    console.log('MARIANO: pointersWithoutDeployments', pointersWithoutDeployments)
+    console.log(`MARIANO(${deploymentId}): pointersWithoutDeployments`, pointersWithoutDeployments)
     if (pointersWithoutDeployments.size > 0) {
       lastDeployments.push({
         entityId: 'NOT_GONNA_BE_USED',
@@ -52,7 +52,7 @@ export class PointerManager {
         pointers: Array.from(pointersWithoutDeployments.values()),
         deleted: true
       })
-      console.log('MARIANO: lastDeployments after', lastDeployments)
+      console.log(`MARIANO(${deploymentId}): lastDeployments after`, lastDeployments)
     }
 
     // Determine if the entity being deployed will become active
@@ -90,7 +90,7 @@ export class PointerManager {
       }
     })
 
-    console.log('MARIANO: overwrite', Array.from(overwrite.values()))
+    console.log(`MARIANO(${deploymentId}): overwrite`, Array.from(overwrite.values()))
 
     // Overwrite the currently last entities that need to be overwritten
     await lastDeployedPointersRepo.setAsLastActiveDeploymentsOnPointers(
@@ -99,7 +99,7 @@ export class PointerManager {
       Array.from(overwrite.values())
     )
 
-    console.log('MARIANO: result', result)
+    console.log(`MARIANO(${deploymentId}): result`, result)
     return result
   }
 

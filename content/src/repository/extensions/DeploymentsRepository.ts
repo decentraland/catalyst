@@ -122,6 +122,7 @@ export class DeploymentsRepository {
     if (pointers.length === 0) {
       return Promise.resolve([])
     }
+    console.log('ignoreDeploymentId', ignoreDeploymentId)
     return this.db.map(
       `
             SELECT
