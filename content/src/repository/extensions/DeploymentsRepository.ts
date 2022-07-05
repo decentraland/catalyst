@@ -104,6 +104,11 @@ export class DeploymentsRepository {
         overwrittenBy = overwrittenByMany[0].id
       }
 
+      console.log(`MARIANO(${entity.id}): calculate overwrites`, {
+        overwrote: Array.from(new Set(overwrote)),
+        overwrittenBy
+      })
+
       return {
         overwrote: new Set(overwrote),
         overwrittenBy
