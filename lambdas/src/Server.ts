@@ -9,7 +9,6 @@ import log4js from 'log4js'
 import morgan from 'morgan'
 import { OffChainWearablesManager } from './apis/collections/off-chain/OffChainWearablesManager'
 import { initializeCollectionsRoutes } from './apis/collections/routes'
-import { initializeContractRoutes } from './apis/contracts/routes'
 import { initializeExploreRoutes } from './apis/explore/routes'
 import { initializeThirdPartyIntegrationsRoutes } from './apis/third-party/routes'
 import { Bean, Environment, EnvironmentConfig } from './Environment'
@@ -69,9 +68,6 @@ export class Server {
 
     // Setup routes
     this.app.use(setupRouter(env))
-
-    // DAO cached access API
-    this.app.use('/contracts', initializeContractRoutes(express.Router(), env.getBean(Bean.DAO)))
 
     // DAO Collections access API
     this.app.use(

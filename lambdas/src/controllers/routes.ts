@@ -11,6 +11,8 @@ import { healthHandler, statusHandler } from './handlers/status/handlers'
 import { validateSignature } from './handlers/crypto/handlers'
 import { HTTPProvider } from 'eth-connect'
 import { getResizedImage } from './handlers/images/handlers'
+import { DAOCache } from '../service/dao/DAOCache'
+import { getCatalystServersList, getPOIsList, getDenylistedNamesList } from './handlers/contracts/handlers'
 
 export function setupRouter(env: Environment): Router {
   const router = Router()
@@ -23,6 +25,7 @@ export function setupRouter(env: Environment): Router {
   const profilesCacheTTL: number = env.getConfig(EnvironmentConfig.PROFILES_CACHE_TTL)
   const ethProvider: HTTPProvider = env.getBean(Bean.ETHEREUM_PROVIDER)
   const rootStorageLocation: string = env.getConfig(EnvironmentConfig.LAMBDAS_STORAGE_LOCATION)
+  const daoCache: DAOCache = env.getBean(Bean.DAO)
 
   // Base endpoints
   router.get('/status', (req: Request, res: Response) => statusHandler(res, env))
@@ -64,6 +67,11 @@ export function setupRouter(env: Environment): Router {
   router.get('/images/:cid/:size', (req: Request, res: Response) =>
     getResizedImage(fetcher, rootStorageLocation, req, res)
   )
+
+  // DAO cached access API
+  router.get('/contracts/servers', (req: Request, res: Response) => getCatalystServersList(daoCache, req, res))
+  router.get('/contracts/pois', (req: Request, res: Response) => getPOIsList(daoCache, req, res))
+  router.get('/contracts/denylisted-names', (req: Request, res: Response) => getDenylistedNamesList(daoCache, req, res))
 
   return router
 }
