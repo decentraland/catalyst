@@ -113,6 +113,7 @@ export class DeploymentsRepository {
 
   /** Returns the last deployments that were active on the given pointers (could be active or not right now) */
   getLastActiveDeploymentsOnPointers(
+    ignoreDeploymentId: DeploymentId,
     entityType: EntityType,
     pointers: string[]
   ): Promise<
@@ -135,10 +136,10 @@ export class DeploymentsRepository {
             FROM deployments
             WHERE deployments.entity_pointers && ARRAY[$2:list] AND
                 deployments.entity_type = $1 AND
-                deployments.deleter_deployment IS NULL
-            ORDER BY deployments.id
+                deployments.id <> $3
+            ORDER BY deployments.id DESC
             LIMIT 1`,
-      [entityType, pointers],
+      [entityType, pointers, ignoreDeploymentId],
       (row) => ({
         deployment: row.id,
         entityId: row.entity_id,
