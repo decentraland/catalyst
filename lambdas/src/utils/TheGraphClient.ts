@@ -373,7 +373,7 @@ export class TheGraphClient {
       mapper: (response) =>
         response.nfts.map(({ id, urn, collection }) => ({ id: id, urn: urn, isApproved: collection.isApproved }))
     }
-    const items = await this.paginatableQuery(query, { owner: owner.toLowerCase(), itemTypes })
+    const items = await this.paginatableQuery(query, { owner: owner.toLowerCase(), item_types: itemTypes })
     return items.filter((item) => item.isApproved).map((item) => item.urn)
   }
 

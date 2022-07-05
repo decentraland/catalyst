@@ -1,5 +1,6 @@
 import { EntityType } from '@dcl/schemas'
-import { anything, instance, mock, verify, when } from 'ts-mockito'
+import { Fetcher } from 'dcl-catalyst-commons'
+import { anything, instance, mock, objectContaining, verify, when } from 'ts-mockito'
 import { getWearablesByOwner, getWearablesByOwnerFromUrns } from '../../../../../src/apis/collections/controllers/wearables'
 import * as tpUrnFinder from '../../../../../src/logic/third-party-urn-finder'
 import { ThirdPartyAssetFetcher } from '../../../../../src/ports/third-party/third-party-fetcher'
@@ -125,6 +126,62 @@ describe('getWearablesByOwner', () => {
     expect(wearables[0].definition).toBeUndefined()
     verify(contentClientMock.fetchEntitiesByPointers(anything(), anything())).never()
     verify(mockedGraphClient.findWearableUrnsByOwner(SOME_ADDRESS)).once()
+    expect(tpUrnFinderSpy).not.toBeCalled()
+  })
+
+  it('should call the graph client with the arguments correctly mapped', async () => {
+    const contentClientMock = mock(SmartContentClient)
+
+    const mockedFetcher = mock(Fetcher)
+    const ethSubgraph = 'eth'
+    const maticSubgraph = 'matic'
+    const query =
+      `
+query itemsByOwner($owner: String, $item_types:[String], $first: Int, $start: String) {
+  nfts(where: {owner: $owner, searchItemType_in: $item_types, id_gt: $start}, first: $first) {
+    id
+    urn
+    collection {
+      isApproved
+    }
+  }
+}`
+    const expectedVariables = {
+      owner: SOME_ADDRESS,
+      item_types: ["wearable_v1", "wearable_v2", "smart_wearable_v1", "emote_v1"],
+      first: 1000,
+      start: ''
+    }
+    when(mockedFetcher.queryGraph(anything(), anything(), anything())).thenResolve({
+      nfts: [{
+        id: 'im an id',
+        urn: WEARABLE_ID_1,
+        collection: {
+          isApproved: true
+        }
+      }]
+    })
+    const graphClient = new TheGraphClient(
+      {
+        ensSubgraph: 'ens',
+        collectionsSubgraph: ethSubgraph,
+        maticCollectionsSubgraph: maticSubgraph,
+        thirdPartyRegistrySubgraph: 'tp'
+      },
+      instance(mockedFetcher)
+    )
+
+    const tpFetcher = { fetchAssets: jest.fn() }
+    const tpUrnFinderSpy = jest.spyOn(tpUrnFinder, 'findThirdPartyItemUrns').mockResolvedValue([])
+
+    const wearables = await getWearablesByOwner(false, instance(contentClientMock), graphClient, tpFetcher, undefined, SOME_ADDRESS)
+
+    expect(wearables.length).toEqual(1)
+    expect(wearables[0].amount).toEqual(2)
+    expect(wearables[0].urn).toEqual(WEARABLE_ID_1)
+    expect(wearables[0].definition).toBeUndefined()
+    verify(mockedFetcher.queryGraph(ethSubgraph, query, objectContaining(expectedVariables))).once()
+    verify(mockedFetcher.queryGraph(maticSubgraph, query, anything())).once()
     expect(tpUrnFinderSpy).not.toBeCalled()
   })
 })
