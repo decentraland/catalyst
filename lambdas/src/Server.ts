@@ -66,19 +66,12 @@ export class Server {
 
     this.metricsPort = initializeMetricsServer(this.app, metricsComponent)
 
-    const fetcher: SmartContentServerFetcher = env.getBean(Bean.SMART_CONTENT_SERVER_FETCHER)
     const contentClient: SmartContentClient = env.getBean(Bean.SMART_CONTENT_SERVER_CLIENT)
     const theGraphClient: TheGraphClient = env.getBean(Bean.THE_GRAPH_CLIENT)
     const offChainManager: OffChainWearablesManager = env.getBean(Bean.OFF_CHAIN_MANAGER)
 
     // Setup routes
     this.app.use(setupRouter(env))
-
-    // Images API for resizing contents
-    this.app.use(
-      '/images',
-      initializeImagesRoutes(express.Router(), fetcher, env.getConfig(EnvironmentConfig.LAMBDAS_STORAGE_LOCATION))
-    )
 
     // DAO cached access API
     this.app.use('/contracts', initializeContractRoutes(express.Router(), env.getBean(Bean.DAO)))

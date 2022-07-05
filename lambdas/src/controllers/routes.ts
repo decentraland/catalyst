@@ -10,6 +10,7 @@ import { getIndividualProfileById, getProfilesById, createProfileHandler } from 
 import { healthHandler, statusHandler } from './handlers/status/handlers'
 import { validateSignature } from './handlers/crypto/handlers'
 import { HTTPProvider } from 'eth-connect'
+import { getResizedImage } from './handlers/images/handlers'
 
 export function setupRouter(env: Environment): Router {
   const router = Router()
@@ -21,6 +22,7 @@ export function setupRouter(env: Environment): Router {
   const theGraphClient: TheGraphClient = env.getBean(Bean.THE_GRAPH_CLIENT)
   const profilesCacheTTL: number = env.getConfig(EnvironmentConfig.PROFILES_CACHE_TTL)
   const ethProvider: HTTPProvider = env.getBean(Bean.ETHEREUM_PROVIDER)
+  const rootStorageLocation: string = env.getConfig(EnvironmentConfig.LAMBDAS_STORAGE_LOCATION)
 
   // Base endpoints
   router.get('/status', (req: Request, res: Response) => statusHandler(res, env))
@@ -32,21 +34,6 @@ export function setupRouter(env: Environment): Router {
   router.get('/contentV2/contents/:cid', (req: Request, res: Response) => getContents(fetcher, req, res))
 
   // Profiles endpoints
-  // router.get(
-  //   '/profiles/',
-  //   asyncHandler(
-  //     async (req, res) =>
-  //       await getProfilesById(
-  //         theGraphClient,
-  //         contentClient,
-  //         ensOwnership,
-  //         wearablesOwnership,
-  //         profilesCacheTTL,
-  //         req,
-  //         res
-  //       )
-  //   )
-  // )
   router.get(
     '/profiles/',
     createProfileHandler(
@@ -72,6 +59,11 @@ export function setupRouter(env: Environment): Router {
 
   // DCL-Crypto API implementation
   router.post('/crypto/validate-signature', (req: Request, res: Response) => validateSignature(ethProvider, req, res))
+
+  // Images API for resizing contents
+  router.get('/images/:cid/:size', (req: Request, res: Response) =>
+    getResizedImage(fetcher, rootStorageLocation, req, res)
+  )
 
   return router
 }
