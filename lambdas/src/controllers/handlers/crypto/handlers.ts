@@ -2,9 +2,9 @@ import { Authenticator, AuthLink, ValidationResult } from '@dcl/crypto'
 import { Request, Response } from 'express'
 import { HTTPProvider } from 'eth-connect'
 
+// Method: POST
+// Path: /validate-signature
 export async function validateSignature(ethereumProvider: HTTPProvider, req: Request, res: Response) {
-  // Method: POST
-  // Path: /validate-signature
   try {
     const timestamp: string | undefined = req.body.timestamp
     const signedMessage: string | undefined = req.body.signedMessage

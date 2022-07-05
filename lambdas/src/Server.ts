@@ -74,9 +74,6 @@ export class Server {
     // Setup routes
     this.app.use(setupRouter(env))
 
-    // DCL-Crypto API implementation
-    this.app.use('/crypto', initializeCryptoRoutes(express.Router(), env.getBean(Bean.ETHEREUM_PROVIDER)))
-
     // Images API for resizing contents
     this.app.use(
       '/images',

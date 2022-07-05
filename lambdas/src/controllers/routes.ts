@@ -8,6 +8,8 @@ import { TheGraphClient } from '../utils/TheGraphClient'
 import { getContents, getInfo, getScenes } from './handlers/content-v2/handlers'
 import { getIndividualProfileById, getProfilesById, createProfileHandler } from './handlers/profiles/handlers'
 import { healthHandler, statusHandler } from './handlers/status/handlers'
+import { validateSignature } from './handlers/crypto/handlers'
+import { HTTPProvider } from 'eth-connect'
 
 export function setupRouter(env: Environment): Router {
   const router = Router()
@@ -18,6 +20,7 @@ export function setupRouter(env: Environment): Router {
   const contentClient: SmartContentClient = env.getBean(Bean.SMART_CONTENT_SERVER_CLIENT)
   const theGraphClient: TheGraphClient = env.getBean(Bean.THE_GRAPH_CLIENT)
   const profilesCacheTTL: number = env.getConfig(EnvironmentConfig.PROFILES_CACHE_TTL)
+  const ethProvider: HTTPProvider = env.getBean(Bean.ETHEREUM_PROVIDER)
 
   // Base endpoints
   router.get('/status', (req: Request, res: Response) => statusHandler(res, env))
@@ -29,6 +32,21 @@ export function setupRouter(env: Environment): Router {
   router.get('/contentV2/contents/:cid', (req: Request, res: Response) => getContents(fetcher, req, res))
 
   // Profiles endpoints
+  // router.get(
+  //   '/profiles/',
+  //   asyncHandler(
+  //     async (req, res) =>
+  //       await getProfilesById(
+  //         theGraphClient,
+  //         contentClient,
+  //         ensOwnership,
+  //         wearablesOwnership,
+  //         profilesCacheTTL,
+  //         req,
+  //         res
+  //       )
+  //   )
+  // )
   router.get(
     '/profiles/',
     createProfileHandler(
@@ -51,6 +69,9 @@ export function setupRouter(env: Environment): Router {
       getIndividualProfileById
     )
   )
+
+  // DCL-Crypto API implementation
+  router.post('/crypto/validate-signature', (req: Request, res: Response) => validateSignature(ethProvider, req, res))
 
   return router
 }
