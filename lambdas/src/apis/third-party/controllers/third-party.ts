@@ -1,7 +1,7 @@
 import { Response } from 'express'
+import { ThirdPartyIntegration } from '../../../controllers/handlers/collections/utils/types'
 import { TheGraphClient } from '../../../utils/TheGraphClient'
 import { TimeRefreshedDataHolder } from '../../../utils/TimeRefreshedDataHolder'
-import { ThirdPartyIntegration } from '../../collections/types'
 
 let thirdPartyIntegrationsCache: TimeRefreshedDataHolder<ThirdPartyIntegration[]>
 

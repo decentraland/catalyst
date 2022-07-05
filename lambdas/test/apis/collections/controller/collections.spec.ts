@@ -1,6 +1,6 @@
 import { instance, mock, when } from 'ts-mockito'
-import { getCollections } from '../../../../src/apis/collections/controllers/collections'
-import { BASE_AVATARS_COLLECTION_ID } from '../../../../src/apis/collections/off-chain/OffChainWearablesManager'
+import { getCollections } from '../../../../src/controllers/handlers/collections/collections'
+import { BASE_AVATARS_COLLECTION_ID } from '../../../../src/controllers/handlers/collections/off-chain/OffChainWearablesManager'
 import { TheGraphClient } from '../../../../src/utils/TheGraphClient'
 
 const COLLECTION_1 = {

@@ -7,9 +7,9 @@ import { asArray, asInt } from '../../../utils/ControllerUtils'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TheGraphClient } from '../../../utils/TheGraphClient'
 import { createFetchComponent, createThirdPartyFetcher, createThirdPartyResolver } from '../../../utils/third-party'
-import { BASE_AVATARS_COLLECTION_ID, OffChainWearablesManager } from '../off-chain/OffChainWearablesManager'
-import { Wearable, WearableId, WearablesFilters, WearablesPagination } from '../types'
-import { isBaseAvatar, translateEntityIntoWearable } from '../Utils'
+import { BASE_AVATARS_COLLECTION_ID, OffChainWearablesManager } from './off-chain/OffChainWearablesManager'
+import { Wearable, WearableId, WearablesFilters, WearablesPagination } from './utils/types'
+import { isBaseAvatar, translateEntityIntoWearable } from './utils/Utils'
 
 // Different versions of the same query param
 const INCLUDE_DEFINITION_VERSIONS = [
@@ -21,15 +21,14 @@ const INCLUDE_DEFINITION_VERSIONS = [
 
 const LOGGER = log4js.getLogger('TheGraphClient')
 
+// Method: GET
+// Path: /collections/wearables-by-owner/:owner?collectionId={string}
 export async function getWearablesByOwnerEndpoint(
   client: SmartContentClient,
   theGraphClient: TheGraphClient,
   req: Request,
   res: Response
 ): Promise<void> {
-  // Method: GET
-  // Path: /wearables-by-owner/:owner?collectionId={string}
-
   const { owner } = req.params
   const { collectionId } = req.query
   const includeDefinition = INCLUDE_DEFINITION_VERSIONS.some((version) => version in req.query)
@@ -86,6 +85,8 @@ export async function getWearablesByOwner(
 
 const MAX_LIMIT = 500
 
+// Method: GET
+// Path: /collections/wearables/?filters&limit={number}&lastId={string}
 export async function getWearablesEndpoint(
   client: SmartContentClient,
   theGraphClient: TheGraphClient,
@@ -93,9 +94,6 @@ export async function getWearablesEndpoint(
   req: Request,
   res: Response
 ): Promise<unknown> {
-  // Method: GET
-  // Path: /wearables/?filters&limit={number}&lastId={string}
-
   const collectionIds: string[] = asArray<string>(req.query.collectionId as string).map((id) => id.toLowerCase())
   const wearableIds: string[] = asArray<string>(req.query.wearableId as string).map((id) => id.toLowerCase())
   const textSearch: string | undefined = (req.query.textSearch as string | undefined)?.toLowerCase()

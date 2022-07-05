@@ -13,6 +13,14 @@ import { HTTPProvider } from 'eth-connect'
 import { getResizedImage } from './handlers/images/handlers'
 import { DAOCache } from '../service/dao/DAOCache'
 import { getCatalystServersList, getPOIsList, getDenylistedNamesList } from './handlers/contracts/handlers'
+import {
+  getStandardErc721,
+  contentsImage,
+  contentsThumbnail,
+  getCollectionsHandler
+} from './handlers/collections/collections'
+import { getWearablesEndpoint, getWearablesByOwnerEndpoint } from './handlers/collections/wearables'
+import { OffChainWearablesManager } from './handlers/collections/off-chain/OffChainWearablesManager'
 
 export function setupRouter(env: Environment): Router {
   const router = Router()
@@ -26,6 +34,7 @@ export function setupRouter(env: Environment): Router {
   const ethProvider: HTTPProvider = env.getBean(Bean.ETHEREUM_PROVIDER)
   const rootStorageLocation: string = env.getConfig(EnvironmentConfig.LAMBDAS_STORAGE_LOCATION)
   const daoCache: DAOCache = env.getBean(Bean.DAO)
+  const offChainManager: OffChainWearablesManager = env.getBean(Bean.OFF_CHAIN_MANAGER)
 
   // Base endpoints
   router.get('/status', (req: Request, res: Response) => statusHandler(res, env))
@@ -72,6 +81,24 @@ export function setupRouter(env: Environment): Router {
   router.get('/contracts/servers', (req: Request, res: Response) => getCatalystServersList(daoCache, req, res))
   router.get('/contracts/pois', (req: Request, res: Response) => getPOIsList(daoCache, req, res))
   router.get('/contracts/denylisted-names', (req: Request, res: Response) => getDenylistedNamesList(daoCache, req, res))
+
+  // DAO Collections access API
+  router.get('/collections/standard/erc721/:chainId/:contract/:option/:emission?', (req: Request, res: Response) =>
+    getStandardErc721(contentClient, req, res)
+  )
+  router.get('/collections/contents/:urn/image', (req: Request, res: Response) =>
+    contentsImage(contentClient, req, res)
+  )
+  router.get('/collections/contents/:urn/thumbnail', (req: Request, res: Response) =>
+    contentsThumbnail(contentClient, req, res)
+  )
+  router.get('/collections/', (req, res) => getCollectionsHandler(theGraphClient, req, res))
+  router.get('/collections/wearables-by-owner/:owner', (req, res) =>
+    getWearablesByOwnerEndpoint(contentClient, theGraphClient, req, res)
+  )
+  router.get('/collections/wearables', (req, res) =>
+    getWearablesEndpoint(contentClient, theGraphClient, offChainManager, req, res)
+  )
 
   return router
 }

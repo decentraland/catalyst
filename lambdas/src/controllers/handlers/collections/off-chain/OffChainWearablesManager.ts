@@ -1,8 +1,8 @@
 import { EntityType } from '@dcl/schemas'
-import { SmartContentClient } from '../../../utils/SmartContentClient'
-import { TimeRefreshedDataHolder } from '../../../utils/TimeRefreshedDataHolder'
-import { Wearable, WearableId, WearablesFilters } from '../types'
-import { preferEnglish, translateEntityIntoWearable } from '../Utils'
+import { SmartContentClient } from '../../../../utils/SmartContentClient'
+import { TimeRefreshedDataHolder } from '../../../../utils/TimeRefreshedDataHolder'
+import { Wearable, WearableId, WearablesFilters } from '../utils/types'
+import { preferEnglish, translateEntityIntoWearable } from '../utils/Utils'
 import baseAvatars from './base-avatars'
 
 /**

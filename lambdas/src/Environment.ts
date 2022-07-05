@@ -1,6 +1,6 @@
 import log4js from 'log4js'
 import ms from 'ms'
-import { OffChainWearablesManagerFactory } from './apis/collections/off-chain/OffChainWearablesManagerFactory'
+import { OffChainWearablesManagerFactory } from './controllers/handlers/collections/off-chain/OffChainWearablesManagerFactory'
 import { DAOCache } from './service/dao/DAOCache'
 import { HTTPProvider } from 'eth-connect'
 import fetch from 'node-fetch'
