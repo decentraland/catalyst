@@ -1,15 +1,15 @@
 import { EthAddress } from '@dcl/crypto'
 import { Entity, EntityType } from '@dcl/schemas'
-import { Request, Response } from 'express'
+import { NextFunction, Request, RequestHandler, Response } from 'express'
 import log4js from 'log4js'
+import { WearableId } from '../../../apis/collections/types'
+import { translateWearablesIdFormat, isBaseAvatar } from '../../../apis/collections/Utils'
 import { asArray } from '../../../utils/ControllerUtils'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TheGraphClient } from '../../../utils/TheGraphClient'
 import { checkForThirdPartyWearablesOwnership } from '../../../utils/third-party'
-import { WearableId } from '../../collections/types'
-import { isBaseAvatar, translateWearablesIdFormat } from '../../collections/Utils'
-import { EnsOwnership } from '../EnsOwnership'
-import { WearablesOwnership } from '../WearablesOwnership'
+import { EnsOwnership } from './EnsOwnership'
+import { WearablesOwnership } from './WearablesOwnership'
 
 const LOGGER = log4js.getLogger('profiles')
 
@@ -303,4 +303,35 @@ export type ProfileMetadataForSnapshots = {
 }
 type AvatarForSnapshots = {
   snapshots: AvatarSnapshots
+}
+
+function asyncHandler(handler: (req: Request, res: Response, next: NextFunction) => Promise<void>): RequestHandler {
+  return (req, res, next) => {
+    handler(req, res, next).catch((e) => {
+      console.error(`Unexpected error while performing request ${req.method} ${req.originalUrl}`, e)
+      res.status(500).send({ status: 'server-error', message: 'Unexpected error' })
+    })
+  }
+}
+
+export function createProfileHandler(
+  theGraphClient: TheGraphClient,
+  client: SmartContentClient,
+  ensOwnership: EnsOwnership,
+  wearablesOwnership: WearablesOwnership,
+  profilesCacheTTL: number,
+  originalHandler: (
+    theGraphClient: TheGraphClient,
+    client: SmartContentClient,
+    ensOwnership: EnsOwnership,
+    wearablesOwnership: WearablesOwnership,
+    profilesCacheTTL: number,
+    req: Request,
+    res: Response
+  ) => Promise<any>
+): RequestHandler {
+  return asyncHandler(
+    async (req, res) =>
+      await originalHandler(theGraphClient, client, ensOwnership, wearablesOwnership, profilesCacheTTL, req, res)
+  )
 }

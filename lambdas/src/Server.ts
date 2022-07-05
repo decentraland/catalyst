@@ -13,9 +13,6 @@ import { initializeContractRoutes } from './apis/contracts/routes'
 import { initializeCryptoRoutes } from './apis/crypto/routes'
 import { initializeExploreRoutes } from './apis/explore/routes'
 import { initializeImagesRoutes } from './apis/images/routes'
-import { EnsOwnership } from './apis/profiles/EnsOwnership'
-import { initializeProfilesRoutes } from './apis/profiles/routes'
-import { WearablesOwnership } from './apis/profiles/WearablesOwnership'
 import { initializeThirdPartyIntegrationsRoutes } from './apis/third-party/routes'
 import { Bean, Environment, EnvironmentConfig } from './Environment'
 import { metricsComponent } from './metrics'
@@ -69,30 +66,13 @@ export class Server {
 
     this.metricsPort = initializeMetricsServer(this.app, metricsComponent)
 
-    const ensOwnership: EnsOwnership = env.getBean(Bean.ENS_OWNERSHIP)
-    const wearablesOwnership: WearablesOwnership = env.getBean(Bean.WEARABLES_OWNERSHIP)
     const fetcher: SmartContentServerFetcher = env.getBean(Bean.SMART_CONTENT_SERVER_FETCHER)
     const contentClient: SmartContentClient = env.getBean(Bean.SMART_CONTENT_SERVER_CLIENT)
     const theGraphClient: TheGraphClient = env.getBean(Bean.THE_GRAPH_CLIENT)
     const offChainManager: OffChainWearablesManager = env.getBean(Bean.OFF_CHAIN_MANAGER)
 
-    const profilesCacheTTL: number = env.getConfig(EnvironmentConfig.PROFILES_CACHE_TTL)
-
     // Setup routes
-    this.app.use(setupRouter(env, fetcher))
-
-    // Profile API implementation
-    this.app.use(
-      '/profiles',
-      initializeProfilesRoutes(
-        express.Router(),
-        theGraphClient,
-        contentClient,
-        ensOwnership,
-        wearablesOwnership,
-        profilesCacheTTL
-      )
-    )
+    this.app.use(setupRouter(env))
 
     // DCL-Crypto API implementation
     this.app.use('/crypto', initializeCryptoRoutes(express.Router(), env.getBean(Bean.ETHEREUM_PROVIDER)))
