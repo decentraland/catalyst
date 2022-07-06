@@ -7,10 +7,8 @@ import * as OpenApiValidator from 'express-openapi-validator'
 import http from 'http'
 import log4js from 'log4js'
 import morgan from 'morgan'
-import { initializeThirdPartyIntegrationsRoutes } from './apis/third-party/routes'
-import { Bean, Environment, EnvironmentConfig } from './Environment'
+import { Environment, EnvironmentConfig } from './Environment'
 import { metricsComponent } from './metrics'
-import { TheGraphClient } from './utils/TheGraphClient'
 import { setupRouter } from './controllers/routes'
 
 export class Server {
@@ -58,12 +56,8 @@ export class Server {
 
     this.metricsPort = initializeMetricsServer(this.app, metricsComponent)
 
-    const theGraphClient: TheGraphClient = env.getBean(Bean.THE_GRAPH_CLIENT)
-
     // Setup routes
     this.app.use(setupRouter(env))
-
-    this.app.use('/third-party-integrations', initializeThirdPartyIntegrationsRoutes(theGraphClient, express.Router()))
   }
 
   async start(): Promise<void> {

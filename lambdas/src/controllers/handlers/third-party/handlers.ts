@@ -1,5 +1,5 @@
 import { Response } from 'express'
-import { ThirdPartyIntegration } from '../../../controllers/handlers/collections/utils/types'
+import { ThirdPartyIntegration } from '../collections/utils/types'
 import { TheGraphClient } from '../../../utils/TheGraphClient'
 import { TimeRefreshedDataHolder } from '../../../utils/TimeRefreshedDataHolder'
 
