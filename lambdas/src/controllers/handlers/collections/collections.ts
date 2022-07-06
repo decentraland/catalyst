@@ -105,7 +105,6 @@ export async function getCollectionsHandler(
   req: Request,
   res: Response
 ): Promise<void> {
-
   try {
     const collections: Collection[] = await getCollections(theGraphClient)
     res.send({ collections })

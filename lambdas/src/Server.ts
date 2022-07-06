@@ -7,11 +7,9 @@ import * as OpenApiValidator from 'express-openapi-validator'
 import http from 'http'
 import log4js from 'log4js'
 import morgan from 'morgan'
-import { initializeExploreRoutes } from './apis/explore/routes'
 import { initializeThirdPartyIntegrationsRoutes } from './apis/third-party/routes'
 import { Bean, Environment, EnvironmentConfig } from './Environment'
 import { metricsComponent } from './metrics'
-import { SmartContentClient } from './utils/SmartContentClient'
 import { TheGraphClient } from './utils/TheGraphClient'
 import { setupRouter } from './controllers/routes'
 
@@ -60,14 +58,10 @@ export class Server {
 
     this.metricsPort = initializeMetricsServer(this.app, metricsComponent)
 
-    const contentClient: SmartContentClient = env.getBean(Bean.SMART_CONTENT_SERVER_CLIENT)
     const theGraphClient: TheGraphClient = env.getBean(Bean.THE_GRAPH_CLIENT)
 
     // Setup routes
     this.app.use(setupRouter(env))
-
-    // Functionality for Explore use case
-    this.app.use('/explore', initializeExploreRoutes(express.Router(), env.getBean(Bean.DAO), contentClient))
 
     this.app.use('/third-party-integrations', initializeThirdPartyIntegrationsRoutes(theGraphClient, express.Router()))
   }

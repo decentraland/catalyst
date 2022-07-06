@@ -77,10 +77,9 @@ function noReject<T>(promise: Promise<T>): Promise<['fulfilled' | 'rejected', an
   )
 }
 
+// Method: GET
+// Path: /realms
 export async function realmsStatus(daoCache: DAOCache, req: Request, res: Response) {
-  // Method: GET
-  // Path: /realms
-
   if (!realmsStatusCache) {
     realmsStatusCache = new TimeRefreshedDataHolder(() => fetchRealmsData(daoCache), '1m')
   }
@@ -94,10 +93,9 @@ export async function realmsStatus(daoCache: DAOCache, req: Request, res: Respon
 
 let hotSceneCache: TimeRefreshedDataHolder<HotSceneInfo[]>
 
+// Method: GET
+// Path: /hot-scenes
 export async function hotScenes(daoCache: DAOCache, contentClient: SmartContentClient, req: Request, res: Response) {
-  // Method: GET
-  // Path: /hot-scenes
-
   if (!hotSceneCache) {
     hotSceneCache = new TimeRefreshedDataHolder(() => fetchHotScenesData(daoCache, contentClient), '1m')
   }
