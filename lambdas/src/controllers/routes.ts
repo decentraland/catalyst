@@ -70,6 +70,18 @@ export function setupRouter(env: Environment): Router {
       getIndividualProfileById
     )
   )
+  // TODO: Remove the route /profile/{id} once we are sure is not being used, as it has been migrated to /profiles/{id}
+  router.get(
+    '/profile/:id',
+    createProfileHandler(
+      theGraphClient,
+      contentClient,
+      ensOwnership,
+      wearablesOwnership,
+      profilesCacheTTL,
+      getIndividualProfileById
+    )
+  )
 
   // DCL-Crypto API implementation
   router.post('/crypto/validate-signature', (req: Request, res: Response) => validateSignature(ethProvider, req, res))
