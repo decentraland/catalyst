@@ -15,7 +15,8 @@ export class PointerManager {
     lastDeployedPointersRepo: LastDeployedPointersRepository,
     deploymentsRepo: DeploymentsRepository,
     deploymentId: DeploymentId,
-    entity: Entity
+    entity: Entity,
+    overwrote: Set<number>
   ): Promise<DeploymentResult> {
     // Fetch active last deployments on pointers
     const lastDeployments = await lastDeployedPointersRepo.getLastActiveDeploymentsOnPointers(
@@ -23,19 +24,38 @@ export class PointerManager {
       entity.pointers
     )
 
+    const resultMariano: DeploymentResult = new Map()
     try {
       const lastDeployments2 = await deploymentsRepo.getLastActiveDeploymentsOnPointers(
         deploymentId,
         entity.type,
         entity.pointers
       )
+      console.log(`MARIANO(${deploymentId}): lastDeployments`, lastDeployments)
       if (JSON.stringify(lastDeployments) !== JSON.stringify(lastDeployments2)) {
-        console.log(`MARIANO(${deploymentId}): lastDeployments are different: `, lastDeployments, lastDeployments2)
+        console.log(`MARIANO(${deploymentId}): lastDeployments are different: `, lastDeployments2)
+      }
+
+      const overwrittenDeployments = await deploymentsRepo.getDeployments(overwrote)
+      for (const pointer of entity.pointers) {
+        resultMariano.set(pointer, {
+          before: overwrittenDeployments.find((dep) => dep.pointers.includes(pointer))?.id,
+          after: DELTA_POINTER_RESULT.SET
+        })
+      }
+      for (const dep of overwrittenDeployments) {
+        for (const pointer of dep.pointers) {
+          if (!resultMariano.has(pointer)) {
+            resultMariano.set(pointer, {
+              before: dep.id,
+              after: DELTA_POINTER_RESULT.CLEARED
+            })
+          }
+        }
       }
     } catch (e) {
       console.log(`MARIANO(${deploymentId}): ERROR`, e)
     }
-    console.log(`MARIANO(${deploymentId}): lastDeployments`, lastDeployments)
 
     // Add a made up deployments for the pointers where there was no deployment yet
     const pointersWithDeployments = lastDeployments
@@ -100,6 +120,10 @@ export class PointerManager {
     )
 
     console.log(`MARIANO(${deploymentId}): result`, result)
+    if (JSON.stringify(result) !== JSON.stringify(resultMariano)) {
+      console.log(`MARIANO(${deploymentId}): resultMariano is different: `, resultMariano)
+    }
+
     return result
   }
 

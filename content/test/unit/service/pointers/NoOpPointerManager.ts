@@ -8,7 +8,7 @@ export class NoOpPointerManager {
       overwrote: new Set(),
       overwrittenBy: null
     })
-    when(mockedManager.referenceEntityFromPointers(anything(), anything(), anything(), anything())).thenResolve(new Map())
+    when(mockedManager.referenceEntityFromPointers(anything(), anything(), anything(), anything(), anything())).thenResolve(new Map())
 
     return instance(mockedManager)
   }

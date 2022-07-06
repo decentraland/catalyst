@@ -290,7 +290,8 @@ export class ServiceImpl implements MetaverseContentService {
                   transaction.lastDeployedPointers,
                   transaction.deployments,
                   deploymentId,
-                  entity
+                  entity,
+                  overwrote
                 )
             )
 
