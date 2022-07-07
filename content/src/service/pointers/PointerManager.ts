@@ -3,6 +3,7 @@ import { DeploymentId, DeploymentsRepository } from '../../repository/extensions
 import { LastDeployedPointersRepository } from '../../repository/extensions/LastDeployedPointersRepository'
 import { PointerHistoryRepository } from '../../repository/extensions/PointerHistoryRepository'
 import { happenedBefore } from '../time/TimeSorting'
+import assert from 'assert'
 
 /**
  * Manage all pointer data
@@ -18,6 +19,10 @@ export class PointerManager {
     entity: Entity,
     overwrote: Set<number>
   ): Promise<DeploymentResult> {
+    console.log(`MARIANO(${deploymentId}): overwrote`, {
+      overwrote: Array.from(overwrote)
+    })
+
     // Fetch active last deployments on pointers
     const lastDeployments = await lastDeployedPointersRepo.getLastActiveDeploymentsOnPointers(
       entity.type,
@@ -26,16 +31,6 @@ export class PointerManager {
 
     const resultMariano: DeploymentResult = new Map()
     try {
-      const lastDeployments2 = await deploymentsRepo.getLastActiveDeploymentsOnPointers(
-        deploymentId,
-        entity.type,
-        entity.pointers
-      )
-      console.log(`MARIANO(${deploymentId}): lastDeployments`, lastDeployments)
-      if (JSON.stringify(lastDeployments) !== JSON.stringify(lastDeployments2)) {
-        console.log(`MARIANO(${deploymentId}): lastDeployments are different: `, lastDeployments2)
-      }
-
       const overwrittenDeployments = await deploymentsRepo.getDeployments(overwrote)
       for (const pointer of entity.pointers) {
         resultMariano.set(pointer, {
@@ -61,9 +56,9 @@ export class PointerManager {
     const pointersWithDeployments = lastDeployments
       .map((deployment) => deployment.pointers)
       .reduce((accum, curr) => accum.concat(curr), [])
-    console.log(`MARIANO(${deploymentId}): pointersWithDeployments`, pointersWithDeployments)
+    // console.log(`MARIANO(${deploymentId}): pointersWithDeployments`, pointersWithDeployments)
     const pointersWithoutDeployments = diff(entity.pointers, pointersWithDeployments)
-    console.log(`MARIANO(${deploymentId}): pointersWithoutDeployments`, pointersWithoutDeployments)
+    // console.log(`MARIANO(${deploymentId}): pointersWithoutDeployments`, pointersWithoutDeployments)
     if (pointersWithoutDeployments.size > 0) {
       lastDeployments.push({
         entityId: 'NOT_GONNA_BE_USED',
@@ -72,7 +67,7 @@ export class PointerManager {
         pointers: Array.from(pointersWithoutDeployments.values()),
         deleted: true
       })
-      console.log(`MARIANO(${deploymentId}): lastDeployments after`, lastDeployments)
+      // console.log(`MARIANO(${deploymentId}): lastDeployments after`, lastDeployments)
     }
 
     // Determine if the entity being deployed will become active
@@ -110,7 +105,7 @@ export class PointerManager {
       }
     })
 
-    console.log(`MARIANO(${deploymentId}): overwrite`, Array.from(overwrite.values()))
+    // console.log(`MARIANO(${deploymentId}): overwrite`, Array.from(overwrite.values()))
 
     // Overwrite the currently last entities that need to be overwritten
     await lastDeployedPointersRepo.setAsLastActiveDeploymentsOnPointers(
@@ -119,9 +114,11 @@ export class PointerManager {
       Array.from(overwrite.values())
     )
 
-    console.log(`MARIANO(${deploymentId}): result`, result)
-    if (JSON.stringify(result) !== JSON.stringify(resultMariano)) {
-      console.log(`MARIANO(${deploymentId}): resultMariano is different: `, resultMariano)
+    console.log(`MARIANO(${deploymentId}): result`, result, 'resultMariano', resultMariano)
+    try {
+      assert.deepEqual(result, resultMariano)
+    } catch (error) {
+      console.log(error)
     }
 
     return result

@@ -119,56 +119,11 @@ export class DeploymentsRepository {
         overwrittenBy = overwrittenByMany[0].id
       }
 
-      console.log(`MARIANO(${entity.id}): calculate overwrites`, {
-        overwrote: Array.from(new Set(overwrote)),
-        overwrittenBy
-      })
-
       return {
         overwrote: new Set(overwrote),
         overwrittenBy
       }
     })
-  }
-
-  /** Returns the last deployments that were active on the given pointers (could be active or not right now) */
-  getLastActiveDeploymentsOnPointers(
-    ignoreDeploymentId: DeploymentId,
-    entityType: EntityType,
-    pointers: string[]
-  ): Promise<
-    { deployment: DeploymentId; entityId: string; timestamp: number; pointers: string[]; deleted: boolean }[]
-  > {
-    if (pointers.length === 0) {
-      return Promise.resolve([])
-    }
-    console.log('ignoreDeploymentId', ignoreDeploymentId)
-    return this.db.map(
-      `
-            SELECT
-                deployments.id,
-                deployments.entity_id,
-                date_part('epoch', deployments.entity_timestamp) * 1000 AS entity_timestamp,
-                deployments.entity_pointers,
-                CASE WHEN deployments.deleter_deployment IS NULL
-                    THEN FALSE
-                    ELSE TRUE
-                END AS deleted
-            FROM deployments
-            WHERE deployments.entity_pointers && ARRAY[$2:list] AND
-                deployments.entity_type = $1 AND
-                deployments.id <> $3
-            ORDER BY deployments.id DESC
-            LIMIT 1`,
-      [entityType, pointers, ignoreDeploymentId],
-      (row) => ({
-        deployment: row.id,
-        entityId: row.entity_id,
-        timestamp: row.entity_timestamp,
-        pointers: row.entity_pointers,
-        deleted: row.deleted
-      })
-    )
   }
 }
 
