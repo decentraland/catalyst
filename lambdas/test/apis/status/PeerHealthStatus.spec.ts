@@ -1,6 +1,6 @@
 import fetch from 'node-fetch'
-import { HealthStatus } from '../../../src/apis/status/health'
-import PeerHealthStatus from '../../../src/apis/status/PeerHealthStatus'
+import { HealthStatus } from '../../../src/controllers/handlers/status/health'
+import PeerHealthStatus from '../../../src/controllers/handlers/status/PeerHealthStatus'
 import { Environment, EnvironmentConfig } from "../../../src/Environment"
 import { Server } from "../../../src/Server"
 import * as Commons from "../../../src/utils/commons"
