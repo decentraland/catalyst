@@ -21,7 +21,7 @@ import {
 } from './handlers/collections/collections'
 import { getWearablesEndpoint, getWearablesByOwnerEndpoint } from './handlers/collections/wearables'
 import { OffChainWearablesManager } from './handlers/collections/off-chain/OffChainWearablesManager'
-import { hotScenes, realmsStatus } from './handlers/explore/handlers'
+import { hotScenes, realmsStatus } from './handlers/explorer/handlers'
 import { initCache, retrieveThirdPartyIntegrations } from './handlers/third-party/handlers'
 
 export function setupRouter(env: Environment): Router {
@@ -114,7 +114,7 @@ export function setupRouter(env: Environment): Router {
     getWearablesEndpoint(contentClient, theGraphClient, offChainManager, req, res)
   )
 
-  // Functionality for Explore use case
+  // Functionality for Explorer use case
   router.get('/explore/hot-scenes', (req: Request, res: Response) => hotScenes(daoCache, contentClient, req, res))
   router.get('/explore/realms', (req: Request, res: Response) => realmsStatus(daoCache, req, res))
 
