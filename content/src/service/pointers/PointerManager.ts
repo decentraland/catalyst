@@ -21,7 +21,8 @@ export class PointerManager {
     overwritten: boolean
   ): Promise<DeploymentResult> {
     console.log(`MARIANO(${deploymentId}): overwrote`, {
-      overwrote: Array.from(overwrote)
+      overwrote: Array.from(overwrote),
+      overwritten: overwritten
     })
 
     // Fetch active last deployments on pointers
@@ -32,7 +33,7 @@ export class PointerManager {
 
     const resultMariano: DeploymentResult = new Map()
     try {
-      if (true || !overwritten) {
+      if (!overwritten) {
         const overwrittenDeployments = await deploymentsRepo.getDeployments(overwrote)
         for (const pointer of entity.pointers) {
           resultMariano.set(pointer, {
@@ -59,9 +60,7 @@ export class PointerManager {
     const pointersWithDeployments = lastDeployments
       .map((deployment) => deployment.pointers)
       .reduce((accum, curr) => accum.concat(curr), [])
-    // console.log(`MARIANO(${deploymentId}): pointersWithDeployments`, pointersWithDeployments)
     const pointersWithoutDeployments = diff(entity.pointers, pointersWithDeployments)
-    // console.log(`MARIANO(${deploymentId}): pointersWithoutDeployments`, pointersWithoutDeployments)
     if (pointersWithoutDeployments.size > 0) {
       lastDeployments.push({
         entityId: 'NOT_GONNA_BE_USED',
@@ -70,7 +69,6 @@ export class PointerManager {
         pointers: Array.from(pointersWithoutDeployments.values()),
         deleted: true
       })
-      // console.log(`MARIANO(${deploymentId}): lastDeployments after`, lastDeployments)
     }
 
     // Determine if the entity being deployed will become active
@@ -108,8 +106,6 @@ export class PointerManager {
       }
     })
 
-    // console.log(`MARIANO(${deploymentId}): overwrite`, Array.from(overwrite.values()))
-
     // Overwrite the currently last entities that need to be overwritten
     await lastDeployedPointersRepo.setAsLastActiveDeploymentsOnPointers(
       deploymentId,
@@ -124,7 +120,7 @@ export class PointerManager {
       console.log(error)
     }
 
-    return resultMariano
+    return result
   }
 
   calculateOverwrites(
