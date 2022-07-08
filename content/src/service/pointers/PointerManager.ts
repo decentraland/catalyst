@@ -124,7 +124,7 @@ export class PointerManager {
       console.log(error)
     }
 
-    return result
+    return resultMariano
   }
 
   calculateOverwrites(
