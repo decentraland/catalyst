@@ -2,7 +2,7 @@ import fetch from 'node-fetch'
 import { HealthStatus } from '../../../src/controllers/handlers/status/health'
 import PeerHealthStatus from '../../../src/controllers/handlers/status/PeerHealthStatus'
 import { Environment, EnvironmentConfig } from "../../../src/Environment"
-import { Server } from "../../../src/Server"
+import { Server } from '../../../src/Server'
 import * as Commons from "../../../src/utils/commons"
 
 describe('PeerHealthStatus', () => {

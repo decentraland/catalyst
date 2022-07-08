@@ -1,15 +1,15 @@
+import { HTTPProvider } from 'eth-connect'
 import log4js from 'log4js'
 import ms from 'ms'
-import { OffChainWearablesManagerFactory } from './controllers/handlers/collections/off-chain/OffChainWearablesManagerFactory'
-import { DAOCache } from './service/dao/DAOCache'
-import { HTTPProvider } from 'eth-connect'
 import fetch from 'node-fetch'
+import { OffChainWearablesManagerFactory } from './controllers/handlers/collections/off-chain/OffChainWearablesManagerFactory'
+import { EnsOwnershipFactory } from './controllers/handlers/profiles/EnsOwnershipFactory'
+import { WearablesOwnershipFactory } from './controllers/handlers/profiles/WearablesOwnershipFactory'
+import { DAOCache } from './service/dao/DAOCache'
 import { getCommsServerUrl } from './utils/commons'
 import { SmartContentClientFactory } from './utils/SmartContentClientFactory'
 import { SmartContentServerFetcherFactory } from './utils/SmartContentServerFetcherFactory'
 import { TheGraphClientFactory } from './utils/TheGraphClientFactory'
-import { EnsOwnershipFactory } from './controllers/handlers/profiles/EnsOwnershipFactory'
-import { WearablesOwnershipFactory } from './controllers/handlers/profiles/WearablesOwnershipFactory'
 
 const DEFAULT_SERVER_PORT = 7070
 export const DEFAULT_ETH_NETWORK = 'ropsten'
@@ -36,7 +36,7 @@ const DEFAULT_INTERNAL_COMMS_SERVER_URL: string = `http://comms-server:9000`
 const DEFAULT_LAMBDAS_STORAGE_LOCATION = 'lambdas-storage'
 
 export class Environment {
-  private configs: Map<EnvironmentConfig, any> = new Map()
+  public configs: Map<EnvironmentConfig, any> = new Map()
   private beans: Map<Bean, any> = new Map()
 
   getConfig<T>(key: EnvironmentConfig): T {
