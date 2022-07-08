@@ -17,7 +17,8 @@ export class PointerManager {
     deploymentsRepo: DeploymentsRepository,
     deploymentId: DeploymentId,
     entity: Entity,
-    overwrote: Set<number>
+    overwrote: Set<number>,
+    overwritten: boolean
   ): Promise<DeploymentResult> {
     console.log(`MARIANO(${deploymentId}): overwrote`, {
       overwrote: Array.from(overwrote)
@@ -31,20 +32,22 @@ export class PointerManager {
 
     const resultMariano: DeploymentResult = new Map()
     try {
-      const overwrittenDeployments = await deploymentsRepo.getDeployments(overwrote)
-      for (const pointer of entity.pointers) {
-        resultMariano.set(pointer, {
-          before: overwrittenDeployments.find((dep) => dep.pointers.includes(pointer))?.id,
-          after: DELTA_POINTER_RESULT.SET
-        })
-      }
-      for (const dep of overwrittenDeployments) {
-        for (const pointer of dep.pointers) {
-          if (!resultMariano.has(pointer)) {
-            resultMariano.set(pointer, {
-              before: dep.id,
-              after: DELTA_POINTER_RESULT.CLEARED
-            })
+      if (!overwritten) {
+        const overwrittenDeployments = await deploymentsRepo.getDeployments(overwrote)
+        for (const pointer of entity.pointers) {
+          resultMariano.set(pointer, {
+            before: overwrittenDeployments.find((dep) => dep.pointers.includes(pointer))?.id,
+            after: DELTA_POINTER_RESULT.SET
+          })
+        }
+        for (const dep of overwrittenDeployments) {
+          for (const pointer of dep.pointers) {
+            if (!resultMariano.has(pointer)) {
+              resultMariano.set(pointer, {
+                before: dep.id,
+                after: DELTA_POINTER_RESULT.CLEARED
+              })
+            }
           }
         }
       }

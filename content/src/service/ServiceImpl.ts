@@ -291,7 +291,8 @@ export class ServiceImpl implements MetaverseContentService {
                   transaction.deployments,
                   deploymentId,
                   entity,
-                  overwrote
+                  overwrote,
+                  overwrittenBy !== null
                 )
             )
 
