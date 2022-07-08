@@ -32,7 +32,7 @@ export class PointerManager {
 
     const resultMariano: DeploymentResult = new Map()
     try {
-      if (!overwritten) {
+      if (true || !overwritten) {
         const overwrittenDeployments = await deploymentsRepo.getDeployments(overwrote)
         for (const pointer of entity.pointers) {
           resultMariano.set(pointer, {
