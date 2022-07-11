@@ -2,7 +2,6 @@ import pgPromise, { IBaseProtocol, IDatabase, IInitOptions, IMain } from 'pg-pro
 import { retry } from '../helpers/RetryHelper'
 import { ContentFilesRepository } from './extensions/ContentFilesRepository'
 import { DeploymentsRepository } from './extensions/DeploymentsRepository'
-import { LastDeployedPointersRepository } from './extensions/LastDeployedPointersRepository'
 import { PointerHistoryRepository } from './extensions/PointerHistoryRepository'
 
 export type Database = IBaseProtocol<IExtensions> & IExtensions
@@ -12,7 +11,6 @@ export interface IExtensions {
   deployments: DeploymentsRepository
   content: ContentFilesRepository
   pointerHistory: PointerHistoryRepository
-  lastDeployedPointers: LastDeployedPointersRepository
 }
 
 type DBConnection = {
@@ -51,7 +49,6 @@ async function connectTo(
       obj.deployments = new DeploymentsRepository(obj)
       obj.content = new ContentFilesRepository(obj)
       obj.pointerHistory = new PointerHistoryRepository(obj)
-      obj.lastDeployedPointers = new LastDeployedPointersRepository(obj)
     },
 
     error(err, e) {

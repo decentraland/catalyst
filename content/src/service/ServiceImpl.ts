@@ -287,7 +287,6 @@ export class ServiceImpl implements MetaverseContentService {
               'reference_entity_from_pointers',
               () =>
                 this.components.pointerManager.referenceEntityFromPointers(
-                  transaction.lastDeployedPointers,
                   transaction.deployments,
                   deploymentId,
                   entity,
