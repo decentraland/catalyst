@@ -9,12 +9,12 @@ import morgan from 'morgan'
 import { setupRouter } from './controllers/routes'
 import { metricsComponent } from './metrics'
 import { initializeMetricsServer } from './MetricsServer'
-import { AppComponents, TestComponents } from './types'
+import { AppComponents, GlobalContext, TestComponents } from './types'
 
 // this function wires the business logic (adapters & controllers) with the components (ports)
 export async function main(program: Lifecycle.EntryPointParameters<AppComponents | TestComponents>) {
   const { components, startComponents } = program
-  // const globalContext: GlobalContext = { components }
+  const globalContext: GlobalContext = { components }
   const env = components.env
 
   // Set logger
@@ -59,7 +59,7 @@ export async function main(program: Lifecycle.EntryPointParameters<AppComponents
   this.metricsPort = initializeMetricsServer(this.app, metricsComponent)
 
   // Setup routes
-  this.app.use(setupRouter(env))
+  this.app.use(setupRouter(env, globalContext))
 
   // Start the server
   this.app.listen(this.port, () => {
@@ -68,7 +68,7 @@ export async function main(program: Lifecycle.EntryPointParameters<AppComponents
   await this.metricsPort.start()
 
   // wire the HTTP router (make it automatic? TBD)
-  // const router = setupRouter()
+  // const router = setupRouter(globalContext)
   // register routes middleware
   // components.server.use(router.middleware())
   // register not implemented/method not allowed/cors responses middleware

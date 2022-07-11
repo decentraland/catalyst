@@ -23,8 +23,9 @@ import { getWearablesEndpoint, getWearablesByOwnerEndpoint } from './handlers/co
 import { OffChainWearablesManager } from './handlers/collections/off-chain/OffChainWearablesManager'
 import { hotScenes, realmsStatus } from './handlers/explorer/handlers'
 import { initCache, retrieveThirdPartyIntegrations } from './handlers/third-party/handlers'
+import { GlobalContext } from '../types'
 
-export function setupRouter(env: Environment): Router {
+export function setupRouter(env: Environment, globalContext: GlobalContext): Router {
   const router = Router()
 
   const ensOwnership: EnsOwnership = env.getBean(Bean.ENS_OWNERSHIP)
@@ -39,8 +40,8 @@ export function setupRouter(env: Environment): Router {
   const offChainManager: OffChainWearablesManager = env.getBean(Bean.OFF_CHAIN_MANAGER)
 
   // Base endpoints
-  router.get('/status', (req: Request, res: Response) => statusHandler(res, env))
-  router.get('/health', (req: Request, res: Response) => healthHandler(res, env))
+  router.get('/status', (req: Request, res: Response) => statusHandler(res, globalContext))
+  router.get('/health', (req: Request, res: Response) => healthHandler(res, env, globalContext))
 
   // Backwards compatibility for older Content API
   router.get('/contentV2/scenes', (req: Request, res: Response) => getScenes(fetcher, req, res))

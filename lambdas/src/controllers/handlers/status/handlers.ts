@@ -1,28 +1,35 @@
 import { Response } from 'express'
 import { HealthStatus } from './health'
 import PeerHealthStatus from './PeerHealthStatus'
-import { Bean, Environment, EnvironmentConfig } from '../../../Environment'
+import { Bean, Environment } from '../../../Environment'
+import { GlobalContext } from '../../../types'
 
 // Method: GET
 // Path: /status
-export async function statusHandler(res: Response, environment: Environment) {
+export async function statusHandler(res: Response, globalContext: GlobalContext) {
+  const config = globalContext.components.config
   res.send({
     version: '1.0',
     currentTime: Date.now(),
-    contentServerUrl: environment.getConfig(EnvironmentConfig.CONTENT_SERVER_ADDRESS),
-    commitHash: environment.getConfig(EnvironmentConfig.COMMIT_HASH),
-    catalystVersion: environment.getConfig(EnvironmentConfig.CATALYST_VERSION)
+    contentServerUrl: config.getString('CONTENT_SERVER_ADDRESS'),
+    commitHash: config.getString('COMMIT_HASH'),
+    catalystVersion: config.getString('CATALYST_VERSION')
   })
 }
 
 // Method: GET
 // Path: /health
-export async function healthHandler(res: Response, environment: Environment) {
+export async function healthHandler(res: Response, env: Environment, globalContext: GlobalContext) {
+  const config = globalContext.components.config
+  const maxSynchronizationTime = (await config.getString('MAX_SYNCHRONIZATION_TIME')) ?? ''
+  const maxDeploymentObtentionTime = (await config.getString('MAX_DEPLOYMENT_OBTENTION_TIME')) ?? ''
+  const commsServerAddress = (await config.getString('COMMS_SERVER_ADDRESS')) ?? ''
+
   const peerHealthStatus = new PeerHealthStatus(
-    environment.getBean(Bean.SMART_CONTENT_SERVER_CLIENT),
-    environment.getConfig(EnvironmentConfig.MAX_SYNCHRONIZATION_TIME),
-    environment.getConfig(EnvironmentConfig.MAX_DEPLOYMENT_OBTENTION_TIME),
-    environment.getConfig(EnvironmentConfig.COMMS_SERVER_ADDRESS)
+    env.getBean(Bean.SMART_CONTENT_SERVER_CLIENT),
+    maxSynchronizationTime,
+    maxDeploymentObtentionTime,
+    commsServerAddress
   )
 
   peerHealthStatus

@@ -1,7 +1,7 @@
 import fetch from 'node-fetch'
 import { HealthStatus } from '../../../src/controllers/handlers/status/health'
 import PeerHealthStatus from '../../../src/controllers/handlers/status/PeerHealthStatus'
-import { Environment, EnvironmentConfig } from "../../../src/Environment"
+import { Environment } from "../../../src/Environment"
 import { Server } from '../../../src/Server'
 import * as Commons from "../../../src/utils/commons"
 
@@ -14,7 +14,7 @@ describe('PeerHealthStatus', () => {
       jest.spyOn(Commons, 'getCommsServerUrl').mockResolvedValue('')
       process.env.CONTENT_SERVER_ADDRESS = ''
       const env = await Environment.getInstance()
-      baseUrl = `http://localhost:${env.getConfig(EnvironmentConfig.SERVER_PORT)}`
+      // baseUrl = `http://localhost:${env.getConfig(EnvironmentConfig.SERVER_PORT)}`
 
       server = new Server(env)
       await server.start()

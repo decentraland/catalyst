@@ -47,3 +47,4 @@ ENTRYPOINT ["/sbin/tini", "--"]
 
 # Run the program under Tini
 CMD [ "/usr/local/bin/node", "--max-old-space-size=8192", "lambdas/entrypoints/run-server.js" ]
+# CMD [ "/usr/local/bin/node", "--max-old-space-size=8192", "lambdas/index.ts" ]
