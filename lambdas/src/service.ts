@@ -7,7 +7,6 @@ import * as OpenApiValidator from 'express-openapi-validator'
 import log4js from 'log4js'
 import morgan from 'morgan'
 import { setupRouter } from './controllers/routes'
-import { EnvironmentConfig } from './Environment'
 import { metricsComponent } from './metrics'
 import { initializeMetricsServer } from './MetricsServer'
 import { AppComponents, TestComponents } from './types'
@@ -19,9 +18,10 @@ export async function main(program: Lifecycle.EntryPointParameters<AppComponents
   const env = components.env
 
   // Set logger
+  const logLevel: string = (await components.config.getString('LOG_LEVEL')) ?? 'info'
   log4js.configure({
     appenders: { console: { type: 'console', layout: { type: 'basic' } } },
-    categories: { default: { appenders: ['console'], level: env.getConfig<string>(EnvironmentConfig.LOG_LEVEL) } }
+    categories: { default: { appenders: ['console'], level: logLevel } }
   })
 
   this.port = await components.config.getString('HTTP_SERVER_PORT')

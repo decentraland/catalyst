@@ -11,7 +11,6 @@ import { TheGraphClientFactory } from './utils/TheGraphClientFactory'
 import { EnsOwnershipFactory } from './controllers/handlers/profiles/EnsOwnershipFactory'
 import { WearablesOwnershipFactory } from './controllers/handlers/profiles/WearablesOwnershipFactory'
 
-const DEFAULT_SERVER_PORT = 7070
 export const DEFAULT_ETH_NETWORK = 'ropsten'
 export const DEFAULT_ENS_OWNER_PROVIDER_URL_ROPSTEN =
   'https://api.thegraph.com/subgraphs/name/decentraland/marketplace-ropsten'
@@ -81,8 +80,6 @@ export const enum Bean {
 }
 
 export const enum EnvironmentConfig {
-  SERVER_PORT,
-  LOG_REQUESTS,
   CONTENT_SERVER_ADDRESS,
   COMMS_SERVER_ADDRESS,
   ENS_OWNER_PROVIDER_URL,
@@ -91,8 +88,6 @@ export const enum EnvironmentConfig {
   THIRD_PARTY_REGISTRY_SUBGRAPH_URL,
   COMMIT_HASH,
   CATALYST_VERSION,
-  USE_COMPRESSION_MIDDLEWARE,
-  LOG_LEVEL,
   ETH_NETWORK,
   LAMBDAS_STORAGE_LOCATION,
   PROFILE_NAMES_CACHE_MAX,
@@ -103,7 +98,6 @@ export const enum EnvironmentConfig {
   MAX_DEPLOYMENT_OBTENTION_TIME,
   METRICS,
   OFF_CHAIN_WEARABLES_REFRESH_TIME,
-  VALIDATE_API,
   PROFILES_CACHE_TTL
 }
 
@@ -127,12 +121,6 @@ export class EnvironmentBuilder {
   async build(): Promise<Environment> {
     const env = new Environment()
 
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.SERVER_PORT,
-      () => process.env.SERVER_PORT ?? DEFAULT_SERVER_PORT
-    )
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_REQUESTS, () => process.env.LOG_REQUESTS !== 'false')
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.CONTENT_SERVER_ADDRESS,
@@ -194,12 +182,6 @@ export class EnvironmentBuilder {
     )
     this.registerConfigIfNotAlreadySet(
       env,
-      EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE,
-      () => process.env.USE_COMPRESSION_MIDDLEWARE === 'true'
-    )
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_LEVEL, () => process.env.LOG_LEVEL ?? 'info')
-    this.registerConfigIfNotAlreadySet(
-      env,
       EnvironmentConfig.ETH_NETWORK,
       () => process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
     )
@@ -237,7 +219,6 @@ export class EnvironmentBuilder {
       EnvironmentConfig.OFF_CHAIN_WEARABLES_REFRESH_TIME,
       () => process.env.OFF_CHAIN_WEARABLES_REFRESH_TIME ?? '15m'
     )
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.VALIDATE_API, () => process.env.VALIDATE_API == 'true')
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PROFILES_CACHE_TTL, () =>
       parseInt(process.env.PROFILES_CACHE_TTL ?? '300')

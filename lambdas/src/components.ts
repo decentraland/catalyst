@@ -18,8 +18,6 @@ export async function initComponents(): Promise<AppComponents> {
 
   const env = await Environment.getInstance()
 
-  console.log(env.configs)
-
   return {
     config,
     logs,

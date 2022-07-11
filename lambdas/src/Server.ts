@@ -5,7 +5,6 @@ import cors from 'cors'
 import express from 'express'
 import * as OpenApiValidator from 'express-openapi-validator'
 import http from 'http'
-import log4js from 'log4js'
 import morgan from 'morgan'
 import { Environment, EnvironmentConfig } from './Environment'
 import { metricsComponent } from './metrics'
@@ -19,12 +18,12 @@ export class Server {
 
   constructor(env: Environment) {
     // Set logger
-    log4js.configure({
-      appenders: { console: { type: 'console', layout: { type: 'basic' } } },
-      categories: { default: { appenders: ['console'], level: env.getConfig<string>(EnvironmentConfig.LOG_LEVEL) } }
-    })
+    // log4js.configure({
+    //   appenders: { console: { type: 'console', layout: { type: 'basic' } } },
+    // categories: { default: { appenders: ['console'], level: env.getConfig<string>(EnvironmentConfig.LOG_LEVEL) } }
+    // })
 
-    this.port = env.getConfig(EnvironmentConfig.SERVER_PORT)
+    // this.port = env.getConfig(EnvironmentConfig.SERVER_PORT)
 
     this.app = express()
 
