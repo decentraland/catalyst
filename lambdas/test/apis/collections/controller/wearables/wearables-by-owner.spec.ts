@@ -1,7 +1,7 @@
 import { EntityType } from '@dcl/schemas'
 import { Fetcher } from 'dcl-catalyst-commons'
 import { anything, instance, mock, objectContaining, verify, when } from 'ts-mockito'
-import { getWearablesByOwner, getWearablesByOwnerFromUrns } from '../../../../../src/apis/collections/controllers/wearables'
+import { getWearablesByOwner, getWearablesByOwnerFromUrns } from '../../../../../src/controllers/handlers/collections/wearables'
 import * as tpUrnFinder from '../../../../../src/logic/third-party-urn-finder'
 import { ThirdPartyAssetFetcher } from '../../../../../src/ports/third-party/third-party-fetcher'
 import { SmartContentClient } from '../../../../../src/utils/SmartContentClient'

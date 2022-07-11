@@ -1,7 +1,7 @@
 import { Logger } from 'log4js'
 import sinon from 'sinon'
 import { anything, instance, mock, when } from 'ts-mockito'
-import { HealthStatus, refreshContentServerStatus } from '../../../src/apis/status/health'
+import { HealthStatus, refreshContentServerStatus } from '../../../src/controllers/handlers/status/health'
 import { SmartContentClient } from '../../../src/utils/SmartContentClient'
 
 describe("Lambda's Controller Utils", () => {

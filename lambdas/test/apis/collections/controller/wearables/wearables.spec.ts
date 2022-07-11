@@ -1,11 +1,11 @@
 import { Entity, EntityType } from '@dcl/schemas'
 import { anything, deepEqual, instance, mock, verify, when } from 'ts-mockito'
-import { getWearables } from '../../../../../src/apis/collections/controllers/wearables'
 import {
   BASE_AVATARS_COLLECTION_ID,
   OffChainWearablesManager
-} from '../../../../../src/apis/collections/off-chain/OffChainWearablesManager'
-import { LambdasWearable, WearableId } from '../../../../../src/apis/collections/types'
+} from '../../../../../src/controllers/handlers/collections/off-chain/OffChainWearablesManager'
+import { LambdasWearable, WearableId } from '../../../../../src/controllers/handlers/collections/utils/types'
+import { getWearables } from '../../../../../src/controllers/handlers/collections/wearables'
 import { SmartContentClient } from '../../../../../src/utils/SmartContentClient'
 import { TheGraphClient } from '../../../../../src/utils/TheGraphClient'
 
