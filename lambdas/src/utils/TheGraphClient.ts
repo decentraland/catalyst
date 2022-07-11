@@ -2,13 +2,18 @@ import { EthAddress } from '@dcl/crypto'
 import { parseUrn } from '@dcl/urn-resolver'
 import { Fetcher } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
-import { EmoteId, ItemFilters, ThirdPartyIntegration, WearableId } from '../controllers/handlers/collections/utils/types'
+import {
+  EmoteId,
+  ItemFilters,
+  ThirdPartyIntegration,
+  WearableId
+} from '../controllers/handlers/collections/utils/types'
 
 export class TheGraphClient {
   public static readonly MAX_PAGE_SIZE = 1000
   private static readonly LOGGER = log4js.getLogger('TheGraphClient')
 
-  constructor(private readonly urls: URLs, private readonly fetcher: Fetcher) { }
+  constructor(private readonly urls: URLs, private readonly fetcher: Fetcher) {}
 
   public async findOwnersByName(names: string[]): Promise<{ name: string; owner: EthAddress }[]> {
     const query: Query<

@@ -344,6 +344,15 @@ export function createProfileHandler(
 ): RequestHandler {
   return asyncHandler(
     async (req, res) =>
-      await originalHandler(theGraphClient, client, ensOwnership, wearablesOwnership, profilesCacheTTL, thirdPartyFetcher, req, res)
+      await originalHandler(
+        theGraphClient,
+        client,
+        ensOwnership,
+        wearablesOwnership,
+        profilesCacheTTL,
+        thirdPartyFetcher,
+        req,
+        res
+      )
   )
 }

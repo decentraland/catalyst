@@ -10,7 +10,8 @@ import { TheGraphClient } from '../utils/TheGraphClient'
 import {
   contentsImage,
   contentsThumbnail,
-  getCollectionsHandler, getStandardErc721
+  getCollectionsHandler,
+  getStandardErc721
 } from './handlers/collections/collections'
 import { OffChainWearablesManager } from './handlers/collections/off-chain/OffChainWearablesManager'
 import { getWearablesByOwnerHandler, getWearablesHandler } from './handlers/collections/wearables'
