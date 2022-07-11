@@ -1,6 +1,5 @@
 import { Entity } from '@dcl/schemas'
 import { DeploymentId, DeploymentsRepository } from '../../repository/extensions/DeploymentsRepository'
-import { PointerHistoryRepository } from '../../repository/extensions/PointerHistoryRepository'
 
 /**
  * Manage all pointer data
@@ -51,10 +50,6 @@ export class PointerManager {
     entity: Entity
   ): Promise<{ overwrote: Set<DeploymentId>; overwrittenBy: DeploymentId | null }> {
     return deploymentsRepo.calculateOverwrites(entity)
-  }
-
-  addToHistory(pointerHistoryRepo: PointerHistoryRepository, deploymentId: DeploymentId, entity: Entity) {
-    return pointerHistoryRepo.addToHistory(deploymentId, entity)
   }
 }
 
