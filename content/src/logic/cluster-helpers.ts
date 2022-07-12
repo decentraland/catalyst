@@ -62,6 +62,7 @@ export async function determineCatalystIdentity(
       await sleep(attempIntervalMs)
       attempts++
     }
+    throw new Error(`Failed to detect my own identity after ${attempts} attempts`)
   } catch (error) {
     logger.error(`Failed to detect my own identity after ${attempts} attempts \n${error}`)
     throw error
