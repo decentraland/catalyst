@@ -122,13 +122,13 @@ export class DeploymentsRepository {
       try {
         const overwrittenByManyMariano = await task.manyOrNone(
           `
-              SELECT d.id
+              SELECT DISTINCT deployments.id
               FROM active_pointers as ap
-                       INNER JOIN deployments d on ap.entity_id = d.entity_id
+                       INNER JOIN deployments on ap.entity_id = deployments.entity_id
               WHERE ap.pointer IN ($2:list)
-                AND d.entity_type = $1
-                AND d.entity_timestamp > to_timestamp($3 / 1000.0)
-              ORDER BY d.entity_timestamp ASC, d.entity_id ASC
+                AND deployments.entity_type = $1
+                AND (deployments.entity_timestamp > to_timestamp($3 / 1000.0) OR (deployments.entity_timestamp = to_timestamp($3 / 1000.0) AND deployments.entity_id > $4))
+              ORDER BY deployments.entity_timestamp, deployments.entity_id
               LIMIT 10
           `,
           [entity.type, entity.pointers, entity.timestamp, entity.id]
@@ -144,8 +144,9 @@ export class DeploymentsRepository {
           overwrittenBy,
           'overwrittenByMariano',
           overwrittenByMariano,
+          overwrittenBy !== overwrittenByMariano ? 'different' : 'same',
           'all',
-          overwrittenByManyMariano
+          overwrittenByManyMariano.map((dep) => dep.id)
         )
       } catch (error) {
         console.error('MARIANO', error)
