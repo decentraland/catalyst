@@ -1,5 +1,5 @@
 import { EthAddress } from '@dcl/crypto'
-import { Entity, EntityType } from '@dcl/schemas'
+import { Entity, EntityType, Profile } from '@dcl/schemas'
 import { NextFunction, Request, RequestHandler, Response } from 'express'
 import log4js from 'log4js'
 import { ThirdPartyAssetFetcher } from '../../../ports/third-party/third-party-fetcher'
@@ -149,37 +149,54 @@ export async function fetchProfiles(
     const profilesMap: Map<EthAddress, { metadata: ProfileMetadata; content: Map<string, string> }> = new Map()
     const namesMap: Map<EthAddress, string[]> = new Map()
     const wearablesMap: Map<EthAddress, WearableId[]> = new Map()
+    const emotesMap: Map<EthAddress, { slot: number, urn: string }[]> = new Map()
 
     // Group nfts and profile metadata by ethAddress
     const entityPromises = profilesEntities
       .filter((entity) => !!entity.metadata)
       .map(async (entity) => {
-        const { ethAddress, metadata, content, names, wearables } = await extractData(entity)
+        const { ethAddress, metadata, content, names, wearables, emotes } = await extractData(entity)
 
         profilesMap.set(ethAddress, { metadata, content })
         namesMap.set(ethAddress, names)
         wearablesMap.set(ethAddress, wearables)
+        if (emotes) {
+          emotesMap.set(ethAddress, emotes)
+        }
       })
     await Promise.all(entityPromises)
 
     //Check which NFTs are owned
     const ownedWearablesPromise = wearablesOwnership.areNFTsOwned(wearablesMap)
     const ownedENSPromise = ensOwnership.areNFTsOwned(namesMap)
+
+    const emoteUrnsByOwner = new Map()
+    for (const [owner, emotes] of emotesMap) {
+      emoteUrnsByOwner.set(owner, emotes.map(emote => emote.urn))
+    }
+    const ownedEmotesPromise = wearablesOwnership.areNFTsOwned(emoteUrnsByOwner)
+
     const thirdPartyWearablesPromise = checkForThirdPartyWearablesOwnership(
       theGraphClient,
       thirdPartyFetcher,
       wearablesMap
     )
-    const [ownedWearables, ownedENS, thirdPartyWearables] = await Promise.all([
-      ownedWearablesPromise,
-      ownedENSPromise,
-      thirdPartyWearablesPromise
-    ])
+    const [
+      ownedWearables,
+      ownedENS,
+      thirdPartyWearables,
+      ownedEmotes] = await Promise.all([
+        ownedWearablesPromise,
+        ownedENSPromise,
+        thirdPartyWearablesPromise,
+        ownedEmotesPromise
+      ])
 
     // Add name data and snapshot urls to profiles
     const result = Array.from(profilesMap.entries()).map(async ([ethAddress, profile]) => {
       const ensOwnership = ownedENS.get(ethAddress)!
       const wearablesOwnership = ownedWearables.get(ethAddress)!
+      const emotesOwnership = ownedEmotes.get(ethAddress)!
       const tpw = thirdPartyWearables.get(ethAddress) ?? []
       const { metadata, content } = profile
       const avatars = metadata.avatars.map(async (profileData) => ({
@@ -191,7 +208,8 @@ export async function fetchProfiles(
           snapshots: addBaseUrlToSnapshots(contentClient.getExternalContentServerUrl(), profileData.avatar, content),
           wearables: (await sanitizeWearables(fixWearableId(profileData.avatar.wearables), wearablesOwnership)).concat(
             tpw
-          )
+          ),
+          emotes: profileData.avatar.emotes ? await sanitizeEmotes(profileData.avatar.emotes, emotesOwnership) : []
         }
       }))
       return { timestamp: profile.metadata.timestamp, avatars: await Promise.all(avatars) }
@@ -209,17 +227,24 @@ async function extractData(entity: Entity): Promise<{
   content: Map<string, string>
   names: string[]
   wearables: WearableId[]
+  emotes?: {
+    slot: number
+    urn: string
+  }[]
 }> {
   const ethAddress = entity.pointers[0]
   const metadata: ProfileMetadata = entity.metadata
+  // const metadata: LambdasProfile = entity.metadata
   const content = new Map((entity.content ?? []).map(({ file, hash }) => [file, hash]))
   const filteredNames = metadata.avatars.map(({ name }) => name).filter((name) => name && name.trim().length > 0)
   // Add timestamp to the metadata
   metadata.timestamp = entity.timestamp
   // Validate wearables urn
   const filteredWearables = await validateWearablesUrn(metadata)
+  const emotes = getEmotes(metadata)
+  const filteredEmotes = (emotes.length == 0) ? undefined : emotes
 
-  return { ethAddress, metadata, content, names: filteredNames, wearables: filteredWearables }
+  return { ethAddress, metadata, content, names: filteredNames, wearables: filteredWearables, emotes: filteredEmotes }
 }
 
 async function validateWearablesUrn(metadata: ProfileMetadata) {
@@ -235,6 +260,18 @@ async function validateWearablesUrn(metadata: ProfileMetadata) {
     (wearableId): wearableId is WearableId => !!wearableId
   )
   return filteredWearables
+}
+
+function getEmotes(metadata: ProfileMetadata): { slot: number, urn: string }[] {
+  const allEmotesInProfile: { slot: number, urn: string }[] = []
+  const allAvatars = metadata?.avatars ?? []
+  for (const avatar of allAvatars) {
+    const allEmotes: { slot: number, urn: string }[] = avatar.avatar.emotes ?? []
+    for (const emote of allEmotes) {
+      allEmotesInProfile.push(emote)
+    }
+  }
+  return allEmotesInProfile
 }
 
 /**
@@ -258,6 +295,21 @@ async function sanitizeWearables(
   return translated
     .filter((wearableId): wearableId is WearableId => !!wearableId)
     .filter((wearableId: WearableId) => isBaseAvatar(wearableId) || ownership.get(wearableId))
+}
+
+/**
+ * We are sanitizing the emotes that are being worn. This includes removing any emotes that is not currently owned,
+ * and transforming all of them into the new format
+ */
+async function sanitizeEmotes(
+  emotesInProfile: { slot: number, urn: string }[],
+  ownership: Map<string, boolean>
+): Promise<{ slot: number, urn: string }[]> {
+  // const translated = await Promise.all(emotesInProfile.map(translateWearablesIdFormat))
+  return emotesInProfile
+    // .filter((wearableId): wearableId is WearableId => !!wearableId)
+    .filter((emote) => ownership.get(emote.urn))
+  // .filter((wearableId: WearableId) => isBaseAvatar(wearableId) || ownership.get(wearableId))
 }
 
 /**
@@ -293,6 +345,10 @@ export type ProfileMetadata = {
   }[]
 }
 
+export type LambdasProfile = Profile & {
+  timestamp: number
+}
+
 type AvatarSnapshots = Record<string, string>
 
 type Avatar = {
@@ -303,6 +359,10 @@ type Avatar = {
   snapshots: AvatarSnapshots
   version: number
   wearables: WearableId[]
+  emotes?: {
+    slot: number
+    urn: string
+  }[]
 }
 
 export type ProfileMetadataForSnapshots = {

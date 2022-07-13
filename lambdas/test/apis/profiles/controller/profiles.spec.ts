@@ -21,7 +21,7 @@ describe('profiles', () => {
   const thirdPartyFetcher = { fetchAssets: () => Promise.resolve([]) }
 
   it(`When profiles are fetched and NFTs are owned, then the returned profile is the same as the content server`, async () => {
-    const { entity, metadata } = profileWith(SOME_ADDRESS, { name: SOME_NAME, wearables: [WEARABLE_ID_1] })
+    const { entity, metadata } = profileWith(SOME_ADDRESS, { name: SOME_NAME, wearables: [WEARABLE_ID_1], emotes: [] })
     const client = contentServerThatReturns(entity)
     const ensOwnership = ownedNFTs(EnsOwnership, SOME_ADDRESS, SOME_NAME)
     const wearablesOwnership = ownedNFTs(WearablesOwnership, SOME_ADDRESS, WEARABLE_ID_1)
@@ -58,7 +58,7 @@ describe('profiles', () => {
   })
 
   it(`When having TPW owned, then they are shown`, async () => {
-    const { entity, metadata } = profileWith(SOME_ADDRESS, { name: SOME_NAME, wearables: [TPW_ID] })
+    const { entity, metadata } = profileWith(SOME_ADDRESS, { name: SOME_NAME, wearables: [TPW_ID], emotes: [] })
     const client = contentServerThatReturns(entity)
     const ensOwnership = ownedNFTs(EnsOwnership, SOME_ADDRESS, SOME_NAME)
     const wearablesOwnership = noNFTs(WearablesOwnership)
@@ -141,6 +141,7 @@ function profileWith(
     wearables?: string[]
     snapshots?: Record<string, string>
     content?: { file: string; hash: string }
+    emotes?: { slot: number, urn: string }[]
   }
 ): { entity: Entity; metadata: pfs.ProfileMetadata } {
   const metadata = {
@@ -157,7 +158,8 @@ function profileWith(
           skin: {},
           version: 10,
           snapshots: options.snapshots ?? {},
-          wearables: options.wearables ?? []
+          wearables: options.wearables ?? [],
+          emotes: options.emotes ?? []
         }
       }
     ]
