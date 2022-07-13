@@ -20,6 +20,7 @@ import { getCatalystServersList, getDenylistedNamesList, getPOIsList } from './h
 import { validateSignature } from './handlers/crypto/handlers'
 import { hotScenes, realmsStatus } from './handlers/explorer/handlers'
 import { getResizedImage } from './handlers/images/handlers'
+import { EmotesOwnership } from './handlers/profiles/EmotesOwnership'
 import { EnsOwnership } from './handlers/profiles/EnsOwnership'
 import { createProfileHandler, getIndividualProfileById, getProfilesById } from './handlers/profiles/handlers'
 import { WearablesOwnership } from './handlers/profiles/WearablesOwnership'
@@ -31,6 +32,7 @@ export function setupRouter(env: Environment): Router {
 
   const ensOwnership: EnsOwnership = env.getBean(Bean.ENS_OWNERSHIP)
   const wearablesOwnership: WearablesOwnership = env.getBean(Bean.WEARABLES_OWNERSHIP)
+  const emotesOwnership: EmotesOwnership = env.getBean(Bean.EMOTES_OWNERSHIP)
   const fetcher: SmartContentServerFetcher = env.getBean(Bean.SMART_CONTENT_SERVER_FETCHER)
   const contentClient: SmartContentClient = env.getBean(Bean.SMART_CONTENT_SERVER_CLIENT)
   const theGraphClient: TheGraphClient = env.getBean(Bean.THE_GRAPH_CLIENT)
@@ -58,6 +60,7 @@ export function setupRouter(env: Environment): Router {
       contentClient,
       ensOwnership,
       wearablesOwnership,
+      emotesOwnership,
       profilesCacheTTL,
       thirdPartyFetcher,
       getProfilesById
@@ -70,6 +73,7 @@ export function setupRouter(env: Environment): Router {
       contentClient,
       ensOwnership,
       wearablesOwnership,
+      emotesOwnership,
       profilesCacheTTL,
       thirdPartyFetcher,
       getIndividualProfileById
@@ -83,6 +87,7 @@ export function setupRouter(env: Environment): Router {
       contentClient,
       ensOwnership,
       wearablesOwnership,
+      emotesOwnership,
       profilesCacheTTL,
       thirdPartyFetcher,
       getIndividualProfileById

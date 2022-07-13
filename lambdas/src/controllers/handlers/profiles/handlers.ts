@@ -8,6 +8,7 @@ import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TheGraphClient } from '../../../utils/TheGraphClient'
 import { WearableId } from '../collections/utils/types'
 import { isBaseAvatar, translateWearablesIdFormat } from '../collections/utils/Utils'
+import { EmotesOwnership } from './EmotesOwnership'
 import { EnsOwnership } from './EnsOwnership'
 import { checkForThirdPartyWearablesOwnership } from './tp-wearables-ownership'
 import { WearablesOwnership } from './WearablesOwnership'
@@ -71,6 +72,7 @@ export async function getIndividualProfileById(
   client: SmartContentClient,
   ensOwnership: EnsOwnership,
   wearables: WearablesOwnership,
+  emotes: EmotesOwnership,
   profilesCacheTTL: number,
   thirdPartyFetcher: ThirdPartyAssetFetcher,
   req: Request,
@@ -85,6 +87,7 @@ export async function getIndividualProfileById(
     client,
     ensOwnership,
     wearables,
+    emotes,
     thirdPartyFetcher,
     getIfModifiedSinceTimestamp(req)
   )
@@ -96,6 +99,7 @@ export async function getProfilesById(
   contentClient: SmartContentClient,
   ensOwnership: EnsOwnership,
   wearables: WearablesOwnership,
+  emotes: EmotesOwnership,
   profilesCacheTTL: number,
   thirdPartyFetcher: ThirdPartyAssetFetcher,
   req: Request,
@@ -115,6 +119,7 @@ export async function getProfilesById(
     contentClient,
     ensOwnership,
     wearables,
+    emotes,
     thirdPartyFetcher,
     getIfModifiedSinceTimestamp(req)
   )
@@ -133,6 +138,7 @@ export async function fetchProfiles(
   contentClient: SmartContentClient,
   ensOwnership: EnsOwnership,
   wearablesOwnership: WearablesOwnership,
+  emotesOwnership: EmotesOwnership,
   thirdPartyFetcher: ThirdPartyAssetFetcher,
   ifModifiedSinceTimestamp?: number | undefined
 ): Promise<ProfileMetadata[] | undefined> {
@@ -174,7 +180,7 @@ export async function fetchProfiles(
     for (const [owner, emotes] of emotesMap) {
       emoteUrnsByOwner.set(owner, emotes.map(emote => emote.urn))
     }
-    const ownedEmotesPromise = wearablesOwnership.areNFTsOwned(emoteUrnsByOwner)
+    const ownedEmotesPromise = emotesOwnership.areNFTsOwned(emoteUrnsByOwner)
 
     const thirdPartyWearablesPromise = checkForThirdPartyWearablesOwnership(
       theGraphClient,
@@ -389,6 +395,7 @@ export function createProfileHandler(
   client: SmartContentClient,
   ensOwnership: EnsOwnership,
   wearablesOwnership: WearablesOwnership,
+  emotesOwnership: EmotesOwnership,
   profilesCacheTTL: number,
   thirdPartyFetcher: ThirdPartyAssetFetcher,
   originalHandler: (
@@ -396,6 +403,7 @@ export function createProfileHandler(
     client: SmartContentClient,
     ensOwnership: EnsOwnership,
     wearablesOwnership: WearablesOwnership,
+    emotesOwnership: EmotesOwnership,
     profilesCacheTTL: number,
     thirdPartyFetcher: ThirdPartyAssetFetcher,
     req: Request,
@@ -409,6 +417,7 @@ export function createProfileHandler(
         client,
         ensOwnership,
         wearablesOwnership,
+        emotesOwnership,
         profilesCacheTTL,
         thirdPartyFetcher,
         req,
