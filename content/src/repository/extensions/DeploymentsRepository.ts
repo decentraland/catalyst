@@ -117,6 +117,7 @@ export class DeploymentsRepository {
       )
 
       if (overwrittenByMany.length === 0 && entity.type === 'scene') {
+        // Scene overwrite determination can be tricky. If none was detected use this other query (slower but safer)
         overwrittenByMany = await task.manyOrNone(
           `
                  SELECT deployments.id
