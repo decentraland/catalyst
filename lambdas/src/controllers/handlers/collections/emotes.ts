@@ -125,6 +125,7 @@ export async function getEmotesHandler(
 
     res.send({ emotes, filters: requestFilters, pagination: { limit: sanitizedLimit, lastId, next } })
   } catch (error) {
+    LOGGER.error(error)
     res.status(500)
   }
 }
@@ -166,8 +167,10 @@ async function fetchEmotes(emoteUrns: string[], client: SmartContentClient): Pro
   if (emoteUrns.length === 0) {
     return []
   }
-
+  console.log('fetching emotes...')
   const entities = await client.fetchEntitiesByPointers(EntityType.EMOTE, emoteUrns)
+  console.log('emotes fetched')
+  console.log(JSON.stringify(entities))
   const emotes = entities.map((entity) => translateEntityIntoEmote(client, entity))
   return emotes.sort((emote1, emote2) => emote1.id.toLowerCase().localeCompare(emote2.id.toLowerCase()))
 }
