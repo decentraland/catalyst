@@ -122,7 +122,7 @@ export class DeploymentsRepository {
       try {
         const overwrittenByManyMariano = await task.manyOrNone(
           `
-              SELECT DISTINCT deployments.id
+              SELECT deployments.id
               FROM active_pointers as ap
                        INNER JOIN deployments on ap.entity_id = deployments.entity_id
               WHERE ap.pointer IN ($2:list)
