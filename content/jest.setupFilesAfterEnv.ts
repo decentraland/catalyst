@@ -1,4 +1,3 @@
-import * as logger from '@well-known-components/logger'
 import fs from 'fs'
 import path from 'path'
 import { ApiCoverage } from './jest.globalSetup'
@@ -8,30 +7,6 @@ import { isCI } from './test/integration/E2ETestUtils'
 // Setup API Coverage Report process
 if (process.env.API_COVERAGE === 'true' || isCI()) {
   setupApiCoverage()
-}
-
-// DISABLE LOGS
-if (process.env.LOG_LEVEL === 'off') {
-  beforeAll(() => {
-    // Mock logger implementation
-    const createLogComponent = logger.createConsoleLogComponent
-    jest.spyOn(logger, 'createLogComponent').mockImplementation(() => {
-      const logComponentMock = createLogComponent({
-        config: {
-          logLevel: 'DEBUG'
-        }
-      })
-      const loggerMock = logComponentMock.getLogger('__test__')
-      loggerMock.debug = () => {}
-      loggerMock.error = () => {}
-      loggerMock.info = () => {}
-      loggerMock.log = () => {}
-      loggerMock.warn = () => {}
-      logComponentMock.getLogger = jest.fn(() => loggerMock)
-      return logComponentMock
-    })
-    jest.spyOn(process.stdout, 'write').mockImplementation(() => true)
-  })
 }
 
 async function setupApiCoverage() {
