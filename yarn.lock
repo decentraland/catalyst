@@ -2615,19 +2615,6 @@ date-format@^4.0.9:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-4.0.9.tgz#4788015ac56dedebe83b03bc361f00c1ddcf1923"
   integrity sha512-+8J+BOUpSrlKLQLeF8xJJVTxS8QfRSuJgwxSVvslzgO3E6khbI0F5mMEPf5mTYhCCm4h99knYP6H3W9n3BQFrg==
 
-dcl-catalyst-client@12.0.3:
-  version "12.0.3"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-12.0.3.tgz#dc9c98f8e37a95b3b74ef2acc2063759c647c06b"
-  integrity sha512-Em/vm7xbnxojNV+RpL8h/0euR7BT3a+djDeJgB1WeMHszgVYA2W1croLzSHCO3uROlrUJrtl+6FQhfg/cUeCSw==
-  dependencies:
-    "@dcl/catalyst-contracts" "^2.0.0"
-    "@dcl/hashing" "^1.1.0"
-    "@dcl/schemas" "^5.0.3"
-    "@types/form-data" "^2.5.0"
-    cookie "^0.4.1"
-    dcl-catalyst-commons "^9.0.0"
-    form-data "^4.0.0"
-
 dcl-catalyst-client@12.0.5:
   version "12.0.5"
   resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-12.0.5.tgz#413b9d01a8c3ed0936583b40cd3071cf5d9263bb"
