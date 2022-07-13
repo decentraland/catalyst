@@ -103,19 +103,6 @@ export class DeploymentsRepository {
         (row) => row.id
       )
 
-      // const deps = await task.manyOrNone(
-      //   `
-      //     SELECT id, entity_id, entity_timestamp, entity_pointers, deleter_deployment
-      //     FROM deployments
-      //     ORDER BY entity_timestamp`
-      // )
-      // const activePointers = await task.manyOrNone(
-      //   `
-      //     SELECT pointer, entity_id
-      //     FROM active_pointers
-      //     ORDER BY pointer`
-      // )
-      // console.log(`MARIANO(${entity.id}, '${entity.pointers}')`, activePointers, deps)
       let overwrittenByMany = await task.manyOrNone(
         `
             SELECT deployments.id
@@ -138,7 +125,7 @@ export class DeploymentsRepository {
                      deployments.entity_pointers && ARRAY [$2:list] AND
                      (deployments.entity_timestamp > to_timestamp($3 / 1000.0) OR (deployments.entity_timestamp = to_timestamp($3 / 1000.0) AND deployments.entity_id > $4))
                  ORDER BY deployments.entity_timestamp, deployments.entity_id
-                 LIMIT 10`,
+                 LIMIT 1`,
           [entity.type, entity.pointers, entity.timestamp, entity.id]
         )
       }
@@ -147,7 +134,6 @@ export class DeploymentsRepository {
       if (overwrittenByMany.length > 0) {
         overwrittenBy = overwrittenByMany[0].id
       }
-      // console.log('overwrittenBy', overwrittenBy)
       return {
         overwrote: new Set(overwrote),
         overwrittenBy
