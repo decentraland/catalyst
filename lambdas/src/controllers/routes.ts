@@ -13,6 +13,7 @@ import {
   getCollectionsHandler,
   getStandardErc721
 } from './handlers/collections/collections'
+import { getEmotesByOwnerHandler, getEmotesHandler } from './handlers/collections/emotes'
 import { OffChainWearablesManager } from './handlers/collections/off-chain/OffChainWearablesManager'
 import { getWearablesByOwnerHandler, getWearablesHandler } from './handlers/collections/wearables'
 import { getContents, getInfo, getScenes } from './handlers/content-v2/handlers'
@@ -124,6 +125,10 @@ export function setupRouter(env: Environment): Router {
   router.get('/collections/wearables', (req, res) =>
     getWearablesHandler(contentClient, theGraphClient, offChainManager, req, res)
   )
+  router.get('/collections/emotes-by-owner/:owner', (req, res) =>
+    getEmotesByOwnerHandler(contentClient, theGraphClient, thirdPartyFetcher, req, res)
+  )
+  router.get('/collections/emotes', (req, res) => getEmotesHandler(contentClient, theGraphClient, req, res))
 
   // Functionality for Explorer use case
   router.get('/explore/hot-scenes', (req: Request, res: Response) => hotScenes(daoCache, contentClient, req, res))
