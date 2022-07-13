@@ -26,7 +26,6 @@ describe('PeerHealthStatus', () => {
 
    it('is ready to use when all services are healthy', async () => {
       jest.spyOn(PeerHealthStatus.prototype, 'getPeerStatus').mockResolvedValue({
-        comms: HealthStatus.HEALTHY,
         content: HealthStatus.HEALTHY,
         lambda: HealthStatus.HEALTHY,
       })
@@ -39,7 +38,6 @@ describe('PeerHealthStatus', () => {
 
     it('is not available when some service is unhealthy', async () => {
       jest.spyOn(PeerHealthStatus.prototype, 'getPeerStatus').mockResolvedValue({
-        comms: HealthStatus.HEALTHY,
         content: HealthStatus.UNHEALTHY,
         lambda: HealthStatus.HEALTHY,
       })

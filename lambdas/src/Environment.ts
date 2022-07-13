@@ -1,15 +1,13 @@
-import log4js from 'log4js'
-import ms from 'ms'
-import { OffChainWearablesManagerFactory } from './controllers/handlers/collections/off-chain/OffChainWearablesManagerFactory'
-import { DAOCache } from './service/dao/DAOCache'
 import { HTTPProvider } from 'eth-connect'
+import ms from 'ms'
 import fetch from 'node-fetch'
-import { getCommsServerUrl } from './utils/commons'
+import { OffChainWearablesManagerFactory } from './controllers/handlers/collections/off-chain/OffChainWearablesManagerFactory'
+import { EnsOwnershipFactory } from './controllers/handlers/profiles/EnsOwnershipFactory'
+import { WearablesOwnershipFactory } from './controllers/handlers/profiles/WearablesOwnershipFactory'
+import { DAOCache } from './service/dao/DAOCache'
 import { SmartContentClientFactory } from './utils/SmartContentClientFactory'
 import { SmartContentServerFetcherFactory } from './utils/SmartContentServerFetcherFactory'
 import { TheGraphClientFactory } from './utils/TheGraphClientFactory'
-import { EnsOwnershipFactory } from './controllers/handlers/profiles/EnsOwnershipFactory'
-import { WearablesOwnershipFactory } from './controllers/handlers/profiles/WearablesOwnershipFactory'
 
 const DEFAULT_SERVER_PORT = 7070
 export const DEFAULT_ETH_NETWORK = 'ropsten'
@@ -31,8 +29,6 @@ export const DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_MAINNET =
 
 const DEFAULT_MAX_SYNCHRONIZATION_TIME = '15m'
 const DEFAULT_MAX_DEPLOYMENT_OBTENTION_TIME = '3s'
-
-const DEFAULT_INTERNAL_COMMS_SERVER_URL: string = `http://comms-server:9000`
 const DEFAULT_LAMBDAS_STORAGE_LOCATION = 'lambdas-storage'
 
 export class Environment {
@@ -84,7 +80,6 @@ export const enum EnvironmentConfig {
   SERVER_PORT,
   LOG_REQUESTS,
   CONTENT_SERVER_ADDRESS,
-  COMMS_SERVER_ADDRESS,
   ENS_OWNER_PROVIDER_URL,
   COLLECTIONS_L1_SUBGRAPH_URL,
   COLLECTIONS_L2_SUBGRAPH_URL,
@@ -108,7 +103,6 @@ export const enum EnvironmentConfig {
 }
 
 export class EnvironmentBuilder {
-  private static readonly LOGGER = log4js.getLogger('EnvironmentBuilder')
   private baseEnv: Environment
   constructor(baseEnv?: Environment) {
     this.baseEnv = baseEnv ?? new Environment()
@@ -138,14 +132,6 @@ export class EnvironmentBuilder {
       EnvironmentConfig.CONTENT_SERVER_ADDRESS,
       () => process.env.CONTENT_SERVER_ADDRESS
     )
-
-    const realCommsServerAddress = await getCommsServerUrl(
-      EnvironmentBuilder.LOGGER,
-      process.env.INTERNAL_COMMS_SERVER_ADDRESS ?? DEFAULT_INTERNAL_COMMS_SERVER_URL,
-      process.env.COMMS_SERVER_ADDRESS
-    )
-
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.COMMS_SERVER_ADDRESS, () => realCommsServerAddress)
 
     this.registerConfigIfNotAlreadySet(
       env,

@@ -1,7 +1,7 @@
 import { Response } from 'express'
+import { Bean, Environment, EnvironmentConfig } from '../../../Environment'
 import { HealthStatus } from './health'
 import PeerHealthStatus from './PeerHealthStatus'
-import { Bean, Environment, EnvironmentConfig } from '../../../Environment'
 
 // Method: GET
 // Path: /status
@@ -21,8 +21,7 @@ export async function healthHandler(res: Response, environment: Environment) {
   const peerHealthStatus = new PeerHealthStatus(
     environment.getBean(Bean.SMART_CONTENT_SERVER_CLIENT),
     environment.getConfig(EnvironmentConfig.MAX_SYNCHRONIZATION_TIME),
-    environment.getConfig(EnvironmentConfig.MAX_DEPLOYMENT_OBTENTION_TIME),
-    environment.getConfig(EnvironmentConfig.COMMS_SERVER_ADDRESS)
+    environment.getConfig(EnvironmentConfig.MAX_DEPLOYMENT_OBTENTION_TIME)
   )
 
   peerHealthStatus

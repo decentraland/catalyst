@@ -37,7 +37,6 @@ These are some of the more important configuration values when running locally:
 
 | Name                          | Description                                                                                                                      | Default |
 | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | :-----: |
-| COMMS_SERVER_ADDRESS          | Comms server address. Will only be used when the service is running outside of docker                                            |    -    |
 | CONTENT_SERVER_ADDRESS        | Content server address. Will only be used when the service is running outside of docker                                          |    -    |
 | LOG_LEVEL                     | Minimum log level                                                                                                                | 'info'  |
 | MAX_SYNCHRONIZATION_TIME      | It's the time that the service will allow for the content service to be out of sync before considering it unhealthy              |  '15m'  |
