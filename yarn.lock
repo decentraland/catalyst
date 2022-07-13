@@ -2628,6 +2628,19 @@ dcl-catalyst-client@12.0.3:
     dcl-catalyst-commons "^9.0.0"
     form-data "^4.0.0"
 
+dcl-catalyst-client@12.0.5:
+  version "12.0.5"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-12.0.5.tgz#413b9d01a8c3ed0936583b40cd3071cf5d9263bb"
+  integrity sha512-Cf5gNq/yd5XGwJU2/3ADssr8rNGaMyzqdqNcBBwIjFGg8KrR0TvoOnqdw+NA2q2dM1zgCSV8xKo+xgvccvul7A==
+  dependencies:
+    "@dcl/catalyst-contracts" "^2.0.0"
+    "@dcl/hashing" "^1.1.0"
+    "@dcl/schemas" "^5.0.3"
+    "@types/form-data" "^2.5.0"
+    cookie "^0.4.1"
+    dcl-catalyst-commons "^9.0.0"
+    form-data "^4.0.0"
+
 dcl-catalyst-commons@9.0.1:
   version "9.0.1"
   resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-9.0.1.tgz#315ef14f774dcdb6f07147865a967ca0b25648e7"
