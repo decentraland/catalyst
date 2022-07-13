@@ -155,7 +155,7 @@ export async function fetchProfiles(
     const profilesMap: Map<EthAddress, { metadata: ProfileMetadata; content: Map<string, string> }> = new Map()
     const namesMap: Map<EthAddress, string[]> = new Map()
     const wearablesMap: Map<EthAddress, WearableId[]> = new Map()
-    const emotesMap: Map<EthAddress, { slot: number, urn: string }[]> = new Map()
+    const emotesMap: Map<EthAddress, { slot: number; urn: string }[]> = new Map()
 
     // Group nfts and profile metadata by ethAddress
     const entityPromises = profilesEntities
@@ -178,7 +178,10 @@ export async function fetchProfiles(
 
     const emoteUrnsByOwner = new Map()
     for (const [owner, emotes] of emotesMap) {
-      emoteUrnsByOwner.set(owner, emotes.map(emote => emote.urn))
+      emoteUrnsByOwner.set(
+        owner,
+        emotes.map((emote) => emote.urn)
+      )
     }
     const ownedEmotesPromise = emotesOwnership.areNFTsOwned(emoteUrnsByOwner)
 
@@ -187,16 +190,12 @@ export async function fetchProfiles(
       thirdPartyFetcher,
       wearablesMap
     )
-    const [
-      ownedWearables,
-      ownedENS,
-      thirdPartyWearables,
-      ownedEmotes] = await Promise.all([
-        ownedWearablesPromise,
-        ownedENSPromise,
-        thirdPartyWearablesPromise,
-        ownedEmotesPromise
-      ])
+    const [ownedWearables, ownedENS, thirdPartyWearables, ownedEmotes] = await Promise.all([
+      ownedWearablesPromise,
+      ownedENSPromise,
+      thirdPartyWearablesPromise,
+      ownedEmotesPromise
+    ])
 
     // Add name data and snapshot urls to profiles
     const result = Array.from(profilesMap.entries()).map(async ([ethAddress, profile]) => {
@@ -248,7 +247,7 @@ async function extractData(entity: Entity): Promise<{
   // Validate wearables urn
   const filteredWearables = await validateWearablesUrn(metadata)
   const emotes = getEmotes(metadata)
-  const filteredEmotes = (emotes.length == 0) ? undefined : emotes
+  const filteredEmotes = emotes.length == 0 ? undefined : emotes
 
   return { ethAddress, metadata, content, names: filteredNames, wearables: filteredWearables, emotes: filteredEmotes }
 }
@@ -268,11 +267,11 @@ async function validateWearablesUrn(metadata: ProfileMetadata) {
   return filteredWearables
 }
 
-function getEmotes(metadata: ProfileMetadata): { slot: number, urn: string }[] {
-  const allEmotesInProfile: { slot: number, urn: string }[] = []
+function getEmotes(metadata: ProfileMetadata): { slot: number; urn: string }[] {
+  const allEmotesInProfile: { slot: number; urn: string }[] = []
   const allAvatars = metadata?.avatars ?? []
   for (const avatar of allAvatars) {
-    const allEmotes: { slot: number, urn: string }[] = avatar.avatar.emotes ?? []
+    const allEmotes: { slot: number; urn: string }[] = avatar.avatar.emotes ?? []
     for (const emote of allEmotes) {
       allEmotesInProfile.push(emote)
     }
@@ -308,13 +307,15 @@ async function sanitizeWearables(
  * and transforming all of them into the new format
  */
 async function sanitizeEmotes(
-  emotesInProfile: { slot: number, urn: string }[],
+  emotesInProfile: { slot: number; urn: string }[],
   ownership: Map<string, boolean>
-): Promise<{ slot: number, urn: string }[]> {
+): Promise<{ slot: number; urn: string }[]> {
   // const translated = await Promise.all(emotesInProfile.map(translateWearablesIdFormat))
-  return emotesInProfile
-    // .filter((wearableId): wearableId is WearableId => !!wearableId)
-    .filter((emote) => ownership.get(emote.urn))
+  return (
+    emotesInProfile
+      // .filter((wearableId): wearableId is WearableId => !!wearableId)
+      .filter((emote) => ownership.get(emote.urn))
+  )
   // .filter((wearableId: WearableId) => isBaseAvatar(wearableId) || ownership.get(wearableId))
 }
 

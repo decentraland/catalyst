@@ -13,7 +13,7 @@ export class TheGraphClient {
   public static readonly MAX_PAGE_SIZE = 1000
   private static readonly LOGGER = log4js.getLogger('TheGraphClient')
 
-  constructor(private readonly urls: URLs, private readonly fetcher: Fetcher) { }
+  constructor(private readonly urls: URLs, private readonly fetcher: Fetcher) {}
 
   public async findOwnersByName(names: string[]): Promise<{ name: string; owner: EthAddress }[]> {
     const query: Query<
@@ -109,14 +109,13 @@ export class TheGraphClient {
     return this.runQuery(query, {})
   }
 
-  private getItemsFragment(
-    [ethAddress, itemIds]: [EthAddress, string[]],
-    itemTypes: BlockchainItemType[]
-  ) {
+  private getItemsFragment([ethAddress, itemIds]: [EthAddress, string[]], itemTypes: BlockchainItemType[]) {
     const urnList = itemIds.map((wearableId) => `"${wearableId}"`).join(',')
     // We need to add a 'P' prefix, because the graph needs the fragment name to start with a letter
     return `
-      P${ethAddress}: nfts(where: { owner: "${ethAddress}", searchItemType_in: ${JSON.stringify(itemTypes)}, urn_in: [${urnList}] }, first: 1000) {
+      P${ethAddress}: nfts(where: { owner: "${ethAddress}", searchItemType_in: ${JSON.stringify(
+      itemTypes
+    )}, urn_in: [${urnList}] }, first: 1000) {
         urn
       }
     `
