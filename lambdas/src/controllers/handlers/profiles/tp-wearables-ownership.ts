@@ -39,3 +39,38 @@ export async function checkForThirdPartyWearablesOwnership(
   }
   return response
 }
+
+export async function checkForThirdPartyEmotesOwnership(
+  theGraphClient: TheGraphClient,
+  thirdPartyFetcher: ThirdPartyAssetFetcher,
+  nftsToCheck: Map<EthAddress, { slot: number; urn: string }[]>
+): Promise<Map<EthAddress, { slot: number; urn: string }[]>> {
+  const response: Map<EthAddress, { slot: number; urn: string }[]> = new Map()
+
+  for (const [address, emotes] of nftsToCheck) {
+    const collectionsForAddress: Set<string> = new Set()
+    for (const emote of emotes) {
+      try {
+        const parsedUrn: DecentralandAssetIdentifier | null = await parseUrn(emote.urn)
+        if (parsedUrn?.type === 'blockchain-collection-third-party') {
+          // TODO: [TPW] Do this with urn-resolver
+          const collectionId = parsedUrn.uri.toString().split(':').slice(0, -1).join(':')
+          collectionsForAddress.add(collectionId)
+        }
+      } catch (error) {
+        console.debug(`There was an error parsing the urn: ${emote}`)
+      }
+    }
+    const ownedEmotes: Set<string> = new Set()
+    for (const collectionId of collectionsForAddress.values()) {
+      const emotesIdsByOwner = await findThirdPartyItemUrns(theGraphClient, thirdPartyFetcher, address, collectionId)
+
+      for (const id of emotesIdsByOwner) {
+        ownedEmotes.add(id)
+      }
+    }
+    const sanitizedWearables = emotes.filter((emote) => ownedEmotes.has(emote.urn))
+    response.set(address, sanitizedWearables)
+  }
+  return response
+}

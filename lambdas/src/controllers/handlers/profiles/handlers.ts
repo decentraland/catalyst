@@ -10,7 +10,7 @@ import { WearableId } from '../collections/utils/types'
 import { isBaseAvatar, translateWearablesIdFormat } from '../collections/utils/Utils'
 import { EmotesOwnership } from './EmotesOwnership'
 import { EnsOwnership } from './EnsOwnership'
-import { checkForThirdPartyWearablesOwnership } from './tp-wearables-ownership'
+import { checkForThirdPartyEmotesOwnership, checkForThirdPartyWearablesOwnership } from './tp-wearables-ownership'
 import { WearablesOwnership } from './WearablesOwnership'
 
 const LOGGER = log4js.getLogger('profiles')
@@ -190,11 +190,15 @@ export async function fetchProfiles(
       thirdPartyFetcher,
       wearablesMap
     )
-    const [ownedWearables, ownedENS, thirdPartyWearables, ownedEmotes] = await Promise.all([
+
+    const thirdPartyEmotesPromise = checkForThirdPartyEmotesOwnership(theGraphClient, thirdPartyFetcher, emotesMap)
+
+    const [ownedWearables, ownedENS, thirdPartyWearables, ownedEmotes, thirdPartyEmotes] = await Promise.all([
       ownedWearablesPromise,
       ownedENSPromise,
       thirdPartyWearablesPromise,
-      ownedEmotesPromise
+      ownedEmotesPromise,
+      thirdPartyEmotesPromise
     ])
 
     // Add name data and snapshot urls to profiles
@@ -202,6 +206,9 @@ export async function fetchProfiles(
       const ensOwnership = ownedENS.get(ethAddress)!
       const wearablesOwnership = ownedWearables.get(ethAddress)!
       const emotesOwnership = ownedEmotes.get(ethAddress)!
+      // const onChainEmotes = profileData.avatar.emotes ? await sanitizeEmotes(profileData.avatar.emotes, emotesOwnership) : []
+      const tpe = thirdPartyEmotes.get(ethAddress) ?? []
+
       const tpw = thirdPartyWearables.get(ethAddress) ?? []
       const { metadata, content } = profile
       const avatars = metadata.avatars.map(async (profileData) => ({
@@ -214,7 +221,10 @@ export async function fetchProfiles(
           wearables: (await sanitizeWearables(fixWearableId(profileData.avatar.wearables), wearablesOwnership)).concat(
             tpw
           ),
-          emotes: profileData.avatar.emotes ? await sanitizeEmotes(profileData.avatar.emotes, emotesOwnership) : []
+          emotes: (profileData.avatar.emotes
+            ? await sanitizeEmotes(profileData.avatar.emotes, emotesOwnership)
+            : []
+          ).concat(tpe)
         }
       }))
       return { timestamp: profile.metadata.timestamp, avatars: await Promise.all(avatars) }
