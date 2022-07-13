@@ -29,8 +29,8 @@ export class SmartContentClient implements ContentAPI {
   constructor(private readonly externalContentServerUrl: string) {}
 
   async fetchEntitiesByPointers(type: EntityType, pointers: string[], options?: RequestOptions): Promise<Entity[]> {
-    const client = await this.getClient()
     console.log(`querying type: ${type}`)
+    const client = await this.getClient()
     return client.fetchEntitiesByPointers(type, pointers, options)
   }
 

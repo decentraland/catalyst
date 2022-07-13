@@ -168,6 +168,7 @@ async function fetchEmotes(emoteUrns: string[], client: SmartContentClient): Pro
     return []
   }
   console.log('fetching emotes...')
+  console.log(`type before calling client: ${EntityType.EMOTE}`)
   const entities = await client.fetchEntitiesByPointers(EntityType.EMOTE, emoteUrns)
   console.log('emotes fetched')
   console.log(JSON.stringify(entities))
