@@ -119,6 +119,38 @@ export class DeploymentsRepository {
         overwrittenBy = overwrittenByMany[0].id
       }
 
+      try {
+        const overwrittenByManyMariano = await task.manyOrNone(
+          `
+              SELECT d.id
+              FROM active_pointers as ap
+                       INNER JOIN deployments d on ap.entity_id = d.entity_id
+              WHERE ap.pointer IN ($2:list)
+                AND d.entity_type = $1
+                AND d.entity_timestamp > to_timestamp($3 / 1000.0)
+              ORDER BY d.entity_timestamp ASC, d.entity_id ASC
+              LIMIT 10
+          `,
+          [entity.type, entity.pointers, entity.timestamp, entity.id]
+        )
+
+        let overwrittenByMariano: DeploymentId | null = null
+        if (overwrittenByManyMariano.length > 0) {
+          overwrittenByMariano = overwrittenByManyMariano[0].id
+        }
+        console.log(
+          `MARIANO(${entity.id})`,
+          'overwrittenBy',
+          overwrittenBy,
+          'overwrittenByMariano',
+          overwrittenByMariano,
+          'all',
+          overwrittenByManyMariano
+        )
+      } catch (error) {
+        console.error('MARIANO', error)
+      }
+
       return {
         overwrote: new Set(overwrote),
         overwrittenBy
