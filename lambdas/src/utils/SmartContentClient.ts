@@ -31,7 +31,13 @@ export class SmartContentClient implements ContentAPI {
   async fetchEntitiesByPointers(type: EntityType, pointers: string[], options?: RequestOptions): Promise<Entity[]> {
     console.log(`querying type: ${type}`)
     const client = await this.getClient()
-    return client.fetchEntitiesByPointers(type, pointers, options)
+    return client.fetchEntitiesByPointers(type, pointers, options).then((entities) => {
+      return (
+        entities
+          // This filter needs to be done because the content-server endpoint doesn't use "type" for searching entities.
+          .filter((entity) => entity.type === EntityType[type])
+      )
+    })
   }
 
   async fetchEntitiesByIds(type: EntityType, ids: string[], options?: RequestOptions): Promise<Entity[]> {
