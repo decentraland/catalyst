@@ -148,7 +148,7 @@ export async function getEmotes(
     if (filters.itemIds) {
       onChain = await fetchEmotes(filters.itemIds, client)
     }
-    result.concat(onChain)
+    result.push(...onChain)
   } else {
     const limit = pagination.limit
     const lastId: string | undefined = pagination.lastId
@@ -160,6 +160,8 @@ export async function getEmotes(
 
   const moreData = result.length > pagination.limit
   const slice = moreData ? result.slice(0, pagination.limit) : result
+  console.log(JSON.stringify(result))
+  console.log(JSON.stringify(slice))
   return { emotes: slice, lastId: moreData ? slice[slice.length - 1]?.id : undefined }
 }
 
