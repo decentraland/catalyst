@@ -13,7 +13,7 @@ export class TheGraphClient {
   public static readonly MAX_PAGE_SIZE = 1000
   private static readonly LOGGER = log4js.getLogger('TheGraphClient')
 
-  constructor(private readonly urls: URLs, private readonly fetcher: Fetcher) {}
+  constructor(private readonly urls: URLs, private readonly fetcher: Fetcher) { }
 
   public async findOwnersByName(names: string[]): Promise<{ name: string; owner: EthAddress }[]> {
     const query: Query<
@@ -271,7 +271,6 @@ export class TheGraphClient {
     // Order will be L1 > L2
     const L1_NETWORKS = ['mainnet', 'ropsten', 'kovan', 'rinkeby', 'goerli']
     const L2_NETWORKS = ['matic', 'mumbai']
-    const emoteTypes: BlockchainItemType[] = ['emote_v1']
 
     let limit = pagination.limit
     let lastId = pagination.lastId
@@ -284,7 +283,7 @@ export class TheGraphClient {
         'collectionsSubgraph',
         { ...filters, lastId },
         limit + 1,
-        emoteTypes
+        EMOTE_TYPES
       )
       result.push(...l1Result)
       limit -= l1Result.length
@@ -297,7 +296,7 @@ export class TheGraphClient {
         'maticCollectionsSubgraph',
         { ...filters, lastId },
         limit + 1,
-        emoteTypes
+        EMOTE_TYPES
       )
       result.push(...l2Result)
     }
@@ -454,6 +453,10 @@ export class TheGraphClient {
     variables: Record<string, any>
   ): Promise<ReturnType> {
     try {
+      console.log('running query:')
+      console.log(query.query)
+      console.log('with variables: ')
+      console.log(JSON.stringify(variables))
       const response = await this.fetcher.queryGraph<QueryResult>(this.urls[query.subgraph], query.query, variables)
       return query.mapper(response)
     } catch (error) {

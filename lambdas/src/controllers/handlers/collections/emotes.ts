@@ -143,7 +143,11 @@ export async function getEmotes(
 
   if (!filters.collectionIds && !filters.textSearch) {
     // Since we only have ids, we don't need to query the subgraph at all
-    // But there is not off-chain Emotes
+    let onChain: LambdasEmote[] = []
+    if (filters.itemIds) {
+      onChain = await fetchEmotes(filters.itemIds, client)
+    }
+    result.concat(onChain)
   } else {
     const limit = pagination.limit
     const lastId: string | undefined = pagination.lastId
