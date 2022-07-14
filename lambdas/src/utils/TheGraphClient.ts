@@ -2,7 +2,7 @@ import { EthAddress } from '@dcl/crypto'
 import { parseUrn } from '@dcl/urn-resolver'
 import { Fetcher } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
-import { ThirdPartyIntegration, WearableId, WearablesFilters } from '../controllers/handlers/collections/utils/types'
+import { ThirdPartyIntegration, WearableId, WearablesFilters } from '../apis/collections/types'
 
 export class TheGraphClient {
   public static readonly MAX_PAGE_SIZE = 1000
