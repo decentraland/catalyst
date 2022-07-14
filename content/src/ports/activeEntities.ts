@@ -36,11 +36,11 @@ export type ActiveEntities = {
    * Save entityId for given pointer and store the entity in the cache,
    * useful to retrieve entities by pointers
    */
-  update(pointers: string[], entity: Entity | NotActiveEntity): Promise<void>
+  update(pointers: string[], entity: Entity | NotActiveEntity): void
   /**
    * Set pointers and entity as NOT_ACTIVE
    */
-  clear(pointers: string[]): Promise<void>
+  clear(pointers: string[]): void
   /**
    * Returns the cached result:
    *  - entity id if there is an active entity
@@ -103,7 +103,7 @@ export const createActiveEntitiesComponent = (
    * Save entityId for given pointer and store the entity in the cache,
    * useful to retrieve entities by pointers
    */
-  const update = async (pointers: string[], entity: Entity | NotActiveEntity): Promise<void> => {
+  const update = async (pointers: string[], entity: Entity | NotActiveEntity) => {
     for (const pointer of pointers) {
       setPreviousEntityAsNone(pointer)
       entityIdByPointers.set(pointer, isEntityPresent(entity) ? entity.id : entity)
