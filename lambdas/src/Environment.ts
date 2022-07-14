@@ -1,6 +1,8 @@
 import log4js from 'log4js'
 import ms from 'ms'
-import { OffChainWearablesManagerFactory } from './controllers/handlers/collections/off-chain/OffChainWearablesManagerFactory'
+import { OffChainWearablesManagerFactory } from './apis/collections/off-chain/OffChainWearablesManagerFactory'
+import { EnsOwnershipFactory } from './apis/profiles/EnsOwnershipFactory'
+import { WearablesOwnershipFactory } from './apis/profiles/WearablesOwnershipFactory'
 import { DAOCache } from './service/dao/DAOCache'
 import { HTTPProvider } from 'eth-connect'
 import fetch from 'node-fetch'
@@ -8,8 +10,6 @@ import { getCommsServerUrl } from './utils/commons'
 import { SmartContentClientFactory } from './utils/SmartContentClientFactory'
 import { SmartContentServerFetcherFactory } from './utils/SmartContentServerFetcherFactory'
 import { TheGraphClientFactory } from './utils/TheGraphClientFactory'
-import { EnsOwnershipFactory } from './controllers/handlers/profiles/EnsOwnershipFactory'
-import { WearablesOwnershipFactory } from './controllers/handlers/profiles/WearablesOwnershipFactory'
 
 const DEFAULT_SERVER_PORT = 7070
 export const DEFAULT_ETH_NETWORK = 'ropsten'
