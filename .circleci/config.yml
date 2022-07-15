@@ -55,9 +55,9 @@ commands:
           name: Build Docker image
           command: |
             if echo "${CIRCLE_TAG}" | grep "^[0-9]\+\.[0-9]\+\.[0-9]\+$"; then
-              DOCKER_BUILDKIT=1 docker buildx build --platform=linux/amd64,linux/arm64 -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} --build-arg COMMIT_HASH=${CIRCLE_SHA1} --build-arg CATALYST_VERSION=${CIRCLE_TAG} -f <<parameters.dockerfile>> .
+              DOCKER_BUILDKIT=1 docker buildx build --platform=linux/arm64 -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} --build-arg COMMIT_HASH=${CIRCLE_SHA1} --build-arg CATALYST_VERSION=${CIRCLE_TAG} -f <<parameters.dockerfile>> .
             else
-              DOCKER_BUILDKIT=1 docker buildx build --platform=linux/amd64,linux/arm64 -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} --build-arg COMMIT_HASH=${CIRCLE_SHA1} -f <<parameters.dockerfile>> .
+              DOCKER_BUILDKIT=1 docker buildx build --platform=linux/arm64 -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} --build-arg COMMIT_HASH=${CIRCLE_SHA1} -f <<parameters.dockerfile>> .
             fi
   push_docker_image:
     steps:
