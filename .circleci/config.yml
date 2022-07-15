@@ -166,6 +166,7 @@ jobs:
           path: content/coverage
       - store_artifacts:
           path: content/coverage
+
   report-content-api-coverage:
     <<: *base_env
     steps:
@@ -175,6 +176,7 @@ jobs:
           command: |
             cd content
             yarn report-api-coverage
+
   build-lambdas:
     <<: *base_env
     steps:
@@ -189,7 +191,7 @@ jobs:
   publish-content-docker:
     <<: *base_env
     docker:
-      - image: cimg/node:16.14-browsers
+      - image: jdrouet/docker-with-buildx:stable
         environment: &ENVIRONMENT
           DOCKER_IMAGE_NAME: decentraland/catalyst-content
     steps:
