@@ -228,9 +228,9 @@ jobs:
     #       DOCKER_IMAGE_NAME: decentraland/catalyst-content
     machine:
       image: ubuntu-2004:current
-      resource_class: arm.medium
-      environment: &ENVIRONMENT
-        DOCKER_IMAGE_NAME: decentraland/catalyst-content
+    resource_class: arm.medium
+    environment: &ENVIRONMENT
+      DOCKER_IMAGE_NAME: decentraland/catalyst-content
     working_directory: *workspace_root
     steps:
       - <<: *attach_root
@@ -245,15 +245,15 @@ jobs:
   publish-lambdas-docker-without-tag:
     # <<: *base_env
     # <<: *build_env
-    # docker:
-    #   - image: jdrouet/docker-with-buildx:stable
-    #     environment: &ENVIRONMENT
-    #       DOCKER_IMAGE_NAME: decentraland/catalyst-lambdas
+    docker:
+      - image: jdrouet/docker-with-buildx:stable
+        environment: &ENVIRONMENT
+          DOCKER_IMAGE_NAME: decentraland/catalyst-lambdas
     machine:
       image: ubuntu-2004:current
-      resource_class: arm.medium
-      environment: &ENVIRONMENT
-        DOCKER_IMAGE_NAME: decentraland/catalyst-lambdas
+    resource_class: arm.medium
+    environment: &ENVIRONMENT
+      DOCKER_IMAGE_NAME: decentraland/catalyst-lambdas
     working_directory: *workspace_root
     steps:
       - <<: *attach_root
