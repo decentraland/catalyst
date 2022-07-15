@@ -204,7 +204,7 @@ jobs:
   publish-lambdas-docker:
     <<: *base_env
     docker:
-      - image: cimg/node:16.14-browsers
+      - image: jdrouet/docker-with-buildx:stable
         environment: &ENVIRONMENT
           DOCKER_IMAGE_NAME: decentraland/catalyst-lambdas
     steps:
@@ -217,7 +217,7 @@ jobs:
   publish-content-docker-without-tag:
     <<: *base_env
     docker:
-      - image: cimg/node:16.14-browsers
+      - image: jdrouet/docker-with-buildx:stable
         environment: &ENVIRONMENT
           DOCKER_IMAGE_NAME: decentraland/catalyst-content
     steps:
@@ -233,7 +233,7 @@ jobs:
   publish-lambdas-docker-without-tag:
     <<: *base_env
     docker:
-      - image: cimg/node:16.14-browsers
+      - image: jdrouet/docker-with-buildx:stable
         environment: &ENVIRONMENT
           DOCKER_IMAGE_NAME: decentraland/catalyst-lambdas
     steps:
