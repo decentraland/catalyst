@@ -1,7 +1,7 @@
 import { Entity, EntityType } from '@dcl/schemas'
 import { instance, mock, when } from 'ts-mockito'
-import { WearableMetadata } from '../../../src/controllers/handlers/collections/utils/types'
-import { translateEntityIntoWearable } from '../../../src/controllers/handlers/collections/utils/Utils'
+import { WearableMetadata } from '../../../src/apis/collections/types'
+import { translateEntityIntoWearable } from '../../../src/apis/collections/Utils'
 import { SmartContentClient } from '../../../src/utils/SmartContentClient'
 
 const EXTERNAL_URL = 'https://external.com'

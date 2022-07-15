@@ -1,7 +1,7 @@
 import { Entity, EntityType } from '@dcl/schemas'
 import { anything, deepEqual, instance, mock, objectContaining, resetCalls, verify, when } from 'ts-mockito'
-import { OffChainWearablesManager } from '../../../../src/controllers/handlers/collections/off-chain/OffChainWearablesManager'
-import { Wearable, WearableId } from '../../../../src/controllers/handlers/collections/utils/types'
+import { OffChainWearablesManager } from '../../../../src/apis/collections/off-chain/OffChainWearablesManager'
+import { Wearable, WearableId } from '../../../../src/apis/collections/types'
 import { SmartContentClient } from '../../../../src/utils/SmartContentClient'
 
 const COLLECTION_ID_1 = 'some-collection'
