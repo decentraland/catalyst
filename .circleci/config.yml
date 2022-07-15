@@ -215,7 +215,7 @@ jobs:
       - push_docker_image
 
   publish-content-docker-without-tag:
-    <<: *base_env
+    # <<: *base_env
     docker:
       - image: jdrouet/docker-with-buildx:stable
         environment: &ENVIRONMENT
@@ -231,7 +231,7 @@ jobs:
             docker push "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}"
 
   publish-lambdas-docker-without-tag:
-    <<: *base_env
+    # <<: *base_env
     docker:
       - image: jdrouet/docker-with-buildx:stable
         environment: &ENVIRONMENT
