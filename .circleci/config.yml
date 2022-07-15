@@ -55,7 +55,7 @@ commands:
       dockerfile:
         type: string
     steps:
-      - setup_remote_docker: { docker_layer_caching: true, version: 20.10.2 }
+      # - setup_remote_docker: { docker_layer_caching: true, version: 20.10.2 }
       - run:
           name: Build Docker image
           command: |
