@@ -220,6 +220,7 @@ jobs:
       - image: jdrouet/docker-with-buildx:stable
         environment: &ENVIRONMENT
           DOCKER_IMAGE_NAME: decentraland/catalyst-content
+    working_directory: *workspace_root
     steps:
       - <<: *attach_root
       - build_docker_image:
@@ -236,6 +237,7 @@ jobs:
       - image: jdrouet/docker-with-buildx:stable
         environment: &ENVIRONMENT
           DOCKER_IMAGE_NAME: decentraland/catalyst-lambdas
+    working_directory: *workspace_root
     steps:
       - <<: *attach_root
       - build_docker_image:
