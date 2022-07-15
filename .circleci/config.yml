@@ -55,9 +55,9 @@ commands:
           name: Build Docker image
           command: |
             if echo "${CIRCLE_TAG}" | grep "^[0-9]\+\.[0-9]\+\.[0-9]\+$"; then
-              DOCKER_BUILDKIT=1 docker buildx --platform=linux/amd64,linux/arm64 -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} --build-arg COMMIT_HASH=${CIRCLE_SHA1} --build-arg CATALYST_VERSION=${CIRCLE_TAG} -f <<parameters.dockerfile>> .
+              DOCKER_BUILDKIT=1 docker buildx build --platform=linux/amd64,linux/arm64 -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} --build-arg COMMIT_HASH=${CIRCLE_SHA1} --build-arg CATALYST_VERSION=${CIRCLE_TAG} -f <<parameters.dockerfile>> .
             else
-              DOCKER_BUILDKIT=1 docker buildx --platform=linux/amd64,linux/arm64 -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} --build-arg COMMIT_HASH=${CIRCLE_SHA1} -f <<parameters.dockerfile>> .
+              DOCKER_BUILDKIT=1 docker buildx build --platform=linux/amd64,linux/arm64 -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} --build-arg COMMIT_HASH=${CIRCLE_SHA1} -f <<parameters.dockerfile>> .
             fi
   push_docker_image:
     steps:
@@ -115,40 +115,40 @@ jobs:
       - <<: *attach_root
       - run: yarn lint:check
 
-  build-content:
-    docker:
-      - <<: *image_client
-      - image: cimg/postgres:12.9
-        command: postgres -c max_connections=300
-        environment:
-          POSTGRES_DB: postgres_test
-          POSTGRES_PASSWORD: '12345678'
-          POSTGRES_USER: postgres
-    parallelism: 4
-    working_directory: *workspace_root
-    steps:
-      - <<: *attach_root
-      - run:
-          name: Run tests
-          command: |
-            cd content
-            TESTFILES=$(circleci tests glob "test/**/*.spec.ts" | circleci tests split --split-by=timings)
-            yarn test $TESTFILES --coverageDirectory=reports --reporters=jest-junit --reporters=default
-            mv reports/coverage-final.json reports/coverage-${CIRCLE_NODE_INDEX:-0}.json
-            mv api-coverage/api-coverage.json api-coverage/api-coverage-${CIRCLE_NODE_INDEX:-0}.json
-          environment:
-            CI: 'true'
-            JEST_JUNIT_OUTPUT_DIR: './test-result'
-            JEST_JUNIT_ADD_FILE_ATTRIBUTE: 'true'
-      - store_test_results:
-          path: content/test-result
-      - store_artifacts:
-          path: content/test-result
-      - persist_to_workspace:
-          root: *workspace_root
-          paths:
-            - content/reports
-            - content/api-coverage
+  # build-content:
+  #   docker:
+  #     - <<: *image_client
+  #     - image: cimg/postgres:12.9
+  #       command: postgres -c max_connections=300
+  #       environment:
+  #         POSTGRES_DB: postgres_test
+  #         POSTGRES_PASSWORD: '12345678'
+  #         POSTGRES_USER: postgres
+  #   parallelism: 4
+  #   working_directory: *workspace_root
+  #   steps:
+  #     - <<: *attach_root
+  #     - run:
+  #         name: Run tests
+  #         command: |
+  #           cd content
+  #           TESTFILES=$(circleci tests glob "test/**/*.spec.ts" | circleci tests split --split-by=timings)
+  #           yarn test $TESTFILES --coverageDirectory=reports --reporters=jest-junit --reporters=default
+  #           mv reports/coverage-final.json reports/coverage-${CIRCLE_NODE_INDEX:-0}.json
+  #           mv api-coverage/api-coverage.json api-coverage/api-coverage-${CIRCLE_NODE_INDEX:-0}.json
+  #         environment:
+  #           CI: 'true'
+  #           JEST_JUNIT_OUTPUT_DIR: './test-result'
+  #           JEST_JUNIT_ADD_FILE_ATTRIBUTE: 'true'
+  #     - store_test_results:
+  #         path: content/test-result
+  #     - store_artifacts:
+  #         path: content/test-result
+  #     - persist_to_workspace:
+  #         root: *workspace_root
+  #         paths:
+  #           - content/reports
+  #           - content/api-coverage
 
   report-content-coverage:
     <<: *base_env
