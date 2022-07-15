@@ -55,12 +55,9 @@ commands:
       dockerfile:
         type: string
     steps:
-      # - setup_remote_docker: { docker_layer_caching: true, version: 20.10.2 }
       - run:
           name: Build Docker image
           command: |
-            echo $DOCKER_IMAGE_NAME
-            echo $CIRCLE_SHA1
             if echo "${CIRCLE_TAG}" | grep "^[0-9]\+\.[0-9]\+\.[0-9]\+$"; then
               DOCKER_BUILDKIT=1 docker buildx build --platform=linux/arm64 -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} --build-arg COMMIT_HASH=${CIRCLE_SHA1} --build-arg CATALYST_VERSION=${CIRCLE_TAG} -f <<parameters.dockerfile>> .
             else
@@ -245,10 +242,6 @@ jobs:
             docker push "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}"
 
   publish-lambdas-docker-without-tag:
-    # docker:
-    #   - image: jdrouet/docker-with-buildx:stable
-    #     environment: &ENVIRONMENT
-    #       DOCKER_IMAGE_NAME: decentraland/catalyst-lambdas
     machine:
       image: ubuntu-2004:current
     resource_class: arm.medium
