@@ -50,16 +50,14 @@ commands:
       dockerfile:
         type: string
     steps:
-      - setup_remote_docker:
-        docker_layer_caching: true
-        version: 20.10.2
+      - setup_remote_docker: { docker_layer_caching: true, version: 20.10.2 }
       - run:
           name: Build Docker image
           command: |
             if echo "${CIRCLE_TAG}" | grep "^[0-9]\+\.[0-9]\+\.[0-9]\+$"; then
-              DOCKER_BUILDKIT=1 docker buildx -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} --platform linux/amd64,linux/arm64 --build-arg COMMIT_HASH=${CIRCLE_SHA1} --build-arg CATALYST_VERSION=${CIRCLE_TAG} -f <<parameters.dockerfile>> .
+              DOCKER_BUILDKIT=1 dockerx build --platform=linux/amd64,linux/arm64 -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} --build-arg COMMIT_HASH=${CIRCLE_SHA1} --build-arg CATALYST_VERSION=${CIRCLE_TAG} -f <<parameters.dockerfile>> .
             else
-              DOCKER_BUILDKIT=1 docker buildx -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} --platform linux/amd64,linux/arm64 --build-arg COMMIT_HASH=${CIRCLE_SHA1} -f <<parameters.dockerfile>> .
+              DOCKER_BUILDKIT=1 dockerx build --platform=linux/amd64,linux/arm64 -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} --build-arg COMMIT_HASH=${CIRCLE_SHA1} -f <<parameters.dockerfile>> .
             fi
   push_docker_image:
     steps:
@@ -191,8 +189,7 @@ jobs:
   publish-content-docker:
     <<: *base_env
     docker:
-      # - image: cimg/node:16.14-browsers
-      - image: jdrouet/docker-with-buildx:stable
+      - image: cimg/node:16.14-browsers
         environment: &ENVIRONMENT
           DOCKER_IMAGE_NAME: decentraland/catalyst-content
     steps:
