@@ -18,6 +18,11 @@ references:
       - <<: *image_client
     working_directory: *workspace_root
 
+  .build_env: &build_env
+    machine:
+      image: ubuntu-2004:current
+    resource_class: arm.medium
+
   .testing_branches: &testing_branches
     filters:
       branches:
@@ -216,10 +221,16 @@ jobs:
 
   publish-content-docker-without-tag:
     # <<: *base_env
-    docker:
-      - image: jdrouet/docker-with-buildx:stable
-        environment: &ENVIRONMENT
-          DOCKER_IMAGE_NAME: decentraland/catalyst-content
+    # <<: *build_env
+    # docker:
+    #   - image: jdrouet/docker-with-buildx:stable
+    #     environment: &ENVIRONMENT
+    #       DOCKER_IMAGE_NAME: decentraland/catalyst-content
+    machine:
+      image: ubuntu-2004:current
+      resource_class: arm.medium
+      environment: &ENVIRONMENT
+        DOCKER_IMAGE_NAME: decentraland/catalyst-content
     working_directory: *workspace_root
     steps:
       - <<: *attach_root
@@ -233,10 +244,16 @@ jobs:
 
   publish-lambdas-docker-without-tag:
     # <<: *base_env
-    docker:
-      - image: jdrouet/docker-with-buildx:stable
-        environment: &ENVIRONMENT
-          DOCKER_IMAGE_NAME: decentraland/catalyst-lambdas
+    # <<: *build_env
+    # docker:
+    #   - image: jdrouet/docker-with-buildx:stable
+    #     environment: &ENVIRONMENT
+    #       DOCKER_IMAGE_NAME: decentraland/catalyst-lambdas
+    machine:
+      image: ubuntu-2004:current
+      resource_class: arm.medium
+      environment: &ENVIRONMENT
+        DOCKER_IMAGE_NAME: decentraland/catalyst-lambdas
     working_directory: *workspace_root
     steps:
       - <<: *attach_root
