@@ -110,6 +110,7 @@ export class ServiceImpl implements MetaverseContentService {
         } else if (!hashes.has(snapshot)) {
           console.log(`MARIANO(${entityId}): this is going to break the validator`)
           // Should we download it here?
+          console.log(`MARIANO(${entityId}`, JSON.stringify(entity))
         }
       }
     }
