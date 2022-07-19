@@ -104,13 +104,12 @@ export class ServiceImpl implements MetaverseContentService {
       const allAvatars: any[] = entity.metadata?.avatars ?? []
 
       for (const avatar of allAvatars) {
-        for (const snapshot of avatar.avatar.snapshots) {
-          if (await this.components.storage.exist(snapshot)) {
-            console.log(`MARIANO(${entityId}): snapshot exists in storage, all good`)
-          } else if (!hashes.has(snapshot)) {
-            console.log(`MARIANO(${entityId}): this is going to break the validator`)
-            // Should we download it here?
-          }
+        const snapshot = avatar.avatar.snapshots.face256
+        if (await this.components.storage.exist(snapshot)) {
+          console.log(`MARIANO(${entityId}): snapshot exists in storage, all good`)
+        } else if (!hashes.has(snapshot)) {
+          console.log(`MARIANO(${entityId}): this is going to break the validator`)
+          // Should we download it here?
         }
       }
     }
