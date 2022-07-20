@@ -1,5 +1,5 @@
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
-import { IDeployerComponent } from '@dcl/snapshots-fetcher/dist/types'
+import { IDeployerComponent } from '@dcl/snapshots-fetcher'
 import { IBaseComponent } from '@well-known-components/interfaces'
 import { isEntityDeployed } from '../../logic/deployments'
 import { FailureReason } from '../../ports/failedDeploymentsCache'
