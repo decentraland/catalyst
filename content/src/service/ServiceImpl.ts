@@ -100,21 +100,6 @@ export class ServiceImpl implements MetaverseContentService {
       return InvalidResult({ errors: ['There was a problem parsing the entity'] })
     }
 
-    if (entity.type === 'profile') {
-      const allAvatars: any[] = entity.metadata?.avatars ?? []
-
-      for (const avatar of allAvatars) {
-        const snapshot = avatar.avatar.snapshots.face256
-        if (await this.components.storage.exist(snapshot)) {
-          console.log(`MARIANO(${entityId}): snapshot exists in storage, all good`)
-        } else if (!hashes.has(snapshot)) {
-          console.log(`MARIANO(${entityId}): this is going to break the validator`)
-          // Should we download it here?
-          console.log(`MARIANO(${entityId}`, JSON.stringify(entity))
-        }
-      }
-    }
-
     // Validate that the entity's pointers are not currently being modified
     const pointersCurrentlyBeingDeployed = this.pointersBeingDeployed.get(entity.type) ?? new Set()
     const overlappingPointers = entity.pointers.filter((pointer) => pointersCurrentlyBeingDeployed.has(pointer))
@@ -408,10 +393,8 @@ export class ServiceImpl implements MetaverseContentService {
    */
   static async hashFiles(files: DeploymentFiles, entityId: string): Promise<Map<string, Uint8Array>> {
     if (files instanceof Map) {
-      console.log(`MARIANO(${entityId}): hashFiles: was a map`, files)
       return files
     } else {
-      console.log(`MARIANO(${entityId}): hashFiles: building map`, files)
       const hashEntries = this.isIPFSHash(entityId)
         ? await calculateIPFSHashes(files)
         : await calculateDeprecatedHashes(files)
