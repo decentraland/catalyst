@@ -37,6 +37,8 @@ export class ServiceImpl implements MetaverseContentService {
 
   private readonly LEGACY_CONTENT_MIGRATION_TIMESTAMP: Date = new Date(1582167600000) // DCL Launch Day
 
+  private readonly ADR_45_TIMESTAMP: number = 1652191200000
+
   constructor(
     public components: Pick<
       AppComponents,
@@ -243,9 +245,9 @@ export class ServiceImpl implements MetaverseContentService {
       }
     }
 
-    if (entity.version !== 'v3')
+    if (entity.version !== 'v3' && entity.timestamp > this.ADR_45_TIMESTAMP)
       return {
-        errors: ['Only entities v3 are allowed']
+        errors: ['Only entities v3 are allowed after ADR-45']
       }
 
     const auditInfoComplete: AuditInfo = {
