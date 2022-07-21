@@ -65,10 +65,8 @@ export abstract class NFTOwnership {
         const owned = ownedNfts?.has(nft)
         if (owned !== undefined) {
           // Only cache the result if the subgraph actually responded
-          console.log('subgraph respondend correctly')
           this.internalCache.set(pair, owned)
         } else {
-          console.log('subgraph respondend undefined')
         }
         // If the query to the subgraph failed, then consider the nft as owned
         ethAddressResult.set(nft, owned ?? true)

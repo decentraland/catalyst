@@ -543,6 +543,6 @@ type URLs = {
 
 type BlockchainItemType = 'wearable_v1' | 'wearable_v2' | 'smart_wearable_v1' | 'emote_v1'
 
-const WEARABLE_TYPES: BlockchainItemType[] = ['wearable_v1', 'wearable_v2', 'smart_wearable_v1', 'emote_v1']
+const WEARABLE_TYPES: BlockchainItemType[] = ['wearable_v1', 'wearable_v2', 'smart_wearable_v1']
 
 const EMOTE_TYPES: BlockchainItemType[] = ['emote_v1']

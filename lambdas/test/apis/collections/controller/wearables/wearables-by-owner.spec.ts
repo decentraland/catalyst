@@ -148,7 +148,7 @@ query itemsByOwner($owner: String, $item_types:[String], $first: Int, $start: St
 }`
     const expectedVariables = {
       owner: SOME_ADDRESS,
-      item_types: ["wearable_v1", "wearable_v2", "smart_wearable_v1", "emote_v1"],
+      item_types: ["wearable_v1", "wearable_v2", "smart_wearable_v1"],
       first: 1000,
       start: ''
     }
