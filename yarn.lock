@@ -382,7 +382,7 @@
     ipfs-unixfs-importer "^7.0.3"
     multiformats "^9.6.3"
 
-"@dcl/schemas@^4.13.0", "@dcl/schemas@^4.14.0", "@dcl/schemas@^4.14.1":
+"@dcl/schemas@^4.13.0", "@dcl/schemas@^4.14.1":
   version "4.14.1"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-4.14.1.tgz#be50ac93d2668e51cd3d92aee68fd9aefb1d405d"
   integrity sha512-c0mD4hrFZs+fEweaag3J0VlPRSasTMUbxn9Oj/vZUe8oO8KzObvxpXH2eCkPosX5pu1TqdIAUsOEouDghUmzlA==
@@ -2667,12 +2667,12 @@ dcl-catalyst-client@^12.0.6:
     dcl-catalyst-commons "^9.0.0"
     form-data "^4.0.0"
 
-dcl-catalyst-commons@9.0.1:
-  version "9.0.1"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-9.0.1.tgz#315ef14f774dcdb6f07147865a967ca0b25648e7"
-  integrity sha512-9BfHnGR9YHe/FkqVKgpBwXMjwI53DtuPn1kBWFyStI4I/F0W2/iG/LzoHLcHB1gzvj3JHaSK+Du0o9HWHIMPiQ==
+dcl-catalyst-commons@9.0.5:
+  version "9.0.5"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-9.0.5.tgz#53bdeef9498600f11b2e077f55834a43731bfc90"
+  integrity sha512-QByI85wQPeJK4X+bA7SbWpXY/Ate1mO+fIeFxlb1/XiyshsoNwGOznZLYaXnNC7Ftnca24Oj4SR4OTfAMwpIqg==
   dependencies:
-    "@dcl/schemas" "^4.14.0"
+    "@dcl/schemas" "^5.0.3"
     abort-controller "^3.0.0"
     cookie "^0.4.1"
     cross-fetch "^3.1.4"
