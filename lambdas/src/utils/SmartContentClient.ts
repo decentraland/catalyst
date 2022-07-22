@@ -76,6 +76,10 @@ export class SmartContentClient implements ContentAPI {
     throw new Error('New deployments are currently not supported')
   }
 
+  deploy(deployData: DeploymentData, options?: RequestOptions): Promise<unknown> {
+    throw new Error('New deployments are currently not supported')
+  }
+
   buildEntity({ type, pointers, files, metadata }: BuildEntityOptions): Promise<DeploymentPreparationData> {
     throw new Error('New deployments are currently not supported')
   }
