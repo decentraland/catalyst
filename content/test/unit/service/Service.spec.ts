@@ -1,10 +1,10 @@
 import { Authenticator } from '@dcl/crypto'
 import { hashV1 } from '@dcl/hashing'
+import { Entity, EntityType, EthAddress } from '@dcl/schemas'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import assert from 'assert'
-import { Deployment, EntityVersion } from 'dcl-catalyst-commons'
-import { Entity, EntityType, EthAddress } from '@dcl/schemas'
+import { HTTPProvider } from 'eth-connect'
 import ms from 'ms'
 import { DEFAULT_ENTITIES_CACHE_SIZE, Environment, EnvironmentConfig } from '../../../src/Environment'
 import * as pointers from '../../../src/logic/database-queries/pointers-queries'
@@ -19,6 +19,7 @@ import { createSequentialTaskExecutor } from '../../../src/ports/sequecuentialTa
 import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
 import { DeploymentManager } from '../../../src/service/deployments/DeploymentManager'
 import * as deployments from '../../../src/service/deployments/deployments'
+import { Deployment } from '../../../src/service/deployments/types'
 import { DELTA_POINTER_RESULT } from '../../../src/service/pointers/PointerManager'
 import {
   DeploymentContext,
@@ -27,12 +28,12 @@ import {
   LocalDeploymentAuditInfo
 } from '../../../src/service/Service'
 import { ServiceImpl } from '../../../src/service/ServiceImpl'
+import { EntityVersion } from '../../../src/types'
 import { MockedRepository } from '../../helpers/repository/MockedRepository'
 import { buildEntityAndFile } from '../../helpers/service/EntityTestFactory'
 import { NoOpServerValidator, NoOpValidator } from '../../helpers/service/validations/NoOpValidator'
 import { MockedStorage } from '../ports/contentStorage/MockedStorage'
 import { NoOpPointerManager } from './pointers/NoOpPointerManager'
-import { HTTPProvider } from 'eth-connect'
 
 export const DECENTRALAND_ADDRESS: EthAddress = '0x1337e0507eb4ab47e08a179573ed4533d9e22a7b'
 

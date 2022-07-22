@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-import { EntityType } from 'dcl-catalyst-commons'
+import { EntityType } from '@dcl/schemas'
 import { anything, instance, mock, when } from 'ts-mockito'
 import { Database } from '../../../src/repository/Database'
 import { DeploymentsRepository } from '../../../src/repository/extensions/DeploymentsRepository'

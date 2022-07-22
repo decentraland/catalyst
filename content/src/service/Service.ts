@@ -1,9 +1,8 @@
-import { AuthChain } from '@dcl/crypto'
-import { EntityType } from '@dcl/schemas'
-import { AuditInfo, Deployment, PartialDeploymentHistory } from 'dcl-catalyst-commons'
+import { AuthChain, EntityType } from '@dcl/schemas'
 import { ContentItem } from '../ports/contentStorage/contentStorage'
 import { FailedDeployment } from '../ports/failedDeploymentsCache'
 import { Database } from '../repository/Database'
+import { AuditInfo, Deployment, PartialDeploymentHistory } from '../service/deployments/types'
 import { DeploymentOptions } from './deployments/types'
 
 /**x

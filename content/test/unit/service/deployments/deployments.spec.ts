@@ -1,6 +1,5 @@
-import { createTestMetricsComponent } from '@well-known-components/metrics'
-import { Deployment, PartialDeploymentHistory } from 'dcl-catalyst-commons'
 import { EntityType } from '@dcl/schemas'
+import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { safe } from 'jest-extra-utils'
 import { restore, stub } from 'sinon'
 import { ContentFilesRow } from '../../../../src/logic/database-queries/content-files-queries'
@@ -13,7 +12,7 @@ import {
   getDeployments,
   MAX_HISTORY_LIMIT
 } from '../../../../src/service/deployments/deployments'
-import { DeploymentOptions } from '../../../../src/service/deployments/types'
+import { Deployment, DeploymentOptions, PartialDeploymentHistory } from '../../../../src/service/deployments/types'
 import { AppComponents } from '../../../../src/types'
 
 describe('deployments service', () => {

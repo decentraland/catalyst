@@ -1,7 +1,7 @@
 import { Entity } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
-import { Deployment } from 'dcl-catalyst-commons'
 import { FailedDeployment } from '../ports/failedDeploymentsCache'
+import { Deployment } from '../service/deployments/types'
 import { DeploymentContext } from '../service/Service'
 import { deployEntityFromRemoteServer } from '../service/synchronization/deployRemoteEntity'
 import { IGNORING_FIX_ERROR } from '../service/validations/server'

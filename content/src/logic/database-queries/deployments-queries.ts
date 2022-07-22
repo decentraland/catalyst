@@ -1,8 +1,8 @@
 import { AuthChain } from '@dcl/crypto'
 import { DeploymentWithAuthChain, EntityType } from '@dcl/schemas'
-import { DeploymentFilters, DeploymentSorting, SortingField, SortingOrder } from 'dcl-catalyst-commons'
 import pg from 'pg'
 import SQL, { SQLStatement } from 'sql-template-strings'
+import { DeploymentFilters, DeploymentSorting, SortingField, SortingOrder } from '../../service/deployments/types'
 import { AppComponents } from '../../types'
 
 export type HistoricalDeployment = DeploymentWithAuthChain & {
