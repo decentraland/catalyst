@@ -350,14 +350,14 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@2.3.2-20220721194900.commit-1b2e08e":
-  version "2.3.2-20220721194900.commit-1b2e08e"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-2.3.2-20220721194900.commit-1b2e08e.tgz#73237ba46633ec726d537a656d7a17b171adaef9"
-  integrity sha512-+GpdSFns95ncZyc0mDVd8swphgh0JrrZEicluu63cJmEkZr07SnecrrXw8y/iRbHVlBSli0t61YB+CnxVzI/Vg==
+"@dcl/content-validator@2.3.2":
+  version "2.3.2"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-2.3.2.tgz#b61b7ff558fd5bbc3bcb7584af3c0a021e33dcff"
+  integrity sha512-lyk08i57epO1BXauOw85vH5Hx/OteU3GHCE1bwZHgZ4dS5JbmMLzijm4+UnRHgEwQ8oOFJWvfwtUGK1i9+BYtw==
   dependencies:
     "@dcl/content-hash-tree" "^1.1.3"
     "@dcl/hashing" "1.1.0"
-    "@dcl/schemas" "^5.4.0"
+    "@dcl/schemas" "^5.4.2"
     "@dcl/urn-resolver" "1.3.1"
     "@well-known-components/interfaces" "1.1.1"
     "@well-known-components/thegraph-component" "^1.2.0"
@@ -391,32 +391,23 @@
     ajv-errors "^2.0.1"
     ajv-keywords "^4.0.1"
 
-"@dcl/schemas@^5.0.3":
-  version "5.0.3"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-5.0.3.tgz#aba986dae25423ce36d7b87f0280dd2923b58818"
-  integrity sha512-FvG9jNBXLj+08RltM98LA0BTw7nSQtzwlghy1DqaqspoT7LhxDol7uWP/CZ1RuyT0x4KnN0E9VYnS9hVAtMi+Q==
+"@dcl/schemas@^5.4.2":
+  version "5.4.2"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-5.4.2.tgz#9996114207f71935bd7bf4d94ee654d4eb2842db"
+  integrity sha512-NyJvL8KGsCm3GbyzELZen+4GR7LmPb+zGie6XatND2FIHsNkciWldKJ8/o2gCFOWNyhA+Si8umQllG5dT7BOxg==
   dependencies:
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
 
-"@dcl/schemas@^5.4.0":
-  version "5.4.1"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-5.4.1.tgz#cf5730cc4463eaf3bbc579775dfee95f3bb5373d"
-  integrity sha512-CkoGwKdkgUwvssmQ2fbdlDh9D/c9akwg6/FF4nCdDG8snFpFuI0MIiTFPUdZFpmYnS2JxJt5u0pjg7xjTeGTUQ==
-  dependencies:
-    ajv "^8.11.0"
-    ajv-errors "^3.0.0"
-    ajv-keywords "^5.1.0"
-
-"@dcl/snapshots-fetcher@3.0.8-20220721150129.commit-ec90593":
-  version "3.0.8-20220721150129.commit-ec90593"
-  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-3.0.8-20220721150129.commit-ec90593.tgz#dce292f45b2d9fae00f1e6acf36db78c3e076c91"
-  integrity sha512-kcLw3OtivhA55j/7fDpe0Tt9hfbGBWar6lOXweoxR7vTRb92+oTbYwymSUxbyYKzN0FmPEH431lYd9n9JjUXyw==
+"@dcl/snapshots-fetcher@3.0.8":
+  version "3.0.8"
+  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-3.0.8.tgz#cfa2a8221faafe7436642ea75ded76ac5cc3d11c"
+  integrity sha512-vQndbAibkJ/qyi/xGOdq/PnII6QZOjQdt/4ajDkmTALK1TVfEAPxck8Qk064wzHSui5q9JyVusEg9FM4UE+Eeg==
   dependencies:
     "@dcl/catalyst-storage" "^1.0.0-20220604235145.commit-892b669"
     "@dcl/hashing" "^1.0.0"
-    "@dcl/schemas" "^5.0.3"
+    "@dcl/schemas" "^5.4.2"
     "@well-known-components/interfaces" "^1.1.0"
     "@well-known-components/metrics" "^1.1.2"
     p-queue "^6.6.2"
