@@ -25,6 +25,21 @@ export class DeploymentsRepository {
     return result[0]
   }
 
+  async getDeployments(deploymentIds: Set<number>): Promise<{ id: number; pointers: string[] }[]> {
+    if (deploymentIds.size === 0) return []
+    return await this.db.map(
+      `
+        SELECT id, entity_pointers
+        FROM deployments d WHERE d.id IN ($1:list)
+      `,
+      [Array.from(deploymentIds)],
+      (row) => ({
+        id: row.id,
+        pointers: row.entity_pointers
+      })
+    )
+  }
+
   async getAmountOfDeployments(): Promise<Map<EntityType, number>> {
     const entries: [EntityType, number][] = await this.db.map(
       `SELECT entity_type, COUNT(*) AS count FROM deployments GROUP BY entity_type`,
@@ -88,22 +103,38 @@ export class DeploymentsRepository {
         (row) => row.id
       )
 
-      const overwrittenByMany = await task.manyOrNone(
+      let overwrittenByMany = await task.manyOrNone(
         `
-                SELECT deployments.id
-                FROM deployments
-                WHERE deployments.entity_type = $1 AND
-                    deployments.entity_pointers && ARRAY [$2:list] AND
-                    (deployments.entity_timestamp > to_timestamp($3 / 1000.0) OR (deployments.entity_timestamp = to_timestamp($3 / 1000.0) AND deployments.entity_id > $4))
-                ORDER BY deployments.entity_timestamp ASC, deployments.entity_id ASC
-                LIMIT 10`,
+            SELECT deployments.id
+            FROM active_pointers as ap
+                     INNER JOIN deployments on ap.entity_id = deployments.entity_id
+            WHERE ap.pointer IN ($2:list)
+              AND deployments.entity_type = $1
+              AND (deployments.entity_timestamp > to_timestamp($3 / 1000.0) OR (deployments.entity_timestamp = to_timestamp($3 / 1000.0) AND deployments.entity_id > $4))
+            ORDER BY deployments.entity_timestamp, deployments.entity_id
+            LIMIT 1`,
         [entity.type, entity.pointers, entity.timestamp, entity.id]
       )
+
+      if (overwrittenByMany.length === 0 && entity.type === 'scene') {
+        // Scene overwrite determination can be tricky. If none was detected use this other query (slower but safer)
+        overwrittenByMany = await task.manyOrNone(
+          `
+                 SELECT deployments.id
+                 FROM deployments
+                 WHERE deployments.entity_type = $1 AND
+                     deployments.entity_pointers && ARRAY [$2:list] AND
+                     (deployments.entity_timestamp > to_timestamp($3 / 1000.0) OR (deployments.entity_timestamp = to_timestamp($3 / 1000.0) AND deployments.entity_id > $4))
+                 ORDER BY deployments.entity_timestamp, deployments.entity_id
+                 LIMIT 1`,
+          [entity.type, entity.pointers, entity.timestamp, entity.id]
+        )
+      }
+
       let overwrittenBy: DeploymentId | null = null
       if (overwrittenByMany.length > 0) {
         overwrittenBy = overwrittenByMany[0].id
       }
-
       return {
         overwrote: new Set(overwrote),
         overwrittenBy

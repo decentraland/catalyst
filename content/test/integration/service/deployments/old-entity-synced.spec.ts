@@ -14,7 +14,7 @@ loadStandaloneTestEnvironment()("Integration - Deployment synced old entity", (t
 
   testCaseWithComponents(
     testEnv,
-    "When deploying an old synced entity, it should succeed",
+    "When deploying an entity with cid v0 hashes of entities before ADR 45, it should succeed",
     async (components) => {
       makeNoopServerValidator(components);
 
