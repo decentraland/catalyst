@@ -337,14 +337,14 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@tag-publish-to-npm-2":
-  version "2.3.2-20220720202727.commit-e3818dd"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-2.3.2-20220720202727.commit-e3818dd.tgz#2a8b25582565cd2a7d417d7ca8d8075ee9026894"
-  integrity sha512-20a4SFR7FBs8N53JwjrKMe9yqVIk3vzm8q7IMAHHZuA0LVzUm1LsqRJpNccvT9NAIzw2xIkTOMAQIXUaTd7Q3Q==
+"@dcl/content-validator@2.3.2":
+  version "2.3.2"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-2.3.2.tgz#b61b7ff558fd5bbc3bcb7584af3c0a021e33dcff"
+  integrity sha512-lyk08i57epO1BXauOw85vH5Hx/OteU3GHCE1bwZHgZ4dS5JbmMLzijm4+UnRHgEwQ8oOFJWvfwtUGK1i9+BYtw==
   dependencies:
     "@dcl/content-hash-tree" "^1.1.3"
     "@dcl/hashing" "1.1.0"
-    "@dcl/schemas" "^5.4.0"
+    "@dcl/schemas" "^5.4.2"
     "@dcl/urn-resolver" "1.3.1"
     "@well-known-components/interfaces" "1.1.1"
     "@well-known-components/thegraph-component" "^1.2.0"
@@ -378,10 +378,19 @@
     ajv-errors "^2.0.1"
     ajv-keywords "^4.0.1"
 
-"@dcl/schemas@^5.0.3", "@dcl/schemas@^5.4.0":
+"@dcl/schemas@^5.0.3":
   version "5.4.1"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-5.4.1.tgz#cf5730cc4463eaf3bbc579775dfee95f3bb5373d"
   integrity sha512-CkoGwKdkgUwvssmQ2fbdlDh9D/c9akwg6/FF4nCdDG8snFpFuI0MIiTFPUdZFpmYnS2JxJt5u0pjg7xjTeGTUQ==
+  dependencies:
+    ajv "^8.11.0"
+    ajv-errors "^3.0.0"
+    ajv-keywords "^5.1.0"
+
+"@dcl/schemas@^5.4.2":
+  version "5.4.2"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-5.4.2.tgz#9996114207f71935bd7bf4d94ee654d4eb2842db"
+  integrity sha512-NyJvL8KGsCm3GbyzELZen+4GR7LmPb+zGie6XatND2FIHsNkciWldKJ8/o2gCFOWNyhA+Si8umQllG5dT7BOxg==
   dependencies:
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
