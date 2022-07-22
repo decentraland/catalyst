@@ -2622,7 +2622,18 @@ dcl-catalyst-client@^12.0.6, dcl-catalyst-client@^12.0.8:
     dcl-catalyst-commons "^9.0.0"
     form-data "^4.0.0"
 
-dcl-catalyst-commons@9.0.5, dcl-catalyst-commons@^9.0.0:
+dcl-catalyst-commons@9.0.6:
+  version "9.0.6"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-9.0.6.tgz#403c6c26428a828fc206a0d643b72b9b816b5558"
+  integrity sha512-6UGyEQaGPCmuETrhI0arD1IJpBsrGJ6+Sh6NEYnULh+UhAx21orbozdJptPWl0y5NoNh12/GLgiYyKu/WSrgcg==
+  dependencies:
+    "@dcl/schemas" "^5.4.2"
+    abort-controller "^3.0.0"
+    cookie "^0.4.1"
+    cross-fetch "^3.1.4"
+    ms "^2.1.2"
+
+dcl-catalyst-commons@^9.0.0:
   version "9.0.5"
   resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-9.0.5.tgz#53bdeef9498600f11b2e077f55834a43731bfc90"
   integrity sha512-QByI85wQPeJK4X+bA7SbWpXY/Ate1mO+fIeFxlb1/XiyshsoNwGOznZLYaXnNC7Ftnca24Oj4SR4OTfAMwpIqg==

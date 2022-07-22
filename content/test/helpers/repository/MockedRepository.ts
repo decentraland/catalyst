@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { EntityType } from 'dcl-catalyst-commons'
 import { anything, instance, mock, when } from 'ts-mockito'
 import { Database } from '../../../src/repository/Database'
 import { DeploymentsRepository } from '../../../src/repository/extensions/DeploymentsRepository'
 import { Repository } from '../../../src/repository/Repository'
+import { EntityType } from "@dcl/schemas";
 
 export class MockedRepository {
   static build(initialAmountOfDeployments: Map<EntityType, number> = new Map()): Repository {
