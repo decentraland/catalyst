@@ -1617,14 +1617,6 @@
   dependencies:
     prom-client "^14.0.1"
 
-"@well-known-components/thegraph-component@^1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@well-known-components/thegraph-component/-/thegraph-component-1.1.0.tgz#5e4c9faa5cec76334b0b1a951becdb27b936255a"
-  integrity sha512-I+O4gMQzQzd5dh8P7qMzpNiY2NVFtCzXbdEhLn6vFjXnz1Zq9YXerwIC4cHefnR+5VcfNeJvLwh8MYJnzwpjtA==
-  dependencies:
-    "@well-known-components/http-server" "^1.1.0"
-    "@well-known-components/interfaces" "^1.1.0"
-
 "@well-known-components/thegraph-component@^1.2.0":
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/@well-known-components/thegraph-component/-/thegraph-component-1.2.0.tgz#bb24e7b1572a10734fdfaac57892a71320de404f"
