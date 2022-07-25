@@ -35,7 +35,7 @@ export async function deployEntityFromRemoteServer(
 }
 
 async function downloadFullEntity(
-  components: Pick<AppComponents, 'metrics' | 'staticConfigs' | 'fetcher' | 'storage'>,
+  components: Pick<AppComponents, 'logs' | 'metrics' | 'staticConfigs' | 'fetcher' | 'storage'>,
   entityId: string,
   entityType: string,
   servers: string[]
