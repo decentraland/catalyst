@@ -107,8 +107,8 @@ loadStandaloneTestEnvironment()("Integration - Deployment with metadata validati
       expect(await deployEntity(components, E1))
         .toEqual({
           errors: [
-            "The provided Eth Address does not have access to the following parcel: (0,0). Error: Unknown metric subgraph_errors_total",
-            "The provided Eth Address does not have access to the following parcel: (0,1). Error: Unknown metric subgraph_errors_total"
+            "The provided Eth Address does not have access to the following parcel: (0,0)",
+            "The provided Eth Address does not have access to the following parcel: (0,1)"
           ]
         })
     }
