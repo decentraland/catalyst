@@ -1,6 +1,6 @@
 import { getContentFiles } from '../../logic/database-queries/content-files-queries'
 import { getHistoricalDeployments } from '../../logic/database-queries/deployments-queries'
-import { AppComponents } from '../../types'
+import { AppComponents, EntityVersion } from '../../types'
 import { Deployment, DeploymentOptions, PartialDeploymentHistory } from './types'
 import { EntityType } from '@dcl/schemas'
 

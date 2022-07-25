@@ -2609,7 +2609,7 @@ date-format@^4.0.10, date-format@^4.0.9:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-4.0.13.tgz#87c3aab3a4f6f37582c5f5f63692d2956fa67890"
   integrity sha512-bnYCwf8Emc3pTD8pXnre+wfnjGtfi5ncMDKy7+cWZXbmRAsdWkOQHrfC1yz/KiwP5thDp2kCHWYWKBX4HP1hoQ==
 
-dcl-catalyst-client@^12.0.6, dcl-catalyst-client@^12.0.8:
+dcl-catalyst-client@^12.0.8:
   version "12.0.8"
   resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-12.0.8.tgz#3673c50508301b8e55e9be887e30bdbed0686f7d"
   integrity sha512-KhPAZX13mNWQVgtfa1Bu8bVC2Vp76C0mgo5SV29UvNkTa/tmPLDTAMwvVADNIjhtDQlyHOgGvpA+/uzybUCMUg==
@@ -6720,7 +6720,7 @@ typedarray@^0.0.6:
   resolved "https://registry.yarnpkg.com/typedarray/-/typedarray-0.0.6.tgz#867ac74e3864187b1d3d47d996a78ec5c8830777"
   integrity sha512-/aCDEGatGvZ2BIk+HmLf4ifCJFwvKFNb9/JeZPMulfgFracn9QFcAf5GO8B/mweUjSoblS5In0cWhqpfs/5PQA==
 
-typescript@^4.4.3, typescript@^4.4.4:
+typescript@^4.4.4:
   version "4.7.4"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.7.4.tgz#1a88596d1cf47d59507a1bcdfb5b9dfe4d488235"
   integrity sha512-C0WQT0gezHuw6AdY1M2jxUO83Rjf0HP7Sk1DtXj6j1EwkQNZrHAg2XPWlq62oqEhYvONq5pkC2Y9oPljWToLmQ==
