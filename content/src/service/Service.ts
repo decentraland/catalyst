@@ -2,7 +2,7 @@ import { AuthChain, EntityType } from '@dcl/schemas'
 import { ContentItem } from '../ports/contentStorage/contentStorage'
 import { FailedDeployment } from '../ports/failedDeploymentsCache'
 import { Database } from '../repository/Database'
-import { AuditInfo, Deployment, PartialDeploymentHistory } from '../service/deployments/types'
+import { AuditInfo, Deployment, PartialDeploymentHistory } from './deployments/types'
 import { DeploymentOptions } from './deployments/types'
 
 /**x
