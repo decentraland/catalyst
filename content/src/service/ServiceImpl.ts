@@ -37,7 +37,9 @@ export class ServiceImpl implements MetaverseContentService {
 
   private readonly LEGACY_CONTENT_MIGRATION_TIMESTAMP: Date = new Date(1582167600000) // DCL Launch Day
 
-  private readonly ADR_45_TIMESTAMP: number = 1652191200000
+  private readonly ADR_45_TIMESTAMP: number = process.env.ADR_45_TIMESTAMP
+    ? parseInt(process.env.ADR_45_TIMESTAMP)
+    : 1652191200000
 
   constructor(
     public components: Pick<
