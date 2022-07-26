@@ -3,7 +3,7 @@ import { instance, mock, when } from 'ts-mockito'
 import { translateEntityIntoEmote } from '../../../../../src/controllers/handlers/collections/utils/Utils'
 import { SmartContentClient } from '../../../../../src/utils/SmartContentClient'
 
-describe('wearables', () => {
+describe('emotes translation', () => {
 
   it('translate old emote into LambdasEmote', async () => {
     const mockedClient: SmartContentClient = mock<SmartContentClient>()
@@ -84,6 +84,8 @@ describe('wearables', () => {
         expect(content.url).toBe(`${contentServerUrl}/contents/${maleHash}`)
       }
     }
+    expect('data' in lambdasEmote).toBeFalsy()
+    expect('emoteDataV0' in lambdasEmote).toBeFalsy()
     // Now we validate that, expect the representations, it is an actual Emote
     const validEmote: any = {
       ...lambdasEmote

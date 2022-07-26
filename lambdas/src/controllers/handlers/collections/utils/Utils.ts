@@ -86,8 +86,9 @@ function translateEmoteSavedAsWearableIntoLambdasEmote(client: SmartContentClien
   const externalImage = createExternalContentUrl(client, entity, metadata.image)
   const thumbnail = createExternalContentUrl(client, entity, metadata.thumbnail)!
   const image = externalImage ?? metadata.image
+  const { data, emoteDataV0, ...restOfMetadata } = metadata as any
   return {
-    ...metadata,
+    ...restOfMetadata,
     thumbnail,
     image,
     emoteDataADR74: {

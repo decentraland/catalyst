@@ -26,10 +26,9 @@ export async function getEmotesByOwnerHandler(
   if (collectionId && typeof collectionId !== 'string') {
     throw new Error('Bad input. CollectionId must be a string.')
   }
-  const includeDefinition = 'includeDefinitions' in req.query
-
+  const includeDefinitions = 'includeDefinitions' in req.query
   try {
-    res.send(await getEmotesByOwner(includeDefinition, client, theGraphClient, thirdPartyFetcher, collectionId, owner))
+    res.send(await getEmotesByOwner(includeDefinitions, client, theGraphClient, thirdPartyFetcher, collectionId, owner))
   } catch (e) {
     LOGGER.error(e)
     res.status(500).send(`Failed to fetch emotes by owner.`)
@@ -37,7 +36,7 @@ export async function getEmotesByOwnerHandler(
 }
 
 export async function getEmotesByOwner(
-  includeDefinition: boolean,
+  includeDefinitions: boolean,
   client: SmartContentClient,
   theGraphClient: TheGraphClient,
   thirdPartyFetcher: ThirdPartyAssetFetcher,
@@ -47,16 +46,17 @@ export async function getEmotesByOwner(
   const ownedEmoteUrns = thirdPartyCollectionId
     ? await findThirdPartyItemUrns(theGraphClient, thirdPartyFetcher, owner, thirdPartyCollectionId)
     : await theGraphClient.findEmoteUrnsByOwner(owner)
-  return getEmotesByOwnerFromUrns(includeDefinition, client, ownedEmoteUrns)
+  return getEmotesByOwnerFromUrns(includeDefinitions, client, ownedEmoteUrns)
 }
 
 export async function getEmotesByOwnerFromUrns(
-  includeDefinition: boolean,
+  includeDefinitions: boolean,
   client: SmartContentClient,
   emoteUrns: string[]
 ): Promise<{ urn: string; amount: number; definition?: LambdasEmote | undefined }[]> {
   // Fetch definitions (if needed)
-  const emotes = includeDefinition ? await fetchEmotes(emoteUrns, client) : []
+  const emotes = includeDefinitions ? await fetchEmotes(emoteUrns, client) : []
+
   const emotesByUrn: Map<string, LambdasEmote> = new Map(emotes.map((emote) => [emote.id.toLowerCase(), emote]))
 
   // Count emotes by id
