@@ -19,11 +19,6 @@ export const createSynchronizationManager = (components: ContentSyncComponents):
   const logger = components.logs.getLogger('ClusterSynchronizationManager')
 
   let synchronizationState = SynchronizationState.BOOTSTRAPPING
-  components.metrics.observe(
-    'dcl_content_server_sync_state',
-    {},
-    SynchronizationState[SynchronizationState.BOOTSTRAPPING]
-  )
 
   return {
     getComponentStatus: async () => {
