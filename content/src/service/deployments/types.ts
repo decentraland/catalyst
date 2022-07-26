@@ -1,4 +1,3 @@
-// import { AuthChain } from '@dcl/crypto'
 import { AuthChain, EntityType, EthAddress } from '@dcl/schemas'
 import { DeploymentField } from '../../controller/Controller'
 import { EntityVersion } from '../../types'
