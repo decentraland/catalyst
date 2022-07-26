@@ -41,7 +41,7 @@ These are some of the more important configuration values:
 
 | Name                    | Description                                                                                          |  Default  |
 | ----------------------- | ---------------------------------------------------------------------------------------------------- | :-------: |
-| ETH_NETWORK             | Which Ethereum network you want to use. Usually is `ropsten` for testing or `mainnet` for production | 'ropsten' |
+| ETH_NETWORK             | Which Ethereum network you want to use. Usually is `goerli` for testing or `mainnet` for production | 'goerli' |
 | STORAGE_ROOT_FOLDER.    | Folder where all content will be stored                                                              | 'storage' |
 | SERVER_PORT             | Port to be used by the service                                                                       |   6969    |
 | LOG_LEVEL               | Minimum log level                                                                                    |  'info'   |

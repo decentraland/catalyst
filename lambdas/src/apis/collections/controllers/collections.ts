@@ -129,8 +129,8 @@ function getProtocol(chainId: string): string | undefined {
   switch (parseInt(chainId, 10)) {
     case ChainId.ETHEREUM_MAINNET:
       return 'ethereum'
-    case ChainId.ETHEREUM_ROPSTEN:
-      return 'ropsten'
+    case ChainId.ETHEREUM_GOERLI:
+      return 'goerli'
     case ChainId.ETHEREUM_RINKEBY:
       return 'rinkeby'
     case ChainId.ETHEREUM_GOERLI:
