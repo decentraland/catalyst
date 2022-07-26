@@ -45,6 +45,9 @@ yarn build
 yarn test
 ```
 
+## Dependencies
+For a list of other Decentraland libraries that Catalyst servers depend on, please check the [library dependencies](docs/dependencies/dependencies.md)
+
 ## Contributing
 
 ### [Code of Conduct](https://github.com/decentraland/catalyst/blob/main/docs/CODE_OF_CONDUCT.md)
