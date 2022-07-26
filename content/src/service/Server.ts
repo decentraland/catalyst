@@ -1,5 +1,4 @@
 import { CONTENT_API } from '@dcl/catalyst-api-specs'
-import { initializeMetricsServer } from './MetricsServer'
 import { IBaseComponent, ILoggerComponent } from '@well-known-components/interfaces'
 import compression from 'compression'
 import cors from 'cors'
@@ -12,8 +11,9 @@ import morgan from 'morgan'
 import multer from 'multer'
 import path from 'path'
 import { Controller } from '../controller/Controller'
-import { EnvironmentConfig } from '../Environment'
+import { CURRENT_CATALYST_URL, CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, EnvironmentConfig } from '../Environment'
 import { AppComponents } from '../types'
+import { initializeMetricsServer } from './MetricsServer'
 
 export class Server implements IBaseComponent {
   private LOGGER: ILoggerComponent.ILogger
@@ -23,6 +23,12 @@ export class Server implements IBaseComponent {
   private port: number
   private app: express.Express
   private httpServer: http.Server
+  private buildInfo: {
+    version: string
+    commitHash: string
+    ethNetwork: string
+    url: string
+  }
 
   constructor(protected components: Pick<AppComponents, 'controller' | 'metrics' | 'env' | 'logs' | 'fs'>) {
     const { env, controller, metrics, logs } = components
@@ -106,6 +112,13 @@ export class Server implements IBaseComponent {
         next()
       })
     }
+
+    this.buildInfo = {
+      version: CURRENT_CATALYST_VERSION,
+      commitHash: CURRENT_COMMIT_HASH,
+      ethNetwork: env.getConfig(EnvironmentConfig.ETH_NETWORK),
+      url: CURRENT_CATALYST_URL
+    }
   }
 
   /*
@@ -163,6 +176,8 @@ export class Server implements IBaseComponent {
     if (this.metricsServer) {
       await this.metricsServer.start()
     }
+
+    this.components.metrics.observe('dcl_content_server_build_info', this.buildInfo, 1)
   }
 
   async stop(): Promise<void> {

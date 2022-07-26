@@ -1,3 +1,4 @@
+import { createTheGraphClient } from '@dcl/content-validator'
 import { EntityType } from '@dcl/schemas'
 import { createCatalystDeploymentStream } from '@dcl/snapshots-fetcher'
 import { createJobLifecycleManagerComponent } from '@dcl/snapshots-fetcher/dist/job-lifecycle-manager'
@@ -42,7 +43,6 @@ import { createSynchronizationManager } from './service/synchronization/Synchron
 import { createServerValidator } from './service/validations/server'
 import { createExternalCalls, createSubGraphsComponent, createValidator } from './service/validations/validator'
 import { AppComponents } from './types'
-import { createTheGraphClient } from '@dcl/content-validator'
 
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
   const metrics = createTestMetricsComponent(metricsDeclaration)
@@ -239,7 +239,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     synchronizationJobManager,
     logs,
     contentCluster,
-    retryFailedDeployments
+    retryFailedDeployments,
+    metrics
   })
 
   const controller = new Controller(
