@@ -1,13 +1,6 @@
 import { AuthChain, Authenticator } from '@dcl/crypto'
 import { Entity, EntityType, IPFSv2 } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
-import {
-  AuditInfo,
-  Deployment,
-  EntityVersion,
-  // TODO: replace this Hashing by the new lib
-  PartialDeploymentHistory
-} from 'dcl-catalyst-commons'
 import { EnvironmentConfig } from '../Environment'
 import { runReportingQueryDurationMetric } from '../instrument'
 import { calculateDeprecatedHashes, calculateIPFSHashes } from '../logic/hashing'
@@ -15,7 +8,8 @@ import { bufferToStream, ContentItem } from '../ports/contentStorage/contentStor
 import { FailedDeployment, FailureReason } from '../ports/failedDeploymentsCache'
 import { Database } from '../repository/Database'
 import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
-import { AppComponents } from '../types'
+import { AuditInfo, Deployment, PartialDeploymentHistory } from '../service/deployments/types'
+import { AppComponents, EntityVersion } from '../types'
 import { getDeployments } from './deployments/deployments'
 import { DeploymentOptions } from './deployments/types'
 import { EntityFactory } from './EntityFactory'

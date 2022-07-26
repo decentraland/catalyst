@@ -3,15 +3,12 @@ import { hashV0, hashV1 } from '@dcl/hashing'
 import { Entity } from '@dcl/schemas'
 import assert from 'assert'
 import { DeploymentData } from 'dcl-catalyst-client'
-import {
-  ContentFileHash,
-  Deployment as ControllerDeployment,
-  EntityContentItemReference,
-  EntityVersion
-} from 'dcl-catalyst-commons'
+import { ContentFileHash, EntityContentItemReference } from 'dcl-catalyst-commons'
 import { Response } from 'node-fetch'
 import { FailedDeployment, FailureReason } from '../../src/ports/failedDeploymentsCache'
+import { Deployment as ControllerDeployment } from '../../src/service/deployments/types'
 import { DeploymentResult, isSuccessfulDeployment } from '../../src/service/Service'
+import { EntityVersion } from '../../src/types'
 import { assertPromiseIsRejected, assertPromiseRejectionGeneric } from '../helpers/PromiseAssertions'
 import { TestProgram } from './TestProgram'
 

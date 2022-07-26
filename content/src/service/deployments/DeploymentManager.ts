@@ -1,7 +1,7 @@
-import { AuditInfo } from 'dcl-catalyst-commons'
 import { Entity } from '@dcl/schemas'
 import { ContentFilesRepository } from '../../repository/extensions/ContentFilesRepository'
 import { DeploymentId, DeploymentsRepository } from '../../repository/extensions/DeploymentsRepository'
+import { AuditInfo } from '../../service/deployments/types'
 
 export class DeploymentManager {
   async getEntityById(

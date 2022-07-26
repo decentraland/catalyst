@@ -1,7 +1,7 @@
 import { Authenticator } from '@dcl/crypto'
 import { Entity, EntityType } from '@dcl/schemas'
-import { AuditInfo } from 'dcl-catalyst-commons'
 import { Database } from '../../repository/Database'
+import { AuditInfo } from '../../service/deployments/types'
 
 export class DeploymentsRepository {
   constructor(private readonly db: Database) {}

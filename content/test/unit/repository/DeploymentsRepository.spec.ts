@@ -1,7 +1,8 @@
 import { Entity, EntityType } from '@dcl/schemas'
-import { AuditInfo, EntityVersion } from 'dcl-catalyst-commons'
 import { anything, capture, deepEqual, instance, mock, spy, verify, when } from 'ts-mockito'
 import { DeploymentsRepository } from '../../../src/repository/extensions/DeploymentsRepository'
+import { AuditInfo } from '../../../src/service/deployments/types'
+import { EntityVersion } from '../../../src/types'
 import MockedDataBase from './MockedDataBase'
 
 describe('DeploymentRepository', () => {
