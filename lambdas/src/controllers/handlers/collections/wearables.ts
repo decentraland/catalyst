@@ -28,11 +28,11 @@ export async function getWearablesByOwnerHandler(
     throw new Error('Bad input. CollectionId must be a string.')
   }
 
-  const includeDefinition = 'includeDefinitions' in req.query
+  const includeDefinitions = 'includeDefinitions' in req.query
 
   try {
     res.send(
-      await getWearablesByOwner(includeDefinition, client, theGraphClient, thirdPartyFetcher, collectionId, owner)
+      await getWearablesByOwner(includeDefinitions, client, theGraphClient, thirdPartyFetcher, collectionId, owner)
     )
   } catch (e) {
     LOGGER.error(e)
@@ -41,7 +41,7 @@ export async function getWearablesByOwnerHandler(
 }
 
 export async function getWearablesByOwner(
-  includeDefinition: boolean,
+  includeDefinitions: boolean,
   client: SmartContentClient,
   theGraphClient: TheGraphClient,
   thirdPartyFetcher: ThirdPartyAssetFetcher,
@@ -51,16 +51,16 @@ export async function getWearablesByOwner(
   const ownedWearableUrns = thirdPartyCollectionId
     ? await findThirdPartyItemUrns(theGraphClient, thirdPartyFetcher, owner, thirdPartyCollectionId)
     : await theGraphClient.findWearableUrnsByOwner(owner)
-  return getWearablesByOwnerFromUrns(includeDefinition, client, ownedWearableUrns)
+  return getWearablesByOwnerFromUrns(includeDefinitions, client, ownedWearableUrns)
 }
 
 export async function getWearablesByOwnerFromUrns(
-  includeDefinition: boolean,
+  includeDefinitions: boolean,
   client: SmartContentClient,
   wearableUrns: string[]
 ): Promise<{ urn: string; amount: number; definition?: LambdasWearable | undefined }[]> {
   // Fetch definitions (if needed)
-  const wearables = includeDefinition ? await fetchWearables(wearableUrns, client) : []
+  const wearables = includeDefinitions ? await fetchWearables(wearableUrns, client) : []
   const wearablesByUrn: Map<string, LambdasWearable> = new Map(
     wearables.map((wearable) => [wearable.id.toLowerCase(), wearable])
   )
