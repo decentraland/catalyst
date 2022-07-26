@@ -167,11 +167,7 @@ async function fetchEmotes(emoteUrns: string[], client: SmartContentClient): Pro
   if (emoteUrns.length === 0) {
     return []
   }
-  console.log('fetching emotes...')
-  console.log(`type before calling client: ${EntityType.EMOTE}`)
   const entities = await client.fetchEntitiesByPointers(EntityType.EMOTE, emoteUrns)
-  console.log('emotes fetched')
-  console.log(JSON.stringify(entities))
   const emotes = entities.map((entity) => translateEntityIntoEmote(client, entity))
   return emotes.sort((emote1, emote2) => emote1.id.toLowerCase().localeCompare(emote2.id.toLowerCase()))
 }

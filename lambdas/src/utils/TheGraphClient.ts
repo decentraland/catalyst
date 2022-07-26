@@ -453,10 +453,6 @@ export class TheGraphClient {
     variables: Record<string, any>
   ): Promise<ReturnType> {
     try {
-      console.log('running query:')
-      console.log(query.query)
-      console.log('with variables: ')
-      console.log(JSON.stringify(variables))
       const response = await this.fetcher.queryGraph<QueryResult>(this.urls[query.subgraph], query.query, variables)
       return query.mapper(response)
     } catch (error) {

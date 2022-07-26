@@ -1,4 +1,4 @@
-import { Emote, Entity, I18N, Wearable } from '@dcl/schemas'
+import { Emote, EmoteCategory, Entity, I18N, Wearable } from '@dcl/schemas'
 import { parseUrn } from '@dcl/urn-resolver'
 import { SmartContentClient } from '../../../../utils/SmartContentClient'
 import { LambdasEmote, LambdasWearable, WearableId } from './types'
@@ -46,11 +46,21 @@ export function translateEntityIntoWearable(client: SmartContentClient, entity: 
 }
 
 export function translateEntityIntoEmote(client: SmartContentClient, entity: Entity): LambdasEmote {
+  const metadata: Emote | Wearable = entity.metadata!
+  const isNewEmote = 'emoteDataADR74' in metadata
+  return isNewEmote
+    ? translateEmoteIntoLambdasEmote(client, entity)
+    : translateEmoteSavedAsWearableIntoLambdasEmote(client, entity)
+}
+
+function translateEmoteIntoLambdasEmote(client: SmartContentClient, entity: Entity): LambdasEmote {
   const metadata: Emote = entity.metadata!
+  if (!('emoteDataADR74' in metadata)) {
+    throw new Error('Error translating entity into Emote. Entity is not an Emote')
+  }
   const representations = metadata.emoteDataADR74.representations.map((representation) =>
     mapRepresentation(representation, client, entity)
   )
-
   const externalImage = createExternalContentUrl(client, entity, metadata.image)
   const thumbnail = createExternalContentUrl(client, entity, metadata.thumbnail)!
   const image = externalImage ?? metadata.image
@@ -61,6 +71,30 @@ export function translateEntityIntoEmote(client: SmartContentClient, entity: Ent
     emoteDataADR74: {
       ...metadata.emoteDataADR74,
       representations
+    }
+  }
+}
+
+function translateEmoteSavedAsWearableIntoLambdasEmote(client: SmartContentClient, entity: Entity): LambdasEmote {
+  const metadata: Emote | Wearable = entity.metadata!
+  if (!('data' in metadata)) {
+    throw new Error('Error translating entity into Emote. Entity is not a Wearable')
+  }
+  const representationsWithUrl = metadata.data.representations.map((representation) =>
+    mapRepresentation(representation, client, entity)
+  )
+  const externalImage = createExternalContentUrl(client, entity, metadata.image)
+  const thumbnail = createExternalContentUrl(client, entity, metadata.thumbnail)!
+  const image = externalImage ?? metadata.image
+  return {
+    ...metadata,
+    thumbnail,
+    image,
+    emoteDataADR74: {
+      category: EmoteCategory.SIMPLE,
+      tags: metadata.data.tags,
+      loop: 'emoteDataV0' in metadata ? (metadata as any).emoteDataV0.loop : false,
+      representations: representationsWithUrl
     }
   }
 }

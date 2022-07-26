@@ -206,7 +206,6 @@ export async function fetchProfiles(
       const ensOwnership = ownedENS.get(ethAddress)!
       const wearablesOwnership = ownedWearables.get(ethAddress)!
       const emotesOwnership = ownedEmotes.get(ethAddress)!
-      // const onChainEmotes = profileData.avatar.emotes ? await sanitizeEmotes(profileData.avatar.emotes, emotesOwnership) : []
       const tpe = thirdPartyEmotes.get(ethAddress) ?? []
 
       const tpw = thirdPartyWearables.get(ethAddress) ?? []
@@ -249,7 +248,6 @@ async function extractData(entity: Entity): Promise<{
 }> {
   const ethAddress = entity.pointers[0]
   const metadata: ProfileMetadata = entity.metadata
-  // const metadata: LambdasProfile = entity.metadata
   const content = new Map((entity.content ?? []).map(({ file, hash }) => [file, hash]))
   const filteredNames = metadata.avatars.map(({ name }) => name).filter((name) => name && name.trim().length > 0)
   // Add timestamp to the metadata
