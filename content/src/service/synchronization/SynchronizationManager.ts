@@ -1,5 +1,6 @@
 import { AppComponents, IStatusCapableComponent } from '../../types'
 
+
 type ContentSyncComponents = Pick<
   AppComponents,
   'logs' | 'synchronizationJobManager' | 'contentCluster' | 'retryFailedDeployments' | 'metrics'
@@ -38,7 +39,7 @@ export const createSynchronizationManager = (components: ContentSyncComponents):
         components.metrics.observe(
           'dcl_content_server_sync_state',
           {},
-          SynchronizationState[SynchronizationState.SYNCING]
+          1
         )
         const desiredJobNames = new Set(components.contentCluster.getAllServersInCluster())
         // the job names are the contentServerUrl
@@ -55,7 +56,7 @@ export const createSynchronizationManager = (components: ContentSyncComponents):
         components.metrics.observe(
           'dcl_content_server_sync_state',
           {},
-          SynchronizationState[SynchronizationState.SYNCED]
+          2
         )
         setDesiredJobs()
       })

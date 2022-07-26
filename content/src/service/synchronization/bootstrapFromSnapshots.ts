@@ -1,6 +1,5 @@
 import { getDeployedEntitiesStream } from '@dcl/snapshots-fetcher'
 import { AppComponents } from '../../types'
-import { SynchronizationState } from './SynchronizationManager'
 
 type BootstrapComponents = Pick<
   AppComponents,
@@ -15,7 +14,7 @@ export async function bootstrapFromSnapshots(components: BootstrapComponents): P
   components.metrics.observe(
     'dcl_content_server_sync_state',
     {},
-    SynchronizationState[SynchronizationState.BOOTSTRAPPING]
+    0
   )
   // then find all other DAO catalyst servers
   const catalystServersButThisOne = await components.contentCluster.getContentServersFromDao()
