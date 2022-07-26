@@ -141,5 +141,9 @@ export const metricsDeclaration = validateMetricsDeclaration({
     // SynchronizationState value
     help: 'Content server sync state.',
     type: 'gauge'
+  },
+  dcl_content_server_failed_deployments: {
+    help: 'Failed deployments.',
+    type: 'gauge'
   }
 })

@@ -103,7 +103,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   // TODO: this should be in the src/logic folder. It is not a component
   const pointerManager = new PointerManager()
 
-  const failedDeploymentsCache = createFailedDeploymentsCache()
+  const failedDeploymentsCache = createFailedDeploymentsCache({ metrics })
 
   const deployRateLimiter = createDeployRateLimiter(
     { logs },
