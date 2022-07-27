@@ -11,7 +11,7 @@ import morgan from 'morgan'
 import multer from 'multer'
 import path from 'path'
 import { Controller } from '../controller/Controller'
-import { CURRENT_CATALYST_URL, CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, EnvironmentConfig } from '../Environment'
+import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, EnvironmentConfig } from '../Environment'
 import { AppComponents } from '../types'
 import { initializeMetricsServer } from './MetricsServer'
 
@@ -27,7 +27,6 @@ export class Server implements IBaseComponent {
     version: string
     commitHash: string
     ethNetwork: string
-    url: string
   }
 
   constructor(protected components: Pick<AppComponents, 'controller' | 'metrics' | 'env' | 'logs' | 'fs'>) {
@@ -116,8 +115,7 @@ export class Server implements IBaseComponent {
     this.buildInfo = {
       version: CURRENT_CATALYST_VERSION,
       commitHash: CURRENT_COMMIT_HASH,
-      ethNetwork: env.getConfig(EnvironmentConfig.ETH_NETWORK),
-      url: CURRENT_CATALYST_URL
+      ethNetwork: env.getConfig(EnvironmentConfig.ETH_NETWORK)
     }
   }
 

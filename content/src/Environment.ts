@@ -44,7 +44,6 @@ export const DEFAULT_BLOCKS_SUBGRAPH_MATIC_MAINNET =
 
 export const CURRENT_COMMIT_HASH = process.env.COMMIT_HASH ?? 'Unknown'
 export const CURRENT_CATALYST_VERSION = process.env.CATALYST_VERSION ?? 'Unknown'
-export const CURRENT_CATALYST_URL = process.env.CATALYST_URL ?? 'Unknown'
 export const DEFAULT_DATABASE_CONFIG = {
   password: '12345678',
   user: 'postgres',

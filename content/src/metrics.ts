@@ -130,7 +130,7 @@ export const metricsDeclaration = validateMetricsDeclaration({
   dcl_content_server_build_info: {
     help: 'Content server static build info.',
     type: 'gauge',
-    labelNames: ['version', 'commitHash', 'ethNetwork', 'url']
+    labelNames: ['version', 'commitHash', 'ethNetwork']
   },
   dcl_content_server_snapshot_entities: {
     help: 'Number of entities in the snapshots per type.',
