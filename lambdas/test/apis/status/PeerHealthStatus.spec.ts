@@ -1,6 +1,6 @@
 import fetch from 'node-fetch'
-import { HealthStatus } from '../../../src/controllers/handlers/status/health'
-import PeerHealthStatus from '../../../src/controllers/handlers/status/PeerHealthStatus'
+import { HealthStatus } from '../../../src/apis/status/health'
+import PeerHealthStatus from '../../../src/apis/status/PeerHealthStatus'
 import { Environment, EnvironmentConfig } from "../../../src/Environment"
 import { Server } from "../../../src/Server"
 import * as Commons from "../../../src/utils/commons"
@@ -24,7 +24,7 @@ describe('PeerHealthStatus', () => {
       await server.stop()
     })
 
-   it('is ready to use when all services are healthy', async () => {
+    it('is ready to use when all services are healthy', async () => {
       jest.spyOn(PeerHealthStatus.prototype, 'getPeerStatus').mockResolvedValue({
         comms: HealthStatus.HEALTHY,
         content: HealthStatus.HEALTHY,

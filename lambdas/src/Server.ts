@@ -6,10 +6,27 @@ import * as OpenApiValidator from 'express-openapi-validator'
 import http from 'http'
 import log4js from 'log4js'
 import morgan from 'morgan'
-import { setupRouter } from './controllers/routes'
-import { Environment, EnvironmentConfig } from './Environment'
+import { OffChainWearablesManager } from './apis/collections/off-chain/OffChainWearablesManager'
+import { initializeCollectionsRoutes } from './apis/collections/routes'
+import { initializeContentV2Routes } from './apis/content-v2/routes'
+import { initializeContractRoutes } from './apis/contracts/routes'
+import { initializeCryptoRoutes } from './apis/crypto/routes'
+import { initializeExploreRoutes } from './apis/explore/routes'
+import { initializeImagesRoutes } from './apis/images/routes'
+import { EmotesOwnership } from './apis/profiles/EmotesOwnership'
+import { EnsOwnership } from './apis/profiles/EnsOwnership'
+import { initializeIndividualProfileRoutes, initializeProfilesRoutes } from './apis/profiles/routes'
+import { WearablesOwnership } from './apis/profiles/WearablesOwnership'
+import statusRouter from './apis/status/routes'
+import { initializeThirdPartyIntegrationsRoutes } from './apis/third-party/routes'
+import { Bean, Environment, EnvironmentConfig } from './Environment'
 import { metricsComponent } from './metrics'
 import { initializeMetricsServer } from './MetricsServer'
+import { createFetchComponent } from './ports/fetcher'
+import { createThirdPartyAssetFetcher, ThirdPartyAssetFetcher } from './ports/third-party/third-party-fetcher'
+import { SmartContentClient } from './utils/SmartContentClient'
+import { SmartContentServerFetcher } from './utils/SmartContentServerFetcher'
+import { TheGraphClient } from './utils/TheGraphClient'
 
 export class Server {
   private port: number
@@ -56,8 +73,76 @@ export class Server {
 
     this.metricsPort = initializeMetricsServer(this.app, metricsComponent)
 
+    const ensOwnership: EnsOwnership = env.getBean(Bean.ENS_OWNERSHIP)
+    const wearablesOwnership: WearablesOwnership = env.getBean(Bean.WEARABLES_OWNERSHIP)
+    const emotesOwnership: EmotesOwnership = env.getBean(Bean.EMOTES_OWNERSHIP)
+    const fetcher: SmartContentServerFetcher = env.getBean(Bean.SMART_CONTENT_SERVER_FETCHER)
+    const contentClient: SmartContentClient = env.getBean(Bean.SMART_CONTENT_SERVER_CLIENT)
+    const theGraphClient: TheGraphClient = env.getBean(Bean.THE_GRAPH_CLIENT)
+    const offChainManager: OffChainWearablesManager = env.getBean(Bean.OFF_CHAIN_MANAGER)
+    const thirdPartyFetcher: ThirdPartyAssetFetcher = createThirdPartyAssetFetcher(createFetchComponent())
+
+    const profilesCacheTTL: number = env.getConfig(EnvironmentConfig.PROFILES_CACHE_TTL)
+
+    // Base endpoints
+    this.app.use('/', statusRouter(env))
+
+    // Backwards compatibility for older Content API
+    this.app.use('/contentv2', initializeContentV2Routes(express.Router(), fetcher))
+
+    // TODO: Remove the route /profile/{id} as it has been migrated to /profiles/{id}
+    // Profile API implementation
+    this.app.use(
+      '/profile',
+      initializeIndividualProfileRoutes(
+        express.Router(),
+        theGraphClient,
+        contentClient,
+        ensOwnership,
+        wearablesOwnership,
+        emotesOwnership,
+        thirdPartyFetcher,
+        profilesCacheTTL
+      )
+    )
+    this.app.use(
+      '/profiles',
+      initializeProfilesRoutes(
+        express.Router(),
+        theGraphClient,
+        contentClient,
+        ensOwnership,
+        wearablesOwnership,
+        emotesOwnership,
+        thirdPartyFetcher,
+        profilesCacheTTL
+      )
+    )
+
+    // DCL-Crypto API implementation
+    this.app.use('/crypto', initializeCryptoRoutes(express.Router(), env.getBean(Bean.ETHEREUM_PROVIDER)))
+
+    // Images API for resizing contents
+    this.app.use(
+      '/images',
+      initializeImagesRoutes(express.Router(), fetcher, env.getConfig(EnvironmentConfig.LAMBDAS_STORAGE_LOCATION))
+    )
+
+    // DAO cached access API
+    this.app.use('/contracts', initializeContractRoutes(express.Router(), env.getBean(Bean.DAO)))
+
+    // DAO Collections access API
+    this.app.use(
+      '/collections',
+      initializeCollectionsRoutes(express.Router(), contentClient, theGraphClient, offChainManager)
+    )
+
+    // Functionality for Explore use case
+    this.app.use('/explore', initializeExploreRoutes(express.Router(), env.getBean(Bean.DAO), contentClient))
+
+    this.app.use('/third-party-integrations', initializeThirdPartyIntegrationsRoutes(theGraphClient, express.Router()))
     // Setup routes
-    this.app.use(setupRouter(env))
+    // this.app.use(setupRouter(env))
   }
 
   async start(): Promise<void> {

@@ -1,7 +1,7 @@
 import { EntityType } from '@dcl/schemas'
 import { Logger } from 'log4js'
 import ms from 'ms'
-import { SmartContentClient } from '../../../utils/SmartContentClient'
+import { SmartContentClient } from '../../utils/SmartContentClient'
 
 export enum HealthStatus {
   HEALTHY = 'Healthy',
