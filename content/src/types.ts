@@ -1,8 +1,8 @@
 import { ExternalCalls, Validator } from '@dcl/content-validator'
-import { EntityType } from '@dcl/schemas'
+import { DeploymentWithAuthChain, EntityType } from '@dcl/schemas'
 import { JobLifecycleManagerComponent } from '@dcl/snapshots-fetcher/dist/job-lifecycle-manager'
 import { IJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
-import { IDeployerComponent, RemoteEntityDeployment } from '@dcl/snapshots-fetcher/dist/types'
+import { IDeployerComponent } from '@dcl/snapshots-fetcher'
 import { IFetchComponent } from '@well-known-components/http-server'
 import { ILoggerComponent, IMetricsComponent } from '@well-known-components/interfaces'
 import { Fetcher } from 'dcl-catalyst-commons'
@@ -102,7 +102,7 @@ export enum EntityVersion {
   V4 = 'v4'
 }
 
-export type CannonicalEntityDeployment = { entity: RemoteEntityDeployment; servers: string[] }
+export type CannonicalEntityDeployment = { entity: DeploymentWithAuthChain; servers: string[] }
 
 export type StatusProbeResult = {
   /** name is used as unique key for the status map */

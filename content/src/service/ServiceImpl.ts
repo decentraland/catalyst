@@ -30,6 +30,10 @@ export class ServiceImpl implements MetaverseContentService {
 
   private readonly LEGACY_CONTENT_MIGRATION_TIMESTAMP: Date = new Date(1582167600000) // DCL Launch Day
 
+  private readonly ADR_45_TIMESTAMP: number = process.env.ADR_45_TIMESTAMP
+    ? parseInt(process.env.ADR_45_TIMESTAMP)
+    : 1652191200000
+
   constructor(
     public components: Pick<
       AppComponents,
@@ -236,9 +240,9 @@ export class ServiceImpl implements MetaverseContentService {
       }
     }
 
-    if (entity.version !== 'v3')
+    if (entity.version !== 'v3' && entity.timestamp > this.ADR_45_TIMESTAMP)
       return {
-        errors: ['Only entities v3 are allowed']
+        errors: ['Only entities v3 are allowed after ADR-45']
       }
 
     const auditInfoComplete: AuditInfo = {
@@ -280,19 +284,16 @@ export class ServiceImpl implements MetaverseContentService {
               'reference_entity_from_pointers',
               () =>
                 this.components.pointerManager.referenceEntityFromPointers(
-                  transaction.lastDeployedPointers,
+                  transaction.deployments,
                   deploymentId,
-                  entity
+                  entity,
+                  overwrote,
+                  overwrittenBy !== null
                 )
             )
 
             // Update pointers and active entities
             await this.updateActiveEntities(pointersFromEntity, entity)
-
-            // Add to pointer history
-            await runReportingQueryDurationMetric(this.components, 'add_pointer_history', () =>
-              this.components.pointerManager.addToHistory(transaction.pointerHistory, deploymentId, entity)
-            )
 
             // Set who overwrote who
             await runReportingQueryDurationMetric(this.components, 'set_entities_overwritter', () =>

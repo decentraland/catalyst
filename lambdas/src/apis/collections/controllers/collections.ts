@@ -6,9 +6,9 @@ import { BASE_AVATARS_COLLECTION_ID } from '../off-chain/OffChainWearablesManage
 import { Collection, ERC721StandardTrait } from '../types'
 import { createExternalContentUrl, findHashForFile, preferEnglish } from '../Utils'
 
-// Method: GET
-// Path: /collections/standard/erc721/:chainId/:contract/:option/:emission
 export async function getStandardErc721(client: SmartContentClient, req: Request, res: Response) {
+  // Method: GET
+  // Path: /standard/erc721/:chainId/:contract/:option/:emission
   const { chainId, contract, option } = req.params
   const emission: string | undefined = req.params.emission
   const protocol = getProtocol(chainId)
@@ -80,28 +80,29 @@ export async function getStandardErc721(client: SmartContentClient, req: Request
   }
 }
 
-// Method: GET
-// Path: /collections/contents/:urn/image
 export async function contentsImage(client: SmartContentClient, req: Request, res: Response): Promise<void> {
+  // Method: GET
+  // Path: /contents/:urn/image
   const { urn } = req.params
   await internalContents(client, res, urn, (wearableMetadata) => wearableMetadata.image)
 }
 
-// Method: GET
-// Path: /collections/contents/:urn/thumbnail
 export async function contentsThumbnail(client: SmartContentClient, req: Request, res: Response): Promise<void> {
+  // Method: GET
+  // Path: /contents/:urn/thumbnail
   const { urn } = req.params
 
   await internalContents(client, res, urn, (wearableMetadata) => wearableMetadata.thumbnail)
 }
 
-// Method: GET
-// Path: /collections/
 export async function getCollectionsHandler(
   theGraphClient: TheGraphClient,
   req: Request,
   res: Response
 ): Promise<void> {
+  // Method: GET
+  // Path: /
+
   try {
     const collections: Collection[] = await getCollections(theGraphClient)
     res.send({ collections })

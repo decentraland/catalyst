@@ -1,4 +1,4 @@
-import { EntityType } from '@dcl/schemas'
+import { EntityType } from "@dcl/schemas"
 import { createOrClause, getHistoricalDeploymentsQuery } from '../../../src/logic/database-queries/deployments-queries'
 import { SortingField, SortingOrder } from '../../../src/service/deployments/types'
 

@@ -37,14 +37,15 @@ async function getStorageLocation(root: string): Promise<string> {
   return root
 }
 
-// Method: GET
-// Path: /images/:cid/:size
 export async function getResizedImage(
   fetcher: SmartContentServerFetcher,
   rooStorageLocation: string,
   req: Request,
   res: Response
 ) {
+  // Method: GET
+  // Path: /images/:cid/:size
+
   try {
     const { cid, size } = req.params
 

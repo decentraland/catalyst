@@ -77,9 +77,10 @@ function noReject<T>(promise: Promise<T>): Promise<['fulfilled' | 'rejected', an
   )
 }
 
-// Method: GET
-// Path: /realms
 export async function realmsStatus(daoCache: DAOCache, req: Request, res: Response) {
+  // Method: GET
+  // Path: /realms
+
   if (!realmsStatusCache) {
     realmsStatusCache = new TimeRefreshedDataHolder(() => fetchRealmsData(daoCache), '1m')
   }
@@ -93,9 +94,10 @@ export async function realmsStatus(daoCache: DAOCache, req: Request, res: Respon
 
 let hotSceneCache: TimeRefreshedDataHolder<HotSceneInfo[]>
 
-// Method: GET
-// Path: /hot-scenes
 export async function hotScenes(daoCache: DAOCache, contentClient: SmartContentClient, req: Request, res: Response) {
+  // Method: GET
+  // Path: /hot-scenes
+
   if (!hotSceneCache) {
     hotSceneCache = new TimeRefreshedDataHolder(() => fetchHotScenesData(daoCache, contentClient), '1m')
   }
@@ -110,22 +112,22 @@ export async function hotScenes(daoCache: DAOCache, contentClient: SmartContentC
 function toRealmsInfo(server: ServerStatus): RealmInfo[] {
   return isLayerBased(server)
     ? server.layers.map((layer) => ({
-      serverName: server.name,
-      url: server.url,
-      layer: layer.name,
-      usersCount: layer.usersCount,
-      maxUsers: layer.maxUsers,
-      userParcels: layer.usersParcels
-    }))
-    : [
-      {
         serverName: server.name,
         url: server.url,
-        usersCount: server.usersCount!,
-        maxUsers: server.maxUsers,
-        userParcels: server.usersParcels!
-      }
-    ]
+        layer: layer.name,
+        usersCount: layer.usersCount,
+        maxUsers: layer.maxUsers,
+        userParcels: layer.usersParcels
+      }))
+    : [
+        {
+          serverName: server.name,
+          url: server.url,
+          usersCount: server.usersCount!,
+          maxUsers: server.maxUsers,
+          userParcels: server.usersParcels!
+        }
+      ]
 }
 
 async function fetchRealmsData(daoCache: DAOCache): Promise<RealmInfo[]> {

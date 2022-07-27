@@ -1,6 +1,6 @@
 import { Emote, EmoteCategory, Entity, I18N, Wearable } from '@dcl/schemas'
 import { parseUrn } from '@dcl/urn-resolver'
-import { SmartContentClient } from '../../utils/SmartContentClient'
+import { SmartContentClient } from '../../../src/utils/SmartContentClient'
 import { LambdasEmote, LambdasWearable, WearableId } from './types'
 
 /**

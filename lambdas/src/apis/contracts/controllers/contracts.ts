@@ -8,21 +8,21 @@ export type ServerMetadata = {
   id: string
 }
 
-// Method: GET
-// Path: /servers
 export async function getCatalystServersList(dao: DAOCache, req: Request, res: Response) {
+  // Method: GET
+  // Path: /servers
   return getValuesList<ServerMetadata>(dao, (dao) => dao.getServers(), req, res)
 }
 
-// Method: GET
-// Path: /pois
 export async function getPOIsList(dao: DAOCache, req: Request, res: Response) {
+  // Method: GET
+  // Path: /pois
   return getValuesList(dao, (dao) => dao.getPOIs(), req, res)
 }
 
-// Method: GET
-// Path: /denylisted-names
 export async function getDenylistedNamesList(dao: DAOCache, req: Request, res: Response) {
+  // Method: GET
+  // Path: /denylisted-names
   return getValuesList(dao, (dao) => dao.getDenylistedNames(), req, res)
 }
 

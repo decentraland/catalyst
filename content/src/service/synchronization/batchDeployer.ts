@@ -1,11 +1,12 @@
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
-import { IDeployerComponent, RemoteEntityDeployment } from '@dcl/snapshots-fetcher/dist/types'
+import { IDeployerComponent } from '@dcl/snapshots-fetcher'
 import { IBaseComponent } from '@well-known-components/interfaces'
 import { isEntityDeployed } from '../../logic/deployments'
 import { FailureReason } from '../../ports/failedDeploymentsCache'
 import { AppComponents, CannonicalEntityDeployment } from '../../types'
 import { DeploymentContext } from '../Service'
 import { deployEntityFromRemoteServer } from './deployRemoteEntity'
+import { DeploymentWithAuthChain } from '@dcl/schemas'
 
 /**
  * An IDeployerComponent parallelizes deployments with a JobQueue.
@@ -45,7 +46,7 @@ export function createBatchDeployerComponent(
    * This function is used to filter out (ignore) deployments coming from remote
    * servers only. Local deployments using POST /entities _ARE NOT_ filtered by this function.
    */
-  async function shouldRemoteEntityDeploymentBeIgnored(entity: RemoteEntityDeployment): Promise<boolean> {
+  async function shouldRemoteEntityDeploymentBeIgnored(entity: DeploymentWithAuthChain): Promise<boolean> {
     // ignore specific entity types using EnvironmentConfig.SYNC_IGNORED_ENTITY_TYPES
     if (syncOptions.ignoredTypes.has(entity.entityType)) {
       return true
@@ -63,7 +64,7 @@ export function createBatchDeployerComponent(
     return false
   }
 
-  async function handleDeploymentFromServer(entity: RemoteEntityDeployment, contentServer: string) {
+  async function handleDeploymentFromServer(entity: DeploymentWithAuthChain, contentServer: string) {
     if (await shouldRemoteEntityDeploymentBeIgnored(entity)) {
       // early return to prevent noops
       components.metrics.increment('dcl_ignored_sync_deployments')
@@ -134,7 +135,7 @@ export function createBatchDeployerComponent(
     onIdle() {
       return parallelDeploymentJobs.onIdle()
     },
-    async deployEntity(entity: RemoteEntityDeployment, contentServers: string[]): Promise<void> {
+    async deployEntity(entity: DeploymentWithAuthChain, contentServers: string[]): Promise<void> {
       for (const contentServer of contentServers) {
         await handleDeploymentFromServer(entity, contentServer)
       }

@@ -91,6 +91,9 @@ export async function getWearablesHandler(
   req: Request,
   res: Response
 ): Promise<unknown> {
+  // Method: GET
+  // Path: /wearables/?filters&limit={number}&lastId={string}
+
   const collectionIds: string[] = asArray<string>(req.query.collectionId as string).map((id) => id.toLowerCase())
   const wearableIds: string[] = asArray<string>(req.query.wearableId as string).map((id) => id.toLowerCase())
   const textSearch: string | undefined = (req.query.textSearch as string | undefined)?.toLowerCase()

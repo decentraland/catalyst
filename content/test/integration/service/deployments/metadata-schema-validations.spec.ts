@@ -1,7 +1,7 @@
 import { EntityType } from "@dcl/schemas"
-import { AuditInfo, EntityVersion } from "dcl-catalyst-commons"
+import { AuditInfo } from "../../../../src/service/deployments/types"
 import { DeploymentContext, DeploymentResult } from "../../../../src/service/Service"
-import { AppComponents } from "../../../../src/types"
+import { AppComponents, EntityVersion } from '../../../../src/types'
 import { makeNoopServerValidator } from "../../../helpers/service/validations/NoOpValidator"
 import { loadStandaloneTestEnvironment, testCaseWithComponents } from "../../E2ETestEnvironment"
 import { buildDeployData, createIdentity, EntityCombo } from "../../E2ETestUtils"

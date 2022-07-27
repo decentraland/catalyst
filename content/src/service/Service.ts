@@ -1,5 +1,4 @@
-import { AuthChain } from '@dcl/crypto'
-import { EntityType } from '@dcl/schemas'
+import { AuthChain, EntityType } from '@dcl/schemas'
 import { ContentItem } from '../ports/contentStorage/contentStorage'
 import { FailedDeployment } from '../ports/failedDeploymentsCache'
 import { Database } from '../repository/Database'
