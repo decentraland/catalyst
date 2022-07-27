@@ -66,7 +66,6 @@ export abstract class NFTOwnership {
         if (owned !== undefined) {
           // Only cache the result if the subgraph actually responded
           this.internalCache.set(pair, owned)
-        } else {
         }
         // If the query to the subgraph failed, then consider the nft as owned
         ethAddressResult.set(nft, owned ?? true)

@@ -318,13 +318,7 @@ async function sanitizeEmotes(
   emotesInProfile: { slot: number; urn: string }[],
   ownership: Map<string, boolean>
 ): Promise<{ slot: number; urn: string }[]> {
-  // const translated = await Promise.all(emotesInProfile.map(translateWearablesIdFormat))
-  return (
-    emotesInProfile
-      // .filter((wearableId): wearableId is WearableId => !!wearableId)
-      .filter((emote) => ownership.get(emote.urn))
-  )
-  // .filter((wearableId: WearableId) => isBaseAvatar(wearableId) || ownership.get(wearableId))
+  return emotesInProfile.filter((emote) => ownership.get(emote.urn))
 }
 
 /**
