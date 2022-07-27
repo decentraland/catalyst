@@ -1,4 +1,4 @@
-import { Bean, Environment, EnvironmentConfig } from '../../../Environment'
+import { Bean, Environment, EnvironmentConfig } from '../../Environment'
 import { EmotesOwnership } from './EmotesOwnership'
 
 export class EmotesOwnershipFactory {

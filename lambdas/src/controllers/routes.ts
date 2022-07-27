@@ -14,6 +14,10 @@ import { getCatalystServersList, getDenylistedNamesList, getPOIsList } from '../
 import { validateSignature } from '../apis/crypto/controllers/crypto'
 import { hotScenes, realmsStatus } from '../apis/explore/controllers/explore'
 import { getResizedImage } from '../apis/images/controllers/images'
+import { createProfileHandler, getIndividualProfileById, getProfilesById } from '../apis/profiles/controllers/profiles'
+import { EmotesOwnership } from '../apis/profiles/EmotesOwnership'
+import { EnsOwnership } from '../apis/profiles/EnsOwnership'
+import { WearablesOwnership } from '../apis/profiles/WearablesOwnership'
 import { Bean, Environment, EnvironmentConfig } from '../Environment'
 import { createFetchComponent } from '../ports/fetcher'
 import { createThirdPartyAssetFetcher, ThirdPartyAssetFetcher } from '../ports/third-party/third-party-fetcher'
@@ -21,10 +25,6 @@ import { DAOCache } from '../service/dao/DAOCache'
 import { SmartContentClient } from '../utils/SmartContentClient'
 import { SmartContentServerFetcher } from '../utils/SmartContentServerFetcher'
 import { TheGraphClient } from '../utils/TheGraphClient'
-import { EmotesOwnership } from './handlers/profiles/EmotesOwnership'
-import { EnsOwnership } from './handlers/profiles/EnsOwnership'
-import { createProfileHandler, getIndividualProfileById, getProfilesById } from './handlers/profiles/handlers'
-import { WearablesOwnership } from './handlers/profiles/WearablesOwnership'
 import { healthHandler, statusHandler } from './handlers/status/handlers'
 import { initCache, retrieveThirdPartyIntegrations } from './handlers/third-party/handlers'
 
@@ -62,8 +62,8 @@ export function setupRouter(env: Environment): Router {
       ensOwnership,
       wearablesOwnership,
       emotesOwnership,
-      profilesCacheTTL,
       thirdPartyFetcher,
+      profilesCacheTTL,
       getProfilesById
     )
   )
@@ -75,8 +75,8 @@ export function setupRouter(env: Environment): Router {
       ensOwnership,
       wearablesOwnership,
       emotesOwnership,
-      profilesCacheTTL,
       thirdPartyFetcher,
+      profilesCacheTTL,
       getIndividualProfileById
     )
   )
@@ -89,8 +89,8 @@ export function setupRouter(env: Environment): Router {
       ensOwnership,
       wearablesOwnership,
       emotesOwnership,
-      profilesCacheTTL,
       thirdPartyFetcher,
+      profilesCacheTTL,
       getIndividualProfileById
     )
   )

@@ -2,16 +2,16 @@ import { EthAddress } from '@dcl/crypto'
 import { Entity, EntityType, Profile } from '@dcl/schemas'
 import { NextFunction, Request, RequestHandler, Response } from 'express'
 import log4js from 'log4js'
-import { WearableId } from '../../../apis/collections/types'
-import { isBaseAvatar, translateWearablesIdFormat } from '../../../apis/collections/Utils'
 import { ThirdPartyAssetFetcher } from '../../../ports/third-party/third-party-fetcher'
 import { asArray } from '../../../utils/ControllerUtils'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TheGraphClient } from '../../../utils/TheGraphClient'
-import { EmotesOwnership } from './EmotesOwnership'
-import { EnsOwnership } from './EnsOwnership'
-import { checkForThirdPartyEmotesOwnership, checkForThirdPartyWearablesOwnership } from './tp-wearables-ownership'
-import { WearablesOwnership } from './WearablesOwnership'
+import { WearableId } from '../../collections/types'
+import { isBaseAvatar, translateWearablesIdFormat } from '../../collections/Utils'
+import { EmotesOwnership } from '../EmotesOwnership'
+import { EnsOwnership } from '../EnsOwnership'
+import { checkForThirdPartyEmotesOwnership, checkForThirdPartyWearablesOwnership } from '../tp-wearables-ownership'
+import { WearablesOwnership } from '../WearablesOwnership'
 
 const LOGGER = log4js.getLogger('profiles')
 
@@ -73,8 +73,8 @@ export async function getIndividualProfileById(
   ensOwnership: EnsOwnership,
   wearables: WearablesOwnership,
   emotes: EmotesOwnership,
-  profilesCacheTTL: number,
   thirdPartyFetcher: ThirdPartyAssetFetcher,
+  profilesCacheTTL: number,
   req: Request,
   res: Response
 ): Promise<void> {
@@ -100,8 +100,8 @@ export async function getProfilesById(
   ensOwnership: EnsOwnership,
   wearables: WearablesOwnership,
   emotes: EmotesOwnership,
-  profilesCacheTTL: number,
   thirdPartyFetcher: ThirdPartyAssetFetcher,
+  profilesCacheTTL: number,
   req: Request,
   res: Response
 ): Promise<Response<any, Record<string, any>> | undefined> {
@@ -405,16 +405,16 @@ export function createProfileHandler(
   ensOwnership: EnsOwnership,
   wearablesOwnership: WearablesOwnership,
   emotesOwnership: EmotesOwnership,
-  profilesCacheTTL: number,
   thirdPartyFetcher: ThirdPartyAssetFetcher,
+  profilesCacheTTL: number,
   originalHandler: (
     theGraphClient: TheGraphClient,
     client: SmartContentClient,
     ensOwnership: EnsOwnership,
     wearablesOwnership: WearablesOwnership,
     emotesOwnership: EmotesOwnership,
-    profilesCacheTTL: number,
     thirdPartyFetcher: ThirdPartyAssetFetcher,
+    profilesCacheTTL: number,
     req: Request,
     res: Response
   ) => Promise<any>
@@ -427,8 +427,8 @@ export function createProfileHandler(
         ensOwnership,
         wearablesOwnership,
         emotesOwnership,
-        profilesCacheTTL,
         thirdPartyFetcher,
+        profilesCacheTTL,
         req,
         res
       )
