@@ -1,4 +1,4 @@
-import { WearableId } from '../utils/types'
+import { WearableId } from '../types'
 
 const list: WearableId[] = [
   'urn:decentraland:off-chain:base-avatars:BaseFemale',

@@ -1,6 +1,6 @@
 import { EthAddress } from '@dcl/crypto'
 import { IFetchComponent } from '@well-known-components/http-server'
-import { ThirdPartyAPIResponse, ThirdPartyAsset } from '../../controllers/handlers/collections/utils/types'
+import { ThirdPartyAPIResponse, ThirdPartyAsset } from '../../apis/collections/types'
 
 export interface ThirdPartyAssetFetcher {
   fetchAssets: (url: string, collectionId: string, owner: EthAddress) => Promise<ThirdPartyAsset[] | undefined>

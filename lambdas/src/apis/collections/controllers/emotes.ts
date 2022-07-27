@@ -7,8 +7,8 @@ import { ThirdPartyAssetFetcher } from '../../../ports/third-party/third-party-f
 import { asArray, asInt } from '../../../utils/ControllerUtils'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TheGraphClient } from '../../../utils/TheGraphClient'
-import { ItemFilters, ItemPagination, LambdasEmote } from './utils/types'
-import { translateEntityIntoEmote } from './utils/Utils'
+import { ItemFilters, ItemPagination, LambdasEmote } from '../types'
+import { translateEntityIntoEmote } from '../Utils'
 
 const LOGGER = log4js.getLogger('TheGraphClient')
 

@@ -7,9 +7,9 @@ import { ThirdPartyAssetFetcher } from '../../../ports/third-party/third-party-f
 import { asArray, asInt } from '../../../utils/ControllerUtils'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TheGraphClient } from '../../../utils/TheGraphClient'
-import { BASE_AVATARS_COLLECTION_ID, OffChainWearablesManager } from './off-chain/OffChainWearablesManager'
-import { ItemFilters, ItemPagination, LambdasWearable } from './utils/types'
-import { isBaseAvatar, translateEntityIntoWearable } from './utils/Utils'
+import { BASE_AVATARS_COLLECTION_ID, OffChainWearablesManager } from '../off-chain/OffChainWearablesManager'
+import { ItemFilters, ItemPagination, LambdasWearable } from '../types'
+import { isBaseAvatar, translateEntityIntoWearable } from '../Utils'
 
 const LOGGER = log4js.getLogger('TheGraphClient')
 

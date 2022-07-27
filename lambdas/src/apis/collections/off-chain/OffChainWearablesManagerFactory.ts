@@ -1,4 +1,4 @@
-import { Bean, Environment, EnvironmentConfig } from '../../../../Environment'
+import { Bean, Environment, EnvironmentConfig } from '../../../Environment'
 import { OffChainWearablesManager } from './OffChainWearablesManager'
 
 export class OffChainWearablesManagerFactory {

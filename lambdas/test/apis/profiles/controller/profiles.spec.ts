@@ -1,7 +1,7 @@
 import { EthAddress } from '@dcl/crypto'
 import { Entity, EntityType } from '@dcl/schemas'
 import { anything, instance, mock, when } from 'ts-mockito'
-import { WearableId } from '../../../../src/controllers/handlers/collections/utils/types'
+import { WearableId } from '../../../../src/apis/collections/types'
 import { EmotesOwnership } from '../../../../src/controllers/handlers/profiles/EmotesOwnership'
 import { EnsOwnership } from '../../../../src/controllers/handlers/profiles/EnsOwnership'
 import * as pfs from '../../../../src/controllers/handlers/profiles/handlers'

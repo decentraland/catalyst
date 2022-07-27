@@ -2,9 +2,9 @@ import { BodyShape, ChainId, Entity, EntityType, isStandard, Wearable, WearableR
 import { Request, Response } from 'express'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TheGraphClient } from '../../../utils/TheGraphClient'
-import { BASE_AVATARS_COLLECTION_ID } from './off-chain/OffChainWearablesManager'
-import { Collection, ERC721StandardTrait } from './utils/types'
-import { createExternalContentUrl, findHashForFile, preferEnglish } from './utils/Utils'
+import { BASE_AVATARS_COLLECTION_ID } from '../off-chain/OffChainWearablesManager'
+import { Collection, ERC721StandardTrait } from '../types'
+import { createExternalContentUrl, findHashForFile, preferEnglish } from '../Utils'
 
 // Method: GET
 // Path: /collections/standard/erc721/:chainId/:contract/:option/:emission

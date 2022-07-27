@@ -1,5 +1,14 @@
 import { HTTPProvider } from 'eth-connect'
 import { Request, Response, Router } from 'express'
+import {
+  contentsImage,
+  contentsThumbnail,
+  getCollectionsHandler,
+  getStandardErc721
+} from '../apis/collections/controllers/collections'
+import { getEmotesByOwnerHandler, getEmotesHandler } from '../apis/collections/controllers/emotes'
+import { getWearablesByOwnerHandler, getWearablesHandler } from '../apis/collections/controllers/wearables'
+import { OffChainWearablesManager } from '../apis/collections/off-chain/OffChainWearablesManager'
 import { Bean, Environment, EnvironmentConfig } from '../Environment'
 import { createFetchComponent } from '../ports/fetcher'
 import { createThirdPartyAssetFetcher, ThirdPartyAssetFetcher } from '../ports/third-party/third-party-fetcher'
@@ -7,15 +16,6 @@ import { DAOCache } from '../service/dao/DAOCache'
 import { SmartContentClient } from '../utils/SmartContentClient'
 import { SmartContentServerFetcher } from '../utils/SmartContentServerFetcher'
 import { TheGraphClient } from '../utils/TheGraphClient'
-import {
-  contentsImage,
-  contentsThumbnail,
-  getCollectionsHandler,
-  getStandardErc721
-} from './handlers/collections/collections'
-import { getEmotesByOwnerHandler, getEmotesHandler } from './handlers/collections/emotes'
-import { OffChainWearablesManager } from './handlers/collections/off-chain/OffChainWearablesManager'
-import { getWearablesByOwnerHandler, getWearablesHandler } from './handlers/collections/wearables'
 import { getContents, getInfo, getScenes } from './handlers/content-v2/handlers'
 import { getCatalystServersList, getDenylistedNamesList, getPOIsList } from './handlers/contracts/handlers'
 import { validateSignature } from './handlers/crypto/handlers'

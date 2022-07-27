@@ -1,6 +1,6 @@
 import { Emote, Entity, EntityType, Wearable, WearableCategory } from '@dcl/schemas'
 import { instance, mock, when } from 'ts-mockito'
-import { translateEntityIntoEmote } from '../../../../../src/controllers/handlers/collections/utils/Utils'
+import { translateEntityIntoEmote } from '../../../../../src/apis/collections/Utils'
 import { SmartContentClient } from '../../../../../src/utils/SmartContentClient'
 
 describe('emotes translation', () => {
