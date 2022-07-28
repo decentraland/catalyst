@@ -1,18 +1,12 @@
 import { AuthChain, AuthLinkType } from '@dcl/crypto'
 import { DeploymentWithAuthChain, Entity, EntityType } from '@dcl/schemas'
-import {
-  AuditInfo,
-  Deployment,
-  EntityVersion,
-  PartialDeploymentHistory
-} from 'dcl-catalyst-commons'
 import { random } from 'faker'
 import { CURRENT_CONTENT_VERSION } from '../../../src/Environment'
 import { ContentItem, SimpleContentItem } from '../../../src/ports/contentStorage/contentStorage'
 import { FailedDeployment } from '../../../src/ports/failedDeploymentsCache'
-import { DeploymentOptions, PointerChangesOptions } from '../../../src/service/deployments/types'
+import { AuditInfo, Deployment, DeploymentOptions, PartialDeploymentHistory, PointerChangesOptions } from '../../../src/service/deployments/types'
 import { DeploymentContext, LocalDeploymentAuditInfo, MetaverseContentService } from '../../../src/service/Service'
-import { IStatusCapableComponent, StatusProbeResult } from '../../../src/types'
+import { EntityVersion, IStatusCapableComponent, StatusProbeResult } from '../../../src/types'
 import { buildEntityAndFile } from './EntityTestFactory'
 
 export class MockedMetaverseContentService implements MetaverseContentService, IStatusCapableComponent {

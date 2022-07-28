@@ -32,7 +32,7 @@ export function createContentFileWriterComponent<T extends symbol | string>(
   function fileNameFromType(type: T): string {
     return path.resolve(
       components.staticConfigs.contentStorageFolder,
-      `tmp-snapshot-file-${typeof type == 'symbol' ? 'all' : type}`
+      `tmp-snapshot-file-${typeof type == 'symbol' ? 'all' : String(type)}`
     )
   }
 

@@ -1,4 +1,4 @@
-import { Deployment, DeploymentBase as ControllerDeployment } from 'dcl-catalyst-commons'
+import { Deployment, DeploymentBase as ControllerDeployment } from '../service/deployments/types'
 import { DeploymentField } from './Controller'
 
 export class ControllerDeploymentFactory {

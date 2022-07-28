@@ -1,5 +1,6 @@
-import { DeploymentContent, EntityContentItemReference } from 'dcl-catalyst-commons'
+import { ContentMapping } from '@dcl/schemas'
 import { Database } from '../../repository/Database'
+import { DeploymentContent } from '../../service/deployments/types'
 import { DeploymentId } from './DeploymentsRepository'
 
 export class ContentFilesRepository {
@@ -39,7 +40,7 @@ export class ContentFilesRepository {
     return result
   }
 
-  async saveContentFiles(deploymentId: DeploymentId, content: EntityContentItemReference[]): Promise<void> {
+  async saveContentFiles(deploymentId: DeploymentId, content: ContentMapping[]): Promise<void> {
     await this.db.txIf((transaction) => {
       const contentPromises = content.map((item) =>
         transaction.none('INSERT INTO content_files (deployment, key, content_hash) VALUES ($1, $2, $3)', [

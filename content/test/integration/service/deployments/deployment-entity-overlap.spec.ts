@@ -1,6 +1,6 @@
 import { EntityType } from '@dcl/schemas'
-import { AuditInfo } from 'dcl-catalyst-commons'
 import { stub } from 'sinon'
+import { AuditInfo } from '../../../../src/service/deployments/types'
 import {
   DeploymentContext,
   DeploymentResult,

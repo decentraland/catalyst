@@ -1,21 +1,15 @@
 import { AuthChain, Authenticator } from '@dcl/crypto'
 import { Entity, EntityType, IPFSv2 } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
-import {
-  AuditInfo,
-  Deployment,
-  EntityVersion,
-  // TODO: replace this Hashing by the new lib
-  PartialDeploymentHistory
-} from 'dcl-catalyst-commons'
 import { EnvironmentConfig } from '../Environment'
 import { runReportingQueryDurationMetric } from '../instrument'
-import { calculateIPFSHashes } from '../logic/hashing'
+import { calculateDeprecatedHashes, calculateIPFSHashes } from '../logic/hashing'
 import { bufferToStream, ContentItem } from '../ports/contentStorage/contentStorage'
 import { FailedDeployment, FailureReason } from '../ports/failedDeploymentsCache'
 import { Database } from '../repository/Database'
 import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
-import { AppComponents } from '../types'
+import { AuditInfo, Deployment, PartialDeploymentHistory } from '../service/deployments/types'
+import { AppComponents, EntityVersion } from '../types'
 import { getDeployments } from './deployments/deployments'
 import { DeploymentOptions } from './deployments/types'
 import { EntityFactory } from './EntityFactory'
@@ -36,6 +30,10 @@ export class ServiceImpl implements MetaverseContentService {
   private readonly pointersBeingDeployed: Map<EntityType, Set<string>> = new Map()
 
   private readonly LEGACY_CONTENT_MIGRATION_TIMESTAMP: Date = new Date(1582167600000) // DCL Launch Day
+
+  private readonly ADR_45_TIMESTAMP: number = process.env.ADR_45_TIMESTAMP
+    ? parseInt(process.env.ADR_45_TIMESTAMP)
+    : 1652191200000
 
   constructor(
     public components: Pick<
@@ -80,7 +78,7 @@ export class ServiceImpl implements MetaverseContentService {
     }
 
     // Hash all files
-    const hashes: Map<string, Uint8Array> = await ServiceImpl.hashFiles(files)
+    const hashes: Map<string, Uint8Array> = await ServiceImpl.hashFiles(files, entityId)
 
     // Find entity file
     const entityFile = hashes.get(entityId)
@@ -243,9 +241,9 @@ export class ServiceImpl implements MetaverseContentService {
       }
     }
 
-    if (entity.version !== 'v3')
+    if (entity.version !== 'v3' && entity.timestamp > this.ADR_45_TIMESTAMP)
       return {
-        errors: ['Only entities v3 are allowed']
+        errors: ['Only entities v3 are allowed after ADR-45']
       }
 
     const auditInfoComplete: AuditInfo = {
@@ -268,7 +266,7 @@ export class ServiceImpl implements MetaverseContentService {
             const { overwrote, overwrittenBy } = await runReportingQueryDurationMetric(
               this.components,
               'calculate_overwrites',
-              () => this.components.pointerManager.calculateOverwrites(transaction.pointerHistory, entity)
+              () => this.components.pointerManager.calculateOverwrites(transaction.deployments, entity)
             )
 
             // Store the deployment
@@ -287,19 +285,16 @@ export class ServiceImpl implements MetaverseContentService {
               'reference_entity_from_pointers',
               () =>
                 this.components.pointerManager.referenceEntityFromPointers(
-                  transaction.lastDeployedPointers,
+                  transaction.deployments,
                   deploymentId,
-                  entity
+                  entity,
+                  overwrote,
+                  overwrittenBy !== null
                 )
             )
 
             // Update pointers and active entities
             await this.updateActiveEntities(pointersFromEntity, entity)
-
-            // Add to pointer history
-            await runReportingQueryDurationMetric(this.components, 'add_pointer_history', () =>
-              this.components.pointerManager.addToHistory(transaction.pointerHistory, deploymentId, entity)
-            )
 
             // Set who overwrote who
             await runReportingQueryDurationMetric(this.components, 'set_entities_overwritter', () =>
@@ -394,11 +389,13 @@ export class ServiceImpl implements MetaverseContentService {
    * They could come hashed because the denylist decorator might have already hashed them for its own validations. In order to avoid re-hashing
    * them in the service (because there might be hundreds of files), we will send the hash result.
    */
-  static async hashFiles(files: DeploymentFiles): Promise<Map<string, Uint8Array>> {
+  static async hashFiles(files: DeploymentFiles, entityId: string): Promise<Map<string, Uint8Array>> {
     if (files instanceof Map) {
       return files
     } else {
-      const hashEntries = await calculateIPFSHashes(files)
+      const hashEntries = this.isIPFSHash(entityId)
+        ? await calculateIPFSHashes(files)
+        : await calculateDeprecatedHashes(files)
       return new Map(hashEntries.map(({ hash, file }) => [hash, file]))
     }
   }

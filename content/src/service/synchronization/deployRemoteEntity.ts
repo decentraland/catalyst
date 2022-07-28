@@ -4,7 +4,7 @@
  *   2) Deploy the downloaded entity locally
  */
 
-import { AuthChain } from '@dcl/crypto'
+import { AuthChain } from '@dcl/schemas'
 import { downloadEntityAndContentFiles } from '@dcl/snapshots-fetcher'
 import { streamToBuffer } from '../../ports/contentStorage/contentStorage'
 import { AppComponents } from '../../types'
@@ -35,7 +35,7 @@ export async function deployEntityFromRemoteServer(
 }
 
 async function downloadFullEntity(
-  components: Pick<AppComponents, 'metrics' | 'staticConfigs' | 'fetcher' | 'storage'>,
+  components: Pick<AppComponents, 'logs' | 'metrics' | 'staticConfigs' | 'fetcher' | 'storage'>,
   entityId: string,
   entityType: string,
   servers: string[]
