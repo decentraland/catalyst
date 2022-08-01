@@ -14,10 +14,6 @@ export async function bootstrapFromSnapshots(components: BootstrapComponents): P
   // then find all other DAO catalyst servers
   const catalystServersButThisOne = await components.contentCluster.getContentServersFromDao()
 
-  if (catalystServersButThisOne.length == 0) {
-    throw new Error('There are no servers. Cancelling bootstrapping')
-  }
-
   const logs = components.logs.getLogger('BootstrapFromSnapshots')
   logs.info(`Starting to bootstrap from snapshots`)
   const requestMaxRetries = 2
