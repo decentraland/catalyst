@@ -13,7 +13,7 @@
   "dependencies": {
     "@dcl/catalyst-api-specs": "1.2.2",
     "@dcl/catalyst-contracts": "^2.1.0",
-    "@dcl/crypto": "^3.0.2",
+    "@dcl/crypto": "^3.1.0",
     "@dcl/schemas": "^5.4.5",
     "@dcl/urn-resolver": "1.4.0",
     "@well-known-components/http-server": "1.1.2",
