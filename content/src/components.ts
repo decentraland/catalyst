@@ -50,7 +50,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const repository = await RepositoryFactory.create({ env, metrics })
   const logs = await createLogComponent({
     config: createConfigComponent({
-      logLevel: env.getConfig(EnvironmentConfig.LOG_LEVEL)
+      LOG_LEVEL: env.getConfig(EnvironmentConfig.LOG_LEVEL)
     })
   })
   const fetcher = createFetchComponent()

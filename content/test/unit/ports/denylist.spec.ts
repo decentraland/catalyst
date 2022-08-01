@@ -9,7 +9,7 @@ describe('when creating a denylist', async () => {
   const env = new Environment()
   const logs = await createLogComponent({
     config: createConfigComponent({
-      logLevel: 'DEBUG'
+      LOG_LEVEL: 'DEBUG'
     })
   })
   const fetcher = { fetch: jest.fn() }
@@ -119,7 +119,7 @@ describe('when two minutes pass after the denylist was loaded', async () => {
   const env = new Environment()
   const logs = await createLogComponent({
     config: createConfigComponent({
-      logLevel: 'DEBUG'
+      LOG_LEVEL: 'DEBUG'
     })
   })
   const fetcher = { fetch: jest.fn() }
@@ -151,7 +151,7 @@ describe('when the denylist is stopped', async () => {
   const env = new Environment()
   const logs = await createLogComponent({
     config: createConfigComponent({
-      logLevel: 'DEBUG'
+      LOG_LEVEL: 'DEBUG'
     })
   })
   const fetcher = { fetch: jest.fn() }

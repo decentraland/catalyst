@@ -45,7 +45,7 @@ export class E2ETestEnvironment {
     const metrics = createTestMetricsComponent(metricsDeclaration)
     const logs = await createLogComponent({
       config: createConfigComponent({
-        logLevel: 'DEBUG'
+        LOG_LEVEL: 'DEBUG'
       })
     })
     this.database = await createDatabaseComponent({ logs, env: this.sharedEnv, metrics })
@@ -105,7 +105,7 @@ export class E2ETestEnvironment {
     const migrationManager = MigrationManagerFactory.create({
       logs: await createLogComponent({
         config: createConfigComponent({
-          logLevel: 'DEBUG'
+          LOG_LEVEL: 'DEBUG'
         })
       }),
       env

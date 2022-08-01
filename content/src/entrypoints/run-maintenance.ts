@@ -31,7 +31,7 @@ void Lifecycle.run({
   async initComponents() {
     const logs = await createLogComponent({
       config: createConfigComponent({
-        logLevel: 'INFO'
+        LOG_LEVEL: 'INFO'
       })
     })
     const metrics = createTestMetricsComponent(metricsDeclaration)

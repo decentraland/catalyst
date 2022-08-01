@@ -42,7 +42,7 @@ describe('ContentFolderMigrationManager', () => {
 async function runMigration(storage: ContentStorage) {
   const logs = await createLogComponent({
     config: createConfigComponent({
-      logLevel: 'DEBUG'
+      LOG_LEVEL: 'DEBUG'
     })
   })
   const metrics = createTestMetricsComponent(metricsDeclaration)

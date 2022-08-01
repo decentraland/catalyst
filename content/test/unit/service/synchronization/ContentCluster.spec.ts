@@ -109,7 +109,7 @@ class ContentClusterBuilder {
 
     const logs = await createLogComponent({
       config: createConfigComponent({
-        logLevel: 'DEBUG'
+        LOG_LEVEL: 'DEBUG'
       })
     })
 

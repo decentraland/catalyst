@@ -231,7 +231,7 @@ describe('Service', function () {
     const failedDeploymentsCache = createFailedDeploymentsCache()
     const logs = await createLogComponent({
       config: createConfigComponent({
-        logLevel: 'DEBUG'
+        LOG_LEVEL: 'DEBUG'
       })
     })
     const deployRateLimiter = createDeployRateLimiter(
