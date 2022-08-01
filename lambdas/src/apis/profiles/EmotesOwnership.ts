@@ -13,7 +13,7 @@ export class EmotesOwnership extends NFTOwnership {
   protected async querySubgraph(
     nftsToCheck: [EthAddress, string[]][]
   ): Promise<{ ownedNFTs: string[]; owner: string }[]> {
-    const result = await this.theGraphClient.checkForWearablesOwnership(nftsToCheck)
+    const result = await this.theGraphClient.checkForEmotesOwnership(nftsToCheck)
     return result.map(({ urns, owner }) => ({ ownedNFTs: urns, owner }))
   }
 }
