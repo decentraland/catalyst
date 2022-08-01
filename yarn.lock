@@ -348,15 +348,15 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@^2.3.2":
-  version "2.3.2"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-2.3.2.tgz#b61b7ff558fd5bbc3bcb7584af3c0a021e33dcff"
-  integrity sha512-lyk08i57epO1BXauOw85vH5Hx/OteU3GHCE1bwZHgZ4dS5JbmMLzijm4+UnRHgEwQ8oOFJWvfwtUGK1i9+BYtw==
+"@dcl/content-validator@^2.4.0":
+  version "2.4.0"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-2.4.0.tgz#25b64485e225fa549327bcda8189640111702bdf"
+  integrity sha512-Pv62Hc6Ce7wSql93ZTHt9jhlXxRe7942oQow3HtesZkjkR/OlJoEnkXHRSJ8xkuQkYjdnP39BQGHOsXlpxGPTA==
   dependencies:
     "@dcl/content-hash-tree" "^1.1.3"
     "@dcl/hashing" "1.1.0"
     "@dcl/schemas" "^5.4.2"
-    "@dcl/urn-resolver" "1.3.1"
+    "@dcl/urn-resolver" "1.4.0"
     "@well-known-components/interfaces" "1.1.1"
     "@well-known-components/thegraph-component" "^1.2.0"
     ms "2.1.3"
@@ -400,11 +400,6 @@
     "@well-known-components/interfaces" "^1.1.0"
     "@well-known-components/metrics" "^1.1.2"
     p-queue "^6.6.2"
-
-"@dcl/urn-resolver@1.3.1":
-  version "1.3.1"
-  resolved "https://registry.yarnpkg.com/@dcl/urn-resolver/-/urn-resolver-1.3.1.tgz#fa1a036f562c2e2fe12ee44a8b0465b62d7e9ef5"
-  integrity sha512-I/ktPcHjAMsJcGL3tsFcNZ4SjZ9UEVEfLue9ys5Ci2S/J/DE5zUPijBc2AFOvAT1sV/4WtF57SNDxMAvwPRNNQ==
 
 "@dcl/urn-resolver@1.4.0":
   version "1.4.0"
