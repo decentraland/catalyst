@@ -147,13 +147,8 @@ describe('when two minutes pass after the denylist was loaded', async () => {
   })
 })
 
-describe('when the denylist is stopped', async () => {
+describe('when the denylist is stopped', () => {
   const env = new Environment()
-  const logs = await createLogComponent({
-    config: createConfigComponent({
-      LOG_LEVEL: 'DEBUG'
-    })
-  })
   const fetcher = { fetch: jest.fn() }
   env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, 'storage')
   env.setConfig(EnvironmentConfig.DENYLIST_FILE_NAME, 'denylist.txt')
@@ -171,6 +166,12 @@ describe('when the denylist is stopped', async () => {
             denied3`))),
       existPath: jest.fn().mockResolvedValue(true)
     }
+    const logs = await createLogComponent({
+      config: createConfigComponent({
+        LOG_LEVEL: 'DEBUG'
+      })
+    })
+
     const denylist = await createDenylist({ env, logs, fs, fetcher })
     expect(['denied1', 'denied2'].every((item) => denylist.isDenylisted(item))).toBe(true)
     denylist.stop && denylist.stop()
