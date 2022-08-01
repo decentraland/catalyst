@@ -43,14 +43,15 @@ import { createServerValidator } from './service/validations/server'
 import { createExternalCalls, createSubGraphsComponent, createValidator } from './service/validations/validator'
 import { AppComponents } from './types'
 import { createTheGraphClient } from '@dcl/content-validator'
+import { createConfigComponent } from '@well-known-components/env-config-provider'
 
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
   const metrics = createTestMetricsComponent(metricsDeclaration)
   const repository = await RepositoryFactory.create({ env, metrics })
-  const logs = createLogComponent({
-    config: {
-      logLevel: env.getConfig(EnvironmentConfig.LOG_LEVEL)
-    }
+  const logs = await createLogComponent({
+    config: createConfigComponent({
+      LOG_LEVEL: env.getConfig(EnvironmentConfig.LOG_LEVEL)
+    })
   })
   const fetcher = createFetchComponent()
   const fs = createFsComponent()
