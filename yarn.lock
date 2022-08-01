@@ -323,10 +323,10 @@
   dependencies:
     yaml "1.10.2"
 
-"@dcl/catalyst-contracts@^2.0.0":
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/@dcl/catalyst-contracts/-/catalyst-contracts-2.0.0.tgz#0cd74e13e625e3b39f834a9bb81f290196ef0c19"
-  integrity sha512-5DIrA4J3W5qknfdHCx66zuc5SYo0+a4CD3qZLFqU4IzfvbYUsR9r3RBXdAja9orqNVRg5yDo5X3lFT7B4FB8UA==
+"@dcl/catalyst-contracts@^2.0.0", "@dcl/catalyst-contracts@^2.1.0":
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-contracts/-/catalyst-contracts-2.1.0.tgz#59cd4e78fd019dd1c5d99075334f658da39430d0"
+  integrity sha512-OjfUa+474P36pqsCi6wIIs+Yf+xohrzSXpb8dEZia2cU9sJneUPkSXxaxwXAnK/ziKzhXbDisLX96wdwQiRS8w==
   dependencies:
     eth-connect "^6.0.2"
 
@@ -387,16 +387,7 @@
     ipfs-unixfs-importer "^7.0.3"
     multiformats "^9.6.3"
 
-"@dcl/schemas@^5.0.3", "@dcl/schemas@^5.0.4", "@dcl/schemas@^5.4.2":
-  version "5.4.2"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-5.4.2.tgz#9996114207f71935bd7bf4d94ee654d4eb2842db"
-  integrity sha512-NyJvL8KGsCm3GbyzELZen+4GR7LmPb+zGie6XatND2FIHsNkciWldKJ8/o2gCFOWNyhA+Si8umQllG5dT7BOxg==
-  dependencies:
-    ajv "^8.11.0"
-    ajv-errors "^3.0.0"
-    ajv-keywords "^5.1.0"
-
-"@dcl/schemas@^5.4.5":
+"@dcl/schemas@^5.0.3", "@dcl/schemas@^5.0.4", "@dcl/schemas@^5.4.2", "@dcl/schemas@^5.4.5":
   version "5.4.5"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-5.4.5.tgz#3a811e422857add169e7b626fd7f9887156c8cb0"
   integrity sha512-ZdrXX9jjB8au5jDHPMADl4TzBQEufmXT6Tv48Q+WKYQ/al5Ll3OAuft2DQKkDt9UVEIXm9MUd0qw3alESAT/zA==
@@ -417,7 +408,7 @@
     "@well-known-components/metrics" "^1.1.2"
     p-queue "^6.6.2"
 
-"@dcl/urn-resolver@1.4.0", "@dcl/urn-resolver@^1.4.0":
+"@dcl/urn-resolver@^1.4.0":
   version "1.4.0"
   resolved "https://registry.yarnpkg.com/@dcl/urn-resolver/-/urn-resolver-1.4.0.tgz#930d46a1222894863c56305cb042499b1aed620d"
   integrity sha512-9+cjs1XvDv2jIzcevDw+DJyxd5Od03mAmP08Z1eZm+DVxtKErrlWrCNQxKtAY9bU9R/jYLieeG/OckIjCGPNoQ==
