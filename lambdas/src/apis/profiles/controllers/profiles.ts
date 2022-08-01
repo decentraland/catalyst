@@ -10,6 +10,7 @@ import { WearableId } from '../../collections/types'
 import { isBaseAvatar, translateWearablesIdFormat } from '../../collections/Utils'
 import { EmotesOwnership } from '../EmotesOwnership'
 import { EnsOwnership } from '../EnsOwnership'
+import { emotesSavedAsWearables } from '../old-emotes'
 import { checkForThirdPartyEmotesOwnership, checkForThirdPartyWearablesOwnership } from '../tp-wearables-ownership'
 import { WearablesOwnership } from '../WearablesOwnership'
 
@@ -220,10 +221,9 @@ export async function fetchProfiles(
           wearables: (await sanitizeWearables(fixWearableId(profileData.avatar.wearables), wearablesOwnership)).concat(
             tpw
           ),
-          emotes: (profileData.avatar.emotes
-            ? await sanitizeEmotes(profileData.avatar.emotes, emotesOwnership)
-            : []
-          ).concat(tpe)
+          emotes:
+            emotesMap.get(ethAddress) ??
+            ([] as { slot: number; urn: string }[]).filter((emote) => emotesOwnership.has(emote.urn)).concat(tpe)
         }
       }))
       return { timestamp: profile.metadata.timestamp, avatars: await Promise.all(avatars) }
@@ -254,7 +254,16 @@ async function extractData(entity: Entity): Promise<{
   metadata.timestamp = entity.timestamp
   // Validate wearables urn
   const filteredWearables = await validateWearablesUrn(metadata)
-  const emotes = getEmotes(metadata)
+  let slot = 0
+  const emotesSavedAsWearablesInProfile = filteredWearables
+    .filter((wearable) => emotesSavedAsWearables.includes(wearable))
+    .map((emoteAsWearable) => {
+      const emote = { slot, urn: emoteAsWearable }
+      slot = slot + 1
+      return emote
+    })
+
+  const emotes = [...getEmotes(metadata), ...emotesSavedAsWearablesInProfile]
   const filteredEmotes = emotes.length == 0 ? undefined : emotes
 
   return { ethAddress, metadata, content, names: filteredNames, wearables: filteredWearables, emotes: filteredEmotes }
@@ -308,17 +317,6 @@ async function sanitizeWearables(
   return translated
     .filter((wearableId): wearableId is WearableId => !!wearableId)
     .filter((wearableId: WearableId) => isBaseAvatar(wearableId) || ownership.get(wearableId))
-}
-
-/**
- * We are sanitizing the emotes that are being worn. This includes removing any emotes that is not currently owned,
- * and transforming all of them into the new format
- */
-async function sanitizeEmotes(
-  emotesInProfile: { slot: number; urn: string }[],
-  ownership: Map<string, boolean>
-): Promise<{ slot: number; urn: string }[]> {
-  return emotesInProfile.filter((emote) => ownership.get(emote.urn))
 }
 
 /**
