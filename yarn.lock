@@ -401,7 +401,7 @@
     "@well-known-components/metrics" "^1.1.2"
     p-queue "^6.6.2"
 
-"@dcl/urn-resolver@1.4.0", "@dcl/urn-resolver@^1.4.0":
+"@dcl/urn-resolver@1.4.0":
   version "1.4.0"
   resolved "https://registry.yarnpkg.com/@dcl/urn-resolver/-/urn-resolver-1.4.0.tgz#930d46a1222894863c56305cb042499b1aed620d"
   integrity sha512-9+cjs1XvDv2jIzcevDw+DJyxd5Od03mAmP08Z1eZm+DVxtKErrlWrCNQxKtAY9bU9R/jYLieeG/OckIjCGPNoQ==
