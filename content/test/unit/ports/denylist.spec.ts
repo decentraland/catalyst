@@ -5,13 +5,16 @@ import { Environment, EnvironmentConfig } from '../../../src/Environment'
 import { createDenylist } from '../../../src/ports/denylist'
 import { createConfigComponent } from "@well-known-components/env-config-provider";
 
-describe('when creating a denylist', async () => {
-  const env = new Environment()
-  const logs = await createLogComponent({
+async function setupLogs() {
+  return await createLogComponent({
     config: createConfigComponent({
       LOG_LEVEL: 'DEBUG'
     })
   })
+}
+
+describe('when creating a denylist', () => {
+  const env = new Environment()
   const fetcher = { fetch: jest.fn() }
   env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, 'storage')
   env.setConfig(EnvironmentConfig.DENYLIST_FILE_NAME, 'denylist.txt')
@@ -20,6 +23,7 @@ describe('when creating a denylist', async () => {
 
   describe('with no denylist file and no urls to fetch', () => {
     it('should create it without errors and no items', async () => {
+      const logs = await setupLogs()
       const fs = {
         createReadStream: jest.fn(),
         existPath: jest.fn().mockResolvedValue(false)
@@ -32,6 +36,7 @@ describe('when creating a denylist', async () => {
   })
   describe('with a denylist file and no urls to fetch denylists', () => {
     it('should create it with the denylisted items of the file', async () => {
+      const logs = await setupLogs()
       const denylistFilePath = resolve('storage', 'denylist.txt')
       const fs = {
         createReadStream: jest.fn().mockReturnValue(Readable.from(`# Denylisted items:
@@ -48,6 +53,7 @@ describe('when creating a denylist', async () => {
   })
   describe('with urls to fetch denylists and no denylist file', () => {
     it('should create it with the denylisted items of the urls', async () => {
+      const logs = await setupLogs()
       const fs = {
         createReadStream: jest.fn().mockReturnValue(Readable.from(`denied1\n denied2`)),
         existPath: jest.fn().mockResolvedValue(false)
@@ -65,6 +71,7 @@ describe('when creating a denylist', async () => {
     })
 
     it('should create it without using the invalid url', async () => {
+      const logs = await setupLogs()
       const fs = {
         createReadStream: jest.fn(),
         existPath: jest.fn().mockResolvedValue(false)
@@ -82,6 +89,7 @@ describe('when creating a denylist', async () => {
   })
   describe('with both a denylist file and urls to fetch denylists', () => {
     it('should create it with the merge of the items in both denylists', async () => {
+      const logs = await setupLogs()
       const fs = {
         createReadStream: jest.fn().mockReturnValue(Readable.from(`denied1\n denied2`)),
         existPath: jest.fn().mockResolvedValue(true)
@@ -98,6 +106,7 @@ describe('when creating a denylist', async () => {
     })
 
     it('should create it with no denied content other than the specified in the denylists', async () => {
+      const logs = await setupLogs()
       const fs = {
         createReadStream: jest.fn().mockReturnValue(Readable.from(`denied1\n denied2`)),
         existPath: jest.fn().mockResolvedValue(true)
@@ -115,19 +124,15 @@ describe('when creating a denylist', async () => {
   })
 })
 
-describe('when two minutes pass after the denylist was loaded', async () => {
+describe('when two minutes pass after the denylist was loaded', () => {
   const env = new Environment()
-  const logs = await createLogComponent({
-    config: createConfigComponent({
-      LOG_LEVEL: 'DEBUG'
-    })
-  })
   const fetcher = { fetch: jest.fn() }
   env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, 'storage')
   env.setConfig(EnvironmentConfig.DENYLIST_FILE_NAME, 'denylist.txt')
   beforeAll(() => jest.useFakeTimers())
   afterAll(() => jest.useRealTimers())
   it('should be reloaded and a new element added', async () => {
+    const logs = await setupLogs()
     const fs = {
       createReadStream: jest.fn()
         .mockReturnValueOnce(Readable.from(`# Denylisted items:
