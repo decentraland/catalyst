@@ -6,6 +6,7 @@ import { migrateContentFolderStructure } from '../../../src/migrations/ContentFo
 import { ContentStorage } from '../../../src/ports/contentStorage/contentStorage'
 import { createFsComponent } from '../../../src/ports/fs'
 import { FileSystemUtils as fsu } from '../ports/contentStorage/FileSystemUtils'
+import { createConfigComponent } from "@well-known-components/env-config-provider";
 
 let files = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
 
@@ -39,10 +40,10 @@ describe('ContentFolderMigrationManager', () => {
 })
 
 async function runMigration(storage: ContentStorage) {
-  const logs = createLogComponent({
-    config: {
+  const logs = await createLogComponent({
+    config: createConfigComponent({
       logLevel: 'DEBUG'
-    }
+    })
   })
   const metrics = createTestMetricsComponent(metricsDeclaration)
   const env = new Environment()

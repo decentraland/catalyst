@@ -11,6 +11,7 @@ import { createFileSystemContentStorage } from '../ports/contentStorage/fileSyst
 import { createFsComponent } from '../ports/fs'
 import { createDatabaseComponent } from '../ports/postgres'
 import { MaintenanceComponents } from '../types'
+import { createConfigComponent } from '@well-known-components/env-config-provider'
 
 void Lifecycle.run({
   async main(program: Lifecycle.EntryPointParameters<MaintenanceComponents>): Promise<void> {
@@ -28,10 +29,10 @@ void Lifecycle.run({
   },
 
   async initComponents() {
-    const logs = createLogComponent({
-      config: {
+    const logs = await createLogComponent({
+      config: createConfigComponent({
         logLevel: 'INFO'
-      }
+      })
     })
     const metrics = createTestMetricsComponent(metricsDeclaration)
     const env = await new EnvironmentBuilder().build()

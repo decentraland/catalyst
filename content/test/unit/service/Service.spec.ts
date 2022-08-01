@@ -34,6 +34,7 @@ import { buildEntityAndFile } from '../../helpers/service/EntityTestFactory'
 import { NoOpServerValidator, NoOpValidator } from '../../helpers/service/validations/NoOpValidator'
 import { MockedStorage } from '../ports/contentStorage/MockedStorage'
 import { NoOpPointerManager } from './pointers/NoOpPointerManager'
+import { createConfigComponent } from "@well-known-components/env-config-provider";
 
 export const DECENTRALAND_ADDRESS: EthAddress = '0x1337e0507eb4ab47e08a179573ed4533d9e22a7b'
 
@@ -228,10 +229,10 @@ describe('Service', function () {
     const serverValidator = new NoOpServerValidator()
     const deploymentManager = new DeploymentManager()
     const failedDeploymentsCache = createFailedDeploymentsCache()
-    const logs = createLogComponent({
-      config: {
+    const logs = await createLogComponent({
+      config: createConfigComponent({
         logLevel: 'DEBUG'
-      }
+      })
     })
     const deployRateLimiter = createDeployRateLimiter(
       { logs },

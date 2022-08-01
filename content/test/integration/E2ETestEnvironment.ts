@@ -12,6 +12,7 @@ import { DaoComponent } from '../../src/service/synchronization/clients/Hardcode
 import { AppComponents } from '../../src/types'
 import { MockedDAOClient } from '../helpers/service/synchronization/clients/MockedDAOClient'
 import { TestProgram } from './TestProgram'
+import { createConfigComponent } from "@well-known-components/env-config-provider";
 export class E2ETestEnvironment {
   public static TEST_SCHEMA = 'e2etest'
   public static POSTGRES_PORT = 5432
@@ -42,10 +43,10 @@ export class E2ETestEnvironment {
       }
     }
     const metrics = createTestMetricsComponent(metricsDeclaration)
-    const logs = createLogComponent({
-      config: {
+    const logs = await createLogComponent({
+      config: createConfigComponent({
         logLevel: 'DEBUG'
-      }
+      })
     })
     this.database = await createDatabaseComponent({ logs, env: this.sharedEnv, metrics })
     this.database.start()
@@ -102,10 +103,10 @@ export class E2ETestEnvironment {
     const [dbName] = await this.createDatabases(1)
     const env = new Environment(this.sharedEnv).setConfig(EnvironmentConfig.PSQL_DATABASE, dbName)
     const migrationManager = MigrationManagerFactory.create({
-      logs: createLogComponent({
-        config: {
+      logs: await createLogComponent({
+        config: createConfigComponent({
           logLevel: 'DEBUG'
-        }
+        })
       }),
       env
     })
