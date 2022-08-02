@@ -1,6 +1,7 @@
 import { Authenticator } from '@dcl/crypto'
 import { hashV1 } from '@dcl/hashing'
 import { Entity, EntityType, EthAddress } from '@dcl/schemas'
+import { createConfigComponent } from "@well-known-components/env-config-provider"
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import assert from 'assert'
@@ -227,10 +228,10 @@ describe('Service', function () {
     const validator = new NoOpValidator()
     const serverValidator = new NoOpServerValidator()
     const deploymentManager = new DeploymentManager()
-    const logs = createLogComponent({
-      config: {
-        logLevel: 'DEBUG'
-      }
+    const logs = await createLogComponent({
+      config: createConfigComponent({
+        LOG_LEVEL: 'DEBUG'
+      })
     })
     const deployRateLimiter = createDeployRateLimiter(
       { logs },

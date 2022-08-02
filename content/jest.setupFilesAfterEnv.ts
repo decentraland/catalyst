@@ -4,6 +4,7 @@ import path from 'path'
 import { ApiCoverage } from './jest.globalSetup'
 import { Server } from './src/service/Server'
 import { isCI } from './test/integration/E2ETestUtils'
+import { createConfigComponent } from "@well-known-components/env-config-provider";
 
 // Setup API Coverage Report process
 if (process.env.API_COVERAGE === 'true' || isCI()) {
@@ -15,18 +16,23 @@ if (process.env.LOG_LEVEL === 'off') {
   beforeAll(() => {
     // Mock logger implementation
     const createLogComponent = logger.createConsoleLogComponent
-    jest.spyOn(logger, 'createLogComponent').mockImplementation(() => {
-      const logComponentMock = createLogComponent({
-        config: {
-          logLevel: 'DEBUG'
-        }
+    jest.spyOn(logger, 'createLogComponent').mockImplementation(async () => {
+      const logComponentMock = await createLogComponent({
+        config: createConfigComponent({
+          LOG_LEVEL: 'DEBUG'
+        })
       })
       const loggerMock = logComponentMock.getLogger('__test__')
-      loggerMock.debug = () => {}
-      loggerMock.error = () => {}
-      loggerMock.info = () => {}
-      loggerMock.log = () => {}
-      loggerMock.warn = () => {}
+      loggerMock.debug = () => {
+      }
+      loggerMock.error = () => {
+      }
+      loggerMock.info = () => {
+      }
+      loggerMock.log = () => {
+      }
+      loggerMock.warn = () => {
+      }
       logComponentMock.getLogger = jest.fn(() => loggerMock)
       return logComponentMock
     })

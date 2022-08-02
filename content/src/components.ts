@@ -3,6 +3,7 @@ import { EntityType } from '@dcl/schemas'
 import { createCatalystDeploymentStream } from '@dcl/snapshots-fetcher'
 import { createJobLifecycleManagerComponent } from '@dcl/snapshots-fetcher/dist/job-lifecycle-manager'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
+import { createConfigComponent } from '@well-known-components/env-config-provider'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { HTTPProvider } from 'eth-connect'
@@ -47,10 +48,10 @@ import { AppComponents } from './types'
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
   const metrics = createTestMetricsComponent(metricsDeclaration)
   const repository = await RepositoryFactory.create({ env, metrics })
-  const logs = createLogComponent({
-    config: {
-      logLevel: env.getConfig(EnvironmentConfig.LOG_LEVEL)
-    }
+  const logs = await createLogComponent({
+    config: createConfigComponent({
+      LOG_LEVEL: env.getConfig(EnvironmentConfig.LOG_LEVEL)
+    })
   })
   const fetcher = createFetchComponent()
   const fs = createFsComponent()

@@ -12,12 +12,12 @@ import { SmartContentServerFetcherFactory } from './utils/SmartContentServerFetc
 import { TheGraphClientFactory } from './utils/TheGraphClientFactory'
 
 const DEFAULT_SERVER_PORT = 7070
-export const DEFAULT_ETH_NETWORK = 'ropsten'
-export const DEFAULT_ENS_OWNER_PROVIDER_URL_ROPSTEN =
-  'https://api.thegraph.com/subgraphs/name/decentraland/marketplace-ropsten'
+export const DEFAULT_ETH_NETWORK = 'goerli'
+export const DEFAULT_ENS_OWNER_PROVIDER_URL_TESTNET =
+  'https://api.thegraph.com/subgraphs/name/decentraland/marketplace-goerli'
 const DEFAULT_ENS_OWNER_PROVIDER_URL_MAINNET = 'https://api.thegraph.com/subgraphs/name/decentraland/marketplace'
-export const DEFAULT_COLLECTIONS_SUBGRAPH_ROPSTEN =
-  'https://api.thegraph.com/subgraphs/name/decentraland/collections-ethereum-ropsten'
+export const DEFAULT_COLLECTIONS_SUBGRAPH_TESTNET =
+  'https://api.thegraph.com/subgraphs/name/decentraland/collections-ethereum-goerli'
 export const DEFAULT_COLLECTIONS_SUBGRAPH_MAINNET =
   'https://api.thegraph.com/subgraphs/name/decentraland/collections-ethereum-mainnet'
 export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MUMBAI =
@@ -154,7 +154,7 @@ export class EnvironmentBuilder {
         process.env.ENS_OWNER_PROVIDER_URL ??
         (process.env.ETH_NETWORK === 'mainnet'
           ? DEFAULT_ENS_OWNER_PROVIDER_URL_MAINNET
-          : DEFAULT_ENS_OWNER_PROVIDER_URL_ROPSTEN)
+          : DEFAULT_ENS_OWNER_PROVIDER_URL_TESTNET)
     )
     this.registerConfigIfNotAlreadySet(
       env,
@@ -163,7 +163,7 @@ export class EnvironmentBuilder {
         process.env.COLLECTIONS_L1_SUBGRAPH_URL ??
         (process.env.ETH_NETWORK === 'mainnet'
           ? DEFAULT_COLLECTIONS_SUBGRAPH_MAINNET
-          : DEFAULT_COLLECTIONS_SUBGRAPH_ROPSTEN)
+          : DEFAULT_COLLECTIONS_SUBGRAPH_TESTNET)
     )
 
     this.registerConfigIfNotAlreadySet(

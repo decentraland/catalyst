@@ -323,10 +323,10 @@
   dependencies:
     yaml "1.10.2"
 
-"@dcl/catalyst-contracts@^2.0.0":
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/@dcl/catalyst-contracts/-/catalyst-contracts-2.0.0.tgz#0cd74e13e625e3b39f834a9bb81f290196ef0c19"
-  integrity sha512-5DIrA4J3W5qknfdHCx66zuc5SYo0+a4CD3qZLFqU4IzfvbYUsR9r3RBXdAja9orqNVRg5yDo5X3lFT7B4FB8UA==
+"@dcl/catalyst-contracts@^2.0.0", "@dcl/catalyst-contracts@^2.1.0":
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-contracts/-/catalyst-contracts-2.1.0.tgz#59cd4e78fd019dd1c5d99075334f658da39430d0"
+  integrity sha512-OjfUa+474P36pqsCi6wIIs+Yf+xohrzSXpb8dEZia2cU9sJneUPkSXxaxwXAnK/ziKzhXbDisLX96wdwQiRS8w==
   dependencies:
     eth-connect "^6.0.2"
 
@@ -348,24 +348,24 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@^2.3.2":
-  version "2.3.2"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-2.3.2.tgz#b61b7ff558fd5bbc3bcb7584af3c0a021e33dcff"
-  integrity sha512-lyk08i57epO1BXauOw85vH5Hx/OteU3GHCE1bwZHgZ4dS5JbmMLzijm4+UnRHgEwQ8oOFJWvfwtUGK1i9+BYtw==
+"@dcl/content-validator@^2.4.0":
+  version "2.4.0"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-2.4.0.tgz#25b64485e225fa549327bcda8189640111702bdf"
+  integrity sha512-Pv62Hc6Ce7wSql93ZTHt9jhlXxRe7942oQow3HtesZkjkR/OlJoEnkXHRSJ8xkuQkYjdnP39BQGHOsXlpxGPTA==
   dependencies:
     "@dcl/content-hash-tree" "^1.1.3"
     "@dcl/hashing" "1.1.0"
     "@dcl/schemas" "^5.4.2"
-    "@dcl/urn-resolver" "1.3.1"
+    "@dcl/urn-resolver" "1.4.0"
     "@well-known-components/interfaces" "1.1.1"
     "@well-known-components/thegraph-component" "^1.2.0"
     ms "2.1.3"
     sharp "^0.30.6"
 
-"@dcl/crypto@^3.0.2":
-  version "3.0.2"
-  resolved "https://registry.yarnpkg.com/@dcl/crypto/-/crypto-3.0.2.tgz#53bf3cba0327ddca282ab39439725d5b1e3e4e46"
-  integrity sha512-klGFPGGDlO3y2agohFWcSyzpAoLdYRDAxYhYSys58jSn0JOZJQmMBSsEQ015R4CAk8ee+CWvGANTDPPKLQrstg==
+"@dcl/crypto@^3.1.0":
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/@dcl/crypto/-/crypto-3.1.0.tgz#ab85d4127bbd6a5eca802e030e51e76dd1cd2f6d"
+  integrity sha512-O4lLgaJ8NXfFS0Svs1hu46HSSJPysDEW4EvWGT6yNp7/f/gheYi4fMip46r/ocfb3Du+CH87Fpj1kvzwQyskvg==
   dependencies:
     "@dcl/schemas" "^5.4.2"
     eth-connect "^6.0.3"
@@ -380,19 +380,19 @@
     ipfs-unixfs-importer "^7.0.3"
     multiformats "^9.6.3"
 
-"@dcl/schemas@^5.0.3", "@dcl/schemas@^5.0.4", "@dcl/schemas@^5.4.2":
-  version "5.4.2"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-5.4.2.tgz#9996114207f71935bd7bf4d94ee654d4eb2842db"
-  integrity sha512-NyJvL8KGsCm3GbyzELZen+4GR7LmPb+zGie6XatND2FIHsNkciWldKJ8/o2gCFOWNyhA+Si8umQllG5dT7BOxg==
+"@dcl/schemas@^5.0.3", "@dcl/schemas@^5.0.4", "@dcl/schemas@^5.4.2", "@dcl/schemas@^5.4.5":
+  version "5.4.5"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-5.4.5.tgz#3a811e422857add169e7b626fd7f9887156c8cb0"
+  integrity sha512-ZdrXX9jjB8au5jDHPMADl4TzBQEufmXT6Tv48Q+WKYQ/al5Ll3OAuft2DQKkDt9UVEIXm9MUd0qw3alESAT/zA==
   dependencies:
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
 
-"@dcl/snapshots-fetcher@^3.0.9":
-  version "3.0.9"
-  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-3.0.9.tgz#c01e775ff3664f3cf5857ec20019c9e742403f9e"
-  integrity sha512-hbgfgtl+NlyR4cBskqpXRynEjd4GL4sCSpFhmHcPQWWsbYDpGW4Zu3UxBTJTZ+sqk4b4HqGxEk6DN6yWhNSnxg==
+"@dcl/snapshots-fetcher@^3.1.0":
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-3.1.0.tgz#ca62791a3d22fee28f207ecb040c48f96338ca19"
+  integrity sha512-OuoQTubH12wTjvn1sk+hjmjIrlahp6P7E//fbh3lWo5w90E48Hp8DP6S/3vU4h6EGeDnphirdiyzsCPG5R3/Yw==
   dependencies:
     "@dcl/catalyst-storage" "^1.0.0-20220604235145.commit-892b669"
     "@dcl/hashing" "^1.0.0"
@@ -401,10 +401,10 @@
     "@well-known-components/metrics" "^1.1.2"
     p-queue "^6.6.2"
 
-"@dcl/urn-resolver@1.3.1":
-  version "1.3.1"
-  resolved "https://registry.yarnpkg.com/@dcl/urn-resolver/-/urn-resolver-1.3.1.tgz#fa1a036f562c2e2fe12ee44a8b0465b62d7e9ef5"
-  integrity sha512-I/ktPcHjAMsJcGL3tsFcNZ4SjZ9UEVEfLue9ys5Ci2S/J/DE5zUPijBc2AFOvAT1sV/4WtF57SNDxMAvwPRNNQ==
+"@dcl/urn-resolver@1.4.0":
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/@dcl/urn-resolver/-/urn-resolver-1.4.0.tgz#930d46a1222894863c56305cb042499b1aed620d"
+  integrity sha512-9+cjs1XvDv2jIzcevDw+DJyxd5Od03mAmP08Z1eZm+DVxtKErrlWrCNQxKtAY9bU9R/jYLieeG/OckIjCGPNoQ==
 
 "@eslint/eslintrc@^1.2.2":
   version "1.3.0"
@@ -1633,10 +1633,10 @@
     "@types/node-fetch" "^2.5.12"
     typed-url-params "^1.0.1"
 
-"@well-known-components/logger@^2.1.0":
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/@well-known-components/logger/-/logger-2.1.0.tgz#2d2e74be3275ccbcf31dbd0f8157c1f01c83a596"
-  integrity sha512-PG8eL8aOD7CDp7N2I91d6f3jiFxrA/i0HQB7192GIIMvCULiwz2aIXYw0GfG5BD+TaFfvC/P7s5YcMAiiW3oLw==
+"@well-known-components/logger@^3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@well-known-components/logger/-/logger-3.0.0.tgz#19532f6027de92a4e85ed2bf50f3c7171c177531"
+  integrity sha512-UbVTSwV+9VtP1Z0sBW+ICbPYJfvy80sJNJNGHi33SeXq4rNSJRsFK8t7LWTipJNLpZRHyMNq4P9swBBB8yAyFw==
 
 "@well-known-components/metrics@1.1.3", "@well-known-components/metrics@^1.1.2":
   version "1.1.3"
