@@ -1,5 +1,5 @@
-import { ILoggerComponent } from '@well-known-components/interfaces'
 import { EntityType, EthAddress } from '@dcl/schemas'
+import { ILoggerComponent } from '@well-known-components/interfaces'
 import ms from 'ms'
 import { initComponentsWithEnv } from './components'
 import { RepositoryQueue } from './repository/RepositoryQueue'

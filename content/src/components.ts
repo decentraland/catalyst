@@ -1,7 +1,9 @@
+import { createTheGraphClient } from '@dcl/content-validator'
 import { EntityType } from '@dcl/schemas'
 import { createCatalystDeploymentStream } from '@dcl/snapshots-fetcher'
 import { createJobLifecycleManagerComponent } from '@dcl/snapshots-fetcher/dist/job-lifecycle-manager'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
+import { createConfigComponent } from '@well-known-components/env-config-provider'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { HTTPProvider } from 'eth-connect'
@@ -42,8 +44,6 @@ import { createSynchronizationManager } from './service/synchronization/Synchron
 import { createServerValidator } from './service/validations/server'
 import { createExternalCalls, createSubGraphsComponent, createValidator } from './service/validations/validator'
 import { AppComponents } from './types'
-import { createTheGraphClient } from '@dcl/content-validator'
-import { createConfigComponent } from '@well-known-components/env-config-provider'
 
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
   const metrics = createTestMetricsComponent(metricsDeclaration)
@@ -104,7 +104,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   // TODO: this should be in the src/logic folder. It is not a component
   const pointerManager = new PointerManager()
 
-  const failedDeploymentsCache = createFailedDeploymentsCache()
+  const failedDeploymentsCache = createFailedDeploymentsCache({ metrics })
 
   const deployRateLimiter = createDeployRateLimiter(
     { logs },
@@ -240,7 +240,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     synchronizationJobManager,
     logs,
     contentCluster,
-    retryFailedDeployments
+    retryFailedDeployments,
+    metrics
   })
 
   const controller = new Controller(

@@ -223,6 +223,7 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
     this.statusEndpointData.lastUpdatedTime = Date.now()
     for (const key in inMemoryArrays) {
       this.statusEndpointData.entities[key] = inMemoryArrays[key].length
+      this.components.metrics.observe('dcl_content_server_snapshot_entities', { type: key }, inMemoryArrays[key].length)
     }
 
     // Phase 3) hash generated files and move them to content folder

@@ -1,6 +1,7 @@
 import { Authenticator } from '@dcl/crypto'
 import { hashV1 } from '@dcl/hashing'
 import { Entity, EntityType, EthAddress } from '@dcl/schemas'
+import { createConfigComponent } from "@well-known-components/env-config-provider"
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import assert from 'assert'
@@ -34,7 +35,6 @@ import { buildEntityAndFile } from '../../helpers/service/EntityTestFactory'
 import { NoOpServerValidator, NoOpValidator } from '../../helpers/service/validations/NoOpValidator'
 import { MockedStorage } from '../ports/contentStorage/MockedStorage'
 import { NoOpPointerManager } from './pointers/NoOpPointerManager'
-import { createConfigComponent } from "@well-known-components/env-config-provider";
 
 export const DECENTRALAND_ADDRESS: EthAddress = '0x1337e0507eb4ab47e08a179573ed4533d9e22a7b'
 
@@ -228,7 +228,6 @@ describe('Service', function () {
     const validator = new NoOpValidator()
     const serverValidator = new NoOpServerValidator()
     const deploymentManager = new DeploymentManager()
-    const failedDeploymentsCache = createFailedDeploymentsCache()
     const logs = await createLogComponent({
       config: createConfigComponent({
         LOG_LEVEL: 'DEBUG'
@@ -239,6 +238,7 @@ describe('Service', function () {
       { defaultMax: 300, defaultTtl: ms('1m'), entitiesConfigMax: new Map(), entitiesConfigTtl: new Map() }
     )
     const metrics = createTestMetricsComponent(metricsDeclaration)
+    const failedDeploymentsCache = createFailedDeploymentsCache({ metrics })
     const storage = new MockedStorage()
     const pointerManager = NoOpPointerManager.build()
     const authenticator = new ContentAuthenticator(new HTTPProvider("https://rpc.decentraland.org/mainnet?project=catalyst-ci"), DECENTRALAND_ADDRESS)
