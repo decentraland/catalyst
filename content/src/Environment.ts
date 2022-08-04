@@ -294,7 +294,7 @@ export class EnvironmentBuilder {
       env,
       EnvironmentConfig.THIRD_PARTY_REGISTRY_L2_SUBGRAPH_URL,
       () =>
-        process.env.COLLECTIONS_L2_SUBGRAPH_URL ??
+        process.env.THIRD_PARTY_REGISTRY_L2_SUBGRAPH_URL ??
         (process.env.ETH_NETWORK === 'mainnet'
           ? DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_MAINNET
           : DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_MUMBAI)
