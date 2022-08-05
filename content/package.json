@@ -11,6 +11,7 @@
     "start:db": "node ./dist/src/entrypoints/run-local-database.js",
     "start:maintenance": "node ./dist/src/entrypoints/run-maintenance.js",
     "start:server": "node ./dist/src/entrypoints/run-server.js",
+    "start:migrator": "tsc -b && node ./dist/src/entrypoints/run-network-migrator.js",
     "test": "jest --runInBand --forceExit --detectOpenHandles --coverage",
     "test:integration": "jest --selectProjects integration --runInBand --forceExit --detectOpenHandles --coverage",
     "test:unit": "jest --selectProjects unit --runInBand --forceExit --detectOpenHandles --coverage"
@@ -35,6 +36,7 @@
     "cors": "2.8.5",
     "dcl-catalyst-client": "^12.1.2",
     "eth-connect": "^6.0.3",
+    "eth-crypto": "^2.3.0",
     "express": "4.18.0",
     "express-openapi-validator": "4.13.7",
     "form-data": "^4.0.0",
