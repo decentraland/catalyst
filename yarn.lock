@@ -323,7 +323,7 @@
   dependencies:
     yaml "1.10.2"
 
-"@dcl/catalyst-contracts@^2.0.0", "@dcl/catalyst-contracts@^2.1.0":
+"@dcl/catalyst-contracts@^2.1.0":
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/@dcl/catalyst-contracts/-/catalyst-contracts-2.1.0.tgz#59cd4e78fd019dd1c5d99075334f658da39430d0"
   integrity sha512-OjfUa+474P36pqsCi6wIIs+Yf+xohrzSXpb8dEZia2cU9sJneUPkSXxaxwXAnK/ziKzhXbDisLX96wdwQiRS8w==
@@ -380,10 +380,10 @@
     ipfs-unixfs-importer "^7.0.3"
     multiformats "^9.6.3"
 
-"@dcl/schemas@^5.0.3", "@dcl/schemas@^5.0.4", "@dcl/schemas@^5.4.2", "@dcl/schemas@^5.4.5":
-  version "5.4.5"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-5.4.5.tgz#3a811e422857add169e7b626fd7f9887156c8cb0"
-  integrity sha512-ZdrXX9jjB8au5jDHPMADl4TzBQEufmXT6Tv48Q+WKYQ/al5Ll3OAuft2DQKkDt9UVEIXm9MUd0qw3alESAT/zA==
+"@dcl/schemas@^5.4.2", "@dcl/schemas@^5.4.5", "@dcl/schemas@^5.5.0":
+  version "5.7.0"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-5.7.0.tgz#4c0a37323e0029bdce6631ba6e8541f6b0f068e2"
+  integrity sha512-r1TgXyfyStP/tSp/9l09ICr5JBTkFGY015WM/JsS3JqDOAVDbYEkGq+vyAwsJVpKcDSR2v9Drh8/ECSSIGl05g==
   dependencies:
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
@@ -2518,7 +2518,7 @@ cookie-signature@1.0.6:
   resolved "https://registry.yarnpkg.com/cookie-signature/-/cookie-signature-1.0.6.tgz#e303a882b342cc3ee8ca513a79999734dab3ae2c"
   integrity sha512-QADzlaHc8icV8I7vbaJXJwod9HWYp8uCqf1xa4OfNu1T7JVxQIrUgOWtHdNDtPiywmFbiS12VjotIXLrKM3orQ==
 
-cookie@0.5.0:
+cookie@0.5.0, cookie@^0.5.0:
   version "0.5.0"
   resolved "https://registry.yarnpkg.com/cookie/-/cookie-0.5.0.tgz#d1f5d71adec6558c58f389987c366aa47e994f8b"
   integrity sha512-YZ3GUyn/o8gfKJlnlX7g7xq4gyO6OSuhGPKaaGssGB2qgDUS0gPgtTvoyZLTt9Ab6dC4hfc9dV5arkvc/OCmrw==
@@ -2630,36 +2630,25 @@ date-format@^4.0.10, date-format@^4.0.9:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-4.0.13.tgz#87c3aab3a4f6f37582c5f5f63692d2956fa67890"
   integrity sha512-bnYCwf8Emc3pTD8pXnre+wfnjGtfi5ncMDKy7+cWZXbmRAsdWkOQHrfC1yz/KiwP5thDp2kCHWYWKBX4HP1hoQ==
 
-dcl-catalyst-client@^12.0.8:
-  version "12.0.8"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-12.0.8.tgz#3673c50508301b8e55e9be887e30bdbed0686f7d"
-  integrity sha512-KhPAZX13mNWQVgtfa1Bu8bVC2Vp76C0mgo5SV29UvNkTa/tmPLDTAMwvVADNIjhtDQlyHOgGvpA+/uzybUCMUg==
+dcl-catalyst-client@^12.1.2:
+  version "12.1.2"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-12.1.2.tgz#0f255f379084c3817b7446966d85b37ea35d5819"
+  integrity sha512-lPiyjYWlHfsCSCSqCza77v65O3z3ngr8UCSkWTWcxk4GTCaoxEI4/BDcP6tcCIEYAFr32pmxDNYSUQlsHPJEkg==
   dependencies:
-    "@dcl/catalyst-contracts" "^2.0.0"
+    "@dcl/catalyst-contracts" "^2.1.0"
     "@dcl/hashing" "^1.1.0"
-    "@dcl/schemas" "^5.0.4"
+    "@dcl/schemas" "^5.5.0"
     "@types/form-data" "^2.5.0"
-    cookie "^0.4.1"
-    dcl-catalyst-commons "^9.0.0"
+    cookie "^0.5.0"
+    dcl-catalyst-commons "^9.0.6"
     form-data "^4.0.0"
 
-dcl-catalyst-commons@9.0.6:
+dcl-catalyst-commons@9.0.6, dcl-catalyst-commons@^9.0.6:
   version "9.0.6"
   resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-9.0.6.tgz#403c6c26428a828fc206a0d643b72b9b816b5558"
   integrity sha512-6UGyEQaGPCmuETrhI0arD1IJpBsrGJ6+Sh6NEYnULh+UhAx21orbozdJptPWl0y5NoNh12/GLgiYyKu/WSrgcg==
   dependencies:
     "@dcl/schemas" "^5.4.2"
-    abort-controller "^3.0.0"
-    cookie "^0.4.1"
-    cross-fetch "^3.1.4"
-    ms "^2.1.2"
-
-dcl-catalyst-commons@^9.0.0:
-  version "9.0.5"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-9.0.5.tgz#53bdeef9498600f11b2e077f55834a43731bfc90"
-  integrity sha512-QByI85wQPeJK4X+bA7SbWpXY/Ate1mO+fIeFxlb1/XiyshsoNwGOznZLYaXnNC7Ftnca24Oj4SR4OTfAMwpIqg==
-  dependencies:
-    "@dcl/schemas" "^5.0.3"
     abort-controller "^3.0.0"
     cookie "^0.4.1"
     cross-fetch "^3.1.4"
