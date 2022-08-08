@@ -30,7 +30,6 @@ contentvalidator --> contenthashtree
 contentvalidator --> hashing
 contentvalidator --> schemas
 contentvalidator --> urnresolver
-contentvalidator --> urnresolver
 crypto --> schemas
 crypto --> ethconnect
 snapshotsfetcher --> catalyststorage
