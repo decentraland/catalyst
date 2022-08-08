@@ -77,7 +77,12 @@ async function doMigration(components: AppComponents) {
     })
 
     // Signing message
-    const { address, privateKey, publicKey } = EthCrypto.createIdentity()
+    if (!process.env.MIGRATION_PRIVATE_KEY) {
+      throw 'Cannot run migration without a deployer PK'
+    }
+    const privateKey = process.env.MIGRATION_PRIVATE_KEY
+    const publicKey = EthCrypto.publicKeyByPrivateKey(privateKey)
+    const address = EthCrypto.publicKey.toAddress(publicKey)
     console.log({ address, privateKey, publicKey })
 
     const messageHash = Authenticator.createEthereumMessageHash(entity.entityId)
