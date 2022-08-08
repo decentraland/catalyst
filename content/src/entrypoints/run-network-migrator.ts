@@ -33,6 +33,15 @@ void Lifecycle.run<AppComponents>({
 })
 
 async function doMigration(components: AppComponents) {
+  // For signing new deployments
+  if (!process.env.MIGRATION_PRIVATE_KEY) {
+    throw 'Cannot run migration without a deployer PK'
+  }
+  const privateKey = process.env.MIGRATION_PRIVATE_KEY
+  const publicKey = EthCrypto.publicKeyByPrivateKey(privateKey)
+  const address = EthCrypto.publicKey.toAddress(publicKey)
+  console.log({ address, privateKey, publicKey })
+
   const result = await components.database.queryWithValues(
     SQL`
         SELECT id, entity_type, entity_id, entity_timestamp, entity_pointers, entity_metadata 
@@ -44,6 +53,8 @@ async function doMigration(components: AppComponents) {
     `
   )
 
+  console.log(`About to attempt migration of ${result.rowCount} scenes`)
+
   for (const deployment of result.rows) {
     const deployment2 = deployment as any
 
@@ -54,7 +65,6 @@ async function doMigration(components: AppComponents) {
         WHERE deployment = ${deployment2.id}
     `
     )
-    console.log(deployment2, fileResult)
 
     const files: Map<string, Uint8Array> = new Map()
 
@@ -67,7 +77,7 @@ async function doMigration(components: AppComponents) {
       }
     }
 
-    console.log('files', files, deployment2.entity_timestamp)
+    // console.log('files', files, deployment2.entity_timestamp)
     const entity: DeploymentPreparationData = await DeploymentBuilder.buildEntity({
       type: deployment2.entity_type,
       pointers: deployment2.entity_pointers,
@@ -75,32 +85,24 @@ async function doMigration(components: AppComponents) {
       metadata: deployment2.entity_metadata.v,
       timestamp: new Date().getTime()
     })
-
-    // Signing message
-    if (!process.env.MIGRATION_PRIVATE_KEY) {
-      throw 'Cannot run migration without a deployer PK'
-    }
-    const privateKey = process.env.MIGRATION_PRIVATE_KEY
-    const publicKey = EthCrypto.publicKeyByPrivateKey(privateKey)
-    const address = EthCrypto.publicKey.toAddress(publicKey)
-    console.log({ address, privateKey, publicKey })
+    console.log(`Deploying entity ${entity.entityId}`)
 
     const messageHash = Authenticator.createEthereumMessageHash(entity.entityId)
     const signature = EthCrypto.sign(privateKey, Buffer.from(messageHash).toString('hex'))
     const authChain = Authenticator.createSimpleAuthChain(entity.entityId, address, signature)
 
-    // // const catalystUrl = 'https://peer-ap1.decentraland.zone'
+    // const catalystUrl = 'https://peer-ap1.decentraland.zone'
     const catalystUrl = 'http://localhost:6969'
     const client = new CatalystClient({ catalystUrl })
 
-    console.log(entity)
-
-    await client.deploy({
-      entityId: entity.entityId,
-      authChain: authChain,
-      files: entity.files
-    })
-
-    throw new Error('fin')
+    try {
+      await client.deploy({
+        entityId: entity.entityId,
+        authChain: authChain,
+        files: entity.files
+      })
+    } catch (e) {
+      console.log(`Error deploying entity ${entity.entityId}`)
+    }
   }
 }
