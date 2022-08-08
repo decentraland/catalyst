@@ -48,10 +48,12 @@ import { AppComponents } from './types'
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
   const metrics = createTestMetricsComponent(metricsDeclaration)
   const repository = await RepositoryFactory.create({ env, metrics })
+  const config = createConfigComponent({
+    LOG_LEVEL: env.getConfig(EnvironmentConfig.LOG_LEVEL),
+    IGNORE_BLOCKCHAIN_ACCESS_CHECKS: env.getConfig(EnvironmentConfig.IGNORE_BLOCKCHAIN_ACCESS_CHECKS)
+  })
   const logs = await createLogComponent({
-    config: createConfigComponent({
-      LOG_LEVEL: env.getConfig(EnvironmentConfig.LOG_LEVEL)
-    })
+    config
   })
   const fetcher = createFetchComponent()
   const fs = createFsComponent()
@@ -127,7 +129,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     logs
   })
   const theGraphClient = createTheGraphClient({ subGraphs, logs })
-  const validator = createValidator({ externalCalls, logs, theGraphClient, subGraphs })
+  const validator = createValidator({ config, externalCalls, logs, theGraphClient, subGraphs })
   const serverValidator = createServerValidator({ failedDeploymentsCache, metrics })
 
   const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs })
