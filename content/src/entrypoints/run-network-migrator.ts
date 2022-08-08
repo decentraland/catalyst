@@ -37,8 +37,10 @@ async function doMigration(components: AppComponents) {
     SQL`
         SELECT id, entity_type, entity_id, entity_timestamp, entity_pointers, entity_metadata 
         FROM deployments 
-        WHERE entity_type = 'scene' 
+        WHERE entity_type = 'scene'
+          AND deleter_deployment IS NULL
           AND entity_timestamp < to_timestamp(${GOERLI_MIGRATION_TIMESTAMP / 1000})
+        ORDER BY entity_timestamp
     `
   )
 
@@ -71,7 +73,6 @@ async function doMigration(components: AppComponents) {
       pointers: deployment2.entity_pointers,
       files,
       metadata: deployment2.entity_metadata.v,
-      // timestamp: new Date(deployment2.entity_timestamp).getTime()
       timestamp: new Date().getTime()
     })
 
