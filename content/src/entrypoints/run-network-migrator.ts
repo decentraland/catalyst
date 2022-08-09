@@ -91,9 +91,7 @@ async function doMigration(components: AppComponents) {
     const signature = EthCrypto.sign(privateKey, Buffer.from(messageHash).toString('hex'))
     const authChain = Authenticator.createSimpleAuthChain(entity.entityId, address, signature)
 
-    // const catalystUrl = 'https://peer-ap1.decentraland.zone'
-    const catalystUrl = 'http://localhost:6969'
-    const client = new CatalystClient({ catalystUrl })
+    const client = new CatalystClient({ catalystUrl: 'https://peer-ap1.decentraland.zone' })
 
     try {
       await client.deploy({

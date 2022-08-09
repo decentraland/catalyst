@@ -133,6 +133,7 @@ export class Server implements IBaseComponent {
     method: HttpMethod = HttpMethod.GET,
     extraHandler?: RequestHandler
   ) {
+    // route = '/content' + route
     const handlers: RequestHandler[] = [
       async (req: express.Request, res: express.Response, next: NextFunction) => {
         try {
