@@ -33,10 +33,13 @@ void Lifecycle.run<AppComponents>({
 })
 
 async function doMigration(components: AppComponents) {
-  // For signing new deployments
   if (!process.env.MIGRATION_PRIVATE_KEY) {
     throw 'Cannot run migration without a deployer PK'
   }
+  if (!process.env.TARGET_CATALYST_URL) {
+    throw 'Need to specify a target Catalyst URL'
+  }
+
   const privateKey = process.env.MIGRATION_PRIVATE_KEY
   const publicKey = EthCrypto.publicKeyByPrivateKey(privateKey)
   const address = EthCrypto.publicKey.toAddress(publicKey)
@@ -91,7 +94,7 @@ async function doMigration(components: AppComponents) {
     const signature = EthCrypto.sign(privateKey, Buffer.from(messageHash).toString('hex'))
     const authChain = Authenticator.createSimpleAuthChain(entity.entityId, address, signature)
 
-    const client = new CatalystClient({ catalystUrl: 'https://peer-ap1.decentraland.zone' })
+    const client = new CatalystClient({ catalystUrl: process.env.TARGET_CATALYST_URL })
 
     try {
       await client.deploy({
