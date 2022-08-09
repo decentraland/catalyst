@@ -58,6 +58,7 @@ async function doMigration(components: AppComponents) {
 
   console.log(`About to attempt migration of ${result.rowCount} scenes`)
 
+  let counter = 0
   for (const deployment of result.rows) {
     const deployment2 = deployment as any
 
@@ -88,7 +89,7 @@ async function doMigration(components: AppComponents) {
       metadata: deployment2.entity_metadata.v,
       timestamp: new Date().getTime()
     })
-    console.log(`Deploying entity ${entity.entityId}`)
+    console.log(`Deploying entity #${counter}: entity_id ${entity.entityId}`)
 
     const messageHash = Authenticator.createEthereumMessageHash(entity.entityId)
     const signature = EthCrypto.sign(privateKey, Buffer.from(messageHash).toString('hex'))
@@ -103,7 +104,8 @@ async function doMigration(components: AppComponents) {
         files: entity.files
       })
     } catch (e) {
-      console.log(`Error deploying entity ${entity.entityId}`)
+      console.log(`Error deploying entity ${entity.entityId} on ${deployment2.entity_pointers}`)
     }
+    counter++
   }
 }
