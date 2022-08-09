@@ -147,7 +147,8 @@ export enum EnvironmentConfig {
   READ_ONLY,
 
   // List of entity types ignored during the synchronization
-  SYNC_IGNORED_ENTITY_TYPES
+  SYNC_IGNORED_ENTITY_TYPES,
+  IGNORE_BLOCKCHAIN_ACCESS_CHECKS
 }
 export class EnvironmentBuilder {
   private baseEnv: Environment
@@ -456,6 +457,12 @@ export class EnvironmentBuilder {
     )
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.READ_ONLY, () => process.env.READ_ONLY == 'true')
+
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.IGNORE_BLOCKCHAIN_ACCESS_CHECKS,
+      () => process.env.IGNORE_BLOCKCHAIN_ACCESS_CHECKS
+    )
 
     return env
   }
