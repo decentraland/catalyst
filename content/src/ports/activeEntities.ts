@@ -211,7 +211,7 @@ export const createActiveEntitiesComponent = (
 
     // get associated entity ids to pointers or save for later
     for (const pointer of uniquePointers) {
-      const entityId = entityIdByPointers.get(pointer)
+      const entityId = entityIdByPointers.get(pointer.toLowerCase())
       if (!entityId) {
         logger.debug('Entity with given pointer not found on cache', { pointer })
         remaining.push(pointer)
