@@ -11,12 +11,9 @@ type BootstrapComponents = Pick<
  * then iterates over all of the deployments to call the batch deployer for each deployed entity.
  */
 export async function bootstrapFromSnapshots(components: BootstrapComponents): Promise<void> {
+  components.metrics.observe('dcl_content_server_sync_state', {}, 0)
   // then find all other DAO catalyst servers
   const catalystServersButThisOne = await components.contentCluster.getContentServersFromDao()
-
-  if (catalystServersButThisOne.length == 0) {
-    throw new Error('There are no servers. Cancelling bootstrapping')
-  }
 
   const logs = components.logs.getLogger('BootstrapFromSnapshots')
   logs.info(`Starting to bootstrap from snapshots`)

@@ -1,7 +1,7 @@
 import { metricsDefinitions as snapshotFetcherMetricsDefinitions } from '@dcl/snapshots-fetcher'
 import { validateMetricsDeclaration } from '@well-known-components/metrics'
-import { metricDeclarations as theGraphMetricDeclarations } from '@well-known-components/thegraph-component'
 import { getDefaultHttpMetrics } from '@well-known-components/metrics/dist/http'
+import { metricDeclarations as theGraphMetricDeclarations } from '@well-known-components/thegraph-component'
 import { sequentialJobMetrics } from './ports/sequecuentialTaskExecutor'
 
 export const metricsDeclaration = validateMetricsDeclaration({
@@ -126,5 +126,24 @@ export const metricsDeclaration = validateMetricsDeclaration({
     help: 'Total number of deployments existence checks to the deployment list filter',
     type: 'counter',
     labelNames: ['hit'] // false_positive=(true|false)
+  },
+  dcl_content_server_build_info: {
+    help: 'Content server static build info.',
+    type: 'gauge',
+    labelNames: ['version', 'commitHash', 'ethNetwork']
+  },
+  dcl_content_server_snapshot_entities: {
+    help: 'Number of entities in the snapshots per type.',
+    type: 'gauge',
+    labelNames: ['type'] // type=EntityType
+  },
+  dcl_content_server_sync_state: {
+    // SynchronizationState value
+    help: 'Content server sync state.',
+    type: 'gauge'
+  },
+  dcl_content_server_failed_deployments: {
+    help: 'Failed deployments.',
+    type: 'gauge'
   }
 })

@@ -1,5 +1,5 @@
-import { ILoggerComponent } from '@well-known-components/interfaces'
 import { EntityType, EthAddress } from '@dcl/schemas'
+import { ILoggerComponent } from '@well-known-components/interfaces'
 import ms from 'ms'
 import { initComponentsWithEnv } from './components'
 import { RepositoryQueue } from './repository/RepositoryQueue'
@@ -14,15 +14,15 @@ const DECENTRALAND_ADDRESS: EthAddress = '0x1337e0507eb4ab47e08a179573ed4533d9e2
 
 const DEFAULT_FOLDER_MIGRATION_MAX_CONCURRENCY = 1000
 export const DEFAULT_ENTITIES_CACHE_SIZE = 150000
-export const DEFAULT_ETH_NETWORK = 'ropsten'
-export const DEFAULT_ENS_OWNER_PROVIDER_URL_ROPSTEN =
-  'https://api.thegraph.com/subgraphs/name/decentraland/marketplace-ropsten'
+export const DEFAULT_ETH_NETWORK = 'goerli'
+export const DEFAULT_ENS_OWNER_PROVIDER_URL_TESTNET =
+  'https://api.thegraph.com/subgraphs/name/decentraland/marketplace-goerli'
 const DEFAULT_ENS_OWNER_PROVIDER_URL_MAINNET = 'https://api.thegraph.com/subgraphs/name/decentraland/marketplace'
-export const DEFAULT_LAND_MANAGER_SUBGRAPH_ROPSTEN =
-  'https://api.thegraph.com/subgraphs/name/decentraland/land-manager-ropsten'
+export const DEFAULT_LAND_MANAGER_SUBGRAPH_TESTNET =
+  'https://api.thegraph.com/subgraphs/name/decentraland/land-manager-goerli'
 export const DEFAULT_LAND_MANAGER_SUBGRAPH_MAINNET = 'https://api.thegraph.com/subgraphs/name/decentraland/land-manager'
-export const DEFAULT_COLLECTIONS_SUBGRAPH_ROPSTEN =
-  'https://api.thegraph.com/subgraphs/name/decentraland/collections-ethereum-ropsten'
+export const DEFAULT_COLLECTIONS_SUBGRAPH_TESTNET =
+  'https://api.thegraph.com/subgraphs/name/decentraland/collections-ethereum-goerli'
 export const DEFAULT_COLLECTIONS_SUBGRAPH_MAINNET =
   'https://api.thegraph.com/subgraphs/name/decentraland/collections-ethereum-mainnet'
 export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MUMBAI =
@@ -33,8 +33,8 @@ export const DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_MUMBAI =
   'https://api.thegraph.com/subgraphs/name/decentraland/tpr-matic-mumbai'
 export const DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_MAINNET =
   'https://api.thegraph.com/subgraphs/name/decentraland/tpr-matic-mainnet'
-export const DEFAULT_BLOCKS_SUBGRAPH_ROPSTEN =
-  'https://api.thegraph.com/subgraphs/name/decentraland/blocks-ethereum-ropsten'
+export const DEFAULT_BLOCKS_SUBGRAPH_TESTNET =
+  'https://api.thegraph.com/subgraphs/name/decentraland/blocks-ethereum-goerli'
 export const DEFAULT_BLOCKS_SUBGRAPH_MAINNET =
   'https://api.thegraph.com/subgraphs/name/decentraland/blocks-ethereum-mainnet'
 export const DEFAULT_BLOCKS_SUBGRAPH_MATIC_MUMBAI =
@@ -147,7 +147,8 @@ export enum EnvironmentConfig {
   READ_ONLY,
 
   // List of entity types ignored during the synchronization
-  SYNC_IGNORED_ENTITY_TYPES
+  SYNC_IGNORED_ENTITY_TYPES,
+  IGNORE_BLOCKCHAIN_ACCESS_CHECKS
 }
 export class EnvironmentBuilder {
   private baseEnv: Environment
@@ -259,7 +260,7 @@ export class EnvironmentBuilder {
         process.env.ENS_OWNER_PROVIDER_URL ??
         (process.env.ETH_NETWORK === 'mainnet'
           ? DEFAULT_ENS_OWNER_PROVIDER_URL_MAINNET
-          : DEFAULT_ENS_OWNER_PROVIDER_URL_ROPSTEN)
+          : DEFAULT_ENS_OWNER_PROVIDER_URL_TESTNET)
     )
     this.registerConfigIfNotAlreadySet(
       env,
@@ -268,7 +269,7 @@ export class EnvironmentBuilder {
         process.env.LAND_MANAGER_SUBGRAPH_URL ??
         (env.getConfig(EnvironmentConfig.ETH_NETWORK) === 'mainnet'
           ? DEFAULT_LAND_MANAGER_SUBGRAPH_MAINNET
-          : DEFAULT_LAND_MANAGER_SUBGRAPH_ROPSTEN)
+          : DEFAULT_LAND_MANAGER_SUBGRAPH_TESTNET)
     )
     this.registerConfigIfNotAlreadySet(
       env,
@@ -277,7 +278,7 @@ export class EnvironmentBuilder {
         process.env.COLLECTIONS_L1_SUBGRAPH_URL ??
         (env.getConfig(EnvironmentConfig.ETH_NETWORK) === 'mainnet'
           ? DEFAULT_COLLECTIONS_SUBGRAPH_MAINNET
-          : DEFAULT_COLLECTIONS_SUBGRAPH_ROPSTEN)
+          : DEFAULT_COLLECTIONS_SUBGRAPH_TESTNET)
     )
 
     this.registerConfigIfNotAlreadySet(
@@ -294,7 +295,7 @@ export class EnvironmentBuilder {
       env,
       EnvironmentConfig.THIRD_PARTY_REGISTRY_L2_SUBGRAPH_URL,
       () =>
-        process.env.COLLECTIONS_L2_SUBGRAPH_URL ??
+        process.env.THIRD_PARTY_REGISTRY_L2_SUBGRAPH_URL ??
         (process.env.ETH_NETWORK === 'mainnet'
           ? DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_MAINNET
           : DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_MUMBAI)
@@ -307,7 +308,7 @@ export class EnvironmentBuilder {
         process.env.BLOCKS_L1_SUBGRAPH_URL ??
         (env.getConfig(EnvironmentConfig.ETH_NETWORK) === 'mainnet'
           ? DEFAULT_BLOCKS_SUBGRAPH_MAINNET
-          : DEFAULT_BLOCKS_SUBGRAPH_ROPSTEN)
+          : DEFAULT_BLOCKS_SUBGRAPH_TESTNET)
     )
 
     this.registerConfigIfNotAlreadySet(
@@ -456,6 +457,12 @@ export class EnvironmentBuilder {
     )
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.READ_ONLY, () => process.env.READ_ONLY == 'true')
+
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.IGNORE_BLOCKCHAIN_ACCESS_CHECKS,
+      () => process.env.IGNORE_BLOCKCHAIN_ACCESS_CHECKS
+    )
 
     return env
   }
