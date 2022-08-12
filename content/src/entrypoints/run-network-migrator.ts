@@ -8,6 +8,7 @@ import { streamToBuffer } from '../ports/contentStorage/contentStorage'
 import { Authenticator } from '@dcl/crypto'
 import EthCrypto from 'eth-crypto'
 import { CatalystClient } from 'dcl-catalyst-client'
+import { Fetcher } from 'dcl-catalyst-commons'
 
 const GOERLI_MIGRATION_TIMESTAMP: number = process.env.GOERLI_MIGRATION_TIMESTAMP
   ? parseInt(process.env.GOERLI_MIGRATION_TIMESTAMP)
@@ -82,20 +83,26 @@ async function doMigration(components: AppComponents) {
     }
 
     // console.log('files', files, deployment2.entity_timestamp)
+    const metadata = deployment2.entity_metadata.v
+    fixInvalidSpawnPoints(metadata)
     const entity: DeploymentPreparationData = await DeploymentBuilder.buildEntity({
       type: deployment2.entity_type,
       pointers: deployment2.entity_pointers,
       files,
-      metadata: deployment2.entity_metadata.v,
+      metadata,
       timestamp: new Date().getTime()
     })
-    console.log(`Deploying entity #${counter}: entity_id ${entity.entityId}`)
+    console.log(`Deploying entity #${counter}: entity_id ${entity.entityId}`, JSON.stringify(metadata))
 
     const messageHash = Authenticator.createEthereumMessageHash(entity.entityId)
     const signature = EthCrypto.sign(privateKey, Buffer.from(messageHash).toString('hex'))
     const authChain = Authenticator.createSimpleAuthChain(entity.entityId, address, signature)
 
-    const client = new CatalystClient({ catalystUrl: process.env.TARGET_CATALYST_URL })
+    const fetcher = new Fetcher({
+      timeout: '20m',
+      headers: { 'User-Agent': `catalyst-client/v3 (+https://github.com/decentraland/catalyst-client)` }
+    })
+    const client = new CatalystClient({ fetcher, catalystUrl: process.env.TARGET_CATALYST_URL })
 
     try {
       await client.deploy({
@@ -104,8 +111,31 @@ async function doMigration(components: AppComponents) {
         files: entity.files
       })
     } catch (e) {
+      console.log(e)
       console.log(`Error deploying entity ${entity.entityId} on ${deployment2.entity_pointers}`)
     }
     counter++
+  }
+}
+
+function fixInvalidSpawnPoints(metadata: any) {
+  if (metadata.spawnPoints) {
+    for (const spawnPoint of metadata.spawnPoints) {
+      if (
+        Array.isArray(spawnPoint.position.x) ||
+        Array.isArray(spawnPoint.position.y) ||
+        Array.isArray(spawnPoint.position.z)
+      ) {
+        if (!Array.isArray(spawnPoint.position.x)) {
+          spawnPoint.position.x = [spawnPoint.position.x]
+        }
+        if (!Array.isArray(spawnPoint.position.y)) {
+          spawnPoint.position.y = [spawnPoint.position.y]
+        }
+        if (!Array.isArray(spawnPoint.position.z)) {
+          spawnPoint.position.z = [spawnPoint.position.z]
+        }
+      }
+    }
   }
 }
