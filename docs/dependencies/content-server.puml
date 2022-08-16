@@ -35,6 +35,7 @@ crypto --> ethconnect
 snapshotsfetcher --> catalyststorage
 snapshotsfetcher --> hashing
 snapshotsfetcher --> schemas
+catalystclient --> catalystcontracts
 
 newpage
 header "Lambdas Server"
@@ -56,6 +57,7 @@ lambdasserver --> urnresolver
 lambdasserver --> catalystclient
 lambdasserver --> catalystcommons
 catalystclient --> catalystcommons
+catalystclient --> catalystcontracts
 catalystcontracts --> ethconnect
 crypto --> schemas
 crypto --> ethconnect
