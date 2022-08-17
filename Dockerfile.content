@@ -42,6 +42,8 @@ EXPOSE 6969
 #            and: https://www.ctl.io/developers/blog/post/gracefully-stopping-docker-containers/
 
 # We use Tini to handle signals and PID1 (https://github.com/krallin/tini, read why here https://github.com/krallin/tini/issues/8)
+# RUN curl https://github.com/krallin/tini/releases/download/v0.19.0/tini-arm64 /tini
+# RUN curl https://github.com/krallin/tini/releases/download/v0.19.0/tini-arm64 /sbin/tini
 RUN apk add --no-cache tini
 
 ENTRYPOINT ["/sbin/tini", "--"]
