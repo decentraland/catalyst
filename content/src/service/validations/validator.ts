@@ -76,7 +76,7 @@ export async function createExternalCalls(
 }
 
 export function createValidator(
-  components: Pick<ContentValidatorComponents, 'externalCalls' | 'logs' | 'theGraphClient' | 'subGraphs'>
+  components: Pick<ContentValidatorComponents, 'config' | 'externalCalls' | 'logs' | 'theGraphClient' | 'subGraphs'>
 ): IValidatorComponent {
   return validator(components)
 }

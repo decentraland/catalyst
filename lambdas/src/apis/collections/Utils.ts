@@ -92,7 +92,7 @@ function translateEmoteSavedAsWearableIntoLambdasEmote(client: SmartContentClien
     thumbnail,
     image,
     emoteDataADR74: {
-      category: EmoteCategory.SIMPLE,
+      category: EmoteCategory.DANCE,
       tags: metadata.data.tags,
       loop: 'emoteDataV0' in metadata ? (metadata as any).emoteDataV0.loop : false,
       representations: representationsWithUrl

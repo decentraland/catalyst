@@ -1,5 +1,6 @@
 import { AuthChain } from '@dcl/crypto'
 import { EntityType } from '@dcl/schemas'
+import { AppComponents } from '../types'
 
 export enum FailureReason {
   DEPLOYMENT_ERROR = 'Deployment error' // During sync, there was an error during deployment. Could be due to a validation
@@ -28,7 +29,9 @@ export type IFailedDeploymentsCacheComponent = {
   getDeploymentStatus(entityId: string): DeploymentStatus
 }
 
-export function createFailedDeploymentsCache(): IFailedDeploymentsCacheComponent {
+export function createFailedDeploymentsCache(
+  components: Pick<AppComponents, 'metrics'>
+): IFailedDeploymentsCacheComponent {
   const failedDeployments: Map<string, FailedDeployment> = new Map()
   return {
     getAllFailedDeployments() {
@@ -38,10 +41,14 @@ export function createFailedDeploymentsCache(): IFailedDeploymentsCacheComponent
       return failedDeployments.get(entityId)
     },
     removeFailedDeployment(entityId: string) {
-      return failedDeployments.delete(entityId)
+      const result = failedDeployments.delete(entityId)
+      components.metrics.observe('dcl_content_server_failed_deployments', {}, failedDeployments.size)
+      return result
     },
     reportFailure(failedDeployment: FailedDeployment) {
-      failedDeployments.set(failedDeployment.entityId, failedDeployment)
+      const result = failedDeployments.set(failedDeployment.entityId, failedDeployment)
+      components.metrics.observe('dcl_content_server_failed_deployments', {}, failedDeployments.size)
+      return result
     },
     getDeploymentStatus(entityId: string) {
       return failedDeployments.get(entityId)?.reason ?? NoFailure.NOT_MARKED_AS_FAILED

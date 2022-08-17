@@ -98,6 +98,10 @@ export class ContentCluster implements IdentityProvider {
       // Refresh the server list
       const allServersInDAO = await this.components.daoClient.getAllContentServers()
 
+      if (allServersInDAO.length == 0) {
+        throw new Error('There are no servers.')
+      }
+
       // Get all addresses in cluster (except this one)
       const allServerBaseUrls: string[] = this.getAllOtherAddressesOnDAO(allServersInDAO)
 

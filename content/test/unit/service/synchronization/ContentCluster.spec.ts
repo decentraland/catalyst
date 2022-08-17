@@ -7,6 +7,7 @@ import { createFetchComponent } from '../../../../src/ports/fetcher'
 import { ChallengeSupervisor, IChallengeSupervisor } from '../../../../src/service/synchronization/ChallengeSupervisor'
 import { ContentCluster } from '../../../../src/service/synchronization/ContentCluster'
 import { MockedDAOClient } from '../../../helpers/service/synchronization/clients/MockedDAOClient'
+import { createConfigComponent } from "@well-known-components/env-config-provider";
 
 jest.mock('@dcl/snapshots-fetcher/dist/utils', () => ({
   ...jest.requireActual('@dcl/snapshots-fetcher/dist/utils'),
@@ -21,14 +22,14 @@ describe('ContentCluster', function () {
 
   // TODO: review this test, there is no real-world case in which the DAO has no servers
   xit(`When there are no servers on the DAO, then no identity is assigned`, async () => {
-    const contentCluster = new ContentClusterBuilder().build(address2)
+    const contentCluster = await new ContentClusterBuilder().build(address2)
 
     // Check that no identity was detected
     expect(await contentCluster.getIdentity()).toBeUndefined()
   })
 
   it(`When I'm on the DAO, then I can determine my identity`, async () => {
-    const contentCluster = new ContentClusterBuilder()
+    const contentCluster = await new ContentClusterBuilder()
       .addAddressWithLocalChallenge(address1, challengeText)
       .build(address1)
 
@@ -38,7 +39,7 @@ describe('ContentCluster', function () {
   })
 
   it(`When I'm not on the DAO, then blank identity is assigned`, async () => {
-    const contentCluster = new ContentClusterBuilder().addLocalChallenge(address1, challengeText).build(address1)
+    const contentCluster = await new ContentClusterBuilder().addLocalChallenge(address1, challengeText).build(address1)
 
     // Check that no identity was detected
     expect(await contentCluster.getIdentity()).toEqual({
@@ -49,7 +50,7 @@ describe('ContentCluster', function () {
   })
 
   it(`When I'm not on the DAO and get no response, then no identity is assigned`, async () => {
-    const contentCluster = new ContentClusterBuilder().addLocalChallenge(address2, challengeText).build(address1)
+    const contentCluster = await new ContentClusterBuilder().addLocalChallenge(address2, challengeText).build(address1)
 
     // Force the attemp interval to be 1000ms and match CI interval
     process.env.CI = 'true'
@@ -91,7 +92,7 @@ class ContentClusterBuilder {
     return this.addAddressWithEndpoints(domain, challengeText)
   }
 
-  build(localAddress: string): ContentCluster {
+  async build(localAddress: string): Promise<ContentCluster> {
     const env = new Environment()
 
     const daoClient = MockedDAOClient.withAddresses(...this.servers.values())
@@ -106,10 +107,10 @@ class ContentClusterBuilder {
       }
       : new ChallengeSupervisor()
 
-    const logs = createLogComponent({
-      config: {
-        logLevel: 'DEBUG'
-      }
+    const logs = await createLogComponent({
+      config: createConfigComponent({
+        LOG_LEVEL: 'DEBUG'
+      })
     })
 
     return new ContentCluster(

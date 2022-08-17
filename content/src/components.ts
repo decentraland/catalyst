@@ -1,7 +1,9 @@
+import { createTheGraphClient } from '@dcl/content-validator'
 import { EntityType } from '@dcl/schemas'
 import { createCatalystDeploymentStream } from '@dcl/snapshots-fetcher'
 import { createJobLifecycleManagerComponent } from '@dcl/snapshots-fetcher/dist/job-lifecycle-manager'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
+import { createConfigComponent } from '@well-known-components/env-config-provider'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { HTTPProvider } from 'eth-connect'
@@ -42,15 +44,16 @@ import { createSynchronizationManager } from './service/synchronization/Synchron
 import { createServerValidator } from './service/validations/server'
 import { createExternalCalls, createSubGraphsComponent, createValidator } from './service/validations/validator'
 import { AppComponents } from './types'
-import { createTheGraphClient } from '@dcl/content-validator'
 
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
   const metrics = createTestMetricsComponent(metricsDeclaration)
   const repository = await RepositoryFactory.create({ env, metrics })
-  const logs = createLogComponent({
-    config: {
-      logLevel: env.getConfig(EnvironmentConfig.LOG_LEVEL)
-    }
+  const config = createConfigComponent({
+    LOG_LEVEL: env.getConfig(EnvironmentConfig.LOG_LEVEL),
+    IGNORE_BLOCKCHAIN_ACCESS_CHECKS: env.getConfig(EnvironmentConfig.IGNORE_BLOCKCHAIN_ACCESS_CHECKS)
+  })
+  const logs = await createLogComponent({
+    config
   })
   const fetcher = createFetchComponent()
   const fs = createFsComponent()
@@ -103,7 +106,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   // TODO: this should be in the src/logic folder. It is not a component
   const pointerManager = new PointerManager()
 
-  const failedDeploymentsCache = createFailedDeploymentsCache()
+  const failedDeploymentsCache = createFailedDeploymentsCache({ metrics })
 
   const deployRateLimiter = createDeployRateLimiter(
     { logs },
@@ -126,7 +129,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     logs
   })
   const theGraphClient = createTheGraphClient({ subGraphs, logs })
-  const validator = createValidator({ externalCalls, logs, theGraphClient, subGraphs })
+  const validator = createValidator({ config, externalCalls, logs, theGraphClient, subGraphs })
   const serverValidator = createServerValidator({ failedDeploymentsCache, metrics })
 
   const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs })
@@ -239,7 +242,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     synchronizationJobManager,
     logs,
     contentCluster,
-    retryFailedDeployments
+    retryFailedDeployments,
+    metrics
   })
 
   const controller = new Controller(

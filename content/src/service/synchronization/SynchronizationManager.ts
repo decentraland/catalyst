@@ -2,7 +2,7 @@ import { AppComponents, IStatusCapableComponent } from '../../types'
 
 type ContentSyncComponents = Pick<
   AppComponents,
-  'logs' | 'synchronizationJobManager' | 'contentCluster' | 'retryFailedDeployments'
+  'logs' | 'synchronizationJobManager' | 'contentCluster' | 'retryFailedDeployments' | 'metrics'
 >
 
 export enum SynchronizationState {
@@ -35,6 +35,7 @@ export const createSynchronizationManager = (components: ContentSyncComponents):
       logger.info(`Starting to sync entities from servers pointer changes`)
       const setDesiredJobs = () => {
         synchronizationState = SynchronizationState.SYNCING
+        components.metrics.observe('dcl_content_server_sync_state', {}, 1)
         const desiredJobNames = new Set(components.contentCluster.getAllServersInCluster())
         // the job names are the contentServerUrl
         return components.synchronizationJobManager.setDesiredJobs(desiredJobNames)
@@ -47,6 +48,7 @@ export const createSynchronizationManager = (components: ContentSyncComponents):
       // the setDesiredJobs function handles the lifecycle od those async jobs.
       components.contentCluster.onSyncFinished(() => {
         synchronizationState = SynchronizationState.SYNCED
+        components.metrics.observe('dcl_content_server_sync_state', {}, 2)
         setDesiredJobs()
       })
 

@@ -124,7 +124,7 @@ jobs:
           POSTGRES_DB: postgres_test
           POSTGRES_PASSWORD: '12345678'
           POSTGRES_USER: postgres
-    parallelism: 4
+    parallelism: 5
     working_directory: *workspace_root
     steps:
       - <<: *attach_root

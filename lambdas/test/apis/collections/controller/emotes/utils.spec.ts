@@ -128,7 +128,7 @@ describe('emotes translation', () => {
         rarity: 'unique',
         i18n: [{ code: 'en', text: 'Emote' }],
         emoteDataADR74: {
-          category: 'simple',
+          category: 'dance',
           representations: [
             {
               bodyShapes: ['urn:decentraland:off-chain:base-avatars:BaseMale'],
