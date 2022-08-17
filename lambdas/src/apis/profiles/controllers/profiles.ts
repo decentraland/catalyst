@@ -101,9 +101,9 @@ export async function getProfilesByIdPost(
   // Path: /lambdas/profiles
   // Body: { ids: string[] }
 
-  const profileIds: string[] = req.body.ids ?? []
+  const profileIds: string[] = req.body?.ids ?? []
 
-  if (!profileIds) {
+  if (profileIds.length === 0) {
     return res.status(400).send({ error: 'You must specify at least one profile id' })
   }
 
@@ -129,9 +129,9 @@ export async function getProfilesById(
 ): Promise<Response<any, Record<string, any>> | undefined> {
   // Method: GET
   // Path: /lambdas/profiles?id={ids}
-  const profileIds: EthAddress[] | undefined = asArray(req.query.id as string)
+  const profileIds: EthAddress[] = asArray(req.query.id as string)
 
-  if (!profileIds) {
+  if (profileIds.length === 0) {
     return res.status(400).send({ error: 'You must specify at least one profile id' })
   }
 
