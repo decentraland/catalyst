@@ -1,7 +1,7 @@
 import { NextFunction, Request, RequestHandler, Response, Router } from 'express'
 import { SmartContentClient } from '../../utils/SmartContentClient'
 import { TheGraphClient } from '../../utils/TheGraphClient'
-import { getIndividualProfileById, getProfilesById } from './controllers/profiles'
+import { getIndividualProfileById, getProfilesById, getProfilesByIdPost } from './controllers/profiles'
 import { EnsOwnership } from './EnsOwnership'
 import { WearablesOwnership } from './WearablesOwnership'
 
@@ -40,6 +40,10 @@ export function initializeProfilesRoutes(
   router.get(
     '/',
     createHandler(theGraphClient, client, ensOwnership, wearablesOwnership, profilesCacheTTL, getProfilesById)
+  )
+  router.post(
+    '/',
+    createHandler(theGraphClient, client, ensOwnership, wearablesOwnership, profilesCacheTTL, getProfilesByIdPost)
   )
   router.get(
     '/:id',
