@@ -2,7 +2,7 @@ import { NextFunction, Request, RequestHandler, Response, Router } from 'express
 import { ThirdPartyAssetFetcher } from '../../ports/third-party/third-party-fetcher'
 import { SmartContentClient } from '../../utils/SmartContentClient'
 import { TheGraphClient } from '../../utils/TheGraphClient'
-import { getIndividualProfileById, getProfilesById } from './controllers/profiles'
+import { getIndividualProfileById, getProfilesById, getProfilesByIdPost } from './controllers/profiles'
 import { EmotesOwnership } from './EmotesOwnership'
 import { EnsOwnership } from './EnsOwnership'
 import { WearablesOwnership } from './WearablesOwnership'
@@ -63,6 +63,19 @@ export function initializeProfilesRoutes(
       thirdPartyFetcher,
       profilesCacheTTL,
       getProfilesById
+    )
+  )
+  router.post(
+    '/',
+    createHandler(
+      theGraphClient,
+      client,
+      ensOwnership,
+      wearablesOwnership,
+      emotesOwnership,
+      thirdPartyFetcher,
+      profilesCacheTTL,
+      getProfilesByIdPost
     )
   )
   router.get(

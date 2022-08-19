@@ -141,8 +141,6 @@ export class Server {
     this.app.use('/explore', initializeExploreRoutes(express.Router(), env.getBean(Bean.DAO), contentClient))
 
     this.app.use('/third-party-integrations', initializeThirdPartyIntegrationsRoutes(theGraphClient, express.Router()))
-    // Setup routes
-    // this.app.use(setupRouter(env))
   }
 
   async start(): Promise<void> {
