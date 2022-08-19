@@ -2650,7 +2650,7 @@ dcl-catalyst-client@^13.0.0:
     dcl-catalyst-commons "^9.0.6"
     form-data "^4.0.0"
 
-dcl-catalyst-commons@9.0.8, dcl-catalyst-commons@^9.0.6:
+dcl-catalyst-commons@^9.0.6:
   version "9.0.8"
   resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-9.0.8.tgz#dd3648d91115d735c5de9e52c5ba6b9db221368a"
   integrity sha512-+0EPfE8Qbmp2C7m/ObR+FYrZd6UTIytMyZHeKDAYCJhzJ7GAivkFDFMFlL04x/QvCdRjkCnH83lulflyYinBlg==
