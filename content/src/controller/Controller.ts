@@ -52,69 +52,81 @@ export class Controller {
    * this endpoint will be deprecated in favor of `getActiveEntities`
    */
   async getEntities(req: express.Request, res: express.Response): Promise<void> {
-    // Method: GET
-    // Path: /entities/:type
-    // Query String: ?{filter}&fields={fieldList}
-    const type: EntityType = parseEntityType(req.params.type)
-    const pointers: string[] = this.asArray<string>(req.query.pointer as string)?.map((p) => p.toLowerCase()) ?? []
-    const ids: string[] = this.asArray<string>(req.query.id as string) ?? []
-    const fields: string = req.query.fields as string
+    try {
+      // Method: GET
+      // Path: /entities/:type
+      // Query String: ?{filter}&fields={fieldList}
+      const type: EntityType = parseEntityType(req.params.type)
+      const pointers: string[] = this.asArray<string>(req.query.pointer as string)?.map((p) => p.toLowerCase()) ?? []
+      const ids: string[] = this.asArray<string>(req.query.id as string) ?? []
+      const fields: string = req.query.fields as string
 
-    // Validate type is valid
-    if (!type) {
-      res.status(400).send({ error: `Unrecognized type: ${req.params.type}` })
-      return
+      // Validate type is valid
+      if (!type) {
+        res.status(400).send({ error: `Unrecognized type: ${req.params.type}` })
+        return
+      }
+
+      // Validate pointers or ids are present, but not both
+      if ((ids.length > 0 && pointers.length > 0) || (ids.length == 0 && pointers.length == 0)) {
+        res.status(400).send({ error: 'ids or pointers must be present, but not both' })
+        return
+      }
+
+      // Validate fields are correct or empty
+      let enumFields: EntityField[] | undefined = undefined
+      if (fields) {
+        enumFields = fields.split(',').map((f) => (<any>EntityField)[f.toUpperCase().trim()])
+      }
+
+      // Calculate and mask entities
+      const entities: Entity[] =
+        ids.length > 0
+          ? await this.components.activeEntities.withIds(ids)
+          : await this.components.activeEntities.withPointers(pointers)
+
+      const maskedEntities: Entity[] = entities.map((entity) => ControllerEntityFactory.maskEntity(entity, enumFields))
+      res.send(maskedEntities)
+    } catch (error) {
+      Controller.LOGGER.error(`POST /entities/active - Internal server error '${error}'`)
+      Controller.LOGGER.error(error)
+      res.status(500).end()
     }
-
-    // Validate pointers or ids are present, but not both
-    if ((ids.length > 0 && pointers.length > 0) || (ids.length == 0 && pointers.length == 0)) {
-      res.status(400).send({ error: 'ids or pointers must be present, but not both' })
-      return
-    }
-
-    // Validate fields are correct or empty
-    let enumFields: EntityField[] | undefined = undefined
-    if (fields) {
-      enumFields = fields.split(',').map((f) => (<any>EntityField)[f.toUpperCase().trim()])
-    }
-
-    // Calculate and mask entities
-    const entities: Entity[] =
-      ids.length > 0
-        ? await this.components.activeEntities.withIds(ids)
-        : await this.components.activeEntities.withPointers(pointers)
-
-    const maskedEntities: Entity[] = entities.map((entity) => ControllerEntityFactory.maskEntity(entity, enumFields))
-    res.send(maskedEntities)
   }
 
   async getActiveEntities(
     req: express.Request<unknown, unknown, { ids: string[]; pointers: string[] }>,
     res: express.Response
   ): Promise<void> {
-    // Method: POST
-    // Path: /entities/active
-    // Body: { ids: string[], pointers: string[]}
+    try {
+      // Method: POST
+      // Path: /entities/active
+      // Body: { ids: string[], pointers: string[]}
 
-    const ids: string[] = req.body.ids
-    const pointers: string[] = req.body.pointers
+      const ids: string[] = req.body.ids
+      const pointers: string[] = req.body.pointers
 
-    const idsPresent = ids?.length > 0
-    const pointersPresent = pointers?.length > 0
+      const idsPresent = ids?.length > 0
+      const pointersPresent = pointers?.length > 0
 
-    const bothPresent = idsPresent && pointersPresent
-    const nonePresent = !idsPresent && !pointersPresent
-    if (bothPresent || nonePresent) {
-      res.status(400).send({ error: 'ids or pointers must be present, but not both' })
-      return
+      const bothPresent = idsPresent && pointersPresent
+      const nonePresent = !idsPresent && !pointersPresent
+      if (bothPresent || nonePresent) {
+        res.status(400).send({ error: 'ids or pointers must be present, but not both' })
+        return
+      }
+
+      const entities: Entity[] =
+        ids && ids.length > 0
+          ? await this.components.activeEntities.withIds(ids)
+          : await this.components.activeEntities.withPointers(pointers)
+
+      res.send(entities)
+    } catch (error) {
+      Controller.LOGGER.error(`POST /entities/active - Internal server error '${error}'`)
+      Controller.LOGGER.error(error)
+      res.status(500).end()
     }
-
-    const entities: Entity[] =
-      ids && ids.length > 0
-        ? await this.components.activeEntities.withIds(ids)
-        : await this.components.activeEntities.withPointers(pointers)
-
-    res.send(entities)
   }
 
   private asArray<T>(elements: any | T | T[]): T[] | undefined {
