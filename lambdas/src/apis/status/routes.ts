@@ -9,7 +9,8 @@ export default (environment: Environment): Router => {
     environment.getBean(Bean.SMART_CONTENT_SERVER_CLIENT),
     environment.getConfig(EnvironmentConfig.MAX_SYNCHRONIZATION_TIME),
     environment.getConfig(EnvironmentConfig.MAX_DEPLOYMENT_OBTENTION_TIME),
-    environment.getConfig(EnvironmentConfig.COMMS_SERVER_ADDRESS)
+    environment.getConfig(EnvironmentConfig.COMMS_SERVER_ADDRESS),
+    environment.getConfig(EnvironmentConfig.COMMS_PROTOCOL)
   )
 
   router.get('/status', (req: Request, res: Response) => {
