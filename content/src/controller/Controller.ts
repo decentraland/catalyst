@@ -88,7 +88,7 @@ export class Controller {
       const maskedEntities: Entity[] = entities.map((entity) => ControllerEntityFactory.maskEntity(entity, enumFields))
       res.send(maskedEntities)
     } catch (error) {
-      Controller.LOGGER.error(`POST /entities/active - Internal server error '${error}'`)
+      Controller.LOGGER.error(`POST /entities/:type - Internal server error '${error}'`)
       Controller.LOGGER.error(error)
       res.status(500).end()
     }
