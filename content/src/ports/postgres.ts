@@ -4,12 +4,16 @@ import { Client, Pool, PoolConfig } from 'pg'
 import QueryStream from 'pg-query-stream'
 import { SQLStatement } from 'sql-template-strings'
 import { EnvironmentConfig } from '../Environment'
-import { runReportingQueryDurationMetric } from '../instrument'
+import { generateReportingQueryDurationMetric, runReportingQueryDurationMetric } from '../instrument'
 import { AppComponents } from '../types'
 
 export interface IDatabaseComponent extends IDatabase {
   queryWithValues<T>(sql: SQLStatement, durationQueryNameLabel?: string): Promise<IDatabase.IQueryResult<T>>
-  streamQuery<T = any>(sql: SQLStatement, config?: { batchSize?: number }): AsyncGenerator<T>
+  streamQuery<T = any>(
+    sql: SQLStatement,
+    config?: { batchSize?: number },
+    durationQueryNameLabel?: string
+  ): AsyncGenerator<T>
 
   start(): Promise<void>
   stop(): Promise<void>
@@ -87,7 +91,17 @@ export async function createDatabaseComponent(
     }
   }
 
-  async function* streamQuery<T>(sql: SQLStatement, config?: { batchSize?: number }): AsyncGenerator<T> {
+  async function* streamQuery<T>(
+    sql: SQLStatement,
+    config?: { batchSize?: number },
+    durationQueryNameLabel?: string
+  ): AsyncGenerator<T> {
+    yield* durationQueryNameLabel
+      ? generateReportingQueryDurationMetric(components, durationQueryNameLabel, streamQuery(sql, config))
+      : streamQueryInternal(sql, config)
+  }
+
+  async function* streamQueryInternal<T>(sql: SQLStatement, config?: { batchSize?: number }): AsyncGenerator<T> {
     const client = new Client({
       ...finalOptions,
       query_timeout: streamQueryTimeout
