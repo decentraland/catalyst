@@ -119,6 +119,10 @@ export async function checkForThirdPartyWearablesOwnership(
     const collectionsForAddress: Set<WearableId> = new Set()
     for (const wearable of wearables) {
       try {
+        if (!wearable.startsWith('urn:') && !wearable.startsWith('dcl:')) {
+          continue
+        }
+
         const parsedUrn: DecentralandAssetIdentifier | null = await parseUrn(wearable)
         if (parsedUrn?.type === 'blockchain-collection-third-party') {
           // TODO: [TPW] Do this with urn-resolver

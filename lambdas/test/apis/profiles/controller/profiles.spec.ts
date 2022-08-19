@@ -73,6 +73,19 @@ describe('profiles', () => {
     expect(profiles[0]).toEqual(metadata)
   })
 
+  it(`When having non-urn items, then they are shown`, async () => {
+    const { entity, metadata } = profileWith(SOME_ADDRESS, { name: SOME_NAME, wearables: ['hammer'] })
+    const client = contentServerThatReturns(entity)
+    const ensOwnership = ownedNFTs(EnsOwnership, SOME_ADDRESS, SOME_NAME)
+    const wearablesOwnership = noNFTs(WearablesOwnership)
+
+    const profiles = (await fetchProfiles([SOME_ADDRESS], theGraphClient, client, ensOwnership, wearablesOwnership))!
+
+    expect(profiles.length).toEqual(1)
+    metadata.avatars[0].avatar.wearables = []
+    expect(profiles[0]).toEqual(metadata)
+  })
+
   it(`When some of the 3TPW worn wearables are not owned, then they are filtered out`, async () => {
     const { entity } = profileWith(SOME_ADDRESS, { wearables: [TPW_ID] })
     const client = contentServerThatReturns(entity)
