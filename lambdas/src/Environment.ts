@@ -104,7 +104,8 @@ export const enum EnvironmentConfig {
   METRICS,
   OFF_CHAIN_WEARABLES_REFRESH_TIME,
   VALIDATE_API,
-  PROFILES_CACHE_TTL
+  PROFILES_CACHE_TTL,
+  COMMS_PROTOCOL
 }
 
 export class EnvironmentBuilder {
@@ -242,6 +243,8 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PROFILES_CACHE_TTL, () =>
       parseInt(process.env.PROFILES_CACHE_TTL ?? '300')
     ) // 5 minutes by default
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.COMMS_PROTOCOL, () => process.env.COMMS_PROTOCOL ?? 'v2')
 
     // Please put special attention on the bean registration order.
     // Some beans depend on other beans, so the required beans should be registered before
