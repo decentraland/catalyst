@@ -23,7 +23,8 @@ export default class PeerHealthStatus {
     contentClient: SmartContentClient,
     maxSynchronizationTime: string,
     maxDeploymentObtentionTime: string,
-    private readonly commsServerAddress: string
+    private readonly commsServerAddress: string,
+    private readonly commsProtocol: string
   ) {
     this.contentServerStatus = new TimeRefreshedDataHolder(
       () =>
@@ -60,6 +61,9 @@ export default class PeerHealthStatus {
   }
 
   public async refreshCommsServerStatus(): Promise<HealthStatus> {
+    if (this.commsProtocol === 'v3') {
+      return HealthStatus.HEALTHY
+    }
     try {
       await (await fetch(this.commsServerAddress + '/status')).json()
 
