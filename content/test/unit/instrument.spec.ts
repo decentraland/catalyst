@@ -43,7 +43,7 @@ describe('instrument', () => {
         })
       })
       describe('fails', () => {
-        it('should re-thrown exception and set the status label to error', async () => {
+        it('should re-throw exception and set the status label to error', async () => {
           jest.spyOn(components.database, 'queryWithValues').mockRejectedValue(new Error('error with postgres'))
 
           await expect(runReportingQueryDurationMetric(
