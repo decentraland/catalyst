@@ -54,7 +54,8 @@ export async function* streamAllEntityIds(
     SQL`
       SELECT entity_id FROM deployments
     `,
-    { batchSize: 10000 }
+    { batchSize: 10000 },
+    'stream_all_entities'
   )) {
     yield {
       entityId: row.entity_id

@@ -19,6 +19,25 @@ export async function runReportingQueryDurationMetric<T>(
   }
 }
 
+export async function* generateReportingQueryDurationMetric<T>(
+  components: Pick<AppComponents, 'metrics'>,
+  queryNameLabel: string,
+  asyncGenerator: AsyncGenerator<T>
+): AsyncGenerator<T> {
+  const { end: endTimer } = components.metrics.startTimer('dcl_db_query_duration_seconds', {
+    query: queryNameLabel
+  })
+  try {
+    for await (const generatedElement of asyncGenerator) {
+      yield generatedElement
+    }
+    endTimer({ status: 'success' })
+  } catch (err) {
+    endTimer({ status: 'error' })
+    throw err
+  }
+}
+
 export async function runLoggingPerformance<T>(
   logger: ILoggerComponent.ILogger,
   taskName: string,
