@@ -74,10 +74,7 @@ describe('profiles', () => {
   it(`When having non-urn items, then they are removed without logging an error`, async () => {
     const { entity, metadata } = profileWith(SOME_ADDRESS, {
       name: SOME_NAME,
-      wearables: [
-        'hammer',
-        'urn:decentraland:mumbai:collections-thirdparty:jean-pier:testing-deployment-6:eed7e679-4b5b-455a-a76b-7ce6c0e3bee3'
-      ]
+      wearables: ['hammer', TPW_ID]
     })
     const client = contentServerThatReturns(entity)
     const ensOwnership = ownedNFTs(EnsOwnership, SOME_ADDRESS, SOME_NAME)
@@ -86,9 +83,7 @@ describe('profiles', () => {
     const profiles = (await fetchProfiles([SOME_ADDRESS], theGraphClient, client, ensOwnership, wearablesOwnership))!
 
     expect(profiles.length).toEqual(1)
-    metadata.avatars[0].avatar.wearables = [
-      'urn:decentraland:mumbai:collections-thirdparty:jean-pier:testing-deployment-6:eed7e679-4b5b-455a-a76b-7ce6c0e3bee3'
-    ]
+    metadata.avatars[0].avatar.wearables = [TPW_ID]
     expect(profiles[0]).toEqual(metadata)
   })
 
