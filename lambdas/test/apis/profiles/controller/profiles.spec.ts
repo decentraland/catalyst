@@ -73,7 +73,7 @@ describe('profiles', () => {
     expect(profiles[0]).toEqual(metadata)
   })
 
-  it(`When having non-urn items, then they are shown`, async () => {
+  it(`When having non-urn items, then they are removed without logging an error`, async () => {
     const { entity, metadata } = profileWith(SOME_ADDRESS, { name: SOME_NAME, wearables: ['hammer'] })
     const client = contentServerThatReturns(entity)
     const ensOwnership = ownedNFTs(EnsOwnership, SOME_ADDRESS, SOME_NAME)
