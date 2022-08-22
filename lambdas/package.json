@@ -15,7 +15,7 @@
     "@dcl/catalyst-contracts": "^3.0.0",
     "@dcl/crypto": "^3.1.2",
     "@dcl/schemas": "^5.10.0",
-    "@dcl/urn-resolver": "^2.0.0",
+    "@dcl/urn-resolver": "^2.0.1",
     "@well-known-components/http-server": "1.1.2",
     "@well-known-components/interfaces": "1.1.1",
     "@well-known-components/metrics": "1.1.3",
