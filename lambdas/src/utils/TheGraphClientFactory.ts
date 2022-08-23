@@ -11,18 +11,17 @@ import { createFetchComponent } from '../ports/fetcher'
 
 export class TheGraphClientFactory {
   static async create(env: Environment): Promise<TheGraphClient> {
+    const config = createConfigComponent({
+      LOG_LEVEL: env.getConfig(EnvironmentConfig.LOG_LEVEL)
+    })
     const baseComponents = {
-      config: createConfigComponent({
-        LOG_LEVEL: env.getConfig(EnvironmentConfig.LOG_LEVEL)
-      }),
+      config,
       fetch: createFetchComponent(),
       metrics: createTestMetricsComponent({ ...theGraphMetricDeclarations }),
-      logs: await createLogComponent({
-        config: createConfigComponent({
-          LOG_LEVEL: env.getConfig(EnvironmentConfig.LOG_LEVEL)
-        })
-      })
+      logs: await createLogComponent({ config })
     }
+
+    console.error(baseComponents)
 
     const collectionsSubgraph = await createSubgraphComponent(
       baseComponents,
