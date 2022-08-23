@@ -21,8 +21,6 @@ export class TheGraphClientFactory {
       logs: await createLogComponent({ config })
     }
 
-    console.error(baseComponents)
-
     const collectionsSubgraph = await createSubgraphComponent(
       baseComponents,
       env.getConfig(EnvironmentConfig.COLLECTIONS_L1_SUBGRAPH_URL)
