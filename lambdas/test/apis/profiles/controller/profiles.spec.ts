@@ -2,10 +2,7 @@ import { EthAddress } from '@dcl/crypto'
 import { Entity, EntityType } from '@dcl/schemas'
 import { anything, instance, mock, when } from 'ts-mockito'
 import { WearableId } from '../../../../src/apis/collections/types'
-import {
-  fetchProfiles,
-  ProfileMetadata
-} from '../../../../src/apis/profiles/controllers/profiles'
+import { fetchProfiles, ProfileMetadata } from '../../../../src/apis/profiles/controllers/profiles'
 import { EnsOwnership } from '../../../../src/apis/profiles/EnsOwnership'
 import { NFTOwnership } from '../../../../src/apis/profiles/NFTOwnership'
 import { WearablesOwnership } from '../../../../src/apis/profiles/WearablesOwnership'
@@ -19,7 +16,8 @@ describe('profiles', () => {
   const SOME_ADDRESS = '0x079bed9c31cb772c4c156f86e1cff15bf751add0'
   const SOME_NAME = 'NFTName'
   const WEARABLE_ID_1 = 'someCollection-someWearable'
-  const TPW_ID = 'urn:decentraland:mumbai:collections-thirdparty:jean-pier:testing-deployment-6:eed7e679-4b5b-455a-a76b-7ce6c0e3bee3'
+  const TPW_ID =
+    'urn:decentraland:mumbai:collections-thirdparty:jean-pier:testing-deployment-6:eed7e679-4b5b-455a-a76b-7ce6c0e3bee3'
   const theGraphClient = theGraph()
 
   it(`When profiles are fetched and NFTs are owned, then the returned profile is the same as the content server`, async () => {
@@ -73,6 +71,22 @@ describe('profiles', () => {
     expect(profiles[0]).toEqual(metadata)
   })
 
+  it(`When having non-urn items, then they are removed without logging an error`, async () => {
+    const { entity, metadata } = profileWith(SOME_ADDRESS, {
+      name: SOME_NAME,
+      wearables: ['hammer', TPW_ID]
+    })
+    const client = contentServerThatReturns(entity)
+    const ensOwnership = ownedNFTs(EnsOwnership, SOME_ADDRESS, SOME_NAME)
+    const wearablesOwnership = noNFTs(WearablesOwnership)
+
+    const profiles = (await fetchProfiles([SOME_ADDRESS], theGraphClient, client, ensOwnership, wearablesOwnership))!
+
+    expect(profiles.length).toEqual(1)
+    metadata.avatars[0].avatar.wearables = [TPW_ID]
+    expect(profiles[0]).toEqual(metadata)
+  })
+
   it(`When some of the 3TPW worn wearables are not owned, then they are filtered out`, async () => {
     const { entity } = profileWith(SOME_ADDRESS, { wearables: [TPW_ID] })
     const client = contentServerThatReturns(entity)
@@ -86,7 +100,6 @@ describe('profiles', () => {
     expect(profiles.length).toEqual(1)
     expect(profiles[0].avatars[0].avatar.wearables.length).toEqual(0)
   })
-
 
   it(`When the is no profile with that address, then an empty list is returned`, async () => {
     const client = contentServerThatReturns()
@@ -131,8 +144,12 @@ describe('profiles', () => {
     const ensOwnership = ownedNFTs(EnsOwnership, SOME_ADDRESS, SOME_NAME)
     const wearablesOwnership = ownedNFTs(WearablesOwnership, SOME_ADDRESS, WEARABLE_ID_1)
 
-    expect(await fetchProfiles([SOME_ADDRESS], theGraphClient, client, ensOwnership, wearablesOwnership, 2000)).toBe(undefined)
-    expect(await fetchProfiles([SOME_ADDRESS], theGraphClient, client, ensOwnership, wearablesOwnership, 3000)).toBe(undefined)
+    expect(await fetchProfiles([SOME_ADDRESS], theGraphClient, client, ensOwnership, wearablesOwnership, 2000)).toBe(
+      undefined
+    )
+    expect(await fetchProfiles([SOME_ADDRESS], theGraphClient, client, ensOwnership, wearablesOwnership, 3000)).toBe(
+      undefined
+    )
   })
 })
 
