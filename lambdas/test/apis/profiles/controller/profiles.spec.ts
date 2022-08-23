@@ -8,6 +8,7 @@ import { EnsOwnership } from '../../../../src/apis/profiles/EnsOwnership'
 import { NFTOwnership } from '../../../../src/apis/profiles/NFTOwnership'
 import * as tpOwnership from '../../../../src/apis/profiles/tp-wearables-ownership'
 import { WearablesOwnership } from '../../../../src/apis/profiles/WearablesOwnership'
+import * as tpUrnFinder from '../../../../src/logic/third-party-urn-finder'
 import { SmartContentClient } from '../../../../src/utils/SmartContentClient'
 import { TheGraphClient } from '../../../../src/utils/TheGraphClient'
 
@@ -17,7 +18,8 @@ describe('profiles', () => {
   const SOME_ADDRESS = '0x079bed9c31cb772c4c156f86e1cff15bf751add0'
   const SOME_NAME = 'NFTName'
   const WEARABLE_ID_1 = 'someCollection-someWearable'
-  const TPW_ID = 'urn:decentraland:mumbai:collections-thirdparty:jean-pier:testing-deployment-6:eed7e679-4b5b-455a-a76b-7ce6c0e3bee3'
+  const TPW_ID =
+    'urn:decentraland:mumbai:collections-thirdparty:jean-pier:testing-deployment-6:eed7e679-4b5b-455a-a76b-7ce6c0e3bee3'
   const theGraphClient = theGraph()
   const thirdPartyFetcher = { fetchAssets: () => Promise.resolve([]) }
 
@@ -73,6 +75,25 @@ describe('profiles', () => {
     const profiles = (await pfs.fetchProfiles([SOME_ADDRESS], theGraphClient, client, ensOwnership, wearablesOwnership, emotesOwnership, thirdPartyFetcher))!
 
     expect(profiles.length).toEqual(1)
+    expect(profiles[0]).toEqual(metadata)
+  })
+
+  it(`When having non-urn items, then they are removed without logging an error`, async () => {
+    const { entity, metadata } = profileWith(SOME_ADDRESS, {
+      name: SOME_NAME,
+      wearables: ['hammer', TPW_ID]
+    })
+    const client = contentServerThatReturns(entity)
+    const ensOwnership = ownedNFTs(EnsOwnership, SOME_ADDRESS, SOME_NAME)
+    const wearablesOwnership = noNFTs(WearablesOwnership)
+    const tpUrnFinderMock = jest.spyOn(tpUrnFinder, 'findThirdPartyItemUrns')
+    tpUrnFinderMock.mockReturnValue(Promise.resolve([TPW_ID]))
+    const emotesOwnership = ownedNFTs(EmotesOwnership, SOME_ADDRESS, WEARABLE_ID_1)
+
+    const profiles = (await pfs.fetchProfiles([SOME_ADDRESS], theGraphClient, client, ensOwnership, wearablesOwnership, emotesOwnership, thirdPartyFetcher))!
+
+    expect(profiles.length).toEqual(1)
+    metadata.avatars[0].avatar.wearables = [TPW_ID]
     expect(profiles[0]).toEqual(metadata)
   })
 
