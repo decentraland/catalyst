@@ -16,14 +16,14 @@
     "test:unit": "jest --selectProjects unit --runInBand --forceExit --detectOpenHandles --coverage"
   },
   "dependencies": {
-    "@dcl/catalyst-api-specs": "^2.0.0",
+    "@dcl/catalyst-api-specs": "^2.0.1",
     "@dcl/catalyst-contracts": "^3.0.0",
-    "@dcl/content-validator": "^4.0.1",
-    "@dcl/crypto": "^3.1.1",
+    "@dcl/content-validator": "^4.0.2",
+    "@dcl/crypto": "^3.1.2",
     "@dcl/hashing": "^1.1.0",
     "@dcl/schemas": "^5.10.0",
     "@dcl/snapshots-fetcher": "^4.0.0",
-    "@dcl/urn-resolver": "^2.0.0",
+    "@dcl/urn-resolver": "^2.0.1",
     "@well-known-components/env-config-provider": "^1.1.1",
     "@well-known-components/http-server": "1.1.2",
     "@well-known-components/interfaces": "1.1.1",
