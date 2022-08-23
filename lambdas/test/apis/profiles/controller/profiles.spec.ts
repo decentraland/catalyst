@@ -112,7 +112,6 @@ describe('profiles', () => {
     expect(profiles[0].avatars[0].avatar.wearables.length).toEqual(0)
   })
 
-
   it(`When the is no profile with that address, then an empty list is returned`, async () => {
     const client = contentServerThatReturns()
     const ensOwnership = noNFTs(EnsOwnership)
