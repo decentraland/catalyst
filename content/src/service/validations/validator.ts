@@ -7,7 +7,7 @@ import {
 } from '@dcl/content-validator'
 import { Authenticator } from '@dcl/crypto'
 import { EnvironmentConfig } from '../../Environment'
-import { streamToBuffer } from '../../ports/contentStorage/contentStorage'
+import { streamToBuffer } from '@dcl/catalyst-storage/dist/content-item'
 import { AppComponents } from '../../types'
 import { createSubgraphComponent } from '@well-known-components/thegraph-component'
 import { IConfigComponent } from '@well-known-components/interfaces'

@@ -1,12 +1,19 @@
+import { ContentItem } from '@dcl/catalyst-storage'
 import { AuthChain, AuthLinkType } from '@dcl/crypto'
 import { DeploymentWithAuthChain, Entity, EntityType } from '@dcl/schemas'
 import { random } from 'faker'
 import { CURRENT_CONTENT_VERSION } from '../../../src/Environment'
-import { ContentItem, SimpleContentItem } from '../../../src/ports/contentStorage/contentStorage'
 import { FailedDeployment } from '../../../src/ports/failedDeploymentsCache'
-import { AuditInfo, Deployment, DeploymentOptions, PartialDeploymentHistory, PointerChangesOptions } from '../../../src/service/deployments/types'
+import {
+  AuditInfo,
+  Deployment,
+  DeploymentOptions,
+  PartialDeploymentHistory,
+  PointerChangesOptions
+} from '../../../src/service/deployments/types'
 import { DeploymentContext, LocalDeploymentAuditInfo, MetaverseContentService } from '../../../src/service/Service'
 import { EntityVersion, IStatusCapableComponent, StatusProbeResult } from '../../../src/types'
+import { SimpleContentItem } from '@dcl/catalyst-storage/dist/content-item'
 import { buildEntityAndFile } from './EntityTestFactory'
 
 export class MockedMetaverseContentService implements MetaverseContentService, IStatusCapableComponent {
@@ -188,13 +195,9 @@ export function buildEntity(
   const entityContent: Map<string, string> = new Map(
     content.map((aContent) => [random.alphaNumeric(10), aContent.hash])
   )
-  return buildEntityAndFile(
-    EntityType.PROFILE,
-    pointers,
-    random.number({ min: 5, max: 10 }),
-    entityContent,
-    { metadata: random.alphaNumeric(10) }
-  )
+  return buildEntityAndFile(EntityType.PROFILE, pointers, random.number({ min: 5, max: 10 }), entityContent, {
+    metadata: random.alphaNumeric(10)
+  })
 }
 
 export function buildContent(): { hash: string; buffer: Buffer } {

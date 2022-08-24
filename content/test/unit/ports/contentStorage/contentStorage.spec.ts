@@ -1,14 +1,14 @@
 import { createReadStream, readFileSync } from 'fs'
 import path from 'path'
 import { Environment, EnvironmentConfig } from '../../../../src/Environment'
-import { bufferToStream, ContentStorage, streamToBuffer } from '../../../../src/ports/contentStorage/contentStorage'
-import { createFileSystemContentStorage } from '../../../../src/ports/contentStorage/fileSystemContentStorage'
+import { bufferToStream, streamToBuffer } from '@dcl/catalyst-storage/dist/content-item'
+import { createFolderBasedFileSystemContentStorage, IContentStorageComponent } from '@dcl/catalyst-storage'
 import { createFsComponent } from '../../../../src/ports/fs'
 import { FileSystemUtils as fsu } from './FileSystemUtils'
 
 describe('ContentStorage', () => {
   let env: Environment
-  let storage: ContentStorage
+  let storage: IContentStorageComponent
   let id: string
   let content: Buffer
   let id2: string
@@ -18,7 +18,7 @@ describe('ContentStorage', () => {
     env = new Environment()
     env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, fsu.createTempDirectory())
     const contentFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
-    storage = await createFileSystemContentStorage({ fs: createFsComponent() }, contentFolder)
+    storage = await createFolderBasedFileSystemContentStorage({ fs: createFsComponent() }, contentFolder)
 
     id = 'some-id'
     content = Buffer.from('123')
@@ -97,9 +97,13 @@ describe('ContentStorage', () => {
     await storage.storeStream(id, bufferToStream(content))
     await storage.storeStream(id2, bufferToStream(content2))
     expect(await storage.existMultiple([id, id2, 'notStored'])).toEqual(
-      new Map([[id, true], [id2, true], ['notStored', false]])
+      new Map([
+        [id, true],
+        [id2, true],
+        ['notStored', false]
+      ])
     )
-})
+  })
 
   it(`When multiple content is stored, then multiple content is correct`, async () => {
     await storage.storeStream(id, bufferToStream(content))
@@ -120,16 +124,15 @@ describe('ContentStorage', () => {
 
   it(`When a content with bad compression ratio is stored and compressed, then it is not stored compressed`, async () => {
     await storage.storeStreamAndCompress(id, bufferToStream(content))
-    const retrievedContent = (await storage.retrieve(id))
+    const retrievedContent = await storage.retrieve(id)
     expect(retrievedContent?.encoding).toBeNull()
     expect(await streamToBuffer(await retrievedContent!.asStream())).toEqual(content)
-
   })
 
   it(`When a content with good compression ratio is stored and compressed, then it is stored compressed`, async () => {
     const goodCompresstionRatioContent = Buffer.from(new Uint8Array(100).fill(0))
     await storage.storeStreamAndCompress(id, bufferToStream(goodCompresstionRatioContent))
-    const retrievedContent = (await storage.retrieve(id))
+    const retrievedContent = await storage.retrieve(id)
     expect(retrievedContent?.encoding).toBe('gzip')
     expect(await streamToBuffer(await retrievedContent!.asStream())).toEqual(goodCompresstionRatioContent)
   })

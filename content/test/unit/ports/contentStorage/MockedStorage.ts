@@ -1,7 +1,8 @@
+import { ContentItem, IContentStorageComponent } from '@dcl/catalyst-storage'
 import { Readable } from 'stream'
-import { ContentItem, ContentStorage, SimpleContentItem, streamToBuffer } from '../../../../src/ports/contentStorage/contentStorage'
+import { streamToBuffer, SimpleContentItem } from '@dcl/catalyst-storage/dist/content-item'
 
-export class MockedStorage implements ContentStorage {
+export class MockedStorage implements IContentStorageComponent {
   private storage: Map<string, Uint8Array> = new Map()
 
   async storeStreamAndCompress(fileId: string, content: Readable): Promise<void> {

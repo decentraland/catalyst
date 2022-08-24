@@ -12,7 +12,7 @@ import { Environment } from './Environment'
 import { metricsDeclaration } from './metrics'
 import { MigrationManager } from './migrations/MigrationManager'
 import { ActiveEntities } from './ports/activeEntities'
-import { ContentStorage } from './ports/contentStorage/contentStorage'
+import { IContentStorageComponent } from '@dcl/catalyst-storage'
 import { Denylist } from './ports/denylist'
 import { DeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
 import { IDeployRateLimiterComponent } from './ports/deployRateLimiterComponent'
@@ -62,7 +62,7 @@ export type AppComponents = {
   failedDeploymentsCache: IFailedDeploymentsCacheComponent
   deployRateLimiter: IDeployRateLimiterComponent
   deploymentManager: DeploymentManager
-  storage: ContentStorage
+  storage: IContentStorageComponent
   authenticator: ContentAuthenticator
   migrationManager: MigrationManager
   serverValidator: ServerValidator
@@ -89,7 +89,7 @@ export type MaintenanceComponents = {
   metrics: IMetricsComponent<keyof typeof metricsDeclaration>
   logs: ILoggerComponent
   database: IDatabaseComponent
-  storage: ContentStorage
+  storage: IContentStorageComponent
   fs: FSComponent
   migrationManager: MigrationManager
 }

@@ -2,14 +2,14 @@ import { streamToBuffer } from '@dcl/snapshots-fetcher/dist/utils'
 import { mkdtempSync, rmSync } from 'fs'
 import os from 'os'
 import path from 'path'
-import { bufferToStream, ContentStorage } from '../../../../src/ports/contentStorage/contentStorage'
-import { createFileSystemContentStorage } from '../../../../src/ports/contentStorage/fileSystemContentStorage'
+import { bufferToStream } from '@dcl/catalyst-storage/dist/content-item'
+import { createFolderBasedFileSystemContentStorage, FolderBasedContentStorage } from '@dcl/catalyst-storage'
 import { createFsComponent } from '../../../../src/ports/fs'
 
 describe('fileSystemContentStorage', () => {
   const fs = createFsComponent()
   let tmpRootDir: string
-  let fileSystemContentStorage: ContentStorage
+  let fileSystemContentStorage: FolderBasedContentStorage
 
   // sha1('some-id') = 9584b661c135a43f2fbbe43cc5104f7bd693d048
   const id: string = 'some-id'
@@ -23,7 +23,7 @@ describe('fileSystemContentStorage', () => {
 
   beforeEach(async () => {
     tmpRootDir = mkdtempSync(path.join(os.tmpdir(), 'content-storage-'))
-    fileSystemContentStorage = await createFileSystemContentStorage({ fs }, tmpRootDir)
+    fileSystemContentStorage = await createFolderBasedFileSystemContentStorage({ fs }, tmpRootDir)
     filePath = path.join(tmpRootDir, '9584', id)
     filePath2 = path.join(tmpRootDir, 'ea6c', id2)
   })

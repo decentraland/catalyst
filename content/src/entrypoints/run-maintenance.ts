@@ -7,7 +7,7 @@ import { deleteUnreferencedFiles } from '../logic/delete-unreferenced-files'
 import { metricsDeclaration } from '../metrics'
 import { migrateContentFolderStructure } from '../migrations/ContentFolderMigrationManager'
 import { MigrationManagerFactory } from '../migrations/MigrationManagerFactory'
-import { createFileSystemContentStorage } from '../ports/contentStorage/fileSystemContentStorage'
+import { createFolderBasedFileSystemContentStorage } from '@dcl/catalyst-storage'
 import { createFsComponent } from '../ports/fs'
 import { createDatabaseComponent } from '../ports/postgres'
 import { MaintenanceComponents } from '../types'
@@ -39,7 +39,7 @@ void Lifecycle.run({
     const database = await createDatabaseComponent({ logs, env, metrics })
     const fs = createFsComponent()
     const contentStorageFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
-    const storage = await createFileSystemContentStorage({ fs }, contentStorageFolder)
+    const storage = await createFolderBasedFileSystemContentStorage({ fs }, contentStorageFolder)
     const migrationManager = MigrationManagerFactory.create({ logs, env })
     env.logConfigValues(logs.getLogger('Environment'))
     return { logs, metrics, env, database, migrationManager, fs, storage }

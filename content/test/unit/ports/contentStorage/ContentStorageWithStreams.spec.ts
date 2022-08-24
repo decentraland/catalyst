@@ -1,13 +1,13 @@
 import path from 'path'
 import { Environment, EnvironmentConfig } from '../../../../src/Environment'
-import { bufferToStream, ContentStorage, streamToBuffer } from '../../../../src/ports/contentStorage/contentStorage'
-import { createFileSystemContentStorage } from '../../../../src/ports/contentStorage/fileSystemContentStorage'
+import { bufferToStream, streamToBuffer } from '@dcl/catalyst-storage/dist/content-item'
+import { createFolderBasedFileSystemContentStorage, IContentStorageComponent } from '@dcl/catalyst-storage'
 import { createFsComponent } from '../../../../src/ports/fs'
 import { FileSystemUtils as fsu } from './FileSystemUtils'
 
 describe('ContentStorage', () => {
   let env: Environment
-  let storage: ContentStorage
+  let storage: IContentStorageComponent
   let id: string
   let content: Buffer
 
@@ -15,7 +15,7 @@ describe('ContentStorage', () => {
     env = new Environment()
     env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, fsu.createTempDirectory())
     const contentFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
-    storage = await createFileSystemContentStorage({ fs: createFsComponent() }, contentFolder)
+    storage = await createFolderBasedFileSystemContentStorage({ fs: createFsComponent() }, contentFolder)
 
     id = 'some-id'
     content = Buffer.from('123')
@@ -70,7 +70,10 @@ describe('ContentStorage', () => {
 
     const retrievedContent = await storage.retrieve(id)
 
-    expect({ encoding: retrievedContent?.encoding, size: retrievedContent?.size }).toEqual({ encoding: 'gzip', size: 45 })
+    expect({ encoding: retrievedContent?.encoding, size: retrievedContent?.size }).toEqual({
+      encoding: 'gzip',
+      size: 45
+    })
     expect(await streamToBuffer(await retrievedContent!.asStream())).toEqual(newContent)
   })
 })

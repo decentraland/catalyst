@@ -2,11 +2,11 @@ import fetch from 'node-fetch'
 import { stub } from 'sinon'
 import { EnvironmentConfig } from '../../src/Environment'
 import { DeploymentWithAuthChain, Entity, EntityType } from '@dcl/schemas'
-import { SimpleContentItem } from '../../src/ports/contentStorage/contentStorage'
 import { Server } from '../../src/service/Server'
 import { randomEntity } from '../helpers/service/EntityTestFactory'
 import { buildContent } from '../helpers/service/MockedMetaverseContentService'
 import { E2ETestEnvironment } from './E2ETestEnvironment'
+import { SimpleContentItem } from '@dcl/catalyst-storage/dist/content-item'
 
 describe('Integration - Server', () => {
   let server: Server

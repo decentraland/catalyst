@@ -3,17 +3,17 @@ import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { Environment, EnvironmentConfig } from '../../../src/Environment'
 import { metricsDeclaration } from '../../../src/metrics'
 import { migrateContentFolderStructure } from '../../../src/migrations/ContentFolderMigrationManager'
-import { ContentStorage } from '../../../src/ports/contentStorage/contentStorage'
 import { createFsComponent } from '../../../src/ports/fs'
 import { FileSystemUtils as fsu } from '../ports/contentStorage/FileSystemUtils'
 import { createConfigComponent } from "@well-known-components/env-config-provider";
+import { IContentStorageComponent } from '@dcl/catalyst-storage'
 
 let files = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
 
 describe('ContentFolderMigrationManager', () => {
   let storeStreamSpy: jest.Mock
 
-  let storage: ContentStorage
+  let storage: IContentStorageComponent
 
   describe('when running the migration with no errors', () => {
     beforeAll(() => {
@@ -39,7 +39,7 @@ describe('ContentFolderMigrationManager', () => {
   })
 })
 
-async function runMigration(storage: ContentStorage) {
+async function runMigration(storage: IContentStorageComponent) {
   const logs = await createLogComponent({
     config: createConfigComponent({
       LOG_LEVEL: 'DEBUG'

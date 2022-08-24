@@ -16,7 +16,7 @@ import { splitByCommaTrimAndRemoveEmptyElements } from './logic/config-helpers'
 import { metricsDeclaration } from './metrics'
 import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
 import { createActiveEntitiesComponent } from './ports/activeEntities'
-import { createFileSystemContentStorage } from './ports/contentStorage/fileSystemContentStorage'
+import { createFolderBasedFileSystemContentStorage } from '@dcl/catalyst-storage'
 import { createDenylist } from './ports/denylist'
 import { createDeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
 import { createDeployRateLimiter } from './ports/deployRateLimiterComponent'
@@ -76,7 +76,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const catalystFetcher = FetcherFactory.create({ env })
   const contentFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
-  const storage = await createFileSystemContentStorage({ fs }, contentFolder)
+  const storage = await createFolderBasedFileSystemContentStorage({ fs }, contentFolder)
 
   const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK)
   const ethereumProvider = new HTTPProvider(

@@ -1,5 +1,5 @@
+import { ContentItem } from '@dcl/catalyst-storage'
 import { AuthChain, EntityType } from '@dcl/schemas'
-import { ContentItem } from '../ports/contentStorage/contentStorage'
 import { FailedDeployment } from '../ports/failedDeploymentsCache'
 import { Database } from '../repository/Database'
 import { AuditInfo, Deployment, PartialDeploymentHistory } from './deployments/types'

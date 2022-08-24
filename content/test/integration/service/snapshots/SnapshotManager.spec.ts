@@ -3,13 +3,13 @@ import { EntityType } from '@dcl/schemas'
 import { inspect } from 'util'
 import { EnvironmentBuilder } from '../../../../src/Environment'
 import { stopAllComponents } from '../../../../src/logic/components-lifecycle'
-import { ContentItem } from '../../../../src/ports/contentStorage/contentStorage'
 import { SnapshotMetadata } from '../../../../src/service/snapshots/SnapshotManager'
 import { AppComponents } from '../../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { assertResultIsSuccessfulWithTimestamp } from '../../E2EAssertions'
 import { loadStandaloneTestEnvironment } from '../../E2ETestEnvironment'
 import { buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo, EntityCombo } from '../../E2ETestUtils'
+import { ContentItem } from '@dcl/catalyst-storage'
 
 loadStandaloneTestEnvironment()('Integration - Snapshot Manager', (testEnv) => {
   const P1 = 'X1,Y1',

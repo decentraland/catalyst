@@ -3,7 +3,7 @@ import fetch from 'node-fetch'
 import path from 'path'
 import { Controller } from '../../../src/controller/Controller'
 import { EnvironmentConfig } from '../../../src/Environment'
-import { bufferToStream } from '../../../src/ports/contentStorage/contentStorage'
+import { bufferToStream } from '@dcl/catalyst-storage/dist/content-item'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
 
