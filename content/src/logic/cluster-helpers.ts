@@ -34,9 +34,9 @@ export async function determineCatalystIdentity(
   // is still warming up, there is a small chance that challenge based requests may be unreachable, thus we have attempts
   let attempts = 0
   try {
-    logger.info('Attempting to determine my identity')
+    logger.debug('Attempting to determine my identity')
     while (attempts < maxAttemps) {
-      logger.info(`Attempt to determine my identity #${attempts + 1}`)
+      logger.debug(`Attempt to determine my identity #${attempts + 1}`)
       const response = await getChallengeInServer(components, normalizedContentServerAddress)
 
       if (response && components.challengeSupervisor.isChallengeOk(response)) {

@@ -121,7 +121,7 @@ export class ServiceImpl implements MetaverseContentService {
     const contextToDeploy: DeploymentContext = this.calculateIfLegacy(entity, auditInfo.authChain, context)
 
     try {
-      ServiceImpl.LOGGER.info(`Deploying entity`, {
+      ServiceImpl.LOGGER.debug(`Deploying entity`, {
         entityId,
         pointers: entity.pointers.join(' ')
       })
@@ -160,7 +160,7 @@ export class ServiceImpl implements MetaverseContentService {
         }
         return storeResult
       } else if (storeResult.wasEntityDeployed) {
-        ServiceImpl.LOGGER.info(`Entity deployed`, {
+        ServiceImpl.LOGGER.debug(`Entity deployed`, {
           entityId,
           pointers: entity.pointers.join(' ')
         })

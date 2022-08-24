@@ -62,12 +62,12 @@ export class TestProgram {
   }
 
   async deploy(deployData: DeploymentData, fix: boolean = false): Promise<number> {
-    this.logger.info('Deploying entity ' + deployData.entityId)
+    this.logger.debug('Deploying entity ' + deployData.entityId)
     const returnValue = await this.client.deployEntity(deployData, fix)
     if (isInvalidDeployment(returnValue)) {
       throw new Error(returnValue.errors.join(','))
     }
-    this.logger.info('Deployed entity ' + deployData.entityId, { returnValue })
+    this.logger.debug('Deployed entity ' + deployData.entityId, { returnValue })
     return returnValue
   }
 
