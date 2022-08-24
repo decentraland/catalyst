@@ -1,12 +1,9 @@
 import { Environment, EnvironmentConfig } from '../Environment'
 import { TheGraphClient } from './TheGraphClient'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
-import {
-  createSubgraphComponent,
-  metricDeclarations as theGraphMetricDeclarations
-} from '@well-known-components/thegraph-component'
+import { metricsComponent } from '../metrics'
+import { createSubgraphComponent } from '@well-known-components/thegraph-component'
 import { createLogComponent } from '@well-known-components/logger'
-import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { createFetchComponent } from '../ports/fetcher'
 
 export class TheGraphClientFactory {
@@ -17,7 +14,7 @@ export class TheGraphClientFactory {
     const baseComponents = {
       config,
       fetch: createFetchComponent(),
-      metrics: createTestMetricsComponent({ ...theGraphMetricDeclarations }),
+      metrics: metricsComponent,
       logs: await createLogComponent({ config })
     }
 
