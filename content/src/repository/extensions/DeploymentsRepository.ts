@@ -4,21 +4,6 @@ import { Database } from '../../repository/Database'
 export class DeploymentsRepository {
   constructor(private readonly db: Database) { }
 
-  async getDeployments(deploymentIds: Set<number>): Promise<{ id: number; pointers: string[] }[]> {
-    if (deploymentIds.size === 0) return []
-    return await this.db.map(
-      `
-        SELECT id, entity_pointers
-        FROM deployments d WHERE d.id IN ($1:list)
-      `,
-      [Array.from(deploymentIds)],
-      (row) => ({
-        id: row.id,
-        pointers: row.entity_pointers
-      })
-    )
-  }
-
   async getAmountOfDeployments(): Promise<Map<EntityType, number>> {
     const entries: [EntityType, number][] = await this.db.map(
       `SELECT entity_type, COUNT(*) AS count FROM deployments GROUP BY entity_type`,

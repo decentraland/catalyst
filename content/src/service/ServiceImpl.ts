@@ -279,17 +279,12 @@ export class ServiceImpl implements MetaverseContentService {
               overwrittenBy
             )
             // Modify active pointers
-            const pointersFromEntity = await runReportingQueryDurationMetric(
+            const pointersFromEntity = await this.components.pointerManager.referenceEntityFromPointers(
               this.components,
-              'reference_entity_from_pointers',
-              () =>
-                this.components.pointerManager.referenceEntityFromPointers(
-                  transaction.deployments,
-                  deploymentId,
-                  entity,
-                  overwrote,
-                  overwrittenBy !== null
-                )
+              deploymentId,
+              entity,
+              overwrote,
+              overwrittenBy !== null
             )
 
             // Update pointers and active entities
