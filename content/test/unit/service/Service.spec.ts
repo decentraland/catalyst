@@ -46,8 +46,6 @@ describe('Service', function () {
     authChain: Authenticator.createSimpleAuthChain('entityId', 'ethAddress', 'signature')
   }
 
-  const initialAmountOfDeployments: number = 15
-
   const randomFile = Buffer.from('1234')
   let randomFileHash: string
   let entity: Entity
@@ -227,7 +225,7 @@ describe('Service', function () {
   })
 
   async function buildService() {
-    const repository = MockedRepository.build(new Map([[EntityType.SCENE, initialAmountOfDeployments]]))
+    const repository = MockedRepository.build()
     const database = createTestDatabaseComponent()
     database.queryWithValues = () => Promise.resolve({ rows: [], rowCount: 0 })
     const env = new Environment()

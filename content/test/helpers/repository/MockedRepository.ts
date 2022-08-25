@@ -1,19 +1,18 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { EntityType } from "@dcl/schemas"
 import { anything, instance, mock, when } from 'ts-mockito'
 import { Database } from '../../../src/repository/Database'
 import { DeploymentsRepository } from '../../../src/repository/extensions/DeploymentsRepository'
 import { Repository } from '../../../src/repository/Repository'
 
 export class MockedRepository {
-  static build(initialAmountOfDeployments: Map<EntityType, number> = new Map()): Repository {
+  static build(): Repository {
     const mockedDatabase: Database = mock<Database>()
     when(mockedDatabase.task(anything())).thenCall((call) => call(mockedDatabase))
     when(mockedDatabase.taskIf(anything())).thenCall((call) => call(mockedDatabase))
     when(mockedDatabase.tx(anything())).thenCall((call) => call(mockedDatabase))
     when(mockedDatabase.txIf(anything())).thenCall((call) => call(mockedDatabase))
     const dbInstance = instance(mockedDatabase)
-    dbInstance.deployments = instance(this.mockDeploymentsRepository(initialAmountOfDeployments))
+    dbInstance.deployments = instance(this.mockDeploymentsRepository())
 
     const mockedRepository: Repository = mock<Repository>()
     when(mockedRepository.task(anything(), anything())).thenCall((call) => call(dbInstance))
@@ -35,7 +34,7 @@ export class MockedRepository {
     return instance(mockedRepository)
   }
 
-  private static mockDeploymentsRepository(initialAmountOfDeployments: Map<EntityType, number>): DeploymentsRepository {
+  private static mockDeploymentsRepository(): DeploymentsRepository {
     const deploymentRepository: DeploymentsRepository = mock<DeploymentsRepository>()
     return deploymentRepository
   }
