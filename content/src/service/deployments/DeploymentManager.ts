@@ -1,37 +1,34 @@
-import { Entity } from '@dcl/schemas'
-import { ContentFilesRepository } from '../../repository/extensions/ContentFilesRepository'
 import { DeploymentId, DeploymentsRepository } from '../../repository/extensions/DeploymentsRepository'
-import { AuditInfo } from '../../service/deployments/types'
 
 export class DeploymentManager {
-  async getEntityById(
-    deploymentsRepository: DeploymentsRepository,
-    entityId: string
-  ): Promise<
-    | {
-        entityId: any
-        localTimestamp: any
-      }
-    | undefined
-  > {
-    return deploymentsRepository.getEntityById(entityId)
-  }
+  // async getEntityById(
+  //   deploymentsRepository: DeploymentsRepository,
+  //   entityId: string
+  // ): Promise<
+  //   | {
+  //       entityId: any
+  //       localTimestamp: any
+  //     }
+  //   | undefined
+  // > {
+  //   return deploymentsRepository.getEntityById(entityId)
+  // }
 
-  async saveDeployment(
-    deploymentsRepository: DeploymentsRepository,
-    contentRepository: ContentFilesRepository,
-    entity: Entity,
-    auditInfo: AuditInfo,
-    overwrittenBy: DeploymentId | null
-  ): Promise<DeploymentId> {
-    const deploymentId = await deploymentsRepository.saveDeployment(entity, auditInfo, overwrittenBy)
+  // async saveDeployment(
+  //   deploymentsRepository: DeploymentsRepository,
+  //   contentRepository: ContentFilesRepository,
+  //   entity: Entity,
+  //   auditInfo: AuditInfo,
+  //   overwrittenBy: DeploymentId | null
+  // ): Promise<DeploymentId> {
+  //   const deploymentId = await deploymentsRepository.saveDeployment(entity, auditInfo, overwrittenBy)
 
-    if (entity.content) {
-      await contentRepository.saveContentFiles(deploymentId, entity.content)
-    }
+  //   if (entity.content) {
+  //     await contentRepository.saveContentFiles(deploymentId, entity.content)
+  //   }
 
-    return deploymentId
-  }
+  //   return deploymentId
+  // }
 
   setEntitiesAsOverwritten(
     deploymentsRepository: DeploymentsRepository,

@@ -1,8 +1,8 @@
-import { AuthChain } from '@dcl/crypto'
-import { DeploymentWithAuthChain, EntityType } from '@dcl/schemas'
+import { AuthChain, Authenticator } from '@dcl/crypto'
+import { ContentMapping, DeploymentWithAuthChain, Entity, EntityType } from '@dcl/schemas'
 import pg from 'pg'
 import SQL, { SQLStatement } from 'sql-template-strings'
-import { DeploymentFilters, DeploymentSorting, SortingField, SortingOrder } from '../../service/deployments/types'
+import { AuditInfo, DeploymentFilters, DeploymentSorting, SortingField, SortingOrder } from '../../service/deployments/types'
 import { AppComponents } from '../../types'
 
 export type HistoricalDeployment = DeploymentWithAuthChain & {
@@ -40,7 +40,7 @@ export async function deploymentExists(
     SELECT 1
     FROM deployments
     WHERE entity_id = ${entityId}
-  `)
+  `, 'deployment_exists')
 
   return result.rowCount > 0
 }
@@ -239,9 +239,53 @@ export async function getActiveDeploymentsByContentHash(
   const query = SQL`SELECT deployment.entity_id FROM deployments as deployment INNER JOIN content_files ON content_files.deployment=deployment.id
     WHERE content_hash=${contentHash} AND deployment.deleter_deployment IS NULL;`
 
-  const queryResult = (await components.database.queryWithValues(query)).rows
+  const queryResult = (await components.database.queryWithValues(query, 'active_deployments_by_hash')).rows
 
   const entities = queryResult.map((deployment: { entity_id: string }) => deployment.entity_id)
 
   return entities
+}
+
+export async function getEntityById(components: Pick<AppComponents, 'database'>, entityId: string):
+  Promise<{ entityId: string; localTimestamp: number } | undefined> {
+  const queryResult = await components.database.queryWithValues<{ entityId: string, localTimestamp: number }>(SQL`
+    SELECT
+      entity_id AS "entityId",
+      date_part('epoch', d.local_timestamp) * 1000 AS "localTimestamp"
+    FROM deployments d WHERE entity_id = ${entityId}
+    LIMIT 1
+  `, 'entity_by_id')
+
+  if (queryResult && queryResult.rowCount > 0) {
+    return queryResult.rows[0]
+  }
+  return undefined
+}
+
+type DeploymentId = number
+
+export async function saveDeployment(
+  components: Pick<AppComponents, 'database'>,
+  entity: Entity,
+  auditInfo: AuditInfo,
+  overwrittenBy: DeploymentId | null):
+  Promise<DeploymentId> {
+  const deployer = Authenticator.ownerAddress(auditInfo.authChain)
+  const metadata = entity.metadata ? { v: entity.metadata } : null // We want to be able to store whatever we want, but psql is heavily typed. So we will wrap the metadata with an object
+  const query = SQL`INSERT INTO deployments
+  (deployer_address, version, entity_type, entity_id, entity_timestamp, entity_pointers, entity_metadata, local_timestamp, auth_chain, deleter_deployment)
+  VALUES
+  (${deployer}, ${entity.version}, ${entity.type}, ${entity.id}, to_timestamp(${entity.timestamp} / 1000.0), ${entity.pointers}, ${metadata}, to_timestamp(${auditInfo.localTimestamp} / 1000.0), ${JSON.stringify(auditInfo.authChain)}, ${overwrittenBy})
+  RETURNING id`
+  const queryResult = await components.database.queryWithValues<{ id: number }>(query, 'save_deployment')
+  return queryResult.rows[0].id
+}
+
+export async function saveContentFiles(
+  components: Pick<AppComponents, 'database'>,
+  deploymentId: DeploymentId,
+  content: ContentMapping[]): Promise<void> {
+  const queries = content.map((item) =>
+    SQL`INSERT INTO content_files (deployment, key, content_hash) VALUES (${deploymentId}, ${item.file}, ${item.hash})`)
+  return components.database.transactionQuery(queries, 'save_content_files')
 }

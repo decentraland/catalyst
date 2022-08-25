@@ -3,6 +3,8 @@ import { Entity, EntityType, IPFSv2 } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { EnvironmentConfig } from '../Environment'
 import { runReportingQueryDurationMetric } from '../instrument'
+import { getEntityById } from '../logic/database-queries/deployments-queries'
+import { saveDeploymentAndContentFiles } from '../logic/deployments'
 import { calculateDeprecatedHashes, calculateIPFSHashes } from '../logic/hashing'
 import { bufferToStream, ContentItem } from '../ports/contentStorage/contentStorage'
 import { FailedDeployment, FailureReason } from '../ports/failedDeploymentsCache'
@@ -66,7 +68,7 @@ export class ServiceImpl implements MetaverseContentService {
     context: DeploymentContext,
     task?: Database
   ): Promise<DeploymentResult> {
-    const deployedEntity = await this.getEntityById(entityId, task)
+    const deployedEntity = await getEntityById(this.components, entityId)
     // entity deployments are idempotent operations
     if (deployedEntity) {
       ServiceImpl.LOGGER.debug(`Entity was already deployed`, {
@@ -226,7 +228,7 @@ export class ServiceImpl implements MetaverseContentService {
     hashes: Map<string, Uint8Array>,
     context: DeploymentContext
   ): Promise<InvalidResult | { auditInfoComplete: AuditInfo; wasEntityDeployed: boolean }> {
-    const deployedEntity = await this.getEntityById(entityId)
+    const deployedEntity = await getEntityById(this.components, entityId)
     const isEntityAlreadyDeployed = !!deployedEntity
 
     const validationResult = await this.validateDeployment(entity, context, isEntityAlreadyDeployed, auditInfo, hashes)
@@ -270,14 +272,11 @@ export class ServiceImpl implements MetaverseContentService {
             )
 
             // Store the deployment
-            const deploymentId = await runReportingQueryDurationMetric(this.components, 'save_deployment', () =>
-              this.components.deploymentManager.saveDeployment(
-                transaction.deployments,
-                transaction.content,
-                entity,
-                auditInfoComplete,
-                overwrittenBy
-              )
+            const deploymentId = await saveDeploymentAndContentFiles(
+              this.components,
+              entity,
+              auditInfoComplete,
+              overwrittenBy
             )
             // Modify active pointers
             const pointersFromEntity = await runReportingQueryDurationMetric(
@@ -410,17 +409,6 @@ export class ServiceImpl implements MetaverseContentService {
 
   isContentAvailable(fileHashes: string[]): Promise<Map<string, boolean>> {
     return this.components.storage.existMultiple(fileHashes)
-  }
-
-  async getEntityById(entityId: string, task?: Database): Promise<{ entityId: string; localTimestamp: number } | void> {
-    return this.components.repository.reuseIfPresent(
-      task,
-      (db) => this.components.deploymentManager.getEntityById(db.deployments, entityId),
-      {
-        priority: DB_REQUEST_PRIORITY.HIGH,
-        durationQueryNameLabel: 'get_entity_by_id'
-      }
-    )
   }
 
   getDeployments(options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>> {

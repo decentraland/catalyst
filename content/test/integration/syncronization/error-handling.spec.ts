@@ -106,7 +106,7 @@ loadTestEnvironment()('End 2 end - Error handling', (testEnv) => {
     await assertEntitiesAreActiveOnServer(server1, controllerEntity)
   })
 
-  it(`When a user tries to fix an entity that hadn't fail, then it is an idempotent operation`, async () => {
+  it.only(`When a user tries to fix an entity that hadn't fail, then it is an idempotent operation`, async () => {
     // Start server
     await server1.startProgram()
 

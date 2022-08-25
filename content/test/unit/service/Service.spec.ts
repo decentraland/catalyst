@@ -8,14 +8,16 @@ import assert from 'assert'
 import { HTTPProvider } from 'eth-connect'
 import ms from 'ms'
 import { DEFAULT_ENTITIES_CACHE_SIZE, Environment, EnvironmentConfig } from '../../../src/Environment'
+import * as deploymentQueries from '../../../src/logic/database-queries/deployments-queries'
 import * as pointers from '../../../src/logic/database-queries/pointers-queries'
+import * as deploymentLogic from '../../../src/logic/deployments'
 import { metricsDeclaration } from '../../../src/metrics'
 import { createActiveEntitiesComponent } from '../../../src/ports/activeEntities'
 import { Denylist } from '../../../src/ports/denylist'
 import { createDeployedEntitiesBloomFilter } from '../../../src/ports/deployedEntitiesBloomFilter'
 import { createDeployRateLimiter } from '../../../src/ports/deployRateLimiterComponent'
 import { createFailedDeploymentsCache } from '../../../src/ports/failedDeploymentsCache'
-import { createDatabaseComponent } from '../../../src/ports/postgres'
+import { createTestDatabaseComponent } from '../../../src/ports/postgres'
 import { createSequentialTaskExecutor } from '../../../src/ports/sequecuentialTaskExecutor'
 import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
 import { DeploymentManager } from '../../../src/service/deployments/DeploymentManager'
@@ -85,12 +87,17 @@ describe('Service', function () {
   it(`When an entity is successfully deployed, then the content is stored correctly`, async () => {
     const service = await buildService()
 
-    jest.spyOn(service, 'getEntityById').mockResolvedValue(undefined)
+    // jest.spyOn(service, 'getEntityById').mockResolvedValue(undefined)
+    jest.spyOn(deploymentQueries, 'getEntityById').mockResolvedValue(undefined)
     const storageSpy = jest.spyOn(service.components.storage, 'storeStream')
-    jest.spyOn(service.components.deploymentManager, 'saveDeployment').mockImplementation(async (...args) => {
+    jest.spyOn(deploymentLogic, 'saveDeploymentAndContentFiles').mockImplementation(async (...args) => {
       console.dir([...args])
       return 123
     })
+    // jest.spyOn(service.components.deploymentManager, 'saveDeployment').mockImplementation(async (...args) => {
+    //   console.dir([...args])
+    //   return 123
+    // })
     jest.spyOn(service.components.deploymentManager, 'setEntitiesAsOverwritten').mockResolvedValue()
 
     const deploymentResult: DeploymentResult = await service.deployEntity(
@@ -114,14 +121,14 @@ describe('Service', function () {
 
   it(`When a file is already uploaded, then don't try to upload it again`, async () => {
     const service = await buildService()
-    jest.spyOn(service, 'getEntityById').mockResolvedValue(undefined)
+    jest.spyOn(deploymentQueries, 'getEntityById').mockResolvedValue(undefined)
 
     // Consider the random file as already uploaded, but not the entity file
     jest
       .spyOn(service.components.storage, 'existMultiple')
       .mockImplementation((ids: string[]) => Promise.resolve(new Map(ids.map((id) => [id, id === randomFileHash]))))
     const storeSpy = jest.spyOn(service.components.storage, 'storeStream')
-    jest.spyOn(service.components.deploymentManager, 'saveDeployment').mockImplementation(async (...args) => {
+    jest.spyOn(deploymentLogic, 'saveDeploymentAndContentFiles').mockImplementation(async (...args) => {
       console.dir([...args])
       return 123
     })
@@ -194,7 +201,7 @@ describe('Service', function () {
       })
     )
 
-    jest.spyOn(service.components.deploymentManager, 'saveDeployment').mockImplementation(() => Promise.resolve(1))
+    jest.spyOn(deploymentLogic, 'saveDeploymentAndContentFiles').mockImplementation(() => Promise.resolve(1))
     jest
       .spyOn(service.components.deploymentManager, 'setEntitiesAsOverwritten')
       .mockImplementation(() => Promise.resolve())
@@ -221,6 +228,8 @@ describe('Service', function () {
 
   async function buildService() {
     const repository = MockedRepository.build(new Map([[EntityType.SCENE, initialAmountOfDeployments]]))
+    const database = createTestDatabaseComponent()
+    database.queryWithValues = () => Promise.resolve({ rows: [], rowCount: 0 })
     const env = new Environment()
     env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, 'inexistent')
     env.setConfig(EnvironmentConfig.DENYLIST_FILE_NAME, 'file')
@@ -242,7 +251,7 @@ describe('Service', function () {
     const storage = new MockedStorage()
     const pointerManager = NoOpPointerManager.build()
     const authenticator = new ContentAuthenticator(new HTTPProvider("https://rpc.decentraland.org/mainnet?project=catalyst-ci"), DECENTRALAND_ADDRESS)
-    const database = await createDatabaseComponent({ logs, env, metrics })
+    // const database = await createDatabaseComponent({ logs, env, metrics })
     const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs })
     env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)
     const denylist: Denylist = { isDenylisted: () => false }

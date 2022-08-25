@@ -2,8 +2,7 @@ import { AuthChain, EntityType } from '@dcl/schemas'
 import { ContentItem } from '../ports/contentStorage/contentStorage'
 import { FailedDeployment } from '../ports/failedDeploymentsCache'
 import { Database } from '../repository/Database'
-import { AuditInfo, Deployment, PartialDeploymentHistory } from './deployments/types'
-import { DeploymentOptions } from './deployments/types'
+import { AuditInfo, Deployment, DeploymentOptions, PartialDeploymentHistory } from './deployments/types'
 
 /**x
  * This version of the service can tell clients about the state of the Metaverse. It assumes that all deployments
@@ -28,7 +27,7 @@ export interface MetaverseContentService {
     authChain: AuthChain,
     errorDescription?: string
   ): void
-  getEntityById(entityId: string): Promise<{ entityId: string; localTimestamp: number } | void>
+  // getEntityById(entityId: string): Promise<{ entityId: string; localTimestamp: number } | undefined>
 }
 
 export type LocalDeploymentAuditInfo = Pick<AuditInfo, 'authChain'>

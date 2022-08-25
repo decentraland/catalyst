@@ -1,12 +1,12 @@
 import { Entity } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { FailedDeployment } from '../ports/failedDeploymentsCache'
-import { Deployment } from '../service/deployments/types'
+import { AuditInfo, Deployment } from '../service/deployments/types'
 import { DeploymentContext } from '../service/Service'
 import { deployEntityFromRemoteServer } from '../service/synchronization/deployRemoteEntity'
 import { IGNORING_FIX_ERROR } from '../service/validations/server'
 import { AppComponents } from '../types'
-import { deploymentExists } from './database-queries/deployments-queries'
+import { deploymentExists, saveContentFiles, saveDeployment } from './database-queries/deployments-queries'
 
 export async function isEntityDeployed(
   components: Pick<AppComponents, 'deployedEntitiesBloomFilter' | 'database' | 'metrics'>,
@@ -93,4 +93,20 @@ export function mapDeploymentsToEntities(deployments: Deployment[]): Entity[] {
     content: content?.map(({ key, hash }) => ({ file: key, hash })) || [],
     metadata
   }))
+}
+
+
+type DeploymentId = number
+
+export async function saveDeploymentAndContentFiles(
+  components: Pick<AppComponents, 'database'>,
+  entity: Entity,
+  auditInfo: AuditInfo,
+  overwrittenBy: DeploymentId | null
+) {
+  const deploymentId = await saveDeployment(components, entity, auditInfo, overwrittenBy)
+  if (entity.content) {
+    await saveContentFiles(components, deploymentId, entity.content)
+  }
+  return deploymentId
 }

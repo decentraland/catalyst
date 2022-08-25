@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
+import { EntityType } from "@dcl/schemas"
 import { anything, instance, mock, when } from 'ts-mockito'
 import { Database } from '../../../src/repository/Database'
 import { DeploymentsRepository } from '../../../src/repository/extensions/DeploymentsRepository'
 import { Repository } from '../../../src/repository/Repository'
-import { EntityType } from "@dcl/schemas";
 
 export class MockedRepository {
   static build(initialAmountOfDeployments: Map<EntityType, number> = new Map()): Repository {
@@ -38,7 +38,7 @@ export class MockedRepository {
   private static mockDeploymentsRepository(initialAmountOfDeployments: Map<EntityType, number>): DeploymentsRepository {
     const deploymentRepository: DeploymentsRepository = mock<DeploymentsRepository>()
     when(deploymentRepository.getAmountOfDeployments()).thenResolve(initialAmountOfDeployments)
-    when(deploymentRepository.getEntityById(anything())).thenResolve(undefined)
+    // when(deploymentRepository.getEntityById(anything())).thenResolve(undefined)
     return deploymentRepository
   }
 }

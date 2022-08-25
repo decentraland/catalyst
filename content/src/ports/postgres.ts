@@ -14,7 +14,7 @@ export interface IDatabaseComponent extends IDatabase {
     config?: { batchSize?: number },
     durationQueryNameLabel?: string
   ): AsyncGenerator<T>
-
+  transactionQuery<T>(sqls: SQLStatement[], durationQueryNameLabel?: string): Promise<void>
   start(): Promise<void>
   stop(): Promise<void>
 }
@@ -30,8 +30,11 @@ export function createTestDatabaseComponent(): IDatabaseComponent {
     async *streamQuery() {
       throw new Error('Not implemented')
     },
-    async start() {},
-    async stop() {}
+    async transactionQuery() {
+      throw new Error('Not implemented')
+    },
+    async start() { },
+    async stop() { }
   }
 }
 
@@ -137,6 +140,27 @@ export async function createDatabaseComponent(
     }
   }
 
+  async function transactionQuery<T>(sqls: SQLStatement[], durationQueryNameLabel?: string): Promise<void> {
+    // We must use the same client and not the pool client. Check documentation
+    // note: we don't try/catch this because if connecting throws an exception
+    // we don't need to dispose of the client (it will be undefined)
+    const client = await pool.connect()
+    try {
+      await client.query('BEGIN')
+      for (const sql of sqls) {
+        // could we parallelize this?
+        await client.query(sql)
+      }
+      await client.query('COMMIT')
+    } catch (e) {
+      await client.query('ROLLBACK')
+      // log?
+      throw e
+    } finally {
+      client.release()
+    }
+  }
+
   let didStop = false
 
   async function stop() {
@@ -179,6 +203,7 @@ export async function createDatabaseComponent(
     query,
     queryWithValues,
     streamQuery,
+    transactionQuery,
     start,
     stop
   }
