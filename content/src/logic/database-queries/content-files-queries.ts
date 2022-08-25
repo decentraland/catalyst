@@ -1,5 +1,4 @@
 import SQL from 'sql-template-strings'
-import { DeploymentId } from '../../repository/extensions/DeploymentsRepository'
 import { DeploymentContent } from '../../service/deployments/types'
 import { AppComponents } from '../../types'
 
@@ -8,6 +7,8 @@ export interface ContentFilesRow {
   key: string
   content_hash: string
 }
+
+type DeploymentId = number
 
 export async function getContentFiles(
   components: Pick<AppComponents, 'database' | 'metrics'>,

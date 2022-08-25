@@ -1,13 +1,11 @@
 import pgPromise, { IBaseProtocol, IDatabase, IInitOptions, IMain } from 'pg-promise'
 import { retry } from '../helpers/RetryHelper'
 import { ContentFilesRepository } from './extensions/ContentFilesRepository'
-import { DeploymentsRepository } from './extensions/DeploymentsRepository'
 
 export type Database = IBaseProtocol<IExtensions> & IExtensions
 export type FullDatabase = IDatabase<IExtensions> & Database
 
 export interface IExtensions {
-  deployments: DeploymentsRepository
   content: ContentFilesRepository
 }
 
@@ -44,7 +42,6 @@ async function connectTo(
   let state = 'disconnected' as State
   const initOptions: IInitOptions<IExtensions> = {
     extend(obj: Database) {
-      obj.deployments = new DeploymentsRepository(obj)
       obj.content = new ContentFilesRepository(obj)
     },
 

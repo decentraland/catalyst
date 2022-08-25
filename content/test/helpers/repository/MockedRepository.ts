@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { anything, instance, mock, when } from 'ts-mockito'
 import { Database } from '../../../src/repository/Database'
-import { DeploymentsRepository } from '../../../src/repository/extensions/DeploymentsRepository'
 import { Repository } from '../../../src/repository/Repository'
 
 export class MockedRepository {
@@ -12,7 +11,6 @@ export class MockedRepository {
     when(mockedDatabase.tx(anything())).thenCall((call) => call(mockedDatabase))
     when(mockedDatabase.txIf(anything())).thenCall((call) => call(mockedDatabase))
     const dbInstance = instance(mockedDatabase)
-    dbInstance.deployments = instance(this.mockDeploymentsRepository())
 
     const mockedRepository: Repository = mock<Repository>()
     when(mockedRepository.task(anything(), anything())).thenCall((call) => call(dbInstance))
@@ -32,10 +30,5 @@ export class MockedRepository {
       call(db ?? dbInstance)
     )
     return instance(mockedRepository)
-  }
-
-  private static mockDeploymentsRepository(): DeploymentsRepository {
-    const deploymentRepository: DeploymentsRepository = mock<DeploymentsRepository>()
-    return deploymentRepository
   }
 }

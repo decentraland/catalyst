@@ -2,9 +2,8 @@ import { AuthChain, Authenticator } from '@dcl/crypto'
 import { Entity, EntityType, IPFSv2 } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { EnvironmentConfig } from '../Environment'
-import { runReportingQueryDurationMetric } from '../instrument'
 import { getEntityById, setEntitiesAsOverwritten } from '../logic/database-queries/deployments-queries'
-import { saveDeploymentAndContentFiles } from '../logic/deployments'
+import { calculateOverwrites, saveDeploymentAndContentFiles } from '../logic/deployments'
 import { calculateDeprecatedHashes, calculateIPFSHashes } from '../logic/hashing'
 import { bufferToStream, ContentItem } from '../ports/contentStorage/contentStorage'
 import { FailedDeployment, FailureReason } from '../ports/failedDeploymentsCache'
@@ -264,11 +263,7 @@ export class ServiceImpl implements MetaverseContentService {
         (db) =>
           db.txIf(async (transaction) => {
             // Calculate overwrites
-            const { overwrote, overwrittenBy } = await runReportingQueryDurationMetric(
-              this.components,
-              'calculate_overwrites',
-              () => this.components.pointerManager.calculateOverwrites(transaction.deployments, entity)
-            )
+            const { overwrote, overwrittenBy } = await calculateOverwrites(this.components, entity)
 
             // Store the deployment
             const deploymentId = await saveDeploymentAndContentFiles(
