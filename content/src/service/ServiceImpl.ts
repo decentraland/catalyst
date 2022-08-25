@@ -3,7 +3,7 @@ import { Entity, EntityType, IPFSv2 } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { EnvironmentConfig } from '../Environment'
 import { runReportingQueryDurationMetric } from '../instrument'
-import { getEntityById } from '../logic/database-queries/deployments-queries'
+import { getEntityById, setEntitiesAsOverwritten } from '../logic/database-queries/deployments-queries'
 import { saveDeploymentAndContentFiles } from '../logic/deployments'
 import { calculateDeprecatedHashes, calculateIPFSHashes } from '../logic/hashing'
 import { bufferToStream, ContentItem } from '../ports/contentStorage/contentStorage'
@@ -45,7 +45,6 @@ export class ServiceImpl implements MetaverseContentService {
       | 'pointerManager'
       | 'failedDeploymentsCache'
       | 'deployRateLimiter'
-      | 'deploymentManager'
       | 'validator'
       | 'serverValidator'
       | 'repository'
@@ -291,13 +290,8 @@ export class ServiceImpl implements MetaverseContentService {
             await this.updateActiveEntities(pointersFromEntity, entity)
 
             // Set who overwrote who
-            await runReportingQueryDurationMetric(this.components, 'set_entities_overwritter', () =>
-              this.components.deploymentManager.setEntitiesAsOverwritten(
-                transaction.deployments,
-                overwrote,
-                deploymentId
-              )
-            )
+            await setEntitiesAsOverwritten(this.components, overwrote, deploymentId)
+
           }),
         { priority: DB_REQUEST_PRIORITY.HIGH, durationQueryNameLabel: 'store_deployment_tx' }
       )

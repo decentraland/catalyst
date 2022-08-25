@@ -20,7 +20,6 @@ import { createFailedDeploymentsCache } from '../../../src/ports/failedDeploymen
 import { createTestDatabaseComponent } from '../../../src/ports/postgres'
 import { createSequentialTaskExecutor } from '../../../src/ports/sequecuentialTaskExecutor'
 import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
-import { DeploymentManager } from '../../../src/service/deployments/DeploymentManager'
 import * as deployments from '../../../src/service/deployments/deployments'
 import { Deployment } from '../../../src/service/deployments/types'
 import { DELTA_POINTER_RESULT } from '../../../src/service/pointers/PointerManager'
@@ -92,11 +91,7 @@ describe('Service', function () {
       console.dir([...args])
       return 123
     })
-    // jest.spyOn(service.components.deploymentManager, 'saveDeployment').mockImplementation(async (...args) => {
-    //   console.dir([...args])
-    //   return 123
-    // })
-    jest.spyOn(service.components.deploymentManager, 'setEntitiesAsOverwritten').mockResolvedValue()
+    jest.spyOn(deploymentQueries, 'setEntitiesAsOverwritten').mockResolvedValue()
 
     const deploymentResult: DeploymentResult = await service.deployEntity(
       [entityFile, randomFile],
@@ -130,7 +125,7 @@ describe('Service', function () {
       console.dir([...args])
       return 123
     })
-    jest.spyOn(service.components.deploymentManager, 'setEntitiesAsOverwritten').mockResolvedValue()
+    jest.spyOn(deploymentQueries, 'setEntitiesAsOverwritten').mockResolvedValue()
 
     await service.deployEntity([entityFile, randomFile], entity.id, auditInfo, DeploymentContext.LOCAL)
 
@@ -200,9 +195,7 @@ describe('Service', function () {
     )
 
     jest.spyOn(deploymentLogic, 'saveDeploymentAndContentFiles').mockImplementation(() => Promise.resolve(1))
-    jest
-      .spyOn(service.components.deploymentManager, 'setEntitiesAsOverwritten')
-      .mockImplementation(() => Promise.resolve())
+    jest.spyOn(deploymentQueries, 'setEntitiesAsOverwritten').mockImplementation(() => Promise.resolve())
 
     // Call the first time
     await service.components.activeEntities.withPointers(POINTERS)
@@ -234,7 +227,6 @@ describe('Service', function () {
 
     const validator = new NoOpValidator()
     const serverValidator = new NoOpServerValidator()
-    const deploymentManager = new DeploymentManager()
     const logs = await createLogComponent({
       config: createConfigComponent({
         LOG_LEVEL: 'DEBUG'
@@ -261,7 +253,6 @@ describe('Service', function () {
       pointerManager,
       failedDeploymentsCache,
       deployRateLimiter,
-      deploymentManager,
       storage,
       repository,
       validator,

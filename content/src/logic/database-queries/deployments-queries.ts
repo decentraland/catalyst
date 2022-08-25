@@ -302,3 +302,11 @@ export async function getDeployments(
   const queryResult = await components.database.queryWithValues<{ id: number, pointers: string[] }>(query, 'get_deployments')
   return queryResult.rows
 }
+
+export async function setEntitiesAsOverwritten(
+  components: Pick<AppComponents, 'database'>,
+  allOverwritten: Set<DeploymentId>, overwrittenBy: DeploymentId): Promise<void> {
+  const queries = Array.from(allOverwritten.values()).map((overwritten) =>
+    SQL`UPDATE deployments SET deleter_deployment = ${overwrittenBy} WHERE id = ${overwritten}`)
+  return components.database.transactionQuery(queries, 'set_entities_overwritter')
+}

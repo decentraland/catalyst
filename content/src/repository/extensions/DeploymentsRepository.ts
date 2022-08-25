@@ -4,15 +4,6 @@ import { Database } from '../../repository/Database'
 export class DeploymentsRepository {
   constructor(private readonly db: Database) { }
 
-  async setEntitiesAsOverwritten(allOverwritten: Set<DeploymentId>, overwrittenBy: DeploymentId): Promise<void> {
-    await this.db.txIf((transaction) => {
-      const updates = Array.from(allOverwritten.values()).map((overwritten) =>
-        this.db.none('UPDATE deployments SET deleter_deployment = $1 WHERE id = $2', [overwrittenBy, overwritten])
-      )
-      return transaction.batch(updates)
-    })
-  }
-
   async calculateOverwrites(
     entity: Entity
   ): Promise<{ overwrote: Set<DeploymentId>; overwrittenBy: DeploymentId | null }> {

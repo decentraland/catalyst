@@ -1,8 +1,8 @@
 import { ExternalCalls, Validator } from '@dcl/content-validator'
 import { DeploymentWithAuthChain, EntityType } from '@dcl/schemas'
+import { IDeployerComponent } from '@dcl/snapshots-fetcher'
 import { JobLifecycleManagerComponent } from '@dcl/snapshots-fetcher/dist/job-lifecycle-manager'
 import { IJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
-import { IDeployerComponent } from '@dcl/snapshots-fetcher'
 import { IFetchComponent } from '@well-known-components/http-server'
 import { ILoggerComponent, IMetricsComponent } from '@well-known-components/interfaces'
 import { Fetcher } from 'dcl-catalyst-commons'
@@ -23,7 +23,6 @@ import { ISequentialTaskExecutorComponent } from './ports/sequecuentialTaskExecu
 import { SystemProperties } from './ports/system-properties'
 import { Repository } from './repository/Repository'
 import { ContentAuthenticator } from './service/auth/Authenticator'
-import { DeploymentManager } from './service/deployments/DeploymentManager'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { PointerManager } from './service/pointers/PointerManager'
 import { Server } from './service/Server'
@@ -61,7 +60,6 @@ export type AppComponents = {
   pointerManager: PointerManager
   failedDeploymentsCache: IFailedDeploymentsCacheComponent
   deployRateLimiter: IDeployRateLimiterComponent
-  deploymentManager: DeploymentManager
   storage: ContentStorage
   authenticator: ContentAuthenticator
   migrationManager: MigrationManager

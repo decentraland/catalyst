@@ -28,7 +28,6 @@ import { createSequentialTaskExecutor } from './ports/sequecuentialTaskExecutor'
 import { createSystemProperties } from './ports/system-properties'
 import { RepositoryFactory } from './repository/RepositoryFactory'
 import { ContentAuthenticator } from './service/auth/Authenticator'
-import { DeploymentManager } from './service/deployments/DeploymentManager'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { PointerManager } from './service/pointers/PointerManager'
 import { Server } from './service/Server'
@@ -101,7 +100,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     },
     env.getConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL)
   )
-  const deploymentManager = new DeploymentManager()
 
   // TODO: this should be in the src/logic folder. It is not a component
   const pointerManager = new PointerManager()
@@ -138,7 +136,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const deployer: MetaverseContentService = new ServiceImpl({
     metrics,
     storage,
-    deploymentManager,
     failedDeploymentsCache,
     deployRateLimiter,
     pointerManager,
@@ -287,7 +284,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     challengeSupervisor,
     snapshotManager,
     contentCluster,
-    deploymentManager,
     failedDeploymentsCache,
     deployRateLimiter,
     pointerManager,
