@@ -295,13 +295,8 @@ export async function getDeployments(
   deploymentIds: Set<number>): Promise<{ id: number; pointers: string[] }[]> {
   if (deploymentIds.size === 0) return []
   const query = SQL`SELECT id, entity_pointers as pointers FROM deployments WHERE id IN (`
-  const ids = Array.from(deploymentIds).map((id, idx) => {
-    if (idx < deploymentIds.size - 1) {
-      return SQL`${id},`
-    } else {
-      return SQL`${id}`
-    }
-  })
+  const ids = Array.from(deploymentIds)
+    .map((id, idx) => (idx < deploymentIds.size - 1) ? SQL`${id},` : SQL`${id}`)
   ids.forEach((id) => query.append(id))
   query.append(`);`)
   const queryResult = await components.database.queryWithValues<{ id: number, pointers: string[] }>(query, 'get_deployments')

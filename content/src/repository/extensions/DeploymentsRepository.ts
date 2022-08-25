@@ -4,15 +4,6 @@ import { Database } from '../../repository/Database'
 export class DeploymentsRepository {
   constructor(private readonly db: Database) { }
 
-  async getAmountOfDeployments(): Promise<Map<EntityType, number>> {
-    const entries: [EntityType, number][] = await this.db.map(
-      `SELECT entity_type, COUNT(*) AS count FROM deployments GROUP BY entity_type`,
-      [],
-      (row) => [row.entity_type, parseInt(row.count)]
-    )
-    return new Map(entries)
-  }
-
   deploymentsSince(entityType: EntityType, timestamp: number): Promise<number> {
     return this.db.one(
       `SELECT COUNT(*) AS count ` +

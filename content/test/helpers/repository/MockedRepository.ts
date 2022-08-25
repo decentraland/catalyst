@@ -37,8 +37,6 @@ export class MockedRepository {
 
   private static mockDeploymentsRepository(initialAmountOfDeployments: Map<EntityType, number>): DeploymentsRepository {
     const deploymentRepository: DeploymentsRepository = mock<DeploymentsRepository>()
-    when(deploymentRepository.getAmountOfDeployments()).thenResolve(initialAmountOfDeployments)
-    // when(deploymentRepository.getEntityById(anything())).thenResolve(undefined)
     return deploymentRepository
   }
 }
