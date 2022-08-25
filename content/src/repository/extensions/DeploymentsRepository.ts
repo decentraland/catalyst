@@ -1,18 +1,8 @@
-import { Entity, EntityType } from '@dcl/schemas'
+import { Entity } from '@dcl/schemas'
 import { Database } from '../../repository/Database'
 
 export class DeploymentsRepository {
   constructor(private readonly db: Database) { }
-
-  deploymentsSince(entityType: EntityType, timestamp: number): Promise<number> {
-    return this.db.one(
-      `SELECT COUNT(*) AS count ` +
-      `FROM deployments ` +
-      `WHERE entity_type = $1 AND local_timestamp > to_timestamp($2 / 1000.0)`,
-      [entityType, timestamp],
-      (row) => row.count
-    )
-  }
 
   async setEntitiesAsOverwritten(allOverwritten: Set<DeploymentId>, overwrittenBy: DeploymentId): Promise<void> {
     await this.db.txIf((transaction) => {
