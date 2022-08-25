@@ -1,29 +1,8 @@
-import { Authenticator } from '@dcl/crypto'
 import { Entity, EntityType } from '@dcl/schemas'
 import { Database } from '../../repository/Database'
-import { AuditInfo } from '../../service/deployments/types'
 
 export class DeploymentsRepository {
   constructor(private readonly db: Database) { }
-
-  // async getEntityById(entityId: string) {
-  //   const result = await this.db.map(
-  //     `
-  //       SELECT
-  //         d.entity_id AS entity_id,
-  //         date_part('epoch', d.local_timestamp) * 1000 AS local_timestamp
-  //       FROM deployments d WHERE d.entity_id = $1
-  //       LIMIT 1
-  //     `,
-  //     [entityId],
-  //     (row) => ({
-  //       entityId: row.entity_id,
-  //       localTimestamp: row.local_timestamp
-  //     })
-  //   )
-  //   if (!result || result.length == 0) return undefined
-  //   return result[0]
-  // }
 
   async getDeployments(deploymentIds: Set<number>): Promise<{ id: number; pointers: string[] }[]> {
     if (deploymentIds.size === 0) return []
@@ -56,23 +35,6 @@ export class DeploymentsRepository {
       `WHERE entity_type = $1 AND local_timestamp > to_timestamp($2 / 1000.0)`,
       [entityType, timestamp],
       (row) => row.count
-    )
-  }
-
-  saveDeployment(entity: Entity, auditInfo: AuditInfo, overwrittenBy: DeploymentId | null): Promise<DeploymentId> {
-    return this.db.one(
-      `INSERT INTO deployments (deployer_address, version, entity_type, entity_id, entity_timestamp, entity_pointers, entity_metadata, local_timestamp, auth_chain, deleter_deployment)` +
-      ` VALUES ` +
-      `($(deployer), $(entity.version), $(entity.type), $(entity.id), to_timestamp($(entity.timestamp) / 1000.0), $(entity.pointers), $(metadata), to_timestamp($(auditInfo.localTimestamp) / 1000.0), $(auditInfo.authChain:json), $(overwrittenBy))` +
-      ` RETURNING id`,
-      {
-        entity,
-        auditInfo,
-        metadata: entity.metadata ? { v: entity.metadata } : null, // We want to be able to store whatever we want, but psql is heavily typed. So we will wrap the metadata with an object
-        deployer: Authenticator.ownerAddress(auditInfo.authChain),
-        overwrittenBy
-      },
-      (deployment) => deployment.id
     )
   }
 

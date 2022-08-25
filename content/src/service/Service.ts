@@ -27,7 +27,6 @@ export interface MetaverseContentService {
     authChain: AuthChain,
     errorDescription?: string
   ): void
-  // getEntityById(entityId: string): Promise<{ entityId: string; localTimestamp: number } | undefined>
 }
 
 export type LocalDeploymentAuditInfo = Pick<AuditInfo, 'authChain'>

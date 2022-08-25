@@ -1,10 +1,7 @@
-import { ContentMapping } from '@dcl/schemas'
 import { Database } from '../../repository/Database'
-import { DeploymentContent } from '../../service/deployments/types'
-import { DeploymentId } from './DeploymentsRepository'
 
 export class ContentFilesRepository {
-  constructor(private readonly db: Database) {}
+  constructor(private readonly db: Database) { }
 
   findContentHashesNotBeingUsedAnymore(lastGarbageCollectionTimestamp: number): Promise<string[]> {
     return this.db.map(
@@ -20,36 +17,5 @@ export class ContentFilesRepository {
       [lastGarbageCollectionTimestamp],
       (row) => row.content_hash
     )
-  }
-
-  async getContentFiles(deploymentIds: DeploymentId[]): Promise<Map<DeploymentId, DeploymentContent[]>> {
-    if (deploymentIds.length === 0) {
-      return new Map()
-    }
-    const queryResult = await this.db.any(
-      'SELECT deployment, key, content_hash FROM content_files WHERE deployment IN ($1:list)',
-      [deploymentIds]
-    )
-    const result: Map<DeploymentId, DeploymentContent[]> = new Map()
-    queryResult.forEach((row) => {
-      if (!result.has(row.deployment)) {
-        result.set(row.deployment, [])
-      }
-      result.get(row.deployment)?.push({ key: row.key, hash: row.content_hash })
-    })
-    return result
-  }
-
-  async saveContentFiles(deploymentId: DeploymentId, content: ContentMapping[]): Promise<void> {
-    await this.db.txIf((transaction) => {
-      const contentPromises = content.map((item) =>
-        transaction.none('INSERT INTO content_files (deployment, key, content_hash) VALUES ($1, $2, $3)', [
-          deploymentId,
-          item.file,
-          item.hash
-        ])
-      )
-      return transaction.batch(contentPromises)
-    })
   }
 }
