@@ -1,8 +1,7 @@
 import { Entity } from '@dcl/schemas'
 import { getDeployments } from '../../logic/database-queries/deployments-queries'
-import { AppComponents } from '../../types'
+import { AppComponents, DeploymentId } from '../../types'
 
-type DeploymentId = number
 /**
  * Manage all pointer data
  */

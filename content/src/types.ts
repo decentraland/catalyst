@@ -122,3 +122,5 @@ export function parseEntityType(strType: string): EntityType {
   const type = EntityType[strType]
   return type
 }
+
+export type DeploymentId = number

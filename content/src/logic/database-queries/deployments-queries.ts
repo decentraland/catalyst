@@ -3,7 +3,7 @@ import { ContentMapping, DeploymentWithAuthChain, Entity, EntityType } from '@dc
 import pg from 'pg'
 import SQL, { SQLStatement } from 'sql-template-strings'
 import { AuditInfo, DeploymentFilters, DeploymentSorting, SortingField, SortingOrder } from '../../service/deployments/types'
-import { AppComponents } from '../../types'
+import { AppComponents, DeploymentId } from '../../types'
 
 export type HistoricalDeployment = DeploymentWithAuthChain & {
   deploymentId: number
@@ -262,8 +262,6 @@ export async function getEntityById(components: Pick<AppComponents, 'database'>,
   return undefined
 }
 
-type DeploymentId = number
-
 export async function saveDeployment(
   components: Pick<AppComponents, 'database'>,
   entity: Entity,
@@ -309,4 +307,57 @@ export async function setEntitiesAsOverwritten(
   const queries = Array.from(allOverwritten.values()).map((overwritten) =>
     SQL`UPDATE deployments SET deleter_deployment = ${overwrittenBy} WHERE id = ${overwritten}`)
   return components.database.transactionQuery(queries, 'set_entities_overwritter')
+}
+
+export async function calculateOverwrote(
+  components: Pick<AppComponents, 'database' | 'repository'>,
+  entity: Entity
+): Promise<DeploymentId[]> {
+  return (await components.database.queryWithValues<{ id: number }>(
+    SQL`
+          SELECT dep1.id
+          FROM deployments AS dep1
+          LEFT JOIN deployments AS dep2 ON dep1.deleter_deployment = dep2.id
+          WHERE dep1.entity_type = ${entity.type} AND
+              dep1.entity_pointers && ${entity.pointers} AND
+              (dep1.entity_timestamp < to_timestamp(${entity.timestamp} / 1000.0) OR (dep1.entity_timestamp = to_timestamp(${entity.timestamp} / 1000.0) AND dep1.entity_id < ${entity.id})) AND
+              (dep2.id IS NULL OR dep2.entity_timestamp > to_timestamp(${entity.timestamp} / 1000.0) OR (dep2.entity_timestamp = to_timestamp(${entity.timestamp} / 1000.0) AND dep2.entity_id > ${entity.id}))
+          ORDER BY dep1.entity_timestamp DESC, dep1.entity_id DESC`
+  )).rows.map((row) => row.id)
+}
+
+export async function calculateOverwrittenByMany1(
+  components: Pick<AppComponents, 'database' | 'repository'>,
+  entity: Entity
+): Promise<{ id: number }[]> {
+  const q = SQL`
+  SELECT deployments.id
+  FROM active_pointers as ap
+           INNER JOIN deployments on ap.entity_id = deployments.entity_id
+  WHERE ap.pointer IN (`
+  const pointers = Array.from(entity.pointers)
+    .map((pointer, idx) => (idx < entity.pointers.length - 1) ? SQL`${pointer},` : SQL`${pointer}`)
+  pointers.forEach((pointer) => q.append(pointer))
+  q.append(SQL`)
+          AND deployments.entity_type = ${entity.type}
+          AND (deployments.entity_timestamp > to_timestamp(${entity.timestamp} / 1000.0) OR (deployments.entity_timestamp = to_timestamp(${entity.timestamp} / 1000.0) AND deployments.entity_id > ${entity.id}))
+        ORDER BY deployments.entity_timestamp, deployments.entity_id
+        LIMIT 1`)
+  return (await components.database.queryWithValues<{ id: number }>(q)).rows
+}
+
+export async function calculateOverwrittenByMany2(
+  components: Pick<AppComponents, 'database' | 'repository'>,
+  entity: Entity
+): Promise<{ id: number }[]> {
+  return (await components.database.queryWithValues<{ id: number }>(
+    SQL`
+    SELECT deployments.id
+    FROM deployments
+    WHERE deployments.entity_type = ${entity.type} AND
+        deployments.entity_pointers && ${entity.pointers} AND
+        (deployments.entity_timestamp > to_timestamp(${entity.timestamp} / 1000.0) OR (deployments.entity_timestamp = to_timestamp(${entity.timestamp} / 1000.0) AND deployments.entity_id > ${entity.id}))
+    ORDER BY deployments.entity_timestamp, deployments.entity_id
+    LIMIT 1`
+  )).rows
 }

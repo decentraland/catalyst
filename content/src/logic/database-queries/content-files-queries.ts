@@ -1,14 +1,12 @@
 import SQL from 'sql-template-strings'
 import { DeploymentContent } from '../../service/deployments/types'
-import { AppComponents } from '../../types'
+import { AppComponents, DeploymentId } from '../../types'
 
 export interface ContentFilesRow {
   deployment: number
   key: string
   content_hash: string
 }
-
-type DeploymentId = number
 
 export async function getContentFiles(
   components: Pick<AppComponents, 'database' | 'metrics'>,
