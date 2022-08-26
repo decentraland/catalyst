@@ -1,3 +1,4 @@
+import { createConfigComponent } from "@well-known-components/env-config-provider"
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { random } from 'faker'
@@ -12,7 +13,6 @@ import { DaoComponent } from '../../src/service/synchronization/clients/Hardcode
 import { AppComponents } from '../../src/types'
 import { MockedDAOClient } from '../helpers/service/synchronization/clients/MockedDAOClient'
 import { TestProgram } from './TestProgram'
-import { createConfigComponent } from "@well-known-components/env-config-provider";
 export class E2ETestEnvironment {
   public static TEST_SCHEMA = 'e2etest'
   public static POSTGRES_PORT = 5432
@@ -49,7 +49,7 @@ export class E2ETestEnvironment {
       })
     })
     this.database = await createDatabaseComponent({ logs, env: this.sharedEnv, metrics })
-    this.database.start()
+    if (this.database.start) this.database.start()
   }
 
   async stop(): Promise<void> {

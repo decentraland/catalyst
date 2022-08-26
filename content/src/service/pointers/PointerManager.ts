@@ -1,6 +1,7 @@
 import { Entity } from '@dcl/schemas'
 import { getDeployments } from '../../logic/database-queries/deployments-queries'
-import { AppComponents, DeploymentId } from '../../types'
+import { IDatabaseComponent } from '../../ports/postgres'
+import { DeploymentId } from '../../types'
 
 /**
  * Manage all pointer data
@@ -16,8 +17,7 @@ export class PointerManager {
    * @returns {DeploymentResult} A map where the keys are pointers and the values are a map with before and after value. Before value is the id of the entity deployed before (or undefined) and after is either 'set' or 'cleared'. For e.g. Map(1) { '0x1728f191d246b5a50af7a9494793af74f449a514' => { before: 5199630, after: 'set' }
    */
   async referenceEntityFromPointers(
-    components: Pick<AppComponents, 'database'>,
-    deploymentId: DeploymentId,
+    database: IDatabaseComponent,
     entity: Entity,
     overwrittenDeploymentIds: Set<number>,
     isEntityOverwrittenByAnExistingDeployment: boolean
@@ -28,7 +28,7 @@ export class PointerManager {
       // At this point, the current deployment will be become active (as there are no other newer deployments overwriting it)
 
       // Fetch overwritten deployments from the DB
-      const overwrittenDeployments = await getDeployments(components, overwrittenDeploymentIds)
+      const overwrittenDeployments = await getDeployments(database, overwrittenDeploymentIds)
 
       // Add all pointers in current entity to the map as SET
       for (const pointer of entity.pointers) {

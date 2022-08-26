@@ -263,7 +263,7 @@ export async function getEntityById(components: Pick<AppComponents, 'database'>,
 }
 
 export async function saveDeployment(
-  components: Pick<AppComponents, 'database'>,
+  database: AppComponents['database'],
   entity: Entity,
   auditInfo: AuditInfo,
   overwrittenBy: DeploymentId | null):
@@ -275,26 +275,25 @@ export async function saveDeployment(
   VALUES
   (${deployer}, ${entity.version}, ${entity.type}, ${entity.id}, to_timestamp(${entity.timestamp} / 1000.0), ${entity.pointers}, ${metadata}, to_timestamp(${auditInfo.localTimestamp} / 1000.0), ${JSON.stringify(auditInfo.authChain)}, ${overwrittenBy})
   RETURNING id`
-  const queryResult = await components.database.queryWithValues<{ id: number }>(query, 'save_deployment')
+  const queryResult = await database.queryWithValues<{ id: number }>(query, 'save_deployment')
   return queryResult.rows[0].id
 }
 
 export async function saveContentFiles(
-  components: Pick<AppComponents, 'database'>,
+  database: AppComponents['database'],
   deploymentId: DeploymentId,
   content: ContentMapping[]): Promise<void> {
   const queries = content.map((item) =>
     SQL`INSERT INTO content_files (deployment, key, content_hash) VALUES (${deploymentId}, ${item.file}, ${item.hash})`)
-  return components.database.transactionQuery(async (client) => {
+  await database.transaction(async (database) => {
     for (const query of queries) {
-      // could we parallelize this?
-      await client.query(query)
+      await database.queryWithValues(query)
     }
   }, 'save_content_files')
 }
 
 export async function getDeployments(
-  components: Pick<AppComponents, 'database'>,
+  database: AppComponents['database'],
   deploymentIds: Set<number>): Promise<{ id: number; pointers: string[] }[]> {
   if (deploymentIds.size === 0) return []
   const query = SQL`SELECT id, entity_pointers as pointers FROM deployments WHERE id IN (`
@@ -302,28 +301,27 @@ export async function getDeployments(
     .map((id, idx) => (idx < deploymentIds.size - 1) ? SQL`${id},` : SQL`${id}`)
   ids.forEach((id) => query.append(id))
   query.append(`);`)
-  const queryResult = await components.database.queryWithValues<{ id: number, pointers: string[] }>(query, 'get_deployments')
+  const queryResult = await database.queryWithValues<{ id: number, pointers: string[] }>(query, 'get_deployments')
   return queryResult.rows
 }
 
 export async function setEntitiesAsOverwritten(
-  components: Pick<AppComponents, 'database'>,
+  database: AppComponents['database'],
   allOverwritten: Set<DeploymentId>, overwrittenBy: DeploymentId): Promise<void> {
   const queries = Array.from(allOverwritten.values()).map((overwritten) =>
     SQL`UPDATE deployments SET deleter_deployment = ${overwrittenBy} WHERE id = ${overwritten}`)
-  return components.database.transactionQuery(async (client) => {
+  await database.transaction(async (database) => {
     for (const query of queries) {
-      // could we parallelize this?
-      await client.query(query)
+      await database.queryWithValues(query)
     }
   }, 'set_entities_overwritter')
 }
 
 export async function calculateOverwrote(
-  components: Pick<AppComponents, 'database' | 'repository'>,
+  database: AppComponents['database'],
   entity: Entity
 ): Promise<DeploymentId[]> {
-  return (await components.database.queryWithValues<{ id: number }>(
+  return (await database.queryWithValues<{ id: number }>(
     SQL`
           SELECT dep1.id
           FROM deployments AS dep1
@@ -337,7 +335,7 @@ export async function calculateOverwrote(
 }
 
 export async function calculateOverwrittenByMany1(
-  components: Pick<AppComponents, 'database' | 'repository'>,
+  database: AppComponents['database'],
   entity: Entity
 ): Promise<{ id: number }[]> {
   const q = SQL`
@@ -353,14 +351,14 @@ export async function calculateOverwrittenByMany1(
           AND (deployments.entity_timestamp > to_timestamp(${entity.timestamp} / 1000.0) OR (deployments.entity_timestamp = to_timestamp(${entity.timestamp} / 1000.0) AND deployments.entity_id > ${entity.id}))
         ORDER BY deployments.entity_timestamp, deployments.entity_id
         LIMIT 1`)
-  return (await components.database.queryWithValues<{ id: number }>(q)).rows
+  return (await database.queryWithValues<{ id: number }>(q)).rows
 }
 
 export async function calculateOverwrittenByMany2(
-  components: Pick<AppComponents, 'database' | 'repository'>,
+  database: AppComponents['database'],
   entity: Entity
 ): Promise<{ id: number }[]> {
-  return (await components.database.queryWithValues<{ id: number }>(
+  return (await database.queryWithValues<{ id: number }>(
     SQL`
     SELECT deployments.id
     FROM deployments

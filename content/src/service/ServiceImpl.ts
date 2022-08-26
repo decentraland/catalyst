@@ -8,7 +8,6 @@ import { calculateDeprecatedHashes, calculateIPFSHashes } from '../logic/hashing
 import { bufferToStream, ContentItem } from '../ports/contentStorage/contentStorage'
 import { FailedDeployment, FailureReason } from '../ports/failedDeploymentsCache'
 import { Database } from '../repository/Database'
-import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
 import { AuditInfo, Deployment, PartialDeploymentHistory } from '../service/deployments/types'
 import { AppComponents, EntityVersion } from '../types'
 import { getDeployments } from './deployments/deployments'
@@ -258,38 +257,31 @@ export class ServiceImpl implements MetaverseContentService {
       // Store the entity's content
       await this.storeEntityContent(hashes)
 
-      await this.components.repository.reuseIfPresent(
-        task,
-        (db) =>
-          db.txIf(async (transaction) => {
-            // Calculate overwrites
-            const { overwrote, overwrittenBy } = await calculateOverwrites(this.components, entity)
+      await this.components.database.transaction(async (database) => {
+        // Calculate overwrites
+        const { overwrote, overwrittenBy } = await calculateOverwrites(database, entity)
 
-            // Store the deployment
-            const deploymentId = await saveDeploymentAndContentFiles(
-              this.components,
-              entity,
-              auditInfoComplete,
-              overwrittenBy
-            )
-            // Modify active pointers
-            const pointersFromEntity = await this.components.pointerManager.referenceEntityFromPointers(
-              this.components,
-              deploymentId,
-              entity,
-              overwrote,
-              overwrittenBy !== null
-            )
+        // Store the deployment
+        const deploymentId = await saveDeploymentAndContentFiles(
+          database,
+          entity,
+          auditInfoComplete,
+          overwrittenBy
+        )
+        // Modify active pointers
+        const pointersFromEntity = await this.components.pointerManager.referenceEntityFromPointers(
+          database,
+          entity,
+          overwrote,
+          overwrittenBy !== null
+        )
 
-            // Update pointers and active entities
-            await this.updateActiveEntities(pointersFromEntity, entity)
+        // Update pointers and active entities
+        await this.updateActiveEntities(pointersFromEntity, entity)
 
-            // Set who overwrote who
-            await setEntitiesAsOverwritten(this.components, overwrote, deploymentId)
-
-          }),
-        { priority: DB_REQUEST_PRIORITY.HIGH, durationQueryNameLabel: 'store_deployment_tx' }
-      )
+        // Set who overwrote who
+        await setEntitiesAsOverwritten(database, overwrote, deploymentId)
+      })
     } else {
       ServiceImpl.LOGGER.info(`Entity already deployed`, { entityId })
       auditInfoComplete.localTimestamp = deployedEntity.localTimestamp

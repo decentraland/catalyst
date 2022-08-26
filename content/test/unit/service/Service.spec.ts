@@ -83,15 +83,7 @@ describe('Service', function () {
 
   it(`When an entity is successfully deployed, then the content is stored correctly`, async () => {
     const service = await buildService()
-
-    // jest.spyOn(service, 'getEntityById').mockResolvedValue(undefined)
-    jest.spyOn(deploymentQueries, 'getEntityById').mockResolvedValue(undefined)
     const storageSpy = jest.spyOn(service.components.storage, 'storeStream')
-    jest.spyOn(deploymentLogic, 'saveDeploymentAndContentFiles').mockImplementation(async (...args) => {
-      console.dir([...args])
-      return 123
-    })
-    jest.spyOn(deploymentQueries, 'setEntitiesAsOverwritten').mockResolvedValue()
 
     const deploymentResult: DeploymentResult = await service.deployEntity(
       [entityFile, randomFile],
@@ -221,6 +213,7 @@ describe('Service', function () {
     const repository = MockedRepository.build()
     const database = createTestDatabaseComponent()
     database.queryWithValues = () => Promise.resolve({ rows: [], rowCount: 0 })
+    database.transaction = () => Promise.resolve()
     const env = new Environment()
     env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, 'inexistent')
     env.setConfig(EnvironmentConfig.DENYLIST_FILE_NAME, 'file')

@@ -1,6 +1,7 @@
 import { Entity } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { FailedDeployment } from '../ports/failedDeploymentsCache'
+import { IDatabaseComponent } from '../ports/postgres'
 import { AuditInfo, Deployment } from '../service/deployments/types'
 import { DeploymentContext } from '../service/Service'
 import { deployEntityFromRemoteServer } from '../service/synchronization/deployRemoteEntity'
@@ -97,29 +98,29 @@ export function mapDeploymentsToEntities(deployments: Deployment[]): Entity[] {
 
 
 export async function saveDeploymentAndContentFiles(
-  components: Pick<AppComponents, 'database'>,
+  database: IDatabaseComponent,
   entity: Entity,
   auditInfo: AuditInfo,
   overwrittenBy: DeploymentId | null
 ) {
-  const deploymentId = await saveDeployment(components, entity, auditInfo, overwrittenBy)
+  const deploymentId = await saveDeployment(database, entity, auditInfo, overwrittenBy)
   if (entity.content) {
-    await saveContentFiles(components, deploymentId, entity.content)
+    await saveContentFiles(database, deploymentId, entity.content)
   }
   return deploymentId
 }
 
 export async function calculateOverwrites(
-  components: Pick<AppComponents, 'database' | 'repository'>,
+  database: IDatabaseComponent,
   entity: Entity
 ): Promise<{ overwrote: Set<DeploymentId>; overwrittenBy: DeploymentId | null }> {
-  const overwrote = await calculateOverwrote(components, entity)
+  const overwrote = await calculateOverwrote(database, entity)
 
-  let overwrittenByMany = await calculateOverwrittenByMany1(components, entity)
+  let overwrittenByMany = await calculateOverwrittenByMany1(database, entity)
 
   if (overwrittenByMany.length === 0 && entity.type === 'scene') {
     // Scene overwrite determination can be tricky. If none was detected use this other query (slower but safer)
-    overwrittenByMany = await calculateOverwrittenByMany2(components, entity)
+    overwrittenByMany = await calculateOverwrittenByMany2(database, entity)
   }
 
   let overwrittenBy: DeploymentId | null = null
