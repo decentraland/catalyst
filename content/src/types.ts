@@ -21,7 +21,6 @@ import { FSComponent } from './ports/fs'
 import { IDatabaseComponent } from './ports/postgres'
 import { ISequentialTaskExecutorComponent } from './ports/sequecuentialTaskExecutor'
 import { SystemProperties } from './ports/system-properties'
-import { Repository } from './repository/Repository'
 import { ContentAuthenticator } from './service/auth/Authenticator'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { PointerManager } from './service/pointers/PointerManager'
@@ -77,9 +76,6 @@ export type AppComponents = {
   denylist: Denylist
   fs: FSComponent
   ethereumProvider: HTTPProvider
-
-  // this will be replaced by `database` and removed from here
-  repository: Repository
 }
 
 export type MaintenanceComponents = {

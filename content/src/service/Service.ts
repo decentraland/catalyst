@@ -1,7 +1,6 @@
 import { AuthChain, EntityType } from '@dcl/schemas'
 import { ContentItem } from '../ports/contentStorage/contentStorage'
 import { FailedDeployment } from '../ports/failedDeploymentsCache'
-import { Database } from '../repository/Database'
 import { AuditInfo, Deployment, DeploymentOptions, PartialDeploymentHistory } from './deployments/types'
 
 /**x
@@ -14,7 +13,6 @@ export interface MetaverseContentService {
     entityId: string,
     auditInfo: LocalDeploymentAuditInfo,
     context: DeploymentContext,
-    task?: Database
   ): Promise<DeploymentResult>
   isContentAvailable(fileHashes: string[]): Promise<Map<string, boolean>>
   getContent(fileHash: string): Promise<ContentItem | undefined>

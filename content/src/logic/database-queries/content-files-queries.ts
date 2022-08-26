@@ -33,3 +33,19 @@ export async function getContentFiles(
 
   return result
 }
+
+export async function findContentHashesNotBeingUsedAnymore(
+  components: Pick<AppComponents, 'database'>,
+  lastGarbageCollectionTimestamp: number): Promise<string[]> {
+  return (await components.database.queryWithValues<{ content_hash: string }>(
+    SQL`
+    SELECT content_files.content_hash
+    FROM content_files
+    INNER JOIN deployments ON content_files.deployment=id
+    LEFT JOIN deployments AS dd ON deployments.deleter_deployment=dd.id
+    WHERE dd.local_timestamp IS NULL OR dd.local_timestamp > to_timestamp(${lastGarbageCollectionTimestamp} / 1000.0)
+    GROUP BY content_files.content_hash
+    HAVING bool_or(deployments.deleter_deployment IS NULL) = FALSE
+  `
+    , 'garbage_collection')).rows.map(row => row.content_hash)
+}

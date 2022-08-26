@@ -7,7 +7,6 @@ import { calculateOverwrites, saveDeploymentAndContentFiles } from '../logic/dep
 import { calculateDeprecatedHashes, calculateIPFSHashes } from '../logic/hashing'
 import { bufferToStream, ContentItem } from '../ports/contentStorage/contentStorage'
 import { FailedDeployment, FailureReason } from '../ports/failedDeploymentsCache'
-import { Database } from '../repository/Database'
 import { AuditInfo, Deployment, PartialDeploymentHistory } from '../service/deployments/types'
 import { AppComponents, EntityVersion } from '../types'
 import { getDeployments } from './deployments/deployments'
@@ -45,7 +44,6 @@ export class ServiceImpl implements MetaverseContentService {
       | 'deployRateLimiter'
       | 'validator'
       | 'serverValidator'
-      | 'repository'
       | 'logs'
       | 'authenticator'
       | 'database'
@@ -62,8 +60,7 @@ export class ServiceImpl implements MetaverseContentService {
     files: DeploymentFiles,
     entityId: string,
     auditInfo: LocalDeploymentAuditInfo,
-    context: DeploymentContext,
-    task?: Database
+    context: DeploymentContext
   ): Promise<DeploymentResult> {
     const deployedEntity = await getEntityById(this.components, entityId)
     // entity deployments are idempotent operations
@@ -126,7 +123,6 @@ export class ServiceImpl implements MetaverseContentService {
       })
 
       const storeResult = await this.storeDeploymentInDatabase(
-        task,
         entityId,
         entity,
         auditInfo,
@@ -218,7 +214,6 @@ export class ServiceImpl implements MetaverseContentService {
   }
 
   private async storeDeploymentInDatabase(
-    task: Database | undefined,
     entityId: string,
     entity: Entity,
     auditInfo: LocalDeploymentAuditInfo,

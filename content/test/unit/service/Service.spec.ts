@@ -31,7 +31,6 @@ import {
 } from '../../../src/service/Service'
 import { ServiceImpl } from '../../../src/service/ServiceImpl'
 import { EntityVersion } from '../../../src/types'
-import { MockedRepository } from '../../helpers/repository/MockedRepository'
 import { buildEntityAndFile } from '../../helpers/service/EntityTestFactory'
 import { NoOpServerValidator, NoOpValidator } from '../../helpers/service/validations/NoOpValidator'
 import { MockedStorage } from '../ports/contentStorage/MockedStorage'
@@ -210,7 +209,6 @@ describe('Service', function () {
   })
 
   async function buildService() {
-    const repository = MockedRepository.build()
     const database = createTestDatabaseComponent()
     database.queryWithValues = () => Promise.resolve({ rows: [], rowCount: 0 })
     database.transaction = () => Promise.resolve()
@@ -247,7 +245,6 @@ describe('Service', function () {
       failedDeploymentsCache,
       deployRateLimiter,
       storage,
-      repository,
       validator,
       serverValidator,
       metrics,
