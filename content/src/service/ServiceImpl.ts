@@ -122,13 +122,7 @@ export class ServiceImpl implements MetaverseContentService {
         pointers: entity.pointers.join(' ')
       })
 
-      const storeResult = await this.storeDeploymentInDatabase(
-        entityId,
-        entity,
-        auditInfo,
-        hashes,
-        contextToDeploy
-      )
+      const storeResult = await this.storeDeploymentInDatabase(entityId, entity, auditInfo, hashes, contextToDeploy)
 
       if (!storeResult) {
         ServiceImpl.LOGGER.error(`Error calling storeDeploymentInDatabase, returned void`, {
@@ -257,12 +251,7 @@ export class ServiceImpl implements MetaverseContentService {
         const { overwrote, overwrittenBy } = await calculateOverwrites(database, entity)
 
         // Store the deployment
-        const deploymentId = await saveDeploymentAndContentFiles(
-          database,
-          entity,
-          auditInfoComplete,
-          overwrittenBy
-        )
+        const deploymentId = await saveDeploymentAndContentFiles(database, entity, auditInfoComplete, overwrittenBy)
         // Modify active pointers
         const pointersFromEntity = await this.components.pointerManager.referenceEntityFromPointers(
           database,

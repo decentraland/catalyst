@@ -12,7 +12,7 @@ export interface MetaverseContentService {
     files: DeploymentFiles,
     entityId: string,
     auditInfo: LocalDeploymentAuditInfo,
-    context: DeploymentContext,
+    context: DeploymentContext
   ): Promise<DeploymentResult>
   isContentAvailable(fileHashes: string[]): Promise<Map<string, boolean>>
   getContent(fileHash: string): Promise<ContentItem | undefined>

@@ -16,7 +16,8 @@ export interface IDatabaseComponent extends IDatabase, IBaseComponent {
   ): AsyncGenerator<T>
   transaction(
     functionToRunWithinTransaction: (client: IDatabaseComponent) => Promise<void>,
-    durationQueryNameLabel?: string): Promise<void>
+    durationQueryNameLabel?: string
+  ): Promise<void>
   start?(): Promise<void>
 }
 
@@ -34,8 +35,8 @@ export function createTestDatabaseComponent(): IDatabaseComponent {
     async transaction() {
       throw new Error('transactionQuery Not implemented')
     },
-    async start() { },
-    async stop() { }
+    async start() {},
+    async stop() {}
   }
 }
 
@@ -66,8 +67,7 @@ export async function createDatabaseComponent(
 
   const pool: Pool = new Pool(poolConfig)
 
-  async function createDatabase(
-    poolClient?: PoolClient): Promise<IDatabaseComponent> {
+  async function createDatabase(poolClient?: PoolClient): Promise<IDatabaseComponent> {
     /**
      * If 'poolClient' is defined, it means it was created by a transaction, so we must run all the queries within
      * the transaction using the same client or it would lead to problems. If it is undefined, we use the pool to run
@@ -117,10 +117,7 @@ export async function createDatabaseComponent(
           rowCount: rows.rowCount
         }
       },
-      async queryWithValues<T>(
-        sql: SQLStatement,
-        durationQueryNameLabel?: string
-      ): Promise<IDatabase.IQueryResult<T>> {
+      async queryWithValues<T>(sql: SQLStatement, durationQueryNameLabel?: string): Promise<IDatabase.IQueryResult<T>> {
         const rows = durationQueryNameLabel
           ? await runReportingQueryDurationMetric(components, durationQueryNameLabel, () => pool.query(sql))
           : await client.query<T[]>(sql)
@@ -143,7 +140,8 @@ export async function createDatabaseComponent(
 
       async transaction(
         functionToRunWithinTransaction: (database: IDatabaseComponent) => Promise<void>,
-        durationQueryNameLabel?: string): Promise<void> {
+        durationQueryNameLabel?: string
+      ): Promise<void> {
         // We must use the same client and not the pool client. Check documentation
         // note: we don't try/catch this because if connecting throws an exception
         // we don't need to dispose of the client (it will be undefined)
@@ -183,7 +181,6 @@ export async function createDatabaseComponent(
       }
     },
     async stop() {
-
       if (didStop) {
         logger.error('Stop called twice')
         return
@@ -217,7 +214,6 @@ export async function createDatabaseComponent(
       }
 
       await promise
-
     }
   }
 }

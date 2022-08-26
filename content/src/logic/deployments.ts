@@ -7,7 +7,14 @@ import { DeploymentContext } from '../service/Service'
 import { deployEntityFromRemoteServer } from '../service/synchronization/deployRemoteEntity'
 import { IGNORING_FIX_ERROR } from '../service/validations/server'
 import { AppComponents, DeploymentId } from '../types'
-import { calculateOverwrittenByMany1, calculateOverwrittenByMany2, calculateOverwrote, deploymentExists, saveContentFiles, saveDeployment } from './database-queries/deployments-queries'
+import {
+  calculateOverwrittenByMany1,
+  calculateOverwrittenByMany2,
+  calculateOverwrote,
+  deploymentExists,
+  saveContentFiles,
+  saveDeployment
+} from './database-queries/deployments-queries'
 
 export async function isEntityDeployed(
   components: Pick<AppComponents, 'deployedEntitiesBloomFilter' | 'database' | 'metrics'>,
@@ -95,7 +102,6 @@ export function mapDeploymentsToEntities(deployments: Deployment[]): Entity[] {
     metadata
   }))
 }
-
 
 export async function saveDeploymentAndContentFiles(
   database: IDatabaseComponent,
