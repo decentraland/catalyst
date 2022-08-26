@@ -285,7 +285,12 @@ export async function saveContentFiles(
   content: ContentMapping[]): Promise<void> {
   const queries = content.map((item) =>
     SQL`INSERT INTO content_files (deployment, key, content_hash) VALUES (${deploymentId}, ${item.file}, ${item.hash})`)
-  return components.database.transactionQuery(queries, 'save_content_files')
+  return components.database.transactionQuery(async (client) => {
+    for (const query of queries) {
+      // could we parallelize this?
+      await client.query(query)
+    }
+  }, 'save_content_files')
 }
 
 export async function getDeployments(
@@ -306,7 +311,12 @@ export async function setEntitiesAsOverwritten(
   allOverwritten: Set<DeploymentId>, overwrittenBy: DeploymentId): Promise<void> {
   const queries = Array.from(allOverwritten.values()).map((overwritten) =>
     SQL`UPDATE deployments SET deleter_deployment = ${overwrittenBy} WHERE id = ${overwritten}`)
-  return components.database.transactionQuery(queries, 'set_entities_overwritter')
+  return components.database.transactionQuery(async (client) => {
+    for (const query of queries) {
+      // could we parallelize this?
+      await client.query(query)
+    }
+  }, 'set_entities_overwritter')
 }
 
 export async function calculateOverwrote(

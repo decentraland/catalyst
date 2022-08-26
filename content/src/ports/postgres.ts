@@ -1,6 +1,6 @@
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { IBaseComponent, IDatabase } from '@well-known-components/interfaces'
-import { Client, Pool, PoolConfig } from 'pg'
+import { Client, Pool, PoolClient, PoolConfig } from 'pg'
 import QueryStream from 'pg-query-stream'
 import { SQLStatement } from 'sql-template-strings'
 import { EnvironmentConfig } from '../Environment'
@@ -14,7 +14,7 @@ export interface IDatabaseComponent extends IDatabase {
     config?: { batchSize?: number },
     durationQueryNameLabel?: string
   ): AsyncGenerator<T>
-  transactionQuery<T>(sqls: SQLStatement[], durationQueryNameLabel?: string): Promise<void>
+  transactionQuery(code: (client: PoolClient) => Promise<void>, durationQueryNameLabel?: string): Promise<void>
   start(): Promise<void>
   stop(): Promise<void>
 }
@@ -140,17 +140,38 @@ export async function createDatabaseComponent(
     }
   }
 
-  async function transactionQuery<T>(sqls: SQLStatement[], durationQueryNameLabel?: string): Promise<void> {
+  // async function transactionQuery<T>(sqls: SQLStatement[], durationQueryNameLabel?: string): Promise<void> {
+  //   // We must use the same client and not the pool client. Check documentation
+  //   // note: we don't try/catch this because if connecting throws an exception
+  //   // we don't need to dispose of the client (it will be undefined)
+  //   const client = await pool.connect()
+  //   try {
+  //     await client.query('BEGIN')
+  //     for (const sql of sqls) {
+  //       // could we parallelize this?
+  //       await client.query(sql)
+  //     }
+  //     await client.query('COMMIT')
+  //   } catch (e) {
+  //     await client.query('ROLLBACK')
+  //     // log?
+  //     throw e
+  //   } finally {
+  //     client.release()
+  //   }
+  // }
+
+  async function transactionQuery<T>(
+    // Use T?
+    code: (client: PoolClient) => Promise<void>,
+    durationQueryNameLabel?: string): Promise<void> {
     // We must use the same client and not the pool client. Check documentation
     // note: we don't try/catch this because if connecting throws an exception
     // we don't need to dispose of the client (it will be undefined)
     const client = await pool.connect()
     try {
       await client.query('BEGIN')
-      for (const sql of sqls) {
-        // could we parallelize this?
-        await client.query(sql)
-      }
+      await code(client)
       await client.query('COMMIT')
     } catch (e) {
       await client.query('ROLLBACK')
