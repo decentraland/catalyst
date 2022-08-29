@@ -4,7 +4,6 @@ import { Client, ClientConfig, Pool, PoolClient, PoolConfig } from 'pg'
 import QueryStream from 'pg-query-stream'
 import { SQLStatement } from 'sql-template-strings'
 import { EnvironmentConfig } from '../Environment'
-import { generateReportingQueryDurationMetric, runReportingQueryDurationMetric } from '../instrument'
 import { AppComponents } from '../types'
 
 export interface IDatabaseComponent extends IDatabase, IBaseComponent {
@@ -35,8 +34,8 @@ export function createTestDatabaseComponent(): IDatabaseComponent {
     async transaction() {
       throw new Error('transactionQuery Not implemented')
     },
-    async start() {},
-    async stop() {}
+    async start() { },
+    async stop() { }
   }
 }
 
@@ -60,71 +59,45 @@ export async function createDatabaseComponent(
 
   const poolConfig = { ...defaultOptions, ...options }
 
-  const streamQueriesConfig: ClientConfig = {
-    ...poolConfig,
-    query_timeout: streamQueryTimeout
-  }
+  const streamQueriesConfig: ClientConfig = { ...poolConfig, query_timeout: streamQueryTimeout }
 
   const pool: Pool = new Pool(poolConfig)
 
-  async function createDatabase(poolClient?: PoolClient): Promise<IDatabaseComponent> {
+  const createEndTimer = (durationQueryNameLabel: string | undefined) =>
+    (durationQueryNameLabel
+      ? components.metrics.startTimer('dcl_db_query_duration_seconds', { query: durationQueryNameLabel })
+      : { end: () => { } }
+    ).end
+
+  async function createDatabaseClient(initializedClient?: PoolClient): Promise<IDatabaseComponent> {
     /**
      * If 'poolClient' is defined, it means it was created by a transaction, so we must run all the queries within
      * the transaction using the same client or it would lead to problems. If it is undefined, we use the pool to run
      * queries.
      * */
-    const client = poolClient ? poolClient : pool
-
-    async function* streamQueryInternal<T>(sql: SQLStatement, config?: { batchSize?: number }): AsyncGenerator<T> {
-      // Create a streamPool and reuse it ?
-      const client = new Client(streamQueriesConfig)
-      await client.connect()
-
-      try {
-        const stream: any = new QueryStream(sql.text, sql.values, config)
-
-        stream.callback = function () {
-          // noop
-        }
-
-        try {
-          const queryPromise = client.query(stream)
-
-          for await (const row of stream) {
-            yield row
-          }
-
-          stream.destroy()
-
-          await queryPromise
-          // finish - OK, this call is necessary to finish the query when we configure query_timeout due to a bug in pg
-          stream.callback(undefined, undefined)
-        } catch (err) {
-          // finish - with error, this call is necessary to finish the query when we configure query_timeout due to a bug in pg
-          stream.callback(err, undefined)
-          throw err
-        }
-      } finally {
-        await client.end()
-      }
-    }
+    const queryClient = initializedClient ? initializedClient : pool
 
     return {
       async query<T>(sql: string): Promise<IDatabase.IQueryResult<T>> {
-        const rows = await client.query<T[]>(sql)
+        const rows = await queryClient.query<T[]>(sql)
         return {
           rows: rows.rows as any[],
           rowCount: rows.rowCount
         }
       },
       async queryWithValues<T>(sql: SQLStatement, durationQueryNameLabel?: string): Promise<IDatabase.IQueryResult<T>> {
-        const rows = durationQueryNameLabel
-          ? await runReportingQueryDurationMetric(components, durationQueryNameLabel, () => pool.query(sql))
-          : await client.query<T[]>(sql)
-
-        return {
-          rows: rows.rows as any[],
-          rowCount: rows.rowCount
+        const endTimer = createEndTimer(durationQueryNameLabel)
+        try {
+          const rows = await queryClient.query<T[]>(sql)
+          endTimer({ status: 'success' })
+          return {
+            rows: rows.rows as any[],
+            rowCount: rows.rowCount
+          }
+        } catch (error) {
+          endTimer({ status: 'error' })
+          logger.error(error)
+          throw error
         }
       },
 
@@ -133,31 +106,68 @@ export async function createDatabaseComponent(
         config?: { batchSize?: number },
         durationQueryNameLabel?: string
       ): AsyncGenerator<T> {
-        yield* durationQueryNameLabel
-          ? generateReportingQueryDurationMetric(components, durationQueryNameLabel, streamQueryInternal(sql, config))
-          : streamQueryInternal(sql, config)
+        // Create a streamPool and reuse it ?
+        const endTimer = createEndTimer(durationQueryNameLabel)
+        const client = new Client(streamQueriesConfig)
+        await client.connect()
+
+        try {
+          const stream: any = new QueryStream(sql.text, sql.values, config)
+
+          stream.callback = function () {
+            // noop
+          }
+
+          try {
+            const queryPromise = client.query(stream)
+
+            for await (const row of stream) {
+              yield row
+            }
+
+            stream.destroy()
+
+            await queryPromise
+            // finish - OK, this call is necessary to finish the query when we configure query_timeout due to a bug in pg
+            stream.callback(undefined, undefined)
+            endTimer({ status: 'success' })
+          } catch (error) {
+            // finish - with error, this call is necessary to finish the query when we configure query_timeout due to a bug in pg
+            stream.callback(error, undefined)
+            endTimer({ status: 'error' })
+            logger.error('Error running stream query:')
+            logger.error(error)
+            throw error
+          }
+        } finally {
+          await client.end()
+        }
       },
 
       async transaction(
         functionToRunWithinTransaction: (database: IDatabaseComponent) => Promise<void>,
         durationQueryNameLabel?: string
       ): Promise<void> {
+        const endTimer = createEndTimer(durationQueryNameLabel)
         // We must use the same client and not the pool client. Check documentation
         // note: we don't try/catch this because if connecting throws an exception
         // we don't need to dispose of the client (it will be undefined)
-        const client = poolClient ? poolClient : await pool.connect()
+        const client = initializedClient ? initializedClient : await pool.connect()
         try {
           await client.query('BEGIN')
-          const database = await createDatabase(client)
+          const database = await createDatabaseClient(client)
           await functionToRunWithinTransaction(database)
           await client.query('COMMIT')
-        } catch (e) {
+          endTimer({ status: 'success' })
+        } catch (error) {
           await client.query('ROLLBACK')
-          // log?
-          throw e
+          endTimer({ status: 'error' })
+          logger.error('Error running transaction:')
+          logger.error(error)
+          throw error
         } finally {
-          // If it's a transaction with a transaction, it mustn't release the client, only the outer transaction.
-          if (!poolClient) {
+          // If it's a transaction with a transaction, it mustn't release the client, only the outer transaction does it.
+          if (!initializedClient) {
             client.release()
           }
         }
@@ -165,7 +175,7 @@ export async function createDatabaseComponent(
     }
   }
 
-  const database = await createDatabase()
+  const database = await createDatabaseClient()
 
   let didStop = false
 
