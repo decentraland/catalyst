@@ -71,9 +71,9 @@ export async function createDatabaseComponent(
 
   async function createDatabaseClient(initializedClient?: PoolClient): Promise<IDatabaseComponent> {
     /**
-     * If 'poolClient' is defined, it means it was created by a transaction, so we must run all the queries within
+     * If 'initializedClient' is defined, it means it was created by a transaction, so we must run all the queries within
      * the transaction using the same client or it would lead to problems. If it is undefined, we use the pool to run
-     * queries.
+     * normal queries.
      * */
     const queryClient = initializedClient ? initializedClient : pool
 
