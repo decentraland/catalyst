@@ -29,7 +29,6 @@ describe('fileSystemContentStorage', () => {
   })
 
   afterEach(() => {
-    console.log(`Deleting: ${tmpRootDir}`)
     rmSync(tmpRootDir, { recursive: true, force: false })
   })
 

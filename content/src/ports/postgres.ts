@@ -6,7 +6,7 @@ import { SQLStatement } from 'sql-template-strings'
 import { EnvironmentConfig } from '../Environment'
 import { AppComponents } from '../types'
 
-export interface IDatabaseComponent extends IDatabase, IBaseComponent {
+export interface DatabaseClient extends IDatabase {
   queryWithValues<T>(sql: SQLStatement, durationQueryNameLabel?: string): Promise<IDatabase.IQueryResult<T>>
   streamQuery<T = any>(
     sql: SQLStatement,
@@ -14,9 +14,12 @@ export interface IDatabaseComponent extends IDatabase, IBaseComponent {
     durationQueryNameLabel?: string
   ): AsyncGenerator<T>
   transaction(
-    functionToRunWithinTransaction: (client: IDatabaseComponent) => Promise<void>,
+    functionToRunWithinTransaction: (client: DatabaseClient) => Promise<void>,
     durationQueryNameLabel?: string
   ): Promise<void>
+}
+
+export interface IDatabaseComponent extends DatabaseClient, IBaseComponent {
   start?(): Promise<void>
 }
 
@@ -43,9 +46,6 @@ export async function createDatabaseComponent(
   components: Pick<AppComponents, 'logs' | 'env' | 'metrics'>,
   options?: PoolConfig
 ): Promise<IDatabaseComponent> {
-  const { logs } = components
-  const logger = logs.getLogger('database-component')
-
   const defaultOptions = {
     port: components.env.getConfig<number>(EnvironmentConfig.PSQL_PORT),
     host: components.env.getConfig<string>(EnvironmentConfig.PSQL_HOST),
@@ -62,6 +62,17 @@ export async function createDatabaseComponent(
   const streamQueriesConfig: ClientConfig = { ...poolConfig, query_timeout: streamQueryTimeout }
 
   const pool: Pool = new Pool(poolConfig)
+
+  return createDatabase(components, pool, streamQueriesConfig)
+}
+
+export async function createDatabase(
+  components: Pick<AppComponents, 'logs' | 'env' | 'metrics'>,
+  pool: Pool,
+  streamQueriesConfig: ClientConfig
+): Promise<IDatabaseComponent> {
+  const { logs } = components
+  const logger = logs.getLogger('database-component')
 
   const createEndTimer = (durationQueryNameLabel: string | undefined) =>
     (durationQueryNameLabel
@@ -145,7 +156,7 @@ export async function createDatabaseComponent(
       },
 
       async transaction(
-        functionToRunWithinTransaction: (database: IDatabaseComponent) => Promise<void>,
+        functionToRunWithinTransaction: (databaseClient: DatabaseClient) => Promise<void>,
         durationQueryNameLabel?: string
       ): Promise<void> {
         const endTimer = createEndTimer(durationQueryNameLabel)
@@ -191,6 +202,7 @@ export async function createDatabaseComponent(
       }
     },
     async stop() {
+      console.log('stopping component 147')
       if (didStop) {
         logger.error('Stop called twice')
         return
