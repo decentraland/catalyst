@@ -37,8 +37,8 @@ export function createTestDatabaseComponent(): IDatabaseComponent {
     async transaction() {
       throw new Error('transactionQuery Not implemented')
     },
-    async start() {},
-    async stop() {}
+    async start() { },
+    async stop() { }
   }
 }
 
@@ -77,7 +77,7 @@ export async function createDatabase(
   const createEndTimer = (durationQueryNameLabel: string | undefined) =>
     (durationQueryNameLabel
       ? components.metrics.startTimer('dcl_db_query_duration_seconds', { query: durationQueryNameLabel })
-      : { end: () => {} }
+      : { end: () => { } }
     ).end
 
   async function createDatabaseClient(initializedClient?: PoolClient): Promise<IDatabaseComponent> {
@@ -202,7 +202,6 @@ export async function createDatabase(
       }
     },
     async stop() {
-      console.log('stopping component 147')
       if (didStop) {
         logger.error('Stop called twice')
         return
