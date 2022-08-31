@@ -2,12 +2,11 @@ import { AuthChain, Authenticator } from '@dcl/crypto'
 import { Entity, EntityType, IPFSv2 } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { EnvironmentConfig } from '../Environment'
-import { runReportingQueryDurationMetric } from '../instrument'
+import { getEntityById, setEntitiesAsOverwritten } from '../logic/database-queries/deployments-queries'
+import { calculateOverwrites, saveDeploymentAndContentFiles } from '../logic/deployments'
 import { calculateDeprecatedHashes, calculateIPFSHashes } from '../logic/hashing'
 import { bufferToStream, ContentItem } from '../ports/contentStorage/contentStorage'
 import { FailedDeployment, FailureReason } from '../ports/failedDeploymentsCache'
-import { Database } from '../repository/Database'
-import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
 import { AuditInfo, Deployment, PartialDeploymentHistory } from '../service/deployments/types'
 import { AppComponents, EntityVersion } from '../types'
 import { getDeployments } from './deployments/deployments'
@@ -43,10 +42,8 @@ export class ServiceImpl implements MetaverseContentService {
       | 'pointerManager'
       | 'failedDeploymentsCache'
       | 'deployRateLimiter'
-      | 'deploymentManager'
       | 'validator'
       | 'serverValidator'
-      | 'repository'
       | 'logs'
       | 'authenticator'
       | 'database'
@@ -63,10 +60,9 @@ export class ServiceImpl implements MetaverseContentService {
     files: DeploymentFiles,
     entityId: string,
     auditInfo: LocalDeploymentAuditInfo,
-    context: DeploymentContext,
-    task?: Database
+    context: DeploymentContext
   ): Promise<DeploymentResult> {
-    const deployedEntity = await this.getEntityById(entityId, task)
+    const deployedEntity = await getEntityById(this.components, entityId)
     // entity deployments are idempotent operations
     if (deployedEntity) {
       ServiceImpl.LOGGER.debug(`Entity was already deployed`, {
@@ -126,14 +122,7 @@ export class ServiceImpl implements MetaverseContentService {
         pointers: entity.pointers.join(' ')
       })
 
-      const storeResult = await this.storeDeploymentInDatabase(
-        task,
-        entityId,
-        entity,
-        auditInfo,
-        hashes,
-        contextToDeploy
-      )
+      const storeResult = await this.storeDeploymentInDatabase(entityId, entity, auditInfo, hashes, contextToDeploy)
 
       if (!storeResult) {
         ServiceImpl.LOGGER.error(`Error calling storeDeploymentInDatabase, returned void`, {
@@ -219,14 +208,13 @@ export class ServiceImpl implements MetaverseContentService {
   }
 
   private async storeDeploymentInDatabase(
-    task: Database | undefined,
     entityId: string,
     entity: Entity,
     auditInfo: LocalDeploymentAuditInfo,
     hashes: Map<string, Uint8Array>,
     context: DeploymentContext
   ): Promise<InvalidResult | { auditInfoComplete: AuditInfo; wasEntityDeployed: boolean }> {
-    const deployedEntity = await this.getEntityById(entityId)
+    const deployedEntity = await getEntityById(this.components, entityId)
     const isEntityAlreadyDeployed = !!deployedEntity
 
     const validationResult = await this.validateDeployment(entity, context, isEntityAlreadyDeployed, auditInfo, hashes)
@@ -258,55 +246,26 @@ export class ServiceImpl implements MetaverseContentService {
       // Store the entity's content
       await this.storeEntityContent(hashes)
 
-      await this.components.repository.reuseIfPresent(
-        task,
-        (db) =>
-          db.txIf(async (transaction) => {
-            // Calculate overwrites
-            const { overwrote, overwrittenBy } = await runReportingQueryDurationMetric(
-              this.components,
-              'calculate_overwrites',
-              () => this.components.pointerManager.calculateOverwrites(transaction.deployments, entity)
-            )
+      await this.components.database.transaction(async (database) => {
+        // Calculate overwrites
+        const { overwrote, overwrittenBy } = await calculateOverwrites(database, entity)
 
-            // Store the deployment
-            const deploymentId = await runReportingQueryDurationMetric(this.components, 'save_deployment', () =>
-              this.components.deploymentManager.saveDeployment(
-                transaction.deployments,
-                transaction.content,
-                entity,
-                auditInfoComplete,
-                overwrittenBy
-              )
-            )
-            // Modify active pointers
-            const pointersFromEntity = await runReportingQueryDurationMetric(
-              this.components,
-              'reference_entity_from_pointers',
-              () =>
-                this.components.pointerManager.referenceEntityFromPointers(
-                  transaction.deployments,
-                  deploymentId,
-                  entity,
-                  overwrote,
-                  overwrittenBy !== null
-                )
-            )
+        // Store the deployment
+        const deploymentId = await saveDeploymentAndContentFiles(database, entity, auditInfoComplete, overwrittenBy)
+        // Modify active pointers
+        const pointersFromEntity = await this.components.pointerManager.referenceEntityFromPointers(
+          database,
+          entity,
+          overwrote,
+          overwrittenBy !== null
+        )
 
-            // Update pointers and active entities
-            await this.updateActiveEntities(pointersFromEntity, entity)
+        // Update pointers and active entities
+        await this.updateActiveEntities(pointersFromEntity, entity)
 
-            // Set who overwrote who
-            await runReportingQueryDurationMetric(this.components, 'set_entities_overwritter', () =>
-              this.components.deploymentManager.setEntitiesAsOverwritten(
-                transaction.deployments,
-                overwrote,
-                deploymentId
-              )
-            )
-          }),
-        { priority: DB_REQUEST_PRIORITY.HIGH, durationQueryNameLabel: 'store_deployment_tx' }
-      )
+        // Set who overwrote who
+        await setEntitiesAsOverwritten(database, overwrote, deploymentId)
+      })
     } else {
       ServiceImpl.LOGGER.info(`Entity already deployed`, { entityId })
       auditInfoComplete.localTimestamp = deployedEntity.localTimestamp
@@ -410,17 +369,6 @@ export class ServiceImpl implements MetaverseContentService {
 
   isContentAvailable(fileHashes: string[]): Promise<Map<string, boolean>> {
     return this.components.storage.existMultiple(fileHashes)
-  }
-
-  async getEntityById(entityId: string, task?: Database): Promise<{ entityId: string; localTimestamp: number } | void> {
-    return this.components.repository.reuseIfPresent(
-      task,
-      (db) => this.components.deploymentManager.getEntityById(db.deployments, entityId),
-      {
-        priority: DB_REQUEST_PRIORITY.HIGH,
-        durationQueryNameLabel: 'get_entity_by_id'
-      }
-    )
   }
 
   getDeployments(options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>> {

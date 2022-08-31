@@ -26,9 +26,7 @@ import { createFsComponent } from './ports/fs'
 import { createDatabaseComponent } from './ports/postgres'
 import { createSequentialTaskExecutor } from './ports/sequecuentialTaskExecutor'
 import { createSystemProperties } from './ports/system-properties'
-import { RepositoryFactory } from './repository/RepositoryFactory'
 import { ContentAuthenticator } from './service/auth/Authenticator'
-import { DeploymentManager } from './service/deployments/DeploymentManager'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { PointerManager } from './service/pointers/PointerManager'
 import { Server } from './service/Server'
@@ -47,7 +45,6 @@ import { AppComponents } from './types'
 
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
   const metrics = createTestMetricsComponent(metricsDeclaration)
-  const repository = await RepositoryFactory.create({ env, metrics })
   const config = createConfigComponent({
     LOG_LEVEL: env.getConfig(EnvironmentConfig.LOG_LEVEL),
     IGNORE_BLOCKCHAIN_ACCESS_CHECKS: env.getConfig(EnvironmentConfig.IGNORE_BLOCKCHAIN_ACCESS_CHECKS)
@@ -101,7 +98,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     },
     env.getConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL)
   )
-  const deploymentManager = new DeploymentManager()
 
   // TODO: this should be in the src/logic folder. It is not a component
   const pointerManager = new PointerManager()
@@ -138,11 +134,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const deployer: MetaverseContentService = new ServiceImpl({
     metrics,
     storage,
-    deploymentManager,
     failedDeploymentsCache,
     deployRateLimiter,
     pointerManager,
-    repository,
     validator,
     serverValidator,
     env,
@@ -160,7 +154,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   )
 
   const garbageCollectionManager = new GarbageCollectionManager(
-    { repository, deployer, systemProperties, metrics, logs, storage },
+    { deployer, systemProperties, metrics, logs, storage, database },
     env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION),
     env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL)
   )
@@ -282,12 +276,10 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     synchronizationJobManager,
     deployedEntitiesBloomFilter: deployedEntitiesBloomFilter,
     controller,
-    repository,
     synchronizationManager,
     challengeSupervisor,
     snapshotManager,
     contentCluster,
-    deploymentManager,
     failedDeploymentsCache,
     deployRateLimiter,
     pointerManager,
