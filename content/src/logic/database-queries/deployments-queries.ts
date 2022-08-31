@@ -357,7 +357,7 @@ export async function calculateOverwrote(database: AppComponents['database'], en
   ).rows.map((row) => row.id)
 }
 
-export async function calculateOverwrittenByMany1(
+export async function calculateOverwrittenByManyFast(
   database: AppComponents['database'],
   entity: Entity
 ): Promise<{ id: number }[]> {
@@ -378,7 +378,7 @@ export async function calculateOverwrittenByMany1(
   return (await database.queryWithValues<{ id: number }>(q)).rows
 }
 
-export async function calculateOverwrittenByMany2(
+export async function calculateOverwrittenBySlow(
   database: AppComponents['database'],
   entity: Entity
 ): Promise<{ id: number }[]> {

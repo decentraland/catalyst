@@ -8,8 +8,8 @@ import { deployEntityFromRemoteServer } from '../service/synchronization/deployR
 import { IGNORING_FIX_ERROR } from '../service/validations/server'
 import { AppComponents, DeploymentId } from '../types'
 import {
-  calculateOverwrittenByMany1,
-  calculateOverwrittenByMany2,
+  calculateOverwrittenByManyFast,
+  calculateOverwrittenBySlow,
   calculateOverwrote,
   deploymentExists,
   saveContentFiles,
@@ -122,11 +122,11 @@ export async function calculateOverwrites(
 ): Promise<{ overwrote: Set<DeploymentId>; overwrittenBy: DeploymentId | null }> {
   const overwrote = await calculateOverwrote(database, entity)
 
-  let overwrittenByMany = await calculateOverwrittenByMany1(database, entity)
+  let overwrittenByMany = await calculateOverwrittenByManyFast(database, entity)
 
   if (overwrittenByMany.length === 0 && entity.type === 'scene') {
     // Scene overwrite determination can be tricky. If none was detected use this other query (slower but safer)
-    overwrittenByMany = await calculateOverwrittenByMany2(database, entity)
+    overwrittenByMany = await calculateOverwrittenBySlow(database, entity)
   }
 
   let overwrittenBy: DeploymentId | null = null
