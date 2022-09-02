@@ -389,10 +389,10 @@
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
 
-"@dcl/snapshots-fetcher@^4.0.0":
-  version "4.0.0"
-  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-4.0.0.tgz#d7a272cf57ed9631c224271642b11b90ec412898"
-  integrity sha512-Hk4hWwDUqO6I7TZW+imQHdzmoCcNM1Vj3Rm6pqqN4V+QhEf8Ikk0VXizDFg0O/cROGo2rne7PN1duu9iSrYi3w==
+"@dcl/snapshots-fetcher@^4.0.3":
+  version "4.0.3"
+  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-4.0.3.tgz#54bb59324db58057ef1397b4bacf6c98ded2764a"
+  integrity sha512-p8euvnOf6XkER7S5bUKZ+osgl+7gN4bUDE1sqKC+55rvkdptv1nbvFqx08h0MtuXEVYPT9mCHEEQqFltnBAqpw==
   dependencies:
     "@dcl/catalyst-storage" "^1.0.0-20220604235145.commit-892b669"
     "@dcl/hashing" "^1.0.0"
