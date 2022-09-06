@@ -126,7 +126,7 @@ export function getHistoricalDeploymentsQuery(
     .append(` ORDER BY dep1.`)
     .append(pg.Client.prototype.escapeIdentifier(timestampField))
     .append(` ${order}, LOWER(dep1.entity_id) ${order} `) // raw values need to be strings not sql templates
-    .append(SQL`LIMIT ${limit} OFFSET ${offset}`)
+  // .append(SQL`LIMIT ${limit} OFFSET ${offset}`)
 
   return query
 }
