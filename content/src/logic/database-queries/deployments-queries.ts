@@ -77,6 +77,7 @@ export function getHistoricalDeploymentsQuery(
 
   // Generate the select according the info needed
   const query: SQLStatement = SQL`
+            SELECT * FROM (
               SELECT
                   dep1.id,
                   dep1.entity_type,
@@ -123,10 +124,11 @@ export function getHistoricalDeploymentsQuery(
 
   query.append(where)
   query
-    .append(` ORDER BY dep1.`)
+    .append(') as m')
+    .append(` ORDER BY m.`)
     .append(pg.Client.prototype.escapeIdentifier(timestampField))
-    .append(` ${order}, LOWER(dep1.entity_id) ${order} `) // raw values need to be strings not sql templates
-  // .append(SQL`LIMIT ${limit} OFFSET ${offset}`)
+    .append(` ${order}, LOWER(m.entity_id) ${order} `) // raw values need to be strings not sql templates
+    .append(SQL`LIMIT ${limit} OFFSET ${offset}`)
 
   return query
 }
