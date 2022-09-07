@@ -224,6 +224,26 @@ describe('DatabaseClient', () => {
       expect(poolClient.release).toBeCalledTimes(1)
     })
 
+    it('should call BEGIN and COMMIT only if it is the outer transaction', async () => {
+      const pool = new Pool()
+      const poolClient = {
+        query: jest.fn(),
+        release: jest.fn()
+      }
+      jest.spyOn(pool, 'connect').mockImplementation(() => poolClient)
+      const database = await createDatabase({ logs, env, metrics }, pool, {})
+      await database.transaction(async (databaseClient) => {
+        // Only the outer transaction calls BEGIN
+        expect(poolClient.query).toBeCalledWith('BEGIN')
+        await databaseClient.transaction(async () => { })
+        // Only the outer transaction calls COMMIT
+        expect(poolClient.query).not.toBeCalledWith('COMMIT')
+      })
+      expect(poolClient.query).toBeCalledWith('BEGIN')
+      expect(poolClient.query).toBeCalledWith('COMMIT')
+      expect(poolClient.query).toBeCalledTimes(2)
+    })
+
     it('should use the pool to make queries when not using the provided database client', async () => {
       // You probable DO NOT want to do this
       const pool = new Pool()

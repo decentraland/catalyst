@@ -173,7 +173,10 @@ export async function createDatabase(
          * Note: we don't try/catch this because if connecting throws an exception, the client will be undefined.
          * No need to dispose the client.
          */
-        const client = initializedClient ? initializedClient : await pool.connect()
+        if (initializedClient) {
+          return functionToRunWithinTransaction(database)
+        }
+        const client = await pool.connect()
         try {
           await client.query('BEGIN')
           const database = await createDatabaseClient(client)
@@ -187,10 +190,7 @@ export async function createDatabase(
           logger.error(error)
           throw error
         } finally {
-          // If it's a transaction with a transaction, it mustn't release the client, only the outer transaction must.
-          if (!initializedClient) {
-            client.release()
-          }
+          client.release()
         }
       }
     }
