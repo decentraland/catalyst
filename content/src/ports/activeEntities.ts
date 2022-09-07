@@ -160,6 +160,7 @@ export const createActiveEntitiesComponent = (
     entityIds?: string[]
     pointers?: string[]
   }): Promise<Entity[]> => {
+    console.log({ entityIds, pointers })
     const deployments = await getDeploymentsForActiveEntities(components, entityIds, pointers)
     for (const deployment of deployments) {
       reportCacheAccess(deployment.entityType, 'miss')
@@ -223,6 +224,7 @@ export const createActiveEntitiesComponent = (
 
     // once we get the ids, retrieve from cache or find
     const entityIds = Array.from(uniqueEntityIds.values())
+    console.debug({ remaining, entityIds })
     const entitiesById = await withIds(entityIds)
 
     // find entities for remaining pointers (we don't know the entity id), it easier to find entire entity instead of ids
