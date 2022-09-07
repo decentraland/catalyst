@@ -5,7 +5,8 @@
   "license": "Apache-2.0",
   "author": "Decentraland Contributors",
   "scripts": {
-    "build": "tsc -b --watch",
+    "build": "tsc -b",
+    "build:watch": "tsc -b --watch",
     "cleanup": "shx rm -rf dist node_modules",
     "report-api-coverage": "node ./reportApiCoverage.js",
     "start:db": "node ./dist/src/entrypoints/run-local-database.js",
