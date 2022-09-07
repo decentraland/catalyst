@@ -246,7 +246,10 @@ export class ServiceImpl implements MetaverseContentService {
       // Store the entity's content
       await this.storeEntityContent(hashes)
 
-      await this.components.database.transaction(async (database) => {
+      const database = this.components.database
+      try {
+        await database.query('BEGIN')
+
         // Calculate overwrites
         const { overwrote, overwrittenBy } = await calculateOverwrites(database, entity)
 
@@ -265,7 +268,14 @@ export class ServiceImpl implements MetaverseContentService {
 
         // Set who overwrote who
         await setEntitiesAsOverwritten(database, overwrote, deploymentId)
-      })
+        await database.query('COMMIT')
+      } catch (error) {
+        await database.query('ROLLBACK')
+        ServiceImpl.LOGGER.error('Error running transaction:')
+        ServiceImpl.LOGGER.error(error)
+        throw error
+      } finally {
+      }
     } else {
       ServiceImpl.LOGGER.info(`Entity already deployed`, { entityId })
       auditInfoComplete.localTimestamp = deployedEntity.localTimestamp

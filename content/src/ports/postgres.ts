@@ -13,10 +13,6 @@ export interface DatabaseClient extends IDatabase {
     config?: { batchSize?: number },
     durationQueryNameLabel?: string
   ): AsyncGenerator<T>
-  transaction(
-    functionToRunWithinTransaction: (client: DatabaseClient) => Promise<void>,
-    durationQueryNameLabel?: string
-  ): Promise<void>
 }
 
 export interface IDatabaseComponent extends DatabaseClient, IBaseComponent {
@@ -33,9 +29,6 @@ export function createTestDatabaseComponent(): IDatabaseComponent {
     },
     async *streamQuery() {
       throw new Error('streamQuery Not implemented')
-    },
-    async transaction() {
-      throw new Error('transactionQuery Not implemented')
     },
     async start() {},
     async stop() {}
@@ -152,45 +145,6 @@ export async function createDatabase(
           }
         } finally {
           await client.end()
-        }
-      },
-
-      async transaction(
-        functionToRunWithinTransaction: (databaseClient: DatabaseClient) => Promise<void>,
-        durationQueryNameLabel?: string
-      ): Promise<void> {
-        const endTimer = createEndTimer(durationQueryNameLabel)
-        /**
-         * It starts a transaction and creates a database client. Then it runs the lambda function parameter
-         * using that client. If it success, commits the transaction. If not, it rollbacks the transaction.
-         * @functionToRunWithinTransaction The code that will run within the transaction.
-         * @durationQueryNameLabel If present, it will be used to instrument the transaction duration.
-         * IMPORTANT: PostgreSQL isolates a transaction to individual client. You MUST use the database client provided
-         * in the lambda function. It will make sure that the queries are made using the same client.
-         */
-
-        /**
-         * Note: we don't try/catch this because if connecting throws an exception, the client will be undefined.
-         * No need to dispose the client.
-         */
-        if (initializedClient) {
-          return functionToRunWithinTransaction(database)
-        }
-        const client = await pool.connect()
-        try {
-          await client.query('BEGIN')
-          const database = await createDatabaseClient(client)
-          await functionToRunWithinTransaction(database)
-          await client.query('COMMIT')
-          endTimer({ status: 'success' })
-        } catch (error) {
-          await client.query('ROLLBACK')
-          endTimer({ status: 'error' })
-          logger.error('Error running transaction:')
-          logger.error(error)
-          throw error
-        } finally {
-          client.release()
         }
       }
     }

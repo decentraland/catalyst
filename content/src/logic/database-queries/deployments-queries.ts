@@ -306,11 +306,9 @@ export async function saveContentFiles(
     (item) =>
       SQL`INSERT INTO content_files (deployment, key, content_hash) VALUES (${deploymentId}, ${item.file}, ${item.hash})`
   )
-  await database.transaction(async (database) => {
-    for (const query of queries) {
-      await database.queryWithValues(query)
-    }
-  }, 'save_content_files')
+  for (const query of queries) {
+    await database.queryWithValues(query)
+  }
 }
 
 export async function getDeployments(
@@ -334,11 +332,9 @@ export async function setEntitiesAsOverwritten(
   const queries = Array.from(allOverwritten.values()).map(
     (overwritten) => SQL`UPDATE deployments SET deleter_deployment = ${overwrittenBy} WHERE id = ${overwritten}`
   )
-  await database.transaction(async (database) => {
-    for (const query of queries) {
-      await database.queryWithValues(query)
-    }
-  }, 'set_entities_overwritter')
+  for (const query of queries) {
+    await database.queryWithValues(query)
+  }
 }
 
 export async function calculateOverwrote(database: AppComponents['database'], entity: Entity): Promise<DeploymentId[]> {
