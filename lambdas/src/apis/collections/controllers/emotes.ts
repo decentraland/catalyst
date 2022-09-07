@@ -126,7 +126,7 @@ export async function getEmotesHandler(
     res.send({ emotes, filters: requestFilters, pagination: { limit: sanitizedLimit, lastId, next } })
   } catch (error) {
     LOGGER.error(error)
-    res.status(500)
+    res.status(500).end()
   }
 }
 
