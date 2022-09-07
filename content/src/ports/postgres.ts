@@ -174,13 +174,13 @@ export async function createDatabase(
          * No need to dispose the client.
          */
         if (initializedClient) {
-          return functionToRunWithinTransaction(database)
+          return functionToRunWithinTransaction(await createDatabaseClient(initializedClient))
         }
-        const client = await pool.connect()
+        const client: PoolClient = await pool.connect()
         try {
           await client.query('BEGIN')
-          const database = await createDatabaseClient(client)
-          await functionToRunWithinTransaction(database)
+          const databaseWithNewClient = await createDatabaseClient(client)
+          await functionToRunWithinTransaction(databaseWithNewClient)
           await client.query('COMMIT')
           endTimer({ status: 'success' })
         } catch (error) {
