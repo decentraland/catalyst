@@ -195,6 +195,7 @@ describe('Service', function () {
   async function buildService() {
     const database = createTestDatabaseComponent()
     database.queryWithValues = () => Promise.resolve({ rows: [], rowCount: 0 })
+    database.query = () => Promise.resolve({ rows: [], rowCount: 0 })
     const env = new Environment()
     env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, 'inexistent')
     env.setConfig(EnvironmentConfig.DENYLIST_FILE_NAME, 'file')

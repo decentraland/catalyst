@@ -274,7 +274,6 @@ export class ServiceImpl implements MetaverseContentService {
         ServiceImpl.LOGGER.error('Error running transaction:')
         ServiceImpl.LOGGER.error(error)
         throw error
-      } finally {
       }
     } else {
       ServiceImpl.LOGGER.info(`Entity already deployed`, { entityId })
