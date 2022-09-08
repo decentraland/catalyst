@@ -177,6 +177,7 @@ export async function createDatabase(
           return functionToRunWithinTransaction(await createDatabaseClient(initializedClient))
         }
         const client: PoolClient = await pool.connect()
+        components.metrics.increment('dcl_db_tx_acquired_clients_total')
         try {
           await client.query('BEGIN')
           const databaseWithNewClient = await createDatabaseClient(client)
@@ -191,6 +192,7 @@ export async function createDatabase(
           throw error
         } finally {
           client.release()
+          components.metrics.increment('dcl_db_tx_released_clients_total')
         }
       }
     }
