@@ -1,4 +1,5 @@
 import { metricsDefinitions as snapshotFetcherMetricsDefinitions } from '@dcl/snapshots-fetcher'
+import { metricDeclarations as loggerMetricDeclarations } from '@well-known-components/logger'
 import { validateMetricsDeclaration } from '@well-known-components/metrics'
 import { getDefaultHttpMetrics } from '@well-known-components/metrics/dist/http'
 import { metricDeclarations as theGraphMetricDeclarations } from '@well-known-components/thegraph-component'
@@ -9,6 +10,7 @@ export const metricsDeclaration = validateMetricsDeclaration({
   ...snapshotFetcherMetricsDefinitions,
   ...sequentialJobMetrics,
   ...theGraphMetricDeclarations,
+  ...loggerMetricDeclarations,
   total_deployments_count: {
     help: 'Total number of deployments made to the content server',
     type: 'counter',
