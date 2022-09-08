@@ -74,7 +74,7 @@ export async function createDatabase(
   const { logs } = components
   const logger = logs.getLogger('database-component')
 
-  const createEndTimer = (durationQueryNameLabel: string | undefined) =>
+  const startTimer = (durationQueryNameLabel: string | undefined) =>
     (durationQueryNameLabel
       ? components.metrics.startTimer('dcl_db_query_duration_seconds', { query: durationQueryNameLabel })
       : { end: () => {} }
@@ -97,7 +97,7 @@ export async function createDatabase(
         }
       },
       async queryWithValues<T>(sql: SQLStatement, durationQueryNameLabel?: string): Promise<IDatabase.IQueryResult<T>> {
-        const endTimer = createEndTimer(durationQueryNameLabel)
+        const endTimer = startTimer(durationQueryNameLabel)
         try {
           const rows = await queryClient.query<T[]>(sql)
           endTimer({ status: 'success' })
@@ -118,7 +118,7 @@ export async function createDatabase(
         durationQueryNameLabel?: string
       ): AsyncGenerator<T> {
         // Create a streamPool and reuse it ?
-        const endTimer = createEndTimer(durationQueryNameLabel)
+        const endTimer = startTimer(durationQueryNameLabel)
         const client = new Client(streamQueriesConfig)
         await client.connect()
 
@@ -159,7 +159,6 @@ export async function createDatabase(
         functionToRunWithinTransaction: (databaseClient: DatabaseClient) => Promise<void>,
         durationQueryNameLabel?: string
       ): Promise<void> {
-        const endTimer = createEndTimer(durationQueryNameLabel)
         /**
          * It starts a transaction and creates a database client. Then it runs the lambda function parameter
          * using that client. If it success, commits the transaction. If not, it rollbacks the transaction.
@@ -168,14 +167,22 @@ export async function createDatabase(
          * IMPORTANT: PostgreSQL isolates a transaction to individual client. You MUST use the database client provided
          * in the lambda function. It will make sure that the queries are made using the same client.
          */
-
+        if (initializedClient) {
+          const endInnerTimer = startTimer(durationQueryNameLabel)
+          try {
+            const res = await functionToRunWithinTransaction(await createDatabaseClient(initializedClient))
+            endInnerTimer({ status: 'success' })
+            return res
+          } catch (error) {
+            endInnerTimer({ status: 'error' })
+            throw error
+          }
+        }
+        const endTimer = startTimer(durationQueryNameLabel)
         /**
          * Note: we don't try/catch this because if connecting throws an exception, the client will be undefined.
          * No need to dispose the client.
          */
-        if (initializedClient) {
-          return functionToRunWithinTransaction(await createDatabaseClient(initializedClient))
-        }
         const client: PoolClient = await pool.connect()
         components.metrics.increment('dcl_db_tx_acquired_clients_total')
         try {
