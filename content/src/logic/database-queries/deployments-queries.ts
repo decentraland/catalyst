@@ -306,9 +306,9 @@ export async function saveContentFiles(
     (item) =>
       SQL`INSERT INTO content_files (deployment, key, content_hash) VALUES (${deploymentId}, ${item.file}, ${item.hash})`
   )
-  await database.transaction(async (database) => {
+  await database.transaction(async (databaseClient) => {
     for (const query of queries) {
-      await database.queryWithValues(query)
+      await databaseClient.queryWithValues(query)
     }
   }, 'save_content_files')
 }
@@ -334,9 +334,9 @@ export async function setEntitiesAsOverwritten(
   const queries = Array.from(allOverwritten.values()).map(
     (overwritten) => SQL`UPDATE deployments SET deleter_deployment = ${overwrittenBy} WHERE id = ${overwritten}`
   )
-  await database.transaction(async (database) => {
+  await database.transaction(async (databaseClient) => {
     for (const query of queries) {
-      await database.queryWithValues(query)
+      await databaseClient.queryWithValues(query)
     }
   }, 'set_entities_overwritter')
 }
