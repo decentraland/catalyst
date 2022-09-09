@@ -126,18 +126,14 @@ describe('Service', function () {
 
   it(`When the same pointer is asked twice, then the second time cached the result is returned`, async () => {
     const service = await buildService()
-    const serviceSpy = jest.spyOn(deployments, 'getDeployments').mockImplementation(() =>
-      Promise.resolve({
-        deployments: [fakeDeployment()],
-        filters: {},
-        pagination: { offset: 0, limit: 0, moreData: true }
-      })
+    const serviceSpy = jest.spyOn(deployments, 'getDeploymentsForActiveEntities').mockImplementation(() =>
+      Promise.resolve([fakeDeployment()])
     )
 
     // Call the first time
     await service.components.activeEntities.withPointers(POINTERS)
     // When a pointer is asked the first time, then the database is reached
-    expectSpyToBeCalled(serviceSpy, { pointers: POINTERS })
+    expect(serviceSpy).toHaveBeenCalledWith(expect.anything(), undefined, POINTERS)
 
     // Reset spy and call again
     serviceSpy.mockReset()
@@ -147,18 +143,14 @@ describe('Service', function () {
 
   it(`Given a pointer with no deployment, when is asked twice, then the second time cached the result is returned`, async () => {
     const service = await buildService()
-    const serviceSpy = jest.spyOn(deployments, 'getDeployments').mockImplementation(() =>
-      Promise.resolve({
-        deployments: [fakeDeployment()],
-        filters: {},
-        pagination: { offset: 0, limit: 0, moreData: true }
-      })
+    const serviceSpy = jest.spyOn(deployments, 'getDeploymentsForActiveEntities').mockImplementation(() =>
+      Promise.resolve([fakeDeployment()])
     )
 
     // Call the first time
     await service.components.activeEntities.withPointers(POINTERS)
 
-    expectSpyToBeCalled(serviceSpy, { pointers: POINTERS })
+    expect(serviceSpy).toHaveBeenCalledWith(expect.anything(), undefined, POINTERS)
 
     // Reset spy and call again
     serviceSpy.mockReset()
@@ -177,12 +169,8 @@ describe('Service', function () {
       )
     )
 
-    const serviceSpy = jest.spyOn(deployments, 'getDeployments').mockImplementation(() =>
-      Promise.resolve({
-        deployments: [fakeDeployment()],
-        filters: {},
-        pagination: { offset: 0, limit: 0, moreData: true }
-      })
+    let serviceSpy = jest.spyOn(deployments, 'getDeploymentsForActiveEntities').mockImplementation(() =>
+      Promise.resolve([fakeDeployment()])
     )
 
     jest.spyOn(deploymentLogic, 'saveDeploymentAndContentFiles').mockImplementation(() => Promise.resolve(1))
@@ -190,22 +178,20 @@ describe('Service', function () {
 
     // Call the first time
     await service.components.activeEntities.withPointers(POINTERS)
-    expectSpyToBeCalled(serviceSpy, { pointers: POINTERS })
+    expect(serviceSpy).toHaveBeenCalledWith(expect.anything(), undefined, POINTERS)
 
     // Make deployment that should update the cache
     await service.deployEntity([entityFile, randomFile], entity.id, auditInfo, DeploymentContext.LOCAL)
 
     // Reset spy and call again
     serviceSpy.mockReset()
-    jest.spyOn(deployments, 'getDeployments').mockImplementation(() =>
-      Promise.resolve({
-        deployments: [fakeDeployment()],
-        filters: {},
-        pagination: { offset: 0, limit: 0, moreData: true }
-      })
+
+    serviceSpy = jest.spyOn(deployments, 'getDeploymentsForActiveEntities').mockImplementation(() =>
+      Promise.resolve([fakeDeployment('QmSQc2mGpzanz1DDtTf2ZCFnwTpJvAbcwzsS4An5PXaTqg')])
     )
     await service.components.activeEntities.withPointers(POINTERS)
-    expectSpyToBeCalled(serviceSpy, { ids: ['QmSQc2mGpzanz1DDtTf2ZCFnwTpJvAbcwzsS4An5PXaTqg'] })
+
+    // expect(serviceSpy).toHaveBeenCalledWith(expect.anything(), ['QmSQc2mGpzanz1DDtTf2ZCFnwTpJvAbcwzsS4An5PXaTqg'], undefined)
   })
 
   async function buildService() {
@@ -255,23 +241,11 @@ describe('Service', function () {
       denylist
     })
   }
-
-  function expectSpyToBeCalled(
-    serviceSpy: jest.SpyInstance,
-    { pointers, ids }: { pointers?: string[]; ids?: string[] }
-  ) {
-    let filters = pointers ? { pointers } : { entiyIds: ids }
-    if (pointers)
-      expect(serviceSpy).toHaveBeenCalledWith(expect.anything(), {
-        filters: { ...filters, onlyCurrentlyPointed: true }
-      })
-  }
-
-  function fakeDeployment(): Deployment {
+  function fakeDeployment(entityId?: string): Deployment {
     return {
       entityVersion: EntityVersion.V3,
       entityType: EntityType.SCENE,
-      entityId: 'someId',
+      entityId: entityId || 'someId',
       entityTimestamp: 10,
       deployedBy: '',
       pointers: POINTERS,
