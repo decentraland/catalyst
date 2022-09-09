@@ -1,12 +1,12 @@
 import { ILoggerComponent } from '@well-known-components/interfaces'
-import { ContentFileHash, delay } from 'dcl-catalyst-commons'
+import { delay } from 'dcl-catalyst-commons'
 import { findContentHashesNotBeingUsedAnymore } from '../../logic/database-queries/content-files-queries'
 import { SYSTEM_PROPERTIES } from '../../ports/system-properties'
 import { AppComponents } from '../../types'
 
 export class GarbageCollectionManager {
   private LOGGER: ILoggerComponent.ILogger
-  private hashesDeletedInLastSweep: Set<ContentFileHash> = new Set()
+  private hashesDeletedInLastSweep: Set<string> = new Set()
   private lastTimeOfCollection: number
   private nextGarbageCollectionTimeout: NodeJS.Timeout
   private stopping = false
@@ -71,7 +71,7 @@ export class GarbageCollectionManager {
     }
   }
 
-  deletedInLastSweep(): Set<ContentFileHash> {
+  deletedInLastSweep(): Set<string> {
     return this.hashesDeletedInLastSweep
   }
 

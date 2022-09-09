@@ -1,11 +1,12 @@
+import { HTTPProvider } from 'eth-connect'
 import log4js from 'log4js'
 import ms from 'ms'
+import fetch from 'node-fetch'
 import { OffChainWearablesManagerFactory } from './apis/collections/off-chain/OffChainWearablesManagerFactory'
+import { EmotesOwnershipFactory } from './apis/profiles/EmotesOwnershipFactory'
 import { EnsOwnershipFactory } from './apis/profiles/EnsOwnershipFactory'
 import { WearablesOwnershipFactory } from './apis/profiles/WearablesOwnershipFactory'
 import { DAOCache } from './service/dao/DAOCache'
-import { HTTPProvider } from 'eth-connect'
-import fetch from 'node-fetch'
 import { getCommsServerUrl } from './utils/commons'
 import { SmartContentClientFactory } from './utils/SmartContentClientFactory'
 import { SmartContentServerFetcherFactory } from './utils/SmartContentServerFetcherFactory'
@@ -75,6 +76,7 @@ export const enum Bean {
   DAO,
   ENS_OWNERSHIP,
   WEARABLES_OWNERSHIP,
+  EMOTES_OWNERSHIP,
   THE_GRAPH_CLIENT,
   OFF_CHAIN_MANAGER,
   ETHEREUM_PROVIDER
@@ -266,6 +268,7 @@ export class EnvironmentBuilder {
     this.registerBeanIfNotAlreadySet(env, Bean.DAO, () => new DAOCache(ethereumProvider))
     this.registerBeanIfNotAlreadySet(env, Bean.ENS_OWNERSHIP, () => EnsOwnershipFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.WEARABLES_OWNERSHIP, () => WearablesOwnershipFactory.create(env))
+    this.registerBeanIfNotAlreadySet(env, Bean.EMOTES_OWNERSHIP, () => EmotesOwnershipFactory.create(env))
 
     return env
   }
