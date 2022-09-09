@@ -124,6 +124,14 @@ export const metricsDeclaration = validateMetricsDeclaration({
     type: 'histogram',
     labelNames: ['query', 'status'] // status=(success|error)
   },
+  dcl_db_tx_acquired_clients_total: {
+    help: 'Total number of clients acquired in a transaction',
+    type: 'counter'
+  },
+  dcl_db_tx_released_clients_total: {
+    help: 'Total number of clients released in a transaction',
+    type: 'counter'
+  },
   dcl_deployed_entities_bloom_filter_checks_total: {
     help: 'Total number of deployments existence checks to the deployment list filter',
     type: 'counter',
