@@ -7,10 +7,9 @@ import { calculateOverwrites, saveDeploymentAndContentFiles } from '../logic/dep
 import { calculateDeprecatedHashes, calculateIPFSHashes } from '../logic/hashing'
 import { bufferToStream, ContentItem } from '../ports/contentStorage/contentStorage'
 import { FailedDeployment, FailureReason } from '../ports/failedDeploymentsCache'
-import { AuditInfo, Deployment, PartialDeploymentHistory } from '../service/deployments/types'
 import { AppComponents, EntityVersion } from '../types'
 import { getDeployments } from './deployments/deployments'
-import { DeploymentOptions } from './deployments/types'
+import { AuditInfo, Deployment, DeploymentOptions, PartialDeploymentHistory } from './deployments/types'
 import { EntityFactory } from './EntityFactory'
 import { DELTA_POINTER_RESULT, DeploymentResult as DeploymentPointersResult } from './pointers/PointerManager'
 import {

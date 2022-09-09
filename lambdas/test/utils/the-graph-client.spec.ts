@@ -1,6 +1,6 @@
-import { TheGraphClient } from '../../src/utils/TheGraphClient'
 import { Fetcher } from 'dcl-catalyst-commons'
 import sinon from 'sinon'
+import { TheGraphClient } from '../../src/utils/TheGraphClient'
 
 describe('The Graph Client', () => {
   it('should iterate until all assets have been fetched', async () => {
@@ -25,7 +25,7 @@ describe('The Graph Client', () => {
       thirdPartyRegistrySubgraph: 'thirdPartyRegistrySubgraph'
     }
     const theGraphClient = new TheGraphClient(urls, fetcher)
-    const assets = await theGraphClient.findWearablesByOwner('0x6a77883ed4E65a1DF591FdA2f5252FD7c548f198')
+    const assets = await theGraphClient.findWearableUrnsByOwner('0x6a77883ed4E65a1DF591FdA2f5252FD7c548f198')
 
     expect(assets).toHaveLength(1001)
   })

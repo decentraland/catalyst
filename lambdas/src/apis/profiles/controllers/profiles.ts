@@ -1,14 +1,17 @@
 import { EthAddress } from '@dcl/crypto'
-import { Entity, EntityType } from '@dcl/schemas'
-import { Request, Response } from 'express'
+import { Entity, EntityType, Profile } from '@dcl/schemas'
+import { NextFunction, Request, RequestHandler, Response } from 'express'
 import log4js from 'log4js'
+import { ThirdPartyAssetFetcher } from '../../../ports/third-party/third-party-fetcher'
 import { asArray } from '../../../utils/ControllerUtils'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TheGraphClient } from '../../../utils/TheGraphClient'
-import { checkForThirdPartyWearablesOwnership } from '../../../utils/third-party'
 import { WearableId } from '../../collections/types'
 import { isBaseAvatar, translateWearablesIdFormat } from '../../collections/Utils'
+import { EmotesOwnership } from '../EmotesOwnership'
 import { EnsOwnership } from '../EnsOwnership'
+import { emotesSavedAsWearables } from '../old-emotes'
+import { checkForThirdPartyEmotesOwnership, checkForThirdPartyWearablesOwnership } from '../tp-wearables-ownership'
 import { WearablesOwnership } from '../WearablesOwnership'
 
 const LOGGER = log4js.getLogger('profiles')
@@ -70,6 +73,8 @@ export async function getIndividualProfileById(
   client: SmartContentClient,
   ensOwnership: EnsOwnership,
   wearables: WearablesOwnership,
+  emotes: EmotesOwnership,
+  thirdPartyFetcher: ThirdPartyAssetFetcher,
   profilesCacheTTL: number,
   req: Request,
   res: Response
@@ -83,6 +88,8 @@ export async function getIndividualProfileById(
     client,
     ensOwnership,
     wearables,
+    emotes,
+    thirdPartyFetcher,
     getIfModifiedSinceTimestamp(req)
   )
   sendProfilesResponse(res, profiles, profilesCacheTTL, true)
@@ -93,6 +100,8 @@ export async function getProfilesByIdPost(
   contentClient: SmartContentClient,
   ensOwnership: EnsOwnership,
   wearables: WearablesOwnership,
+  emotes: EmotesOwnership,
+  thirdPartyFetcher: ThirdPartyAssetFetcher,
   profilesCacheTTL: number,
   req: Request,
   res: Response
@@ -113,6 +122,8 @@ export async function getProfilesByIdPost(
     contentClient,
     ensOwnership,
     wearables,
+    emotes,
+    thirdPartyFetcher,
     getIfModifiedSinceTimestamp(req)
   )
   sendProfilesResponse(res, profiles, profilesCacheTTL)
@@ -123,6 +134,8 @@ export async function getProfilesById(
   contentClient: SmartContentClient,
   ensOwnership: EnsOwnership,
   wearables: WearablesOwnership,
+  emotes: EmotesOwnership,
+  thirdPartyFetcher: ThirdPartyAssetFetcher,
   profilesCacheTTL: number,
   req: Request,
   res: Response
@@ -141,6 +154,8 @@ export async function getProfilesById(
     contentClient,
     ensOwnership,
     wearables,
+    emotes,
+    thirdPartyFetcher,
     getIfModifiedSinceTimestamp(req)
   )
   sendProfilesResponse(res, profiles, profilesCacheTTL)
@@ -158,6 +173,8 @@ export async function fetchProfiles(
   contentClient: SmartContentClient,
   ensOwnership: EnsOwnership,
   wearablesOwnership: WearablesOwnership,
+  emotesOwnership: EmotesOwnership,
+  thirdPartyFetcher: ThirdPartyAssetFetcher,
   ifModifiedSinceTimestamp?: number | undefined
 ): Promise<ProfileMetadata[] | undefined> {
   try {
@@ -173,33 +190,59 @@ export async function fetchProfiles(
     const profilesMap: Map<EthAddress, { metadata: ProfileMetadata; content: Map<string, string> }> = new Map()
     const namesMap: Map<EthAddress, string[]> = new Map()
     const wearablesMap: Map<EthAddress, WearableId[]> = new Map()
+    const emotesMap: Map<EthAddress, { slot: number; urn: string }[]> = new Map()
 
     // Group nfts and profile metadata by ethAddress
     const entityPromises = profilesEntities
       .filter((entity) => !!entity.metadata)
       .map(async (entity) => {
-        const { ethAddress, metadata, content, names, wearables } = await extractData(entity)
+        const { ethAddress, metadata, content, names, wearables, emotes } = await extractData(entity)
 
         profilesMap.set(ethAddress, { metadata, content })
         namesMap.set(ethAddress, names)
         wearablesMap.set(ethAddress, wearables)
+        if (emotes) {
+          emotesMap.set(ethAddress, emotes)
+        }
       })
     await Promise.all(entityPromises)
 
     //Check which NFTs are owned
     const ownedWearablesPromise = wearablesOwnership.areNFTsOwned(wearablesMap)
     const ownedENSPromise = ensOwnership.areNFTsOwned(namesMap)
-    const thirdPartyWearablesPromise = checkForThirdPartyWearablesOwnership(theGraphClient, contentClient, wearablesMap)
-    const [ownedWearables, ownedENS, thirdPartyWearables] = await Promise.all([
+
+    const emoteUrnsByOwner = new Map()
+    for (const [owner, emotes] of emotesMap) {
+      emoteUrnsByOwner.set(
+        owner,
+        emotes.map((emote) => emote.urn)
+      )
+    }
+    const ownedEmotesPromise = emotesOwnership.areNFTsOwned(emoteUrnsByOwner)
+
+    const thirdPartyWearablesPromise = checkForThirdPartyWearablesOwnership(
+      theGraphClient,
+      thirdPartyFetcher,
+      wearablesMap
+    )
+
+    const thirdPartyEmotesPromise = checkForThirdPartyEmotesOwnership(theGraphClient, thirdPartyFetcher, emotesMap)
+
+    const [ownedWearables, ownedENS, thirdPartyWearables, ownedEmotes, thirdPartyEmotes] = await Promise.all([
       ownedWearablesPromise,
       ownedENSPromise,
-      thirdPartyWearablesPromise
+      thirdPartyWearablesPromise,
+      ownedEmotesPromise,
+      thirdPartyEmotesPromise
     ])
 
     // Add name data and snapshot urls to profiles
     const result = Array.from(profilesMap.entries()).map(async ([ethAddress, profile]) => {
       const ensOwnership = ownedENS.get(ethAddress)!
       const wearablesOwnership = ownedWearables.get(ethAddress)!
+      const emotesOwnership = ownedEmotes.get(ethAddress)!
+      const tpe = thirdPartyEmotes.get(ethAddress) ?? []
+
       const tpw = thirdPartyWearables.get(ethAddress) ?? []
       const { metadata, content } = profile
       const avatars = metadata.avatars.map(async (profileData) => ({
@@ -211,7 +254,10 @@ export async function fetchProfiles(
           snapshots: addBaseUrlToSnapshots(contentClient.getExternalContentServerUrl(), profileData.avatar, content),
           wearables: (await sanitizeWearables(fixWearableId(profileData.avatar.wearables), wearablesOwnership)).concat(
             tpw
-          )
+          ),
+          emotes:
+            emotesMap.get(ethAddress) ??
+            ([] as { slot: number; urn: string }[]).filter((emote) => emotesOwnership.has(emote.urn)).concat(tpe)
         }
       }))
       return { timestamp: profile.metadata.timestamp, avatars: await Promise.all(avatars) }
@@ -229,6 +275,10 @@ async function extractData(entity: Entity): Promise<{
   content: Map<string, string>
   names: string[]
   wearables: WearableId[]
+  emotes?: {
+    slot: number
+    urn: string
+  }[]
 }> {
   const ethAddress = entity.pointers[0]
   const metadata: ProfileMetadata = entity.metadata
@@ -238,8 +288,19 @@ async function extractData(entity: Entity): Promise<{
   metadata.timestamp = entity.timestamp
   // Validate wearables urn
   const filteredWearables = await validateWearablesUrn(metadata)
+  let slot = 0
+  const emotesSavedAsWearablesInProfile = filteredWearables
+    .filter((wearable) => emotesSavedAsWearables.includes(wearable))
+    .map((emoteAsWearable) => {
+      const emote = { slot, urn: emoteAsWearable }
+      slot = slot + 1
+      return emote
+    })
 
-  return { ethAddress, metadata, content, names: filteredNames, wearables: filteredWearables }
+  const emotes = [...getEmotes(metadata), ...emotesSavedAsWearablesInProfile]
+  const filteredEmotes = emotes.length == 0 ? undefined : emotes
+
+  return { ethAddress, metadata, content, names: filteredNames, wearables: filteredWearables, emotes: filteredEmotes }
 }
 
 async function validateWearablesUrn(metadata: ProfileMetadata) {
@@ -255,6 +316,18 @@ async function validateWearablesUrn(metadata: ProfileMetadata) {
     (wearableId): wearableId is WearableId => !!wearableId
   )
   return filteredWearables
+}
+
+function getEmotes(metadata: ProfileMetadata): { slot: number; urn: string }[] {
+  const allEmotesInProfile: { slot: number; urn: string }[] = []
+  const allAvatars = metadata?.avatars ?? []
+  for (const avatar of allAvatars) {
+    const allEmotes: { slot: number; urn: string }[] = avatar.avatar.emotes ?? []
+    for (const emote of allEmotes) {
+      allEmotesInProfile.push(emote)
+    }
+  }
+  return allEmotesInProfile
 }
 
 /**
@@ -313,6 +386,10 @@ export type ProfileMetadata = {
   }[]
 }
 
+export type LambdasProfile = Profile & {
+  timestamp: number
+}
+
 type AvatarSnapshots = Record<string, string>
 
 type Avatar = {
@@ -323,6 +400,10 @@ type Avatar = {
   snapshots: AvatarSnapshots
   version: number
   wearables: WearableId[]
+  emotes?: {
+    slot: number
+    urn: string
+  }[]
 }
 
 export type ProfileMetadataForSnapshots = {
@@ -333,4 +414,49 @@ export type ProfileMetadataForSnapshots = {
 }
 type AvatarForSnapshots = {
   snapshots: AvatarSnapshots
+}
+
+function asyncHandler(handler: (req: Request, res: Response, next: NextFunction) => Promise<void>): RequestHandler {
+  return (req, res, next) => {
+    handler(req, res, next).catch((e) => {
+      console.error(`Unexpected error while performing request ${req.method} ${req.originalUrl}`, e)
+      res.status(500).send({ status: 'server-error', message: 'Unexpected error' })
+    })
+  }
+}
+
+export function createProfileHandler(
+  theGraphClient: TheGraphClient,
+  client: SmartContentClient,
+  ensOwnership: EnsOwnership,
+  wearablesOwnership: WearablesOwnership,
+  emotesOwnership: EmotesOwnership,
+  thirdPartyFetcher: ThirdPartyAssetFetcher,
+  profilesCacheTTL: number,
+  originalHandler: (
+    theGraphClient: TheGraphClient,
+    client: SmartContentClient,
+    ensOwnership: EnsOwnership,
+    wearablesOwnership: WearablesOwnership,
+    emotesOwnership: EmotesOwnership,
+    thirdPartyFetcher: ThirdPartyAssetFetcher,
+    profilesCacheTTL: number,
+    req: Request,
+    res: Response
+  ) => Promise<any>
+): RequestHandler {
+  return asyncHandler(
+    async (req, res) =>
+      await originalHandler(
+        theGraphClient,
+        client,
+        ensOwnership,
+        wearablesOwnership,
+        emotesOwnership,
+        thirdPartyFetcher,
+        profilesCacheTTL,
+        req,
+        res
+      )
+  )
 }

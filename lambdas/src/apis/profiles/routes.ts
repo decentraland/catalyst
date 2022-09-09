@@ -1,7 +1,9 @@
 import { NextFunction, Request, RequestHandler, Response, Router } from 'express'
+import { ThirdPartyAssetFetcher } from '../../ports/third-party/third-party-fetcher'
 import { SmartContentClient } from '../../utils/SmartContentClient'
 import { TheGraphClient } from '../../utils/TheGraphClient'
 import { getIndividualProfileById, getProfilesById, getProfilesByIdPost } from './controllers/profiles'
+import { EmotesOwnership } from './EmotesOwnership'
 import { EnsOwnership } from './EnsOwnership'
 import { WearablesOwnership } from './WearablesOwnership'
 
@@ -20,11 +22,22 @@ export function initializeIndividualProfileRoutes(
   client: SmartContentClient,
   ensOwnership: EnsOwnership,
   wearablesOwnership: WearablesOwnership,
+  emotesOwnership: EmotesOwnership,
+  thirdPartyFetcher: ThirdPartyAssetFetcher,
   profilesCacheTTL: number
 ): Router {
   router.get(
     '/:id',
-    createHandler(theGraphClient, client, ensOwnership, wearablesOwnership, profilesCacheTTL, getIndividualProfileById)
+    createHandler(
+      theGraphClient,
+      client,
+      ensOwnership,
+      wearablesOwnership,
+      emotesOwnership,
+      thirdPartyFetcher,
+      profilesCacheTTL,
+      getIndividualProfileById
+    )
   )
   return router
 }
@@ -35,19 +48,48 @@ export function initializeProfilesRoutes(
   client: SmartContentClient,
   ensOwnership: EnsOwnership,
   wearablesOwnership: WearablesOwnership,
+  emotesOwnership: EmotesOwnership,
+  thirdPartyFetcher: ThirdPartyAssetFetcher,
   profilesCacheTTL: number
 ): Router {
   router.get(
     '/',
-    createHandler(theGraphClient, client, ensOwnership, wearablesOwnership, profilesCacheTTL, getProfilesById)
+    createHandler(
+      theGraphClient,
+      client,
+      ensOwnership,
+      wearablesOwnership,
+      emotesOwnership,
+      thirdPartyFetcher,
+      profilesCacheTTL,
+      getProfilesById
+    )
   )
   router.post(
     '/',
-    createHandler(theGraphClient, client, ensOwnership, wearablesOwnership, profilesCacheTTL, getProfilesByIdPost)
+    createHandler(
+      theGraphClient,
+      client,
+      ensOwnership,
+      wearablesOwnership,
+      emotesOwnership,
+      thirdPartyFetcher,
+      profilesCacheTTL,
+      getProfilesByIdPost
+    )
   )
   router.get(
     '/:id',
-    createHandler(theGraphClient, client, ensOwnership, wearablesOwnership, profilesCacheTTL, getIndividualProfileById)
+    createHandler(
+      theGraphClient,
+      client,
+      ensOwnership,
+      wearablesOwnership,
+      emotesOwnership,
+      thirdPartyFetcher,
+      profilesCacheTTL,
+      getIndividualProfileById
+    )
   )
   return router
 }
@@ -57,12 +99,16 @@ function createHandler(
   client: SmartContentClient,
   ensOwnership: EnsOwnership,
   wearablesOwnership: WearablesOwnership,
+  emotesOwnership: EmotesOwnership,
+  thirdPartyFetcher: ThirdPartyAssetFetcher,
   profilesCacheTTL: number,
   originalHandler: (
     theGraphClient: TheGraphClient,
     client: SmartContentClient,
     ensOwnership: EnsOwnership,
     wearablesOwnership: WearablesOwnership,
+    emotesOwnership: EmotesOwnership,
+    thirdPartyFetcher: ThirdPartyAssetFetcher,
     profilesCacheTTL: number,
     req: Request,
     res: Response
@@ -70,6 +116,16 @@ function createHandler(
 ): RequestHandler {
   return asyncHandler(
     async (req, res) =>
-      await originalHandler(theGraphClient, client, ensOwnership, wearablesOwnership, profilesCacheTTL, req, res)
+      await originalHandler(
+        theGraphClient,
+        client,
+        ensOwnership,
+        wearablesOwnership,
+        emotesOwnership,
+        thirdPartyFetcher,
+        profilesCacheTTL,
+        req,
+        res
+      )
   )
 }

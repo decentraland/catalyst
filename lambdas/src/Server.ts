@@ -13,6 +13,7 @@ import { initializeContractRoutes } from './apis/contracts/routes'
 import { initializeCryptoRoutes } from './apis/crypto/routes'
 import { initializeExploreRoutes } from './apis/explore/routes'
 import { initializeImagesRoutes } from './apis/images/routes'
+import { EmotesOwnership } from './apis/profiles/EmotesOwnership'
 import { EnsOwnership } from './apis/profiles/EnsOwnership'
 import { initializeIndividualProfileRoutes, initializeProfilesRoutes } from './apis/profiles/routes'
 import { WearablesOwnership } from './apis/profiles/WearablesOwnership'
@@ -21,9 +22,12 @@ import { initializeThirdPartyIntegrationsRoutes } from './apis/third-party/route
 import { Bean, Environment, EnvironmentConfig } from './Environment'
 import { metricsComponent } from './metrics'
 import { initializeMetricsServer } from './MetricsServer'
+import { createFetchComponent } from './ports/fetcher'
+import { createThirdPartyAssetFetcher, ThirdPartyAssetFetcher } from './ports/third-party/third-party-fetcher'
 import { SmartContentClient } from './utils/SmartContentClient'
 import { SmartContentServerFetcher } from './utils/SmartContentServerFetcher'
 import { TheGraphClient } from './utils/TheGraphClient'
+
 export class Server {
   private port: number
   private app: express.Express
@@ -71,10 +75,12 @@ export class Server {
 
     const ensOwnership: EnsOwnership = env.getBean(Bean.ENS_OWNERSHIP)
     const wearablesOwnership: WearablesOwnership = env.getBean(Bean.WEARABLES_OWNERSHIP)
+    const emotesOwnership: EmotesOwnership = env.getBean(Bean.EMOTES_OWNERSHIP)
     const fetcher: SmartContentServerFetcher = env.getBean(Bean.SMART_CONTENT_SERVER_FETCHER)
     const contentClient: SmartContentClient = env.getBean(Bean.SMART_CONTENT_SERVER_CLIENT)
     const theGraphClient: TheGraphClient = env.getBean(Bean.THE_GRAPH_CLIENT)
     const offChainManager: OffChainWearablesManager = env.getBean(Bean.OFF_CHAIN_MANAGER)
+    const thirdPartyFetcher: ThirdPartyAssetFetcher = createThirdPartyAssetFetcher(createFetchComponent())
 
     const profilesCacheTTL: number = env.getConfig(EnvironmentConfig.PROFILES_CACHE_TTL)
 
@@ -94,6 +100,8 @@ export class Server {
         contentClient,
         ensOwnership,
         wearablesOwnership,
+        emotesOwnership,
+        thirdPartyFetcher,
         profilesCacheTTL
       )
     )
@@ -105,6 +113,8 @@ export class Server {
         contentClient,
         ensOwnership,
         wearablesOwnership,
+        emotesOwnership,
+        thirdPartyFetcher,
         profilesCacheTTL
       )
     )
