@@ -1,4 +1,5 @@
 import { metricsDefinitions as snapshotFetcherMetricsDefinitions } from '@dcl/snapshots-fetcher'
+import { metricDeclarations as loggerMetricDeclarations } from '@well-known-components/logger'
 import { validateMetricsDeclaration } from '@well-known-components/metrics'
 import { getDefaultHttpMetrics } from '@well-known-components/metrics/dist/http'
 import { metricDeclarations as theGraphMetricDeclarations } from '@well-known-components/thegraph-component'
@@ -9,6 +10,7 @@ export const metricsDeclaration = validateMetricsDeclaration({
   ...snapshotFetcherMetricsDefinitions,
   ...sequentialJobMetrics,
   ...theGraphMetricDeclarations,
+  ...loggerMetricDeclarations,
   total_deployments_count: {
     help: 'Total number of deployments made to the content server',
     type: 'counter',
@@ -121,6 +123,14 @@ export const metricsDeclaration = validateMetricsDeclaration({
     help: 'Histogram of query duration to the database in seconds per query',
     type: 'histogram',
     labelNames: ['query', 'status'] // status=(success|error)
+  },
+  dcl_db_tx_acquired_clients_total: {
+    help: 'Total number of clients acquired in a transaction',
+    type: 'counter'
+  },
+  dcl_db_tx_released_clients_total: {
+    help: 'Total number of clients released in a transaction',
+    type: 'counter'
   },
   dcl_deployed_entities_bloom_filter_checks_total: {
     help: 'Total number of deployments existence checks to the deployment list filter',

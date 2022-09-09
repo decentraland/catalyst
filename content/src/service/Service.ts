@@ -1,9 +1,7 @@
 import { ContentItem } from '@dcl/catalyst-storage'
 import { AuthChain, EntityType } from '@dcl/schemas'
 import { FailedDeployment } from '../ports/failedDeploymentsCache'
-import { Database } from '../repository/Database'
-import { AuditInfo, Deployment, PartialDeploymentHistory } from './deployments/types'
-import { DeploymentOptions } from './deployments/types'
+import { AuditInfo, Deployment, DeploymentOptions, PartialDeploymentHistory } from './deployments/types'
 
 /**x
  * This version of the service can tell clients about the state of the Metaverse. It assumes that all deployments
@@ -14,8 +12,7 @@ export interface MetaverseContentService {
     files: DeploymentFiles,
     entityId: string,
     auditInfo: LocalDeploymentAuditInfo,
-    context: DeploymentContext,
-    task?: Database
+    context: DeploymentContext
   ): Promise<DeploymentResult>
   isContentAvailable(fileHashes: string[]): Promise<Map<string, boolean>>
   getContent(fileHash: string): Promise<ContentItem | undefined>
@@ -28,7 +25,6 @@ export interface MetaverseContentService {
     authChain: AuthChain,
     errorDescription?: string
   ): void
-  getEntityById(entityId: string): Promise<{ entityId: string; localTimestamp: number } | void>
 }
 
 export type LocalDeploymentAuditInfo = Pick<AuditInfo, 'authChain'>

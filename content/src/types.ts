@@ -1,8 +1,8 @@
 import { ExternalCalls, Validator } from '@dcl/content-validator'
 import { DeploymentWithAuthChain, EntityType } from '@dcl/schemas'
+import { IDeployerComponent } from '@dcl/snapshots-fetcher'
 import { JobLifecycleManagerComponent } from '@dcl/snapshots-fetcher/dist/job-lifecycle-manager'
 import { IJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
-import { IDeployerComponent } from '@dcl/snapshots-fetcher'
 import { IFetchComponent } from '@well-known-components/http-server'
 import { ILoggerComponent, IMetricsComponent } from '@well-known-components/interfaces'
 import { Fetcher } from 'dcl-catalyst-commons'
@@ -21,9 +21,7 @@ import { FSComponent } from './ports/fs'
 import { IDatabaseComponent } from './ports/postgres'
 import { ISequentialTaskExecutorComponent } from './ports/sequecuentialTaskExecutor'
 import { SystemProperties } from './ports/system-properties'
-import { Repository } from './repository/Repository'
 import { ContentAuthenticator } from './service/auth/Authenticator'
-import { DeploymentManager } from './service/deployments/DeploymentManager'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { PointerManager } from './service/pointers/PointerManager'
 import { Server } from './service/Server'
@@ -61,7 +59,6 @@ export type AppComponents = {
   pointerManager: PointerManager
   failedDeploymentsCache: IFailedDeploymentsCacheComponent
   deployRateLimiter: IDeployRateLimiterComponent
-  deploymentManager: DeploymentManager
   storage: IContentStorageComponent
   authenticator: ContentAuthenticator
   migrationManager: MigrationManager
@@ -79,9 +76,6 @@ export type AppComponents = {
   denylist: Denylist
   fs: FSComponent
   ethereumProvider: HTTPProvider
-
-  // this will be replaced by `database` and removed from here
-  repository: Repository
 }
 
 export type MaintenanceComponents = {
@@ -124,3 +118,5 @@ export function parseEntityType(strType: string): EntityType {
   const type = EntityType[strType]
   return type
 }
+
+export type DeploymentId = number

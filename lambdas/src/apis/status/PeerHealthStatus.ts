@@ -1,8 +1,8 @@
 import log4js, { Logger } from 'log4js'
-import { HealthStatus, refreshContentServerStatus } from '../../apis/status/health'
+import fetch from 'node-fetch'
 import { SmartContentClient } from '../../utils/SmartContentClient'
 import { TimeRefreshedDataHolder } from '../../utils/TimeRefreshedDataHolder'
-import fetch from 'node-fetch'
+import { HealthStatus, refreshContentServerStatus } from './health'
 
 const REFRESH_TIME: string = '1m'
 

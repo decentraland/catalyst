@@ -3,10 +3,10 @@ import { hashV0, hashV1 } from '@dcl/hashing'
 import { Entity } from '@dcl/schemas'
 import assert from 'assert'
 import { DeploymentData } from 'dcl-catalyst-client'
-import { ContentFileHash, EntityContentItemReference } from 'dcl-catalyst-commons'
+import { EntityContentItemReference } from 'dcl-catalyst-commons'
 import { Response } from 'node-fetch'
 import { FailedDeployment, FailureReason } from '../../src/ports/failedDeploymentsCache'
-import { Deployment as ControllerDeployment } from '../../src/service/deployments/types'
+import { Deployment } from '../../src/service/deployments/types'
 import { DeploymentResult, isSuccessfulDeployment } from '../../src/service/Service'
 import { EntityVersion } from '../../src/types'
 import { assertPromiseIsRejected, assertPromiseRejectionGeneric } from '../helpers/PromiseAssertions'
@@ -81,7 +81,7 @@ export async function assertDeploymentsCount(server: TestProgram, count: number)
 
 export async function assertDeploymentsAreReported(
   server: TestProgram,
-  ...expectedDeployments: ControllerDeployment[]
+  ...expectedDeployments: Deployment[]
 ) {
   const { deployments } = await server.components.deployer.getDeployments()
   assert.equal(
@@ -104,8 +104,8 @@ export async function assertDeploymentsAreReported(
 
   // Compare deployments
   for (let i = 0; i < expectedDeployments.length; i++) {
-    const expectedEvent: ControllerDeployment = sortedExpectedDeployments[i]
-    const actualEvent: ControllerDeployment = sortedDeployments[i]
+    const expectedEvent: Deployment = sortedExpectedDeployments[i]
+    const actualEvent: Deployment = sortedDeployments[i]
     assertEqualsDeployment(actualEvent, expectedEvent)
   }
 }
@@ -130,7 +130,7 @@ export async function assertDeploymentFailed(server: TestProgram, reason: Failur
   assert.equal(failedDeployment.reason, reason)
 }
 
-function assertEqualsDeployment(actualDeployment: ControllerDeployment, expectedDeployment: ControllerDeployment) {
+function assertEqualsDeployment(actualDeployment: Deployment, expectedDeployment: Deployment) {
   assert.equal(actualDeployment.entityType, expectedDeployment.entityType)
   assert.equal(actualDeployment.entityId, expectedDeployment.entityId)
   assert.deepEqual(actualDeployment.pointers, expectedDeployment.pointers)
@@ -151,13 +151,13 @@ async function assertEntityIsOnServer(server: TestProgram, entity: Entity) {
   return assertFileIsOnServer(server, entity.id)
 }
 
-export async function assertFileIsOnServer(server: TestProgram, hash: ContentFileHash) {
+export async function assertFileIsOnServer(server: TestProgram, hash: string) {
   const content = await server.downloadContent(hash)
   const downloadedContentHashes = await Promise.all([hashV0(content), hashV1(content)])
   assert.ok(downloadedContentHashes.includes(hash))
 }
 
-export async function assertFileIsNotOnServer(server: TestProgram, hash: ContentFileHash) {
+export async function assertFileIsNotOnServer(server: TestProgram, hash: string) {
   await assertPromiseIsRejected(() => server.downloadContent(hash))
 }
 
@@ -208,7 +208,7 @@ export async function assertEntityIsDenylisted(server: TestProgram, entity: Enti
 export async function assertContentNotIsDenylisted(
   server: TestProgram,
   entity: Entity,
-  contentHash: ContentFileHash
+  contentHash: string
 ) {
   // Legacy check
   const auditInfo = await server.getAuditInfo(entity)
@@ -222,7 +222,7 @@ export async function assertContentNotIsDenylisted(
 export async function assertContentIsDenylisted(
   server: TestProgram,
   entity: Entity,
-  contentHash: ContentFileHash
+  contentHash: string
 ) {
   // Legacy check
   const auditInfo = await server.getAuditInfo(entity)
@@ -230,7 +230,6 @@ export async function assertContentIsDenylisted(
 
   // Deployments check
   const deployment = await getEntitiesDeployment(server, entity)
-  console.log(deployment.auditInfo)
   assert.ok(deployment.auditInfo.denylistedContent!.includes(contentHash))
 }
 
@@ -238,7 +237,7 @@ export function buildDeployment(
   deployData: DeploymentData,
   entity: Entity,
   deploymentTimestamp: number
-): ControllerDeployment {
+): Deployment {
   return {
     ...entity,
     entityVersion: EntityVersion.V3,
@@ -270,7 +269,7 @@ export function assertFieldsOnEntitiesExceptIdsAreEqual(entity1: Entity, entity2
   assert.deepStrictEqual(entity1.metadata, entity2.metadata)
 }
 
-function assertEntityIsTheSameAsDeployment(entity: Entity, deployment: ControllerDeployment) {
+function assertEntityIsTheSameAsDeployment(entity: Entity, deployment: Deployment) {
   assert.strictEqual(entity.id, deployment.entityId)
   assert.strictEqual(entity.type, deployment.entityType)
   assert.strictEqual(entity.timestamp, deployment.entityTimestamp)
@@ -280,7 +279,7 @@ function assertEntityIsTheSameAsDeployment(entity: Entity, deployment: Controlle
   assert.deepStrictEqual(mappedContent, deployment.content)
 }
 
-async function getEntitiesDeployment(server: TestProgram, entity: Entity): Promise<ControllerDeployment> {
+async function getEntitiesDeployment(server: TestProgram, entity: Entity): Promise<Deployment> {
   const deployments = await server.getEntitiesByIds(entity.type, entity.id)
   assert.equal(deployments.length, 1)
   const auditInfo = await server.getAuditInfo(deployments[0])

@@ -1,7 +1,7 @@
 import { Entity, EntityType } from '@dcl/schemas'
 import { ILoggerComponent, Lifecycle } from '@well-known-components/interfaces'
 import { ContentClient, DeploymentData } from 'dcl-catalyst-client'
-import { ContentFileHash, ServerStatus } from 'dcl-catalyst-commons'
+import { ServerStatus } from 'dcl-catalyst-commons'
 import fetch from 'node-fetch'
 import { EnvironmentConfig } from '../../src/Environment'
 import { FailedDeployment } from '../../src/ports/failedDeploymentsCache'
@@ -91,7 +91,7 @@ export class TestProgram {
     return this.client.fetchEntityById(type, id)
   }
 
-  downloadContent(fileHash: ContentFileHash): Promise<Buffer> {
+  downloadContent(fileHash: string): Promise<Buffer> {
     return this.client.downloadContent(fileHash)
   }
 
