@@ -109,8 +109,6 @@ export async function getDeploymentsForActiveEntities(
       : SQL`dep1.entity_pointers && ${pointers!.map((p) => p.toLowerCase())}`
   )
 
-  // console.log(query, query.text, query.values)
-
   const historicalDeploymentsResponse = await components.database.queryWithValues(query, 'get_active_entities')
 
   const deploymentsResult: HistoricalDeployment[] = historicalDeploymentsResponse.rows.map(
