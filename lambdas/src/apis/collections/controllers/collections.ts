@@ -178,7 +178,11 @@ export function getBodyShapes(representations: WearableRepresentation[]) {
   const bodyShapes = new Set<BodyShape>()
   for (const representation of representations) {
     for (const bodyShape of representation.bodyShapes) {
-      bodyShapes.add(BodyShape[bodyShape].split(':').pop()!)
+      if (bodyShape === BodyShape[BodyShape.MALE]) {
+        bodyShapes.add(BodyShape.MALE)
+      } else if (bodyShape === BodyShape[BodyShape.FEMALE]) {
+        bodyShapes.add(BodyShape.FEMALE)
+      }
     }
   }
   return Array.from(bodyShapes)
