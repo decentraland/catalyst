@@ -175,13 +175,13 @@ async function fetchEntity(client: SmartContentClient, urn: string): Promise<Ent
 }
 
 export function getBodyShapes(representations: WearableRepresentation[]) {
-  const bodyShapes = new Set<BodyShape>()
+  const bodyShapes = new Set<string>()
   for (const representation of representations) {
     for (const bodyShape of representation.bodyShapes) {
       if (bodyShape === BodyShape[BodyShape.MALE]) {
-        bodyShapes.add(BodyShape.MALE)
+        bodyShapes.add('BaseMale')
       } else if (bodyShape === BodyShape[BodyShape.FEMALE]) {
-        bodyShapes.add(BodyShape.FEMALE)
+        bodyShapes.add('BaseFemale')
       }
     }
   }
