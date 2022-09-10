@@ -1,4 +1,4 @@
-import { BodyShape, ChainId, Entity, EntityType, isStandard, Wearable, WearableRepresentation } from '@dcl/schemas'
+import { BodyShape, ChainId, Entity, EntityType, StandardProps, Wearable, WearableRepresentation } from '@dcl/schemas'
 import { Request, Response } from 'express'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TheGraphClient } from '../../../utils/TheGraphClient'
@@ -21,11 +21,12 @@ export async function getStandardErc721(client: SmartContentClient, req: Request
     const urn = buildUrn(protocol, contract, option)
     const entity = await fetchEntity(client, urn)
     if (entity) {
-      const wearableMetadata: Wearable = entity.metadata
+      const wearableMetadata: Wearable & StandardProps = entity.metadata
       const name = preferEnglish(wearableMetadata.i18n)
-      if (!isStandard(wearableMetadata)) {
+      if (!wearableMetadata.rarity) {
         throw new Error('Wearable is not standard.')
       }
+
       const totalEmission = RARITIES_EMISSIONS[wearableMetadata.rarity]
       const description = emission ? `DCL Wearable ${emission}/${totalEmission}` : ''
       const image = createExternalContentUrl(client, entity, wearableMetadata.image)
