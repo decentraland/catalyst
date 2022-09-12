@@ -54,6 +54,9 @@ export async function checkForThirdPartyEmotesOwnership(
     const collectionsForAddress: Set<string> = new Set()
     for (const emote of emotes) {
       try {
+        if (!emote.urn.startsWith('urn:') && !emote.urn.startsWith('dcl:')) {
+          continue
+        }
         const parsedUrn: DecentralandAssetIdentifier | null = await parseUrn(emote.urn)
         if (parsedUrn?.type === 'blockchain-collection-third-party') {
           // TODO: [TPW] Do this with urn-resolver
