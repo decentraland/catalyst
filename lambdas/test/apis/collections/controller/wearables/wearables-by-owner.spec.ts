@@ -2,10 +2,10 @@ import { EntityType } from '@dcl/schemas'
 import { anything, instance, mock, verify, when } from 'ts-mockito'
 import { getWearablesByOwner, getWearablesByOwnerFromUrns } from '../../../../../src/apis/collections/controllers/wearables'
 import * as tpUrnFinder from '../../../../../src/logic/third-party-urn-finder'
+import { ThirdPartyAssetFetcher } from "../../../../../src/ports/third-party/third-party-fetcher";
 import { SmartContentClient } from '../../../../../src/utils/SmartContentClient'
 import { TheGraphClient } from '../../../../../src/utils/TheGraphClient'
 import { ISubgraphComponent } from '@well-known-components/thegraph-component'
-import { ThirdPartyAssetFetcher } from "../../../../../src/ports/third-party/third-party-fetcher";
 
 const SOME_ADDRESS = '0x079bed9c31cb772c4c156f86e1cff15bf751add0'
 const WEARABLE_ID_1 = 'someCollection-someWearable'
