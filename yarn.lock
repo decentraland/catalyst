@@ -1624,10 +1624,19 @@
     on-finished "^2.3.0"
     path-to-regexp "^6.2.0"
 
-"@well-known-components/interfaces@1.1.1", "@well-known-components/interfaces@^1.1.0", "@well-known-components/interfaces@^1.1.1":
+"@well-known-components/interfaces@1.1.1":
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/@well-known-components/interfaces/-/interfaces-1.1.1.tgz#d7e6552dd9ebee9ff9a2c9b5e1a88fc8247eb106"
   integrity sha512-LCIBhzHvxXhT/uXrMXuvfWsIcHmK9lQ65StVMOgkPRqzo29X3U4crUB/dy2wFYITE5WnLUk/d25tpOKvvOlUeA==
+  dependencies:
+    "@types/node" "^16.11.19"
+    "@types/node-fetch" "^2.5.12"
+    typed-url-params "^1.0.1"
+
+"@well-known-components/interfaces@^1.1.0", "@well-known-components/interfaces@^1.1.1", "@well-known-components/interfaces@^1.1.2":
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/@well-known-components/interfaces/-/interfaces-1.1.2.tgz#754ad83ffd434a63d57773be69177bce9869c554"
+  integrity sha512-hLqjVXZPHObloSbscauQWP9LI1r0jqW/kGlpJ+cZxEOhclvG4ot0JIiu4YeK436YgbjRYJxsGOkJGl37RLvKOg==
   dependencies:
     "@types/node" "^16.11.19"
     "@types/node-fetch" "^2.5.12"
