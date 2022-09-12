@@ -61,7 +61,7 @@ export async function checkForThirdPartyEmotesOwnership(
           collectionsForAddress.add(collectionId)
         }
       } catch (error) {
-        console.debug(`There was an error parsing the urn: ${emote}`)
+        console.debug(`There was an error parsing the urn: ${emote.urn}`)
       }
     }
     const ownedEmotes: Set<string> = new Set()
