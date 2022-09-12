@@ -136,7 +136,7 @@ export async function getWearablesHandler(
     res.send({ wearables, filters: requestFilters, pagination: { limit: sanitizedLimit, lastId, next } })
   } catch (error) {
     LOGGER.error(error)
-    res.status(500)
+    res.status(500).end()
   }
 }
 
@@ -203,5 +203,6 @@ async function fetchWearables(wearableUrns: string[], client: SmartContentClient
 
   const entities = await client.fetchEntitiesByPointers(EntityType.WEARABLE, wearableUrns)
   const wearables = entities.map((entity) => translateEntityIntoWearable(client, entity))
+
   return wearables.sort((wearable1, wearable2) => wearable1.id.toLowerCase().localeCompare(wearable2.id.toLowerCase()))
 }

@@ -1,14 +1,11 @@
 import { EntityType } from '@dcl/schemas'
 import { anything, instance, mock, verify, when } from 'ts-mockito'
-import {
-  getWearablesByOwner,
-  getWearablesByOwnerFromUrns
-} from '../../../../../src/apis/collections/controllers/wearables'
+import { getWearablesByOwner, getWearablesByOwnerFromUrns } from '../../../../../src/apis/collections/controllers/wearables'
 import * as tpUrnFinder from '../../../../../src/logic/third-party-urn-finder'
-import { ThirdPartyAssetFetcher } from '../../../../../src/ports/third-party/third-party-fetcher'
 import { SmartContentClient } from '../../../../../src/utils/SmartContentClient'
 import { TheGraphClient } from '../../../../../src/utils/TheGraphClient'
 import { ISubgraphComponent } from '@well-known-components/thegraph-component'
+import { ThirdPartyAssetFetcher } from "../../../../../src/ports/third-party/third-party-fetcher";
 
 const SOME_ADDRESS = '0x079bed9c31cb772c4c156f86e1cff15bf751add0'
 const WEARABLE_ID_1 = 'someCollection-someWearable'
@@ -55,17 +52,15 @@ describe('getWearablesByOwnerFromUrns', () => {
       image: undefined,
       thumbnail: undefined
     }
-    when(mockedClient.fetchEntitiesByPointers(anything(), wearableUrns)).thenResolve([
-      {
-        version: 'v3',
-        id: 'someId',
-        type: EntityType.WEARABLE,
-        pointers: wearableUrns,
-        timestamp: 10,
-        content: [],
-        metadata: wearableMetadata
-      }
-    ])
+    when(mockedClient.fetchEntitiesByPointers(anything(), wearableUrns)).thenResolve([{
+      version: 'v3',
+      id: 'someId',
+      type: EntityType.WEARABLE,
+      pointers: wearableUrns,
+      timestamp: 10,
+      content: [],
+      metadata: wearableMetadata
+    }])
 
     const wearables = await getWearablesByOwnerFromUrns(true, instance(mockedClient), wearableUrns)
 
@@ -93,31 +88,23 @@ describe('getWearablesByOwnerFromUrns', () => {
 })
 
 describe('getWearablesByOwner', () => {
+
   beforeEach(() => jest.resetAllMocks())
   it('When collectionId is defined, then assets are fetched from the third party', async () => {
     const contentClientMock = mock(SmartContentClient)
     const mockedGraphClient = mock(TheGraphClient)
 
     const tpFetcher: ThirdPartyAssetFetcher = {
-      fetchAssets: () =>
-        Promise.resolve([
-          {
-            id: TPW_WEARABLE_ID,
-            amount: 1,
-            urn: { decentraland: TPW_WEARABLE_ID }
-          }
-        ])
+      fetchAssets: () => Promise.resolve(
+        [{
+          id: TPW_WEARABLE_ID,
+          amount: 1,
+          urn: { decentraland: TPW_WEARABLE_ID }
+        }])
     }
     jest.spyOn(tpUrnFinder, 'findThirdPartyItemUrns').mockResolvedValue([TPW_WEARABLE_ID])
 
-    const wearables = await getWearablesByOwner(
-      false,
-      instance(contentClientMock),
-      instance(mockedGraphClient),
-      tpFetcher,
-      'some-collection',
-      SOME_ADDRESS
-    )
+    const wearables = await getWearablesByOwner(false, instance(contentClientMock), instance(mockedGraphClient), tpFetcher, 'some-collection', SOME_ADDRESS)
 
     expect(wearables.length).toEqual(1)
     expect(wearables[0].amount).toEqual(1)
@@ -135,14 +122,7 @@ describe('getWearablesByOwner', () => {
     const tpFetcher = { fetchAssets: jest.fn() }
     const tpUrnFinderSpy = jest.spyOn(tpUrnFinder, 'findThirdPartyItemUrns').mockResolvedValue([])
 
-    const wearables = await getWearablesByOwner(
-      false,
-      instance(contentClientMock),
-      instance(mockedGraphClient),
-      tpFetcher,
-      undefined,
-      SOME_ADDRESS
-    )
+    const wearables = await getWearablesByOwner(false, instance(contentClientMock), instance(mockedGraphClient), tpFetcher, undefined, SOME_ADDRESS)
 
     expect(wearables.length).toEqual(1)
     expect(wearables[0].amount).toEqual(1)
@@ -156,7 +136,8 @@ describe('getWearablesByOwner', () => {
   it('should call the graph client with the arguments correctly mapped', async () => {
     const contentClientMock = mock(SmartContentClient)
 
-    const query = `
+    const query =
+      `
 query itemsByOwner($owner: String, $item_types:[String], $first: Int, $start: String) {
   nfts(where: {owner: $owner, searchItemType_in: $item_types, id_gt: $start}, first: $first) {
     id
@@ -168,7 +149,7 @@ query itemsByOwner($owner: String, $item_types:[String], $first: Int, $start: St
 }`
     const expectedVariables = {
       owner: SOME_ADDRESS,
-      item_types: ['wearable_v1', 'wearable_v2', 'smart_wearable_v1'],
+      item_types: ["wearable_v1", "wearable_v2", "smart_wearable_v1"],
       first: 1000,
       start: ''
     }
@@ -205,14 +186,7 @@ query itemsByOwner($owner: String, $item_types:[String], $first: Int, $start: St
     const tpFetcher = { fetchAssets: jest.fn() }
     const tpUrnFinderSpy = jest.spyOn(tpUrnFinder, 'findThirdPartyItemUrns').mockResolvedValue([])
 
-    const wearables = await getWearablesByOwner(
-      false,
-      instance(contentClientMock),
-      graphClient,
-      tpFetcher,
-      undefined,
-      SOME_ADDRESS
-    )
+    const wearables = await getWearablesByOwner(false, instance(contentClientMock), graphClient, tpFetcher, undefined, SOME_ADDRESS)
 
     expect(wearables.length).toEqual(1)
     expect(wearables[0].amount).toEqual(2)

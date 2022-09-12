@@ -1,12 +1,20 @@
 import { Entity } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { FailedDeployment } from '../ports/failedDeploymentsCache'
-import { Deployment } from '../service/deployments/types'
+import { IDatabaseComponent } from '../ports/postgres'
+import { AuditInfo, Deployment } from '../service/deployments/types'
 import { DeploymentContext } from '../service/Service'
 import { deployEntityFromRemoteServer } from '../service/synchronization/deployRemoteEntity'
 import { IGNORING_FIX_ERROR } from '../service/validations/server'
-import { AppComponents } from '../types'
-import { deploymentExists } from './database-queries/deployments-queries'
+import { AppComponents, DeploymentId } from '../types'
+import {
+  calculateOverwrittenByManyFast,
+  calculateOverwrittenBySlow,
+  calculateOverwrote,
+  deploymentExists,
+  saveContentFiles,
+  saveDeployment
+} from './database-queries/deployments-queries'
 
 export async function isEntityDeployed(
   components: Pick<AppComponents, 'deployedEntitiesBloomFilter' | 'database' | 'metrics'>,
@@ -93,4 +101,40 @@ export function mapDeploymentsToEntities(deployments: Deployment[]): Entity[] {
     content: content?.map(({ key, hash }) => ({ file: key, hash })) || [],
     metadata
   }))
+}
+
+export async function saveDeploymentAndContentFiles(
+  database: IDatabaseComponent,
+  entity: Entity,
+  auditInfo: AuditInfo,
+  overwrittenBy: DeploymentId | null
+) {
+  const deploymentId = await saveDeployment(database, entity, auditInfo, overwrittenBy)
+  if (entity.content) {
+    await saveContentFiles(database, deploymentId, entity.content)
+  }
+  return deploymentId
+}
+
+export async function calculateOverwrites(
+  database: IDatabaseComponent,
+  entity: Entity
+): Promise<{ overwrote: Set<DeploymentId>; overwrittenBy: DeploymentId | null }> {
+  const overwrote = await calculateOverwrote(database, entity)
+
+  let overwrittenByMany = await calculateOverwrittenByManyFast(database, entity)
+
+  if (overwrittenByMany.length === 0 && entity.type === 'scene') {
+    // Scene overwrite determination can be tricky. If none was detected use this other query (slower but safer)
+    overwrittenByMany = await calculateOverwrittenBySlow(database, entity)
+  }
+
+  let overwrittenBy: DeploymentId | null = null
+  if (overwrittenByMany.length > 0) {
+    overwrittenBy = overwrittenByMany[0].id
+  }
+  return {
+    overwrote: new Set(overwrote),
+    overwrittenBy
+  }
 }

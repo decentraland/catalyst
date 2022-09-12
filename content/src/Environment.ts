@@ -2,7 +2,6 @@ import { EntityType, EthAddress } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import ms from 'ms'
 import { initComponentsWithEnv } from './components'
-import { RepositoryQueue } from './repository/RepositoryQueue'
 import { AppComponents, parseEntityType } from './types'
 
 export const CURRENT_CONTENT_VERSION = 'v3'
@@ -131,9 +130,6 @@ export enum EnvironmentConfig {
   DISABLE_SYNCHRONIZATION,
   SYNC_STREAM_TIMEOUT,
   CONTENT_SERVER_ADDRESS,
-  REPOSITORY_QUEUE_MAX_CONCURRENCY,
-  REPOSITORY_QUEUE_MAX_QUEUED,
-  REPOSITORY_QUEUE_TIMEOUT,
   ENTITIES_CACHE_SIZE,
   BLOCKS_L1_SUBGRAPH_URL,
   BLOCKS_L2_SUBGRAPH_URL,
@@ -391,24 +387,6 @@ export class EnvironmentBuilder {
       () =>
         process.env.CONTENT_SERVER_ADDRESS ||
         'http://localhost:' + env.getConfig<number>(EnvironmentConfig.SERVER_PORT).toString()
-    )
-
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.REPOSITORY_QUEUE_MAX_CONCURRENCY,
-      () => process.env.REPOSITORY_QUEUE_MAX_CONCURRENCY ?? RepositoryQueue.DEFAULT_MAX_CONCURRENCY
-    )
-
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.REPOSITORY_QUEUE_MAX_QUEUED,
-      () => process.env.REPOSITORY_QUEUE_MAX_QUEUED ?? RepositoryQueue.DEFAULT_MAX_QUEUED
-    )
-
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.REPOSITORY_QUEUE_TIMEOUT,
-      () => process.env.REPOSITORY_QUEUE_TIMEOUT ?? RepositoryQueue.DEFAULT_TIMEOUT
     )
 
     this.registerConfigIfNotAlreadySet(

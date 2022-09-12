@@ -1,11 +1,11 @@
-import fetch from 'node-fetch';
-import { EnvironmentConfig } from '../../../src/Environment';
-import { createFsComponent } from '../../../src/ports/fs';
-import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator';
-import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment';
-import { getIntegrationResourcePathFor } from '../resources/get-resource-path';
-import { TestProgram } from '../TestProgram';
-import FormData = require("form-data");
+import fetch from 'node-fetch'
+import { EnvironmentConfig } from '../../../src/Environment'
+import { createFsComponent } from '../../../src/ports/fs'
+import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
+import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
+import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
+import { TestProgram } from '../TestProgram'
+import FormData = require("form-data")
 
 interface ActivePointersRow {
   entity_id: string,
@@ -37,11 +37,11 @@ loadStandaloneTestEnvironment()('Integration - Create entities', (testEnv) => {
 
   const profileAddress = '0x31a19cb92ac89f1aa62fa72da5f52521daf130b0'
   const originalProfileEntityId = 'bafkreigiffn5v5j5o2rd24dvirirggghisva44owomrl65dqg5flan47le'
-  const profileOverwriteEntityId = 'bafkreiczclosnorj7bzibuvotiwf2gyvtmnxmyvl62nacpxhluqsi72bxq';
+  const profileOverwriteEntityId = 'bafkreiczclosnorj7bzibuvotiwf2gyvtmnxmyvl62nacpxhluqsi72bxq'
 
   it('when creating a profile, pointer should be stored in active-pointers table', async () => {
     // Create profile
-    const form = createForm(originalProfileEntityId, 'profile_original.json');
+    const form = createForm(originalProfileEntityId, 'profile_original.json')
     await callCreateEntityEndpoint(server, form)
 
     // Check that entity_id matches only with the profile pointer
@@ -53,11 +53,11 @@ loadStandaloneTestEnvironment()('Integration - Create entities', (testEnv) => {
 
   it('when overwriting a profile, entity id should be replaced in active-pointers table', async () => {
     // Create profile
-    let form = createForm(originalProfileEntityId, 'profile_original.json');
+    let form = createForm(originalProfileEntityId, 'profile_original.json')
     await callCreateEntityEndpoint(server, form)
 
     // Overwrite profile
-    form = createForm(profileOverwriteEntityId, 'profile_overwrite.json');
+    form = createForm(profileOverwriteEntityId, 'profile_overwrite.json')
     await callCreateEntityEndpoint(server, form)
 
     // Check that entity_id matches only with the profile pointer
@@ -72,11 +72,11 @@ loadStandaloneTestEnvironment()('Integration - Create entities', (testEnv) => {
 
   it('when overwriting a profile, new profile must be ignored if its timestamp is older', async () => {
     // Create profile
-    let form = createForm(profileOverwriteEntityId, 'profile_overwrite.json');
+    let form = createForm(profileOverwriteEntityId, 'profile_overwrite.json')
     await callCreateEntityEndpoint(server, form)
 
     // Try to overwrite it with a profile with older timestamp
-    form = createForm(originalProfileEntityId, 'profile_original.json');
+    form = createForm(originalProfileEntityId, 'profile_original.json')
     await callCreateEntityEndpoint(server, form)
 
     // Check that entity_id matches only with the profile pointer
@@ -89,13 +89,13 @@ loadStandaloneTestEnvironment()('Integration - Create entities', (testEnv) => {
     await assertQueryResultPointers(originalProfileEntityId, [])
   })
 
-  const originalSceneEntityId = 'bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy';
-  const overwriteSceneEntityId = 'bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq';
-  const anotherSceneEntityId = 'bafkreihubgrgjjz55sbzd5jq5fr4qucz37preqnwcggznzrlatpmz4n3sa';
+  const originalSceneEntityId = 'bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy'
+  const overwriteSceneEntityId = 'bafkreiccs3djm6cfhucvena5ay5qoybf76vdqaeido53azizw4zb2myqjq'
+  const anotherSceneEntityId = 'bafkreihubgrgjjz55sbzd5jq5fr4qucz37preqnwcggznzrlatpmz4n3sa'
 
   it('when creating a scene, pointers should be stored in active-pointers table', async () => {
     // Create scene
-    const form = createForm(originalSceneEntityId, 'scene_original.json');
+    const form = createForm(originalSceneEntityId, 'scene_original.json')
     await callCreateEntityEndpoint(server, form)
 
     // Check that entity_id matches only with the scene pointers
@@ -109,11 +109,11 @@ loadStandaloneTestEnvironment()('Integration - Create entities', (testEnv) => {
 
   it('when overwriting a scene, unused pointers should be deleted from active-pointers table', async () => {
     // Create scene
-    let form = createForm(originalSceneEntityId, 'scene_original.json');
+    let form = createForm(originalSceneEntityId, 'scene_original.json')
     await callCreateEntityEndpoint(server, form)
 
     // Overwrite scene
-    form = createForm(overwriteSceneEntityId, 'scene_overwrite.json');
+    form = createForm(overwriteSceneEntityId, 'scene_overwrite.json')
     await callCreateEntityEndpoint(server, form)
 
     // Check that scene pointers match only with the entity_id
@@ -131,21 +131,21 @@ loadStandaloneTestEnvironment()('Integration - Create entities', (testEnv) => {
 
   it('when overwriting multiple scenes, unused pointers should be deleted from active-pointers table', async () => {
     // Create scene
-    let form = createForm(originalSceneEntityId, 'scene_original.json');
+    let form = createForm(originalSceneEntityId, 'scene_original.json')
     await callCreateEntityEndpoint(server, form)
 
     // Check that scene pointers match only with the entity_id
     await assertQueryResultPointers(originalSceneEntityId, ['0,0', '0,1'])
 
     // Create a second scene (non-overlapping)
-    form = createForm(anotherSceneEntityId, 'another_scene.json');
+    form = createForm(anotherSceneEntityId, 'another_scene.json')
     await callCreateEntityEndpoint(server, form)
 
     // Check that scene pointers match only with the entity_id
     await assertQueryResultPointers(anotherSceneEntityId, ['1,0', '1,1'])
 
     // Create a scene that overwrites the two previous ones
-    form = createForm(overwriteSceneEntityId, 'scene_overwrite.json');
+    form = createForm(overwriteSceneEntityId, 'scene_overwrite.json')
     await callCreateEntityEndpoint(server, form)
 
     // Check that scene pointers match only with the entity_id
@@ -167,11 +167,11 @@ loadStandaloneTestEnvironment()('Integration - Create entities', (testEnv) => {
 
   it('when overwriting a scene, new scene must be ignored if its timestamp is older', async () => {
     // Create scene
-    let form = createForm(overwriteSceneEntityId, 'scene_overwrite.json');
+    let form = createForm(overwriteSceneEntityId, 'scene_overwrite.json')
     await callCreateEntityEndpoint(server, form)
 
     // Try to overwrite it with a scene with older timestamp
-    form = createForm(originalSceneEntityId, 'scene_original.json');
+    form = createForm(originalSceneEntityId, 'scene_original.json')
     await callCreateEntityEndpoint(server, form)
 
     // Check that entity_id matches scene pointers
@@ -207,14 +207,14 @@ loadStandaloneTestEnvironment()('Integration - Create entities', (testEnv) => {
 
 function createForm(entityId: string, filename: string) {
   // Instantiate form
-  const form = new FormData();
+  const form = new FormData()
 
   // Add entityId
-  form.append('entityId', entityId);
+  form.append('entityId', entityId)
 
   // Add entity file
-  const entityFile = fs.createReadStream(getIntegrationResourcePathFor(filename));
-  form.append('files', entityFile);
+  const entityFile = fs.createReadStream(getIntegrationResourcePathFor(filename))
+  form.append('files', entityFile)
 
   // Add authChain. Just as a example
   const authChain = [
@@ -232,14 +232,14 @@ function createForm(entityId: string, filename: string) {
       payload: "QmNMZBy7khBxdigikA8mcJMyv6yeBXfMv3iAcUiBr6n72C",
       signature: "0xbed22719dcdc19580353108027c41c65863404879592c65014d806efa961c629777adc76986193eaee4e48f278ec59feb1c289827254230af85b2955157ec8061b"
     }
-  ];
-  form.append('authChain', JSON.stringify(authChain));
+  ]
+  form.append('authChain', JSON.stringify(authChain))
 
-  return form;
+  return form
 }
 
 async function callCreateEntityEndpoint(server: TestProgram, form: FormData) {
-  const response = await fetch(`${server.getUrl()}/entities`, { method: 'POST', body: form});
+  const response = await fetch(`${server.getUrl()}/entities`, { method: 'POST', body: form })
   expect(response.status).toBe(200)
   expect(await response.json()).toHaveProperty('creationTimestamp')
 }
