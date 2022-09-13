@@ -22,7 +22,7 @@
     "sort-pkg:lambdas": "npx sort-package-json lambdas/package.json",
     "start": "yarn workspaces run start:server",
     "start:content": "yarn workspace @catalyst/content-server start:db && yarn workspace @catalyst/content-server start:server",
-    "start:lambdas": "yarn workspace @catalyst/lambdas-server start",
+    "start:lambdas": "yarn workspace @catalyst/lambdas-server start:server",
     "test": "run-s 'test:*'",
     "test:content": "yarn workspace @catalyst/content-server test",
     "test:lambdas": "yarn workspace @catalyst/lambdas-server test",

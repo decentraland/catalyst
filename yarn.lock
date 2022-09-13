@@ -362,10 +362,10 @@
     ms "2.1.3"
     sharp "^0.30.6"
 
-"@dcl/crypto@^3.1.3":
-  version "3.1.3"
-  resolved "https://registry.yarnpkg.com/@dcl/crypto/-/crypto-3.1.3.tgz#e5cb06ecc7ca959f8149c224c3c6f8cfff600f60"
-  integrity sha512-freCUbjS7EMhCYXeXoynR3WHviczKmp/EK2NZ07TGD8zsguBe8rg6aZKecZyPDLKXF4hXOQEk7074Px4JLGLDA==
+"@dcl/crypto@^3.2.0":
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/@dcl/crypto/-/crypto-3.2.0.tgz#ac551f6cb4bed99dd5c0e2d9c015ebc2c075b46f"
+  integrity sha512-VkiF064YX/Yp3PkOKCaVs84t1dROshb8R6afuAi1TnvdkiUdBUKpjaxDEXdQFhCVIAdfvzpLAOC41ZB/D21OKA==
   dependencies:
     "@dcl/schemas" "^5.4.2"
     eth-connect "^6.0.3"
@@ -380,10 +380,10 @@
     ipfs-unixfs-importer "^7.0.3"
     multiformats "^9.6.3"
 
-"@dcl/schemas@^5.14.0", "@dcl/schemas@^5.4.2", "@dcl/schemas@^5.5.0":
-  version "5.14.0"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-5.14.0.tgz#efcf45b8f8ef04f221d27d16a447bce40615107d"
-  integrity sha512-UKIny4sxoYpKwRItM7mEzFyM7+R2kwqV8PB7DBo30PCkoFBL3N6b85K/hGk9qd+ZNTioFy6ceL8y7bKeASWUHw==
+"@dcl/schemas@^5.15.0", "@dcl/schemas@^5.4.2", "@dcl/schemas@^5.5.0":
+  version "5.15.0"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-5.15.0.tgz#8cba7e4103e8c08e3e5e02c352bf4db8967b13f1"
+  integrity sha512-zt9Iz8r2e9l8JYsEO8+OWxtlY+RQwQL/EXNJ1DZ71WjTFqSNOJcAKoIyCMGKUwh84jSptlw+pYD29copESWwCw==
   dependencies:
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
@@ -1606,28 +1606,37 @@
   dependencies:
     dotenv "^8.2.0"
 
-"@well-known-components/http-server@1.1.2", "@well-known-components/http-server@^1.1.0":
-  version "1.1.2"
-  resolved "https://registry.yarnpkg.com/@well-known-components/http-server/-/http-server-1.1.2.tgz#39d038da07efd3c1a3bc9a7edab5418c8162910f"
-  integrity sha512-kkx34LjUSt3jhRDKK09yzkIr8NLp6fnPHTJXkaO3EEv7a0ERnsSFIM0AQjfRBS4CG283b0EgbTUmQnxxaXRHrg==
+"@well-known-components/http-server@1.1.4", "@well-known-components/http-server@^1.1.0":
+  version "1.1.4"
+  resolved "https://registry.yarnpkg.com/@well-known-components/http-server/-/http-server-1.1.4.tgz#67f764aa8f7f40532febf9c97ced2f661d880c3b"
+  integrity sha512-DgrZ/TCufIt+RElag5wPWRDilZ3HPWcdVvCe61NERLKEudZB0zB05DKDdqhqYa7K7a4isJ8V8udQMlD/cIm54A==
   dependencies:
     "@types/compression" "^1.7.0"
     "@types/cors" "^2.8.9"
     "@types/http-errors" "^1.8.1"
     compression "^1.7.4"
     cors "^2.8.5"
-    destroy "^1.1.0"
-    express "^4.17.1"
+    destroy "^1.2.0"
+    express "^4.18.1"
     fp-future "^1.0.1"
-    http-errors "^1.8.0"
+    http-errors "^1.8.1"
     node-fetch "^2.6.7"
-    on-finished "^2.3.0"
-    path-to-regexp "^6.2.0"
+    on-finished "^2.4.1"
+    path-to-regexp "^6.2.1"
 
-"@well-known-components/interfaces@1.1.1", "@well-known-components/interfaces@^1.1.0", "@well-known-components/interfaces@^1.1.1":
+"@well-known-components/interfaces@1.1.1":
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/@well-known-components/interfaces/-/interfaces-1.1.1.tgz#d7e6552dd9ebee9ff9a2c9b5e1a88fc8247eb106"
   integrity sha512-LCIBhzHvxXhT/uXrMXuvfWsIcHmK9lQ65StVMOgkPRqzo29X3U4crUB/dy2wFYITE5WnLUk/d25tpOKvvOlUeA==
+  dependencies:
+    "@types/node" "^16.11.19"
+    "@types/node-fetch" "^2.5.12"
+    typed-url-params "^1.0.1"
+
+"@well-known-components/interfaces@^1.1.0", "@well-known-components/interfaces@^1.1.1", "@well-known-components/interfaces@^1.1.2":
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/@well-known-components/interfaces/-/interfaces-1.1.2.tgz#754ad83ffd434a63d57773be69177bce9869c554"
+  integrity sha512-hLqjVXZPHObloSbscauQWP9LI1r0jqW/kGlpJ+cZxEOhclvG4ot0JIiu4YeK436YgbjRYJxsGOkJGl37RLvKOg==
   dependencies:
     "@types/node" "^16.11.19"
     "@types/node-fetch" "^2.5.12"
@@ -2645,7 +2654,7 @@ dcl-catalyst-client@^13.0.3:
     dcl-catalyst-commons "^9.0.6"
     form-data "^4.0.0"
 
-dcl-catalyst-commons@9.0.10, dcl-catalyst-commons@^9.0.6:
+dcl-catalyst-commons@^9.0.6:
   version "9.0.10"
   resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-9.0.10.tgz#d901822e5f44bbf44be83e655df98f3d537798f8"
   integrity sha512-O5x9js02MkuV/6JMeM6Pzy7/UVZRfq/fk7SOGM1b/gNIMel9aXKxotR/0JV0WLXjDfLBxT+7dEbeu3hxgmVkKg==
@@ -2749,7 +2758,7 @@ depd@~1.1.2:
   resolved "https://registry.yarnpkg.com/depd/-/depd-1.1.2.tgz#9bcd52e14c097763e749b274c4346ed2e560b5a9"
   integrity sha512-7emPTl6Dpo6JRXOXjLRxck+FlLRX5847cLKEn00PLAgc3g2hTZZgr+e4c2v6QpSmLeFP3n5yUo7ft6avBK/5jQ==
 
-destroy@1.2.0, destroy@^1.1.0, destroy@^1.2.0:
+destroy@1.2.0, destroy@^1.2.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/destroy/-/destroy-1.2.0.tgz#4803735509ad8be552934c67df614f94e66fa015"
   integrity sha512-2sJGJTaXIIaR1w4iJSNoN0hnMY7Gpc/n8D4qSCJw8QqFWXf7cuAgnEHxBpweaVcPevC2l3KpjYCx3NypQQgaJg==
@@ -3278,7 +3287,7 @@ express-openapi-validator@4.13.8:
     ono "^7.1.3"
     path-to-regexp "^6.2.0"
 
-express@4.18.1, express@^4.17.1:
+express@4.18.1, express@^4.18.1:
   version "4.18.1"
   resolved "https://registry.yarnpkg.com/express/-/express-4.18.1.tgz#7797de8b9c72c857b9cd0e14a5eea80666267caf"
   integrity sha512-zZBcOX9TfehHQhtupq57OF8lFZ3UZi08Y97dwFCkD8p9d/d2Y3M+ykKcwaMDEL+4qyUolgBDX6AblpR3fL212Q==
@@ -3761,7 +3770,7 @@ http-errors@2.0.0:
     statuses "2.0.1"
     toidentifier "1.0.1"
 
-http-errors@^1.8.0:
+http-errors@^1.8.1:
   version "1.8.1"
   resolved "https://registry.yarnpkg.com/http-errors/-/http-errors-1.8.1.tgz#7c3f28577cbc8a207388455dbd62295ed07bd68c"
   integrity sha512-Kpk9Sm7NmI+RHhnj6OIWDI1d6fIoFAtFt9RLaTMRlg/8w49juAStsrBgp0Dp4OdxdVbRIeKhtCUvoi/RuAhO4g==
@@ -5380,7 +5389,7 @@ object.assign@^4.1.2:
     has-symbols "^1.0.1"
     object-keys "^1.1.1"
 
-on-finished@2.4.1, on-finished@^2.3.0:
+on-finished@2.4.1, on-finished@^2.3.0, on-finished@^2.4.1:
   version "2.4.1"
   resolved "https://registry.yarnpkg.com/on-finished/-/on-finished-2.4.1.tgz#58c8c44116e54845ad57f14ab10b03533184ac3f"
   integrity sha512-oVlzkg3ENAhCk2zdv7IJwd/QUD4z2RxRwpkcGY8psCVcCYZNq4wYnVWALHM+brtuJjePWiYF/ClmuDr8Ch5+kg==
@@ -5597,7 +5606,7 @@ path-to-regexp@^1.7.0:
   dependencies:
     isarray "0.0.1"
 
-path-to-regexp@^6.2.0:
+path-to-regexp@^6.2.0, path-to-regexp@^6.2.1:
   version "6.2.1"
   resolved "https://registry.yarnpkg.com/path-to-regexp/-/path-to-regexp-6.2.1.tgz#d54934d6798eb9e5ef14e7af7962c945906918e5"
   integrity sha512-JLyh7xT1kizaEvcaXOQwOc2/Yhw6KZOvPf1S8401UyLk86CU79LN3vl7ztXGm/pZ+YjoyAJ4rxmHwbkBXJX+yw==
