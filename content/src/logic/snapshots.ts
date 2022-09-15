@@ -59,7 +59,7 @@ export async function generateSnapshots(
 
   const snapshotHashes: Map<EntityType | ALL_ENTITIES, SnapshotGenerationResult> = new Map()
 
-  const fileWriterComponent = createContentFileWriterComponent<EntityType | ALL_ENTITIES>(components)
+  const fileWriterComponent = createContentFileWriterComponent<EntityType | ALL_ENTITIES>(components, 'new-')
 
   const newActiveEntitiesCount = {}
 
