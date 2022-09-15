@@ -20,6 +20,7 @@ import { IFailedDeploymentsCacheComponent } from './ports/failedDeploymentsCache
 import { FSComponent } from './ports/fs'
 import { IDatabaseComponent } from './ports/postgres'
 import { ISequentialTaskExecutorComponent } from './ports/sequecuentialTaskExecutor'
+import { SnapshotGenerator } from './ports/snapshotGenerator'
 import { SystemProperties } from './ports/system-properties'
 import { ContentAuthenticator } from './service/auth/Authenticator'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
@@ -76,6 +77,7 @@ export type AppComponents = {
   denylist: Denylist
   fs: FSComponent
   ethereumProvider: HTTPProvider
+  snapshotGenerator: SnapshotGenerator
 }
 
 export type MaintenanceComponents = {

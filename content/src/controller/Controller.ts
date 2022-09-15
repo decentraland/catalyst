@@ -41,6 +41,7 @@ export class Controller {
       | 'activeEntities'
       | 'denylist'
       | 'fs'
+      | 'snapshotGenerator'
     >,
     private readonly ethNetwork: string
   ) {
@@ -661,6 +662,19 @@ export class Controller {
 
     if (!metadata) {
       res.status(503).send({ error: 'Snapshot not yet created' })
+    } else {
+      res.send(metadata)
+    }
+  }
+
+  async getAllNewSnapshots(req: express.Request, res: express.Response): Promise<void> {
+    // Method: GET
+    // Path: /snapshots
+
+    const metadata = this.components.snapshotGenerator.getCurrentSnapshots()
+
+    if (!metadata) {
+      res.status(503).send({ error: 'New Snapshots not yet created' })
     } else {
       res.send(metadata)
     }

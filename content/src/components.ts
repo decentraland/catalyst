@@ -25,6 +25,7 @@ import { createFetchComponent } from './ports/fetcher'
 import { createFsComponent } from './ports/fs'
 import { createDatabaseComponent } from './ports/postgres'
 import { createSequentialTaskExecutor } from './ports/sequecuentialTaskExecutor'
+import { createSnapshotGenerator } from './ports/snapshotGenerator'
 import { createSystemProperties } from './ports/system-properties'
 import { ContentAuthenticator } from './service/auth/Authenticator'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
@@ -240,6 +241,16 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     metrics
   })
 
+  const snapshotGenerator = createSnapshotGenerator({
+    logs,
+    fs,
+    metrics,
+    staticConfigs,
+    storage,
+    database,
+    denylist
+  })
+
   const controller = new Controller(
     {
       synchronizationManager,
@@ -252,7 +263,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       sequentialExecutor,
       activeEntities,
       denylist,
-      fs
+      fs,
+      snapshotGenerator
     },
     ethNetwork
   )
@@ -299,6 +311,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     sequentialExecutor,
     denylist,
     ethereumProvider,
-    fs
+    fs,
+    snapshotGenerator
   }
 }
