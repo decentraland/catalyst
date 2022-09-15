@@ -64,7 +64,7 @@ export async function generateSnapshots(
   const newActiveEntitiesCount = {}
 
   // this header is necessary to later differentiate between binary formats and non-binary formats
-  const FILE_HEADER = '### Decentraland json snapshot\n'
+  const FILE_HEADER = '### Decentraland json new snapshot\n'
 
   // Phase 1) pre-open all the files and write the headers
   for (const entityType of snapshotTypes) {
