@@ -73,3 +73,16 @@ export function divideTimeRangeInSubintervals(timeRange: TimeRange, intervalSize
     }
   }
 }
+
+export function isTimeRangeCoveredBy(timerange: TimeRange, timeRanges: TimeRange[]) {
+  if (timeRanges.length == 0) return false
+  const minTimestamp = timeRanges[0].initTimestampSecs
+  let currentMaxTimestamp = timeRanges[0].endTimestampSecs
+  for (const t of timeRanges) {
+    if (t.initTimestampSecs > currentMaxTimestamp) {
+      return false
+    }
+    currentMaxTimestamp = Math.max(currentMaxTimestamp, t.endTimestampSecs)
+  }
+  return minTimestamp <= timerange.initTimestampSecs && currentMaxTimestamp >= timerange.endTimestampSecs
+}

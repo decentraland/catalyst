@@ -1,4 +1,4 @@
-import { divideTimeRange, divideTimeRangeInDays, divideTimeRangeInMonths, divideTimeRangeInWeeks, divideTimeRangeInYears, SECONDS_PER_DAY, SECONDS_PER_MONTH, SECONDS_PER_WEEK, TimeRange, timeRangeSizeInSeconds } from '../../../src/logic/divide-time-range'
+import { divideTimeRange, divideTimeRangeInDays, divideTimeRangeInMonths, divideTimeRangeInWeeks, divideTimeRangeInYears, SECONDS_PER_DAY, SECONDS_PER_MONTH, SECONDS_PER_WEEK, TimeRange, timeRangeSizeInSeconds } from '../../../src/logic/time-range'
 
 it('should split a 2 days and 50 seconds timerange in 2 days and a remainder of 50 seconds', async () => {
   const timeRange: TimeRange = {
