@@ -255,7 +255,9 @@ export class EnvironmentBuilder {
       SmartContentServerFetcherFactory.create(env)
     )
     this.registerBeanIfNotAlreadySet(env, Bean.SMART_CONTENT_SERVER_CLIENT, () => SmartContentClientFactory.create(env))
-    this.registerBeanIfNotAlreadySet(env, Bean.THE_GRAPH_CLIENT, () => TheGraphClientFactory.create(env))
+
+    const theGraphClient = await TheGraphClientFactory.create(env)
+    this.registerBeanIfNotAlreadySet(env, Bean.THE_GRAPH_CLIENT, () => theGraphClient)
     this.registerBeanIfNotAlreadySet(env, Bean.OFF_CHAIN_MANAGER, () => OffChainWearablesManagerFactory.create(env))
 
     const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK)
