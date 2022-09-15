@@ -7,6 +7,7 @@
   "scripts": {
     "build": "tsc -b",
     "build:watch": "tsc -b --watch",
+    "build:sourcemap": "tsc --sourcemap",
     "cleanup": "shx rm -rf dist node_modules",
     "report-api-coverage": "node ./reportApiCoverage.js",
     "start:db": "node ./dist/src/entrypoints/run-local-database.js",
