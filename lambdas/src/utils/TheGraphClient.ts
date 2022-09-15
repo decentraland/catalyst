@@ -1,14 +1,14 @@
 import { EthAddress } from '@dcl/crypto'
 import { parseUrn } from '@dcl/urn-resolver'
-import { Fetcher } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import { EmoteId, ItemFilters, ThirdPartyIntegration, WearableId } from '../apis/collections/types'
+import { ISubgraphComponent } from '@well-known-components/thegraph-component'
 
 export class TheGraphClient {
   public static readonly MAX_PAGE_SIZE = 1000
   private static readonly LOGGER = log4js.getLogger('TheGraphClient')
 
-  constructor(private readonly urls: URLs, private readonly fetcher: Fetcher) {}
+  constructor(private readonly subGraphs: SubGraphs) {}
 
   public async findOwnersByName(names: string[]): Promise<{ name: string; owner: EthAddress }[]> {
     const query: Query<
@@ -73,7 +73,7 @@ export class TheGraphClient {
 
   private async getOwnedItems(
     itemIdsToCheck: [string, string[]][],
-    subgraph: keyof URLs,
+    subgraph: keyof SubGraphs,
     itemTypes: BlockchainItemType[]
   ): Promise<{ owner: EthAddress; urns: string[] }[]> {
     try {
@@ -86,7 +86,7 @@ export class TheGraphClient {
 
   private getOwnersByItem(
     itemIdsToCheck: [string, string[]][],
-    subgraph: keyof URLs,
+    subgraph: keyof SubGraphs,
     itemTypes: BlockchainItemType[]
   ): Promise<{ owner: EthAddress; urns: string[] }[]> {
     const subgraphQuery = `{` + itemIdsToCheck.map((query) => this.getItemsFragment(query, itemTypes)).join('\n') + `}`
@@ -141,7 +141,7 @@ export class TheGraphClient {
     return l1Collections.concat(l2Collections)
   }
 
-  private async getCollections(subgraph: keyof URLs) {
+  private async getCollections(subgraph: keyof SubGraphs) {
     try {
       const query: Query<{ collections: { name: string; urn: string }[] }, { name: string; urn: string }[]> = {
         description: 'fetch collections',
@@ -192,7 +192,7 @@ export class TheGraphClient {
    * This method returns the third party resolver API to be used to query assets from any collection
    * of given third party integration
    */
-  public async findThirdPartyResolver(subgraph: keyof URLs, id: string): Promise<string | undefined> {
+  public async findThirdPartyResolver(subgraph: keyof SubGraphs, id: string): Promise<string | undefined> {
     const query: Query<{ thirdParties: [{ resolver: string }] }, string | undefined> = {
       description: 'fetch third party resolver',
       subgraph: subgraph,
@@ -307,7 +307,7 @@ export class TheGraphClient {
   }
 
   private findItemUrnsByFiltersInSubgraph(
-    subgraph: keyof URLs,
+    subgraph: keyof SubGraphs,
     filters: ItemFilters & { lastId?: string },
     limit: number,
     itemTypes: BlockchainItemType[]
@@ -383,7 +383,7 @@ export class TheGraphClient {
     return ethereumWearables.concat(maticWearables)
   }
 
-  private async getItemsByOwner(subgraph: keyof URLs, owner: string, itemTypes: BlockchainItemType[]) {
+  private async getItemsByOwner(subgraph: keyof SubGraphs, owner: string, itemTypes: BlockchainItemType[]) {
     const query: Query<
       { nfts: { id: string; urn: string; collection: { isApproved: boolean } }[] },
       { id: string; urn: string; isApproved: boolean }[]
@@ -448,11 +448,13 @@ export class TheGraphClient {
     variables: Record<string, any>
   ): Promise<ReturnType> {
     try {
-      const response = await this.fetcher.queryGraph<QueryResult>(this.urls[query.subgraph], query.query, variables)
+      const response = await this.subGraphs[query.subgraph].query<QueryResult>(query.query, variables)
       return query.mapper(response)
     } catch (error) {
       TheGraphClient.LOGGER.error(
-        `Failed to execute the following query to the subgraph ${this.urls[query.subgraph]} ${query.description}'.`,
+        `Failed to execute the following query to the subgraph ${this.subGraphs[query.subgraph]} ${
+          query.description
+        }'.`,
         error
       )
       throw new Error('Internal server error')
@@ -520,16 +522,16 @@ const QUERY_COLLECTIONS = `
 
 type Query<QueryResult, ReturnType> = {
   description: string
-  subgraph: keyof URLs
+  subgraph: keyof SubGraphs
   query: string
   mapper: (queryResult: QueryResult) => ReturnType
 }
 
-type URLs = {
-  ensSubgraph: string
-  collectionsSubgraph: string
-  maticCollectionsSubgraph: string
-  thirdPartyRegistrySubgraph: string
+type SubGraphs = {
+  ensSubgraph: ISubgraphComponent
+  collectionsSubgraph: ISubgraphComponent
+  maticCollectionsSubgraph: ISubgraphComponent
+  thirdPartyRegistrySubgraph: ISubgraphComponent
 }
 
 type BlockchainItemType = 'wearable_v1' | 'wearable_v2' | 'smart_wearable_v1' | 'emote_v1'
