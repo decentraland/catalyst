@@ -6,12 +6,14 @@ export type IFile = {
   filePath: string
   appendDebounced: (buffer: string) => Promise<void>
   close: () => Promise<void>
+  delete: () => Promise<void>
 }
 
 export async function createContentFileWriter(
   components: Pick<AppComponents, 'logs' | 'staticConfigs' | 'fs'>,
   filename: string
 ): Promise<IFile> {
+  const logger = components.logs.getLogger('file-writer')
   const filePath = path.resolve(components.staticConfigs.contentStorageFolder, filename)
 
   // if the process failed while creating the snapshot last time the file may still exists
@@ -57,6 +59,15 @@ export async function createContentFileWriter(
       await flush()
       file.close()
       await fileClosedFuture
+    },
+    async delete() {
+      if (await checkFileExists(filePath)) {
+        try {
+          await components.fs.unlink(filePath)
+        } catch (err) {
+          logger.error(err)
+        }
+      }
     }
   }
 }

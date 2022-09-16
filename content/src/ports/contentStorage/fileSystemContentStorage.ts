@@ -75,17 +75,12 @@ export async function createFileSystemContentStorage(
     storeStream,
     retrieve,
     async storeStreamAndCompress(id: string, stream: Readable): Promise<void> {
-      console.log(`storing stream ${id}...`)
       await storeStream(id, stream)
-      console.log(`stream stored ${id}`)
       if (await compressContentFile(await getFilePath(id))) {
-        console.log(`file compressed ${id}`)
         // try to remove original file if present
         const contentItem = await retrieve(id)
         if (contentItem?.encoding) {
           await noFailUnlink(await getFilePath(id))
-        } else {
-          console.log(`original ${id} was not present`)
         }
       }
     },

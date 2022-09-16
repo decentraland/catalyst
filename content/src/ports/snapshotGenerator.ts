@@ -5,7 +5,7 @@ import {
   findSnapshotsStrictlyContainedInTimeRange,
   saveSnapshot
 } from '../logic/database-queries/snapshots-queries'
-import { ALL_ENTITIES, generateSnapshots, NewSnapshotMetadata } from '../logic/snapshots'
+import { generateAndStoreSnapshot, NewSnapshotMetadata } from '../logic/snapshots'
 import { divideTimeRange, isTimeRangeCoveredBy, TimeRange } from '../logic/time-range'
 import { AppComponents } from '../types'
 
@@ -45,15 +45,14 @@ export function createSnapshotGenerator(
       const shouldGenerateNewSnapshot = !isTimeRangeCoveredByOtherSnapshots || multipleSnapshotsShouldBeReplaced
 
       if (shouldGenerateNewSnapshot) {
-        const snapshotHashes = await generateSnapshots(components, interval, new Set([ALL_ENTITIES]))
-        const allEntitiesGenerationResult = snapshotHashes.get(ALL_ENTITIES)
-        if (allEntitiesGenerationResult) {
-          const { hash, numberOfEntities } = allEntitiesGenerationResult
+        const snapshotResult = await generateAndStoreSnapshot(components, interval)
+        if (snapshotResult) {
+          const { hash, numberOfEntities } = snapshotResult
           const replacedSnapshotHashes = allEntitiesSnapshots.map((s) => s.hash)
           await components.database.transaction(async (txDatabase) => {
             if (replacedSnapshotHashes.length > 0) {
               await deleteSnapshots(txDatabase, replacedSnapshotHashes)
-              // DELETE snapshot files!!!
+              await components.storage.delete(replacedSnapshotHashes)
             }
             const newSnapshot = { hash, timerange: interval, replacedSnapshotHashes, numberOfEntities }
             await saveSnapshot(txDatabase, newSnapshot, Math.floor(Date.now() / 1000))
