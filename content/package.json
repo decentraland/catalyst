@@ -20,7 +20,7 @@
   "dependencies": {
     "@dcl/catalyst-api-specs": "^2.0.9",
     "@dcl/catalyst-contracts": "^3.0.0",
-    "@dcl/content-validator": "^4.0.7",
+    "@dcl/content-validator": "^4.0.9",
     "@dcl/crypto": "^3.2.1",
     "@dcl/hashing": "^1.1.0",
     "@dcl/schemas": "^5.16.0",
