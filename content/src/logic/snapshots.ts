@@ -70,6 +70,9 @@ export async function generateSnapshots(
   for (const entityType of snapshotTypes) {
     await fileWriterComponent.appendToFile(entityType, FILE_HEADER)
     newActiveEntitiesCount[entityType.toString()] = 0
+    if (entityType === ALL_ENTITIES) {
+      Object.keys(EntityType).forEach((t) => (newActiveEntitiesCount[t.toString()] = 0))
+    }
   }
 
   // Phase 2) iterate all active deployments and write to files
