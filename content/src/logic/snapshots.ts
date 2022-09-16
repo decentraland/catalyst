@@ -71,7 +71,7 @@ export async function generateSnapshots(
     await fileWriterComponent.appendToFile(entityType, FILE_HEADER)
     newActiveEntitiesCount[entityType.toString()] = 0
     if (entityType === ALL_ENTITIES) {
-      Object.keys(EntityType).forEach((t) => (newActiveEntitiesCount[t.toString()] = 0))
+      Object.keys(EntityType).forEach((t) => (newActiveEntitiesCount[t.toString().toLocaleLowerCase()] = 0))
     }
   }
 
