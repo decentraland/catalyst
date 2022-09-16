@@ -61,7 +61,6 @@ export function createSnapshotGenerator(
         } else {
           throw new Error('Error generating snapshot')
         }
-        console.log('generated snapshots finished!')
       } else {
         for (const snapshotMetadata of allEntitiesSnapshots) {
           snapshotMetadatas.push(snapshotMetadata)

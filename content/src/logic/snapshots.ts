@@ -69,7 +69,7 @@ export async function generateSnapshots(
   // Phase 1) pre-open all the files and write the headers
   for (const entityType of snapshotTypes) {
     await fileWriterComponent.appendToFile(entityType, FILE_HEADER)
-    newActiveEntitiesCount[entityType] = 0
+    newActiveEntitiesCount[entityType.toString()] = 0
   }
 
   // Phase 2) iterate all active deployments and write to files
@@ -104,7 +104,7 @@ export async function generateSnapshots(
       await moveSnapshotFileToContentFolder(components, fileName, hash, timeRange, logger)
 
       // Save the snapshot hash and metadata
-      snapshotHashes.set(entityType, { hash, numberOfEntities: newActiveEntitiesCount[entityType] })
+      snapshotHashes.set(entityType, { hash, numberOfEntities: newActiveEntitiesCount[entityType.toString()] })
     }
   } catch (err: any) {
     stopTimer({ failed: 'true' })

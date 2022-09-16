@@ -134,7 +134,6 @@ export async function saveSnapshot(
   )
   RETURNING hash
   `
-  console.log(`inserting: ${query.values}`)
   await database.queryWithValues(query, 'save_snapshot')
 }
 
