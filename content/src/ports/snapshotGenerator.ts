@@ -53,6 +53,7 @@ export function createSnapshotGenerator(
           await components.database.transaction(async (txDatabase) => {
             if (replacedSnapshotHashes.length > 0) {
               await deleteSnapshots(txDatabase, replacedSnapshotHashes)
+              // DELETE snapshot files!!!
             }
             const newSnapshot = { hash, timerange: interval, replacedSnapshotHashes, numberOfEntities }
             await saveSnapshot(txDatabase, newSnapshot, Math.floor(Date.now() / 1000))
