@@ -93,6 +93,7 @@ export async function generateSnapshots(
     await fileWriterComponent.flushToDiskAndCloseFiles()
   }
 
+  console.log(newActiveEntitiesCount)
   // Phase 3) hash generated files and move them to content folder
   try {
     // compress and commit

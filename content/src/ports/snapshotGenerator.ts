@@ -61,6 +61,7 @@ export function createSnapshotGenerator(
         } else {
           throw new Error('Error generating snapshot')
         }
+        logger.info(`New snapshot generated for interval: [${interval}].`)
       } else {
         for (const snapshotMetadata of allEntitiesSnapshots) {
           snapshotMetadatas.push(snapshotMetadata)
