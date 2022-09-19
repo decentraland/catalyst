@@ -5,12 +5,19 @@ import {
   findSnapshotsStrictlyContainedInTimeRange,
   saveSnapshot
 } from '../logic/database-queries/snapshots-queries'
-import { generateAndStoreSnapshot, NewSnapshotMetadata } from '../logic/snapshots'
+import { generateAndStoreSnapshot } from '../logic/snapshots'
 import { divideTimeRange, isTimeRangeCoveredBy, TimeRange } from '../logic/time-range'
 import { AppComponents } from '../types'
 
 export type SnapshotGenerator = IBaseComponent & {
   getCurrentSnapshots(): NewSnapshotMetadata[] | undefined
+}
+
+export type NewSnapshotMetadata = {
+  hash: string
+  timerange: TimeRange
+  numberOfEntities: number
+  replacedSnapshotHashes?: string[]
 }
 
 export function createSnapshotGenerator(
@@ -35,20 +42,20 @@ export function createSnapshotGenerator(
     }
     const timeRangeDivision = divideTimeRange(timeline)
     for (const interval of timeRangeDivision.intervals) {
-      const allEntitiesSnapshots = await findSnapshotsStrictlyContainedInTimeRange(components, interval)
+      const savedSnapshots = await findSnapshotsStrictlyContainedInTimeRange(components, interval)
 
       const isTimeRangeCoveredByOtherSnapshots = isTimeRangeCoveredBy(
         interval,
-        allEntitiesSnapshots.map((s) => s.timerange)
+        savedSnapshots.map((s) => s.timerange)
       )
-      const multipleSnapshotsShouldBeReplaced = isTimeRangeCoveredByOtherSnapshots && allEntitiesSnapshots.length > 1
+      const multipleSnapshotsShouldBeReplaced = isTimeRangeCoveredByOtherSnapshots && savedSnapshots.length > 1
       const shouldGenerateNewSnapshot = !isTimeRangeCoveredByOtherSnapshots || multipleSnapshotsShouldBeReplaced
 
       if (shouldGenerateNewSnapshot) {
         const snapshotResult = await generateAndStoreSnapshot(components, interval)
         if (snapshotResult) {
           const { hash, numberOfEntities } = snapshotResult
-          const replacedSnapshotHashes = allEntitiesSnapshots.map((s) => s.hash)
+          const replacedSnapshotHashes = savedSnapshots.map((s) => s.hash)
           await components.database.transaction(async (txDatabase) => {
             if (replacedSnapshotHashes.length > 0) {
               await deleteSnapshots(txDatabase, replacedSnapshotHashes)
@@ -61,9 +68,11 @@ export function createSnapshotGenerator(
         } else {
           throw new Error('Error generating snapshot')
         }
-        logger.info(`New snapshot generated for interval: [${interval}].`)
+        logger.info(
+          `New snapshot generated for interval: [${interval.initTimestampSecs}, ${interval.endTimestampSecs}].`
+        )
       } else {
-        for (const snapshotMetadata of allEntitiesSnapshots) {
+        for (const snapshotMetadata of savedSnapshots) {
           snapshotMetadatas.push(snapshotMetadata)
         }
       }

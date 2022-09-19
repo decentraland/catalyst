@@ -5,13 +5,6 @@ import { AppComponents } from '../types'
 import { streamActiveDeploymentsInTimeRange } from './database-queries/snapshots-queries'
 import { TimeRange } from './time-range'
 
-export type NewSnapshotMetadata = {
-  hash: string
-  timerange: TimeRange
-  numberOfEntities: number
-  replacedSnapshotHashes?: string[]
-}
-
 async function moveSnapshotFileToContentFolder(
   components: Pick<AppComponents, 'storage' | 'fs'>,
   tmpFile: string,
@@ -30,15 +23,13 @@ async function moveSnapshotFileToContentFolder(
   }
 }
 
-type SnapshotGenerationResult = {
-  hash: string
-  numberOfEntities: number
-}
-
 export async function generateAndStoreSnapshot(
   components: Pick<AppComponents, 'database' | 'fs' | 'metrics' | 'storage' | 'logs' | 'denylist' | 'staticConfigs'>,
   timeRange: TimeRange
-): Promise<SnapshotGenerationResult> {
+): Promise<{
+  hash: string
+  numberOfEntities: number
+}> {
   const logger = components.logs.getLogger('snapshot-generation')
   let numberOfEntities = 0
   let fileWriter: IFile | undefined
