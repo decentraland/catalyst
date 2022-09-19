@@ -1,6 +1,6 @@
 import { hashV1 } from '@dcl/hashing'
 import { ILoggerComponent } from '@well-known-components/interfaces'
-import { createContentFileWriter, IFile } from '../ports/fileWriter'
+import { createFileWriter, IFile } from '../ports/fileWriter'
 import { AppComponents } from '../types'
 import { streamActiveDeploymentsInTimeRange } from './database-queries/snapshots-queries'
 import { TimeRange } from './time-range'
@@ -34,8 +34,7 @@ export async function generateAndStoreSnapshot(
   let numberOfEntities = 0
   let fileWriter: IFile | undefined
   try {
-    // chose a temp name file or let the file writer do it
-    fileWriter = await createContentFileWriter(components, 'tmp-all-entities-snapshot')
+    fileWriter = await createFileWriter(components, 'tmp-all-entities-snapshot')
     // this header is necessary to later differentiate between binary formats and non-binary formats
     await fileWriter.appendDebounced('### Decentraland json snapshot\n')
     for await (const snapshotElem of streamActiveDeploymentsInTimeRange(components, timeRange)) {
@@ -50,7 +49,6 @@ export async function generateAndStoreSnapshot(
     if (fileWriter) await fileWriter.close()
   }
 
-  // Phase 3) hash generated files and move them to content folder
   const hash = await hashV1(components.fs.createReadStream(fileWriter.filePath) as any)
   await moveSnapshotFileToContentFolder(components, fileWriter.filePath, hash, timeRange, logger)
   await fileWriter.delete()

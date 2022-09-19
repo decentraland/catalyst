@@ -9,7 +9,7 @@ export type IFile = {
   delete: () => Promise<void>
 }
 
-export async function createContentFileWriter(
+export async function createFileWriter(
   components: Pick<AppComponents, 'logs' | 'staticConfigs' | 'fs'>,
   filename: string
 ): Promise<IFile> {

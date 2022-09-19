@@ -1,7 +1,7 @@
 import { DeploymentWithAuthChain } from '@dcl/schemas'
 import SQL from 'sql-template-strings'
+import { NewSnapshotMetadata } from '../../ports/snapshotGenerator'
 import { AppComponents } from '../../types'
-import { NewSnapshotMetadata } from '../snapshots'
 import { TimeRange } from '../time-range'
 
 export async function* streamActiveDeployments(
@@ -93,7 +93,7 @@ export async function findSnapshotsStrictlyContainedInTimeRange(
   ).rows.map(({ hash, initTimestampSecs, endTimestampSecs, replacedSnapshotHashes, numberOfEntities }) => {
     return {
       hash,
-      timerange: {
+      timeRange: {
         initTimestampSecs,
         endTimestampSecs
       },
@@ -114,8 +114,8 @@ export async function saveSnapshot(
   VALUES
   (
     ${snapshotMetadata.hash},
-    to_timestamp(${snapshotMetadata.timerange.initTimestampSecs}),
-    to_timestamp(${snapshotMetadata.timerange.endTimestampSecs}),
+    to_timestamp(${snapshotMetadata.timeRange.initTimestampSecs}),
+    to_timestamp(${snapshotMetadata.timeRange.endTimestampSecs}),
     ${snapshotMetadata.replacedSnapshotHashes ?? []},
     ${snapshotMetadata.numberOfEntities},
     to_timestamp(${generationTimestampSecs})
