@@ -13,10 +13,11 @@ export type IFile = {
 
 export async function createFileWriter(
   components: Pick<AppComponents, 'logs' | 'staticConfigs' | 'fs' | 'storage'>,
-  filename: string
+  filenamePrefix?: string
 ): Promise<IFile> {
   const logger = components.logs.getLogger('file-writer')
-  const filePath = path.resolve(components.staticConfigs.contentStorageFolder, filename)
+  const tmpFilename = `${filenamePrefix}${crypto.randomUUID()}`
+  const filePath = path.resolve(components.staticConfigs.contentStorageFolder, tmpFilename)
 
   // if the process failed while creating the snapshot last time the file may still exists
   // deleting the staging tmpFile just in case
