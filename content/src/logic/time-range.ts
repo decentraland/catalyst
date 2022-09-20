@@ -55,7 +55,7 @@ export function divideTimeInYearsMonthsWeeksAndDays(timeRange: TimeRange): TimeR
   }
 }
 
-export function divideTimeRangeInSubintervals(timeRange: TimeRange, intervalSizeSeconds: number): TimeRangeDivision {
+function divideTimeRangeInSubintervals(timeRange: TimeRange, intervalSizeSeconds: number): TimeRangeDivision {
   // assert timestamps are seconds
   let initInterval = timeRange.initTimestampSecs
   let endInterval = timeRange.initTimestampSecs + intervalSizeSeconds
