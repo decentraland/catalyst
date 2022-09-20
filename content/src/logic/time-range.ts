@@ -8,6 +8,22 @@ export type TimeRangeDivision = {
   remainder: TimeRange
 }
 
+export function intervalSizeLabel(timeRange: TimeRange) {
+  const diff = timeRange.endTimestampSecs - timeRange.initTimestampSecs
+  switch (diff) {
+    case SECONDS_PER_DAY:
+      return 'day'
+    case SECONDS_PER_WEEK:
+      return 'week'
+    case SECONDS_PER_MONTH:
+      return 'month'
+    case SECONDS_PER_YEAR:
+      return 'year'
+    default:
+      return 'unknown'
+  }
+}
+
 export function timeRangeSizeInSeconds(timeRange: TimeRange): number {
   // throw if end > init
   return timeRange.endTimestampSecs - timeRange.initTimestampSecs

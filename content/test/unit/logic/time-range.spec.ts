@@ -1,4 +1,4 @@
-import { divideTimeInYearsMonthsWeeksAndDays, divideTimeRangeInDays, divideTimeRangeInMonths, divideTimeRangeInWeeks, divideTimeRangeInYears, SECONDS_PER_DAY, SECONDS_PER_MONTH, SECONDS_PER_WEEK, TimeRange, timeRangeSizeInSeconds } from '../../../src/logic/time-range'
+import { divideTimeInYearsMonthsWeeksAndDays, divideTimeRangeInDays, divideTimeRangeInMonths, divideTimeRangeInWeeks, divideTimeRangeInYears, intervalSizeLabel, SECONDS_PER_DAY, SECONDS_PER_MONTH, SECONDS_PER_WEEK, SECONDS_PER_YEAR, TimeRange, timeRangeSizeInSeconds } from '../../../src/logic/time-range'
 
 it('should split a 2 days and 50 seconds timerange in 2 days and a remainder of 50 seconds', async () => {
   const timeRange: TimeRange = {
@@ -128,4 +128,12 @@ it('should split a 372 days timerange in one year, one month, one week, and one 
     initTimestampSecs: 1673136000, // 2023-01-8 00:00:00 GMT
     endTimestampSecs: 1673136000 // 2023-01-8 00:00:00 GMT
   } as TimeRange)
+})
+
+it('should return correct interval size labels', async () => {
+  expect(intervalSizeLabel({ initTimestampSecs: 0, endTimestampSecs: SECONDS_PER_DAY })).toEqual('day')
+  expect(intervalSizeLabel({ initTimestampSecs: 0, endTimestampSecs: SECONDS_PER_WEEK })).toEqual('week')
+  expect(intervalSizeLabel({ initTimestampSecs: 0, endTimestampSecs: SECONDS_PER_MONTH })).toEqual('month')
+  expect(intervalSizeLabel({ initTimestampSecs: 0, endTimestampSecs: SECONDS_PER_YEAR })).toEqual('year')
+  expect(intervalSizeLabel({ initTimestampSecs: 0, endTimestampSecs: SECONDS_PER_YEAR + 1 })).toEqual('unknown')
 })

@@ -6,7 +6,7 @@ import {
   saveSnapshot,
   streamActiveDeploymentsInTimeRange
 } from './database-queries/snapshots-queries'
-import { divideTimeInYearsMonthsWeeksAndDays, isTimeRangeCoveredBy, TimeRange } from './time-range'
+import { divideTimeInYearsMonthsWeeksAndDays, intervalSizeLabel, isTimeRangeCoveredBy, TimeRange } from './time-range'
 
 export type NewSnapshotMetadata = {
   hash: string
@@ -22,6 +22,9 @@ export async function generateAndStoreSnapshot(
   hash: string
   numberOfEntities: number
 }> {
+  const { end: endTimer } = components.metrics.startTimer('dcl_content_server_snapshot_generation_time', {
+    interval_size: intervalSizeLabel(timeRange)
+  })
   let numberOfEntities = 0
   let fileWriter: IFile | undefined
   try {
@@ -36,13 +39,17 @@ export async function generateAndStoreSnapshot(
       await fileWriter.appendDebounced(stringifiedElement)
       numberOfEntities++
     }
+    const storedHash = await fileWriter.store()
+    endTimer({ result: 'success' })
+    return {
+      hash: storedHash,
+      numberOfEntities
+    }
+  } catch (error) {
+    endTimer({ result: 'error' })
+    throw error
   } finally {
     if (fileWriter) await fileWriter.close()
-  }
-
-  return {
-    hash: await fileWriter.store(),
-    numberOfEntities
   }
 }
 
