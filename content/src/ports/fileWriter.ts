@@ -1,5 +1,6 @@
 import { hashV1 } from '@dcl/hashing'
 import { checkFileExists } from '@dcl/snapshots-fetcher/dist/utils'
+import crypto from 'crypto'
 import path from 'path'
 import { AppComponents } from '../types'
 
