@@ -1,3 +1,4 @@
+import { hashV1 } from '@dcl/hashing'
 import { checkFileExists } from '@dcl/snapshots-fetcher/dist/utils'
 import path from 'path'
 import { AppComponents } from '../types'
@@ -7,10 +8,11 @@ export type IFile = {
   appendDebounced: (buffer: string) => Promise<void>
   close: () => Promise<void>
   delete: () => Promise<void>
+  store: () => Promise<string>
 }
 
 export async function createFileWriter(
-  components: Pick<AppComponents, 'logs' | 'staticConfigs' | 'fs'>,
+  components: Pick<AppComponents, 'logs' | 'staticConfigs' | 'fs' | 'storage'>,
   filename: string
 ): Promise<IFile> {
   const logger = components.logs.getLogger('file-writer')
@@ -47,6 +49,22 @@ export async function createFileWriter(
     }
   }
 
+  async function close() {
+    await flush()
+    file.close()
+    await fileClosedFuture
+  }
+
+  async function deleteFile() {
+    if (await checkFileExists(filePath)) {
+      try {
+        await components.fs.unlink(filePath)
+      } catch (err) {
+        logger.error(err)
+      }
+    }
+  }
+
   return {
     filePath,
     async appendDebounced(buffer: string) {
@@ -55,19 +73,20 @@ export async function createFileWriter(
         await flush()
       }
     },
-    async close() {
-      await flush()
-      file.close()
-      await fileClosedFuture
-    },
-    async delete() {
-      if (await checkFileExists(filePath)) {
-        try {
-          await components.fs.unlink(filePath)
-        } catch (err) {
-          logger.error(err)
-        }
+    close,
+    delete: deleteFile,
+    async store() {
+      await close()
+      const hash = await hashV1(components.fs.createReadStream(filePath) as any)
+      const hasContent = await components.storage.retrieve(hash)
+
+      if (!hasContent) {
+        // move and compress the file into the destinationFilename
+        await components.storage.storeStreamAndCompress(hash, components.fs.createReadStream(filePath))
+        logger.info(`Generated snapshot. hash=${hash}`)
       }
+      await deleteFile()
+      return hash
     }
   }
 }

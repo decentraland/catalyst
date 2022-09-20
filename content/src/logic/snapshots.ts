@@ -1,26 +1,18 @@
-import { hashV1 } from '@dcl/hashing'
-import { ILoggerComponent } from '@well-known-components/interfaces'
 import { createFileWriter, IFile } from '../ports/fileWriter'
 import { AppComponents } from '../types'
-import { streamActiveDeploymentsInTimeRange } from './database-queries/snapshots-queries'
-import { TimeRange } from './time-range'
+import {
+  deleteSnapshots,
+  findSnapshotsStrictlyContainedInTimeRange,
+  saveSnapshot,
+  streamActiveDeploymentsInTimeRange
+} from './database-queries/snapshots-queries'
+import { divideTimeInYearsMonthsWeeksAndDays, isTimeRangeCoveredBy, TimeRange } from './time-range'
 
-async function moveSnapshotFileToContentFolder(
-  components: Pick<AppComponents, 'storage' | 'fs'>,
-  tmpFile: string,
-  hash: string,
-  timeRange: TimeRange,
-  logger: ILoggerComponent.ILogger
-) {
-  const hasContent = await components.storage.retrieve(hash)
-
-  if (!hasContent) {
-    // move and compress the file into the destinationFilename
-    await components.storage.storeStreamAndCompress(hash, components.fs.createReadStream(tmpFile))
-    logger.info(
-      `Generated snapshot. hash=${hash} timeRange=[${timeRange.initTimestampSecs}, ${timeRange.endTimestampSecs}]`
-    )
-  }
+export type NewSnapshotMetadata = {
+  hash: string
+  timeRange: TimeRange
+  numberOfEntities: number
+  replacedSnapshotHashes?: string[]
 }
 
 export async function generateAndStoreSnapshot(
@@ -30,7 +22,6 @@ export async function generateAndStoreSnapshot(
   hash: string
   numberOfEntities: number
 }> {
-  const logger = components.logs.getLogger('snapshot-generation')
   let numberOfEntities = 0
   let fileWriter: IFile | undefined
   try {
@@ -49,11 +40,49 @@ export async function generateAndStoreSnapshot(
     if (fileWriter) await fileWriter.close()
   }
 
-  const hash = await hashV1(components.fs.createReadStream(fileWriter.filePath) as any)
-  await moveSnapshotFileToContentFolder(components, fileWriter.filePath, hash, timeRange, logger)
-  await fileWriter.delete()
   return {
-    hash,
+    hash: await fileWriter.store(),
     numberOfEntities
   }
+}
+
+export async function generateSnapshotsInMultipleTimeRanges(
+  components: Pick<AppComponents, 'database' | 'fs' | 'metrics' | 'storage' | 'logs' | 'denylist' | 'staticConfigs'>,
+  timeRangeToDivide: TimeRange
+): Promise<NewSnapshotMetadata[]> {
+  const logger = components.logs.getLogger('snapshot-generation')
+  const snapshotMetadatas: NewSnapshotMetadata[] = []
+  const timeRangeDivision = divideTimeInYearsMonthsWeeksAndDays(timeRangeToDivide)
+  for (const timeRange of timeRangeDivision.intervals) {
+    const savedSnapshots = await findSnapshotsStrictlyContainedInTimeRange(components, timeRange)
+
+    const isTimeRangeCoveredByOtherSnapshots = isTimeRangeCoveredBy(
+      timeRange,
+      savedSnapshots.map((s) => s.timeRange)
+    )
+    const multipleSnapshotsShouldBeReplaced = isTimeRangeCoveredByOtherSnapshots && savedSnapshots.length > 1
+    const shouldGenerateNewSnapshot = !isTimeRangeCoveredByOtherSnapshots || multipleSnapshotsShouldBeReplaced
+
+    if (shouldGenerateNewSnapshot) {
+      const { hash, numberOfEntities } = await generateAndStoreSnapshot(components, timeRange)
+      const replacedSnapshotHashes = savedSnapshots.map((s) => s.hash)
+      await components.database.transaction(async (txDatabase) => {
+        if (replacedSnapshotHashes.length > 0) {
+          await deleteSnapshots(txDatabase, replacedSnapshotHashes)
+          await components.storage.delete(replacedSnapshotHashes)
+        }
+        const newSnapshot = { hash, timeRange, replacedSnapshotHashes, numberOfEntities }
+        await saveSnapshot(txDatabase, newSnapshot, Math.floor(Date.now() / 1000))
+        snapshotMetadatas.push(newSnapshot)
+      })
+      logger.info(
+        `New snapshot generated for interval: [${timeRange.initTimestampSecs}, ${timeRange.endTimestampSecs}].`
+      )
+    } else {
+      for (const snapshotMetadata of savedSnapshots) {
+        snapshotMetadatas.push(snapshotMetadata)
+      }
+    }
+  }
+  return snapshotMetadatas
 }

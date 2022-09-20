@@ -1,7 +1,7 @@
 import { DeploymentWithAuthChain } from '@dcl/schemas'
 import SQL from 'sql-template-strings'
-import { NewSnapshotMetadata } from '../../ports/snapshotGenerator'
 import { AppComponents } from '../../types'
+import { NewSnapshotMetadata } from '../snapshots'
 import { TimeRange } from '../time-range'
 
 export async function* streamActiveDeployments(

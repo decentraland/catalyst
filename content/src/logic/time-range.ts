@@ -34,7 +34,7 @@ export function divideTimeRangeInDays(timeRange: TimeRange): TimeRangeDivision {
   return divideTimeRangeInSubintervals(timeRange, SECONDS_PER_DAY)
 }
 
-export function divideTimeRange(timeRange: TimeRange): TimeRangeDivision {
+export function divideTimeInYearsMonthsWeeksAndDays(timeRange: TimeRange): TimeRangeDivision {
   const intervals: TimeRange[] = []
 
   const { intervals: years, remainder: yearlyRemainder } = divideTimeRangeInYears(timeRange)

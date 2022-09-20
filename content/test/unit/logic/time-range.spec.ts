@@ -1,4 +1,4 @@
-import { divideTimeRange, divideTimeRangeInDays, divideTimeRangeInMonths, divideTimeRangeInWeeks, divideTimeRangeInYears, SECONDS_PER_DAY, SECONDS_PER_MONTH, SECONDS_PER_WEEK, TimeRange, timeRangeSizeInSeconds } from '../../../src/logic/time-range'
+import { divideTimeInYearsMonthsWeeksAndDays, divideTimeRangeInDays, divideTimeRangeInMonths, divideTimeRangeInWeeks, divideTimeRangeInYears, SECONDS_PER_DAY, SECONDS_PER_MONTH, SECONDS_PER_WEEK, TimeRange, timeRangeSizeInSeconds } from '../../../src/logic/time-range'
 
 it('should split a 2 days and 50 seconds timerange in 2 days and a remainder of 50 seconds', async () => {
   const timeRange: TimeRange = {
@@ -106,7 +106,7 @@ it('should split a 372 days timerange in one year, one month, one week, and one 
     endTimestampSecs: 1673136000 // 2022-01-08 00:00:00 GMT, 372 days later
   }
 
-  const timeRangeDivision = divideTimeRange(timeRange)
+  const timeRangeDivision = divideTimeInYearsMonthsWeeksAndDays(timeRange)
   expect(timeRangeDivision.intervals.length).toEqual(4)
   expect(timeRangeDivision.intervals[0]).toEqual({
     initTimestampSecs: 1640995200, // 2022-01-01 00:00:00 GMT,
