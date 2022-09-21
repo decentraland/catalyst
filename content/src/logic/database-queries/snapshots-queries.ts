@@ -79,7 +79,7 @@ export async function findSnapshotsStrictlyContainedInTimeRange(
     replaced_hashes as replacedSnapshotHashes,
     number_of_entities as numberOfEntities
   FROM snapshots
-  WHERE to_timestamp(${timerange.initTimestampSecs}) <= init_timestamp
+  WHERE init_timestamp >= to_timestamp(${timerange.initTimestampSecs})
   AND end_timestamp <= to_timestamp(${timerange.endTimestampSecs})
   `
   return (
