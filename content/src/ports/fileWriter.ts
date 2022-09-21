@@ -85,7 +85,7 @@ export async function createFileWriter(
       if (!hasContent) {
         // move and compress the file into the destinationFilename
         await components.storage.storeStreamAndCompress(hash, components.fs.createReadStream(filePath))
-        logger.info(`Generated snapshot. hash=${hash}`)
+        logger.info(`File ${filePath} stored with hash=${hash}`)
       }
       await deleteFile()
       return hash

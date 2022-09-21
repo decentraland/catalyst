@@ -86,9 +86,7 @@ export async function generateSnapshotsInMultipleTimeRanges(
         `New snapshot generated for interval: [${timeRange.initTimestampSecs}, ${timeRange.endTimestampSecs}].`
       )
     } else {
-      for (const snapshotMetadata of savedSnapshots) {
-        snapshotMetadatas.push(snapshotMetadata)
-      }
+      snapshotMetadatas.push(...savedSnapshots)
     }
   }
   return snapshotMetadatas
