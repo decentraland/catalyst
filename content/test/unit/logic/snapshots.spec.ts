@@ -5,7 +5,7 @@ import { ILoggerComponent } from '@well-known-components/interfaces'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import * as snapshotQueries from '../../../src/logic/database-queries/snapshots-queries'
-import { generateAndStoreSnapshot, generateSnapshotsInMultipleTimeRanges, NewSnapshotMetadata } from '../../../src/logic/snapshots'
+import { generateAndStoreSnapshot, generateSnapshotsInMultipleTimeRanges } from '../../../src/logic/snapshots'
 import { SECONDS_PER_DAY, SECONDS_PER_MONTH, SECONDS_PER_WEEK, SECONDS_PER_YEAR } from '../../../src/logic/time-range'
 import { metricsDeclaration } from '../../../src/metrics'
 import { ContentStorage } from '../../../src/ports/contentStorage/contentStorage'
@@ -155,7 +155,7 @@ describe('generate snapshot in multiple', () => {
       numberOfEntities: 0,
       replacedSnapshotHashes: [],
       timeRange: oneYearRange
-    } as NewSnapshotMetadata)
+    })
   })
 
   it('should generate snapshot when there are multiple snapshots that cover the interval', async () => {
@@ -179,11 +179,31 @@ describe('generate snapshot in multiple', () => {
       numberOfEntities: 0,
       replacedSnapshotHashes: ['h1', 'h2'],
       timeRange: oneYearRange
-    } as NewSnapshotMetadata)
+    })
     expect(storage.delete).toBeCalledWith(expect.arrayContaining(['h1', 'h2']))
     expect(database.queryWithValues).toBeCalledWith(expect.objectContaining({
       strings: expect.arrayContaining([expect.stringMatching(/^DELETE FROM snapshots WHERE hash IN \(/)]),
       values: expect.arrayContaining(['h1', 'h2'])
+    }), 'save_snapshot')
+  })
+
+  it('should delete old snapshots within the interval of the new snapshot generated', async () => {
+    mockStreamedActiveEntitiesWith([])
+    const oneYearRange = { initTimestampSecs: 0, endTimestampSecs: SECONDS_PER_YEAR }
+    const timeRangeWithinTheYear = { initTimestampSecs: 0, endTimestampSecs: SECONDS_PER_YEAR / 2 }
+    jest.spyOn(database, 'queryWithValues').mockResolvedValue({ rows: [], rowCount: 0 })
+    jest.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([
+      { hash: 'h1', numberOfEntities: 1, replacedSnapshotHashes: [], timeRange: timeRangeWithinTheYear },
+    ])
+    jest.spyOn(database, 'transaction').mockImplementation(async (f) => { await f(database) })
+    const expectedHash = 'hash'
+    mockCreateFileWriterMockWith('filePath', expectedHash)
+
+    await generateSnapshotsInMultipleTimeRanges({ database, fs, metrics, logs, staticConfigs, storage, denylist }, oneYearRange)
+    expect(storage.delete).toBeCalledWith(expect.arrayContaining(['h1']))
+    expect(database.queryWithValues).toBeCalledWith(expect.objectContaining({
+      strings: expect.arrayContaining([expect.stringMatching(/^DELETE FROM snapshots WHERE hash IN \(/)]),
+      values: expect.arrayContaining(['h1'])
     }), 'save_snapshot')
   })
 
@@ -207,6 +227,61 @@ describe('generate snapshot in multiple', () => {
       strings: expect.arrayContaining([expect.stringMatching(/^DELETE FROM snapshots WHERE hash IN \(/)]),
       values: expect.arrayContaining(['h1', 'h2'])
     }), 'save_snapshot')
+  })
+
+  it('should replace snapshots when they cover the time range', async () => {
+    mockStreamedActiveEntitiesWith([
+      { entityId: 'id1', entityType: 't1', pointers: ['p1'], localTimestamp: 0, authChain: [] },
+      { entityId: 'id2', entityType: 't2', pointers: ['p2'], localTimestamp: 1, authChain: [] },
+      { entityId: 'id3', entityType: 't3', pointers: ['p3'], localTimestamp: 2, authChain: [] }
+    ])
+    const oneYearRange = { initTimestampSecs: 0, endTimestampSecs: SECONDS_PER_YEAR }
+    const firstHalfYear = { initTimestampSecs: 0, endTimestampSecs: SECONDS_PER_YEAR / 2 }
+    const secondHalfYear = { initTimestampSecs: SECONDS_PER_YEAR / 2, endTimestampSecs: SECONDS_PER_YEAR }
+    jest.spyOn(database, 'queryWithValues').mockResolvedValue({ rows: [], rowCount: 0 })
+    jest.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([
+      // These two snapshots cover the whole year.
+      { hash: 'h1', numberOfEntities: 1, replacedSnapshotHashes: [], timeRange: firstHalfYear },
+      { hash: 'h2', numberOfEntities: 2, replacedSnapshotHashes: [], timeRange: secondHalfYear }
+    ])
+    jest.spyOn(database, 'transaction').mockImplementation(async (f) => { await f(database) })
+    const expectedHash = 'hash'
+    mockCreateFileWriterMockWith('filePath', expectedHash)
+
+    const snapshots = await generateSnapshotsInMultipleTimeRanges({ database, fs, metrics, logs, staticConfigs, storage, denylist }, oneYearRange)
+    expect(snapshots).toHaveLength(1)
+    expect(snapshots[0]).toEqual({
+      hash: expectedHash,
+      numberOfEntities: 3,
+      replacedSnapshotHashes: ['h1', 'h2'],
+      timeRange: oneYearRange
+    })
+  })
+
+  it('should not replace snapshots when they do not cover the time range', async () => {
+    mockStreamedActiveEntitiesWith([
+      { entityId: 'id1', entityType: 't1', pointers: ['p1'], localTimestamp: 0, authChain: [] },
+      { entityId: 'id2', entityType: 't2', pointers: ['p2'], localTimestamp: 1, authChain: [] },
+      { entityId: 'id3', entityType: 't3', pointers: ['p3'], localTimestamp: 2, authChain: [] }
+    ])
+    const oneYearRange = { initTimestampSecs: 0, endTimestampSecs: SECONDS_PER_YEAR }
+    const firstHalfYear = { initTimestampSecs: 0, endTimestampSecs: SECONDS_PER_YEAR / 2 }
+    jest.spyOn(database, 'queryWithValues').mockResolvedValue({ rows: [], rowCount: 0 })
+    jest.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([
+      { hash: 'h1', numberOfEntities: 1, replacedSnapshotHashes: [], timeRange: firstHalfYear },
+    ])
+    jest.spyOn(database, 'transaction').mockImplementation(async (f) => { await f(database) })
+    const expectedHash = 'hash'
+    mockCreateFileWriterMockWith('filePath', expectedHash)
+
+    const snapshots = await generateSnapshotsInMultipleTimeRanges({ database, fs, metrics, logs, staticConfigs, storage, denylist }, oneYearRange)
+    expect(snapshots).toHaveLength(1)
+    expect(snapshots[0]).toEqual({
+      hash: expectedHash,
+      numberOfEntities: 3,
+      replacedSnapshotHashes: [],
+      timeRange: oneYearRange
+    })
   })
 
   it('should not generate snapshot when there is a single snapshot that covers the interval', async () => {
