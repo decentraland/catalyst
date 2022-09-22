@@ -9,7 +9,7 @@ export type TimeRangeDivision = {
 }
 
 export function intervalSizeLabel(timeRange: TimeRange) {
-  const diff = timeRange.endTimestampSecs - timeRange.initTimestampSecs
+  const diff = timeRangeSizeInSeconds(timeRange)
   switch (diff) {
     case SECONDS_PER_DAY:
       return 'day'
@@ -101,4 +101,43 @@ export function isTimeRangeCoveredBy(timerange: TimeRange, timeRanges: TimeRange
     currentMaxTimestamp = Math.max(currentMaxTimestamp, t.endTimestampSecs)
   }
   return minTimestamp <= timerange.initTimestampSecs && currentMaxTimestamp >= timerange.endTimestampSecs
+}
+
+export function divideTimeRange(timeRange: TimeRange): TimeRangeDivision {
+  // assert end >= init
+  const timeSizeInSeconds = timeRangeSizeInSeconds(timeRange)
+  const intervalSizes = [SECONDS_PER_YEAR, SECONDS_PER_MONTH, SECONDS_PER_WEEK, SECONDS_PER_DAY]
+  const intervals: TimeRange[] = []
+  let remainingTimeSize = timeSizeInSeconds
+  let initInterval = timeRange.initTimestampSecs
+  function addNewIntervalOfSize(intervalSizeSecs: number) {
+    const endInterval = initInterval + intervalSizeSecs
+    intervals.push({ initTimestampSecs: initInterval, endTimestampSecs: endInterval })
+    initInterval = endInterval
+    remainingTimeSize = remainingTimeSize - intervalSizeSecs
+  }
+  for (const [idx, intervalSize] of intervalSizes.entries()) {
+    if (idx == intervalSizes.length - 1) {
+      while (remainingTimeSize >= intervalSizes[idx]) {
+        addNewIntervalOfSize(intervalSizes[idx])
+      }
+    } else {
+      const numberOfIntervalsOfNextSizeInCurrentSize = Math.floor(intervalSize / intervalSizes[idx + 1])
+      while (
+        remainingTimeSize >=
+        (numberOfIntervalsOfNextSizeInCurrentSize + 1) * intervalSizes[idx + 1] +
+          (idx + 2 < intervalSizes.length ? intervalSizes[idx + 2] : 0) +
+          (idx + 3 < intervalSizes.length ? intervalSizes[idx + 3] : 0)
+      ) {
+        addNewIntervalOfSize(intervalSize)
+      }
+    }
+  }
+  return {
+    intervals,
+    remainder: {
+      initTimestampSecs: initInterval,
+      endTimestampSecs: timeRange.endTimestampSecs
+    }
+  }
 }
