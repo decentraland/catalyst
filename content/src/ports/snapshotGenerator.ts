@@ -22,7 +22,7 @@ export function createSnapshotGenerator(
     isRunningGeneration = true
     try {
       currentSnapshots = await generateSnapshotsInMultipleTimeRanges(components, {
-        // IT IS IMPORTANT THIS TIMESTAMP NEVER CHANGES; IF IT DOES, THE WHOLE SNAPSHOTS WILL BE REGENERATED.
+        // IT IS IMPORTANT THIS TIMESTAMP NEVER CHANGES; IF IT DOES, THE WHOLE SNAPSHOTS SET WILL BE REGENERATED.
         initTimestampSecs: 1577836800,
         endTimestampSecs: Math.floor(Date.now() / 1000)
       })

@@ -1,4 +1,3 @@
-
 import { DeploymentWithAuthChain } from '@dcl/schemas'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
 import { ILoggerComponent } from '@well-known-components/interfaces'
@@ -6,7 +5,7 @@ import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import * as snapshotQueries from '../../../src/logic/database-queries/snapshots-queries'
 import { generateAndStoreSnapshot, generateSnapshotsInMultipleTimeRanges } from '../../../src/logic/snapshots'
-import { SECONDS_PER_DAY, SECONDS_PER_MONTH, SECONDS_PER_WEEK, SECONDS_PER_YEAR } from '../../../src/logic/time-range'
+import * as tr from '../../../src/logic/time-range'
 import { metricsDeclaration } from '../../../src/metrics'
 import { ContentStorage } from '../../../src/ports/contentStorage/contentStorage'
 import { Denylist } from '../../../src/ports/denylist'
@@ -26,15 +25,9 @@ describe('generate snapshot', () => {
   let storage: ContentStorage
   let logs: ILoggerComponent
 
-  beforeAll(async () => {
-    logs = await createLogComponent({
-      config: createConfigComponent({
-        LOG_LEVEL: 'DEBUG'
-      })
-    })
-  })
+  beforeAll(async () => logs = await createLogComponent({ config: createConfigComponent({ LOG_LEVEL: 'DEBUG' }) }))
 
-  beforeEach(() => jest.resetAllMocks())
+  beforeEach(() => jest.restoreAllMocks())
 
   it('should stream active entities with given time range', async () => {
     const streamSpy = mockStreamedActiveEntitiesWith([])
@@ -130,21 +123,19 @@ describe('generate snapshot in multiple', () => {
   }
   let logs: ILoggerComponent
 
-  beforeAll(async () => {
-    logs = await createLogComponent({
-      config: createConfigComponent({
-        LOG_LEVEL: 'DEBUG'
-      })
-    })
-  })
+  beforeAll(async () => logs = await createLogComponent({ config: createConfigComponent({ LOG_LEVEL: 'DEBUG' }) }))
 
-  beforeEach(() => jest.resetAllMocks())
+  beforeEach(() => jest.restoreAllMocks())
 
   it('should generate snapshot for time range when there are no saved snapshots for that time range', async () => {
     mockStreamedActiveEntitiesWith([])
-    const oneYearRange = { initTimestampSecs: 0, endTimestampSecs: SECONDS_PER_YEAR }
+    const oneYearRange = { initTimestampSecs: 0, endTimestampSecs: tr.SECONDS_PER_YEAR }
     jest.spyOn(database, 'queryWithValues').mockResolvedValue({ rows: [], rowCount: 0 })
     jest.spyOn(database, 'transaction').mockImplementation(async (f) => { await f(database) })
+    jest.spyOn(tr, 'divideTimeInYearsMonthsWeeksAndDays').mockReturnValue({
+      intervals: [oneYearRange],
+      remainder: { initTimestampSecs: tr.SECONDS_PER_YEAR, endTimestampSecs: tr.SECONDS_PER_YEAR }
+    })
     const expectedHash = 'hash'
     mockCreateFileWriterMockWith('filePath', expectedHash)
 
@@ -160,15 +151,19 @@ describe('generate snapshot in multiple', () => {
 
   it('should generate snapshot when there are multiple snapshots that cover the interval', async () => {
     mockStreamedActiveEntitiesWith([])
-    const oneYearRange = { initTimestampSecs: 0, endTimestampSecs: SECONDS_PER_YEAR }
-    const firstHalfYear = { initTimestampSecs: 0, endTimestampSecs: SECONDS_PER_YEAR / 2 }
-    const secondHalfYear = { initTimestampSecs: SECONDS_PER_YEAR / 2, endTimestampSecs: SECONDS_PER_YEAR }
+    const oneYearRange = { initTimestampSecs: 0, endTimestampSecs: tr.SECONDS_PER_YEAR }
+    const firstHalfYear = { initTimestampSecs: 0, endTimestampSecs: tr.SECONDS_PER_YEAR / 2 }
+    const secondHalfYear = { initTimestampSecs: tr.SECONDS_PER_YEAR / 2, endTimestampSecs: tr.SECONDS_PER_YEAR }
     jest.spyOn(database, 'queryWithValues').mockResolvedValue({ rows: [], rowCount: 0 })
     jest.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([
       { hash: 'h1', numberOfEntities: 1, replacedSnapshotHashes: [], timeRange: firstHalfYear },
       { hash: 'h2', numberOfEntities: 2, replacedSnapshotHashes: [], timeRange: secondHalfYear }
     ])
     jest.spyOn(database, 'transaction').mockImplementation(async (f) => { await f(database) })
+    jest.spyOn(tr, 'divideTimeInYearsMonthsWeeksAndDays').mockReturnValue({
+      intervals: [oneYearRange],
+      remainder: { initTimestampSecs: tr.SECONDS_PER_YEAR, endTimestampSecs: tr.SECONDS_PER_YEAR }
+    })
     const expectedHash = 'hash'
     mockCreateFileWriterMockWith('filePath', expectedHash)
 
@@ -189,8 +184,8 @@ describe('generate snapshot in multiple', () => {
 
   it('should delete old snapshots within the interval of the new snapshot generated', async () => {
     mockStreamedActiveEntitiesWith([])
-    const oneYearRange = { initTimestampSecs: 0, endTimestampSecs: SECONDS_PER_YEAR }
-    const timeRangeWithinTheYear = { initTimestampSecs: 0, endTimestampSecs: SECONDS_PER_YEAR / 2 }
+    const oneYearRange = { initTimestampSecs: 0, endTimestampSecs: tr.SECONDS_PER_YEAR }
+    const timeRangeWithinTheYear = { initTimestampSecs: 0, endTimestampSecs: tr.SECONDS_PER_YEAR / 2 }
     jest.spyOn(database, 'queryWithValues').mockResolvedValue({ rows: [], rowCount: 0 })
     jest.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([
       { hash: 'h1', numberOfEntities: 1, replacedSnapshotHashes: [], timeRange: timeRangeWithinTheYear },
@@ -209,9 +204,9 @@ describe('generate snapshot in multiple', () => {
 
   it('should delete snapshots when they are replaced', async () => {
     mockStreamedActiveEntitiesWith([])
-    const oneYearRange = { initTimestampSecs: 0, endTimestampSecs: SECONDS_PER_YEAR }
-    const firstHalfYear = { initTimestampSecs: 0, endTimestampSecs: SECONDS_PER_YEAR / 2 }
-    const secondHalfYear = { initTimestampSecs: SECONDS_PER_YEAR / 2, endTimestampSecs: SECONDS_PER_YEAR }
+    const oneYearRange = { initTimestampSecs: 0, endTimestampSecs: tr.SECONDS_PER_YEAR }
+    const firstHalfYear = { initTimestampSecs: 0, endTimestampSecs: tr.SECONDS_PER_YEAR / 2 }
+    const secondHalfYear = { initTimestampSecs: tr.SECONDS_PER_YEAR / 2, endTimestampSecs: tr.SECONDS_PER_YEAR }
     jest.spyOn(database, 'queryWithValues').mockResolvedValue({ rows: [], rowCount: 0 })
     jest.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([
       { hash: 'h1', numberOfEntities: 1, replacedSnapshotHashes: [], timeRange: firstHalfYear },
@@ -235,15 +230,19 @@ describe('generate snapshot in multiple', () => {
       { entityId: 'id2', entityType: 't2', pointers: ['p2'], localTimestamp: 1, authChain: [] },
       { entityId: 'id3', entityType: 't3', pointers: ['p3'], localTimestamp: 2, authChain: [] }
     ])
-    const oneYearRange = { initTimestampSecs: 0, endTimestampSecs: SECONDS_PER_YEAR }
-    const firstHalfYear = { initTimestampSecs: 0, endTimestampSecs: SECONDS_PER_YEAR / 2 }
-    const secondHalfYear = { initTimestampSecs: SECONDS_PER_YEAR / 2, endTimestampSecs: SECONDS_PER_YEAR }
+    const oneYearRange = { initTimestampSecs: 0, endTimestampSecs: tr.SECONDS_PER_YEAR }
+    const firstHalfYear = { initTimestampSecs: 0, endTimestampSecs: tr.SECONDS_PER_YEAR / 2 }
+    const secondHalfYear = { initTimestampSecs: tr.SECONDS_PER_YEAR / 2, endTimestampSecs: tr.SECONDS_PER_YEAR }
     jest.spyOn(database, 'queryWithValues').mockResolvedValue({ rows: [], rowCount: 0 })
     jest.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([
       // These two snapshots cover the whole year.
       { hash: 'h1', numberOfEntities: 1, replacedSnapshotHashes: [], timeRange: firstHalfYear },
       { hash: 'h2', numberOfEntities: 2, replacedSnapshotHashes: [], timeRange: secondHalfYear }
     ])
+    jest.spyOn(tr, 'divideTimeInYearsMonthsWeeksAndDays').mockReturnValue({
+      intervals: [oneYearRange],
+      remainder: { initTimestampSecs: tr.SECONDS_PER_YEAR, endTimestampSecs: tr.SECONDS_PER_YEAR }
+    })
     jest.spyOn(database, 'transaction').mockImplementation(async (f) => { await f(database) })
     const expectedHash = 'hash'
     mockCreateFileWriterMockWith('filePath', expectedHash)
@@ -264,13 +263,17 @@ describe('generate snapshot in multiple', () => {
       { entityId: 'id2', entityType: 't2', pointers: ['p2'], localTimestamp: 1, authChain: [] },
       { entityId: 'id3', entityType: 't3', pointers: ['p3'], localTimestamp: 2, authChain: [] }
     ])
-    const oneYearRange = { initTimestampSecs: 0, endTimestampSecs: SECONDS_PER_YEAR }
-    const firstHalfYear = { initTimestampSecs: 0, endTimestampSecs: SECONDS_PER_YEAR / 2 }
+    const oneYearRange = { initTimestampSecs: 0, endTimestampSecs: tr.SECONDS_PER_YEAR }
+    const firstHalfYear = { initTimestampSecs: 0, endTimestampSecs: tr.SECONDS_PER_YEAR / 2 }
     jest.spyOn(database, 'queryWithValues').mockResolvedValue({ rows: [], rowCount: 0 })
     jest.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([
       { hash: 'h1', numberOfEntities: 1, replacedSnapshotHashes: [], timeRange: firstHalfYear },
     ])
     jest.spyOn(database, 'transaction').mockImplementation(async (f) => { await f(database) })
+    jest.spyOn(tr, 'divideTimeInYearsMonthsWeeksAndDays').mockReturnValue({
+      intervals: [oneYearRange],
+      remainder: { initTimestampSecs: tr.SECONDS_PER_YEAR, endTimestampSecs: tr.SECONDS_PER_YEAR }
+    })
     const expectedHash = 'hash'
     mockCreateFileWriterMockWith('filePath', expectedHash)
 
@@ -286,11 +289,15 @@ describe('generate snapshot in multiple', () => {
 
   it('should not generate snapshot when there is a single snapshot that covers the interval', async () => {
     mockStreamedActiveEntitiesWith([])
-    const oneYearRange = { initTimestampSecs: 0, endTimestampSecs: SECONDS_PER_YEAR }
+    const oneYearRange = { initTimestampSecs: 0, endTimestampSecs: tr.SECONDS_PER_YEAR }
     jest.spyOn(database, 'queryWithValues').mockResolvedValue({ rows: [], rowCount: 0 })
     const expectedSnapshot = { hash: 'h1', numberOfEntities: 1, replacedSnapshotHashes: [], timeRange: oneYearRange }
     jest.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([expectedSnapshot])
     jest.spyOn(database, 'transaction').mockImplementation(async (f) => { await f(database) })
+    jest.spyOn(tr, 'divideTimeInYearsMonthsWeeksAndDays').mockReturnValue({
+      intervals: [oneYearRange],
+      remainder: { initTimestampSecs: tr.SECONDS_PER_YEAR, endTimestampSecs: tr.SECONDS_PER_YEAR }
+    })
     const expectedHash = 'hash'
     mockCreateFileWriterMockWith('filePath', expectedHash)
 
@@ -303,30 +310,42 @@ describe('generate snapshot in multiple', () => {
     mockStreamedActiveEntitiesWith([])
     const oneYearOneMonthOneWeekOneDay = {
       initTimestampSecs: 0,
-      endTimestampSecs: SECONDS_PER_YEAR + SECONDS_PER_MONTH + SECONDS_PER_WEEK + SECONDS_PER_DAY
+      endTimestampSecs: tr.SECONDS_PER_YEAR + tr.SECONDS_PER_MONTH + tr.SECONDS_PER_WEEK + tr.SECONDS_PER_DAY
     }
     jest.spyOn(database, 'queryWithValues').mockResolvedValue({ rows: [], rowCount: 0 })
     jest.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([])
     jest.spyOn(database, 'transaction').mockImplementation(async (f) => { await f(database) })
+    jest.spyOn(tr, 'divideTimeInYearsMonthsWeeksAndDays').mockReturnValue({
+      intervals: [
+        { initTimestampSecs: 0, endTimestampSecs: tr.SECONDS_PER_YEAR },
+        { initTimestampSecs: tr.SECONDS_PER_YEAR, endTimestampSecs: tr.SECONDS_PER_YEAR + tr.SECONDS_PER_MONTH },
+        { initTimestampSecs: tr.SECONDS_PER_YEAR + tr.SECONDS_PER_MONTH, endTimestampSecs: tr.SECONDS_PER_YEAR + tr.SECONDS_PER_MONTH + tr.SECONDS_PER_WEEK },
+        { initTimestampSecs: tr.SECONDS_PER_YEAR + tr.SECONDS_PER_MONTH + tr.SECONDS_PER_WEEK, endTimestampSecs: tr.SECONDS_PER_YEAR + tr.SECONDS_PER_MONTH + tr.SECONDS_PER_WEEK + tr.SECONDS_PER_DAY }
+      ],
+      remainder: {
+        initTimestampSecs: tr.SECONDS_PER_YEAR + tr.SECONDS_PER_MONTH + tr.SECONDS_PER_WEEK + tr.SECONDS_PER_DAY,
+        endTimestampSecs: tr.SECONDS_PER_YEAR + tr.SECONDS_PER_MONTH + tr.SECONDS_PER_WEEK + tr.SECONDS_PER_DAY
+      }
+    })
     const expectedHash = 'hash'
     mockCreateFileWriterMockWith('filePath', expectedHash)
     const snapshots = await generateSnapshotsInMultipleTimeRanges({ database, fs, metrics, logs, staticConfigs, storage, denylist }, oneYearOneMonthOneWeekOneDay)
     const baseSnapshot = { hash: expectedHash, numberOfEntities: 0, replacedSnapshotHashes: [] }
     const yearlySnapshotTimeRange = {
       initTimestampSecs: 0,
-      endTimestampSecs: SECONDS_PER_YEAR
+      endTimestampSecs: tr.SECONDS_PER_YEAR
     }
     const monthlySnapshotTimeRange = {
       initTimestampSecs: yearlySnapshotTimeRange.endTimestampSecs,
-      endTimestampSecs: yearlySnapshotTimeRange.endTimestampSecs + SECONDS_PER_MONTH
+      endTimestampSecs: yearlySnapshotTimeRange.endTimestampSecs + tr.SECONDS_PER_MONTH
     }
     const weeklySnapshotTimeRange = {
       initTimestampSecs: monthlySnapshotTimeRange.endTimestampSecs,
-      endTimestampSecs: monthlySnapshotTimeRange.endTimestampSecs + SECONDS_PER_WEEK
+      endTimestampSecs: monthlySnapshotTimeRange.endTimestampSecs + tr.SECONDS_PER_WEEK
     }
     const dailySnapshotTimeRange = {
       initTimestampSecs: weeklySnapshotTimeRange.endTimestampSecs,
-      endTimestampSecs: weeklySnapshotTimeRange.endTimestampSecs + SECONDS_PER_DAY
+      endTimestampSecs: weeklySnapshotTimeRange.endTimestampSecs + tr.SECONDS_PER_DAY
     }
     expect(snapshots).toHaveLength(4)
     expect(snapshots[0]).toEqual({ ...baseSnapshot, timeRange: yearlySnapshotTimeRange })

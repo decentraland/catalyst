@@ -34,62 +34,6 @@ export const SECONDS_PER_WEEK = 7 * SECONDS_PER_DAY
 export const SECONDS_PER_MONTH = 4 * SECONDS_PER_WEEK
 export const SECONDS_PER_YEAR = 12 * SECONDS_PER_MONTH
 
-export function divideTimeRangeInYears(timeRange: TimeRange): TimeRangeDivision {
-  return divideTimeRangeInSubintervals(timeRange, SECONDS_PER_YEAR)
-}
-
-export function divideTimeRangeInMonths(timeRange: TimeRange): TimeRangeDivision {
-  return divideTimeRangeInSubintervals(timeRange, SECONDS_PER_MONTH)
-}
-
-export function divideTimeRangeInWeeks(timeRange: TimeRange): TimeRangeDivision {
-  return divideTimeRangeInSubintervals(timeRange, SECONDS_PER_WEEK)
-}
-
-export function divideTimeRangeInDays(timeRange: TimeRange): TimeRangeDivision {
-  return divideTimeRangeInSubintervals(timeRange, SECONDS_PER_DAY)
-}
-
-export function divideTimeInYearsMonthsWeeksAndDays(timeRange: TimeRange): TimeRangeDivision {
-  const intervals: TimeRange[] = []
-
-  const { intervals: years, remainder: yearlyRemainder } = divideTimeRangeInYears(timeRange)
-  for (const year of years) intervals.push(year)
-
-  const { intervals: months, remainder: monthlyRemainder } = divideTimeRangeInMonths(yearlyRemainder)
-  for (const month of months) intervals.push(month)
-
-  const { intervals: weeks, remainder: weeklyRemainder } = divideTimeRangeInWeeks(monthlyRemainder)
-  for (const week of weeks) intervals.push(week)
-
-  const { intervals: days, remainder: dailyRemainder } = divideTimeRangeInDays(weeklyRemainder)
-  for (const day of days) intervals.push(day)
-
-  return {
-    intervals,
-    remainder: dailyRemainder
-  }
-}
-
-function divideTimeRangeInSubintervals(timeRange: TimeRange, intervalSizeSeconds: number): TimeRangeDivision {
-  // assert timestamps are seconds
-  let initInterval = timeRange.initTimestampSecs
-  let endInterval = timeRange.initTimestampSecs + intervalSizeSeconds
-  const intervals: TimeRange[] = []
-  while (endInterval <= timeRange.endTimestampSecs) {
-    intervals.push({ initTimestampSecs: initInterval, endTimestampSecs: endInterval })
-    initInterval = endInterval
-    endInterval += intervalSizeSeconds
-  }
-  return {
-    intervals,
-    remainder: {
-      initTimestampSecs: initInterval,
-      endTimestampSecs: timeRange.endTimestampSecs
-    }
-  }
-}
-
 export function isTimeRangeCoveredBy(timerange: TimeRange, timeRanges: TimeRange[]) {
   if (timeRanges.length == 0) return false
   const minTimestamp = timeRanges[0].initTimestampSecs
@@ -103,7 +47,7 @@ export function isTimeRangeCoveredBy(timerange: TimeRange, timeRanges: TimeRange
   return minTimestamp <= timerange.initTimestampSecs && currentMaxTimestamp >= timerange.endTimestampSecs
 }
 
-export function divideTimeRange(timeRange: TimeRange): TimeRangeDivision {
+export function divideTimeInYearsMonthsWeeksAndDays(timeRange: TimeRange): TimeRangeDivision {
   // assert end >= init
   const timeSizeInSeconds = timeRangeSizeInSeconds(timeRange)
   const intervalSizes = [SECONDS_PER_YEAR, SECONDS_PER_MONTH, SECONDS_PER_WEEK, SECONDS_PER_DAY]
