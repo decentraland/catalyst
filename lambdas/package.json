@@ -11,7 +11,7 @@
     "test": "jest --runInBand --forceExit --coverage"
   },
   "dependencies": {
-    "@dcl/catalyst-api-specs": "^2.0.9",
+    "@dcl/catalyst-api-specs": "^2.0.10",
     "@dcl/catalyst-contracts": "^3.0.0",
     "@dcl/crypto": "^3.2.1",
     "@dcl/schemas": "^5.16.0",
