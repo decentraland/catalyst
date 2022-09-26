@@ -17,7 +17,7 @@
     "test:unit": "jest --selectProjects unit --runInBand --forceExit --detectOpenHandles --coverage"
   },
   "dependencies": {
-    "@dcl/catalyst-api-specs": "^2.0.9",
+    "@dcl/catalyst-api-specs": "^2.0.12",
     "@dcl/catalyst-contracts": "^3.0.0",
     "@dcl/content-validator": "^4.0.11",
     "@dcl/crypto": "^3.2.1",
