@@ -51,8 +51,7 @@ export async function* streamActiveDeploymentsInTimeRange(
       date_part('epoch', local_timestamp) * 1000 AS local_timestamp
     FROM deployments d
     WHERE d.deleter_deployment IS NULL
-    AND to_timestamp(${timeRange.initTimestampSecs}) <= local_timestamp
-    AND local_timestamp <= to_timestamp(${timeRange.endTimestampSecs})
+    AND local_timestamp BETWEEN to_timestamp(${timeRange.initTimestampSecs}) AND to_timestamp(${timeRange.endTimestampSecs})
     `,
     { batchSize: 1000 },
     'stream_active_deployments_in_timerange'
