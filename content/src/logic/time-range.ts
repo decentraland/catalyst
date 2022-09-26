@@ -54,27 +54,21 @@ export function divideTimeInYearsMonthsWeeksAndDays(timeRange: TimeRange): TimeR
   const intervals: TimeRange[] = []
   let remainingTimeSize = timeSizeInSeconds
   let initInterval = timeRange.initTimestampSecs
-  function addNewIntervalOfSize(intervalSizeSecs: number) {
-    const endInterval = initInterval + intervalSizeSecs
-    intervals.push({ initTimestampSecs: initInterval, endTimestampSecs: endInterval })
-    initInterval = endInterval
-    remainingTimeSize = remainingTimeSize - intervalSizeSecs
-  }
   for (const [idx, intervalSize] of intervalSizes.entries()) {
-    if (idx == intervalSizes.length - 1) {
-      while (remainingTimeSize >= intervalSizes[idx]) {
-        addNewIntervalOfSize(intervalSizes[idx])
-      }
-    } else {
-      const numberOfIntervalsOfNextSizeInCurrentSize = Math.floor(intervalSize / intervalSizes[idx + 1])
-      while (
-        remainingTimeSize >=
-        (numberOfIntervalsOfNextSizeInCurrentSize + 1) * intervalSizes[idx + 1] +
-          (idx + 2 < intervalSizes.length ? intervalSizes[idx + 2] : 0) +
-          (idx + 3 < intervalSizes.length ? intervalSizes[idx + 3] : 0)
-      ) {
-        addNewIntervalOfSize(intervalSize)
-      }
+    const numberOfIntervalsOfNextSizeInCurrentSize = Math.floor(intervalSize / (intervalSizes[idx + 1] ?? intervalSize))
+    while (
+      remainingTimeSize >=
+      // here we check there is enough time to create a block of the current group
+      numberOfIntervalsOfNextSizeInCurrentSize * (intervalSizes[idx + 1] ?? intervalSize) +
+        // now we check the next groups have at least one level complete before creating the current one
+        (intervalSizes[idx + 1] ?? 0) +
+        (intervalSizes[idx + 2] ?? 0) +
+        (intervalSizes[idx + 3] ?? 0)
+    ) {
+      const endInterval = initInterval + intervalSize
+      intervals.push({ initTimestampSecs: initInterval, endTimestampSecs: endInterval })
+      initInterval = endInterval
+      remainingTimeSize = remainingTimeSize - intervalSize
     }
   }
   return {
