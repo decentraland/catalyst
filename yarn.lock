@@ -2655,9 +2655,9 @@ dcl-catalyst-client@^13.0.3:
     form-data "^4.0.0"
 
 dcl-catalyst-commons@^9.0.6:
-  version "9.0.10"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-9.0.10.tgz#d901822e5f44bbf44be83e655df98f3d537798f8"
-  integrity sha512-O5x9js02MkuV/6JMeM6Pzy7/UVZRfq/fk7SOGM1b/gNIMel9aXKxotR/0JV0WLXjDfLBxT+7dEbeu3hxgmVkKg==
+  version "9.0.11"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-9.0.11.tgz#e0a991162ce689a9796098e6fabfa0ead0518021"
+  integrity sha512-N+Syn9UqzvNKudlFMrtQecsD+VK/iE1AAHEFpKciAnM7drrp60N/qLTVPbRi/QatCfhp2JOqCWeElvuMoN+dgA==
   dependencies:
     "@dcl/schemas" "^5.4.2"
     abort-controller "^3.0.0"
