@@ -348,16 +348,16 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@^4.0.7":
-  version "4.0.7"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.0.7.tgz#d1a1d7faeb20d0fa771a34338e3a9ab4d8a06904"
-  integrity sha512-kfWWMQ4Y6chkTVAa7t9FvtabHYD27KraJcVc/FczWNovrS/eu8PwoanbuQm+1dVhdmB9w8RDdr7UALjvNtTGzQ==
+"@dcl/content-validator@^4.0.11":
+  version "4.0.11"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.0.11.tgz#47bffb680401a732550aec240efefd824f16254a"
+  integrity sha512-MEftzc50ypuCacnNP95+VLb0OVuR4AFg3rpQJcHsVrYOXeEgQ1mgUHpmR8iKuTLPcFEEXe7D1wwwPjrFLBEUqg==
   dependencies:
     "@dcl/content-hash-tree" "^1.1.3"
     "@dcl/hashing" "1.1.0"
     "@dcl/schemas" "^5.4.2"
     "@dcl/urn-resolver" "2.0.2"
-    "@well-known-components/interfaces" "1.1.1"
+    "@well-known-components/interfaces" "1.1.2"
     "@well-known-components/thegraph-component" "^1.2.0"
     ms "2.1.3"
     sharp "^0.30.6"
@@ -1624,16 +1624,7 @@
     on-finished "^2.4.1"
     path-to-regexp "^6.2.1"
 
-"@well-known-components/interfaces@1.1.1":
-  version "1.1.1"
-  resolved "https://registry.yarnpkg.com/@well-known-components/interfaces/-/interfaces-1.1.1.tgz#d7e6552dd9ebee9ff9a2c9b5e1a88fc8247eb106"
-  integrity sha512-LCIBhzHvxXhT/uXrMXuvfWsIcHmK9lQ65StVMOgkPRqzo29X3U4crUB/dy2wFYITE5WnLUk/d25tpOKvvOlUeA==
-  dependencies:
-    "@types/node" "^16.11.19"
-    "@types/node-fetch" "^2.5.12"
-    typed-url-params "^1.0.1"
-
-"@well-known-components/interfaces@^1.1.0", "@well-known-components/interfaces@^1.1.1", "@well-known-components/interfaces@^1.1.2":
+"@well-known-components/interfaces@1.1.2", "@well-known-components/interfaces@^1.1.0", "@well-known-components/interfaces@^1.1.1", "@well-known-components/interfaces@^1.1.2":
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/@well-known-components/interfaces/-/interfaces-1.1.2.tgz#754ad83ffd434a63d57773be69177bce9869c554"
   integrity sha512-hLqjVXZPHObloSbscauQWP9LI1r0jqW/kGlpJ+cZxEOhclvG4ot0JIiu4YeK436YgbjRYJxsGOkJGl37RLvKOg==
