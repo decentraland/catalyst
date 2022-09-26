@@ -1,10 +1,29 @@
-import { BodyShape, ChainId, Entity, EntityType, StandardProps, Wearable, WearableRepresentation } from '@dcl/schemas'
+import {
+  BodyShape,
+  ChainId,
+  Emote,
+  Entity,
+  EntityType,
+  StandardProps,
+  Wearable,
+  WearableRepresentation
+} from '@dcl/schemas'
 import { Request, Response } from 'express'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TheGraphClient } from '../../../utils/TheGraphClient'
 import { BASE_AVATARS_COLLECTION_ID } from '../off-chain/OffChainWearablesManager'
 import { Collection, ERC721StandardTrait } from '../types'
 import { createExternalContentUrl, findHashForFile, preferEnglish } from '../Utils'
+
+type StandardWearable = Wearable & StandardProps
+type StandardEmote = Emote & StandardProps
+type ItemData = {
+  replaces?: any[]
+  hides?: any[]
+  tags: string[]
+  representations: any[]
+  category: any
+}
 
 export async function getStandardErc721(client: SmartContentClient, req: Request, res: Response) {
   // Method: GET
@@ -21,34 +40,33 @@ export async function getStandardErc721(client: SmartContentClient, req: Request
     const urn = buildUrn(protocol, contract, option)
     const entity = await fetchEntity(client, urn)
     if (entity) {
-      const wearableMetadata: Wearable & StandardProps = entity.metadata
-      const name = preferEnglish(wearableMetadata.i18n)
-      if (!wearableMetadata.rarity) {
+      const itemMetadata: StandardWearable | StandardEmote = entity.metadata
+      const name = preferEnglish(itemMetadata.i18n)
+      if (!itemMetadata.rarity) {
         throw new Error('Wearable is not standard.')
       }
 
-      const totalEmission = RARITIES_EMISSIONS[wearableMetadata.rarity]
+      const totalEmission = RARITIES_EMISSIONS[itemMetadata.rarity]
       const description = emission ? `DCL Wearable ${emission}/${totalEmission}` : ''
-      const image = createExternalContentUrl(client, entity, wearableMetadata.image)
-      const thumbnail = createExternalContentUrl(client, entity, wearableMetadata.thumbnail)
-      const bodyShapeTraits = getBodyShapes(wearableMetadata.data.representations).reduce(
+      const image = createExternalContentUrl(client, entity, itemMetadata.image)
+      const thumbnail = createExternalContentUrl(client, entity, itemMetadata.thumbnail)
+      const itemData: ItemData =
+        (itemMetadata as StandardEmote).emoteDataADR74 ?? (itemMetadata as StandardWearable).data
+      const bodyShapeTraits = getBodyShapes(itemData.representations).reduce(
         (bodyShapes: ERC721StandardTrait[], bodyShape) => {
           bodyShapes.push({
             trait_type: 'Body Shape',
             value: bodyShape
           })
-
           return bodyShapes
         },
         []
       )
-
-      const tagTraits = wearableMetadata.data.tags.reduce((tags: ERC721StandardTrait[], tag) => {
+      const tagTraits = itemData.tags.reduce((tags: ERC721StandardTrait[], tag) => {
         tags.push({
           trait_type: 'Tag',
           value: tag
         })
-
         return tags
       }, [])
 
@@ -62,11 +80,11 @@ export async function getStandardErc721(client: SmartContentClient, req: Request
         attributes: [
           {
             trait_type: 'Rarity',
-            value: wearableMetadata.rarity
+            value: itemMetadata.rarity
           },
           {
             trait_type: 'Category',
-            value: wearableMetadata.data.category
+            value: itemData.category
           },
           ...tagTraits,
           ...bodyShapeTraits
