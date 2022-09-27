@@ -11,7 +11,7 @@ import { BASE_AVATARS_COLLECTION_ID, OffChainWearablesManager } from '../off-cha
 import { ItemFilters, ItemPagination, LambdasWearable } from '../types'
 import { isBaseAvatar, translateEntityIntoWearable } from '../Utils'
 
-const LOGGER = log4js.getLogger('TheGraphClientWearables')
+const LOGGER = log4js.getLogger('WearablesHandler')
 
 export async function getWearablesByOwnerHandler(
   client: SmartContentClient,
