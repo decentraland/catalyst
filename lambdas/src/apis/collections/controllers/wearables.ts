@@ -11,7 +11,7 @@ import { BASE_AVATARS_COLLECTION_ID, OffChainWearablesManager } from '../off-cha
 import { ItemFilters, ItemPagination, LambdasWearable } from '../types'
 import { isBaseAvatar, translateEntityIntoWearable } from '../Utils'
 
-const LOGGER = log4js.getLogger('TheGraphClient')
+const LOGGER = log4js.getLogger('WearablesHandler')
 
 export async function getWearablesByOwnerHandler(
   client: SmartContentClient,
@@ -202,7 +202,9 @@ async function fetchWearables(wearableUrns: string[], client: SmartContentClient
   }
 
   const entities = await client.fetchEntitiesByPointers(EntityType.WEARABLE, wearableUrns)
-  const wearables = entities.map((entity) => translateEntityIntoWearable(client, entity))
+  const wearables = entities
+    .map((entity) => translateEntityIntoWearable(client, entity))
+    .filter((wearable): wearable is LambdasWearable => !!wearable)
 
   return wearables.sort((wearable1, wearable2) => wearable1.id.toLowerCase().localeCompare(wearable2.id.toLowerCase()))
 }

@@ -12,11 +12,13 @@ describe('Collection Utils', () => {
     const client = getClient()
     const entity = buildEntity()
 
-    const wearable = translateEntityIntoWearable(client, entity)
+    let wearable = translateEntityIntoWearable(client, entity)
     const entityMetadata: Wearable = entity.metadata
 
     // Compare top level properties
     assertAreEqualExceptProperties(wearable, entityMetadata, 'thumbnail', 'image', 'data')
+    expect(wearable).toBeDefined()
+    wearable = wearable!
     expect(wearable.thumbnail).toEqual(`${EXTERNAL_URL}/contents/${CONTENT_HASH1}`)
     expect(wearable.image).toEqual(`${EXTERNAL_URL}/contents/${CONTENT_HASH2}`)
 
