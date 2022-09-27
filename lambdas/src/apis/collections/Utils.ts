@@ -25,8 +25,11 @@ export function preferEnglish(i18ns: I18N[]): string | undefined {
   return (i18nInEnglish ?? i18ns[0])?.text
 }
 
-export function translateEntityIntoWearable(client: SmartContentClient, entity: Entity): LambdasWearable {
-  const metadata: Wearable = entity.metadata!
+export function translateEntityIntoWearable(client: SmartContentClient, entity: Entity): LambdasWearable | undefined {
+  if (!entity.metadata || !entity.metadata.representations) {
+    return undefined
+  }
+  const metadata: Wearable = entity.metadata
   const representations = metadata.data.representations.map((representation) =>
     mapRepresentation(representation, client, entity)
   )

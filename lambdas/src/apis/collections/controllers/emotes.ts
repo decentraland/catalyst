@@ -10,7 +10,7 @@ import { TheGraphClient } from '../../../utils/TheGraphClient'
 import { ItemFilters, ItemPagination, LambdasEmote } from '../types'
 import { translateEntityIntoEmote } from '../Utils'
 
-const LOGGER = log4js.getLogger('TheGraphClient')
+const LOGGER = log4js.getLogger('TheGraphClientEmotes')
 
 export async function getEmotesByOwnerHandler(
   client: SmartContentClient,
