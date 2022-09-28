@@ -27,6 +27,7 @@ export function preferEnglish(i18ns: I18N[]): string | undefined {
 
 export function translateEntityIntoWearable(client: SmartContentClient, entity: Entity): LambdasWearable | undefined {
   if (!entity.metadata?.data?.representations) {
+    console.log(`[DEBUG] A emote is being treated as a wearable, urn: ${(entity.pointers ?? []).toString()}`)
     // HOTFIX: When getting emotes as wearables
     return undefined
   }
