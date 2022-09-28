@@ -40,6 +40,9 @@ export function createSnapshotGenerator(
 
   return {
     async start(): Promise<void> {
+      // We have the SnapshotManager here because we need it to run before the new snapshots run to avoid a race
+      // condition with the content storage
+      console.log('started BABY')
       await components.snapshotManager.generateSnapshots()
       runningGeneration = runGenerationAndScheduleNext()
       await runningGeneration
