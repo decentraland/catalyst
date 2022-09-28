@@ -8,7 +8,10 @@ export type SnapshotGenerator = IBaseComponent & {
 }
 
 export function createSnapshotGenerator(
-  components: Pick<AppComponents, 'database' | 'fs' | 'metrics' | 'storage' | 'logs' | 'denylist' | 'staticConfigs'>
+  components: Pick<
+    AppComponents,
+    'database' | 'fs' | 'metrics' | 'storage' | 'logs' | 'denylist' | 'staticConfigs' | 'snapshotManager'
+  >
 ): SnapshotGenerator {
   const logger = components.logs.getLogger('snapshot-generator')
   const generationInterval = ms('6h')
@@ -37,6 +40,7 @@ export function createSnapshotGenerator(
 
   return {
     async start(): Promise<void> {
+      await components.snapshotManager.generateSnapshots()
       runningGeneration = runGenerationAndScheduleNext()
       await runningGeneration
     },

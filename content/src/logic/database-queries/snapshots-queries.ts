@@ -134,3 +134,33 @@ export async function deleteSnapshots(
   query.append(`);`)
   await database.queryWithValues(query, 'save_snapshot')
 }
+
+export async function saveProcessedSnapshot(
+  components: Pick<AppComponents, 'database'>,
+  processedSnapshotHash: string,
+  processTimestampSecs: number
+): Promise<void> {
+  const query = SQL`
+  INSERT INTO processed_snapshots
+  (hash, process_time)
+  VALUES
+  (${processedSnapshotHash}, to_timestamp(${processTimestampSecs}))
+  RETURNING hash
+  `
+  await components.database.queryWithValues(query, 'save_processed_snapshot')
+}
+
+export async function existsProcessedSnapshot(
+  components: Pick<AppComponents, 'database'>,
+  processedSnapshotHash: string
+): Promise<boolean> {
+  const result = await components.database.queryWithValues(
+    SQL`
+  SELECT hash
+  FROM processed_snapshots
+  WHERE hash = ${processedSnapshotHash}
+  `,
+    'save_processed_snapshot'
+  )
+  return result.rowCount > 0
+}

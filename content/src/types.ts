@@ -3,6 +3,7 @@ import { DeploymentWithAuthChain, EntityType } from '@dcl/schemas'
 import { IDeployerComponent } from '@dcl/snapshots-fetcher'
 import { JobLifecycleManagerComponent } from '@dcl/snapshots-fetcher/dist/job-lifecycle-manager'
 import { IJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
+import { IProcessedSnapshotStorageComponent } from '@dcl/snapshots-fetcher/dist/types'
 import { IFetchComponent } from '@well-known-components/http-server'
 import { ILoggerComponent, IMetricsComponent } from '@well-known-components/interfaces'
 import { Fetcher } from 'dcl-catalyst-commons'
@@ -78,6 +79,7 @@ export type AppComponents = {
   fs: FSComponent
   ethereumProvider: HTTPProvider
   snapshotGenerator: SnapshotGenerator
+  processedSnapshotStorage: IProcessedSnapshotStorageComponent
 }
 
 export type MaintenanceComponents = {

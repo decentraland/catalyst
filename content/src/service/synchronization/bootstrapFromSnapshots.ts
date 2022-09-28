@@ -3,7 +3,15 @@ import { AppComponents } from '../../types'
 
 type BootstrapComponents = Pick<
   AppComponents,
-  'staticConfigs' | 'logs' | 'batchDeployer' | 'metrics' | 'fetcher' | 'downloadQueue' | 'contentCluster' | 'storage'
+  | 'staticConfigs'
+  | 'logs'
+  | 'batchDeployer'
+  | 'metrics'
+  | 'fetcher'
+  | 'downloadQueue'
+  | 'contentCluster'
+  | 'storage'
+  | 'processedSnapshotStorage'
 >
 
 /**

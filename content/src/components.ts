@@ -24,6 +24,7 @@ import { createFailedDeploymentsCache } from './ports/failedDeploymentsCache'
 import { createFetchComponent } from './ports/fetcher'
 import { createFsComponent } from './ports/fs'
 import { createDatabaseComponent } from './ports/postgres'
+import { createProcessedSnapshotStorage } from './ports/processedSnapshotStorage'
 import { createSequentialTaskExecutor } from './ports/sequecuentialTaskExecutor'
 import { createSnapshotGenerator } from './ports/snapshotGenerator'
 import { createSystemProperties } from './ports/system-properties'
@@ -149,10 +150,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     denylist
   })
 
-  const snapshotManager = new SnapshotManager(
-    { database, metrics, staticConfigs, logs, storage, denylist, fs },
-    env.getConfig(EnvironmentConfig.SNAPSHOT_FREQUENCY_IN_MILLISECONDS)
-  )
+  const snapshotManager = new SnapshotManager({ database, metrics, staticConfigs, logs, storage, denylist, fs })
 
   const garbageCollectionManager = new GarbageCollectionManager(
     { deployer, systemProperties, metrics, logs, storage, database },
@@ -198,7 +196,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       jobManagerName: 'SynchronizationJobManager',
       createJob(contentServer) {
         return createCatalystDeploymentStream(
-          { logs, downloadQueue, fetcher, metrics, deployer: batchDeployer, storage },
+          { logs, downloadQueue, fetcher, metrics, deployer: batchDeployer, storage, processedSnapshotStorage },
           {
             tmpDownloadFolder: staticConfigs.tmpDownloadFolder,
             contentServer,
@@ -248,8 +246,11 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     staticConfigs,
     storage,
     database,
-    denylist
+    denylist,
+    snapshotManager
   })
+
+  const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs })
 
   const controller = new Controller(
     {
@@ -312,6 +313,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     denylist,
     ethereumProvider,
     fs,
-    snapshotGenerator
+    snapshotGenerator,
+    processedSnapshotStorage
   }
 }
