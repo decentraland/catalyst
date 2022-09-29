@@ -150,17 +150,20 @@ export async function saveProcessedSnapshot(
   await components.database.queryWithValues(query, 'save_processed_snapshot')
 }
 
-export async function existsProcessedSnapshot(
+export async function getProcessedSnapshots(
   components: Pick<AppComponents, 'database'>,
-  processedSnapshotHash: string
-): Promise<boolean> {
-  const result = await components.database.queryWithValues(
-    SQL`
+  processedSnapshotHashes: string[]
+): Promise<Set<string>> {
+  const query = SQL`
   SELECT hash
   FROM processed_snapshots
-  WHERE hash = ${processedSnapshotHash}
-  `,
-    'save_processed_snapshot'
+  WHERE hash IN (`
+  const hashes = processedSnapshotHashes.map((h, i) =>
+    i < processedSnapshotHashes.length - 1 ? SQL`${h},` : SQL`${h}`
   )
-  return result.rowCount > 0
+  hashes.forEach((hash) => query.append(hash))
+  query.append(`);`)
+
+  const result = await components.database.queryWithValues<{ hash: string }>(query, 'get_processed_snapshots')
+  return new Set(result.rows.map((row) => row.hash))
 }
