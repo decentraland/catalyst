@@ -23,14 +23,14 @@ export function createProcessedSnapshotStorage(
       if (!snapshotWasAlreadyProcessed && replacedHashesWereAlreadyProcessed) {
         await components.database.transaction(async (txDatabase) => {
           await deleteProcessedSnapshots(txDatabase, replacedHashes)
-          await saveProcessedSnapshot(txDatabase, hash, Math.floor(Date.now() / 1000))
+          await saveProcessedSnapshot(txDatabase, hash, Date.now())
         }, 'replace_processed_snapshots')
       }
 
       return snapshotWasAlreadyProcessed || replacedHashesWereAlreadyProcessed
     },
     async markSnapshotProcessed(hash: string): Promise<void> {
-      await saveProcessedSnapshot(components.database, hash, Math.floor(Date.now() / 1000))
+      await saveProcessedSnapshot(components.database, hash, Date.now())
       logger.info(`Snapshot ${hash} successfully processed and saved.`)
     }
   }

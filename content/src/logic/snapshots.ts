@@ -76,14 +76,18 @@ export async function generateSnapshotsInMultipleTimeRanges(
       await components.database.transaction(async (txDatabase) => {
         const replacedSnapshotHashes = isTimeRangeCoveredByOtherSnapshots ? savedSnapshotHashes : []
         const newSnapshot = { hash, timeRange, replacedSnapshotHashes, numberOfEntities }
-        await saveSnapshot(txDatabase, newSnapshot, Math.floor(Date.now() / 1000))
+        await saveSnapshot(txDatabase, newSnapshot, Date.now())
         if (savedSnapshotHashes.length > 0) {
           await deleteSnapshots(txDatabase, savedSnapshotHashes)
           await components.storage.delete(savedSnapshotHashes)
         }
         snapshotMetadatas.push(newSnapshot)
       })
-      logger.info(`Snapshot generated for interval: [${timeRange.initTimestampSecs}, ${timeRange.endTimestampSecs}].`)
+      logger.info(
+        `Snapshot generated for interval: [${new Date(timeRange.initTimestamp).toISOString()}, ${new Date(
+          timeRange.endTimestamp
+        ).toISOString()}].`
+      )
     } else {
       snapshotMetadatas.push(...savedSnapshots)
     }

@@ -1,6 +1,6 @@
 export type TimeRange = {
-  initTimestampSecs: number
-  endTimestampSecs: number
+  initTimestamp: number
+  endTimestamp: number
 }
 
 export type TimeRangeDivision = {
@@ -9,55 +9,55 @@ export type TimeRangeDivision = {
 }
 
 export function intervalSizeLabel(timeRange: TimeRange) {
-  const diff = timeRangeSizeInSeconds(timeRange)
+  const diff = timeRangeSizeInMS(timeRange)
   switch (diff) {
-    case SECONDS_PER_DAY:
+    case MS_PER_DAY:
       return 'day'
-    case SECONDS_PER_WEEK:
+    case MS_PER_WEEK:
       return 'week'
-    case SECONDS_PER_MONTH:
+    case MS_PER_MONTH:
       return 'month'
-    case SECONDS_PER_YEAR:
+    case MS_PER_YEAR:
       return 'year'
     default:
       return 'unknown'
   }
 }
 
-export function timeRangeSizeInSeconds(timeRange: TimeRange): number {
+export function timeRangeSizeInMS(timeRange: TimeRange): number {
   // throw if end > init
-  return timeRange.endTimestampSecs - timeRange.initTimestampSecs
+  return timeRange.endTimestamp - timeRange.initTimestamp
 }
 
-export const SECONDS_PER_DAY = 86_400
-export const SECONDS_PER_WEEK = 7 * SECONDS_PER_DAY
-export const SECONDS_PER_MONTH = 4 * SECONDS_PER_WEEK
-export const SECONDS_PER_YEAR = 12 * SECONDS_PER_MONTH
+export const MS_PER_DAY = 86_400_000
+export const MS_PER_WEEK = 7 * MS_PER_DAY
+export const MS_PER_MONTH = 4 * MS_PER_WEEK
+export const MS_PER_YEAR = 12 * MS_PER_MONTH
 
 export function isTimeRangeCoveredBy(timerange: TimeRange, timeRanges: TimeRange[]) {
   if (timeRanges.length == 0) return false
-  const minTimestamp = timeRanges[0].initTimestampSecs
-  let currentMaxTimestamp = timeRanges[0].endTimestampSecs
+  const minTimestamp = timeRanges[0].initTimestamp
+  let currentMaxTimestamp = timeRanges[0].endTimestamp
   for (const t of timeRanges) {
-    if (t.initTimestampSecs > currentMaxTimestamp) {
+    if (t.initTimestamp > currentMaxTimestamp) {
       return false
     }
-    currentMaxTimestamp = Math.max(currentMaxTimestamp, t.endTimestampSecs)
+    currentMaxTimestamp = Math.max(currentMaxTimestamp, t.endTimestamp)
   }
-  return minTimestamp <= timerange.initTimestampSecs && currentMaxTimestamp >= timerange.endTimestampSecs
+  return minTimestamp <= timerange.initTimestamp && currentMaxTimestamp >= timerange.endTimestamp
 }
 
 export function divideTimeInYearsMonthsWeeksAndDays(timeRange: TimeRange): TimeRangeDivision {
   // assert end >= init
-  const timeSizeInSeconds = timeRangeSizeInSeconds(timeRange)
-  const intervalSizes = [SECONDS_PER_YEAR, SECONDS_PER_MONTH, SECONDS_PER_WEEK, SECONDS_PER_DAY]
+  const timeSizeMS = timeRangeSizeInMS(timeRange)
+  const intervalSizes = [MS_PER_YEAR, MS_PER_MONTH, MS_PER_WEEK, MS_PER_DAY]
   const intervals: TimeRange[] = []
-  let remainingTimeSize = timeSizeInSeconds
-  let initInterval = timeRange.initTimestampSecs
+  let remainingTimeSizeMS = timeSizeMS
+  let initInterval = timeRange.initTimestamp
   for (const [idx, intervalSize] of intervalSizes.entries()) {
     const numberOfIntervalsOfNextSizeInCurrentSize = Math.floor(intervalSize / (intervalSizes[idx + 1] ?? intervalSize))
     while (
-      remainingTimeSize >=
+      remainingTimeSizeMS >=
       // here we check there is enough time to create a block of the current group
       numberOfIntervalsOfNextSizeInCurrentSize * (intervalSizes[idx + 1] ?? intervalSize) +
         // now we check the next groups have at least one level complete before creating the current one
@@ -66,16 +66,16 @@ export function divideTimeInYearsMonthsWeeksAndDays(timeRange: TimeRange): TimeR
         (intervalSizes[idx + 3] ?? 0)
     ) {
       const endInterval = initInterval + intervalSize
-      intervals.push({ initTimestampSecs: initInterval, endTimestampSecs: endInterval })
+      intervals.push({ initTimestamp: initInterval, endTimestamp: endInterval })
       initInterval = endInterval
-      remainingTimeSize = remainingTimeSize - intervalSize
+      remainingTimeSizeMS = remainingTimeSizeMS - intervalSize
     }
   }
   return {
     intervals,
     remainder: {
-      initTimestampSecs: initInterval,
-      endTimestampSecs: timeRange.endTimestampSecs
+      initTimestamp: initInterval,
+      endTimestamp: timeRange.endTimestamp
     }
   }
 }

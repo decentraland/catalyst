@@ -48,10 +48,10 @@ export async function* streamActiveDeploymentsInTimeRange(
       entity_type,
       entity_pointers,
       auth_chain,
-      date_part('epoch', local_timestamp) * 1000 AS local_timestamp
+      date_part('epoch', local_timestamp) * 1000 AS "localTimestamp"
     FROM deployments d
     WHERE d.deleter_deployment IS NULL
-    AND local_timestamp BETWEEN to_timestamp(${timeRange.initTimestampSecs}) AND to_timestamp(${timeRange.endTimestampSecs})
+    AND local_timestamp BETWEEN to_timestamp(${timeRange.initTimestamp} / 1000.0) AND to_timestamp(${timeRange.endTimestamp} / 1000.0)
     `,
     { batchSize: 1000 },
     'stream_active_deployments_in_timerange'
@@ -60,7 +60,7 @@ export async function* streamActiveDeploymentsInTimeRange(
       entityId: row.entity_id,
       entityType: row.entity_type,
       pointers: row.entity_pointers,
-      localTimestamp: row.local_timestamp,
+      localTimestamp: row.localTimestamp,
       authChain: row.auth_chain
     }
   }
@@ -73,28 +73,28 @@ export async function findSnapshotsStrictlyContainedInTimeRange(
   const query = SQL`
   SELECT
     hash,
-    date_part('epoch', init_timestamp)  AS "initTimestampSecs",
-    date_part('epoch', end_timestamp)  AS "endTimestampSecs",
+    date_part('epoch', init_timestamp) * 1000  AS "initTimestamp",
+    date_part('epoch', end_timestamp) * 1000  AS "endTimestamp",
     replaced_hashes as replacedSnapshotHashes,
     number_of_entities as numberOfEntities
   FROM snapshots
-  WHERE init_timestamp >= to_timestamp(${timerange.initTimestampSecs})
-  AND end_timestamp <= to_timestamp(${timerange.endTimestampSecs})
+  WHERE init_timestamp >= to_timestamp(${timerange.initTimestamp} / 1000.0)
+  AND end_timestamp <= to_timestamp(${timerange.endTimestamp} / 1000.0)
   `
   return (
     await components.database.queryWithValues<{
       hash: string
-      initTimestampSecs: number
-      endTimestampSecs: number
+      initTimestamp: number
+      endTimestamp: number
       replacedSnapshotHashes: string[]
       numberOfEntities: number
     }>(query, 'find_snapshots_in_timerange')
-  ).rows.map(({ hash, initTimestampSecs, endTimestampSecs, replacedSnapshotHashes, numberOfEntities }) => {
+  ).rows.map(({ hash, initTimestamp, endTimestamp, replacedSnapshotHashes, numberOfEntities }) => {
     return {
       hash,
       timeRange: {
-        initTimestampSecs,
-        endTimestampSecs
+        initTimestamp,
+        endTimestamp
       },
       replacedSnapshotHashes,
       numberOfEntities
@@ -113,11 +113,11 @@ export async function saveSnapshot(
   VALUES
   (
     ${snapshotMetadata.hash},
-    to_timestamp(${snapshotMetadata.timeRange.initTimestampSecs}),
-    to_timestamp(${snapshotMetadata.timeRange.endTimestampSecs}),
+    to_timestamp(${snapshotMetadata.timeRange.initTimestamp} / 1000.0),
+    to_timestamp(${snapshotMetadata.timeRange.endTimestamp} / 1000.0),
     ${snapshotMetadata.replacedSnapshotHashes ?? []},
     ${snapshotMetadata.numberOfEntities},
-    to_timestamp(${generationTimestampSecs})
+    to_timestamp(${generationTimestampSecs} / 1000.0)
   )
   RETURNING hash
   `
@@ -144,7 +144,7 @@ export async function saveProcessedSnapshot(
   INSERT INTO processed_snapshots
   (hash, process_time)
   VALUES
-  (${processedSnapshotHash}, to_timestamp(${processTimestampSecs}))
+  (${processedSnapshotHash}, to_timestamp(${processTimestampSecs} / 1000.0))
   RETURNING hash
   `
   await database.queryWithValues(query, 'save_processed_snapshot')
@@ -160,8 +160,6 @@ export async function deleteProcessedSnapshots(
   )
   hashes.forEach((hash) => query.append(hash))
   query.append(`);`)
-  console.log(query.text)
-  console.log(query.values)
   await database.queryWithValues(query, 'save_snapshot')
 }
 

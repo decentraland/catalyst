@@ -1,70 +1,70 @@
-import { divideTimeInYearsMonthsWeeksAndDays, intervalSizeLabel, isTimeRangeCoveredBy, SECONDS_PER_DAY, SECONDS_PER_MONTH, SECONDS_PER_WEEK, SECONDS_PER_YEAR, TimeRange, timeRangeSizeInSeconds } from '../../../src/logic/time-range'
+import { divideTimeInYearsMonthsWeeksAndDays, intervalSizeLabel, isTimeRangeCoveredBy, MS_PER_DAY, MS_PER_MONTH, MS_PER_WEEK, MS_PER_YEAR, TimeRange, timeRangeSizeInMS } from '../../../src/logic/time-range'
 
 it('should return correct interval size labels', () => {
-  expect(intervalSizeLabel({ initTimestampSecs: 0, endTimestampSecs: SECONDS_PER_DAY })).toEqual('day')
-  expect(intervalSizeLabel({ initTimestampSecs: 0, endTimestampSecs: SECONDS_PER_WEEK })).toEqual('week')
-  expect(intervalSizeLabel({ initTimestampSecs: 0, endTimestampSecs: SECONDS_PER_MONTH })).toEqual('month')
-  expect(intervalSizeLabel({ initTimestampSecs: 0, endTimestampSecs: SECONDS_PER_YEAR })).toEqual('year')
-  expect(intervalSizeLabel({ initTimestampSecs: 0, endTimestampSecs: SECONDS_PER_YEAR + 1 })).toEqual('unknown')
+  expect(intervalSizeLabel({ initTimestamp: 0, endTimestamp: MS_PER_DAY })).toEqual('day')
+  expect(intervalSizeLabel({ initTimestamp: 0, endTimestamp: MS_PER_WEEK })).toEqual('week')
+  expect(intervalSizeLabel({ initTimestamp: 0, endTimestamp: MS_PER_MONTH })).toEqual('month')
+  expect(intervalSizeLabel({ initTimestamp: 0, endTimestamp: MS_PER_YEAR })).toEqual('year')
+  expect(intervalSizeLabel({ initTimestamp: 0, endTimestamp: MS_PER_YEAR + 1 })).toEqual('unknown')
 })
 
 it('time range should be covered by others', () => {
   const weeklyTimeRangeToBeCovered: TimeRange = {
-    initTimestampSecs: 1640995200, // 2022-01-01 00:00:00 GMT
-    endTimestampSecs: 1641600000 // 2022-01-08 00:00:00 GMT, 7 days later
+    initTimestamp: 1640995200, // 2022-01-01 00:00:00 GMT
+    endTimestamp: 1641600000 // 2022-01-08 00:00:00 GMT, 7 days later
   }
   // 7 days
   const dailyTimeRanges: TimeRange[] = [
-    { initTimestampSecs: 1640995200, endTimestampSecs: 1641081600 },
-    { initTimestampSecs: 1641081600, endTimestampSecs: 1641168000 },
-    { initTimestampSecs: 1641168000, endTimestampSecs: 1641254400 },
-    { initTimestampSecs: 1641254400, endTimestampSecs: 1641340800 },
-    { initTimestampSecs: 1641340800, endTimestampSecs: 1641427200 },
-    { initTimestampSecs: 1641427200, endTimestampSecs: 1641513600 },
-    { initTimestampSecs: 1641513600, endTimestampSecs: 1641600000 },
+    { initTimestamp: 1640995200, endTimestamp: 1641081600 },
+    { initTimestamp: 1641081600, endTimestamp: 1641168000 },
+    { initTimestamp: 1641168000, endTimestamp: 1641254400 },
+    { initTimestamp: 1641254400, endTimestamp: 1641340800 },
+    { initTimestamp: 1641340800, endTimestamp: 1641427200 },
+    { initTimestamp: 1641427200, endTimestamp: 1641513600 },
+    { initTimestamp: 1641513600, endTimestamp: 1641600000 },
   ]
   expect(isTimeRangeCoveredBy(weeklyTimeRangeToBeCovered, dailyTimeRanges)).toBeTruthy()
 })
 
 it('time range should not be covered by others', () => {
   const weeklyTimeRangeToBeCovered: TimeRange = {
-    initTimestampSecs: 1640995200, // 2022-01-01 00:00:00 GMT
-    endTimestampSecs: 1641600000 // 2022-01-08 00:00:00 GMT, 7 days later
+    initTimestamp: 1640995200, // 2022-01-01 00:00:00 GMT
+    endTimestamp: 1641600000 // 2022-01-08 00:00:00 GMT, 7 days later
   }
   // 6 days
   const dailyTimeRanges: TimeRange[] = [
-    { initTimestampSecs: 1640995200, endTimestampSecs: 1641081600 },
-    { initTimestampSecs: 1641081600, endTimestampSecs: 1641168000 },
-    { initTimestampSecs: 1641168000, endTimestampSecs: 1641254400 },
-    { initTimestampSecs: 1641254400, endTimestampSecs: 1641340800 },
-    { initTimestampSecs: 1641340800, endTimestampSecs: 1641427200 },
-    { initTimestampSecs: 1641427200, endTimestampSecs: 1641513600 }
+    { initTimestamp: 1640995200, endTimestamp: 1641081600 },
+    { initTimestamp: 1641081600, endTimestamp: 1641168000 },
+    { initTimestamp: 1641168000, endTimestamp: 1641254400 },
+    { initTimestamp: 1641254400, endTimestamp: 1641340800 },
+    { initTimestamp: 1641340800, endTimestamp: 1641427200 },
+    { initTimestamp: 1641427200, endTimestamp: 1641513600 }
   ]
   expect(isTimeRangeCoveredBy(weeklyTimeRangeToBeCovered, dailyTimeRanges)).toBeFalsy()
 })
 
 it('should split a 2 days and 50 seconds timerange in 2 days and a remainder of 50 seconds', () => {
   const timeRange: TimeRange = {
-    initTimestampSecs: 1640995200, // 2022-01-01 00:00:00 GMT
-    endTimestampSecs: 1641168000 + 50 // 2022-01-03 00:00:50 GMT, 2 days and 50 seconds later
+    initTimestamp: 1640995200000, // 2022-01-01 00:00:00 GMT
+    endTimestamp: 1641168000000 + 50000 // 2022-01-03 00:00:50 GMT, 2 days and 50 seconds later
   }
   const timeRangeDivision = divideTimeInYearsMonthsWeeksAndDays(timeRange)
   expect(timeRangeDivision.intervals.length).toEqual(2)
   for (const dailyInterval of timeRangeDivision.intervals) {
-    expect(timeRangeSizeInSeconds(dailyInterval)).toBe(SECONDS_PER_DAY)
+    expect(timeRangeSizeInMS(dailyInterval)).toBe(MS_PER_DAY)
   }
   expect(timeRangeDivision.intervals[0]).toEqual({
-    initTimestampSecs: 1640995200, // 2022-01-01 00:00:00 GMT
-    endTimestampSecs: 1641081600 // 2022-01-02 00:00:00 GMT
+    initTimestamp: 1640995200000, // 2022-01-01 00:00:00 GMT
+    endTimestamp: 1641081600000 // 2022-01-02 00:00:00 GMT
   })
   expect(timeRangeDivision.intervals[1]).toEqual({
-    initTimestampSecs: 1641081600, // 2022-01-02 00:00:00 GMT
-    endTimestampSecs: 1641168000 // 2022-01-03 00:00:00 GMT
+    initTimestamp: 1641081600000, // 2022-01-02 00:00:00 GMT
+    endTimestamp: 1641168000000 // 2022-01-03 00:00:00 GMT
   })
-  expect(timeRangeSizeInSeconds(timeRangeDivision.remainder)).toEqual(50)
+  expect(timeRangeSizeInMS(timeRangeDivision.remainder)).toEqual(50000)
   expect(timeRangeDivision.remainder).toEqual({
-    initTimestampSecs: 1641168000, // 2022-01-03 00:00:00 GMT
-    endTimestampSecs: 1641168050 // 2022-01-03 00:00:50 GMT
+    initTimestamp: 1641168000000, // 2022-01-03 00:00:00 GMT
+    endTimestamp: 1641168050000 // 2022-01-03 00:00:50 GMT
   })
 })
 
@@ -73,17 +73,17 @@ function expectTimeDivisionMatchesRepresentation(timeRange: TimeRange, represent
   const intervals = timeRangeDivision.intervals
   let received = ""
   for (const interval of intervals) {
-    switch (timeRangeSizeInSeconds(interval)) {
-      case SECONDS_PER_DAY:
+    switch (timeRangeSizeInMS(interval)) {
+      case MS_PER_DAY:
         received = received + 'I'
         break
-      case SECONDS_PER_WEEK:
+      case MS_PER_WEEK:
         received = received + 'W'
         break
-      case SECONDS_PER_MONTH:
+      case MS_PER_MONTH:
         received = received + 'M'
         break
-      case SECONDS_PER_YEAR:
+      case MS_PER_YEAR:
         received = received + 'Y'
         break
       default:
@@ -93,15 +93,15 @@ function expectTimeDivisionMatchesRepresentation(timeRange: TimeRange, represent
   expect(received).toEqual(representation)
   // Now we assert that the intervals and remainder covers correctly the time range
   if (intervals.length > 0) {
-    expect(intervals[0].initTimestampSecs).toEqual(timeRange.initTimestampSecs)
-    expect(timeRangeDivision.remainder.endTimestampSecs).toEqual(timeRange.endTimestampSecs)
+    expect(intervals[0].initTimestamp).toEqual(timeRange.initTimestamp)
+    expect(timeRangeDivision.remainder.endTimestamp).toEqual(timeRange.endTimestamp)
     // Now we assert the intervals are consecutive
-    let previousEndTimestampSecs = intervals[0].initTimestampSecs
+    let previousEndTimestampSecs = intervals[0].initTimestamp
     for (const interval of intervals) {
-      expect(interval.initTimestampSecs).toEqual(previousEndTimestampSecs)
-      previousEndTimestampSecs = interval.endTimestampSecs
+      expect(interval.initTimestamp).toEqual(previousEndTimestampSecs)
+      previousEndTimestampSecs = interval.endTimestamp
     }
-    expect(timeRangeDivision.remainder.initTimestampSecs).toEqual(intervals[intervals.length - 1].endTimestampSecs)
+    expect(timeRangeDivision.remainder.initTimestamp).toEqual(intervals[intervals.length - 1].endTimestamp)
   }
 
 }
@@ -137,7 +137,7 @@ it('should satisfy progression', () => {
 
 function timeRangeOfDays(timestampSecsStartingAt: number, numberOfDays: number): TimeRange {
   return {
-    initTimestampSecs: timestampSecsStartingAt,
-    endTimestampSecs: timestampSecsStartingAt + SECONDS_PER_DAY * numberOfDays
+    initTimestamp: timestampSecsStartingAt,
+    endTimestamp: timestampSecsStartingAt + MS_PER_DAY * numberOfDays
   }
 }
