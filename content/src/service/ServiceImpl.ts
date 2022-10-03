@@ -6,7 +6,7 @@ import { getEntityById, setEntitiesAsOverwritten } from '../logic/database-queri
 import { calculateOverwrites, saveDeploymentAndContentFiles } from '../logic/deployments'
 import { calculateDeprecatedHashes, calculateIPFSHashes } from '../logic/hashing'
 import { bufferToStream, ContentItem } from '../ports/contentStorage/contentStorage'
-import { FailedDeployment, FailureReason } from '../ports/failedDeploymentsCache'
+import { FailedDeployment, FailureReason } from '../ports/failedDeployments'
 import { AppComponents, EntityVersion } from '../types'
 import { getDeployments } from './deployments/deployments'
 import { AuditInfo, Deployment, DeploymentOptions, PartialDeploymentHistory } from './deployments/types'
@@ -39,7 +39,7 @@ export class ServiceImpl implements MetaverseContentService {
       | 'metrics'
       | 'storage'
       | 'pointerManager'
-      | 'failedDeploymentsCache'
+      | 'failedDeployments'
       | 'deployRateLimiter'
       | 'validator'
       | 'serverValidator'
@@ -271,7 +271,7 @@ export class ServiceImpl implements MetaverseContentService {
     }
 
     // Mark deployment as successful (this does nothing it if hadn't failed on the first place)
-    this.components.failedDeploymentsCache.removeFailedDeployment(entity.id)
+    await this.components.failedDeployments.removeFailedDeployment(entity.id)
 
     return { auditInfoComplete, wasEntityDeployed: !isEntityAlreadyDeployed }
   }
@@ -293,17 +293,17 @@ export class ServiceImpl implements MetaverseContentService {
     if (setPointers.length > 0) await this.components.activeEntities.update(setPointers, entity)
   }
 
-  reportErrorDuringSync(
+  async reportErrorDuringSync(
     entityType: EntityType,
     entityId: string,
     reason: FailureReason,
     authChain: AuthChain,
     errorDescription?: string
-  ): void {
+  ): Promise<void> {
     ServiceImpl.LOGGER.warn(
       `Deployment of entity (${entityType}, ${entityId}) failed. Reason was: '${errorDescription}'`
     )
-    return this.components.failedDeploymentsCache.reportFailure({
+    return this.components.failedDeployments.reportFailure({
       entityType,
       entityId,
       reason,
@@ -374,8 +374,8 @@ export class ServiceImpl implements MetaverseContentService {
     return getDeployments(this.components, options)
   }
 
-  getAllFailedDeployments(): FailedDeployment[] {
-    return this.components.failedDeploymentsCache.getAllFailedDeployments()
+  async getAllFailedDeployments(): Promise<FailedDeployment[]> {
+    return this.components.failedDeployments.getAllFailedDeployments()
   }
 
   private async validateDeployment(
@@ -390,7 +390,7 @@ export class ServiceImpl implements MetaverseContentService {
       areThereNewerEntities: (entity) => this.areThereNewerEntitiesOnPointers(entity),
       isEntityDeployedAlready: () => isEntityDeployedAlready,
       isNotFailedDeployment: (entity) =>
-        this.components.failedDeploymentsCache.findFailedDeployment(entity.id) === undefined,
+        this.components.failedDeployments.findFailedDeployment(entity.id) === undefined,
       isEntityRateLimited: (entity) => this.components.deployRateLimiter.isRateLimited(entity.type, entity.pointers),
       isRequestTtlBackwards: (entity) =>
         Date.now() - entity.timestamp > this.components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)

@@ -76,7 +76,7 @@ export const IGNORING_FIX_ERROR = 'Ignoring fix for failed deployment since ther
  * Server side validations for current deploying entity for LOCAL and FIX_ATTEMPT contexts
  */
 export const createServerValidator = (
-  components: Pick<AppComponents, 'failedDeploymentsCache' | 'metrics'>
+  components: Pick<AppComponents, 'failedDeployments' | 'metrics'>
 ): ServerValidator => ({
   validate: async (entity, context, serviceCalls) => {
     // these contexts doesn't validate anything in this side
@@ -94,7 +94,7 @@ export const createServerValidator = (
       // so we remove it from failed deployments cache
 
       if (await serviceCalls.areThereNewerEntities(entity)) {
-        components.failedDeploymentsCache.removeFailedDeployment(entity.id)
+        components.failedDeployments.removeFailedDeployment(entity.id)
         return {
           ok: false,
           message: `${IGNORING_FIX_ERROR} (pointers=${entity.pointers.join(',')})`

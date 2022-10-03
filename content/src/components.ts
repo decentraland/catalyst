@@ -20,7 +20,7 @@ import { createFileSystemContentStorage } from './ports/contentStorage/fileSyste
 import { createDenylist } from './ports/denylist'
 import { createDeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
 import { createDeployRateLimiter } from './ports/deployRateLimiterComponent'
-import { createFailedDeploymentsCache } from './ports/failedDeploymentsCache'
+import { createFailedDeployments } from './ports/failedDeployments'
 import { createFetchComponent } from './ports/fetcher'
 import { createFsComponent } from './ports/fs'
 import { createDatabaseComponent } from './ports/postgres'
@@ -104,7 +104,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   // TODO: this should be in the src/logic folder. It is not a component
   const pointerManager = new PointerManager()
 
-  const failedDeploymentsCache = createFailedDeploymentsCache({ metrics })
+  const failedDeployments = await createFailedDeployments({ metrics, database })
 
   const deployRateLimiter = createDeployRateLimiter(
     { logs },
@@ -128,7 +128,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   })
   const theGraphClient = createTheGraphClient({ subGraphs, logs })
   const validator = createValidator({ config, externalCalls, logs, theGraphClient, subGraphs })
-  const serverValidator = createServerValidator({ failedDeploymentsCache, metrics })
+  const serverValidator = createServerValidator({ failedDeployments: failedDeployments, metrics })
 
   const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs })
   const activeEntities = createActiveEntitiesComponent({ database, env, logs, metrics, denylist, sequentialExecutor })
@@ -136,7 +136,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const deployer: MetaverseContentService = new ServiceImpl({
     metrics,
     storage,
-    failedDeploymentsCache,
+    failedDeployments,
     deployRateLimiter,
     pointerManager,
     validator,
@@ -227,7 +227,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     logs,
     deployer,
     contentCluster,
-    failedDeploymentsCache,
+    failedDeployments,
     storage
   })
 
@@ -293,7 +293,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     challengeSupervisor,
     snapshotManager,
     contentCluster,
-    failedDeploymentsCache,
+    failedDeployments,
     deployRateLimiter,
     pointerManager,
     storage,

@@ -3,7 +3,7 @@ import { DeploymentWithAuthChain, Entity, EntityType } from '@dcl/schemas'
 import { random } from 'faker'
 import { CURRENT_CONTENT_VERSION } from '../../../src/Environment'
 import { ContentItem, SimpleContentItem } from '../../../src/ports/contentStorage/contentStorage'
-import { FailedDeployment } from '../../../src/ports/failedDeploymentsCache'
+import { FailedDeployment } from '../../../src/ports/failedDeployments'
 import { AuditInfo, Deployment, DeploymentOptions, PartialDeploymentHistory, PointerChangesOptions } from '../../../src/service/deployments/types'
 import { DeploymentContext, LocalDeploymentAuditInfo, MetaverseContentService } from '../../../src/service/Service'
 import { EntityVersion, IStatusCapableComponent, StatusProbeResult } from '../../../src/types'
@@ -124,7 +124,7 @@ export class MockedMetaverseContentService implements MetaverseContentService, I
     }
   }
 
-  getAllFailedDeployments(): FailedDeployment[] {
+  getAllFailedDeployments(): Promise<FailedDeployment[]> {
     throw new Error('Method not implemented.')
   }
 

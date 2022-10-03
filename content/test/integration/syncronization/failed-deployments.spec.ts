@@ -1,7 +1,7 @@
 import { stub } from 'sinon'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { retryFailedDeploymentExecution } from '../../../src/logic/deployments'
-import { FailedDeployment, FailureReason } from '../../../src/ports/failedDeploymentsCache'
+import { FailedDeployment, FailureReason } from '../../../src/ports/failedDeployments'
 import { assertDeploymentFailed, assertDeploymentFailsWith, assertEntitiesAreActiveOnServer } from '../E2EAssertions'
 import { loadTestEnvironment } from '../E2ETestEnvironment'
 import { awaitUntil, buildDeployData, buildDeployDataAfterEntity, createIdentity } from '../E2ETestUtils'
