@@ -94,7 +94,7 @@ export const createServerValidator = (
       // so we remove it from failed deployments cache
 
       if (await serviceCalls.areThereNewerEntities(entity)) {
-        components.failedDeployments.removeFailedDeployment(entity.id)
+        await components.failedDeployments.removeFailedDeployment(entity.id)
         return {
           ok: false,
           message: `${IGNORING_FIX_ERROR} (pointers=${entity.pointers.join(',')})`
