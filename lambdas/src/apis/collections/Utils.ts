@@ -19,6 +19,8 @@ export function isBaseAvatar(wearable: WearableId): boolean {
   return wearable.includes('base-avatars')
 }
 
+export const isOldEmote = (urn: string): boolean => /^[a-z]+$/i.test(urn)
+
 /** We will prioritize the text in english. If not present, then we will choose the first one */
 export function preferEnglish(i18ns: I18N[]): string | undefined {
   const i18nInEnglish = i18ns.filter((i18n) => i18n.code.toLowerCase() === 'en')[0]
