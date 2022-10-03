@@ -34,13 +34,17 @@ export type IFailedDeploymentsComponent = {
   findFailedDeployment(entityId: string): Promise<FailedDeployment | undefined>
   removeFailedDeployment(entityId: string): Promise<void>
   reportFailure(failedDeployment: FailedDeployment): Promise<void>
+  start(): Promise<void>
 }
 
 export async function createFailedDeployments(
   components: Pick<AppComponents, 'metrics' | 'database'>
 ): Promise<IFailedDeploymentsComponent> {
-  let failedDeploymentsCount = await numberOfFailedDeployments(components)
+  let failedDeploymentsCount: number
   return {
+    async start() {
+      failedDeploymentsCount = await numberOfFailedDeployments(components)
+    },
     async getAllFailedDeployments() {
       return getFailedDeployments(components)
     },
