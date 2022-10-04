@@ -316,10 +316,10 @@
   dependencies:
     "@cspotcode/source-map-consumer" "0.8.0"
 
-"@dcl/catalyst-api-specs@^2.0.9":
-  version "2.0.9"
-  resolved "https://registry.yarnpkg.com/@dcl/catalyst-api-specs/-/catalyst-api-specs-2.0.9.tgz#096054727ae332de09fe2f0fe92f21709e2d34f7"
-  integrity sha512-SlhgVcHSq1YMH8XUlu0UvrD9EQefmbNm42HBOwXaKt87EQqLrYo/W9AAM2QflhDhiodozJKS6+2qpd7/z1B4yA==
+"@dcl/catalyst-api-specs@^2.0.12":
+  version "2.0.12"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-api-specs/-/catalyst-api-specs-2.0.12.tgz#2e5ae2b0906170184bd971836469be2795b50f3d"
+  integrity sha512-S0mCLsQ60S0gkuZGdCEgrIGzetMBm+Y5N7t+IdwrjujvbAJmnWTyTBD4gL1vqauZyOaU35E192qxu58ZYHJbIA==
   dependencies:
     yaml "2.1.1"
 
@@ -380,10 +380,10 @@
     ipfs-unixfs-importer "^7.0.3"
     multiformats "^9.6.3"
 
-"@dcl/schemas@^5.16.0", "@dcl/schemas@^5.4.2", "@dcl/schemas@^5.5.0":
-  version "5.16.0"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-5.16.0.tgz#4b00fc4476d4f52b9d740462157d850129770ad2"
-  integrity sha512-DQGbVopUt35lMdoWM/vAcsLy7vh/zCjTABOB4S1fvOI093sH3GVdVkz5ifcfMyxrWuOd0FM0VBcOzRWkRzb76w==
+"@dcl/schemas@^5.19.0", "@dcl/schemas@^5.4.2", "@dcl/schemas@^5.5.0":
+  version "5.19.0"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-5.19.0.tgz#c1311bc18ab4f20cd6b1365c6e42b382f290e787"
+  integrity sha512-eJkZu7oNgZ5rGSi6BzxUBe/IHYKf0mtP+DYkDUFyTmN7Xk81AQy7CXQoT6ME8Qc8A0fT2LfM08sunMJbO5IGqg==
   dependencies:
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
@@ -1608,17 +1608,17 @@
     "@typescript-eslint/types" "5.33.0"
     eslint-visitor-keys "^3.3.0"
 
-"@well-known-components/env-config-provider@^1.1.1":
-  version "1.1.1"
-  resolved "https://registry.yarnpkg.com/@well-known-components/env-config-provider/-/env-config-provider-1.1.1.tgz#d04215847fcab83a1ab05e375df8e2141dae23cd"
-  integrity sha512-toj2HcxYZRf9UuBqEC9mrej9yyQlGU/15oGtShrDtNC9/OVLBNY3q8cNgLLKbPOMLaRJkjdQvIvpjb+Q+E+PFQ==
+"@well-known-components/env-config-provider@^1.2.0":
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/@well-known-components/env-config-provider/-/env-config-provider-1.2.0.tgz#bd170c0af24cd8a34ebff23245fe53466db7f8be"
+  integrity sha512-QYDL9Uk1zEs5Q4ymgeZo1GVzuHe9Pp/jOLPRIbhwtPOCQ2Bd9yIlUWiFoC36JpcUSIlQ7Fzh8x21v2U95q5/+Q==
   dependencies:
-    dotenv "^8.2.0"
+    dotenv "^16.0.1"
 
-"@well-known-components/http-server@1.1.4", "@well-known-components/http-server@^1.1.0":
-  version "1.1.4"
-  resolved "https://registry.yarnpkg.com/@well-known-components/http-server/-/http-server-1.1.4.tgz#67f764aa8f7f40532febf9c97ced2f661d880c3b"
-  integrity sha512-DgrZ/TCufIt+RElag5wPWRDilZ3HPWcdVvCe61NERLKEudZB0zB05DKDdqhqYa7K7a4isJ8V8udQMlD/cIm54A==
+"@well-known-components/http-server@1.1.5", "@well-known-components/http-server@^1.1.0":
+  version "1.1.5"
+  resolved "https://registry.yarnpkg.com/@well-known-components/http-server/-/http-server-1.1.5.tgz#0d468593fa5887950c6f37a299b3077c85851fe7"
+  integrity sha512-SdZfNHFKqa5dccJDxPfaNoPqFKb/2ggd+yMwisv+FvFuLLxtGmvNRaxp9vMSwoVVAAI3vyx8NGmXHO1sHsoXLw==
   dependencies:
     "@types/compression" "^1.7.0"
     "@types/cors" "^2.8.9"
@@ -2648,10 +2648,10 @@ date-format@^4.0.10, date-format@^4.0.13:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-4.0.13.tgz#87c3aab3a4f6f37582c5f5f63692d2956fa67890"
   integrity sha512-bnYCwf8Emc3pTD8pXnre+wfnjGtfi5ncMDKy7+cWZXbmRAsdWkOQHrfC1yz/KiwP5thDp2kCHWYWKBX4HP1hoQ==
 
-dcl-catalyst-client@^13.0.3:
-  version "13.0.3"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-13.0.3.tgz#76ef8308491c58c0d65371d3a0a7429e892f8ad9"
-  integrity sha512-u9uSRfdX8vONTrPV9SM3YJ2rXX3gkKl89l9dr6Z5yhe87jRIlBgifijo9Uf9bFz6URozZlLiHHtqsQ+YExIiFg==
+dcl-catalyst-client@^13.0.7:
+  version "13.0.7"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-13.0.7.tgz#f2257d871db7f3347c4ef0b3f0205f7103e09c73"
+  integrity sha512-el8mPlTRZT7ca9suwmQkSinLAvAIEmVJeT4EHd7ZDYkl1N11sk8n/0vYXRSd+vQNstgk8oEQcWKvr/MyMFixAA==
   dependencies:
     "@dcl/catalyst-contracts" "^3.0.0"
     "@dcl/hashing" "^1.1.0"
@@ -2662,9 +2662,9 @@ dcl-catalyst-client@^13.0.3:
     form-data "^4.0.0"
 
 dcl-catalyst-commons@^9.0.6:
-  version "9.0.10"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-9.0.10.tgz#d901822e5f44bbf44be83e655df98f3d537798f8"
-  integrity sha512-O5x9js02MkuV/6JMeM6Pzy7/UVZRfq/fk7SOGM1b/gNIMel9aXKxotR/0JV0WLXjDfLBxT+7dEbeu3hxgmVkKg==
+  version "9.0.11"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-9.0.11.tgz#e0a991162ce689a9796098e6fabfa0ead0518021"
+  integrity sha512-N+Syn9UqzvNKudlFMrtQecsD+VK/iE1AAHEFpKciAnM7drrp60N/qLTVPbRi/QatCfhp2JOqCWeElvuMoN+dgA==
   dependencies:
     "@dcl/schemas" "^5.4.2"
     abort-controller "^3.0.0"
@@ -2849,10 +2849,10 @@ domexception@^2.0.1:
   dependencies:
     webidl-conversions "^5.0.0"
 
-dotenv@^8.2.0:
-  version "8.6.0"
-  resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-8.6.0.tgz#061af664d19f7f4d8fc6e4ff9b584ce237adcb8b"
-  integrity sha512-IrPdXQsk2BbzvCBGBOTmmSH5SodmqZNt4ERAZDmW4CT+tL8VtvinqywuANaFu4bOMWki16nqf0e4oC0QIaDr/g==
+dotenv@^16.0.1:
+  version "16.0.3"
+  resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-16.0.3.tgz#115aec42bac5053db3c456db30cc243a5a836a07"
+  integrity sha512-7GO6HghkA5fYG9TYnNxi14/7K9f5occMlp3zXAuSxn7CKCxt9xbNWG7yF8hTCSUchlfWSe3uLmlPfigevRItzQ==
 
 eastasianwidth@^0.2.0:
   version "0.2.0"

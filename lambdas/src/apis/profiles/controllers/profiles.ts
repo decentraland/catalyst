@@ -7,7 +7,7 @@ import { asArray } from '../../../utils/ControllerUtils'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TheGraphClient } from '../../../utils/TheGraphClient'
 import { WearableId } from '../../collections/types'
-import { isBaseAvatar, translateWearablesIdFormat } from '../../collections/Utils'
+import { isBaseAvatar, isOldEmote, translateWearablesIdFormat } from '../../collections/Utils'
 import { EmotesOwnership } from '../EmotesOwnership'
 import { EnsOwnership } from '../EnsOwnership'
 import { emotesSavedAsWearables } from '../old-emotes'
@@ -255,9 +255,9 @@ export async function fetchProfiles(
           wearables: (await sanitizeWearables(fixWearableId(profileData.avatar.wearables), wearablesOwnership)).concat(
             tpw
           ),
-          emotes:
-            emotesMap.get(ethAddress) ??
-            ([] as { slot: number; urn: string }[]).filter((emote) => emotesOwnership.has(emote.urn)).concat(tpe)
+          emotes: (emotesMap.get(ethAddress) ?? ([] as { slot: number; urn: string }[]))
+            .filter((emote) => isOldEmote(emote.urn) || emotesOwnership.get(emote.urn))
+            .concat(tpe)
         }
       }))
       return { timestamp: profile.metadata.timestamp, avatars: await Promise.all(avatars) }

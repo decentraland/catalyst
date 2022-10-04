@@ -64,6 +64,7 @@ export class OffChainWearablesManager {
       const entities = await client.fetchEntitiesByPointers(EntityType.WEARABLE, wearableIds)
       entities
         .map((entity) => translateEntityIntoWearable(client, entity))
+        .filter((wearable): wearable is LambdasWearable => !!wearable)
         .sort((wearable1, wearable2) => wearable1.id.toLowerCase().localeCompare(wearable2.id.toLowerCase()))
         .forEach((wearable) => localDefinitions.push({ collectionId, wearable }))
     }
