@@ -52,8 +52,10 @@ export async function createFailedDeployments(
       return getFailedDeploymentByEntityId(components, entityId)
     },
     async removeFailedDeployment(entityId: string) {
-      await deleteFailedDeployment(components, entityId)
-      failedDeploymentsCount--
+      const wasDeleted = await deleteFailedDeployment(components, entityId)
+      if (wasDeleted) {
+        failedDeploymentsCount--
+      }
       components.metrics.observe('dcl_content_server_failed_deployments', {}, failedDeploymentsCount)
     },
     async reportFailure(failedDeployment: FailedDeployment) {
