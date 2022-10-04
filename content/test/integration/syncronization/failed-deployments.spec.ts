@@ -1,10 +1,11 @@
 import { stub } from 'sinon'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { retryFailedDeploymentExecution } from '../../../src/logic/deployments'
-import { FailedDeployment, FailureReason } from '../../../src/ports/failedDeploymentsCache'
+import { FailedDeployment, FailureReason } from '../../../src/ports/failedDeployments'
 import { assertDeploymentFailed, assertDeploymentFailsWith, assertEntitiesAreActiveOnServer } from '../E2EAssertions'
 import { loadTestEnvironment } from '../E2ETestEnvironment'
 import { awaitUntil, buildDeployData, buildDeployDataAfterEntity, createIdentity } from '../E2ETestUtils'
+import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
 
 loadTestEnvironment()('Errors during sync', (testEnv) => {
   describe('Deploy an entity on server 1', function () {
@@ -32,7 +33,7 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
       // Prepare entity to deploy
       const entityCombo = await buildDeployData(['0,0', '0,1'], {
         metadata: { a: 'metadata' },
-        contentPaths: ['test/integration/resources/some-binary-file.png']
+        contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
       })
       this.deployData = entityCombo.deployData
       this.controllerEntity = entityCombo.controllerEntity
@@ -157,7 +158,7 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
       // Prepare entity to deploy
       const entityCombo = await buildDeployData(['0,0', '0,1'], {
         metadata: { a: 'metadata' },
-        contentPaths: ['test/integration/resources/some-binary-file.png']
+        contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
       })
       this.deployData = entityCombo.deployData
       this.controllerEntity = entityCombo.controllerEntity

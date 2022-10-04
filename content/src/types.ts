@@ -17,7 +17,7 @@ import { ContentStorage } from './ports/contentStorage/contentStorage'
 import { Denylist } from './ports/denylist'
 import { DeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
 import { IDeployRateLimiterComponent } from './ports/deployRateLimiterComponent'
-import { IFailedDeploymentsCacheComponent } from './ports/failedDeploymentsCache'
+import { IFailedDeploymentsComponent } from './ports/failedDeployments'
 import { FSComponent } from './ports/fs'
 import { IDatabaseComponent } from './ports/postgres'
 import { ISequentialTaskExecutorComponent } from './ports/sequecuentialTaskExecutor'
@@ -59,7 +59,7 @@ export type AppComponents = {
   challengeSupervisor: IChallengeSupervisor
   contentCluster: ContentCluster
   pointerManager: PointerManager
-  failedDeploymentsCache: IFailedDeploymentsCacheComponent
+  failedDeployments: IFailedDeploymentsComponent
   deployRateLimiter: IDeployRateLimiterComponent
   storage: ContentStorage
   authenticator: ContentAuthenticator
