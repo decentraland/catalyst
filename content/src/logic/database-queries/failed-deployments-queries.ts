@@ -11,7 +11,7 @@ export async function saveFailedDeployment(
   INSERT INTO failed_deployments
   (entity_id, entity_type, failure_time, reason, auth_chain, error_description, snapshot_hash)
   VALUES
-  (${entityId}, ${entityType}, to_timestamp(${failureTimestamp} / 1000.0), ${JSON.stringify(reason)}, ${JSON.stringify(
+  (${entityId}, ${entityType}, to_timestamp(${failureTimestamp} / 1000.0), ${reason}, ${JSON.stringify(
     authChain
   )}, ${errorDescription}, ${snapshotHash})
   RETURNING entity_id
@@ -32,7 +32,7 @@ export async function deleteFailedDeployment(
 export async function getFailedDeployments(components: Pick<AppComponents, 'database'>): Promise<FailedDeployment[]> {
   const query = SQL`
   SELECT
-      entity_id AS "entityId"
+      entity_id AS "entityId",
       entity_type AS "entityType",
       date_part('epoch', failure_time) * 1000 AS "failureTimestamp",
       reason,
@@ -50,7 +50,7 @@ export async function getFailedDeploymentByEntityId(
 ): Promise<FailedDeployment | undefined> {
   const query = SQL`
   SELECT
-      entity_id AS "entityId"
+      entity_id AS "entityId",
       entity_type AS "entityType",
       date_part('epoch', failure_time) * 1000 AS "failureTimestamp",
       reason,
