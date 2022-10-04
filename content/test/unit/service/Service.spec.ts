@@ -16,7 +16,7 @@ import { createActiveEntitiesComponent } from '../../../src/ports/activeEntities
 import { Denylist } from '../../../src/ports/denylist'
 import { createDeployedEntitiesBloomFilter } from '../../../src/ports/deployedEntitiesBloomFilter'
 import { createDeployRateLimiter } from '../../../src/ports/deployRateLimiterComponent'
-import { createFailedDeploymentsCache } from '../../../src/ports/failedDeploymentsCache'
+import { createFailedDeployments } from '../../../src/ports/failedDeployments'
 import { createTestDatabaseComponent } from '../../../src/ports/postgres'
 import { createSequentialTaskExecutor } from '../../../src/ports/sequecuentialTaskExecutor'
 import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
@@ -196,7 +196,7 @@ describe('Service', function () {
 
   async function buildService() {
     const database = createTestDatabaseComponent()
-    database.queryWithValues = () => Promise.resolve({ rows: [], rowCount: 0 })
+    database.queryWithValues = () => Promise.resolve({ rows: [{ count: 0 }], rowCount: 0 } as any)
     database.transaction = () => Promise.resolve()
     const env = new Environment()
     env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, 'inexistent')
@@ -214,7 +214,7 @@ describe('Service', function () {
       { defaultMax: 300, defaultTtl: ms('1m'), entitiesConfigMax: new Map(), entitiesConfigTtl: new Map() }
     )
     const metrics = createTestMetricsComponent(metricsDeclaration)
-    const failedDeploymentsCache = createFailedDeploymentsCache({ metrics })
+    const failedDeployments = await createFailedDeployments({ metrics, database })
     const storage = new MockedStorage()
     const pointerManager = NoOpPointerManager.build()
     const authenticator = new ContentAuthenticator(new HTTPProvider("https://rpc.decentraland.org/mainnet?project=catalyst-ci"), DECENTRALAND_ADDRESS)
@@ -227,7 +227,7 @@ describe('Service', function () {
     return new ServiceImpl({
       env,
       pointerManager,
-      failedDeploymentsCache,
+      failedDeployments,
       deployRateLimiter,
       storage,
       validator,

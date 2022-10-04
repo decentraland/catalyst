@@ -1,12 +1,12 @@
-import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
+import { DeploymentWithAuthChain } from '@dcl/schemas'
 import { IDeployerComponent } from '@dcl/snapshots-fetcher'
+import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { IBaseComponent } from '@well-known-components/interfaces'
 import { isEntityDeployed } from '../../logic/deployments'
-import { FailureReason } from '../../ports/failedDeploymentsCache'
+import { FailureReason } from '../../ports/failedDeployments'
 import { AppComponents, CannonicalEntityDeployment } from '../../types'
 import { DeploymentContext } from '../Service'
 import { deployEntityFromRemoteServer } from './deployRemoteEntity'
-import { DeploymentWithAuthChain } from '@dcl/schemas'
 
 /**
  * An IDeployerComponent parallelizes deployments with a JobQueue.

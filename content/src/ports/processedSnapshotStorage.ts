@@ -13,8 +13,7 @@ export function createProcessedSnapshotStorage(
   return {
     async wasSnapshotProcessed(hash: string, replacedSnapshotHashes?: string[]): Promise<boolean> {
       const replacedHashes = replacedSnapshotHashes ?? []
-      const hashesToGet = [hash, ...replacedHashes]
-      const processedSnapshotHashes = await getProcessedSnapshots(components, hashesToGet)
+      const processedSnapshotHashes = await getProcessedSnapshots(components, [hash, ...replacedHashes])
 
       const snapshotWasAlreadyProcessed = processedSnapshotHashes.has(hash)
       const replacedHashesWereAlreadyProcessed =
