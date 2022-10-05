@@ -56,11 +56,9 @@ export async function createFailedDeployments(
     async removeFailedDeployment(entityId: string) {
       const failedDeployment = failedDeploymentsByEntityIdCache.get(entityId)
       if (failedDeployment) {
-        const wasDeleted = await deleteFailedDeployment(components, entityId)
+        await deleteFailedDeployment(components, entityId)
         failedDeploymentsByEntityIdCache.delete(entityId)
-        if (wasDeleted) {
-          components.metrics.observe('dcl_content_server_failed_deployments', {}, failedDeploymentsByEntityIdCache.size)
-        }
+        components.metrics.observe('dcl_content_server_failed_deployments', {}, failedDeploymentsByEntityIdCache.size)
       }
     },
     async reportFailure(failedDeployment: FailedDeployment) {
