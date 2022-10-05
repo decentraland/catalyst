@@ -92,7 +92,7 @@ describe('Service', function () {
     )
     if (isInvalidDeployment(deploymentResult)) {
       assert.fail(
-        'The deployment result: ' + deploymentResult + ' was expected to be successful, it was invalid instead.'
+        'The deployment result: ' + JSON.stringify(deploymentResult) + ' was expected to be successful, it was invalid instead.'
       )
     } else {
       const deltaMilliseconds = Date.now() - deploymentResult
