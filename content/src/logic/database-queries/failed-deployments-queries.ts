@@ -23,14 +23,14 @@ export async function deleteFailedDeployment(
   components: Pick<AppComponents, 'database'>,
   entityId: string
 ): Promise<boolean> {
-  const queryResult = await components.database.queryWithValues<{ count: number }>(
+  const queryResult = await components.database.queryWithValues<{ count: string }>(
     SQL`
   WITH deleted AS (
     DELETE FROM failed_deployments WHERE entity_id = ${entityId} RETURNING *
   ) SELECT count(*) FROM deleted;`,
     'delete_failed_deployment'
   )
-  return queryResult.rows[0].count > 0
+  return parseInt(queryResult.rows[0].count) > 0
 }
 
 export async function getFailedDeployments(components: Pick<AppComponents, 'database'>): Promise<FailedDeployment[]> {
@@ -69,6 +69,6 @@ export async function getFailedDeploymentByEntityId(
 export async function numberOfFailedDeployments(components: Pick<AppComponents, 'database'>): Promise<number> {
   const query = SQL`
   SELECT COUNT(*) FROM failed_deployments`
-  const queryResult = await components.database.queryWithValues<{ count: number }>(query, 'save_failed_deployment')
-  return queryResult.rows[0].count
+  const queryResult = await components.database.queryWithValues<{ count: string }>(query, 'save_failed_deployment')
+  return parseInt(queryResult.rows[0].count)
 }
