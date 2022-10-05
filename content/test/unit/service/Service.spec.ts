@@ -9,6 +9,7 @@ import { HTTPProvider } from 'eth-connect'
 import ms from 'ms'
 import { DEFAULT_ENTITIES_CACHE_SIZE, Environment, EnvironmentConfig } from '../../../src/Environment'
 import * as deploymentQueries from '../../../src/logic/database-queries/deployments-queries'
+import * as failedDeploymentQueries from '../../../src/logic/database-queries/failed-deployments-queries'
 import * as pointers from '../../../src/logic/database-queries/pointers-queries'
 import * as deploymentLogic from '../../../src/logic/deployments'
 import { metricsDeclaration } from '../../../src/metrics'
@@ -66,6 +67,8 @@ describe('Service', function () {
   })
 
   it(`When no file matches the given entity id, then deployment fails`, async () => {
+    jest.spyOn(failedDeploymentQueries, 'numberOfFailedDeployments').mockResolvedValue(0)
+    jest.spyOn(failedDeploymentQueries, 'deleteFailedDeployment').mockResolvedValue(false)
     const service = await buildService()
     const deploymentResult = await service.deployEntity(
       [randomFile],
@@ -81,6 +84,8 @@ describe('Service', function () {
   })
 
   it(`When an entity is successfully deployed, then the content is stored correctly`, async () => {
+    jest.spyOn(failedDeploymentQueries, 'numberOfFailedDeployments').mockResolvedValue(0)
+    jest.spyOn(failedDeploymentQueries, 'deleteFailedDeployment').mockResolvedValue(false)
     const service = await buildService()
     const storageSpy = jest.spyOn(service.components.storage, 'storeStream')
 
@@ -196,7 +201,7 @@ describe('Service', function () {
 
   async function buildService() {
     const database = createTestDatabaseComponent()
-    database.queryWithValues = () => Promise.resolve({ rows: [{ count: 0 }], rowCount: 0 } as any)
+    database.queryWithValues = () => Promise.resolve({ rows: [], rowCount: 0 } as any)
     database.transaction = () => Promise.resolve()
     const env = new Environment()
     env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, 'inexistent')
@@ -223,6 +228,7 @@ describe('Service', function () {
     const denylist: Denylist = { isDenylisted: () => false }
     const sequentialExecutor = createSequentialTaskExecutor({ logs, metrics })
     const activeEntities = createActiveEntitiesComponent({ database, logs, env, metrics, denylist, sequentialExecutor })
+    await failedDeployments.start()
 
     return new ServiceImpl({
       env,
