@@ -2,9 +2,7 @@ import { AuthChain } from '@dcl/crypto'
 import { EntityType } from '@dcl/schemas'
 import {
   deleteFailedDeployment,
-  getFailedDeploymentByEntityId,
   getFailedDeployments,
-  numberOfFailedDeployments,
   saveFailedDeployment
 } from '../logic/database-queries/failed-deployments-queries'
 import { AppComponents } from '../types'
@@ -40,28 +38,35 @@ export type IFailedDeploymentsComponent = {
 export async function createFailedDeployments(
   components: Pick<AppComponents, 'metrics' | 'database'>
 ): Promise<IFailedDeploymentsComponent> {
-  let failedDeploymentsCount: number
+  const failedDeploymentsByEntityIdCache: Map<string, FailedDeployment> = new Map()
+
   return {
     async start() {
-      failedDeploymentsCount = await numberOfFailedDeployments(components)
+      const failedDeployments = await getFailedDeployments(components)
+      for (const failedDeployment of failedDeployments) {
+        failedDeploymentsByEntityIdCache.set(failedDeployment.entityId, failedDeployment)
+      }
     },
     async getAllFailedDeployments() {
-      return getFailedDeployments(components)
+      return Array.from(failedDeploymentsByEntityIdCache.values())
     },
     async findFailedDeployment(entityId: string) {
-      return getFailedDeploymentByEntityId(components, entityId)
+      return failedDeploymentsByEntityIdCache.get(entityId)
     },
     async removeFailedDeployment(entityId: string) {
-      const wasDeleted = await deleteFailedDeployment(components, entityId)
-      if (wasDeleted) {
-        failedDeploymentsCount--
-        components.metrics.observe('dcl_content_server_failed_deployments', {}, failedDeploymentsCount)
+      const failedDeployment = failedDeploymentsByEntityIdCache.get(entityId)
+      if (failedDeployment) {
+        const wasDeleted = await deleteFailedDeployment(components, entityId)
+        failedDeploymentsByEntityIdCache.delete(entityId)
+        if (wasDeleted) {
+          components.metrics.observe('dcl_content_server_failed_deployments', {}, failedDeploymentsByEntityIdCache.size)
+        }
       }
     },
     async reportFailure(failedDeployment: FailedDeployment) {
       await saveFailedDeployment(components, failedDeployment)
-      failedDeploymentsCount++
-      components.metrics.observe('dcl_content_server_failed_deployments', {}, failedDeploymentsCount)
+      failedDeploymentsByEntityIdCache.set(failedDeployment.entityId, failedDeployment)
+      components.metrics.observe('dcl_content_server_failed_deployments', {}, failedDeploymentsByEntityIdCache.size)
     }
   }
 }

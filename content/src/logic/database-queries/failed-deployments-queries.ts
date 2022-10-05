@@ -47,28 +47,3 @@ export async function getFailedDeployments(components: Pick<AppComponents, 'data
   const queryResult = await components.database.queryWithValues<FailedDeployment>(query, 'save_failed_deployment')
   return queryResult.rows
 }
-
-export async function getFailedDeploymentByEntityId(
-  components: Pick<AppComponents, 'database'>,
-  entityId: string
-): Promise<FailedDeployment | undefined> {
-  const query = SQL`
-  SELECT
-      entity_id AS "entityId",
-      entity_type AS "entityType",
-      date_part('epoch', failure_time) * 1000 AS "failureTimestamp",
-      reason,
-      auth_chain AS "authChain",
-      error_description AS "errorDescription",
-      snapshot_hash AS "snapshotHash"
-  FROM failed_deployments WHERE entity_id = ${entityId}`
-  const queryResult = await components.database.queryWithValues<FailedDeployment>(query, 'save_failed_deployment')
-  return queryResult.rowCount > 0 ? queryResult.rows[0] : undefined
-}
-
-export async function numberOfFailedDeployments(components: Pick<AppComponents, 'database'>): Promise<number> {
-  const query = SQL`
-  SELECT COUNT(*) FROM failed_deployments`
-  const queryResult = await components.database.queryWithValues<{ count: string }>(query, 'save_failed_deployment')
-  return parseInt(queryResult.rows[0].count)
-}
