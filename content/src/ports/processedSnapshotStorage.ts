@@ -28,8 +28,9 @@ export function createProcessedSnapshotStorage(
 
       return snapshotWasAlreadyProcessed || replacedHashesWereAlreadyProcessed
     },
-    async markSnapshotProcessed(hash: string): Promise<void> {
+    async markSnapshotProcessed(hash: string, replacedSnapshotHashes?: string[]): Promise<void> {
       await saveProcessedSnapshot(components.database, hash, Date.now())
+      await deleteProcessedSnapshots(components.database, replacedSnapshotHashes ?? [])
       logger.info(`Snapshot ${hash} successfully processed and saved.`)
     }
   }

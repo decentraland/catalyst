@@ -154,6 +154,9 @@ export async function deleteProcessedSnapshots(
   database: AppComponents['database'],
   processedSnapshotHashesToDelete: string[]
 ): Promise<void> {
+  if (processedSnapshotHashesToDelete.length == 0) {
+    return
+  }
   const query = SQL`DELETE FROM processed_snapshots WHERE hash IN (`
   const hashes = processedSnapshotHashesToDelete.map((h, i) =>
     i < processedSnapshotHashesToDelete.length - 1 ? SQL`${h},` : SQL`${h}`
