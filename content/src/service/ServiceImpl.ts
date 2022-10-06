@@ -6,7 +6,7 @@ import { getEntityById, setEntitiesAsOverwritten } from '../logic/database-queri
 import { calculateOverwrites, saveDeploymentAndContentFiles } from '../logic/deployments'
 import { calculateDeprecatedHashes, calculateIPFSHashes } from '../logic/hashing'
 import { bufferToStream, ContentItem } from '../ports/contentStorage/contentStorage'
-import { FailedDeployment, FailureReason } from '../ports/failedDeployments'
+import { FailureReason } from '../ports/failedDeployments'
 import { AppComponents, EntityVersion } from '../types'
 import { getDeployments } from './deployments/deployments'
 import { AuditInfo, Deployment, DeploymentOptions, PartialDeploymentHistory } from './deployments/types'
@@ -372,10 +372,6 @@ export class ServiceImpl implements MetaverseContentService {
 
   getDeployments(options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>> {
     return getDeployments(this.components, options)
-  }
-
-  async getAllFailedDeployments(): Promise<FailedDeployment[]> {
-    return this.components.failedDeployments.getAllFailedDeployments()
   }
 
   private async validateDeployment(

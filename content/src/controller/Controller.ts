@@ -42,6 +42,7 @@ export class Controller {
       | 'denylist'
       | 'fs'
       | 'snapshotGenerator'
+      | 'failedDeployments'
     >,
     private readonly ethNetwork: string
   ) {
@@ -684,7 +685,7 @@ export class Controller {
     // Method: GET
     // Path: /failed-deployments
 
-    const failedDeployments = await this.components.deployer.getAllFailedDeployments()
+    const failedDeployments = await this.components.failedDeployments.getAllFailedDeployments()
     res.send(failedDeployments)
   }
 

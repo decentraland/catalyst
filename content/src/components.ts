@@ -265,7 +265,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       activeEntities,
       denylist,
       fs,
-      snapshotGenerator
+      snapshotGenerator,
+      failedDeployments
     },
     ethNetwork
   )

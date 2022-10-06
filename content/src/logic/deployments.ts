@@ -54,7 +54,7 @@ export async function retryFailedDeploymentExecution(
 ): Promise<void> {
   const logs = logger || components.logs.getLogger('retryFailedDeploymentExecution')
   // Get Failed Deployments from local storage
-  const failedDeployments: FailedDeployment[] = await components.deployer.getAllFailedDeployments()
+  const failedDeployments: FailedDeployment[] = await components.failedDeployments.getAllFailedDeployments()
 
   // TODO: there may be chances that failed deployments are not part of all catalyst in cluster
   const contentServersUrls = components.contentCluster.getAllServersInCluster()
