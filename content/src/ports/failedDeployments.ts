@@ -62,7 +62,15 @@ export async function createFailedDeployments(
       }
     },
     async reportFailure(failedDeployment: FailedDeployment) {
-      await saveFailedDeployment(components, failedDeployment)
+      const savedFailedDeployment = failedDeploymentsByEntityIdCache.get(failedDeployment.entityId)
+      if (savedFailedDeployment) {
+        await components.database.transaction(async (txDatabase) => {
+          await deleteFailedDeployment({ database: txDatabase }, failedDeployment.entityId)
+          await saveFailedDeployment({ database: txDatabase }, failedDeployment)
+        })
+      } else {
+        await saveFailedDeployment(components, failedDeployment)
+      }
       failedDeploymentsByEntityIdCache.set(failedDeployment.entityId, failedDeployment)
       components.metrics.observe('dcl_content_server_failed_deployments', {}, failedDeploymentsByEntityIdCache.size)
     }
