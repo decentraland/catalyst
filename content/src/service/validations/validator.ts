@@ -12,12 +12,25 @@ import { AppComponents } from '../../types'
 import { createSubgraphComponent } from '@well-known-components/thegraph-component'
 import { IConfigComponent } from '@well-known-components/interfaces'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
+import { createBlockRepository, createBlockSearch, createCachingEthereumProvider } from '@dcl/block-indexer'
+import Web3 from 'web3'
+import { Eth } from 'web3-eth'
 
 export async function createSubGraphsComponent(
   components: Pick<AppComponents, 'env' | 'logs' | 'metrics' | 'fetcher'>
 ): Promise<SubGraphs> {
   const config: IConfigComponent = createConfigComponent({}) // TODO Get config from higher level
   const baseComponents = { config, fetch: components.fetcher, metrics: components.metrics, logs: components.logs }
+
+  const ethNetwork: string = components.env.getConfig(EnvironmentConfig.ETH_NETWORK)
+  const l1EthereumProvider: Eth = new Web3(
+    `https://rpc.decentraland.org/${encodeURIComponent(ethNetwork)}?project=block-search`
+  ).eth
+  const l2EthereumProvider: Eth = new Web3(
+    ethNetwork === 'ethereum'
+      ? `https://rpc.decentraland.org/matic?project=block-search`
+      : `https://rpc.decentraland.org/mumbai?project=block-search`
+  ).eth
   return {
     L1: {
       landManager: await createSubgraphComponent(
@@ -50,7 +63,9 @@ export async function createSubGraphsComponent(
         baseComponents,
         components.env.getConfig(EnvironmentConfig.THIRD_PARTY_REGISTRY_L2_SUBGRAPH_URL)
       )
-    }
+    },
+    l1BlockSearch: createBlockSearch(createBlockRepository(createCachingEthereumProvider(l1EthereumProvider))),
+    l2BlockSearch: createBlockSearch(createBlockRepository(createCachingEthereumProvider(l2EthereumProvider)))
   }
 }
 
