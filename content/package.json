@@ -17,9 +17,10 @@
     "test:unit": "jest --selectProjects unit --runInBand --forceExit --detectOpenHandles --coverage"
   },
   "dependencies": {
+    "@dcl/block-indexer": "1.0.0-20221011120927.commit-eca6849",
     "@dcl/catalyst-api-specs": "^2.0.12",
     "@dcl/catalyst-contracts": "^3.0.0",
-    "@dcl/content-validator": "^4.0.11",
+    "@dcl/content-validator": "4.0.12-20221011125008.commit-a0a246c",
     "@dcl/crypto": "^3.2.1",
     "@dcl/hashing": "^1.1.0",
     "@dcl/schemas": "^5.19.0",
@@ -52,7 +53,8 @@
     "pg": "8.8.0",
     "pg-query-stream": "^4.2.3",
     "sql-template-strings": "^2.2.2",
-    "uuid": "8.3.2"
+    "uuid": "8.3.2",
+    "web3": "^1.8.0"
   },
   "devDependencies": {
     "@types/compression": "^1",
