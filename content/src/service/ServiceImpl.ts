@@ -6,7 +6,6 @@ import { getEntityById, setEntitiesAsOverwritten } from '../logic/database-queri
 import { calculateOverwrites, saveDeploymentAndContentFiles } from '../logic/deployments'
 import { calculateDeprecatedHashes, calculateIPFSHashes } from '../logic/hashing'
 import { bufferToStream, ContentItem } from '../ports/contentStorage/contentStorage'
-import { FailureReason } from '../ports/failedDeployments'
 import { AppComponents, EntityVersion } from '../types'
 import { getDeployments } from './deployments/deployments'
 import { AuditInfo, Deployment, DeploymentOptions, PartialDeploymentHistory } from './deployments/types'
@@ -291,26 +290,6 @@ export class ServiceImpl implements MetaverseContentService {
 
     // update pointer (points to the new entity that is active)
     if (setPointers.length > 0) await this.components.activeEntities.update(setPointers, entity)
-  }
-
-  async reportErrorDuringSync(
-    entityType: EntityType,
-    entityId: string,
-    reason: FailureReason,
-    authChain: AuthChain,
-    errorDescription?: string
-  ): Promise<void> {
-    ServiceImpl.LOGGER.warn(
-      `Deployment of entity (${entityType}, ${entityId}) failed. Reason was: '${errorDescription}'`
-    )
-    return this.components.failedDeployments.reportFailure({
-      entityType,
-      entityId,
-      reason,
-      authChain,
-      errorDescription,
-      failureTimestamp: Date.now()
-    })
   }
 
   // todo: review if we can use entities cache to determine if there is a newer deployment

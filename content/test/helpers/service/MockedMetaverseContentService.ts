@@ -1,4 +1,4 @@
-import { AuthChain, AuthLinkType } from '@dcl/crypto'
+import { AuthLinkType } from '@dcl/crypto'
 import { DeploymentWithAuthChain, Entity, EntityType } from '@dcl/schemas'
 import { random } from 'faker'
 import { CURRENT_CONTENT_VERSION } from '../../../src/Environment'
@@ -46,15 +46,6 @@ export class MockedMetaverseContentService implements MetaverseContentService, I
       name: 'mockedContentService',
       data: MockedMetaverseContentService.STATUS
     }
-  }
-  reportErrorDuringSync(
-    entityType: EntityType,
-    entityId: string,
-    reason: string,
-    authChain: AuthChain,
-    errorDescription?: string
-  ): Promise<null> {
-    throw new Error('Method not implemented.')
   }
 
   getEntityById(entityId: string): Promise<{ entityId: string; localTimestamp: number } | undefined> {

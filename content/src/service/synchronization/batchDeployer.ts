@@ -28,6 +28,7 @@ export function createBatchDeployerComponent(
     | 'database'
     | 'deployedEntitiesBloomFilter'
     | 'storage'
+    | 'failedDeployments'
   >,
   syncOptions: {
     ignoredTypes: Set<string>
@@ -110,14 +111,19 @@ export function createBatchDeployerComponent(
             successfulDeployments.add(entity.entityId)
             deploymentsMap.delete(entity.entityId)
           } catch (err: any) {
-            // failed deployments are automatically rescheduled
-            components.deployer.reportErrorDuringSync(
-              entity.entityType as any,
-              entity.entityId,
-              FailureReason.DEPLOYMENT_ERROR,
-              entity.authChain,
-              err.toString()
+            const errorDescription = err.toString()
+            logs.warn(
+              `Deployment of entity (${entity.entityType}, ${entity.entityId}) failed. Reason was: '${errorDescription}'`
             )
+            // failed deployments are automatically rescheduled
+            await components.failedDeployments.reportFailure({
+              entityType: entity.entityType as any,
+              entityId: entity.entityId,
+              reason: FailureReason.DEPLOYMENT_ERROR,
+              authChain: entity.authChain,
+              errorDescription,
+              failureTimestamp: Date.now()
+            })
           } finally {
             // decrement the gauge of enqueued deployments
             components.metrics.decrement('dcl_pending_deployment_gauge', metricLabels)
