@@ -178,7 +178,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       deployer,
       staticConfigs,
       deployedEntitiesBloomFilter: deployedEntitiesBloomFilter,
-      storage
+      storage,
+      failedDeployments
     },
     {
       ignoredTypes: new Set(ignoredTypes),
