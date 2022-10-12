@@ -24,7 +24,7 @@
     "@dcl/crypto": "^3.2.1",
     "@dcl/hashing": "^1.1.0",
     "@dcl/schemas": "^5.19.0",
-    "@dcl/snapshots-fetcher": "tag-fetch-new-snapshots-7",
+    "@dcl/snapshots-fetcher": "tag-fetch-new-snapshots-8",
     "@dcl/urn-resolver": "^2.0.2",
     "@well-known-components/env-config-provider": "^1.2.0",
     "@well-known-components/http-server": "1.1.5",
