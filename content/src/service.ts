@@ -25,5 +25,7 @@ export async function main(program: Lifecycle.EntryPointParameters<AppComponents
   if (!disableSynchronization) {
     await bootstrapFromSnapshots(components)
     await components.synchronizationManager.syncWithServers()
+  } else {
+    await bootstrapFromSnapshots(components)
   }
 }
