@@ -46,6 +46,7 @@ export async function createFailedDeployments(
       for (const failedDeployment of failedDeployments) {
         failedDeploymentsByEntityIdCache.set(failedDeployment.entityId, failedDeployment)
       }
+      components.metrics.observe('dcl_content_server_failed_deployments', {}, failedDeploymentsByEntityIdCache.size)
     },
     async getAllFailedDeployments() {
       return Array.from(failedDeploymentsByEntityIdCache.values())
