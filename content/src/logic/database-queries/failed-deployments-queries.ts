@@ -40,6 +40,6 @@ export async function getFailedDeployments(components: Pick<AppComponents, 'data
       error_description AS "errorDescription",
       snapshot_hash AS "snapshotHash"
   FROM failed_deployments`
-  const queryResult = await components.database.queryWithValues<FailedDeployment>(query, 'save_failed_deployment')
+  const queryResult = await components.database.queryWithValues<FailedDeployment>(query, 'get_failed_deployments')
   return queryResult.rows
 }
