@@ -25,8 +25,5 @@ export async function main(program: Lifecycle.EntryPointParameters<AppComponents
   if (!disableSynchronization) {
     await bootstrapFromSnapshots(components)
     await components.synchronizationManager.syncWithServers()
-  } else {
-    await bootstrapFromSnapshots(components)
-    components.metrics.observe('dcl_content_server_sync_state', {}, 1)
   }
 }
