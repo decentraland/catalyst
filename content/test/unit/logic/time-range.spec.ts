@@ -10,35 +10,48 @@ it('should return correct interval size labels', () => {
 
 it('time range should be covered by others', () => {
   const weeklyTimeRangeToBeCovered: TimeRange = {
-    initTimestamp: 1640995200, // 2022-01-01 00:00:00 GMT
-    endTimestamp: 1641600000 // 2022-01-08 00:00:00 GMT, 7 days later
+    initTimestamp: 1640995200000, // 2022-01-01 00:00:00 GMT
+    endTimestamp: 1641600000000 // 2022-01-08 00:00:00 GMT, 7 days later
   }
   // 7 days
   const dailyTimeRanges: TimeRange[] = [
-    { initTimestamp: 1640995200, endTimestamp: 1641081600 },
-    { initTimestamp: 1641081600, endTimestamp: 1641168000 },
-    { initTimestamp: 1641168000, endTimestamp: 1641254400 },
-    { initTimestamp: 1641254400, endTimestamp: 1641340800 },
-    { initTimestamp: 1641340800, endTimestamp: 1641427200 },
-    { initTimestamp: 1641427200, endTimestamp: 1641513600 },
-    { initTimestamp: 1641513600, endTimestamp: 1641600000 },
+    { initTimestamp: 1640995200000, endTimestamp: 1641081600000 },
+    { initTimestamp: 1641081600000, endTimestamp: 1641168000000 },
+    { initTimestamp: 1641168000000, endTimestamp: 1641254400000 },
+    { initTimestamp: 1641254400000, endTimestamp: 1641340800000 },
+    { initTimestamp: 1641340800000, endTimestamp: 1641427200000 },
+    { initTimestamp: 1641427200000, endTimestamp: 1641513600000 },
+    { initTimestamp: 1641513600000, endTimestamp: 1641600000000 },
   ]
   expect(isTimeRangeCoveredBy(weeklyTimeRangeToBeCovered, dailyTimeRanges)).toBeTruthy()
 })
 
 it('time range should not be covered by others', () => {
   const weeklyTimeRangeToBeCovered: TimeRange = {
-    initTimestamp: 1640995200, // 2022-01-01 00:00:00 GMT
-    endTimestamp: 1641600000 // 2022-01-08 00:00:00 GMT, 7 days later
+    initTimestamp: 1640995200000, // 2022-01-01 00:00:00 GMT
+    endTimestamp: 1641600000000 // 2022-01-08 00:00:00 GMT, 7 days later
   }
   // 6 days
   const dailyTimeRanges: TimeRange[] = [
-    { initTimestamp: 1640995200, endTimestamp: 1641081600 },
-    { initTimestamp: 1641081600, endTimestamp: 1641168000 },
-    { initTimestamp: 1641168000, endTimestamp: 1641254400 },
-    { initTimestamp: 1641254400, endTimestamp: 1641340800 },
-    { initTimestamp: 1641340800, endTimestamp: 1641427200 },
-    { initTimestamp: 1641427200, endTimestamp: 1641513600 }
+    { initTimestamp: 1640995200000, endTimestamp: 1641081600000 },
+    { initTimestamp: 1641081600000, endTimestamp: 1641168000000 },
+    { initTimestamp: 1641168000000, endTimestamp: 1641254400000 },
+    { initTimestamp: 1641254400000, endTimestamp: 1641340800000 },
+    { initTimestamp: 1641340800000, endTimestamp: 1641427200000 },
+    { initTimestamp: 1641427200000, endTimestamp: 1641513600000 }
+  ]
+  expect(isTimeRangeCoveredBy(weeklyTimeRangeToBeCovered, dailyTimeRanges)).toBeFalsy()
+})
+
+it('time range should not be covered by others when there is a gap', () => {
+  const weeklyTimeRangeToBeCovered: TimeRange = {
+    initTimestamp: 1640995200000, // 2022-01-01 00:00:00 GMT
+    endTimestamp: 1641600000000 // 2022-01-08 00:00:00 GMT, 7 days later
+  }
+  // The time range [2022-01-04 00:00:00 GMT, 2022-01-05 00:00:00 GMT] is not covered
+  const dailyTimeRanges: TimeRange[] = [
+    { initTimestamp: 1640995200000, endTimestamp: 1641254400000 }, // [2022-01-01 00:00:00 GMT, 2022-01-04 00:00:00 GMT]
+    { initTimestamp: 1641340800000, endTimestamp: 1641600000000 }, // [2022-01-05 00:00:00 GMT, 2022-01-08 00:00:00 GMT]
   ]
   expect(isTimeRangeCoveredBy(weeklyTimeRangeToBeCovered, dailyTimeRanges)).toBeFalsy()
 })
@@ -108,31 +121,31 @@ function expectTimeDivisionMatchesRepresentation(timeRange: TimeRange, represent
 
 it('should satisfy progression', () => {
   // I = Day, W = Week, M = Month, Y = Year
-  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200, 1), 'I')
-  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200, 7), 'IIIIIII')
-  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200, 8), 'WI')
-  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200, 14), 'WIIIIIII')
-  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200, 15), 'WWI')
-  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200, 21), 'WWIIIIIII')
-  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200, 22), 'WWWI')
-  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200, 28), 'WWWIIIIIII')
-  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200, 29), 'WWWWI')
-  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200, 34), 'WWWWIIIIII')
-  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200, 35), 'WWWWIIIIIII')
-  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200, 36), 'MWI')
-  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200, 42), 'MWIIIIIII')
-  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200, 43), 'MWWI')
-  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200, 49), 'MWWIIIIIII')
-  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200, 50), 'MWWWI')
-  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200, 56), 'MWWWIIIIIII')
-  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200, 57), 'MWWWWI')
-  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200, 63), 'MWWWWIIIIIII')
-  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200, 64), 'MMWI')
-  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200, 364), 'MMMMMMMMMMMMWWWIIIIIII')
-  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200, 365), 'MMMMMMMMMMMMWWWWI')
-  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200, 370), 'MMMMMMMMMMMMWWWWIIIIII')
-  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200, 371), 'MMMMMMMMMMMMWWWWIIIIIII')
-  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200, 372), 'YMWI')
+  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200000, 1), 'I')
+  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200000, 7), 'IIIIIII')
+  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200000, 8), 'WI')
+  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200000, 14), 'WIIIIIII')
+  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200000, 15), 'WWI')
+  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200000, 21), 'WWIIIIIII')
+  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200000, 22), 'WWWI')
+  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200000, 28), 'WWWIIIIIII')
+  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200000, 29), 'WWWWI')
+  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200000, 34), 'WWWWIIIIII')
+  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200000, 35), 'WWWWIIIIIII')
+  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200000, 36), 'MWI')
+  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200000, 42), 'MWIIIIIII')
+  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200000, 43), 'MWWI')
+  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200000, 49), 'MWWIIIIIII')
+  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200000, 50), 'MWWWI')
+  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200000, 56), 'MWWWIIIIIII')
+  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200000, 57), 'MWWWWI')
+  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200000, 63), 'MWWWWIIIIIII')
+  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200000, 64), 'MMWI')
+  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200000, 364), 'MMMMMMMMMMMMWWWIIIIIII')
+  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200000, 365), 'MMMMMMMMMMMMWWWWI')
+  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200000, 370), 'MMMMMMMMMMMMWWWWIIIIII')
+  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200000, 371), 'MMMMMMMMMMMMWWWWIIIIIII')
+  expectTimeDivisionMatchesRepresentation(timeRangeOfDays(1640995200000, 372), 'YMWI')
 })
 
 function timeRangeOfDays(timestampSecsStartingAt: number, numberOfDays: number): TimeRange {
