@@ -16,6 +16,7 @@ import { splitByCommaTrimAndRemoveEmptyElements } from './logic/config-helpers'
 import { metricsDeclaration } from './metrics'
 import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
 import { createActiveEntitiesComponent } from './ports/activeEntities'
+import { createClock } from './ports/clock'
 import { createFileSystemContentStorage } from './ports/contentStorage/fileSystemContentStorage'
 import { createDenylist } from './ports/denylist'
 import { createDeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
@@ -46,6 +47,7 @@ import { createExternalCalls, createSubGraphsComponent, createValidator } from '
 import { AppComponents } from './types'
 
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
+  const clock = createClock()
   const metrics = createTestMetricsComponent(metricsDeclaration)
   const config = createConfigComponent({
     LOG_LEVEL: env.getConfig(EnvironmentConfig.LOG_LEVEL),
@@ -248,7 +250,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     storage,
     database,
     denylist,
-    snapshotManager
+    snapshotManager,
+    clock
   })
 
   const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs })
@@ -316,6 +319,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     ethereumProvider,
     fs,
     snapshotGenerator,
-    processedSnapshotStorage
+    processedSnapshotStorage,
+    clock
   }
 }

@@ -13,6 +13,7 @@ import { Environment } from './Environment'
 import { metricsDeclaration } from './metrics'
 import { MigrationManager } from './migrations/MigrationManager'
 import { ActiveEntities } from './ports/activeEntities'
+import { Clock } from './ports/clock'
 import { ContentStorage } from './ports/contentStorage/contentStorage'
 import { Denylist } from './ports/denylist'
 import { DeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
@@ -80,6 +81,7 @@ export type AppComponents = {
   ethereumProvider: HTTPProvider
   snapshotGenerator: SnapshotGenerator
   processedSnapshotStorage: IProcessedSnapshotStorageComponent
+  clock: Clock
 }
 
 export type MaintenanceComponents = {
