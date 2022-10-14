@@ -23,7 +23,7 @@ export type FailedDeployment = {
   failureTimestamp: number
   reason: FailureReason
   authChain: AuthChain
-  errorDescription?: string
+  errorDescription: string
   snapshotHash?: string
 }
 
