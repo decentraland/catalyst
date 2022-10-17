@@ -49,6 +49,7 @@ export class ServiceImpl implements MetaverseContentService {
       | 'env'
       | 'activeEntities'
       | 'denylist'
+      | 'clock'
     >
   ) {
     ServiceImpl.LOGGER = components.logs.getLogger('ServiceImpl')
@@ -66,7 +67,7 @@ export class ServiceImpl implements MetaverseContentService {
       ServiceImpl.LOGGER.debug(`Entity was already deployed`, {
         entityId,
         deployedTimestamp: deployedEntity.localTimestamp,
-        delta: Date.now() - deployedEntity.localTimestamp
+        delta: this.components.clock.now() - deployedEntity.localTimestamp
       })
       return deployedEntity.localTimestamp
     }
@@ -175,7 +176,7 @@ export class ServiceImpl implements MetaverseContentService {
       }
 
       // TODO: review this
-      return storeResult.auditInfoComplete.localTimestamp || Date.now()
+      return storeResult.auditInfoComplete.localTimestamp || this.components.clock.now()
     } catch (error) {
       ServiceImpl.LOGGER.error(`There was an error deploying the entity: ${error}`, { entityId })
       return InvalidResult({
@@ -235,7 +236,7 @@ export class ServiceImpl implements MetaverseContentService {
     const auditInfoComplete: AuditInfo = {
       ...auditInfo,
       version: EntityVersion.V3,
-      localTimestamp: Date.now()
+      localTimestamp: this.components.clock.now()
     }
 
     if (!isEntityAlreadyDeployed) {
@@ -368,7 +369,8 @@ export class ServiceImpl implements MetaverseContentService {
         this.components.failedDeployments.findFailedDeployment(entity.id) === undefined,
       isEntityRateLimited: (entity) => this.components.deployRateLimiter.isRateLimited(entity.type, entity.pointers),
       isRequestTtlBackwards: (entity) =>
-        Date.now() - entity.timestamp > this.components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
+        this.components.clock.now() - entity.timestamp >
+        this.components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
     })
 
     // If there is an error in the server side validation, we won't run protocol validations

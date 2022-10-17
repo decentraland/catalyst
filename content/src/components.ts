@@ -98,7 +98,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       challengeSupervisor,
       fetcher,
       logs,
-      env
+      env,
+      clock
     },
     env.getConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL)
   )
@@ -130,9 +131,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   })
   const theGraphClient = createTheGraphClient({ subGraphs, logs })
   const validator = createValidator({ config, externalCalls, logs, theGraphClient, subGraphs })
-  const serverValidator = createServerValidator({ failedDeployments: failedDeployments, metrics })
+  const serverValidator = createServerValidator({ failedDeployments: failedDeployments, metrics, clock })
 
-  const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs })
+  const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, clock })
   const activeEntities = createActiveEntitiesComponent({ database, env, logs, metrics, denylist, sequentialExecutor })
 
   const deployer: MetaverseContentService = new ServiceImpl({
@@ -149,13 +150,14 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     database,
     deployedEntitiesBloomFilter,
     activeEntities,
-    denylist
+    denylist,
+    clock
   })
 
-  const snapshotManager = new SnapshotManager({ database, metrics, staticConfigs, logs, storage, denylist, fs })
+  const snapshotManager = new SnapshotManager({ database, metrics, staticConfigs, logs, storage, denylist, fs, clock })
 
   const garbageCollectionManager = new GarbageCollectionManager(
-    { deployer, systemProperties, metrics, logs, storage, database },
+    { deployer, systemProperties, metrics, logs, storage, database, clock },
     env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION),
     env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL)
   )
@@ -181,7 +183,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       staticConfigs,
       deployedEntitiesBloomFilter: deployedEntitiesBloomFilter,
       storage,
-      failedDeployments
+      failedDeployments,
+      clock
     },
     {
       ignoredTypes: new Set(ignoredTypes),
@@ -254,7 +257,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     clock
   })
 
-  const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs })
+  const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs, clock })
 
   const controller = new Controller(
     {
@@ -292,7 +295,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     batchDeployer,
     downloadQueue,
     synchronizationJobManager,
-    deployedEntitiesBloomFilter: deployedEntitiesBloomFilter,
+    deployedEntitiesBloomFilter,
     controller,
     synchronizationManager,
     challengeSupervisor,

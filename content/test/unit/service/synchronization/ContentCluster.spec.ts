@@ -1,4 +1,5 @@
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
+import { createConfigComponent } from "@well-known-components/env-config-provider"
 import { createLogComponent } from '@well-known-components/logger'
 import { Response } from 'node-fetch'
 import { stub } from 'sinon'
@@ -7,12 +8,11 @@ import { createFetchComponent } from '../../../../src/ports/fetcher'
 import { ChallengeSupervisor, IChallengeSupervisor } from '../../../../src/service/synchronization/ChallengeSupervisor'
 import { ContentCluster } from '../../../../src/service/synchronization/ContentCluster'
 import { MockedDAOClient } from '../../../helpers/service/synchronization/clients/MockedDAOClient'
-import { createConfigComponent } from "@well-known-components/env-config-provider";
 
 jest.mock('@dcl/snapshots-fetcher/dist/utils', () => ({
   ...jest.requireActual('@dcl/snapshots-fetcher/dist/utils'),
   sleep: jest.fn()
-}));
+}))
 
 describe('ContentCluster', function () {
   const address1: string = 'http://address1'
@@ -94,6 +94,7 @@ class ContentClusterBuilder {
 
   async build(localAddress: string): Promise<ContentCluster> {
     const env = new Environment()
+    const clock = { now: Date.now }
 
     const daoClient = MockedDAOClient.withAddresses(...this.servers.values())
     env.setConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL, 1000)
@@ -114,7 +115,7 @@ class ContentClusterBuilder {
     })
 
     return new ContentCluster(
-      { daoClient, logs, challengeSupervisor, fetcher: this.fetcher, env },
+      { daoClient, logs, challengeSupervisor, fetcher: this.fetcher, env, clock },
       env.getConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL)
     )
   }

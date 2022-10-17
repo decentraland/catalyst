@@ -29,6 +29,7 @@ export function createBatchDeployerComponent(
     | 'deployedEntitiesBloomFilter'
     | 'storage'
     | 'failedDeployments'
+    | 'clock'
   >,
   syncOptions: {
     ignoredTypes: Set<string>
@@ -122,7 +123,7 @@ export function createBatchDeployerComponent(
               reason: FailureReason.DEPLOYMENT_ERROR,
               authChain: entity.authChain,
               errorDescription,
-              failureTimestamp: Date.now()
+              failureTimestamp: components.clock.now()
             })
           } finally {
             // decrement the gauge of enqueued deployments

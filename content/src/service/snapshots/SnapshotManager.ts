@@ -31,7 +31,7 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
   constructor(
     private readonly components: Pick<
       AppComponents,
-      'database' | 'metrics' | 'staticConfigs' | 'logs' | 'storage' | 'denylist' | 'fs'
+      'database' | 'metrics' | 'staticConfigs' | 'logs' | 'storage' | 'denylist' | 'fs' | 'clock'
     >
   ) {
     this.LOGGER = components.logs.getLogger('SnapshotManager')
@@ -163,7 +163,7 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
     }
 
     // update the snapshot sizes
-    this.statusEndpointData.lastUpdatedTime = Date.now()
+    this.statusEndpointData.lastUpdatedTime = this.components.clock.now()
     for (const key in inMemoryArrays) {
       this.statusEndpointData.entities[key] = inMemoryArrays[key].length
       this.components.metrics.observe('dcl_content_server_snapshot_entities', { type: key }, inMemoryArrays[key].length)

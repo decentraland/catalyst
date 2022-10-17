@@ -7,14 +7,14 @@ import {
 import { AppComponents } from '../types'
 
 export function createProcessedSnapshotStorage(
-  components: Pick<AppComponents, 'database' | 'logs'>
+  components: Pick<AppComponents, 'database' | 'logs' | 'clock'>
 ): IProcessedSnapshotStorageComponent {
   const logger = components.logs.getLogger('processed-snapshot-storage')
 
   async function saveSnapshotAndDeleteTheReplacedOnes(snapshotHash: string, replacedSnapshotHashes?: string[]) {
     await components.database.transaction(async (txDatabase) => {
       await deleteProcessedSnapshots(txDatabase, replacedSnapshotHashes ?? [])
-      await saveProcessedSnapshot(txDatabase, snapshotHash, Date.now())
+      await saveProcessedSnapshot(txDatabase, snapshotHash, components.clock.now())
     }, 'replace_processed_snapshots')
   }
 

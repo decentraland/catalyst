@@ -22,7 +22,9 @@ interface ServiceCalls {
 }
 
 const REQUEST_TTL_FORWARDS: number = ms('15m')
-const isRequestTtlForwards: EntityCheck = (entity) => Date.now() - entity.timestamp < -REQUEST_TTL_FORWARDS
+function isRequestTtlForwards(components: Pick<AppComponents, 'clock'>, entity: Entity): boolean | Promise<boolean> {
+  return components.clock.now() - entity.timestamp < -REQUEST_TTL_FORWARDS
+}
 
 /**
  * Checks when context is DeploymentContext.LOCAL
@@ -30,7 +32,7 @@ const isRequestTtlForwards: EntityCheck = (entity) => Date.now() - entity.timest
 const localChecks = async (
   entity: Entity,
   serviceCalls: ServiceCalls,
-  components: Pick<AppComponents, 'metrics'>
+  components: Pick<AppComponents, 'metrics' | 'clock'>
 ): Promise<string | undefined> => {
   /** Validate that there are no newer deployments on the entity's pointers */
   if (await serviceCalls.areThereNewerEntities(entity))
@@ -55,7 +57,7 @@ const localChecks = async (
     } pointers=${entity.pointers.join(',')}).`
 
   /** Validate that the deployment is not too far in the future */
-  if (isRequestTtlForwards(entity))
+  if (isRequestTtlForwards(components, entity))
     return `The request is too far in the future, please submit it again with a new timestamp (entityId=${
       entity.id
     } pointers=${entity.pointers.join(',')}).`
@@ -76,7 +78,7 @@ export const IGNORING_FIX_ERROR = 'Ignoring fix for failed deployment since ther
  * Server side validations for current deploying entity for LOCAL and FIX_ATTEMPT contexts
  */
 export const createServerValidator = (
-  components: Pick<AppComponents, 'failedDeployments' | 'metrics'>
+  components: Pick<AppComponents, 'failedDeployments' | 'metrics' | 'clock'>
 ): ServerValidator => ({
   validate: async (entity, context, serviceCalls) => {
     // these contexts doesn't validate anything in this side

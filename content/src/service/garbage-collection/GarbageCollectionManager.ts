@@ -15,7 +15,7 @@ export class GarbageCollectionManager {
   constructor(
     private readonly components: Pick<
       AppComponents,
-      'systemProperties' | 'deployer' | 'metrics' | 'logs' | 'storage' | 'database'
+      'systemProperties' | 'deployer' | 'metrics' | 'logs' | 'storage' | 'database' | 'clock'
     >,
     private readonly performGarbageCollection: boolean,
     private readonly sweepInterval: number
@@ -45,7 +45,7 @@ export class GarbageCollectionManager {
    * If they are not being used, then we will delete them.
    */
   async performSweep() {
-    const newTimeOfCollection: number = Date.now()
+    const newTimeOfCollection: number = this.components.clock.now()
     this.sweeping = true
     const { end: endTimer } = this.components.metrics.startTimer('dcl_content_garbage_collection_time')
     try {

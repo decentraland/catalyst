@@ -10,6 +10,7 @@ import { createProcessedSnapshotStorage } from '../../../src/ports/processedSnap
 describe('failed deployments', () => {
 
   const database = createTestDatabaseComponent()
+  const clock = { now: Date.now }
   let logs: ILoggerComponent
 
   beforeAll(async () => {
@@ -24,7 +25,7 @@ describe('failed deployments', () => {
 
   describe('wasSnapshotProcessed', () => {
     it('should return false when snapshot was not processed', async () => {
-      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs })
+      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs, clock })
       const processedSnapshot = 'someHash'
       jest.spyOn(snapshotQueries, 'getProcessedSnapshots').mockResolvedValue(new Set(['anotherHash']))
 
@@ -32,7 +33,7 @@ describe('failed deployments', () => {
     })
 
     it('should return true when snapshot was processed', async () => {
-      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs })
+      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs, clock })
       const processedSnapshot = 'someHash'
       jest.spyOn(snapshotQueries, 'getProcessedSnapshots').mockResolvedValue(new Set([processedSnapshot]))
 
@@ -40,7 +41,7 @@ describe('failed deployments', () => {
     })
 
     it('should return true when snapshot was not processed but did all the replaced ones', async () => {
-      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs })
+      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs, clock })
       const processedSnapshot = 'someHash'
       const replacedHashes = ['h1', 'h2']
       jest.spyOn(snapshotQueries, 'getProcessedSnapshots').mockResolvedValue(new Set(replacedHashes))
@@ -52,7 +53,7 @@ describe('failed deployments', () => {
     })
 
     it('should return true when snapshot was not processed and did some but not all the replaced ones', async () => {
-      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs })
+      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs, clock })
       const processedSnapshot = 'someHash'
       const replacedHashes = ['h1', 'h2']
       jest.spyOn(snapshotQueries, 'getProcessedSnapshots').mockResolvedValue(new Set(['h1']))
@@ -64,7 +65,7 @@ describe('failed deployments', () => {
     })
 
     it('when the replaced hashes were processed, it should save the new snapshot hash and delete the replaced ones', async () => {
-      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs })
+      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs, clock })
       const processedSnapshot = 'someHash'
       const replacedHashes = ['h1', 'h2']
       jest.spyOn(snapshotQueries, 'getProcessedSnapshots').mockResolvedValue(new Set(replacedHashes))
@@ -79,7 +80,7 @@ describe('failed deployments', () => {
     })
 
     it('when only some of the replaced snapshots were processed, it should not save the new snapshot hash and do not delete the replaced ones', async () => {
-      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs })
+      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs, clock })
       const processedSnapshot = 'someHash'
       const replacedHashes = ['h1', 'h2']
       jest.spyOn(snapshotQueries, 'getProcessedSnapshots').mockResolvedValue(new Set(['h1']))
@@ -96,7 +97,7 @@ describe('failed deployments', () => {
 
   describe('markSnapshotAsProcessed', () => {
     it('should save the new snapshot hash and delete the replaced ones', async () => {
-      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs })
+      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs, clock })
       const processedSnapshot = 'someHash'
       const replacedHashes = ['h1', 'h2']
       jest.spyOn(snapshotQueries, 'getProcessedSnapshots').mockResolvedValue(new Set(replacedHashes))

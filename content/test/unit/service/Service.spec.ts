@@ -200,6 +200,7 @@ describe('Service', function () {
   })
 
   async function buildService() {
+    const clock = { now: Date.now }
     const database = createTestDatabaseComponent()
     database.queryWithValues = () => Promise.resolve({ rows: [], rowCount: 0 } as any)
     database.transaction = () => Promise.resolve()
@@ -223,7 +224,7 @@ describe('Service', function () {
     const storage = new MockedStorage()
     const pointerManager = NoOpPointerManager.build()
     const authenticator = new ContentAuthenticator(new HTTPProvider("https://rpc.decentraland.org/mainnet?project=catalyst-ci"), DECENTRALAND_ADDRESS)
-    const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs })
+    const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, clock })
     env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)
     const denylist: Denylist = { isDenylisted: () => false }
     const sequentialExecutor = createSequentialTaskExecutor({ logs, metrics })
@@ -244,7 +245,8 @@ describe('Service', function () {
       database,
       deployedEntitiesBloomFilter: deployedEntitiesBloomFilter,
       activeEntities,
-      denylist
+      denylist,
+      clock
     })
   }
   function fakeDeployment(entityId?: string): Deployment {

@@ -37,7 +37,10 @@ export class ContentCluster implements IdentityProvider {
   private stoppedFuture = future<void>()
 
   constructor(
-    private readonly components: Pick<AppComponents, 'logs' | 'daoClient' | 'challengeSupervisor' | 'fetcher' | 'env'>,
+    private readonly components: Pick<
+      AppComponents,
+      'logs' | 'daoClient' | 'challengeSupervisor' | 'fetcher' | 'env' | 'clock'
+    >,
     private readonly timeBetweenSyncs: number
   ) {
     ContentCluster.LOGGER = components.logs.getLogger('ContentCluster')
@@ -123,7 +126,7 @@ export class ContentCluster implements IdentityProvider {
       }
 
       // Update sync time
-      this.timeOfLastSync = Date.now()
+      this.timeOfLastSync = this.components.clock.now()
 
       for (const cb of this.syncFinishedEventCallbacks) {
         cb()
