@@ -75,8 +75,8 @@ export async function findSnapshotsStrictlyContainedInTimeRange(
     hash,
     date_part('epoch', init_timestamp) * 1000  AS "initTimestamp",
     date_part('epoch', end_timestamp) * 1000  AS "endTimestamp",
-    replaced_hashes as replacedSnapshotHashes,
-    number_of_entities as numberOfEntities
+    replaced_hashes AS "replacedSnapshotHashes",
+    number_of_entities AS "numberOfEntities"
   FROM snapshots
   WHERE init_timestamp >= to_timestamp(${timerange.initTimestamp} / 1000.0)
   AND end_timestamp <= to_timestamp(${timerange.endTimestamp} / 1000.0)
