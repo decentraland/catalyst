@@ -1606,10 +1606,10 @@
   dependencies:
     dotenv "^16.0.1"
 
-"@well-known-components/http-server@1.1.5", "@well-known-components/http-server@^1.1.0":
-  version "1.1.5"
-  resolved "https://registry.yarnpkg.com/@well-known-components/http-server/-/http-server-1.1.5.tgz#0d468593fa5887950c6f37a299b3077c85851fe7"
-  integrity sha512-SdZfNHFKqa5dccJDxPfaNoPqFKb/2ggd+yMwisv+FvFuLLxtGmvNRaxp9vMSwoVVAAI3vyx8NGmXHO1sHsoXLw==
+"@well-known-components/http-server@1.1.6", "@well-known-components/http-server@^1.1.0":
+  version "1.1.6"
+  resolved "https://registry.yarnpkg.com/@well-known-components/http-server/-/http-server-1.1.6.tgz#3abc208820512bfc98080e85a4f4f6217ca9d810"
+  integrity sha512-ufTiLQg1QPrgiDjr3bYuKdevZyLkJONRpmFd922F6Ty+Wd0CCOoZZzyP0vlanr0DvcrTifkO04N33fEuhg0AsQ==
   dependencies:
     "@types/compression" "^1.7.0"
     "@types/cors" "^2.8.9"
