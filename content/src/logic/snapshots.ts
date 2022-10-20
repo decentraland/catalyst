@@ -1,8 +1,9 @@
 import { createFileWriter, IFile } from '../ports/fileWriter'
 import { AppComponents } from '../types'
 import {
-  deleteSnapshots,
+  deleteSnapshotsInTimeRange,
   findSnapshotsStrictlyContainedInTimeRange,
+  getSnapshotHashesNotInTimeRange,
   saveSnapshot,
   streamActiveDeploymentsInTimeRange
 } from './database-queries/snapshots-queries'
@@ -79,11 +80,18 @@ export async function generateSnapshotsInMultipleTimeRanges(
       await components.database.transaction(async (txDatabase) => {
         const replacedSnapshotHashes = isTimeRangeCoveredByOtherSnapshots ? savedSnapshotHashes : []
         const newSnapshot = { hash, timeRange, replacedSnapshotHashes, numberOfEntities }
+        const snapshotHashesUsedInOtherTimeRanges = await getSnapshotHashesNotInTimeRange(
+          txDatabase,
+          savedSnapshotHashes,
+          timeRange
+        )
+        const snapshotHashesToDeleteInStorage = savedSnapshotHashes.filter(
+          (hash) => !snapshotHashesUsedInOtherTimeRanges.has(hash)
+        )
+        // The order is important, the snapshot to save could have the same hash of one of the ones to be deleted
+        await deleteSnapshotsInTimeRange(txDatabase, savedSnapshotHashes, timeRange)
         await saveSnapshot(txDatabase, newSnapshot, components.clock.now())
-        if (savedSnapshotHashes.length > 0) {
-          await deleteSnapshots(txDatabase, savedSnapshotHashes)
-          await components.storage.delete(savedSnapshotHashes)
-        }
+        await components.storage.delete(snapshotHashesToDeleteInStorage)
         snapshotMetadatas.push(newSnapshot)
       })
       logger.info(
