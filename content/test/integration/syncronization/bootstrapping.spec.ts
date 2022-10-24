@@ -5,7 +5,6 @@ import { getProcessedSnapshots } from '../../../src/logic/database-queries/snaps
 import * as timeRangeLogic from '../../../src/logic/time-range'
 import { Deployment } from '../../../src/service/deployments/types'
 import { bootstrapFromSnapshots } from '../../../src/service/synchronization/bootstrapFromSnapshots'
-import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { assertDeploymentsAreReported, buildDeployment } from '../E2EAssertions'
 import { loadTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
@@ -21,8 +20,6 @@ loadTestEnvironment()('Bootstrapping synchronization tests', function (testEnv) 
 
   beforeEach(async () => {
     ;[server1, server2] = await testEnv.configServer(SYNC_INTERVAL).andBuildMany(2)
-    makeNoopValidator(server1.components)
-    makeNoopValidator(server2.components)
     jest.restoreAllMocks()
 
     const now = Date.now()
@@ -30,6 +27,8 @@ loadTestEnvironment()('Bootstrapping synchronization tests', function (testEnv) 
     fakeNow = () => Date.now() - now + initialTimestamp + baseTimestamp
     jest.spyOn(server1.components.clock, 'now').mockImplementation(fakeNow)
     jest.spyOn(server2.components.clock, 'now').mockImplementation(fakeNow)
+    jest.spyOn(server1.components.validator, 'validate').mockResolvedValue({ ok: true })
+    jest.spyOn(server2.components.validator, 'validate').mockResolvedValue({ ok: true })
   })
 
   it('when a server bootstraps, it should processed the snapshots of other servers', async () => {
@@ -123,6 +122,47 @@ loadTestEnvironment()('Bootstrapping synchronization tests', function (testEnv) 
     await bootstrapFromSnapshots(server2.components)
     expect(markSnapshotProcessedSpy).toBeCalledTimes(1)
 
+  })
+
+  it('when a server bootstraps, it should persist failed deployments but mark as processed the snapshots', async () => {
+    jest.spyOn(server2.components.validator, 'validate').mockResolvedValue({ ok: false })
+
+    // it should create 7 daily empty snapshots starting at initialTimestamp
+    await server1.startProgram()
+
+    // deploy an entity to server 1
+    const deployment = await deployEntityAtTimestamp(server1, 'p1', fakeNow() + 1)
+
+    // Assert that the entity was deployed on server 1
+    await assertDeploymentsAreReported(server1, deployment)
+
+    // now restart the snapshot generator and advance the time one day so it creates a new daily snapshot and includes the last deployment
+    if (server1.components.snapshotGenerator.stop) await server1.components.snapshotGenerator.stop()
+    // we advance the clock 1 day so the new daily snapshot is created
+    advanceTime(timeRangeLogic.MS_PER_DAY)
+    if (server1.components.snapshotGenerator.start) await server1.components.snapshotGenerator.start({ started: jest.fn(), live: jest.fn(), getComponents: jest.fn() })
+
+    // now we start a new server 2 and expect that after bootstrap, it processed all the snapshots from server 1
+    const bootstrapFromSnapshotsFinished = bootstrapFromSnapshotsFinishedFuture(server2)
+    await server2.startProgram()
+    await bootstrapFromSnapshotsFinished
+
+    // now we assert the server 2 processed all the server 1 snapshots; it's in the db and the deployment inside were deployed
+    const server1snapshots = await server1.components.database
+      .queryWithValues<{ hash: string }>(SQL`SELECT DISTINCT hash from snapshots ORDER BY hash;`)
+    const server2processedSnapshots = await server2.components.database
+      .queryWithValues<{ hash: string }>(SQL`SELECT DISTINCT hash from processed_snapshots ORDER BY hash;`)
+    expect(server1snapshots.rows).toEqual(server2processedSnapshots.rows)
+
+    // assert that the fail deployments was persisted
+    const failedDeployments = await server2.components.failedDeployments.getAllFailedDeployments()
+    expect(failedDeployments).toEqual(expect.arrayContaining([expect.objectContaining({
+      entityId: deployment.entityId
+    })]))
+
+    // assert that the entity was not deployed on server 2
+    const { deployments } = await server2.components.deployer.getDeployments()
+    expect(deployments).toHaveLength(0)
   })
 
   function advanceTime(msToAdvance: number) {
