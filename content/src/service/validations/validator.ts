@@ -12,7 +12,7 @@ import { AppComponents } from '../../types'
 import { createSubgraphComponent } from '@well-known-components/thegraph-component'
 import { IConfigComponent } from '@well-known-components/interfaces'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
-import { createBlockRepository, createBlockSearch, createCachingEthereumProvider } from '@dcl/block-indexer'
+import { createAvlBlockSearch, createBlockRepository, createCachingEthereumProvider } from '@dcl/block-indexer'
 import Web3 from 'web3'
 import { Eth } from 'web3-eth'
 
@@ -64,8 +64,8 @@ export async function createSubGraphsComponent(
         components.env.getConfig(EnvironmentConfig.THIRD_PARTY_REGISTRY_L2_SUBGRAPH_URL)
       )
     },
-    l1BlockSearch: createBlockSearch(createBlockRepository(createCachingEthereumProvider(l1EthereumProvider))),
-    l2BlockSearch: createBlockSearch(createBlockRepository(createCachingEthereumProvider(l2EthereumProvider)))
+    l1BlockSearch: createAvlBlockSearch(createBlockRepository(createCachingEthereumProvider(l1EthereumProvider))),
+    l2BlockSearch: createAvlBlockSearch(createBlockRepository(createCachingEthereumProvider(l2EthereumProvider)))
   }
 }
 
