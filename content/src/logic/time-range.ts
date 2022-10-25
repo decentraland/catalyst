@@ -34,6 +34,34 @@ export const MS_PER_WEEK = 7 * MS_PER_DAY
 export const MS_PER_MONTH = 4 * MS_PER_WEEK
 export const MS_PER_YEAR = 12 * MS_PER_MONTH
 
+/**
+ * @param timerange interval to be covered by @timeRanges
+ * @param timeRanges intervals to cover @timerange
+ * @returns true if the sum of all the intervals in timeRanges together cover the interval of timerange. Overlaps can occur.
+ * EXAMPLE 1
+ *  Input:
+ *    - timerange: [t1, t2]
+ *    - timeRanges: [[t1, t1 + 5], [t1 + 5, t2]]
+ *  Result: True, as the sum of all the elements in timeRanges cover the interval of timerange.
+ *
+ * EXAMPLE 2
+ *  Input:
+ *    - timerange: [t1, t2]
+ *    - timeRanges: [[t1, t1 + 2], [t1 + 4, t2]]
+ *  Result: False, as the interval between [t1 + 2, t1 + 4] is not covered.
+ *
+ * EXAMPLE 3
+ *  Input:
+ *    - timerange: [t1, t2]
+ *    - timeRanges: [[t1, t1 + 6], [t1 + 5, t2]]
+ *  Result: True, even though as the intervals in timeRanges are overlapped, the sum of all the elements in timeRanges cover the interval of timerange.
+ *
+ * EXAMPLE 4
+ *  Input:
+ *    - timerange: [t1, t2]
+ *    - timeRanges: [[t1 - 1, t1 + 5], [t1 + 5, t2 + 3]]
+ *  Result: True, even though the sum of all the elements in timeRanges extends the limits of timerange, it strictly contains it.
+ */
 export function isTimeRangeCoveredBy(timerange: TimeRange, timeRanges: TimeRange[]) {
   if (timeRanges.length == 0) return false
   const minTimestamp = timeRanges[0].initTimestamp
