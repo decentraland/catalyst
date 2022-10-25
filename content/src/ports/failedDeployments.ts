@@ -24,7 +24,6 @@ export type FailedDeployment = {
   reason: FailureReason
   authChain: AuthChain
   errorDescription: string
-  snapshotHash?: string
 }
 
 export type IFailedDeploymentsComponent = {

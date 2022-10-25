@@ -6,14 +6,14 @@ export async function saveFailedDeployment(
   components: Pick<AppComponents, 'database'>,
   failedDeployment: FailedDeployment
 ): Promise<void> {
-  const { entityId, entityType, failureTimestamp, reason, authChain, errorDescription, snapshotHash } = failedDeployment
+  const { entityId, entityType, failureTimestamp, reason, authChain, errorDescription } = failedDeployment
   const query = SQL`
   INSERT INTO failed_deployments
-  (entity_id, entity_type, failure_time, reason, auth_chain, error_description, snapshot_hash)
+  (entity_id, entity_type, failure_time, reason, auth_chain, error_description)
   VALUES
   (${entityId}, ${entityType}, to_timestamp(${failureTimestamp} / 1000.0), ${reason}, ${JSON.stringify(
     authChain
-  )}, ${errorDescription}, ${snapshotHash})
+  )}, ${errorDescription})
   RETURNING entity_id
   `
   await components.database.queryWithValues(query, 'save_failed_deployment')
@@ -37,8 +37,7 @@ export async function getFailedDeployments(components: Pick<AppComponents, 'data
       date_part('epoch', failure_time) * 1000 AS "failureTimestamp",
       reason,
       auth_chain AS "authChain",
-      error_description AS "errorDescription",
-      snapshot_hash AS "snapshotHash"
+      error_description AS "errorDescription"
   FROM failed_deployments`
   const queryResult = await components.database.queryWithValues<FailedDeployment>(query, 'get_failed_deployments')
   return queryResult.rows
