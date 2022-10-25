@@ -76,6 +76,7 @@ export type AppComponents = {
   denylist: Denylist
   fs: FSComponent
   ethereumProvider: HTTPProvider
+  maticProvider: HTTPProvider
 }
 
 export type MaintenanceComponents = {

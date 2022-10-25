@@ -12,25 +12,34 @@ import { AppComponents } from '../../types'
 import { createSubgraphComponent } from '@well-known-components/thegraph-component'
 import { IConfigComponent } from '@well-known-components/interfaces'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
-import { createAvlBlockSearch, createBlockRepository, createCachingEthereumProvider } from '@dcl/block-indexer'
-import Web3 from 'web3'
-import { Eth } from 'web3-eth'
+import {
+  createAvlBlockSearch,
+  createBlockRepository,
+  createCachingEthereumProvider,
+  EthereumProvider
+} from '@dcl/block-indexer'
+import { HTTPProvider, RequestManager } from 'eth-connect'
+
+const createEthereumProvider = (httpProvider: HTTPProvider): EthereumProvider => {
+  const reqMan = new RequestManager(httpProvider)
+  return {
+    getBlockNumber: async (): Promise<number> => {
+      return (await reqMan.eth_blockNumber()) as number
+    },
+    getBlock: async (block: number): Promise<{ timestamp: string | number }> => {
+      return await reqMan.eth_getBlockByNumber(block, false)
+    }
+  }
+}
 
 export async function createSubGraphsComponent(
-  components: Pick<AppComponents, 'env' | 'logs' | 'metrics' | 'fetcher'>
+  components: Pick<AppComponents, 'env' | 'logs' | 'metrics' | 'fetcher' | 'ethereumProvider' | 'maticProvider'>
 ): Promise<SubGraphs> {
   const config: IConfigComponent = createConfigComponent({}) // TODO Get config from higher level
   const baseComponents = { config, fetch: components.fetcher, metrics: components.metrics, logs: components.logs }
 
-  const ethNetwork: string = components.env.getConfig(EnvironmentConfig.ETH_NETWORK)
-  const l1EthereumProvider: Eth = new Web3(
-    `https://rpc.decentraland.org/${encodeURIComponent(ethNetwork)}?project=block-search`
-  ).eth
-  const l2EthereumProvider: Eth = new Web3(
-    ethNetwork === 'ethereum'
-      ? `https://rpc.decentraland.org/matic?project=block-search`
-      : `https://rpc.decentraland.org/mumbai?project=block-search`
-  ).eth
+  const l1EthereumProvider: EthereumProvider = createEthereumProvider(components.ethereumProvider)
+  const l2EthereumProvider: EthereumProvider = createEthereumProvider(components.maticProvider)
   return {
     L1: {
       landManager: await createSubgraphComponent(

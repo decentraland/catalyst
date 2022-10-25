@@ -82,6 +82,14 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       fetch: fetcher.fetch
     }
   )
+  const maticProvider = new HTTPProvider(
+    ethNetwork === 'ethereum'
+      ? `https://rpc.decentraland.org/matic?project=catalyst-content`
+      : `https://rpc.decentraland.org/mumbai?project=catalyst-content`,
+    {
+      fetch: fetcher.fetch
+    }
+  )
   const daoClient = await DAOClientFactory.create(env, ethereumProvider)
   const authenticator = new ContentAuthenticator(
     ethereumProvider,
@@ -116,7 +124,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     }
   )
 
-  const subGraphs = await createSubGraphsComponent({ env, metrics, logs, fetcher })
+  const subGraphs = await createSubGraphsComponent({ env, metrics, logs, fetcher, ethereumProvider, maticProvider })
   const externalCalls = await createExternalCalls({
     storage,
     authenticator,
@@ -299,6 +307,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     sequentialExecutor,
     denylist,
     ethereumProvider,
+    maticProvider,
     fs
   }
 }
