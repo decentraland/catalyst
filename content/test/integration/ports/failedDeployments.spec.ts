@@ -14,8 +14,7 @@ loadStandaloneTestEnvironment()('failed deployments - ', (testEnv) => {
     failureTimestamp: 123,
     reason: FailureReason.DEPLOYMENT_ERROR,
     authChain: [],
-    errorDescription: 'some-error',
-    snapshotHash: 'someHash'
+    errorDescription: 'some-error'
   }
 
   testCaseWithComponents(
