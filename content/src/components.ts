@@ -131,7 +131,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   })
   const theGraphClient = createTheGraphClient({ subGraphs, logs })
   const validator = createValidator({ config, externalCalls, logs, theGraphClient, subGraphs })
-  const serverValidator = createServerValidator({ failedDeployments: failedDeployments, metrics, clock })
+  const serverValidator = createServerValidator({ failedDeployments, metrics, clock })
 
   const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, clock })
   const activeEntities = createActiveEntitiesComponent({ database, env, logs, metrics, denylist, sequentialExecutor })
