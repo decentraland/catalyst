@@ -316,10 +316,10 @@
   dependencies:
     "@cspotcode/source-map-consumer" "0.8.0"
 
-"@dcl/block-indexer@1.0.0-20221024210809.commit-ee77354":
-  version "1.0.0-20221024210809.commit-ee77354"
-  resolved "https://registry.yarnpkg.com/@dcl/block-indexer/-/block-indexer-1.0.0-20221024210809.commit-ee77354.tgz#cf0beec925cb8c4464c2c8f8ca2b8d33621a8e61"
-  integrity sha512-dSms1CHjdvFneA3xVmir2k5F6xM7mQvcGjzz30U2tLHCo4CW2URNr3FP13wWnZYkdlewK2eAyLTnrXwj8hggNA==
+"@dcl/block-indexer@1.0.0-20221025195753.commit-0220f1d":
+  version "1.0.0-20221025195753.commit-0220f1d"
+  resolved "https://registry.yarnpkg.com/@dcl/block-indexer/-/block-indexer-1.0.0-20221025195753.commit-0220f1d.tgz#d6528c1a8ed85a2bdccbc1b61d5c5b3a18d02de2"
+  integrity sha512-UNXz7iJOSpid3NFUUuKzu+dEsSjuRguFZwmVzgH1mGShmvh8NsntsWPmKh+Gs8oxvuGa8zmpH/1pyTqNL6P8sw==
   dependencies:
     lru-cache "^7.14.0"
 
@@ -355,12 +355,12 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@4.0.12-20221024211351.commit-41803fd":
-  version "4.0.12-20221024211351.commit-41803fd"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.0.12-20221024211351.commit-41803fd.tgz#343f1f3aa4a78cc053faa48429c284abc29fa901"
-  integrity sha512-O1KJqpQYPU+UuKXtC0ta/gZPfCi8jYbT0sr3ANLz+0uvmFygeUU3iSaPZ/f1pOZziwN3iT7kqN0lhhFf8eNHAw==
+"@dcl/content-validator@4.0.12-20221025200301.commit-f1a4004":
+  version "4.0.12-20221025200301.commit-f1a4004"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.0.12-20221025200301.commit-f1a4004.tgz#35fef9cb7d1cd5d55ffdaae174f75c64884e1cc0"
+  integrity sha512-+4rLBRqe98jDESORLQfONe87sKOBZvG4hFhaXXFhJV8crCvm7HA1vGOXKU+zZsdAnRPijojz4A5EhedO0RuZNQ==
   dependencies:
-    "@dcl/block-indexer" "1.0.0-20221024210809.commit-ee77354"
+    "@dcl/block-indexer" "1.0.0-20221025195753.commit-0220f1d"
     "@dcl/content-hash-tree" "^1.1.3"
     "@dcl/hashing" "1.1.0"
     "@dcl/schemas" "^5.4.2"
