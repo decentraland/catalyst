@@ -113,9 +113,11 @@ export function createBatchDeployerComponent(
             deploymentsMap.delete(entity.entityId)
           } catch (err: any) {
             const errorDescription = err.toString()
-            logs.warn(
-              `Deployment of entity (${entity.entityType}, ${entity.entityId}) failed. Reason was: '${errorDescription}'`
-            )
+            logs.warn(`Entity deployment failed`, {
+              entityType: entity.entityType,
+              entityId: entity.entityId,
+              reason: errorDescription
+            })
             // failed deployments are automatically rescheduled
             await components.failedDeployments.reportFailure({
               entityType: entity.entityType as any,
