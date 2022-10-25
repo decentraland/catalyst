@@ -35,7 +35,7 @@ export function createProcessedSnapshotStorage(
     },
     async markSnapshotProcessed(hash: string, replacedSnapshotHashes?: string[]): Promise<void> {
       await saveSnapshotAndDeleteTheReplacedOnes(hash, replacedSnapshotHashes)
-      logger.info(`Snapshot ${hash} successfully processed and saved.`)
+      logger.info(`Snapshot successfully processed and saved`, { hash })
     }
   }
 }
