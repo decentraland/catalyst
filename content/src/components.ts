@@ -84,7 +84,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   )
   const maticProvider = new HTTPProvider(
     ethNetwork === 'ethereum'
-      ? `https://rpc.decentraland.org/matic?project=catalyst-content`
+      ? `https://rpc.decentraland.org/polygon?project=catalyst-content`
       : `https://rpc.decentraland.org/mumbai?project=catalyst-content`,
     {
       fetch: fetcher.fetch
