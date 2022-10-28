@@ -316,10 +316,10 @@
   dependencies:
     "@cspotcode/source-map-consumer" "0.8.0"
 
-"@dcl/catalyst-api-specs@^2.0.13":
-  version "2.0.13"
-  resolved "https://registry.yarnpkg.com/@dcl/catalyst-api-specs/-/catalyst-api-specs-2.0.13.tgz#b7859680aa2280ab1c2bedfe7363df44da1fe8bb"
-  integrity sha512-2QR7J2oo8wXPg9+7J3X287HJbyanUuoobXGkaxi7UcJava1wynOqHN7UA3NUoWJ3Ql7f5VbCh2ExutAhDRNrow==
+"@dcl/catalyst-api-specs@^2.0.14":
+  version "2.0.14"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-api-specs/-/catalyst-api-specs-2.0.14.tgz#7655bd7b99c5cb1bbac15b6ddfeee7e7ba6305b1"
+  integrity sha512-HA8Y3sHbbuKasfQjwbL1jMaolswaR6TTefjEantLB9/Hc+1NrHfRXDyC6xqr1LmKIarESBBA39m68iIu79Dwtg==
   dependencies:
     yaml "2.1.1"
 
@@ -371,10 +371,19 @@
     eth-connect "^6.0.3"
     ethereum-cryptography "^1.0.3"
 
-"@dcl/hashing@1.1.0", "@dcl/hashing@^1.0.0", "@dcl/hashing@^1.1.0":
+"@dcl/hashing@1.1.0":
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/@dcl/hashing/-/hashing-1.1.0.tgz#8992beeeb07b7cab9b683895399bcaf8ead32869"
   integrity sha512-u20iZwIT9YBLkoxO2rHw53zm2ePagFvJ2lChclN2wxlZoL04SlAucu3njsOSYcgPBMRrmMqHk3cbxVuP70aBbA==
+  dependencies:
+    ethereum-cryptography "^1.0.3"
+    ipfs-unixfs-importer "^7.0.3"
+    multiformats "^9.6.3"
+
+"@dcl/hashing@^1.0.0", "@dcl/hashing@^1.1.0", "@dcl/hashing@^1.1.1":
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/@dcl/hashing/-/hashing-1.1.1.tgz#4ecbe9fba3e4f34eebed097eb0080c673a90d3fc"
+  integrity sha512-0IjZMuJij09P61C1BZkMZKJVDuCbzkINjkM6jRNqy/tuypa4hyzF/v0SoI8Ob7WvZmZ6VJuSmfnY1cPBfEykcg==
   dependencies:
     ethereum-cryptography "^1.0.3"
     ipfs-unixfs-importer "^7.0.3"
@@ -2653,10 +2662,10 @@ date-format@^4.0.10, date-format@^4.0.13:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-4.0.13.tgz#87c3aab3a4f6f37582c5f5f63692d2956fa67890"
   integrity sha512-bnYCwf8Emc3pTD8pXnre+wfnjGtfi5ncMDKy7+cWZXbmRAsdWkOQHrfC1yz/KiwP5thDp2kCHWYWKBX4HP1hoQ==
 
-dcl-catalyst-client@^13.0.7:
-  version "13.0.7"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-13.0.7.tgz#f2257d871db7f3347c4ef0b3f0205f7103e09c73"
-  integrity sha512-el8mPlTRZT7ca9suwmQkSinLAvAIEmVJeT4EHd7ZDYkl1N11sk8n/0vYXRSd+vQNstgk8oEQcWKvr/MyMFixAA==
+dcl-catalyst-client@^13.0.13:
+  version "13.0.13"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-13.0.13.tgz#51fab9f7d76b768a0fe98e9a3a34a3c83c3533cc"
+  integrity sha512-U7fX4QlYx7PN7gI8TGf+O3OegFHMuAWfbignd/P8Mwlim8t/uJ3hAMf2yV3iCEZyUg0O266oHZUkOlVyPWj+bQ==
   dependencies:
     "@dcl/catalyst-contracts" "^3.0.0"
     "@dcl/hashing" "^1.1.0"

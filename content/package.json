@@ -17,11 +17,11 @@
     "test:unit": "jest --selectProjects unit --runInBand --forceExit --detectOpenHandles --coverage"
   },
   "dependencies": {
-    "@dcl/catalyst-api-specs": "^2.0.13",
+    "@dcl/catalyst-api-specs": "^2.0.14",
     "@dcl/catalyst-contracts": "^3.0.0",
     "@dcl/content-validator": "^4.0.11",
     "@dcl/crypto": "^3.2.1",
-    "@dcl/hashing": "^1.1.0",
+    "@dcl/hashing": "^1.1.1",
     "@dcl/schemas": "^5.26.1",
     "@dcl/snapshots-fetcher": "^4.0.7",
     "@dcl/urn-resolver": "^2.0.3",
@@ -34,7 +34,7 @@
     "bloom-filters": "^3.0.0",
     "compression": "1.7.4",
     "cors": "2.8.5",
-    "dcl-catalyst-client": "^13.0.7",
+    "dcl-catalyst-client": "^13.0.13",
     "eth-connect": "^6.0.3",
     "express": "4.18.1",
     "express-openapi-validator": "4.13.8",
