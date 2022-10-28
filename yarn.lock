@@ -355,10 +355,10 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@4.0.12-20221028144919.commit-a3b20c2":
-  version "4.0.12-20221028144919.commit-a3b20c2"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.0.12-20221028144919.commit-a3b20c2.tgz#06e98f6b3bcc9dec85b5f544a0cb5054316ee4f0"
-  integrity sha512-wNFtx8TSsz3z4cxHh3EdCEuswdAzk15nBh1jD9XnvOVSJqUm9wik/SpkAQPY3o+MrOqcJc4ConXX6kFTocTLgg==
+"@dcl/content-validator@4.0.12-20221028154459.commit-7623b91":
+  version "4.0.12-20221028154459.commit-7623b91"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.0.12-20221028154459.commit-7623b91.tgz#6600aa680cc8dcfe1bc000ab35a0b3277e786aff"
+  integrity sha512-OyS7ajVX+71sheMR1hlnl5zHDErTc0mKfjemeN39e4J60g0Imoa5Prml/oLRRYXxKcal/bWzi2IzmeaB3aF8xw==
   dependencies:
     "@dcl/block-indexer" "1.0.0-20221028144543.commit-a76df23"
     "@dcl/content-hash-tree" "^1.1.3"
