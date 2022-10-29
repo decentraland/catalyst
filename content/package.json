@@ -23,7 +23,7 @@
     "@dcl/crypto": "^3.2.2",
     "@dcl/hashing": "^1.1.1",
     "@dcl/schemas": "^5.26.1",
-    "@dcl/snapshots-fetcher": "^4.0.7",
+    "@dcl/snapshots-fetcher": "^4.0.14",
     "@dcl/urn-resolver": "^2.0.3",
     "@well-known-components/env-config-provider": "^1.2.0",
     "@well-known-components/http-server": "1.1.6",
