@@ -20,7 +20,7 @@
     "@dcl/block-indexer": "1.0.0-20221028144543.commit-a76df23",
     "@dcl/catalyst-api-specs": "^2.0.14",
     "@dcl/catalyst-contracts": "^3.0.0",
-    "@dcl/content-validator": "4.0.12-20221028174140.commit-6dc680f",
+    "@dcl/content-validator": "4.0.18-20221031140028.commit-ce088d5",
     "@dcl/crypto": "^3.2.2",
     "@dcl/hashing": "^1.1.1",
     "@dcl/schemas": "^5.26.1",
