@@ -1,103 +1,108 @@
-import { getProcessedSnapshots, saveProcessedSnapshot } from '../../../src/logic/database-queries/snapshots-queries'
+import * as snapshotQueries from '../../../src/logic/database-queries/snapshots-queries'
+import { saveProcessedSnapshot } from '../../../src/logic/database-queries/snapshots-queries'
 import { loadStandaloneTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
 
 loadStandaloneTestEnvironment()('precessed snapshot storage', (testEnv) => {
 
-  describe('wasSnapshotProcessed', () => {
-    testCaseWithComponents(
-      testEnv,
-      'should return no failed deployments after start if there no one in the db',
-      async (components) => {
-        const processedSnapshot = 'someHash'
-        await saveProcessedSnapshot(components.database, 'anotherHash', Date.now())
+  describe('processedFrom', () => {
 
-        expect(await components.processedSnapshotStorage.wasSnapshotProcessed(processedSnapshot)).toBeFalsy()
-      }
-    )
+    beforeEach(() => jest.restoreAllMocks())
 
     testCaseWithComponents(
       testEnv,
-      'should return true when snapshot was processed',
+      'should return the result from they query when the hashes are not in cache',
       async (components) => {
         const processedSnapshot = 'someHash'
         await saveProcessedSnapshot(components.database, processedSnapshot, Date.now())
 
-        expect(await components.processedSnapshotStorage.wasSnapshotProcessed(processedSnapshot)).toBeTruthy()
+        expect(await components.processedSnapshotStorage.processedFrom([processedSnapshot])).toEqual(new Set([processedSnapshot]))
       }
     )
 
     testCaseWithComponents(
       testEnv,
-      'should return true when snapshot was not processed but did all the replaced ones',
+      'should cache the processed snapshots',
       async (components) => {
         const processedSnapshot = 'someHash'
-        const replacedHashes = ['h1', 'h2']
-        for (const hash of replacedHashes) {
-          await saveProcessedSnapshot(components.database, hash, Date.now())
-        }
+        await saveProcessedSnapshot(components.database, processedSnapshot, Date.now())
 
-        expect(await components.processedSnapshotStorage.wasSnapshotProcessed(processedSnapshot, replacedHashes)).toBeTruthy()
+        const dbQuerySpy = jest.spyOn(snapshotQueries, 'getProcessedSnapshots')
+        await components.processedSnapshotStorage.processedFrom([processedSnapshot])
+        expect(dbQuerySpy).toBeCalledTimes(1)
+        // now the result should be cached
+        dbQuerySpy.mockReset()
+        await components.processedSnapshotStorage.processedFrom([processedSnapshot])
+        expect(dbQuerySpy).toBeCalledTimes(0)
       }
     )
 
     testCaseWithComponents(
       testEnv,
-      'should return true when snapshot was not processed and did some but not all the replaced ones',
+      'should query the db if not ALL the snapshots are in the cache',
       async (components) => {
         const processedSnapshot = 'someHash'
-        const replacedHashes = ['h1', 'h2']
-        await saveProcessedSnapshot(components.database, 'h1', Date.now())
+        await saveProcessedSnapshot(components.database, processedSnapshot, Date.now())
 
-        expect(await components.processedSnapshotStorage.wasSnapshotProcessed(processedSnapshot, replacedHashes)).toBeFalsy()
+        await components.processedSnapshotStorage.processedFrom([processedSnapshot])
+        // now the snapshot 'processedSnapshot' is cached
+        const anotherHashNotInCache = 'anotherHashNotInCache'
+        const dbQuerySpy = jest.spyOn(snapshotQueries, 'getProcessedSnapshots')
+        await components.processedSnapshotStorage.processedFrom([processedSnapshot, anotherHashNotInCache])
+        expect(dbQuerySpy).toBeCalledWith(expect.anything(), expect.arrayContaining([processedSnapshot, anotherHashNotInCache]))
       }
     )
 
     testCaseWithComponents(
       testEnv,
-      'when all the replaced hashes were processed, should save the new snapshot hash and delete the replaced ones',
+      'should not query the db if ALL the snapshots are in the cache',
       async (components) => {
         const processedSnapshot = 'someHash'
-        const replacedHashes = ['h1', 'h2']
-        for (const hash of replacedHashes) {
-          await saveProcessedSnapshot(components.database, hash, Date.now())
-        }
+        const anotherProcessedSnapshot = 'anotherHash'
+        const otherProcessedSnapshot = 'otherHash'
 
-        expect(await components.processedSnapshotStorage.wasSnapshotProcessed(processedSnapshot, replacedHashes)).toBeTruthy()
-        expect(await getProcessedSnapshots(components, [processedSnapshot, ...replacedHashes]))
-          .toEqual(new Set([processedSnapshot]))
-      }
-    )
+        await saveProcessedSnapshot(components.database, processedSnapshot, Date.now())
+        await saveProcessedSnapshot(components.database, anotherProcessedSnapshot, Date.now())
+        await saveProcessedSnapshot(components.database, otherProcessedSnapshot, Date.now())
 
-    testCaseWithComponents(
-      testEnv,
-      'when only some of the replaced snapshots were processed, it should not save the new snapshot hash and do not delete the replaced ones',
-      async (components) => {
-        const processedSnapshot = 'someHash'
-        const replacedHashes = ['h1', 'h2']
-        await saveProcessedSnapshot(components.database, 'h1', Date.now())
+        await components.processedSnapshotStorage.processedFrom([processedSnapshot, otherProcessedSnapshot])
+        await components.processedSnapshotStorage.processedFrom([anotherProcessedSnapshot])
 
-        expect(await components.processedSnapshotStorage.wasSnapshotProcessed(processedSnapshot, replacedHashes)).toBeFalsy()
-        expect(await getProcessedSnapshots(components, [processedSnapshot, ...replacedHashes])).toEqual(new Set(['h1']))
+        const dbQuerySpy = jest.spyOn(snapshotQueries, 'getProcessedSnapshots')
+        await components.processedSnapshotStorage.processedFrom([processedSnapshot, otherProcessedSnapshot, anotherProcessedSnapshot])
+        expect(dbQuerySpy).toBeCalledTimes(0)
       }
     )
   })
 
-  describe('markSnapshotAsProcessed', () => {
+  describe('saveProcessed', () => {
+
     testCaseWithComponents(
       testEnv,
-      'should save the new snapshot hash and delete the replaced ones',
+      'should save the snapshot and set the current process time',
       async (components) => {
         const processedSnapshot = 'someHash'
-        const replacedHashes = ['h1', 'h2']
-        for (const hash of replacedHashes) {
-          await saveProcessedSnapshot(components.database, hash, Date.now())
-        }
+        const saveProcessedSnapshotSpy = jest.spyOn(snapshotQueries, 'saveProcessedSnapshot').mockResolvedValue()
+        const expectedProcessTime = Date.now()
+        jest.spyOn(components.clock, 'now').mockReturnValue(expectedProcessTime)
 
-        await components.processedSnapshotStorage.markSnapshotProcessed(processedSnapshot, replacedHashes)
-        expect(await getProcessedSnapshots(components, [processedSnapshot, ...replacedHashes]))
-          .toEqual(new Set([processedSnapshot]))
+        await components.processedSnapshotStorage.saveProcessed(processedSnapshot)
+
+        expect(saveProcessedSnapshotSpy).toBeCalledWith(expect.anything(), processedSnapshot, expectedProcessTime)
+      }
+    )
+
+    testCaseWithComponents(
+      testEnv,
+      'should cache the processed snapshot when saving a snapshot',
+      async (components) => {
+        const processedSnapshot = 'someHash'
+
+        await components.processedSnapshotStorage.saveProcessed(processedSnapshot)
+        const dbQuerySpy = jest.spyOn(snapshotQueries, 'getProcessedSnapshots')
+        const processedSnapshots = await components.processedSnapshotStorage.processedFrom([processedSnapshot])
+        expect(dbQuerySpy).toBeCalledTimes(0)
+        expect(processedSnapshots).toEqual(new Set([processedSnapshot]))
       }
     )
   })
-
 })

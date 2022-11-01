@@ -30,6 +30,7 @@ export function createBatchDeployerComponent(
     | 'storage'
     | 'failedDeployments'
     | 'clock'
+    | 'processedSnapshots'
   >,
   syncOptions: {
     ignoredTypes: Set<string>
@@ -66,10 +67,16 @@ export function createBatchDeployerComponent(
     return false
   }
 
-  async function handleDeploymentFromServer(entity: DeploymentWithAuthChain, contentServer: string) {
+  async function handleDeploymentFromServer(
+    entity: DeploymentWithAuthChain & { snapshotHash?: string },
+    contentServer: string
+  ) {
     if (await shouldRemoteEntityDeploymentBeIgnored(entity)) {
       // early return to prevent noops
       components.metrics.increment('dcl_ignored_sync_deployments')
+      if (entity.snapshotHash) {
+        await components.processedSnapshots.entityProcessedFrom(entity.snapshotHash)
+      }
       return
     }
 
@@ -97,6 +104,9 @@ export function createBatchDeployerComponent(
         .scheduleJobWithPriority(async () => {
           try {
             if (await isEntityDeployed(components, entity.entityId)) {
+              if (entity.snapshotHash) {
+                await components.processedSnapshots.entityProcessedFrom(entity.snapshotHash)
+              }
               return
             }
 
@@ -111,6 +121,9 @@ export function createBatchDeployerComponent(
 
             successfulDeployments.add(entity.entityId)
             deploymentsMap.delete(entity.entityId)
+            if (entity.snapshotHash) {
+              await components.processedSnapshots.entityProcessedFrom(entity.snapshotHash)
+            }
           } catch (err: any) {
             const errorDescription = err.toString()
             logs.warn(`Entity deployment failed`, {
@@ -144,7 +157,10 @@ export function createBatchDeployerComponent(
     onIdle() {
       return parallelDeploymentJobs.onIdle()
     },
-    async deployEntity(entity: DeploymentWithAuthChain, contentServers: string[]): Promise<void> {
+    async deployEntity(
+      entity: DeploymentWithAuthChain & { snapshotHash?: string },
+      contentServers: string[]
+    ): Promise<void> {
       for (const contentServer of contentServers) {
         await handleDeploymentFromServer(entity, contentServer)
       }

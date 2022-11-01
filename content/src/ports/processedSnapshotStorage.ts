@@ -1,41 +1,28 @@
 import { IProcessedSnapshotStorageComponent } from '@dcl/snapshots-fetcher/dist/types'
-import {
-  deleteProcessedSnapshots,
-  getProcessedSnapshots,
-  saveProcessedSnapshot
-} from '../logic/database-queries/snapshots-queries'
+import { getProcessedSnapshots, saveProcessedSnapshot } from '../logic/database-queries/snapshots-queries'
 import { AppComponents } from '../types'
 
 export function createProcessedSnapshotStorage(
-  components: Pick<AppComponents, 'database' | 'logs' | 'clock'>
+  components: Pick<AppComponents, 'database' | 'clock'>
 ): IProcessedSnapshotStorageComponent {
-  const logger = components.logs.getLogger('processed-snapshot-storage')
-
-  async function saveSnapshotAndDeleteTheReplacedOnes(snapshotHash: string, replacedSnapshotHashes?: string[]) {
-    await components.database.transaction(async (txDatabase) => {
-      await deleteProcessedSnapshots(txDatabase, replacedSnapshotHashes ?? [])
-      await saveProcessedSnapshot(txDatabase, snapshotHash, components.clock.now())
-    }, 'replace_processed_snapshots')
-  }
+  const processedSnapshotsCache = new Set()
 
   return {
-    async wasSnapshotProcessed(hash: string, replacedSnapshotHashes?: string[]): Promise<boolean> {
-      const replacedHashes = replacedSnapshotHashes ?? []
-      const processedSnapshotHashes = await getProcessedSnapshots(components, [hash, ...replacedHashes])
-
-      const snapshotWasAlreadyProcessed = processedSnapshotHashes.has(hash)
-      const replacedHashesWereAlreadyProcessed =
-        replacedHashes.length > 0 && replacedHashes.every((h) => processedSnapshotHashes.has(h))
-
-      if (!snapshotWasAlreadyProcessed && replacedHashesWereAlreadyProcessed) {
-        await saveSnapshotAndDeleteTheReplacedOnes(hash, replacedHashes)
+    async processedFrom(snapshotHashes: string[]) {
+      const snapshotsInCache = snapshotHashes.filter((h) => processedSnapshotsCache.has(h))
+      if (snapshotsInCache.length == snapshotHashes.length) {
+        return new Set(snapshotHashes)
+      }
+      const processedSnapshots = await getProcessedSnapshots(components, snapshotHashes)
+      for (const processedSnapshot of processedSnapshots) {
+        processedSnapshotsCache.add(processedSnapshot)
       }
 
-      return snapshotWasAlreadyProcessed || replacedHashesWereAlreadyProcessed
+      return processedSnapshots
     },
-    async markSnapshotProcessed(hash: string, replacedSnapshotHashes?: string[]): Promise<void> {
-      await saveSnapshotAndDeleteTheReplacedOnes(hash, replacedSnapshotHashes)
-      logger.info(`Snapshot successfully processed and saved`, { hash })
+    async saveProcessed(snapshotHash: string) {
+      await saveProcessedSnapshot(components.database, snapshotHash, components.clock.now())
+      processedSnapshotsCache.add(snapshotHash)
     }
   }
 }

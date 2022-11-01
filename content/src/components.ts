@@ -1,6 +1,6 @@
 import { createTheGraphClient } from '@dcl/content-validator'
 import { EntityType } from '@dcl/schemas'
-import { createCatalystDeploymentStream } from '@dcl/snapshots-fetcher'
+import { createCatalystDeploymentStream, createProcessedSnapshotsComponent } from '@dcl/snapshots-fetcher'
 import { createJobLifecycleManagerComponent } from '@dcl/snapshots-fetcher/dist/job-lifecycle-manager'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
@@ -172,6 +172,10 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     env.getConfig<string>(EnvironmentConfig.SYNC_IGNORED_ENTITY_TYPES)
   )
 
+  const processedSnapshotStorage = createProcessedSnapshotStorage({ database, clock })
+
+  const processedSnapshots = createProcessedSnapshotsComponent({ processedSnapshotStorage })
+
   const batchDeployer = createBatchDeployerComponent(
     {
       logs,
@@ -184,7 +188,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       deployedEntitiesBloomFilter: deployedEntitiesBloomFilter,
       storage,
       failedDeployments,
-      clock
+      clock,
+      processedSnapshots
     },
     {
       ignoredTypes: new Set(ignoredTypes),
@@ -202,7 +207,16 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       jobManagerName: 'SynchronizationJobManager',
       createJob(contentServer) {
         return createCatalystDeploymentStream(
-          { logs, downloadQueue, fetcher, metrics, deployer: batchDeployer, storage, processedSnapshotStorage },
+          {
+            logs,
+            downloadQueue,
+            fetcher,
+            metrics,
+            deployer: batchDeployer,
+            storage,
+            processedSnapshotStorage,
+            processedSnapshots
+          },
           {
             tmpDownloadFolder: staticConfigs.tmpDownloadFolder,
             contentServer,
@@ -256,8 +270,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     snapshotManager,
     clock
   })
-
-  const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs, clock })
 
   const controller = new Controller(
     {
@@ -322,6 +334,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     ethereumProvider,
     fs,
     snapshotGenerator,
+    processedSnapshots,
     processedSnapshotStorage,
     clock
   }

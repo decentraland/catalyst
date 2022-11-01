@@ -1,115 +1,91 @@
 
-import { createConfigComponent } from '@well-known-components/env-config-provider'
-import { ILoggerComponent } from '@well-known-components/interfaces'
-import { createLogComponent } from '@well-known-components/logger'
 import * as snapshotQueries from '../../../src/logic/database-queries/snapshots-queries'
 import { createTestDatabaseComponent } from '../../../src/ports/postgres'
 import { createProcessedSnapshotStorage } from '../../../src/ports/processedSnapshotStorage'
 
 
-describe('failed deployments', () => {
+describe('processed snapshot storage', () => {
 
   const database = createTestDatabaseComponent()
   const clock = { now: Date.now }
-  let logs: ILoggerComponent
-
-  beforeAll(async () => {
-    logs = await createLogComponent({
-      config: createConfigComponent({
-        LOG_LEVEL: 'DEBUG'
-      })
-    })
-  })
 
   beforeEach(() => jest.restoreAllMocks())
 
-  describe('wasSnapshotProcessed', () => {
-    it('should return false when snapshot was not processed', async () => {
-      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs, clock })
-      const processedSnapshot = 'someHash'
-      jest.spyOn(snapshotQueries, 'getProcessedSnapshots').mockResolvedValue(new Set(['anotherHash']))
-
-      expect(await processedSnapshotStorage.wasSnapshotProcessed(processedSnapshot)).toBeFalsy()
-    })
-
-    it('should return true when snapshot was processed', async () => {
-      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs, clock })
+  describe('processedFrom', () => {
+    it('should return the result from they query when the hashes are not in cache', async () => {
+      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, clock })
       const processedSnapshot = 'someHash'
       jest.spyOn(snapshotQueries, 'getProcessedSnapshots').mockResolvedValue(new Set([processedSnapshot]))
 
-      expect(await processedSnapshotStorage.wasSnapshotProcessed(processedSnapshot)).toBeTruthy()
+      expect(await processedSnapshotStorage.processedFrom([processedSnapshot])).toEqual(new Set([processedSnapshot]))
     })
 
-    it('should return true when snapshot was not processed but did all the replaced ones', async () => {
-      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs, clock })
+    it('should cache the processed snapshots', async () => {
+      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, clock })
       const processedSnapshot = 'someHash'
-      const replacedHashes = ['h1', 'h2']
-      jest.spyOn(snapshotQueries, 'getProcessedSnapshots').mockResolvedValue(new Set(replacedHashes))
-      jest.spyOn(snapshotQueries, 'deleteProcessedSnapshots').mockImplementation()
-      jest.spyOn(snapshotQueries, 'saveProcessedSnapshot').mockImplementation()
-      jest.spyOn(database, 'transaction').mockImplementation(async (fnToRun) => await fnToRun(database))
+      const dbQuerySpy = jest.spyOn(snapshotQueries, 'getProcessedSnapshots').mockResolvedValue(new Set([processedSnapshot]))
 
-      expect(await processedSnapshotStorage.wasSnapshotProcessed(processedSnapshot, replacedHashes)).toBeTruthy()
+      await processedSnapshotStorage.processedFrom([processedSnapshot])
+      expect(dbQuerySpy).toBeCalledTimes(1)
+      // now the result should be cached
+      dbQuerySpy.mockReset()
+      await processedSnapshotStorage.processedFrom([processedSnapshot])
+      expect(dbQuerySpy).toBeCalledTimes(0)
     })
 
-    it('should return true when snapshot was not processed and did some but not all the replaced ones', async () => {
-      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs, clock })
+    it('should query the db if not ALL the snapshots are in the cache', async () => {
+      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, clock })
       const processedSnapshot = 'someHash'
-      const replacedHashes = ['h1', 'h2']
-      jest.spyOn(snapshotQueries, 'getProcessedSnapshots').mockResolvedValue(new Set(['h1']))
-      jest.spyOn(snapshotQueries, 'deleteProcessedSnapshots').mockImplementation()
-      jest.spyOn(snapshotQueries, 'saveProcessedSnapshot').mockImplementation()
-      jest.spyOn(database, 'transaction').mockImplementation(async (fnToRun) => await fnToRun(database))
+      const dbQuerySpy = jest.spyOn(snapshotQueries, 'getProcessedSnapshots').mockResolvedValue(new Set([processedSnapshot]))
 
-      expect(await processedSnapshotStorage.wasSnapshotProcessed(processedSnapshot, replacedHashes)).toBeFalsy()
+      await processedSnapshotStorage.processedFrom([processedSnapshot])
+      // now the snapshot 'processedSnapshot' is cached
+      const anotherHashNotInCache = 'anotherHashNotInCache'
+      await processedSnapshotStorage.processedFrom([processedSnapshot, anotherHashNotInCache])
+      expect(dbQuerySpy).toBeCalledWith(expect.anything(), expect.arrayContaining([processedSnapshot, anotherHashNotInCache]))
     })
 
-    it('when the replaced hashes were processed, it should save the new snapshot hash and delete the replaced ones', async () => {
-      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs, clock })
+    it('should not query the db if ALL the snapshots are in the cache', async () => {
+      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, clock })
       const processedSnapshot = 'someHash'
-      const replacedHashes = ['h1', 'h2']
-      jest.spyOn(snapshotQueries, 'getProcessedSnapshots').mockResolvedValue(new Set(replacedHashes))
-      const deleteSpy = jest.spyOn(snapshotQueries, 'deleteProcessedSnapshots').mockImplementation()
-      const saveSpy = jest.spyOn(snapshotQueries, 'saveProcessedSnapshot').mockImplementation()
-      const txSpy = jest.spyOn(database, 'transaction').mockImplementation(async (fnToRun) => await fnToRun(database))
+      const anotherProcessedSnapshot = 'anotherHash'
+      const otherProcessedSnapshot = 'otherHash'
 
-      expect(await processedSnapshotStorage.wasSnapshotProcessed(processedSnapshot, replacedHashes)).toBeTruthy()
-      expect(deleteSpy).toHaveBeenCalledWith(database, replacedHashes)
-      expect(saveSpy).toHaveBeenCalledWith(database, processedSnapshot, expect.anything())
-      expect(txSpy).toHaveBeenCalled()
-    })
+      jest.spyOn(snapshotQueries, 'getProcessedSnapshots').mockResolvedValue(new Set([processedSnapshot, otherProcessedSnapshot]))
+      await processedSnapshotStorage.processedFrom([processedSnapshot, otherProcessedSnapshot])
+      jest.spyOn(snapshotQueries, 'getProcessedSnapshots').mockResolvedValue(new Set([anotherProcessedSnapshot]))
+      await processedSnapshotStorage.processedFrom([anotherProcessedSnapshot])
 
-    it('when only some of the replaced snapshots were processed, it should not save the new snapshot hash and do not delete the replaced ones', async () => {
-      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs, clock })
-      const processedSnapshot = 'someHash'
-      const replacedHashes = ['h1', 'h2']
-      jest.spyOn(snapshotQueries, 'getProcessedSnapshots').mockResolvedValue(new Set(['h1']))
-      const deleteSpy = jest.spyOn(snapshotQueries, 'deleteProcessedSnapshots').mockImplementation()
-      const saveSpy = jest.spyOn(snapshotQueries, 'saveProcessedSnapshot').mockImplementation()
-      const txSpy = jest.spyOn(database, 'transaction').mockImplementation(async (fnToRun) => await fnToRun(database))
-
-      expect(await processedSnapshotStorage.wasSnapshotProcessed(processedSnapshot, replacedHashes)).toBeFalsy()
-      expect(deleteSpy).not.toHaveBeenCalled()
-      expect(saveSpy).not.toHaveBeenCalled()
-      expect(txSpy).not.toHaveBeenCalled()
+      const dbQuerySpy = jest.spyOn(snapshotQueries, 'getProcessedSnapshots')
+      dbQuerySpy.mockReset()
+      await processedSnapshotStorage.processedFrom([processedSnapshot, otherProcessedSnapshot, anotherProcessedSnapshot])
+      expect(dbQuerySpy).toBeCalledTimes(0)
     })
   })
 
-  describe('markSnapshotAsProcessed', () => {
-    it('should save the new snapshot hash and delete the replaced ones', async () => {
-      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs, clock })
+  describe('saveProcessed', () => {
+    it('should save the snapshot and set the current process time', async () => {
+      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, clock })
       const processedSnapshot = 'someHash'
-      const replacedHashes = ['h1', 'h2']
-      jest.spyOn(snapshotQueries, 'getProcessedSnapshots').mockResolvedValue(new Set(replacedHashes))
-      const deleteSpy = jest.spyOn(snapshotQueries, 'deleteProcessedSnapshots').mockImplementation()
-      const saveSpy = jest.spyOn(snapshotQueries, 'saveProcessedSnapshot').mockImplementation()
-      const txSpy = jest.spyOn(database, 'transaction').mockImplementation(async (fnToRun) => await fnToRun(database))
+      const saveProcessedSnapshotSpy = jest.spyOn(snapshotQueries, 'saveProcessedSnapshot').mockResolvedValue()
+      const expectedProcessTime = Date.now()
+      jest.spyOn(clock, 'now').mockReturnValue(expectedProcessTime)
 
-      await processedSnapshotStorage.markSnapshotProcessed(processedSnapshot, replacedHashes)
-      expect(deleteSpy).toHaveBeenCalledWith(database, replacedHashes)
-      expect(saveSpy).toHaveBeenCalledWith(database, processedSnapshot, expect.anything())
-      expect(txSpy).toHaveBeenCalled()
+      await processedSnapshotStorage.saveProcessed(processedSnapshot)
+
+      expect(saveProcessedSnapshotSpy).toBeCalledWith(database, processedSnapshot, expectedProcessTime)
+    })
+
+    it('should cache the processed snapshot when saving a snapshot', async () => {
+      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, clock })
+      const processedSnapshot = 'someHash'
+      jest.spyOn(snapshotQueries, 'saveProcessedSnapshot').mockResolvedValue()
+
+      await processedSnapshotStorage.saveProcessed(processedSnapshot)
+      const dbQuerySpy = jest.spyOn(snapshotQueries, 'getProcessedSnapshots')
+      const processedSnapshots = await processedSnapshotStorage.processedFrom([processedSnapshot])
+      expect(dbQuerySpy).toBeCalledTimes(0)
+      expect(processedSnapshots).toEqual(new Set([processedSnapshot]))
     })
   })
-
 })

@@ -12,6 +12,7 @@ type BootstrapComponents = Pick<
   | 'contentCluster'
   | 'storage'
   | 'processedSnapshotStorage'
+  | 'processedSnapshots'
 >
 
 /**

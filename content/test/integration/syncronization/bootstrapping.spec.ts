@@ -80,7 +80,7 @@ loadTestEnvironment()('Bootstrapping synchronization tests', function (testEnv) 
     await assertDeploymentsAreReported(server2, deployment)
   })
 
-  it('when a server process a snapshot with replaced hashes and it has already processed all of them, it should add the new one in the db, delete the replaced ones, and do not process it again', async () => {
+  it('when a server process a snapshot with replaced hashes and it has already processed all of them, it should add the new one in the db, and do not process its entities again', async () => {
     // it should not create snapshots
     await server1.startProgram()
 
@@ -100,9 +100,11 @@ loadTestEnvironment()('Bootstrapping synchronization tests', function (testEnv) 
     if (server1.components.snapshotGenerator.start) await server1.components.snapshotGenerator.start({ started: jest.fn(), live: jest.fn(), getComponents: jest.fn() })
 
     // now we start a new server 2 so it processes the 3 snapshots: the first one, the second one and the 5 empty ones (only one is processed)
-    const markSnapshotProcessedSpy = jest.spyOn(server2.components.processedSnapshotStorage, 'markSnapshotProcessed')
+    // const markSnapshotProcessedSpy = jest.spyOn(server2.components.processedSnapshotStorage, 'markSnapshotProcessed')
+    // const saveProcessedSpy = jest.spyOn(server2.components.processedSnapshotStorage, 'saveProcessed')
+    const endStreamOfSpy = jest.spyOn(server2.components.processedSnapshots, 'endStreamOf')
     await server2.startProgram()
-    expect(markSnapshotProcessedSpy).toBeCalledTimes(3)
+    expect(endStreamOfSpy).toBeCalledTimes(3)
 
     // now we deploy a new entity for the 8th day
     advanceTime(timeRangeLogic.MS_PER_DAY)
@@ -118,9 +120,9 @@ loadTestEnvironment()('Bootstrapping synchronization tests', function (testEnv) 
     // now we run the bootstrap from snapshots again in server 2 (would be nice a mechanism to restart the server)
     // it should save the weekly snapshot as already processed as it already processed the 7 ones that it's replacing
     // it should process only the last daily snapshot
-    markSnapshotProcessedSpy.mockReset()
+    endStreamOfSpy.mockReset()
     await bootstrapFromSnapshots(server2.components)
-    expect(markSnapshotProcessedSpy).toBeCalledTimes(1)
+    expect(endStreamOfSpy).toBeCalledTimes(1)
 
   })
 
