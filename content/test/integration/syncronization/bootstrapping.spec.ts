@@ -14,6 +14,7 @@ loadTestEnvironment()('Bootstrapping synchronization tests', function (testEnv) 
   const SYNC_INTERVAL: number = ms('1s')
   let server1: TestProgram, server2: TestProgram
   const initialTimestamp = 1577836800000
+  const emptySnapshotHash = 'bafkreig6sfhegnp4okzecgx3v6gj6pohh5qzw6zjtrdqtggx64743rkmz4'
 
   let fakeNow: () => number
   let baseTimestamp = 0
@@ -36,9 +37,7 @@ loadTestEnvironment()('Bootstrapping synchronization tests', function (testEnv) 
     advanceTime(timeRangeLogic.MS_PER_WEEK)
     await server1.startProgram()
 
-    const bootstrapFromSnapshotsFinished = bootstrapFromSnapshotsFinishedFuture(server2)
-    await server2.startProgram()
-    await bootstrapFromSnapshotsFinished
+    await startProgramAndWaitUntilBootstrapFinishes(server2)
 
     // once the bootstrap from snapshots finished, it should have processed the server1 snapshots.
     const server1Snapshots =
@@ -49,7 +48,7 @@ loadTestEnvironment()('Bootstrapping synchronization tests', function (testEnv) 
     expect(server2ProcessedSnapshots).toEqual(server1Snapshots)
   })
 
-  it('when a server process a snapshot, it deploys the entities insdide it', async () => {
+  it('when a server process a snapshot, it deploys the entities inside it', async () => {
     // it should create 7 daily empty snapshots starting at initialTimestamp
     await server1.startProgram()
 
@@ -66,9 +65,7 @@ loadTestEnvironment()('Bootstrapping synchronization tests', function (testEnv) 
     if (server1.components.snapshotGenerator.start) await server1.components.snapshotGenerator.start({ started: jest.fn(), live: jest.fn(), getComponents: jest.fn() })
 
     // now we start a new server 2 and expect that after bootstrap, it processed all the snapshots from server 1
-    const bootstrapFromSnapshotsFinished = bootstrapFromSnapshotsFinishedFuture(server2)
-    await server2.startProgram()
-    await bootstrapFromSnapshotsFinished
+    await startProgramAndWaitUntilBootstrapFinishes(server2)
 
     // now we assert the server 2 processed all the server 1 snapshots; it's in the db and the deployment inside were deployed
     const server1snapshots = await server1.components.database
@@ -103,26 +100,29 @@ loadTestEnvironment()('Bootstrapping synchronization tests', function (testEnv) 
     // const markSnapshotProcessedSpy = jest.spyOn(server2.components.processedSnapshotStorage, 'markSnapshotProcessed')
     // const saveProcessedSpy = jest.spyOn(server2.components.processedSnapshotStorage, 'saveProcessed')
     const endStreamOfSpy = jest.spyOn(server2.components.processedSnapshots, 'endStreamOf')
-    await server2.startProgram()
-    expect(endStreamOfSpy).toBeCalledTimes(3)
+
+    await startProgramAndWaitUntilBootstrapFinishes(server2)
+
+    expect(endStreamOfSpy).toHaveBeenNthCalledWith(2, expect.anything(), 1)
+    expect(endStreamOfSpy).toHaveBeenNthCalledWith(1, emptySnapshotHash, 0)
 
     // now we deploy a new entity for the 8th day
-    advanceTime(timeRangeLogic.MS_PER_DAY)
+    // advanceTime(timeRangeLogic.MS_PER_DAY)
     const deployment3 = await deployEntityAtTimestamp(server1, 'p3', fakeNow() + 1)
     await assertDeploymentsAreReported(server1, deployment1, deployment2, deployment3)
 
     // now we advance the clock one day more, 8 days passed, it will generate 1 weekly snapshot (replacing the first 7)
     // and a new daily one for the 8th day
-    if (server1.components.snapshotGenerator.stop) await server1.components.snapshotGenerator.stop()
     advanceTime(timeRangeLogic.MS_PER_DAY)
+    if (server1.components.snapshotGenerator.stop) await server1.components.snapshotGenerator.stop()
     if (server1.components.snapshotGenerator.start) await server1.components.snapshotGenerator.start({ started: jest.fn(), live: jest.fn(), getComponents: jest.fn() })
 
-    // now we run the bootstrap from snapshots again in server 2 (would be nice a mechanism to restart the server)
+    // now we run the bootstrap from snapshots again in server 2 (would be nice to have a mechanism to restart the server)
     // it should save the weekly snapshot as already processed as it already processed the 7 ones that it's replacing
-    // it should process only the last daily snapshot
+    // it should process only the last empty daily snapshot
     endStreamOfSpy.mockReset()
     await bootstrapFromSnapshots(server2.components)
-    expect(endStreamOfSpy).toBeCalledTimes(1)
+    expect(endStreamOfSpy).toHaveBeenNthCalledWith(1, expect.anything(), 1)
 
   })
 
@@ -145,9 +145,7 @@ loadTestEnvironment()('Bootstrapping synchronization tests', function (testEnv) 
     if (server1.components.snapshotGenerator.start) await server1.components.snapshotGenerator.start({ started: jest.fn(), live: jest.fn(), getComponents: jest.fn() })
 
     // now we start a new server 2 and expect that after bootstrap, it processed all the snapshots from server 1
-    const bootstrapFromSnapshotsFinished = bootstrapFromSnapshotsFinishedFuture(server2)
-    await server2.startProgram()
-    await bootstrapFromSnapshotsFinished
+    await startProgramAndWaitUntilBootstrapFinishes(server2)
 
     // now we assert the server 2 processed all the server 1 snapshots; it's in the db and the deployment inside were deployed
     const server1snapshots = await server1.components.database
@@ -180,12 +178,13 @@ loadTestEnvironment()('Bootstrapping synchronization tests', function (testEnv) 
   }
 })
 
-async function bootstrapFromSnapshotsFinishedFuture(server: TestProgram) {
+async function startProgramAndWaitUntilBootstrapFinishes(server: TestProgram) {
   const bootstrapFromSnapshotsFinished = future<void>()
   const originalSync = server.components.synchronizationManager.syncWithServers
   jest.spyOn(server.components.synchronizationManager, 'syncWithServers').mockImplementation(async () => {
     bootstrapFromSnapshotsFinished.resolve()
     originalSync()
   })
-  return bootstrapFromSnapshotsFinished
+  await server.startProgram()
+  await bootstrapFromSnapshotsFinished
 }

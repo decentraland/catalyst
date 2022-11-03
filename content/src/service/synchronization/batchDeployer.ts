@@ -140,6 +140,9 @@ export function createBatchDeployerComponent(
               errorDescription,
               failureTimestamp: components.clock.now()
             })
+            if (entity.snapshotHash) {
+              await components.processedSnapshots.entityProcessedFrom(entity.snapshotHash)
+            }
           } finally {
             // decrement the gauge of enqueued deployments
             components.metrics.decrement('dcl_pending_deployment_gauge', metricLabels)
