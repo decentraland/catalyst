@@ -19,7 +19,7 @@
   "dependencies": {
     "@dcl/catalyst-api-specs": "^2.0.14",
     "@dcl/catalyst-contracts": "^3.0.0",
-    "@dcl/content-validator": "4.0.18-20221103143349.commit-0d1e33d",
+    "@dcl/content-validator": "4.0.18-20221103155156.commit-04f6d2d",
     "@dcl/crypto": "^3.2.2",
     "@dcl/hashing": "^1.1.1",
     "@dcl/schemas": "^5.26.1",
