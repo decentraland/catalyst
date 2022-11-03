@@ -3,8 +3,9 @@ import { getProcessedSnapshots, saveProcessedSnapshot } from '../logic/database-
 import { AppComponents } from '../types'
 
 export function createProcessedSnapshotStorage(
-  components: Pick<AppComponents, 'database' | 'clock'>
+  components: Pick<AppComponents, 'database' | 'clock' | 'logs'>
 ): IProcessedSnapshotStorageComponent {
+  const logger = components.logs.getLogger('processed-snapshot-storage')
   const processedSnapshotsCache = new Set()
 
   return {
@@ -23,6 +24,7 @@ export function createProcessedSnapshotStorage(
     async saveProcessed(snapshotHash: string) {
       await saveProcessedSnapshot(components.database, snapshotHash, components.clock.now())
       processedSnapshotsCache.add(snapshotHash)
+      logger.info(`Processed Snapshot saved`, { snapshotHash })
     }
   }
 }

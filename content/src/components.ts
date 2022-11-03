@@ -172,7 +172,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     env.getConfig<string>(EnvironmentConfig.SYNC_IGNORED_ENTITY_TYPES)
   )
 
-  const processedSnapshotStorage = createProcessedSnapshotStorage({ database, clock })
+  const processedSnapshotStorage = createProcessedSnapshotStorage({ database, clock, logs })
 
   const processedSnapshots = createProcessedSnapshotsComponent({ processedSnapshotStorage })
 
