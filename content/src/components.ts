@@ -174,7 +174,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const processedSnapshotStorage = createProcessedSnapshotStorage({ database, clock, logs })
 
-  const processedSnapshots = createProcessedSnapshotsComponent({ processedSnapshotStorage })
+  const processedSnapshots = createProcessedSnapshotsComponent({ processedSnapshotStorage, logs })
 
   const batchDeployer = createBatchDeployerComponent(
     {
