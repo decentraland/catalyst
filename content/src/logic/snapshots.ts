@@ -57,7 +57,7 @@ export async function generateAndStoreSnapshot(
 export async function generateSnapshotsInMultipleTimeRanges(
   components: Pick<
     AppComponents,
-    'database' | 'fs' | 'metrics' | 'storage' | 'logs' | 'denylist' | 'staticConfigs' | 'clock'
+    'database' | 'fs' | 'metrics' | 'storage' | 'logs' | 'denylist' | 'staticConfigs' | 'clock' | 'storage'
   >,
   timeRangeToDivide: TimeRange
 ): Promise<NewSnapshotMetadata[]> {
@@ -72,7 +72,10 @@ export async function generateSnapshotsInMultipleTimeRanges(
       savedSnapshots.map((s) => s.timeRange)
     )
     const multipleSnapshotsShouldBeReplaced = isTimeRangeCoveredByOtherSnapshots && savedSnapshots.length > 1
-    const shouldGenerateNewSnapshot = !isTimeRangeCoveredByOtherSnapshots || multipleSnapshotsShouldBeReplaced
+    const existSnapshots = await components.storage.existMultiple(savedSnapshots.map((s) => s.hash))
+    const allSnapshotsAreStored = Array.from(existSnapshots.values()).every((exist) => exist == true)
+    const shouldGenerateNewSnapshot =
+      !isTimeRangeCoveredByOtherSnapshots || multipleSnapshotsShouldBeReplaced || !allSnapshotsAreStored
 
     if (shouldGenerateNewSnapshot) {
       const { hash, numberOfEntities } = await generateAndStoreSnapshot(components, timeRange)
