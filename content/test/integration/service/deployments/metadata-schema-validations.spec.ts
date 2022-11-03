@@ -104,13 +104,13 @@ loadStandaloneTestEnvironment()("Integration - Deployment with metadata validati
         identity,
       })
 
-      const deploymentResult: DeploymentResult = await deployEntity(components, E1);
-
-      expect(deploymentResult).toHaveProperty('errors')
-      expect(deploymentResult['errors'])
-        .toContain("The provided Eth Address does not have access to the following parcel: (0,0)")
-      expect(deploymentResult['errors'])
-        .toContain("The provided Eth Address does not have access to the following parcel: (0,1)")
+      expect(await deployEntity(components, E1))
+        .toEqual({
+          errors: [
+            "The provided Eth Address does not have access to the following parcel: (0,0)",
+            "The provided Eth Address does not have access to the following parcel: (0,1)"
+          ]
+        })
     }
   )
 
