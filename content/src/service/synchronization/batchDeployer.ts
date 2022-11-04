@@ -102,11 +102,16 @@ export function createBatchDeployerComponent(
 
       parallelDeploymentJobs
         .scheduleJobWithPriority(async () => {
+          /**
+           *  Entity should be marked as processed in the snapshot if anyone of these conditions is met:
+           *  1. The entity is already deployed.
+           *  2. The entity was sucessfully deployed.
+           *  3. The entity failed to be deployed but was successfully persisted as failed deployment
+           */
+          let wasEntityProcessed = false
           try {
             if (await isEntityDeployed(components, entity.entityId)) {
-              if (entity.snapshotHash) {
-                await components.processedSnapshots.entityProcessedFrom(entity.snapshotHash)
-              }
+              wasEntityProcessed = true
               return
             }
 
@@ -118,12 +123,9 @@ export function createBatchDeployerComponent(
               elementInMap!.servers,
               DeploymentContext.SYNCED
             )
-
+            wasEntityProcessed = true
             successfulDeployments.add(entity.entityId)
             deploymentsMap.delete(entity.entityId)
-            if (entity.snapshotHash) {
-              await components.processedSnapshots.entityProcessedFrom(entity.snapshotHash)
-            }
           } catch (err: any) {
             const errorDescription = err.toString()
             logs.warn(`Entity deployment failed`, {
@@ -140,12 +142,13 @@ export function createBatchDeployerComponent(
               errorDescription,
               failureTimestamp: components.clock.now()
             })
-            if (entity.snapshotHash) {
-              await components.processedSnapshots.entityProcessedFrom(entity.snapshotHash)
-            }
+            wasEntityProcessed = true
           } finally {
             // decrement the gauge of enqueued deployments
             components.metrics.decrement('dcl_pending_deployment_gauge', metricLabels)
+            if (entity.snapshotHash && wasEntityProcessed) {
+              await components.processedSnapshots.entityProcessedFrom(entity.snapshotHash)
+            }
           }
         }, operationPriority)
         .catch(logs.error)
