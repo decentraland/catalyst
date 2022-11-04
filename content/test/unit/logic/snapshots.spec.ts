@@ -22,7 +22,21 @@ describe('generate snapshot', () => {
   const staticConfigs = { contentStorageFolder: '', tmpDownloadFolder: '' }
   const denylist: Denylist = { isDenylisted: jest.fn() }
   const aTimeRange = { initTimestamp: 1, endTimestamp: 2 }
-  let storage: ContentStorage
+  const storage: ContentStorage = {
+    storeStream: jest.fn(),
+    storeStreamAndCompress: jest.fn(),
+    delete: jest.fn(),
+    retrieve: jest.fn(),
+    exist: jest.fn(),
+    existMultiple: async (fileIds: string[]) => {
+      const exist = new Map()
+      for (const fileId of fileIds) {
+        exist.set(fileId, true)
+      }
+      return exist
+    },
+    allFileIds: jest.fn()
+  }
   let logs: ILoggerComponent
 
   beforeAll(async () => {
@@ -124,7 +138,13 @@ describe('generate snapshot in multiple', () => {
     delete: jest.fn(),
     retrieve: jest.fn(),
     exist: jest.fn(),
-    existMultiple: jest.fn(),
+    existMultiple: async (fileIds: string[]) => {
+      const exist = new Map()
+      for (const fileId of fileIds) {
+        exist.set(fileId, true)
+      }
+      return exist
+    },
     allFileIds: jest.fn()
   }
   let logs: ILoggerComponent
@@ -183,6 +203,40 @@ describe('generate snapshot in multiple', () => {
     mockCreateFileWriterMockWith('filePath', expectedHash)
 
     const expectedReplacedHashes = ['h1', 'h2']
+    const expectedSnapshot = {
+      hash: expectedHash,
+      numberOfEntities: 0,
+      replacedSnapshotHashes: expectedReplacedHashes,
+      timeRange: oneYearRange
+    }
+
+    const snapshots = await generateSnapshotsInMultipleTimeRanges({ database, fs, metrics, logs, staticConfigs, storage, denylist, clock }, oneYearRange)
+    expect(snapshots).toHaveLength(1)
+    expect(snapshots[0]).toEqual(expectedSnapshot)
+    expect(storage.delete).toBeCalledWith(expect.arrayContaining(expectedReplacedHashes))
+    expect(deleteSpy).toBeCalledWith(expect.anything(), expect.arrayContaining(expectedReplacedHashes), oneYearRange)
+    expect(saveSpy).toBeCalledWith(expect.anything(), expectedSnapshot, expect.anything())
+  })
+
+  it('should re-generate snapshot when there the current snapshot is not in storage', async () => {
+    mockStreamedActiveEntitiesWith([])
+    const oneYearRange = { initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR }
+    jest.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([
+      { hash: 'snapshotNotInStorage', numberOfEntities: 1, replacedSnapshotHashes: [], timeRange: oneYearRange },
+    ])
+    jest.spyOn(tr, 'divideTimeInYearsMonthsWeeksAndDays').mockReturnValue({
+      intervals: [oneYearRange],
+      remainder: { initTimestamp: tr.MS_PER_YEAR, endTimestamp: tr.MS_PER_YEAR }
+    })
+    jest.spyOn(storage, 'existMultiple').mockImplementation(async () => {
+      const exist = new Map()
+      exist.set('snapshotNotInStorage', false)
+      return exist
+    })
+    const expectedHash = 'hash'
+    mockCreateFileWriterMockWith('filePath', expectedHash)
+
+    const expectedReplacedHashes = ['snapshotNotInStorage']
     const expectedSnapshot = {
       hash: expectedHash,
       numberOfEntities: 0,

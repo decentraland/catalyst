@@ -30,6 +30,7 @@ export function createBatchDeployerComponent(
     | 'storage'
     | 'failedDeployments'
     | 'clock'
+    | 'processedSnapshots'
   >,
   syncOptions: {
     ignoredTypes: Set<string>
@@ -66,10 +67,16 @@ export function createBatchDeployerComponent(
     return false
   }
 
-  async function handleDeploymentFromServer(entity: DeploymentWithAuthChain, contentServer: string) {
+  async function handleDeploymentFromServer(
+    entity: DeploymentWithAuthChain & { snapshotHash?: string },
+    contentServer: string
+  ) {
     if (await shouldRemoteEntityDeploymentBeIgnored(entity)) {
       // early return to prevent noops
       components.metrics.increment('dcl_ignored_sync_deployments')
+      if (entity.snapshotHash) {
+        await components.processedSnapshots.entityProcessedFrom(entity.snapshotHash)
+      }
       return
     }
 
@@ -95,8 +102,16 @@ export function createBatchDeployerComponent(
 
       parallelDeploymentJobs
         .scheduleJobWithPriority(async () => {
+          /**
+           *  Entity should be marked as processed in the snapshot if anyone of these conditions is met:
+           *  1. The entity is already deployed.
+           *  2. The entity was sucessfully deployed.
+           *  3. The entity failed to be deployed but was successfully persisted as failed deployment
+           */
+          let wasEntityProcessed = false
           try {
             if (await isEntityDeployed(components, entity.entityId)) {
+              wasEntityProcessed = true
               return
             }
 
@@ -108,7 +123,7 @@ export function createBatchDeployerComponent(
               elementInMap!.servers,
               DeploymentContext.SYNCED
             )
-
+            wasEntityProcessed = true
             successfulDeployments.add(entity.entityId)
             deploymentsMap.delete(entity.entityId)
           } catch (err: any) {
@@ -127,9 +142,13 @@ export function createBatchDeployerComponent(
               errorDescription,
               failureTimestamp: components.clock.now()
             })
+            wasEntityProcessed = true
           } finally {
             // decrement the gauge of enqueued deployments
             components.metrics.decrement('dcl_pending_deployment_gauge', metricLabels)
+            if (entity.snapshotHash && wasEntityProcessed) {
+              await components.processedSnapshots.entityProcessedFrom(entity.snapshotHash)
+            }
           }
         }, operationPriority)
         .catch(logs.error)
@@ -144,7 +163,10 @@ export function createBatchDeployerComponent(
     onIdle() {
       return parallelDeploymentJobs.onIdle()
     },
-    async deployEntity(entity: DeploymentWithAuthChain, contentServers: string[]): Promise<void> {
+    async deployEntity(
+      entity: DeploymentWithAuthChain & { snapshotHash?: string },
+      contentServers: string[]
+    ): Promise<void> {
       for (const contentServer of contentServers) {
         await handleDeploymentFromServer(entity, contentServer)
       }
