@@ -13,10 +13,13 @@ import { createSubgraphComponent } from '@well-known-components/thegraph-compone
 import { IConfigComponent } from '@well-known-components/interfaces'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
 import {
+  AvlTree,
+  BlockInfo,
   createAvlBlockSearch,
   createBlockRepository,
   createCachingEthereumProvider,
-  EthereumProvider
+  EthereumProvider,
+  saveTree
 } from '@dcl/block-indexer'
 import { HTTPProvider, RequestManager } from 'eth-connect'
 
@@ -40,6 +43,22 @@ export async function createSubGraphsComponent(
 
   const l1EthereumProvider: EthereumProvider = createEthereumProvider(components.ethereumProvider)
   const l2EthereumProvider: EthereumProvider = createEthereumProvider(components.maticProvider)
+  const l1BlockSearch = createAvlBlockSearch(createBlockRepository(createCachingEthereumProvider(l1EthereumProvider)))
+  const l2BlockSearch = createAvlBlockSearch(createBlockRepository(createCachingEthereumProvider(l2EthereumProvider)))
+
+  const converter: (k: number, v: BlockInfo) => any[] = (k, v) => [k, v.block]
+  const callback = (tree: AvlTree<number, BlockInfo>, networkName: string) => async () => {
+    console.log(`saving snapshots for ${networkName}`)
+    const start = new Date().getTime()
+    try {
+      await saveTree(tree, `tree-export-${networkName}-${start}.csv`, converter)
+    } finally {
+      console.log(`saving snapshot for ${networkName} took ${new Date().getTime() - start} ms.`)
+    }
+  }
+  setInterval(callback(l1BlockSearch.tree, 'l1'), 60 * 60_000) // Every hour
+  setInterval(callback(l2BlockSearch.tree, 'l2'), 60 * 60_000) // Every hour
+
   return {
     L1: {
       landManager: await createSubgraphComponent(
@@ -73,8 +92,8 @@ export async function createSubGraphsComponent(
         components.env.getConfig(EnvironmentConfig.THIRD_PARTY_REGISTRY_L2_SUBGRAPH_URL)
       )
     },
-    l1BlockSearch: createAvlBlockSearch(createBlockRepository(createCachingEthereumProvider(l1EthereumProvider))),
-    l2BlockSearch: createAvlBlockSearch(createBlockRepository(createCachingEthereumProvider(l2EthereumProvider)))
+    l1BlockSearch,
+    l2BlockSearch
   }
 }
 
