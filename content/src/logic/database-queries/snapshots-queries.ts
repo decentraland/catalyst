@@ -181,22 +181,6 @@ export async function saveProcessedSnapshot(
   await database.queryWithValues(query, 'save_processed_snapshot')
 }
 
-export async function deleteProcessedSnapshots(
-  database: AppComponents['database'],
-  processedSnapshotHashesToDelete: string[]
-): Promise<void> {
-  if (processedSnapshotHashesToDelete.length == 0) {
-    return
-  }
-  const query = SQL`DELETE FROM processed_snapshots WHERE hash IN (`
-  const hashes = processedSnapshotHashesToDelete.map((h, i) =>
-    i < processedSnapshotHashesToDelete.length - 1 ? SQL`${h},` : SQL`${h}`
-  )
-  hashes.forEach((hash) => query.append(hash))
-  query.append(`);`)
-  await database.queryWithValues(query, 'save_snapshot')
-}
-
 export async function getProcessedSnapshots(
   components: Pick<AppComponents, 'database'>,
   processedSnapshotHashes: string[]
