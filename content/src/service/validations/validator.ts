@@ -19,7 +19,7 @@ import {
   createBlockRepository,
   createCachingEthereumProvider,
   EthereumProvider,
-  saveTree
+  loadTree
 } from '@dcl/block-indexer'
 import { HTTPProvider, RequestManager } from 'eth-connect'
 
@@ -46,18 +46,40 @@ export async function createSubGraphsComponent(
   const l1BlockSearch = createAvlBlockSearch(createBlockRepository(createCachingEthereumProvider(l1EthereumProvider)))
   const l2BlockSearch = createAvlBlockSearch(createBlockRepository(createCachingEthereumProvider(l2EthereumProvider)))
 
-  const converter: (k: number, v: BlockInfo) => any[] = (k, v) => [k, v.block]
-  const callback = (tree: AvlTree<number, BlockInfo>, networkName: string) => async () => {
-    console.log(`saving snapshots for ${networkName}`)
+  const converter: (row: any[]) => { key: number; value: BlockInfo } = (row) => ({
+    key: parseInt(row[0]),
+    value: {
+      timestamp: row[0],
+      block: parseInt(row[1])
+    }
+  })
+  const warmUpCache = async (tree: AvlTree<number, BlockInfo>, networkName: string): Promise<void> => {
     const start = new Date().getTime()
+    const file = `blocks-cache-${networkName}.csv`
     try {
-      await saveTree(tree, `tree-export-${networkName}-${start}.csv`, converter)
-    } finally {
-      console.log(`saving snapshot for ${networkName} took ${new Date().getTime() - start} ms.`)
+      await loadTree(tree, file, converter)
+      console.log(`loading snapshot for ${networkName} took ${new Date().getTime() - start} ms.`)
+    } catch (e) {
+      console.log(`failed to load cache file ${file}`, e.toString())
     }
   }
-  setInterval(callback(l1BlockSearch.tree, 'l1'), 60 * 60_000) // Every hour
-  setInterval(callback(l2BlockSearch.tree, 'l2'), 60 * 60_000) // Every hour
+  const ethNetwork: string = components.env.getConfig(EnvironmentConfig.ETH_NETWORK)
+
+  await warmUpCache(l1BlockSearch.tree, ethNetwork)
+  await warmUpCache(l2BlockSearch.tree, ethNetwork === 'mainnet' ? 'polygon' : 'mumbai')
+
+  // const converter: (k: number, v: BlockInfo) => any[] = (k, v) => [k, v.block]
+  // const callback = (tree: AvlTree<number, BlockInfo>, networkName: string) => async () => {
+  //   console.log(`saving snapshots for ${networkName}`)
+  //   const start = new Date().getTime()
+  //   try {
+  //     await saveTree(tree, `tree-export-${networkName}-${start}.csv`, converter)
+  //   } finally {
+  //     console.log(`saving snapshot for ${networkName} took ${new Date().getTime() - start} ms.`)
+  //   }
+  // }
+  // setInterval(callback(l1BlockSearch.tree, 'l1'), 60 * 60_000) // Every hour
+  // setInterval(callback(l2BlockSearch.tree, 'l2'), 60 * 60_000) // Every hour
 
   return {
     L1: {
