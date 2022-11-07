@@ -19,14 +19,21 @@ export function isBaseAvatar(wearable: WearableId): boolean {
   return wearable.includes('base-avatars')
 }
 
+export const isOldEmote = (urn: string): boolean => /^[a-z]+$/i.test(urn)
+
 /** We will prioritize the text in english. If not present, then we will choose the first one */
 export function preferEnglish(i18ns: I18N[]): string | undefined {
   const i18nInEnglish = i18ns.filter((i18n) => i18n.code.toLowerCase() === 'en')[0]
   return (i18nInEnglish ?? i18ns[0])?.text
 }
 
-export function translateEntityIntoWearable(client: SmartContentClient, entity: Entity): LambdasWearable {
-  const metadata: Wearable = entity.metadata!
+export function translateEntityIntoWearable(client: SmartContentClient, entity: Entity): LambdasWearable | undefined {
+  if (!entity.metadata?.data?.representations) {
+    console.log(`[DEBUG] A emote is being treated as a wearable, urn: ${(entity.pointers ?? []).toString()}`)
+    // HOTFIX: When getting emotes as wearables
+    return undefined
+  }
+  const metadata: Wearable = entity.metadata
   const representations = metadata.data.representations.map((representation) =>
     mapRepresentation(representation, client, entity)
   )

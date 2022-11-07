@@ -1,11 +1,11 @@
 import { EntityType } from '@dcl/schemas'
-import { Fetcher } from 'dcl-catalyst-commons'
-import { anything, instance, mock, objectContaining, verify, when } from 'ts-mockito'
+import { anything, instance, mock, verify, when } from 'ts-mockito'
 import { getWearablesByOwner, getWearablesByOwnerFromUrns } from '../../../../../src/apis/collections/controllers/wearables'
 import * as tpUrnFinder from '../../../../../src/logic/third-party-urn-finder'
-import { ThirdPartyAssetFetcher } from '../../../../../src/ports/third-party/third-party-fetcher'
+import { ThirdPartyAssetFetcher } from "../../../../../src/ports/third-party/third-party-fetcher";
 import { SmartContentClient } from '../../../../../src/utils/SmartContentClient'
 import { TheGraphClient } from '../../../../../src/utils/TheGraphClient'
+import { ISubgraphComponent } from '@well-known-components/thegraph-component'
 
 const SOME_ADDRESS = '0x079bed9c31cb772c4c156f86e1cff15bf751add0'
 const WEARABLE_ID_1 = 'someCollection-someWearable'
@@ -25,7 +25,11 @@ describe('getWearablesByOwnerFromUrns', () => {
   it('When user has repeated wearables, then they are grouped together', async () => {
     const contentClientMock = mock(SmartContentClient)
 
-    const wearables = await getWearablesByOwnerFromUrns(false, instance(contentClientMock), [WEARABLE_ID_1, WEARABLE_ID_1, WEARABLE_ID_2])
+    const wearables = await getWearablesByOwnerFromUrns(false, instance(contentClientMock), [
+      WEARABLE_ID_1,
+      WEARABLE_ID_1,
+      WEARABLE_ID_2
+    ])
 
     expect(wearables.length).toEqual(2)
     const [wearable1, wearable2] = wearables
@@ -132,9 +136,6 @@ describe('getWearablesByOwner', () => {
   it('should call the graph client with the arguments correctly mapped', async () => {
     const contentClientMock = mock(SmartContentClient)
 
-    const mockedFetcher = mock(Fetcher)
-    const ethSubgraph = 'eth'
-    const maticSubgraph = 'matic'
     const query =
       `
 query itemsByOwner($owner: String, $item_types:[String], $first: Int, $start: String) {
@@ -152,24 +153,35 @@ query itemsByOwner($owner: String, $item_types:[String], $first: Int, $start: St
       first: 1000,
       start: ''
     }
-    when(mockedFetcher.queryGraph(anything(), anything(), anything())).thenResolve({
-      nfts: [{
-        id: 'im an id',
-        urn: WEARABLE_ID_1,
-        collection: {
-          isApproved: true
+    const subGraphs = {
+      ensSubgraph: jest.fn() as any as ISubgraphComponent,
+      collectionsSubgraph: { query: jest.fn() },
+      maticCollectionsSubgraph: { query: jest.fn() },
+      thirdPartyRegistrySubgraph: jest.fn() as any as ISubgraphComponent
+    }
+    subGraphs.collectionsSubgraph.query.mockResolvedValue({
+      nfts: [
+        {
+          id: 'im an id',
+          urn: WEARABLE_ID_1,
+          collection: {
+            isApproved: true
+          }
         }
-      }]
+      ]
     })
-    const graphClient = new TheGraphClient(
-      {
-        ensSubgraph: 'ens',
-        collectionsSubgraph: ethSubgraph,
-        maticCollectionsSubgraph: maticSubgraph,
-        thirdPartyRegistrySubgraph: 'tp'
-      },
-      instance(mockedFetcher)
-    )
+    subGraphs.maticCollectionsSubgraph.query.mockResolvedValue({
+      nfts: [
+        {
+          id: 'im an id',
+          urn: WEARABLE_ID_1,
+          collection: {
+            isApproved: true
+          }
+        }
+      ]
+    })
+    const graphClient = new TheGraphClient(subGraphs)
 
     const tpFetcher = { fetchAssets: jest.fn() }
     const tpUrnFinderSpy = jest.spyOn(tpUrnFinder, 'findThirdPartyItemUrns').mockResolvedValue([])
@@ -180,8 +192,15 @@ query itemsByOwner($owner: String, $item_types:[String], $first: Int, $start: St
     expect(wearables[0].amount).toEqual(2)
     expect(wearables[0].urn).toEqual(WEARABLE_ID_1)
     expect(wearables[0].definition).toBeUndefined()
-    verify(mockedFetcher.queryGraph(ethSubgraph, query, objectContaining(expectedVariables))).once()
-    verify(mockedFetcher.queryGraph(maticSubgraph, query, anything())).once()
+    expect(subGraphs.collectionsSubgraph.query).toHaveBeenCalledTimes(1)
+    expect(subGraphs.collectionsSubgraph.query).toHaveBeenCalledWith(query, expectedVariables)
+    expect(subGraphs.maticCollectionsSubgraph.query).toHaveBeenCalledTimes(1)
+    expect(subGraphs.maticCollectionsSubgraph.query).toHaveBeenCalledWith(query, {
+      first: 1000,
+      item_types: ['wearable_v1', 'wearable_v2', 'smart_wearable_v1'],
+      owner: '0x079bed9c31cb772c4c156f86e1cff15bf751add0',
+      start: ''
+    })
     expect(tpUrnFinderSpy).not.toBeCalled()
   })
 })
