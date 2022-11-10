@@ -161,29 +161,6 @@ export async function deleteSnapshotsInTimeRange(
   await database.queryWithValues(query, 'save_snapshot')
 }
 
-export async function isSnapshotInTimerangeOutdated(
-  database: AppComponents['database'],
-  snapshotHashes: string[],
-  timeRange: TimeRange
-): Promise<Set<string>> {
-  if (snapshotHashes.length == 0) {
-    return new Set()
-  }
-  const query = SQL`
-  SELECT hash
-  FROM snapshots
-  WHERE init_timestamp <= end_timestamp
-  AND (init_timestamp >= to_timestamp(${timeRange.endTimestamp} / 1000.0)
-  OR end_timestamp <= to_timestamp(${timeRange.initTimestamp} / 1000.0))
-  AND hash IN (`
-  const hashes = snapshotHashes.map((h, i) => (i < snapshotHashes.length - 1 ? SQL`${h},` : SQL`${h}`))
-  hashes.forEach((hash) => query.append(hash))
-  query.append(`);`)
-
-  const result = await database.queryWithValues<{ hash: string }>(query, 'get_snapshots')
-  return new Set(result.rows.map((row) => row.hash))
-}
-
 export async function saveProcessedSnapshot(
   database: AppComponents['database'],
   processedSnapshotHash: string,
