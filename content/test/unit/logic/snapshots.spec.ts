@@ -72,55 +72,18 @@ describe('generate snapshot', () => {
     expect(fileWriterMock.close).toBeCalledTimes(1)
   })
 
-  it('should append no denylisted active entities', async () => {
+  it('should return snapshot hash and total number of entities', async () => {
     mockStreamedActiveEntitiesWith([
-      { entityId: 'id1', entityType: 't1', pointers: ['p1'], localTimestamp: 0, authChain: [] },
-      { entityId: 'id2', entityType: 't2', pointers: ['p2'], localTimestamp: 1, authChain: [] }
-    ])
-    const fileWriterMock = mockCreateFileWriterMockWith('filePath', 'aHash')
-    await generateAndStoreSnapshot({ database, fs, metrics, logs, staticConfigs, storage, denylist, }, aTimeRange)
-    expect(fileWriterMock.appendDebounced).toBeCalledWith('### Decentraland json snapshot\n')
-    expect(fileWriterMock.appendDebounced)
-      .toBeCalledWith('{"entityId":"id1","entityType":"t1","pointers":["p1"],"localTimestamp":0,"authChain":[]}\n')
-    expect(fileWriterMock.appendDebounced)
-      .toBeCalledWith('{"entityId":"id2","entityType":"t2","pointers":["p2"],"localTimestamp":1,"authChain":[]}\n')
-    expect(fileWriterMock.appendDebounced).toBeCalledTimes(3)
-  })
-
-  it('should append only no denylisted active entities', async () => {
-    mockStreamedActiveEntitiesWith([
-      { entityId: 'id1', entityType: 't1', pointers: ['p1'], localTimestamp: 0, authChain: [] },
-      { entityId: 'id2', entityType: 't2', pointers: ['p2'], localTimestamp: 1, authChain: [] },
-      { entityId: 'id3', entityType: 't3', pointers: ['p3'], localTimestamp: 2, authChain: [] }
-    ])
-    const fileWriterMock = mockCreateFileWriterMockWith('filePath', 'aHash')
-    const denylist = {
-      isDenylisted: jest.fn().mockImplementation((id) => id == 'id3')
-    }
-    await generateAndStoreSnapshot({ database, fs, metrics, logs, staticConfigs, storage, denylist }, aTimeRange)
-    expect(fileWriterMock.appendDebounced).toBeCalledWith('### Decentraland json snapshot\n')
-    expect(fileWriterMock.appendDebounced)
-      .toBeCalledWith('{"entityId":"id1","entityType":"t1","pointers":["p1"],"localTimestamp":0,"authChain":[]}\n')
-    expect(fileWriterMock.appendDebounced)
-      .toBeCalledWith('{"entityId":"id2","entityType":"t2","pointers":["p2"],"localTimestamp":1,"authChain":[]}\n')
-    expect(fileWriterMock.appendDebounced).toBeCalledTimes(3)
-  })
-
-  it('should return snapshot hash and total number of no denylisted entities', async () => {
-    mockStreamedActiveEntitiesWith([
-      { entityId: 'id1', entityType: 't1', pointers: ['p1'], localTimestamp: 0, authChain: [] },
-      { entityId: 'id2', entityType: 't2', pointers: ['p2'], localTimestamp: 1, authChain: [] },
-      { entityId: 'id3', entityType: 't3', pointers: ['p3'], localTimestamp: 2, authChain: [] }
+      { entityId: 'id1', entityType: 't1', pointers: ['p1'], entityTimestamp: 0, authChain: [] },
+      { entityId: 'id2', entityType: 't2', pointers: ['p2'], entityTimestamp: 1, authChain: [] },
+      { entityId: 'id3', entityType: 't3', pointers: ['p3'], entityTimestamp: 2, authChain: [] }
     ])
     const expectedSnapshotHash = 'aHash'
     mockCreateFileWriterMockWith('filePath', expectedSnapshotHash)
-    const denylist = {
-      isDenylisted: jest.fn().mockImplementation((id) => id == 'id3')
-    }
     const { hash, numberOfEntities } =
       await generateAndStoreSnapshot({ database, fs, metrics, logs, staticConfigs, storage, denylist }, aTimeRange)
     expect(hash).toEqual(expectedSnapshotHash)
-    expect(numberOfEntities).toEqual(2)
+    expect(numberOfEntities).toEqual(3)
   })
 })
 
@@ -294,9 +257,9 @@ describe('generate snapshot in multiple', () => {
 
   it('should replace snapshots when they cover the time range', async () => {
     mockStreamedActiveEntitiesWith([
-      { entityId: 'id1', entityType: 't1', pointers: ['p1'], localTimestamp: 0, authChain: [] },
-      { entityId: 'id2', entityType: 't2', pointers: ['p2'], localTimestamp: 1, authChain: [] },
-      { entityId: 'id3', entityType: 't3', pointers: ['p3'], localTimestamp: 2, authChain: [] }
+      { entityId: 'id1', entityType: 't1', pointers: ['p1'], entityTimestamp: 0, authChain: [] },
+      { entityId: 'id2', entityType: 't2', pointers: ['p2'], entityTimestamp: 1, authChain: [] },
+      { entityId: 'id3', entityType: 't3', pointers: ['p3'], entityTimestamp: 2, authChain: [] }
     ])
     const oneYearRange = { initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR }
     const firstHalfYear = { initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR / 2 }
@@ -325,9 +288,9 @@ describe('generate snapshot in multiple', () => {
 
   it('should not replace snapshots when they do not cover the time range', async () => {
     mockStreamedActiveEntitiesWith([
-      { entityId: 'id1', entityType: 't1', pointers: ['p1'], localTimestamp: 0, authChain: [] },
-      { entityId: 'id2', entityType: 't2', pointers: ['p2'], localTimestamp: 1, authChain: [] },
-      { entityId: 'id3', entityType: 't3', pointers: ['p3'], localTimestamp: 2, authChain: [] }
+      { entityId: 'id1', entityType: 't1', pointers: ['p1'], entityTimestamp: 0, authChain: [] },
+      { entityId: 'id2', entityType: 't2', pointers: ['p2'], entityTimestamp: 1, authChain: [] },
+      { entityId: 'id3', entityType: 't3', pointers: ['p3'], entityTimestamp: 2, authChain: [] }
     ])
     const oneYearRange = { initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR }
     const firstHalfYear = { initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR / 2 }

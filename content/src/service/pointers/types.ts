@@ -3,8 +3,10 @@ import { DeploymentFilters } from '../../service/deployments/types'
 
 export type PointerChangesFilters = Pick<DeploymentFilters, 'from' | 'to' | 'entityTypes'>
 
+export type PointerChange = DeploymentWithAuthChain & { localTimestamp: number }
+
 export type DeploymentPointerChanges = {
-  pointerChanges: DeploymentWithAuthChain[]
+  pointerChanges: PointerChange[]
   filters: Omit<PointerChangesFilters, 'entityType'>
   pagination: {
     offset: number

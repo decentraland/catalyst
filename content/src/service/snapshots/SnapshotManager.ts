@@ -138,13 +138,13 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
         const str = JSON.stringify(snapshotElem) + '\n'
 
         // update ALL_ENTITIES timestamp
-        increaseTimestamp(ALL_ENTITIES, snapshotElem.localTimestamp)
+        increaseTimestamp(ALL_ENTITIES, snapshotElem.entityTimestamp)
 
         // write deployment to ALL_ENTITIES file
         await fileWriterComponent.appendToFile(ALL_ENTITIES, str)
 
         // update entityType timestamp
-        increaseTimestamp(snapshotElem.entityType, snapshotElem.localTimestamp)
+        increaseTimestamp(snapshotElem.entityType, snapshotElem.entityTimestamp)
 
         // write deployment to entityType file
         await fileWriterComponent.appendToFile(snapshotElem.entityType as EntityType, str)

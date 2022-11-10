@@ -308,6 +308,7 @@ async function deployAnEntityAtTimestamp(components: Pick<AppComponents, 'deploy
   jest.spyOn(components.clock, 'now').mockReturnValue(deployTimestmap)
   const anEntity: EntityCombo = await buildDeployData([pointer], {
     type: EntityType.PROFILE,
+    timestamp: deployTimestmap,
     metadata: { a: 'metadata' }
   })
   await components.deployer.deployEntity(

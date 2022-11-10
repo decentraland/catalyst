@@ -13,7 +13,7 @@ import { AppComponents, DeploymentId } from '../../types'
 
 export type HistoricalDeployment = DeploymentWithAuthChain & {
   deploymentId: number
-  entityTimestamp: number
+  localTimestamp: number
   metadata: any
   deployerAddress: string
   version: string

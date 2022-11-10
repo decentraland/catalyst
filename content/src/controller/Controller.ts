@@ -1,5 +1,5 @@
 import { AuthChain, Authenticator, AuthLink, EthAddress, Signature } from '@dcl/crypto'
-import { DeploymentWithAuthChain, Entity, EntityType } from '@dcl/schemas'
+import { Entity, EntityType } from '@dcl/schemas'
 import { DecentralandAssetIdentifier, parseUrn } from '@dcl/urn-resolver'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import destroy from 'destroy'
@@ -13,7 +13,7 @@ import { ContentItem } from '../ports/contentStorage/contentStorage'
 import { getDeployments } from '../service/deployments/deployments'
 import { AuditInfo, Deployment, DeploymentOptions, SortingField, SortingOrder } from '../service/deployments/types'
 import { getPointerChanges } from '../service/pointers/pointers'
-import { PointerChangesFilters } from '../service/pointers/types'
+import { PointerChange, PointerChangesFilters } from '../service/pointers/types'
 import {
   DeploymentContext,
   isInvalidDeployment,
@@ -418,12 +418,12 @@ export class Controller {
   }
 
   private calculateNextRelativePathForPointer(
-    lastPointerChange: DeploymentWithAuthChain,
+    lastPointerChange: PointerChange,
     limit: number,
     filters?: PointerChangesFilters
   ): string | undefined {
     const nextFilters = Object.assign({}, filters)
-    // It will always use toLocalTimestamp as this endpoint is always sorted with the default config: local and DESC
+    // It will always use toEntityTimestamp as this endpoint is always sorted with the default config: localTimestamp and DESC
     nextFilters.to = lastPointerChange.localTimestamp
 
     const nextQueryParams = toQueryParams({

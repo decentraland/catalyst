@@ -1,8 +1,7 @@
-import { DeploymentWithAuthChain } from '@dcl/schemas'
 import { getHistoricalDeployments, HistoricalDeployment } from '../../logic/database-queries/deployments-queries'
 import { AppComponents } from '../../types'
 import { PointerChangesOptions } from '../deployments/types'
-import { DeploymentPointerChanges } from './types'
+import { DeploymentPointerChanges, PointerChange } from './types'
 
 const MAX_HISTORY_LIMIT = 500
 
@@ -24,7 +23,7 @@ export async function getPointerChanges(
 
   deploymentsWithExtra = deploymentsWithExtra.filter((result) => !components.denylist.isDenylisted(result.entityId))
   const moreData: boolean = deploymentsWithExtra.length > curatedLimit
-  const deployments: DeploymentWithAuthChain[] = deploymentsWithExtra.slice(0, curatedLimit)
+  const deployments: PointerChange[] = deploymentsWithExtra.slice(0, curatedLimit)
 
   return {
     pointerChanges: deployments,

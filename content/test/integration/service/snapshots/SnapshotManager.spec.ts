@@ -1,13 +1,13 @@
-import { processDeploymentsInStream } from '@dcl/snapshots-fetcher/dist/file-processor'
 import { EntityType } from '@dcl/schemas'
+import { processDeploymentsInStream } from '@dcl/snapshots-fetcher/dist/file-processor'
 import { inspect } from 'util'
 import { EnvironmentBuilder } from '../../../../src/Environment'
 import { stopAllComponents } from '../../../../src/logic/components-lifecycle'
 import { ContentItem } from '../../../../src/ports/contentStorage/contentStorage'
+import { isSuccessfulDeployment } from '../../../../src/service/Service'
 import { SnapshotMetadata } from '../../../../src/service/snapshots/SnapshotManager'
 import { AppComponents } from '../../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
-import { assertResultIsSuccessfulWithTimestamp } from '../../E2EAssertions'
 import { loadStandaloneTestEnvironment } from '../../E2ETestEnvironment'
 import { buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo, EntityCombo } from '../../E2ETestUtils'
 
@@ -50,7 +50,8 @@ loadStandaloneTestEnvironment()('Integration - Snapshot Manager', (testEnv) => {
 
     // Assert snapshot was created
     expect(snapshotMetadata).toBeDefined()
-    assertResultIsSuccessfulWithTimestamp(deploymentResult, snapshotMetadata!.lastIncludedDeploymentTimestamp)
+    expect(isSuccessfulDeployment(deploymentResult)).toBeTruthy()
+    expect(snapshotMetadata!.lastIncludedDeploymentTimestamp).toEqual(Math.max(E1.entity.timestamp, E2.entity.timestamp))
     // Assert snapshot content is correct
     await assertGZipSnapshotContains(snapshotMetadata, E1, E2)
   })
@@ -68,10 +69,8 @@ loadStandaloneTestEnvironment()('Integration - Snapshot Manager', (testEnv) => {
 
     // Assert snapshot was created
     expect(snapshotMetadata).toBeDefined()
-    assertResultIsSuccessfulWithTimestamp(
-      deploymentResult,
-      snapshotMetadata!.entities.scene.lastIncludedDeploymentTimestamp
-    )
+    expect(isSuccessfulDeployment(deploymentResult)).toBeTruthy()
+    expect(snapshotMetadata!.entities.scene.lastIncludedDeploymentTimestamp).toEqual(Math.max(E1.entity.timestamp, E2.entity.timestamp))
     // Assert snapshot content is correct
     await assertGZipSnapshotContains(snapshotMetadata!.entities.scene, E1, E2)
   })

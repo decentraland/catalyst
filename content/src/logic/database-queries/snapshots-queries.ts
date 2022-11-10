@@ -15,24 +15,18 @@ export async function* streamActiveDeployments(
     // IT IS IMPORTANT THAT THIS QUERY NEVER CHANGES. ORDER IS NOT GUARANTEED
     SQL`
       SELECT
-        entity_id,
-        entity_type,
-        entity_pointers,
-        auth_chain,
-        date_part('epoch', local_timestamp) * 1000 AS local_timestamp
+        entity_id AS "entityId",
+        entity_type AS "entityType",
+        entity_pointers AS "pointers",
+        auth_chain AS "authChain",
+        date_part('epoch', entity_timestamp) * 1000 AS "entityTimestamp"
       FROM deployments d
       WHERE d.deleter_deployment IS NULL
     `,
     options,
     'stream_active_deployments'
   )) {
-    yield {
-      entityId: row.entity_id,
-      entityType: row.entity_type,
-      pointers: row.entity_pointers,
-      localTimestamp: row.local_timestamp,
-      authChain: row.auth_chain
-    }
+    yield row
   }
 }
 
@@ -40,29 +34,24 @@ export async function* streamActiveDeploymentsInTimeRange(
   components: Pick<AppComponents, 'database'>,
   timeRange: TimeRange
 ): AsyncIterable<DeploymentWithAuthChain> {
-  // IT IS IMPORTANT THAT THIS QUERY NEVER CHANGES. ORDER IS NOT GUARANTEED  `
-  for await (const row of components.database.streamQuery(
+  // IT IS IMPORTANT THAT THIS QUERY NEVER CHANGES
+  for await (const row of components.database.streamQuery<DeploymentWithAuthChain>(
     SQL`
     SELECT
-      entity_id,
-      entity_type,
-      entity_pointers,
-      auth_chain,
-      date_part('epoch', local_timestamp) * 1000 AS "localTimestamp"
-    FROM deployments d
-    WHERE d.deleter_deployment IS NULL
-    AND local_timestamp BETWEEN to_timestamp(${timeRange.initTimestamp} / 1000.0) AND to_timestamp(${timeRange.endTimestamp} / 1000.0)
+      entity_id AS "entityId",
+      entity_type AS "entityType",
+      entity_pointers AS "pointers",
+      auth_chain AS "authChain",
+      date_part('epoch', entity_timestamp) * 1000 AS "entityTimestamp"
+    FROM deployments
+    WHERE deleter_deployment IS NULL
+    AND entity_timestamp BETWEEN to_timestamp(${timeRange.initTimestamp} / 1000.0) AND to_timestamp(${timeRange.endTimestamp} / 1000.0)
+    ORDER BY entity_timestamp
     `,
     { batchSize: 1000 },
     'stream_active_deployments_in_timerange'
   )) {
-    yield {
-      entityId: row.entity_id,
-      entityType: row.entity_type,
-      pointers: row.entity_pointers,
-      localTimestamp: row.localTimestamp,
-      authChain: row.auth_chain
-    }
+    yield row
   }
 }
 
@@ -77,9 +66,15 @@ export async function findSnapshotsStrictlyContainedInTimeRange(
     date_part('epoch', end_timestamp) * 1000  AS "endTimestamp",
     replaced_hashes AS "replacedSnapshotHashes",
     number_of_entities AS "numberOfEntities"
-  FROM snapshots
+  FROM snapshots s
   WHERE init_timestamp >= to_timestamp(${timerange.initTimestamp} / 1000.0)
   AND end_timestamp <= to_timestamp(${timerange.endTimestamp} / 1000.0)
+  AND NOT EXISTS (
+    SELECT id FROM deployments
+      WHERE deleter_deployment IS null
+      AND entity_timestamp BETWEEN s.init_timestamp AND s.end_timestamp
+      AND local_timestamp > generation_time
+    );
   `
   return (
     await components.database.queryWithValues<{
@@ -164,6 +159,29 @@ export async function deleteSnapshotsInTimeRange(
   hashes.forEach((hash) => query.append(hash))
   query.append(`);`)
   await database.queryWithValues(query, 'save_snapshot')
+}
+
+export async function isSnapshotInTimerangeOutdated(
+  database: AppComponents['database'],
+  snapshotHashes: string[],
+  timeRange: TimeRange
+): Promise<Set<string>> {
+  if (snapshotHashes.length == 0) {
+    return new Set()
+  }
+  const query = SQL`
+  SELECT hash
+  FROM snapshots
+  WHERE init_timestamp <= end_timestamp
+  AND (init_timestamp >= to_timestamp(${timeRange.endTimestamp} / 1000.0)
+  OR end_timestamp <= to_timestamp(${timeRange.initTimestamp} / 1000.0))
+  AND hash IN (`
+  const hashes = snapshotHashes.map((h, i) => (i < snapshotHashes.length - 1 ? SQL`${h},` : SQL`${h}`))
+  hashes.forEach((hash) => query.append(hash))
+  query.append(`);`)
+
+  const result = await database.queryWithValues<{ hash: string }>(query, 'get_snapshots')
+  return new Set(result.rows.map((row) => row.hash))
 }
 
 export async function saveProcessedSnapshot(

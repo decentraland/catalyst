@@ -33,9 +33,6 @@ export async function generateAndStoreSnapshot(
     // this header is necessary to later differentiate between binary formats and non-binary formats
     await fileWriter.appendDebounced('### Decentraland json snapshot\n')
     for await (const snapshotElem of streamActiveDeploymentsInTimeRange(components, timeRange)) {
-      if (components.denylist.isDenylisted(snapshotElem.entityId)) {
-        continue
-      }
       const stringifiedElement = JSON.stringify(snapshotElem) + '\n'
       await fileWriter.appendDebounced(stringifiedElement)
       numberOfEntities++
