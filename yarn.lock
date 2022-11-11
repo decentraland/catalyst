@@ -398,23 +398,23 @@
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
 
-"@dcl/schemas@tag-fast-bootstrapping-3":
-  version "5.28.1-20221108204939.commit-131a7d3"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-5.28.1-20221108204939.commit-131a7d3.tgz#f85f6cd02d4b74b92b3dd11355156c247dd59eb3"
-  integrity sha512-GSJYsupYypdEqjK8QXak1mBvEnsNmW2VkWyGxRs+x6WFLxHKAeFK09F+vrvKYRXLn8MoyNRaZaCBM2cbKnw7mw==
+"@dcl/schemas@tag-fast-bootstrapping-5":
+  version "5.29.1-20221110202018.commit-b02a4b7"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-5.29.1-20221110202018.commit-b02a4b7.tgz#15691992f8f34b07a63e91cbab74701655e9f0e7"
+  integrity sha512-B37SGTVVBWcmRwmaWQt3boH902vrAHJKDHZWZZRSjIAyg9kwJG1mFOoE6EFUXkI0a79+d2MNdrEwa3OA9kT1iw==
   dependencies:
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
 
-"@dcl/snapshots-fetcher@tag-fetch-new-snapshots-21":
-  version "4.0.15-20221109193943.commit-bfda352"
-  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-4.0.15-20221109193943.commit-bfda352.tgz#93ed2e09cdd19bc7bcfc42f91b74f3ac5acf592d"
-  integrity sha512-nwGutali5f4ukII8gJgtuPueHKKR3jfMZ6LjbpWo5iW80wEw18G7ZBSwYckNROub6AwxDItRIp4V6MJNCty3zg==
+"@dcl/snapshots-fetcher@tag-fetch-new-snapshots-27":
+  version "4.0.15-20221111165333.commit-e84fafd"
+  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-4.0.15-20221111165333.commit-e84fafd.tgz#d5fb256bad787a89e08bc28ffc701da8040ddb6d"
+  integrity sha512-oC/E8UZ5EkSe9vtfXcMkMiem9wqtQtQaXgFfFmNuVZ9pvRF70fTwuECBABtWMWHyHAMezf5Vd9a0PfBJ0WM1gA==
   dependencies:
     "@dcl/catalyst-storage" "^1.0.0-20220604235145.commit-892b669"
     "@dcl/hashing" "^1.0.0"
-    "@dcl/schemas" tag-fast-bootstrapping-3
+    "@dcl/schemas" tag-fast-bootstrapping-5
     "@well-known-components/interfaces" "^1.1.0"
     "@well-known-components/metrics" "^2.0.0"
     ms "2.1.3"

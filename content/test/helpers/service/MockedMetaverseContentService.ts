@@ -1,5 +1,5 @@
 import { AuthLinkType } from '@dcl/crypto'
-import { DeploymentWithAuthChain, Entity, EntityType } from '@dcl/schemas'
+import { Entity, EntityType, PointerChangesSyncDeployment } from '@dcl/schemas'
 import { random } from 'faker'
 import { CURRENT_CONTENT_VERSION } from '../../../src/Environment'
 import { ContentItem, SimpleContentItem } from '../../../src/ports/contentStorage/contentStorage'
@@ -34,7 +34,7 @@ export class MockedMetaverseContentService implements MetaverseContentService, I
 
   private readonly entities: Entity[]
   private readonly content: Map<string, Buffer>
-  private readonly pointerChanges: DeploymentWithAuthChain[]
+  private readonly pointerChanges: PointerChangesSyncDeployment[]
 
   constructor(builder: MockedMetaverseContentServiceBuilder) {
     this.entities = builder.entities
@@ -145,7 +145,7 @@ export class MockedMetaverseContentService implements MetaverseContentService, I
 export class MockedMetaverseContentServiceBuilder {
   readonly entities: Entity[] = []
   readonly content: Map<string, Buffer> = new Map()
-  readonly pointerChanges: DeploymentWithAuthChain[] = []
+  readonly pointerChanges: PointerChangesSyncDeployment[] = []
 
   withEntity(newEntity: Entity): MockedMetaverseContentServiceBuilder {
     this.entities.push(newEntity)
@@ -157,7 +157,7 @@ export class MockedMetaverseContentServiceBuilder {
     return this
   }
 
-  withPointerChanges(delta: DeploymentWithAuthChain): MockedMetaverseContentServiceBuilder {
+  withPointerChanges(delta: PointerChangesSyncDeployment): MockedMetaverseContentServiceBuilder {
     this.pointerChanges.push(delta)
     return this
   }

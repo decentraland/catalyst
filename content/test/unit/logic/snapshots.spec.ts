@@ -1,4 +1,4 @@
-import { DeploymentWithAuthChain } from '@dcl/schemas'
+import { SnapshotSyncDeployment } from '@dcl/schemas'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { createLogComponent } from '@well-known-components/logger'
@@ -413,7 +413,7 @@ function mockCreateFileWriterMockWith(filePath: string, storedHash: string): IFi
   return fileWriterMock
 }
 
-function mockStreamedActiveEntitiesWith(entities: DeploymentWithAuthChain[]) {
+function mockStreamedActiveEntitiesWith(entities: SnapshotSyncDeployment[]) {
   return jest.spyOn(snapshotQueries, 'streamActiveDeploymentsInTimeRange')
     .mockImplementation(async function* gen() {
       for (const entity of entities) {

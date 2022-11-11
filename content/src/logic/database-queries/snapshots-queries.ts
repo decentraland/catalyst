@@ -1,4 +1,4 @@
-import { DeploymentWithAuthChain } from '@dcl/schemas'
+import { SnapshotSyncDeployment } from '@dcl/schemas'
 import SQL from 'sql-template-strings'
 import { AppComponents } from '../../types'
 import { NewSnapshotMetadata } from '../snapshots'
@@ -6,7 +6,7 @@ import { TimeRange } from '../time-range'
 
 export async function* streamActiveDeployments(
   components: Pick<AppComponents, 'database'>
-): AsyncIterable<DeploymentWithAuthChain> {
+): AsyncIterable<SnapshotSyncDeployment> {
   const { database } = components
 
   const options = { batchSize: 1000 }
@@ -33,9 +33,9 @@ export async function* streamActiveDeployments(
 export async function* streamActiveDeploymentsInTimeRange(
   components: Pick<AppComponents, 'database'>,
   timeRange: TimeRange
-): AsyncIterable<DeploymentWithAuthChain> {
+): AsyncIterable<SnapshotSyncDeployment> {
   // IT IS IMPORTANT THAT THIS QUERY NEVER CHANGES
-  for await (const row of components.database.streamQuery<DeploymentWithAuthChain>(
+  for await (const row of components.database.streamQuery<SnapshotSyncDeployment>(
     SQL`
     SELECT
       entity_id AS "entityId",

@@ -1,5 +1,5 @@
 import { AuthChain, Authenticator, AuthLink, EthAddress, Signature } from '@dcl/crypto'
-import { Entity, EntityType } from '@dcl/schemas'
+import { Entity, EntityType, PointerChangesSyncDeployment } from '@dcl/schemas'
 import { DecentralandAssetIdentifier, parseUrn } from '@dcl/urn-resolver'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import destroy from 'destroy'
@@ -13,7 +13,7 @@ import { ContentItem } from '../ports/contentStorage/contentStorage'
 import { getDeployments } from '../service/deployments/deployments'
 import { AuditInfo, Deployment, DeploymentOptions, SortingField, SortingOrder } from '../service/deployments/types'
 import { getPointerChanges } from '../service/pointers/pointers'
-import { PointerChange, PointerChangesFilters } from '../service/pointers/types'
+import { PointerChangesFilters } from '../service/pointers/types'
 import {
   DeploymentContext,
   isInvalidDeployment,
@@ -418,7 +418,7 @@ export class Controller {
   }
 
   private calculateNextRelativePathForPointer(
-    lastPointerChange: PointerChange,
+    lastPointerChange: PointerChangesSyncDeployment,
     limit: number,
     filters?: PointerChangesFilters
   ): string | undefined {

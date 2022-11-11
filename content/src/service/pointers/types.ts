@@ -1,12 +1,10 @@
-import { DeploymentWithAuthChain } from '@dcl/schemas'
+import { PointerChangesSyncDeployment } from '@dcl/schemas'
 import { DeploymentFilters } from '../../service/deployments/types'
 
 export type PointerChangesFilters = Pick<DeploymentFilters, 'from' | 'to' | 'entityTypes'>
 
-export type PointerChange = DeploymentWithAuthChain & { localTimestamp: number }
-
 export type DeploymentPointerChanges = {
-  pointerChanges: PointerChange[]
+  pointerChanges: PointerChangesSyncDeployment[]
   filters: Omit<PointerChangesFilters, 'entityType'>
   pagination: {
     offset: number

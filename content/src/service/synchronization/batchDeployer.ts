@@ -1,4 +1,4 @@
-import { DeploymentWithAuthChain } from '@dcl/schemas'
+import { SnapshotSyncDeployment } from '@dcl/schemas'
 import { IDeployerComponent } from '@dcl/snapshots-fetcher'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { IBaseComponent } from '@well-known-components/interfaces'
@@ -49,7 +49,7 @@ export function createBatchDeployerComponent(
    * This function is used to filter out (ignore) deployments coming from remote
    * servers only. Local deployments using POST /entities _ARE NOT_ filtered by this function.
    */
-  async function shouldRemoteEntityDeploymentBeIgnored(entity: DeploymentWithAuthChain): Promise<boolean> {
+  async function shouldRemoteEntityDeploymentBeIgnored(entity: SnapshotSyncDeployment): Promise<boolean> {
     // ignore specific entity types using EnvironmentConfig.SYNC_IGNORED_ENTITY_TYPES
     if (syncOptions.ignoredTypes.has(entity.entityType)) {
       return true
@@ -68,7 +68,7 @@ export function createBatchDeployerComponent(
   }
 
   async function handleDeploymentFromServer(
-    entity: DeploymentWithAuthChain & { snapshotHash?: string },
+    entity: SnapshotSyncDeployment & { snapshotHash?: string },
     contentServer: string
   ) {
     if (await shouldRemoteEntityDeploymentBeIgnored(entity)) {
@@ -164,7 +164,7 @@ export function createBatchDeployerComponent(
       return parallelDeploymentJobs.onIdle()
     },
     async deployEntity(
-      entity: DeploymentWithAuthChain & { snapshotHash?: string },
+      entity: SnapshotSyncDeployment & { snapshotHash?: string },
       contentServers: string[]
     ): Promise<void> {
       for (const contentServer of contentServers) {

@@ -1,5 +1,5 @@
 import { ExternalCalls, Validator } from '@dcl/content-validator'
-import { DeploymentWithAuthChain, EntityType } from '@dcl/schemas'
+import { EntityType, SyncDeployment } from '@dcl/schemas'
 import { IDeployerComponent } from '@dcl/snapshots-fetcher'
 import { JobLifecycleManagerComponent } from '@dcl/snapshots-fetcher/dist/job-lifecycle-manager'
 import { IJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
@@ -103,7 +103,7 @@ export enum EntityVersion {
   V4 = 'v4'
 }
 
-export type CannonicalEntityDeployment = { entity: DeploymentWithAuthChain; servers: string[] }
+export type CannonicalEntityDeployment = { entity: SyncDeployment; servers: string[] }
 
 export type StatusProbeResult = {
   /** name is used as unique key for the status map */
