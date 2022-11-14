@@ -44,7 +44,7 @@ commands:
     steps:
       - run:
           name: Log into DockerHub
-          command: docker login -u "${QUAY_USERNAME}" -p "${QUAY_TOKEN}" quay.io
+          command: docker login -u "${QUAY_USER}" -p "${QUAY_PASS}" quay.io
   build_docker_image:
     parameters:
       dockerfile:
