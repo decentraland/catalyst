@@ -44,7 +44,7 @@ commands:
     steps:
       - run:
           name: Log into DockerHub
-          command: docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
+          command: docker login -u "${QUAY_USERNAME}" -p "${QUAY_TOKEN}" quay.io
   build_docker_image:
     parameters:
       dockerfile:
@@ -64,18 +64,18 @@ commands:
       - run:
           name: Push image
           command: |
-            docker push "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}"
+            docker push "quay.io/${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}"
             if echo "${CIRCLE_TAG}" | grep "^[0-9]\+\.[0-9]\+\.[0-9]\+$"; then
               docker tag "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}" "${DOCKER_IMAGE_NAME}:${CIRCLE_TAG}"
-              docker push "${DOCKER_IMAGE_NAME}:${CIRCLE_TAG}"
+              docker push "quay.io/${DOCKER_IMAGE_NAME}:${CIRCLE_TAG}"
               docker tag "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}" "${DOCKER_IMAGE_NAME}:latest"
-              docker push "${DOCKER_IMAGE_NAME}:latest"
+              docker push "quay.io/${DOCKER_IMAGE_NAME}:latest"
               # TODO: publish SNS message for stable channel
             fi
 
             if [ "${CIRCLE_BRANCH}" = "main" ]; then
               docker tag "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}" "${DOCKER_IMAGE_NAME}:next"
-              docker push "${DOCKER_IMAGE_NAME}:next"
+              docker push "quay.io/${DOCKER_IMAGE_NAME}:next"
 
               # TODO: publish SNS message for latest channel
             fi
@@ -226,7 +226,7 @@ jobs:
       - run:
           name: Push image (without tag)
           command: |
-            docker push "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}"
+            docker push "quay.io/${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}"
 
   publish-lambdas-docker-without-tag:
     <<: *base_env
@@ -242,7 +242,7 @@ jobs:
       - run:
           name: Push image (without tag)
           command: |
-            docker push "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}"
+            docker push "quay.io/${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}"
 
 workflows:
   version: 2
