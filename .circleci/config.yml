@@ -64,18 +64,18 @@ commands:
       - run:
           name: Push image
           command: |
-            docker push "quay.io/${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}"
+            docker push "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}"
             if echo "${CIRCLE_TAG}" | grep "^[0-9]\+\.[0-9]\+\.[0-9]\+$"; then
-              docker tag "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}" "quay.io/${DOCKER_IMAGE_NAME}:${CIRCLE_TAG}"
-              docker push "quay.io/${DOCKER_IMAGE_NAME}:${CIRCLE_TAG}"
-              docker tag "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}" "quay.io/${DOCKER_IMAGE_NAME}:latest"
-              docker push "quay.io/${DOCKER_IMAGE_NAME}:latest"
+              docker tag "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}" "${DOCKER_IMAGE_NAME}:${CIRCLE_TAG}"
+              docker push "${DOCKER_IMAGE_NAME}:${CIRCLE_TAG}"
+              docker tag "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}" "${DOCKER_IMAGE_NAME}:latest"
+              docker push "${DOCKER_IMAGE_NAME}:latest"
               # TODO: publish SNS message for stable channel
             fi
 
             if [ "${CIRCLE_BRANCH}" = "main" ]; then
-              docker tag "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}" "quay.io/${DOCKER_IMAGE_NAME}:next"
-              docker push "quay.io/${DOCKER_IMAGE_NAME}:next"
+              docker tag "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}" "${DOCKER_IMAGE_NAME}:next"
+              docker push "${DOCKER_IMAGE_NAME}:next"
 
               # TODO: publish SNS message for latest channel
             fi
@@ -191,7 +191,7 @@ jobs:
     docker:
       - image: cimg/node:16.14-browsers
         environment: &ENVIRONMENT
-          DOCKER_IMAGE_NAME: decentraland/catalyst-content
+          DOCKER_IMAGE_NAME: quay.io/decentraland/catalyst-content
     steps:
       - <<: *attach_root
       - build_docker_image:
@@ -204,7 +204,7 @@ jobs:
     docker:
       - image: cimg/node:16.14-browsers
         environment: &ENVIRONMENT
-          DOCKER_IMAGE_NAME: decentraland/catalyst-lambdas
+          DOCKER_IMAGE_NAME: quay.io/decentraland/catalyst-lambdas
     steps:
       - <<: *attach_root
       - build_docker_image:
@@ -217,7 +217,7 @@ jobs:
     docker:
       - image: cimg/node:16.14-browsers
         environment: &ENVIRONMENT
-          DOCKER_IMAGE_NAME: decentraland/catalyst-content
+          DOCKER_IMAGE_NAME: quay.io/decentraland/catalyst-content
     steps:
       - <<: *attach_root
       - build_docker_image:
@@ -226,14 +226,14 @@ jobs:
       - run:
           name: Push image (without tag)
           command: |
-            docker push "quay.io/${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}"
+            docker push "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}"
 
   publish-lambdas-docker-without-tag:
     <<: *base_env
     docker:
       - image: cimg/node:16.14-browsers
         environment: &ENVIRONMENT
-          DOCKER_IMAGE_NAME: decentraland/catalyst-lambdas
+          DOCKER_IMAGE_NAME: quay.io/decentraland/catalyst-lambdas
     steps:
       - <<: *attach_root
       - build_docker_image:
@@ -242,7 +242,7 @@ jobs:
       - run:
           name: Push image (without tag)
           command: |
-            docker push "quay.io/${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}"
+            docker push "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}"
 
 workflows:
   version: 2
