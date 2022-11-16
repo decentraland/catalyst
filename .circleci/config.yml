@@ -44,7 +44,7 @@ commands:
     steps:
       - run:
           name: Log into DockerHub
-          command: docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
+          command: docker login -u "${QUAY_USER}" -p "${QUAY_PASS}" quay.io
   build_docker_image:
     parameters:
       dockerfile:
@@ -191,7 +191,7 @@ jobs:
     docker:
       - image: cimg/node:16.14-browsers
         environment: &ENVIRONMENT
-          DOCKER_IMAGE_NAME: decentraland/catalyst-content
+          DOCKER_IMAGE_NAME: quay.io/decentraland/catalyst-content
     steps:
       - <<: *attach_root
       - build_docker_image:
@@ -204,7 +204,7 @@ jobs:
     docker:
       - image: cimg/node:16.14-browsers
         environment: &ENVIRONMENT
-          DOCKER_IMAGE_NAME: decentraland/catalyst-lambdas
+          DOCKER_IMAGE_NAME: quay.io/decentraland/catalyst-lambdas
     steps:
       - <<: *attach_root
       - build_docker_image:
@@ -217,7 +217,7 @@ jobs:
     docker:
       - image: cimg/node:16.14-browsers
         environment: &ENVIRONMENT
-          DOCKER_IMAGE_NAME: decentraland/catalyst-content
+          DOCKER_IMAGE_NAME: quay.io/decentraland/catalyst-content
     steps:
       - <<: *attach_root
       - build_docker_image:
@@ -233,7 +233,7 @@ jobs:
     docker:
       - image: cimg/node:16.14-browsers
         environment: &ENVIRONMENT
-          DOCKER_IMAGE_NAME: decentraland/catalyst-lambdas
+          DOCKER_IMAGE_NAME: quay.io/decentraland/catalyst-lambdas
     steps:
       - <<: *attach_root
       - build_docker_image:
