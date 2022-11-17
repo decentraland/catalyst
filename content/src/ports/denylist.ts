@@ -54,6 +54,7 @@ export async function createDenylist(
     if (!fileName) return
     if (!(await components.fs.existPath(fileName))) {
       logger.info("Denylist file doesn't exist", { fileName })
+      // i think here is failing
       return
     }
 
@@ -83,12 +84,20 @@ export async function createDenylist(
         await loadDenylistFromUrl(url)
       }
     } catch (err) {
+      logger.info('[denylist] There was an error with loading denylist')
       logger.error(err)
     }
   }
 
   await loadDenylists()
-  const reloadTimer = setInterval(() => loadDenylists().catch(logger.error), 120_000 /* two minutes */)
+  const reloadTimer = setInterval(
+    () =>
+      loadDenylists().catch((e) => {
+        logger.info('[denylist] What happened here?')
+        logger.error(e)
+      }),
+    120_000 /* two minutes */
+  )
 
   return {
     isDenylisted: (id: string): boolean => {
