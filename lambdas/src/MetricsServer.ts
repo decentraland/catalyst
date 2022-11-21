@@ -7,12 +7,12 @@ import { collectDefaultMetrics, Registry } from 'prom-client'
 export function initializeMetricsServer<T extends string>(
   serverToInstrument: express.Express,
   metricsComponent: IMetricsComponent<T & HttpMetrics> & {
-    registry: Registry
+    register: Registry
   }
 ) {
   const metricsExpressApp = express()
 
-  const register = metricsComponent.registry
+  const register = metricsComponent.register
 
   addMetricsEndpointToServer(metricsExpressApp, register)
 
