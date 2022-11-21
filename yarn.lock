@@ -330,15 +330,15 @@
   dependencies:
     eth-connect "^6.0.2"
 
-"@dcl/catalyst-storage@^1.0.0-20220604235145.commit-892b669":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@dcl/catalyst-storage/-/catalyst-storage-1.0.0.tgz#21f62295c00fb97a4b8efb9cb5d4ab65cedb2f55"
-  integrity sha512-TtKpP8P/v/kzKiIWR2eB+OlCmTkvXlGL9ZlVBHHSs0XCdrxcc7p0SROFd7qzt7aFQA2hMFjODrhHAxACDD1ijA==
+"@dcl/catalyst-storage@^2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-storage/-/catalyst-storage-2.0.0.tgz#e41376fd652ecdb23a8525d6a5abddadca5ddbb8"
+  integrity sha512-wwSxjaF0gXMIoH9DaBY+y7pNstrGf0YM21lEvQ6KWGFdseli3E4QSv1o1T8j1GeUY0nfH735yClSr07P02dW3g==
   dependencies:
     "@types/destroy" "^1.0.0"
-    "@types/node" "^17.0.39"
+    "@types/node" "^18.6.3"
     "@well-known-components/interfaces" "^1.1.1"
-    aws-sdk "^2.1148.0"
+    aws-sdk "^2.1248.0"
     destroy "^1.2.0"
 
 "@dcl/content-hash-tree@^1.1.3":
@@ -389,12 +389,12 @@
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
 
-"@dcl/snapshots-fetcher@^4.0.14":
-  version "4.0.14"
-  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-4.0.14.tgz#7482a099429cbe534fb55a5dc4cc9114b98063d8"
-  integrity sha512-sJz7B89jkxpEHOj7v8e5r+nz28C2rj0DCa13evfOVMDN8Xul7V3s4tU8moZ5fhvXSxBr61ebgTfb5AnIjugQ2g==
+"@dcl/snapshots-fetcher@^4.0.18":
+  version "4.0.18"
+  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-4.0.18.tgz#490ce1e748003d4f45427f49ac62b33dfa14e5fe"
+  integrity sha512-7R/FPbmh72w9uwufxhvo9Cx0Bu7fXW6pO/vMpUTUrAF5y0TrtCxNgSB71s4XLMNG+D+5Keq/QTSM1VL/RjMI7A==
   dependencies:
-    "@dcl/catalyst-storage" "^1.0.0-20220604235145.commit-892b669"
+    "@dcl/catalyst-storage" "^2.0.0"
     "@dcl/hashing" "^1.0.0"
     "@dcl/schemas" "^5.4.2"
     "@well-known-components/interfaces" "^1.1.0"
@@ -1402,7 +1402,7 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-18.0.6.tgz#0ba49ac517ad69abe7a1508bc9b3a5483df9d5d7"
   integrity sha512-/xUq6H2aQm261exT6iZTMifUySEt4GR5KX8eYyY+C4MSNPqSh9oNIP7tz2GLKTlFaiBbgZNxffoR3CVRG+cljw==
 
-"@types/node@17.0.45", "@types/node@^17.0.39":
+"@types/node@17.0.45":
   version "17.0.45"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-17.0.45.tgz#2c0fafd78705e7a18b7906b5201a522719dc5190"
   integrity sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw==
@@ -1411,6 +1411,11 @@
   version "16.11.45"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-16.11.45.tgz#155b13a33c665ef2b136f7f245fa525da419e810"
   integrity sha512-3rKg/L5x0rofKuuUt5zlXzOnKyIHXmIu5R8A0TuNDMF2062/AOIDBciFIjToLEJ/9F9DzkHNot+BpNsMI1OLdQ==
+
+"@types/node@^18.6.3":
+  version "18.11.9"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.11.9.tgz#02d013de7058cea16d36168ef2fc653464cfbad4"
+  integrity sha512-CRpX21/kGdzjOpFsZSkcrXMGIBWMGNIHXXBVFSH+ggkftxg+XYP20TESbh+zFvFj3EQOl5byk0HTRn1IL6hbqg==
 
 "@types/on-finished@2.3.1":
   version "2.3.1"
@@ -1638,7 +1643,14 @@
   resolved "https://registry.yarnpkg.com/@well-known-components/logger/-/logger-3.0.0.tgz#19532f6027de92a4e85ed2bf50f3c7171c177531"
   integrity sha512-UbVTSwV+9VtP1Z0sBW+ICbPYJfvy80sJNJNGHi33SeXq4rNSJRsFK8t7LWTipJNLpZRHyMNq4P9swBBB8yAyFw==
 
-"@well-known-components/metrics@2.0.1", "@well-known-components/metrics@^2.0.0":
+"@well-known-components/metrics@1.1.3":
+  version "1.1.3"
+  resolved "https://registry.yarnpkg.com/@well-known-components/metrics/-/metrics-1.1.3.tgz#f57041a940b87675e716c38a0acf3d9410501b75"
+  integrity sha512-kPTH2Xqkll3RW+OtC+Ra9u1t5ZcQQ7U6H4YGMs9cg9kvOvohBeJt9MV+fbC5/gznitNGxxm6hG1z6Vim6Gm2HQ==
+  dependencies:
+    prom-client "^14.0.1"
+
+"@well-known-components/metrics@^2.0.0":
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/@well-known-components/metrics/-/metrics-2.0.1.tgz#b5f5410c3ba6e5658ef80926a1f7bd81d7aa1f56"
   integrity sha512-jgT9TuxVS9GzVMMYWXNJRM2qXvexuf4xfrFNBYa3w+gqEWCK4Id5R4zBee/bm6/F5yIPauAWxbOS6KNNDBIrGw==
@@ -1907,10 +1919,10 @@ available-typed-arrays@^1.0.5:
   resolved "https://registry.yarnpkg.com/available-typed-arrays/-/available-typed-arrays-1.0.5.tgz#92f95616501069d07d10edb2fc37d3e1c65123b7"
   integrity sha512-DMD0KiN46eipeziST1LPP/STfDU0sufISXmjSgvVsoU2tqxctQeASejWcfNtxYKqETM1UxQ8sp2OrSBWpHY6sw==
 
-aws-sdk@^2.1148.0:
-  version "2.1180.0"
-  resolved "https://registry.yarnpkg.com/aws-sdk/-/aws-sdk-2.1180.0.tgz#01c5a5c845bea6676421cbb8fb162c4df8b719d5"
-  integrity sha512-QyQ+Zxb+AowFHb9N6qrmpA+LVZxUlBCfqEsRUAss+0y+QbEwfh4o+AxP6V0xz+m+UlBNxBkqJLx8UPoVk387LQ==
+aws-sdk@^2.1248.0:
+  version "2.1257.0"
+  resolved "https://registry.yarnpkg.com/aws-sdk/-/aws-sdk-2.1257.0.tgz#8ed8ca99f97dc642fce98dac7d5eb18e94ae9833"
+  integrity sha512-SNfKIVlJdLyBbUSGgvsBOuV4iOE1modoKOhnV/bIi2F7DJkq4SCPmrN1nwLNBnOQQvZRlPwFbHPVrJ3clTXLDQ==
   dependencies:
     buffer "4.9.2"
     events "1.1.1"
@@ -5780,7 +5792,7 @@ process-on-spawn@^1.0.0:
   dependencies:
     fromentries "^1.2.0"
 
-prom-client@^14.1.0:
+prom-client@^14.0.1, prom-client@^14.1.0:
   version "14.1.0"
   resolved "https://registry.yarnpkg.com/prom-client/-/prom-client-14.1.0.tgz#049609859483d900844924df740722c76ed1fdbb"
   integrity sha512-iFWCchQmi4170omLpFXbzz62SQTmPhtBL35v0qGEVRHKcqIeiexaoYeP0vfZTujxEq3tA87iqOdRbC9svS1B9A==
