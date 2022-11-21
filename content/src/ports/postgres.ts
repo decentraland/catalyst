@@ -170,10 +170,12 @@ export async function createDatabase(
         if (initializedClient) {
           const endInnerTimer = startTimer(durationQueryNameLabel)
           try {
+            console.log('[denylist] about to run tx')
             const res = await functionToRunWithinTransaction(await createDatabaseClient(initializedClient))
             endInnerTimer({ status: 'success' })
             return res
           } catch (error) {
+            console.log('[denylist] there was an error when run tx')
             endInnerTimer({ status: 'error' })
             throw error
           }

@@ -246,6 +246,7 @@ export class ServiceImpl implements MetaverseContentService {
       await this.storeEntityContent(hashes)
 
       await this.components.database.transaction(async (database) => {
+        console.log('[denylist] starting tx to store deployment')
         // Calculate overwrites
         const { overwrote, overwrittenBy } = await calculateOverwrites(database, entity)
 

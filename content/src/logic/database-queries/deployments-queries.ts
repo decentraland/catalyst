@@ -308,6 +308,8 @@ export async function saveContentFiles(
   )
   await database.transaction(async (databaseClient) => {
     for (const query of queries) {
+      console.log('[denylist] About to run tx with query:')
+      console.debug(query)
       await databaseClient.queryWithValues(query)
     }
   }, 'save_content_files')

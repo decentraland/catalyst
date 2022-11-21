@@ -71,7 +71,6 @@ export function streamToBuffer(stream: Readable): Promise<Buffer> {
     stream.on('error', reject)
     stream.on('data', (data) => {
       if (data instanceof Uint8Array) {
-        console.log('[denylist] is this failing here?')
         buffers.push(data)
       } else {
         reject(new Error('Stream did not emit Uint8Array'))
