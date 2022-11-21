@@ -308,10 +308,11 @@ export async function saveContentFiles(
   )
   await database.transaction(async (databaseClient) => {
     for (const query of queries) {
-      console.log('[denylist] About to run tx with query:')
+      const n = Math.random()
+      console.log(`[denylist] ${n} About to run tx with query:`)
       console.debug(query)
       const result = await databaseClient.queryWithValues(query)
-      console.log('[denylist] tx executed, result: ')
+      console.log(`[denylist] ${n} tx executed, result:`)
       console.debug(result)
     }
   }, 'save_content_files')
