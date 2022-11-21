@@ -54,7 +54,6 @@ export async function createDenylist(
     if (!fileName) return
     if (!(await components.fs.existPath(fileName))) {
       logger.info("Denylist file doesn't exist", { fileName })
-      // i think here is failing
       return
     }
 
