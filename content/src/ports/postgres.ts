@@ -192,6 +192,7 @@ export async function createDatabase(
           await client.query('COMMIT')
           endTimer({ status: 'success' })
         } catch (error) {
+          console.log('[denylist] There was an error in the beggining tx')
           await client.query('ROLLBACK')
           endTimer({ status: 'error' })
           logger.error('Error running transaction:')
