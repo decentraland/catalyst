@@ -1,3 +1,4 @@
+import future from 'fp-future'
 import { stub } from 'sinon'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { retryFailedDeploymentExecution } from '../../../src/logic/deployments'
@@ -6,6 +7,7 @@ import { assertDeploymentFailed, assertDeploymentFailsWith, assertEntitiesAreAct
 import { loadTestEnvironment } from '../E2ETestEnvironment'
 import { awaitUntil, buildDeployData, buildDeployDataAfterEntity, createIdentity } from '../E2ETestUtils'
 import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
+import { TestProgram } from '../TestProgram'
 
 loadTestEnvironment()('Errors during sync', (testEnv) => {
   describe('Deploy an entity on server 1', function () {
@@ -17,7 +19,8 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
           .andBuildMany(2)
 
       // Start server1
-      await this.server1.startProgram()
+      // await this.server1.startProgram()
+      await startProgramAndWaitUntilBootstrapFinishes(this.server1)
 
       this.validatorStub1 = stub(this.server1.components.validator, 'validate')
       this.validatorStub1.returns(Promise.resolve({ ok: true }))
@@ -43,7 +46,7 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
       await awaitUntil(() => assertEntitiesAreActiveOnServer(this.server1, this.controllerEntity))
 
       // Start server2
-      await this.server2.startProgram()
+      await startProgramAndWaitUntilBootstrapFinishes(this.server2)
     })
 
     afterEach(async function () {
@@ -53,10 +56,11 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
     })
 
     it('stores it as failed deployment locally', async function () {
+      jest.setTimeout(60000)
       await awaitUntil(() =>
         assertDeploymentFailed(this.server2, FailureReason.DEPLOYMENT_ERROR, this.controllerEntity)
       )
-    })
+    }, 60000)
 
     describe('fix the failed entity on server2 when retrying it', function () {
       beforeEach(async function () {
@@ -177,3 +181,15 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
     })
   })
 })
+
+
+async function startProgramAndWaitUntilBootstrapFinishes(server: TestProgram) {
+  const waitBootstrap = future<void>()
+  await server.components.synchronizer.onInitialBootstrapFinished(async () => {
+    await server.components.downloadQueue.onIdle()
+    await server.components.batchDeployer.onIdle()
+    waitBootstrap.resolve()
+  })
+  await server.startProgram()
+  await waitBootstrap
+}
