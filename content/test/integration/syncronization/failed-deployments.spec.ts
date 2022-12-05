@@ -116,12 +116,13 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
         this.anotherEntityCombo = await buildDeployDataAfterEntity(this.controllerEntity, ['0,1'], {
           metadata: { a: 'metadata2' }
         })
-        // Deploy entity 2 on server 2
-        await this.server2.deploy(this.anotherEntityCombo.deployData)
-        await awaitUntil(() => assertEntitiesAreActiveOnServer(this.server2, this.anotherEntityCombo.controllerEntity))
+        // Wait until entity from sync is deployed and failed
         await awaitUntil(() =>
           assertDeploymentFailed(this.server2, FailureReason.DEPLOYMENT_ERROR, this.controllerEntity)
         )
+        // Deploy entity 2 (with same pointers) on server 2
+        await this.server2.deploy(this.anotherEntityCombo.deployData)
+        await awaitUntil(() => assertEntitiesAreActiveOnServer(this.server2, this.anotherEntityCombo.controllerEntity))
 
         // Restore server validations to detect the newer entity
         this.serverValidatorStub2.restore()

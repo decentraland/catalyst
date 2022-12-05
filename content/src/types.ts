@@ -1,7 +1,6 @@
 import { ExternalCalls, Validator } from '@dcl/content-validator'
 import { EntityType, SyncDeployment } from '@dcl/schemas'
-import { IDeployerComponent } from '@dcl/snapshots-fetcher'
-import { JobLifecycleManagerComponent } from '@dcl/snapshots-fetcher/dist/job-lifecycle-manager'
+import { IDeployerComponent, SynchronizerComponent } from '@dcl/snapshots-fetcher'
 import { IJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { IProcessedSnapshotsComponent, IProcessedSnapshotStorageComponent } from '@dcl/snapshots-fetcher/dist/types'
 import { IFetchComponent } from '@well-known-components/http-server'
@@ -34,7 +33,6 @@ import { IChallengeSupervisor } from './service/synchronization/ChallengeSupervi
 import { DaoComponent } from './service/synchronization/clients/HardcodedDAOClient'
 import { ContentCluster } from './service/synchronization/ContentCluster'
 import { IRetryFailedDeploymentsComponent } from './service/synchronization/retryFailedDeployments'
-import { ISynchronizationManager } from './service/synchronization/SynchronizationManager'
 import { ServerValidator } from './service/validations/server'
 
 // Minimum amount of needed stuff to make the sync work
@@ -52,8 +50,7 @@ export type AppComponents = {
     tmpDownloadFolder: string
   }
   batchDeployer: IDeployerComponent
-  synchronizationJobManager: JobLifecycleManagerComponent
-  synchronizationManager: ISynchronizationManager
+  synchronizer: SynchronizerComponent
   deployedEntitiesBloomFilter: DeployedEntitiesBloomFilter
   controller: Controller
   snapshotManager: ISnapshotManager

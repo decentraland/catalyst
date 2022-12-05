@@ -1,10 +1,10 @@
+// it('test', () => { })
 import future from 'fp-future'
 import ms from 'ms'
 import SQL from 'sql-template-strings'
 import { getProcessedSnapshots } from '../../../src/logic/database-queries/snapshots-queries'
 import * as timeRangeLogic from '../../../src/logic/time-range'
 import { Deployment } from '../../../src/service/deployments/types'
-import { bootstrapFromSnapshots } from '../../../src/service/synchronization/bootstrapFromSnapshots'
 import { assertDeploymentsAreReported, buildDeployment } from '../E2EAssertions'
 import { loadTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
@@ -40,7 +40,7 @@ loadTestEnvironment()('Bootstrapping synchronization tests', function (testEnv) 
     await startProgramAndWaitUntilBootstrapFinishes(server2)
 
     // once the bootstrap from snapshots finished, it should have processed the server1 snapshots.
-    const server1Snapshots =
+    const server1Snapshots: Set<string> =
       new Set((await server1.components.database.queryWithValues<{ hash: string }>(SQL`SELECT DISTINCT hash from snapshots;`)).rows.map(s => s.hash))
 
     const server2ProcessedSnapshots = await getProcessedSnapshots(server2.components, Array.from(server1Snapshots))
@@ -117,13 +117,12 @@ loadTestEnvironment()('Bootstrapping synchronization tests', function (testEnv) 
     if (server1.components.snapshotGenerator.stop) await server1.components.snapshotGenerator.stop()
     if (server1.components.snapshotGenerator.start) await server1.components.snapshotGenerator.start({ started: jest.fn(), live: jest.fn(), getComponents: jest.fn() })
 
-    // now we run the bootstrap from snapshots again in server 2 (would be nice to have a mechanism to restart the server)
+    // now we run the sync from snapshots again in server 2 (would be nice to have a mechanism to restart the server)
     // it should save the weekly snapshot as already processed as it already processed the 7 ones that it's replacing
     // it should process only the last empty daily snapshot
     endStreamOfSpy.mockReset()
-    await bootstrapFromSnapshots(server2.components)
+    await server2.components.synchronizer.syncSnapshotsForSyncingServers()
     expect(endStreamOfSpy).toHaveBeenNthCalledWith(1, expect.anything(), 1)
-
   })
 
   it('when a server bootstraps, it should persist failed deployments but mark as processed the snapshots', async () => {
@@ -179,12 +178,12 @@ loadTestEnvironment()('Bootstrapping synchronization tests', function (testEnv) 
 })
 
 async function startProgramAndWaitUntilBootstrapFinishes(server: TestProgram) {
-  const bootstrapFromSnapshotsFinished = future<void>()
-  const originalSync = server.components.synchronizationManager.syncWithServers
-  jest.spyOn(server.components.synchronizationManager, 'syncWithServers').mockImplementation(async () => {
-    bootstrapFromSnapshotsFinished.resolve()
-    originalSync()
+  const waitBootstrap = future<void>()
+  await server.components.synchronizer.onInitialBootstrapFinished(async () => {
+    await server.components.downloadQueue.onIdle()
+    await server.components.batchDeployer.onIdle()
+    waitBootstrap.resolve()
   })
   await server.startProgram()
-  await bootstrapFromSnapshotsFinished
+  await waitBootstrap
 }

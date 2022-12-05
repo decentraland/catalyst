@@ -1,11 +1,11 @@
 import { Entity, EntityType } from '@dcl/schemas'
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { DeploymentData } from 'dcl-catalyst-client'
-import { makeNoopSynchronizationManager } from '../helpers/service/synchronization/MockedSynchronizationManager'
 import { makeNoopValidator } from '../helpers/service/validations/NoOpValidator'
 import { assertDeploymentsAreReported, buildDeployment } from './E2EAssertions'
 import { loadStandaloneTestEnvironment } from './E2ETestEnvironment'
 import { buildDeployData } from './E2ETestUtils'
+import { getIntegrationResourcePathFor } from './resources/get-resource-path'
 import { TestProgram } from './TestProgram'
 
 loadStandaloneTestEnvironment()('End 2 end deploy test', (testEnv) => {
@@ -15,7 +15,6 @@ loadStandaloneTestEnvironment()('End 2 end deploy test', (testEnv) => {
 
   beforeEach(async () => {
     server = await testEnv.configServer().andBuild()
-    makeNoopSynchronizationManager(server.components.synchronizationManager)
     makeNoopValidator(server.components)
     await server.startProgram()
   })
@@ -41,7 +40,7 @@ loadStandaloneTestEnvironment()('End 2 end deploy test', (testEnv) => {
     //------------------------------
     const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData([POINTER0, POINTER1], {
       metadata: { a: 'this is just some metadata' },
-      contentPaths: ['test/integration/resources/some-binary-file.png', 'test/integration/resources/some-text-file.txt']
+      contentPaths: [getIntegrationResourcePathFor('some-binary-file.png'), getIntegrationResourcePathFor('some-text-file.txt')]
     })
 
     const creationTimestamp = await server.deploy(deployData)

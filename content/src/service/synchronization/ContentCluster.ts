@@ -29,7 +29,7 @@ export class ContentCluster implements IdentityProvider {
   // Time of last sync with the DAO
   private timeOfLastSync: number = 0
 
-  private syncFinishedEventCallbacks: Array<() => void> = []
+  private syncFinishedEventCallbacks: Array<(serverClients: Set<string>) => void> = []
 
   private identityFuture: Promise<CatalystByIdResult | undefined> | undefined
 
@@ -61,7 +61,7 @@ export class ContentCluster implements IdentityProvider {
   /**
    * Registers an event that is emitted every time the list of catalysts is refreshed.
    */
-  onSyncFinished(cb: () => void): void {
+  onSyncFinished(cb: (serverClients: Set<string>) => void): void {
     this.syncFinishedEventCallbacks.push(cb)
   }
 
@@ -129,7 +129,7 @@ export class ContentCluster implements IdentityProvider {
       this.timeOfLastSync = this.components.clock.now()
 
       for (const cb of this.syncFinishedEventCallbacks) {
-        cb()
+        cb(this.serverClients)
       }
     } catch (error) {
       ContentCluster.LOGGER.error(`Failed to sync with the DAO \n${error}`)

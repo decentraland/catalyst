@@ -1,7 +1,6 @@
 import { createTheGraphClient } from '@dcl/content-validator'
 import { EntityType } from '@dcl/schemas'
-import { createCatalystDeploymentStream, createProcessedSnapshotsComponent } from '@dcl/snapshots-fetcher'
-import { createJobLifecycleManagerComponent } from '@dcl/snapshots-fetcher/dist/job-lifecycle-manager'
+import { createProcessedSnapshotsComponent, createSynchronizer } from '@dcl/snapshots-fetcher'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
 import { createLogComponent } from '@well-known-components/logger'
@@ -41,7 +40,6 @@ import { ChallengeSupervisor } from './service/synchronization/ChallengeSupervis
 import { DAOClientFactory } from './service/synchronization/clients/DAOClientFactory'
 import { ContentCluster } from './service/synchronization/ContentCluster'
 import { createRetryFailedDeployments } from './service/synchronization/retryFailedDeployments'
-import { createSynchronizationManager } from './service/synchronization/SynchronizationManager'
 import { createServerValidator } from './service/validations/server'
 import { createExternalCalls, createSubGraphsComponent, createValidator } from './service/validations/validator'
 import { AppComponents } from './types'
@@ -201,40 +199,31 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     }
   )
 
-  const synchronizationJobManager = createJobLifecycleManagerComponent(
-    { logs },
+  const synchronizer = await createSynchronizer(
     {
-      jobManagerName: 'SynchronizationJobManager',
-      createJob(contentServer) {
-        return createCatalystDeploymentStream(
-          {
-            logs,
-            downloadQueue,
-            fetcher,
-            metrics,
-            deployer: batchDeployer,
-            storage,
-            processedSnapshotStorage,
-            processedSnapshots
-          },
-          {
-            tmpDownloadFolder: staticConfigs.tmpDownloadFolder,
-            contentServer,
+      logs,
+      downloadQueue,
+      fetcher,
+      metrics,
+      deployer: batchDeployer,
+      storage,
+      processedSnapshotStorage,
+      processedSnapshots
+    },
+    {
+      tmpDownloadFolder: staticConfigs.tmpDownloadFolder,
 
-            // time between every poll to /pointer-changes
-            pointerChangesWaitTime: 5000,
+      // time between every poll to /pointer-changes
+      pointerChangesWaitTime: 5000,
 
-            // reconnection time for the whole catalyst
-            reconnectTime: 1000 /* one second */,
-            reconnectRetryTimeExponent: 1.2,
-            maxReconnectionTime: 3_600_000 /* one hour */,
+      // reconnection time for the whole catalyst
+      reconnectTime: 1000 /* one second */,
+      reconnectRetryTimeExponent: 1.2,
+      maxReconnectionTime: 3_600_000 /* one hour */,
 
-            // download entities retry
-            requestMaxRetries: 10,
-            requestRetryWaitTime: 5000
-          }
-        )
-      }
+      // download entities retry
+      requestMaxRetries: 10,
+      requestRetryWaitTime: 5000
     }
   )
 
@@ -251,14 +240,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     storage
   })
 
-  const synchronizationManager = createSynchronizationManager({
-    synchronizationJobManager,
-    logs,
-    contentCluster,
-    retryFailedDeployments,
-    metrics
-  })
-
   const snapshotGenerator = createSnapshotGenerator({
     logs,
     fs,
@@ -273,7 +254,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const controller = new Controller(
     {
-      synchronizationManager,
       challengeSupervisor,
       snapshotManager,
       deployer,
@@ -306,10 +286,11 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     staticConfigs,
     batchDeployer,
     downloadQueue,
-    synchronizationJobManager,
+    // synchronizationJobManager,
     deployedEntitiesBloomFilter,
     controller,
-    synchronizationManager,
+    synchronizer,
+    // synchronizationManager,
     challengeSupervisor,
     snapshotManager,
     contentCluster,

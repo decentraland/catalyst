@@ -30,7 +30,6 @@ export class Controller {
   constructor(
     private readonly components: Pick<
       AppComponents,
-      | 'synchronizationManager'
       | 'snapshotManager'
       | 'deployer'
       | 'challengeSupervisor'

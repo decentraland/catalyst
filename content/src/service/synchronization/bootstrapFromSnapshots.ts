@@ -1,4 +1,6 @@
-import { getDeployedEntitiesStream } from '@dcl/snapshots-fetcher'
+import {
+  getDeployedEntitiesInSnapshotsStreamFromServers
+} from '@dcl/snapshots-fetcher'
 import { AppComponents } from '../../types'
 
 type BootstrapComponents = Pick<
@@ -34,14 +36,17 @@ export async function bootstrapFromSnapshots(components: BootstrapComponents): P
     catalystServersButThisOne.map(async (contentServer) => {
       logs.info(`Will deploy entities from ${contentServer} snapshots`)
       try {
-        const stream = getDeployedEntitiesStream(components, {
-          tmpDownloadFolder: components.staticConfigs.tmpDownloadFolder,
-          contentServer,
-          pointerChangesWaitTime: 0, // zero to not restart the timer
-          requestMaxRetries,
-          requestRetryWaitTime,
-          fromTimestamp: 0 // start bootstrap from the beginning of the times every time. it is cheap
-        })
+        const stream = getDeployedEntitiesInSnapshotsStreamFromServers(
+          components,
+          {
+            tmpDownloadFolder: components.staticConfigs.tmpDownloadFolder,
+            pointerChangesWaitTime: 0, // zero to not restart the timer
+            requestMaxRetries,
+            requestRetryWaitTime,
+            fromTimestamp: 0 // start bootstrap from the beginning of the times every time. it is cheap
+          },
+          catalystServersButThisOne
+        )
         for await (const entity of stream) {
           // schedule the deployment in the deployer. the await DOES NOT mean that the entity was deployed entirely.
           await components.batchDeployer.deployEntity(entity, [contentServer])

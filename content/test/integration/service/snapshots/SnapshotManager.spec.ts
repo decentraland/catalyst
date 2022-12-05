@@ -1,5 +1,8 @@
 import { EntityType } from '@dcl/schemas'
 import { processDeploymentsInStream } from '@dcl/snapshots-fetcher/dist/file-processor'
+import { createConfigComponent } from '@well-known-components/env-config-provider'
+import { ILoggerComponent } from '@well-known-components/interfaces'
+import { createLogComponent } from '@well-known-components/logger'
 import { inspect } from 'util'
 import { EnvironmentBuilder } from '../../../../src/Environment'
 import { stopAllComponents } from '../../../../src/logic/components-lifecycle'
@@ -17,10 +20,14 @@ loadStandaloneTestEnvironment()('Integration - Snapshot Manager', (testEnv) => {
   let E1: EntityCombo, E2: EntityCombo
 
   let components: AppComponents
+  let logs: ILoggerComponent
+  let logger: ILoggerComponent.ILogger
 
   beforeAll(async () => {
     E1 = await buildDeployData([P1], { type: EntityType.SCENE, metadata: {} })
     E2 = await buildDeployDataAfterEntity(E1, [P2], { type: EntityType.SCENE, metadata: {} })
+    logs = await createLogComponent({ config: createConfigComponent({ LOG_LEVEL: 'DEBUG' }) })
+    logger = logs.getLogger('snapshot-manager-test')
   })
 
   beforeEach(async () => {
@@ -119,7 +126,7 @@ loadStandaloneTestEnvironment()('Integration - Snapshot Manager', (testEnv) => {
 
     const readStream = await content.asStream()
 
-    for await (const deployment of processDeploymentsInStream(readStream)) {
+    for await (const deployment of processDeploymentsInStream(readStream, logger)) {
       entityToPointersSnapshot.set(deployment.entityId, (deployment as any).pointers)
     }
 

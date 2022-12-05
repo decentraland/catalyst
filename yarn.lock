@@ -380,15 +380,6 @@
     ipfs-unixfs-importer "^7.0.3"
     multiformats "^9.6.3"
 
-"@dcl/schemas@^5.19.0":
-  version "5.21.0"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-5.21.0.tgz#af0e0e679694c9f64e01fbecd7d3da051a50876d"
-  integrity sha512-QlUCXf0AV/D3itxgZqQW+0z3PKQBXlmwHVDUsejfnNo6ycQwIdCWQMzI4QKxBKnyVHoieBOSMgvLaMJXb7JXpA==
-  dependencies:
-    ajv "^8.11.0"
-    ajv-errors "^3.0.0"
-    ajv-keywords "^5.1.0"
-
 "@dcl/schemas@^5.4.2", "@dcl/schemas@^5.5.0":
   version "5.19.0"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-5.19.0.tgz#c1311bc18ab4f20cd6b1365c6e42b382f290e787"
@@ -407,17 +398,16 @@
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
 
-"@dcl/snapshots-fetcher@tag-fetch-new-snapshots-27":
-  version "4.0.15-20221111165333.commit-e84fafd"
-  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-4.0.15-20221111165333.commit-e84fafd.tgz#d5fb256bad787a89e08bc28ffc701da8040ddb6d"
-  integrity sha512-oC/E8UZ5EkSe9vtfXcMkMiem9wqtQtQaXgFfFmNuVZ9pvRF70fTwuECBABtWMWHyHAMezf5Vd9a0PfBJ0WM1gA==
+"@dcl/snapshots-fetcher@tag-fetch-new-snapshots-40":
+  version "4.0.19-20221205164224.commit-2d0e177"
+  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-4.0.19-20221205164224.commit-2d0e177.tgz#c0d640a73efc3d5c9db28d446e808fb05c31f575"
+  integrity sha512-eBlASSpLpvEShzvZkj8o+354XKEqFRGG8g+fcDD3Zl45MZgE+fC/sKb7HNthxMhYn07Jom0kQfr9sru8y4HWEg==
   dependencies:
     "@dcl/catalyst-storage" "^1.0.0-20220604235145.commit-892b669"
     "@dcl/hashing" "^1.0.0"
     "@dcl/schemas" tag-fast-bootstrapping-5
     "@well-known-components/interfaces" "^1.1.0"
     "@well-known-components/metrics" "^2.0.0"
-    ms "2.1.3"
     p-queue "^6.6.2"
 
 "@dcl/urn-resolver@2.0.2", "@dcl/urn-resolver@^2.0.2":

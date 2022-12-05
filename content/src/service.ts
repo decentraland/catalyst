@@ -1,7 +1,6 @@
 import { Lifecycle } from '@well-known-components/interfaces'
 import { EnvironmentConfig } from './Environment'
 import { migrateContentFolderStructure } from './migrations/ContentFolderMigrationManager'
-import { bootstrapFromSnapshots } from './service/synchronization/bootstrapFromSnapshots'
 import { AppComponents } from './types'
 
 // this function wires the business logic (adapters & controllers) with the components (ports)
@@ -23,7 +22,14 @@ export async function main(program: Lifecycle.EntryPointParameters<AppComponents
   const disableSynchronization = components.env.getConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION)
 
   if (!disableSynchronization) {
-    await bootstrapFromSnapshots(components)
-    await components.synchronizationManager.syncWithServers()
+    await components.synchronizer.onInitialBootstrapFinished(async () => {
+      // synchronizationState = SynchronizationState.SYNCED
+      await components.downloadQueue.onIdle()
+      await components.batchDeployer.onIdle()
+      components.metrics.observe('dcl_content_server_sync_state', {}, 2)
+    })
+    await components.synchronizer.syncWithServers(new Set(components.contentCluster.getAllServersInCluster()))
+
+    components.contentCluster.onSyncFinished(components.synchronizer.syncWithServers)
   }
 }

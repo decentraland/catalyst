@@ -1,9 +1,6 @@
 import { AppComponents, IStatusCapableComponent } from '../../types'
 
-type ContentSyncComponents = Pick<
-  AppComponents,
-  'logs' | 'synchronizationJobManager' | 'contentCluster' | 'retryFailedDeployments' | 'metrics'
->
+type ContentSyncComponents = Pick<AppComponents, 'logs' | 'contentCluster' | 'retryFailedDeployments' | 'metrics'>
 
 export enum SynchronizationState {
   BOOTSTRAPPING = 'Bootstrapping',
@@ -36,9 +33,9 @@ export const createSynchronizationManager = (components: ContentSyncComponents):
       const setDesiredJobs = () => {
         synchronizationState = SynchronizationState.SYNCING
         components.metrics.observe('dcl_content_server_sync_state', {}, 1)
-        const desiredJobNames = new Set(components.contentCluster.getAllServersInCluster())
+        // const desiredJobNames = new Set(components.contentCluster.getAllServersInCluster())
         // the job names are the contentServerUrl
-        return components.synchronizationJobManager.setDesiredJobs(desiredJobNames)
+        // return components.synchronizationJobManager.setDesiredJobs(desiredJobNames)
       }
 
       // start the sync jobs
