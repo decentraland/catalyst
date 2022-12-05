@@ -5,11 +5,11 @@ import * as fs from 'fs'
 import { streamActiveDeployments } from '../../logic/database-queries/snapshots-queries'
 import { createContentFileWriterComponent } from '../../ports/contentFileWriter'
 import { bufferToStream } from '../../ports/contentStorage/contentStorage'
-import { AppComponents, IStatusCapableComponent } from '../../types'
+import { AppComponents } from '../../types'
 
 const ALL_ENTITIES = Symbol('allEntities')
 type ALL_ENTITIES = typeof ALL_ENTITIES
-const NAME_FOR_STATUS_ENDPOINT = 'snapshot'
+// const NAME_FOR_STATUS_ENDPOINT = 'snapshot'
 
 export type ISnapshotManager = {
   getSnapshotMetadataPerEntityType(entityType: EntityType): SnapshotMetadata | undefined
@@ -17,7 +17,8 @@ export type ISnapshotManager = {
   generateSnapshots(): Promise<void>
 }
 
-export class SnapshotManager implements IStatusCapableComponent, ISnapshotManager {
+// export class SnapshotManager implements IStatusCapableComponent, ISnapshotManager {
+export class SnapshotManager implements ISnapshotManager {
   /** @deprecated */
   private lastSnapshots: Map<EntityType, SnapshotMetadata> = new Map()
   private lastSnapshotsPerEntityType: Map<EntityType | ALL_ENTITIES, SnapshotMetadata> = new Map()
@@ -37,12 +38,12 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
     this.LOGGER = components.logs.getLogger('SnapshotManager')
   }
 
-  async getComponentStatus() {
-    return {
-      name: NAME_FOR_STATUS_ENDPOINT,
-      data: this.statusEndpointData
-    }
-  }
+  // async getComponentStatus() {
+  //   return {
+  //     name: NAME_FOR_STATUS_ENDPOINT,
+  //     data: this.statusEndpointData
+  //   }
+  // }
 
   /**
    * @deprecated
