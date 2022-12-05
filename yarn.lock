@@ -348,30 +348,39 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@^4.0.11":
-  version "4.0.11"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.0.11.tgz#47bffb680401a732550aec240efefd824f16254a"
-  integrity sha512-MEftzc50ypuCacnNP95+VLb0OVuR4AFg3rpQJcHsVrYOXeEgQ1mgUHpmR8iKuTLPcFEEXe7D1wwwPjrFLBEUqg==
+"@dcl/content-validator@^4.0.17":
+  version "4.0.20"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.0.20.tgz#3ef5873b16b0d603a41c2d0f2797483273564263"
+  integrity sha512-JeWLBCvhDp3k99TpRYsZwPuNsERowh1ab3Tt2UAftpJmOe+2H1LzFD69yFVLH39vogPmr1U7GrvwciH1jukhYw==
   dependencies:
     "@dcl/content-hash-tree" "^1.1.3"
-    "@dcl/hashing" "1.1.0"
+    "@dcl/hashing" "1.1.2"
     "@dcl/schemas" "^5.4.2"
-    "@dcl/urn-resolver" "2.0.2"
-    "@well-known-components/interfaces" "1.1.2"
+    "@dcl/urn-resolver" "2.0.3"
+    "@well-known-components/interfaces" "1.1.3"
     "@well-known-components/thegraph-component" "^1.2.0"
     ms "2.1.3"
     sharp "^0.30.6"
 
-"@dcl/crypto@^3.2.1":
-  version "3.2.1"
-  resolved "https://registry.yarnpkg.com/@dcl/crypto/-/crypto-3.2.1.tgz#cffe90a0a74c72ade876cc6e36871a0496275d9f"
-  integrity sha512-T5JYQXctKXfzjLbbVTkAqljQU7cMVQJlmgvKHq7Tj/EtYjyNYW1lNlj2sAx0HRvdKRlKCyshgWjnbu6zYKIR0A==
+"@dcl/crypto@^3.2.2":
+  version "3.2.3"
+  resolved "https://registry.yarnpkg.com/@dcl/crypto/-/crypto-3.2.3.tgz#768d3b0ea4d62b7078d7466fa8159d096f1cb618"
+  integrity sha512-0fscXbo8FRjs3Fy3ekBWRNBmUB4McWncEpsa+VFmhBRvjYI7xK00W0E/MM5eiWoQxt92fewkIR68vEPTCaqLwA==
   dependencies:
     "@dcl/schemas" "^5.4.2"
     eth-connect "^6.0.3"
     ethereum-cryptography "^1.0.3"
 
-"@dcl/hashing@1.1.0", "@dcl/hashing@^1.0.0", "@dcl/hashing@^1.1.0":
+"@dcl/hashing@1.1.2", "@dcl/hashing@^1.1.1":
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/@dcl/hashing/-/hashing-1.1.2.tgz#f72334eae2fdafac8b69299b297ff6a0c37b5544"
+  integrity sha512-edCbqZH4ZEHpacY6LIn/D+qRx2cSmRAjfJIgSNifURLKXQ0LWXc8bVzfhlM3R9D+RLyQIgddWObCCXoa6YS+eA==
+  dependencies:
+    ethereum-cryptography "^1.0.3"
+    ipfs-unixfs-importer "^7.0.3"
+    multiformats "^9.6.3"
+
+"@dcl/hashing@^1.0.0", "@dcl/hashing@^1.1.0":
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/@dcl/hashing/-/hashing-1.1.0.tgz#8992beeeb07b7cab9b683895399bcaf8ead32869"
   integrity sha512-u20iZwIT9YBLkoxO2rHw53zm2ePagFvJ2lChclN2wxlZoL04SlAucu3njsOSYcgPBMRrmMqHk3cbxVuP70aBbA==
@@ -410,10 +419,10 @@
     "@well-known-components/metrics" "^2.0.0"
     p-queue "^6.6.2"
 
-"@dcl/urn-resolver@2.0.2", "@dcl/urn-resolver@^2.0.2":
-  version "2.0.2"
-  resolved "https://registry.yarnpkg.com/@dcl/urn-resolver/-/urn-resolver-2.0.2.tgz#d2c416a9131e3d901f6b85828330502ee041ba1c"
-  integrity sha512-o2jAizoyZ74/lP+XYmENeAnKEw2sSudSWOhDnR4ESa++7eFJhlDSyPAWAfptSEfpWGY7GmgNUMMkXq8E6GLebA==
+"@dcl/urn-resolver@2.0.3", "@dcl/urn-resolver@^2.0.3":
+  version "2.0.3"
+  resolved "https://registry.yarnpkg.com/@dcl/urn-resolver/-/urn-resolver-2.0.3.tgz#1ec62b8cc1ab4eeb6073c5f06bd4b163e52da89b"
+  integrity sha512-/DaBj2ijznphQrbMkDXCudFa/f6IWfefv+C7DJNB1064n+yuxoIdCmYpp0lKjXMfSVkbJDjFS5bVaAzXVb265w==
 
 "@eslint/eslintrc@^1.3.0":
   version "1.3.0"
@@ -1633,7 +1642,16 @@
     on-finished "^2.4.1"
     path-to-regexp "^6.2.1"
 
-"@well-known-components/interfaces@1.1.2", "@well-known-components/interfaces@^1.1.0", "@well-known-components/interfaces@^1.1.1", "@well-known-components/interfaces@^1.1.2":
+"@well-known-components/interfaces@1.1.3":
+  version "1.1.3"
+  resolved "https://registry.yarnpkg.com/@well-known-components/interfaces/-/interfaces-1.1.3.tgz#7f69c4f82366587a9adfb1e032e228fbe5852b26"
+  integrity sha512-hQvm9Vzx0VN85thbO7OudjylEUVzD39dEue2irKnfvZKPfpKxGzt0u9t47egt6bYo1DeUr6JkBtWIckXpnlFEQ==
+  dependencies:
+    "@types/node" "^16.11.19"
+    "@types/node-fetch" "^2.5.12"
+    typed-url-params "^1.0.1"
+
+"@well-known-components/interfaces@^1.1.0", "@well-known-components/interfaces@^1.1.1", "@well-known-components/interfaces@^1.1.2":
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/@well-known-components/interfaces/-/interfaces-1.1.2.tgz#754ad83ffd434a63d57773be69177bce9869c554"
   integrity sha512-hLqjVXZPHObloSbscauQWP9LI1r0jqW/kGlpJ+cZxEOhclvG4ot0JIiu4YeK436YgbjRYJxsGOkJGl37RLvKOg==
