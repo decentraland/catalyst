@@ -330,10 +330,10 @@
   dependencies:
     eth-connect "^6.0.2"
 
-"@dcl/catalyst-storage@^2.0.0":
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/@dcl/catalyst-storage/-/catalyst-storage-2.0.0.tgz#e41376fd652ecdb23a8525d6a5abddadca5ddbb8"
-  integrity sha512-wwSxjaF0gXMIoH9DaBY+y7pNstrGf0YM21lEvQ6KWGFdseli3E4QSv1o1T8j1GeUY0nfH735yClSr07P02dW3g==
+"@dcl/catalyst-storage@^1.0.0-20220604235145.commit-892b669":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-storage/-/catalyst-storage-1.1.0.tgz#00982afef6d623d5cc562551492a786f71021423"
+  integrity sha512-RWJHFbje9nH9Je/Pah64ucRs8MoXARTI/5k+Rh7TiWk+AmDPK2eUyfbOVQXDk+3//4rpirNguf3arvC4Scveeg==
   dependencies:
     "@types/destroy" "^1.0.0"
     "@types/node" "^18.6.3"
@@ -407,12 +407,12 @@
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
 
-"@dcl/snapshots-fetcher@tag-fetch-new-snapshots-41":
-  version "4.0.19-20221205201106.commit-97cfe0c"
-  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-4.0.19-20221205201106.commit-97cfe0c.tgz#f7bc6b8704c947762e1afbf8e42989a38579be29"
-  integrity sha512-QSB3s24r0bp2MVjlZrjUOfOAehPmc8aJ5O7XmMEwc/ilfFDvaaehyTQUT8xE2GOCXoCmJZjyZ5zAzk2GAbzPEA==
+"@dcl/snapshots-fetcher@tag-fetch-new-snapshots-42":
+  version "4.0.19-20221206162028.commit-f4b395a"
+  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-4.0.19-20221206162028.commit-f4b395a.tgz#9f6fda29418a98c2ecc4f7b5518fddab96ddc6d8"
+  integrity sha512-8suJYLeBzYMTqhe2O4Voo0KOds6cV0S4UwaCjjRNl8q99qo64zTd2vGGSOXliDja1DspxWuE+j0heLnocGW4pA==
   dependencies:
-    "@dcl/catalyst-storage" "^2.0.0"
+    "@dcl/catalyst-storage" "^1.0.0-20220604235145.commit-892b669"
     "@dcl/hashing" "^1.0.0"
     "@dcl/schemas" tag-fast-bootstrapping-5
     "@well-known-components/interfaces" "^1.1.0"
@@ -1647,7 +1647,7 @@
     on-finished "^2.4.1"
     path-to-regexp "^6.2.1"
 
-"@well-known-components/interfaces@1.1.3":
+"@well-known-components/interfaces@1.1.3", "@well-known-components/interfaces@^1.1.3":
   version "1.1.3"
   resolved "https://registry.yarnpkg.com/@well-known-components/interfaces/-/interfaces-1.1.3.tgz#7f69c4f82366587a9adfb1e032e228fbe5852b26"
   integrity sha512-hQvm9Vzx0VN85thbO7OudjylEUVzD39dEue2irKnfvZKPfpKxGzt0u9t47egt6bYo1DeUr6JkBtWIckXpnlFEQ==
@@ -1656,7 +1656,7 @@
     "@types/node-fetch" "^2.5.12"
     typed-url-params "^1.0.1"
 
-"@well-known-components/interfaces@^1.1.0", "@well-known-components/interfaces@^1.1.1", "@well-known-components/interfaces@^1.1.2":
+"@well-known-components/interfaces@^1.1.0", "@well-known-components/interfaces@^1.1.1":
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/@well-known-components/interfaces/-/interfaces-1.1.2.tgz#754ad83ffd434a63d57773be69177bce9869c554"
   integrity sha512-hLqjVXZPHObloSbscauQWP9LI1r0jqW/kGlpJ+cZxEOhclvG4ot0JIiu4YeK436YgbjRYJxsGOkJGl37RLvKOg==

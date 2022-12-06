@@ -19,7 +19,6 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
           .andBuildMany(2)
 
       // Start server1
-      // await this.server1.startProgram()
       await startProgramAndWaitUntilBootstrapFinishes(this.server1)
 
       this.validatorStub1 = stub(this.server1.components.validator, 'validate')
@@ -185,11 +184,11 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
 
 async function startProgramAndWaitUntilBootstrapFinishes(server: TestProgram) {
   const waitBootstrap = future<void>()
+  await server.startProgram()
   await server.components.synchronizer.onInitialBootstrapFinished(async () => {
     await server.components.downloadQueue.onIdle()
     await server.components.batchDeployer.onIdle()
     waitBootstrap.resolve()
   })
-  await server.startProgram()
   await waitBootstrap
 }
