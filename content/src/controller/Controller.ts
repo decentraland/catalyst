@@ -616,18 +616,21 @@ export class Controller {
   async getStatus(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
     // Path: /status
-
-    const serverStatus = await statusResponseFromComponents(this.components)
-
-    res.status(serverStatus.successful ? 200 : 503)
-
-    res.send({
-      ...serverStatus.details,
-      version: CURRENT_CONTENT_VERSION,
-      commitHash: CURRENT_COMMIT_HASH,
-      catalystVersion: CURRENT_CATALYST_VERSION,
-      ethNetwork: this.ethNetwork
-    })
+    try {
+      const serverStatus = await statusResponseFromComponents(this.components)
+      res.status(serverStatus.successful ? 200 : 503)
+      res.send({
+        ...serverStatus.details,
+        version: CURRENT_CONTENT_VERSION,
+        commitHash: CURRENT_COMMIT_HASH,
+        catalystVersion: CURRENT_CATALYST_VERSION,
+        ethNetwork: this.ethNetwork
+      })
+    } catch (error) {
+      console.log(error)
+      res.status(504)
+      res.send({})
+    }
   }
 
   /**
