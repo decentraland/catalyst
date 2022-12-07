@@ -1,6 +1,6 @@
 import { Entity, EntityType, EthAddress } from '@dcl/schemas'
-import { Fetcher } from 'dcl-catalyst-commons'
 import { Request, Response } from 'express'
+import fetch from 'node-fetch'
 import { DAOCache } from '../../../service/dao/DAOCache'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TimeRefreshedDataHolder } from '../../../utils/TimeRefreshedDataHolder'
@@ -39,43 +39,54 @@ export type HotSceneInfo = {
   realms: RealmInfo[]
 }
 
-type Layer = {
-  name: string
-  usersCount: number
-  maxUsers: number
-  usersParcels: ParcelCoord[]
+type ServerStatusConfig = {
+  realmName: string
+}
+type ServerStatusContent = {
+  healthy: boolean
+  commitHash: string
+  version: string
 }
 
-type BaseServerStatus = {
-  name: string
+type ServerStatusComms = {
+  healthy: boolean
+  protocol: string
+  commitHash: string
+  version: string
+  usersCount: number
+}
+
+type ServerStatusLambdas = {
+  healthy: boolean
+  commitHash: string
+  version: string
+}
+type ServerStatusBff = {
+  usersCount: number
+  healthy: boolean
+  commitHash: string
+}
+
+type ParcelsInfo = {
+  peersCount: number
+  parcel: {
+    x: number
+    y: number
+  }
+}
+
+type ServerStatus = {
   url: string
-  layers?: Layer[]
-  maxUsers?: number
-}
-
-type LayersBasedServerStatus = {
-  layers: Layer[]
-} & BaseServerStatus
-
-type IslandBasedServerStatus = {
-  usersParcels: ParcelCoord[]
-  usersCount: number
-} & BaseServerStatus
-
-type ServerStatus = LayersBasedServerStatus | IslandBasedServerStatus
-
-function isLayerBased(status: ServerStatus): status is LayersBasedServerStatus {
-  return 'layers' in status
+  healthy: boolean
+  configurations: ServerStatusConfig
+  content: ServerStatusContent
+  comms: ServerStatusComms
+  lambdas: ServerStatusLambdas
+  bff: ServerStatusBff
+  parcels: ParcelsInfo[]
 }
 
 let realmsStatusCache: TimeRefreshedDataHolder<RealmInfo[]>
-
-function noReject<T>(promise: Promise<T>): Promise<['fulfilled' | 'rejected', any]> {
-  return promise.then(
-    (value) => ['fulfilled', value],
-    (error) => ['rejected', error]
-  )
-}
 
 export async function realmsStatus(daoCache: DAOCache, req: Request, res: Response) {
   // Method: GET
@@ -110,34 +121,25 @@ export async function hotScenes(daoCache: DAOCache, contentClient: SmartContentC
 }
 
 function toRealmsInfo(server: ServerStatus): RealmInfo[] {
-  return isLayerBased(server)
-    ? server.layers.map((layer) => ({
-        serverName: server.name,
-        url: server.url,
-        layer: layer.name,
-        usersCount: layer.usersCount,
-        maxUsers: layer.maxUsers,
-        userParcels: layer.usersParcels
-      }))
-    : [
-        {
-          serverName: server.name,
-          url: server.url,
-          usersCount: server.usersCount!,
-          maxUsers: server.maxUsers,
-          userParcels: server.usersParcels!
-        }
-      ]
+  return [
+    {
+      serverName: server.configurations.realmName,
+      url: server.url,
+      usersCount: server.comms.usersCount,
+      maxUsers: 2000, // This is Kernel's default
+      userParcels: toParcelCoord(server.parcels)
+    }
+  ]
 }
 
 async function fetchRealmsData(daoCache: DAOCache): Promise<RealmInfo[]> {
-  const statuses = await fetchCatalystStatuses(daoCache)
+  const statuses: ServerStatus[] = await fetchCatalystStatuses(daoCache)
 
   return statuses.flatMap(toRealmsInfo).sort((realm1, realm2) => realm2.usersCount - realm1.usersCount)
 }
 
 async function fetchHotScenesData(daoCache: DAOCache, contentClient: SmartContentClient): Promise<HotSceneInfo[]> {
-  const statuses = await fetchCatalystStatuses(daoCache)
+  const statuses: ServerStatus[] = await fetchCatalystStatuses(daoCache)
   const tiles = getOccupiedTiles(statuses)
 
   if (tiles.length > 0) {
@@ -157,7 +159,7 @@ async function fetchHotScenesData(daoCache: DAOCache, contentClient: SmartConten
   }
 }
 
-async function fetchCatalystStatuses(daoCache: DAOCache) {
+async function fetchCatalystStatuses(daoCache: DAOCache): Promise<ServerStatus[]> {
   const nodes = await daoCache.getServers()
   const statuses = await fetchStatuses(nodes)
   return statuses
@@ -165,34 +167,31 @@ async function fetchCatalystStatuses(daoCache: DAOCache) {
 
 function countUsers(hotScenes: HotSceneInfo[], statuses: ServerStatus[]) {
   statuses.forEach((server) => {
-    if (isLayerBased(server)) {
-      server.layers.forEach((layer) => {
-        layer.usersParcels.forEach((parcel) => countUser(parcel, server, hotScenes, layer))
-      })
-    } else {
-      server.usersParcels.forEach((parcel) => countUser(parcel, server, hotScenes))
-    }
+    server.parcels.forEach((p) => countUser(p, server, hotScenes))
   })
 }
 
-function countUser(parcel: ParcelCoord, server: ServerStatus, hotScenes: HotSceneInfo[], layer?: Layer) {
-  const scene = hotScenes.find((it) => it.parcels?.some((sceneParcel) => parcelEqual(parcel, sceneParcel)))
+function countUser(parcel: ParcelsInfo, server: ServerStatus, hotScenes: HotSceneInfo[]) {
+  const scene = hotScenes.find((it) =>
+    it.parcels?.some((sceneParcel) => parcelEqual([parcel.parcel.x, parcel.parcel.y], sceneParcel))
+  )
   if (scene) {
-    scene.usersTotalCount += 1
-    let realm = scene.realms.find((it) => it.serverName === server.name && it.layer === layer?.name)
+    scene.usersTotalCount += parcel.peersCount
+    let realm = scene.realms.find((it) => it.serverName === server.configurations.realmName)
     if (!realm) {
       realm = {
-        serverName: server.name,
+        serverName: server.configurations.realmName,
         url: server.url,
-        layer: layer?.name,
         usersCount: 0,
-        maxUsers: layer?.maxUsers ?? server.maxUsers,
+        maxUsers: 2000, // This is Kernel's default
         userParcels: []
       }
       scene.realms.push(realm)
     }
-    realm.usersCount += 1
-    realm.userParcels.push(parcel)
+    realm.usersCount += parcel.peersCount
+    for (let i = 0; i < parcel.peersCount; i++) {
+      realm.userParcels.push([parcel.parcel.x, parcel.parcel.y])
+    }
   }
 }
 
@@ -200,9 +199,7 @@ function getTilesOfServer(status: ServerStatus) {
   function toTiles(parcelCoords: ParcelCoord[]) {
     return parcelCoords.map((parcel) => `${parcel[0]},${parcel[1]}`)
   }
-  return isLayerBased(status)
-    ? status.layers.flatMap((layer) => toTiles(layer.usersParcels))
-    : toTiles(status.usersParcels)
+  return toTiles(toParcelCoord(status.parcels))
 }
 
 function getOccupiedTiles(statuses: ServerStatus[]) {
@@ -252,19 +249,25 @@ function getCoords(coordsAsString: string): ParcelCoord {
 }
 
 async function fetchStatuses(nodes: Set<ServerMetadata>): Promise<ServerStatus[]> {
-  return (await Promise.all([...nodes].map((it) => fetchStatus(it))))
-    .filter((it) => it[0] !== 'rejected')
-    .map((it) => it[1])
+  return (await Promise.allSettled([...nodes].map((it) => fetchStatus(it))))
+    .filter((p) => p.status === 'fulfilled')
+    .map((p) => (p as PromiseFulfilledResult<ServerStatus>).value)
 }
 
-async function fetchStatus(serverData: ServerMetadata) {
-  // TODO: Create a CommsClient and replace this plain json call
-  const fetcher = new Fetcher()
-  return noReject(
-    (
-      fetcher.fetchJson(`${serverData.baseUrl}/comms/status?includeLayers=true&includeUsersParcels=true`, {
-        timeout: '10s'
-      }) as any
-    ).then((value) => ({ ...value, url: serverData.baseUrl }))
-  )
+async function fetchStatus(serverData: ServerMetadata): Promise<ServerStatus> {
+  const [about, statsParcel] = await Promise.all([
+    fetch(`${serverData.baseUrl}/about`).then((a) => a.json()),
+    fetch(`${serverData.baseUrl}/stats/parcels`).then((a) => a.json())
+  ])
+  return { ...about, ...statsParcel, url: serverData.baseUrl }
+}
+
+function toParcelCoord(parcels: ParcelsInfo[]): ParcelCoord[] {
+  const result: ParcelCoord[] = []
+  parcels.forEach((p) => {
+    for (let i = 0; i < p.peersCount; i++) {
+      result.push([p.parcel.x, p.parcel.y])
+    }
+  })
+  return result
 }
