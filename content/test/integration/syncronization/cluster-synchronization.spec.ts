@@ -1,3 +1,4 @@
+import * as loggerComponent from '@well-known-components/logger'
 import ms from 'ms'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import {
@@ -16,14 +17,28 @@ loadTestEnvironment()('End 2 end synchronization tests', function (testEnv) {
   const SYNC_INTERVAL: number = ms('1s')
   let server1: TestProgram, server2: TestProgram, server3: TestProgram
 
+  let loggerIndex = 1
+
+  beforeAll(() => {
+    const originalCreateLogComponent = loggerComponent.createLogComponent
+    jest.spyOn(loggerComponent, 'createLogComponent').mockImplementation(async (components) => {
+      const logComponent = await originalCreateLogComponent(components)
+      const originalGetLogger = logComponent.getLogger
+      const assignedLoggerIndex = loggerIndex
+      logComponent.getLogger = (loggerName) => originalGetLogger(`server${assignedLoggerIndex}/${loggerName}`)
+      loggerIndex++
+      return logComponent
+    })
+  })
+
   beforeEach(async () => {
-    ;[server1, server2, server3] = await testEnv.configServer(SYNC_INTERVAL).andBuildMany(3)
-    makeNoopValidator(server1.components)
-    makeNoopValidator(server2.components)
-    makeNoopValidator(server3.components)
+    loggerIndex = 1
   })
 
   it(`When a server gets some content uploaded, then the other servers download it`, async () => {
+    ;[server1, server2] = await testEnv.configServer().andBuildMany(2)
+    makeNoopValidator(server1.components)
+    makeNoopValidator(server2.components)
     // Start server 1 and 2
     await Promise.all([server1.startProgram(), server2.startProgram()])
 
@@ -51,6 +66,10 @@ loadTestEnvironment()('End 2 end synchronization tests', function (testEnv) {
   })
 
   it(`When a server finds a new deployment with already known content, it can still deploy it successfully`, async () => {
+    ;[server1, server2, server3] = await testEnv.configServer().andBuildMany(3)
+    makeNoopValidator(server1.components)
+    makeNoopValidator(server2.components)
+    makeNoopValidator(server3.components)
     // Start server 1 and 2
     await Promise.all([server1.startProgram(), server2.startProgram()])
 
@@ -97,6 +116,10 @@ loadTestEnvironment()('End 2 end synchronization tests', function (testEnv) {
    */
   // TODO: [new-sync]
   xit("When a lost update is detected, previous entities are deleted but new ones aren't", async () => {
+    ;[server1, server2, server3] = await testEnv.configServer(SYNC_INTERVAL).andBuildMany(3)
+    makeNoopValidator(server1.components)
+    makeNoopValidator(server2.components)
+    makeNoopValidator(server3.components)
     // Start server 2
     await Promise.all([server2.startProgram()])
 

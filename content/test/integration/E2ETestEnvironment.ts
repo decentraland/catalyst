@@ -1,4 +1,5 @@
 import { createConfigComponent } from "@well-known-components/env-config-provider"
+import { ILoggerComponent } from "@well-known-components/interfaces"
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { random } from 'faker'
@@ -20,6 +21,7 @@ export class E2ETestEnvironment {
   private database: IDatabaseComponent
   private sharedEnv: Environment
   private dao: MockedDAOClient
+  private logs: ILoggerComponent
 
   async start(overrideConfigs?: Record<number, any>): Promise<void> {
     const port = process.env.MAPPED_POSTGRES_PORT
@@ -43,12 +45,12 @@ export class E2ETestEnvironment {
       }
     }
     const metrics = createTestMetricsComponent(metricsDeclaration)
-    const logs = await createLogComponent({
+    this.logs = await createLogComponent({
       config: createConfigComponent({
         LOG_LEVEL: 'DEBUG'
       })
     })
-    this.database = await createDatabaseComponent({ logs, env: this.sharedEnv, metrics })
+    this.database = await createDatabaseComponent({ logs: this.logs, env: this.sharedEnv, metrics })
     if (this.database.start) this.database.start()
   }
 
@@ -91,9 +93,7 @@ export class E2ETestEnvironment {
 
     if (syncInternal) {
       const interval = typeof syncInternal === 'number' ? syncInternal : ms(syncInternal)
-      builder
-        .withConfig(EnvironmentConfig.SYNC_WITH_SERVERS_INTERVAL, interval)
-        .withConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL, interval)
+      builder.withConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL, interval)
     }
     return builder
   }
@@ -102,14 +102,7 @@ export class E2ETestEnvironment {
   async getEnvForNewDatabase(): Promise<Environment> {
     const [dbName] = await this.createDatabases(1)
     const env = new Environment(this.sharedEnv).setConfig(EnvironmentConfig.PSQL_DATABASE, dbName)
-    const migrationManager = MigrationManagerFactory.create({
-      logs: await createLogComponent({
-        config: createConfigComponent({
-          LOG_LEVEL: 'DEBUG'
-        })
-      }),
-      env
-    })
+    const migrationManager = MigrationManagerFactory.create({ logs: this.logs, env })
     await migrationManager.run()
     await stopAllComponents({ migrationManager })
     return env

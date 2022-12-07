@@ -1,4 +1,3 @@
-// it('test', () => { })
 import future from 'fp-future'
 import ms from 'ms'
 import SQL from 'sql-template-strings'
