@@ -42,7 +42,7 @@ import { ContentCluster } from './service/synchronization/ContentCluster'
 import { createRetryFailedDeployments } from './service/synchronization/retryFailedDeployments'
 import { createServerValidator } from './service/validations/server'
 import { createExternalCalls, createSubGraphsComponent, createValidator } from './service/validations/validator'
-import { AppComponents } from './types'
+import { AppComponents, SynchronizationState } from './types'
 
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
   const clock = createClock()
@@ -227,6 +227,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     }
   )
 
+  const synchronizationState = SynchronizationState.BOOTSTRAPPING
+
   const retryFailedDeployments = createRetryFailedDeployments({
     env,
     metrics,
@@ -265,7 +267,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       denylist,
       fs,
       snapshotGenerator,
-      failedDeployments
+      failedDeployments,
+      contentCluster,
+      synchronizationState
     },
     ethNetwork
   )
@@ -286,11 +290,10 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     staticConfigs,
     batchDeployer,
     downloadQueue,
-    // synchronizationJobManager,
     deployedEntitiesBloomFilter,
     controller,
     synchronizer,
-    // synchronizationManager,
+    synchronizationState,
     challengeSupervisor,
     snapshotManager,
     contentCluster,

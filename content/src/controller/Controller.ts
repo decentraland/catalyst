@@ -42,6 +42,8 @@ export class Controller {
       | 'fs'
       | 'snapshotGenerator'
       | 'failedDeployments'
+      | 'contentCluster'
+      | 'synchronizationState'
     >,
     private readonly ethNetwork: string
   ) {
@@ -628,8 +630,8 @@ export class Controller {
       catalystVersion: CURRENT_CATALYST_VERSION,
       ethNetwork: this.ethNetwork,
       synchronizationStatus: {
-        lastSyncWithDAO: 0,
-        synchronizationState: 'Syncing'
+        ...this.components.contentCluster.getStatus(),
+        synchronizationState: this.components.synchronizationState
       }
     })
   }

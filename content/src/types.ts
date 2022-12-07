@@ -51,6 +51,7 @@ export type AppComponents = {
   }
   batchDeployer: IDeployerComponent
   synchronizer: SynchronizerComponent
+  synchronizationState: SynchronizationState
   deployedEntitiesBloomFilter: DeployedEntitiesBloomFilter
   controller: Controller
   snapshotManager: ISnapshotManager
@@ -124,3 +125,8 @@ export function parseEntityType(strType: string): EntityType {
 }
 
 export type DeploymentId = number
+
+export enum SynchronizationState {
+  BOOTSTRAPPING = 'Bootstrapping',
+  SYNCING = 'Syncing'
+}
