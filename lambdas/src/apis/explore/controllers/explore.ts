@@ -167,14 +167,16 @@ async function fetchCatalystStatuses(daoCache: DAOCache): Promise<ServerStatus[]
 
 function countUsers(hotScenes: HotSceneInfo[], statuses: ServerStatus[]) {
   statuses.forEach((server) => {
-    server.parcels.forEach((p) => countUser([p.parcel.x, p.parcel.y], server, hotScenes))
+    server.parcels.forEach((p) => countUser(p, server, hotScenes))
   })
 }
 
-function countUser(parcel: ParcelCoord, server: ServerStatus, hotScenes: HotSceneInfo[]) {
-  const scene = hotScenes.find((it) => it.parcels?.some((sceneParcel) => parcelEqual(parcel, sceneParcel)))
+function countUser(parcel: ParcelsInfo, server: ServerStatus, hotScenes: HotSceneInfo[]) {
+  const scene = hotScenes.find((it) =>
+    it.parcels?.some((sceneParcel) => parcelEqual([parcel.parcel.x, parcel.parcel.y], sceneParcel))
+  )
   if (scene) {
-    scene.usersTotalCount += 1
+    scene.usersTotalCount += parcel.peersCount
     let realm = scene.realms.find((it) => it.serverName === server.configurations.realmName)
     if (!realm) {
       realm = {
@@ -187,7 +189,9 @@ function countUser(parcel: ParcelCoord, server: ServerStatus, hotScenes: HotScen
       scene.realms.push(realm)
     }
     realm.usersCount += 1
-    realm.userParcels.push(parcel)
+    for (let i = 0; i < parcel.peersCount; i++) {
+      realm.userParcels.push([parcel.parcel.x, parcel.parcel.y])
+    }
   }
 }
 
@@ -245,19 +249,25 @@ function getCoords(coordsAsString: string): ParcelCoord {
 }
 
 async function fetchStatuses(nodes: Set<ServerMetadata>): Promise<ServerStatus[]> {
-  return (await Promise.all([...nodes].map((it) => fetchStatus(it)))).filter((c) => !!c).map((d) => d as ServerStatus)
+  return (await Promise.allSettled([...nodes].map((it) => fetchStatus(it))))
+    .filter((p) => p.status === 'fulfilled')
+    .map((p) => (p as PromiseFulfilledResult<ServerStatus>).value)
 }
 
-async function fetchStatus(serverData: ServerMetadata): Promise<ServerStatus | undefined> {
-  try {
-    const about = await (await fetch(`${serverData.baseUrl}/about`)).json()
-    const statsParcels = await (await fetch(`${serverData.baseUrl}/stats/parcels`)).json()
-    return { ...about, ...statsParcels, url: serverData.baseUrl }
-  } catch (error) {
-    return undefined
-  }
+async function fetchStatus(serverData: ServerMetadata): Promise<ServerStatus> {
+  const [about, statsParcel] = await Promise.all([
+    fetch(`${serverData.baseUrl}/about`).then((a) => a.json()),
+    fetch(`${serverData.baseUrl}/stats/parcels`).then((a) => a.json())
+  ])
+  return { ...about, ...statsParcel, url: serverData.baseUrl }
 }
 
 function toParcelCoord(parcels: ParcelsInfo[]): ParcelCoord[] {
-  return parcels.map((p) => [p.parcel.x, p.parcel.y])
+  const result: ParcelCoord[] = []
+  parcels.forEach((p) => {
+    for (let i = 0; i < p.peersCount; i++) {
+      result.push([p.parcel.x, p.parcel.y])
+    }
+  })
+  return result
 }
