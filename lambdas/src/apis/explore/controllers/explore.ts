@@ -126,7 +126,7 @@ function toRealmsInfo(server: ServerStatus): RealmInfo[] {
       serverName: server.configurations.realmName,
       url: server.url,
       usersCount: server.comms.usersCount,
-      maxUsers: 1000, // TODO: Check this
+      maxUsers: 2000, // This is Kernel's default
       userParcels: toParcelCoord(server.parcels)
     }
   ]
@@ -181,7 +181,7 @@ function countUser(parcel: ParcelCoord, server: ServerStatus, hotScenes: HotScen
         serverName: server.configurations.realmName,
         url: server.url,
         usersCount: 0,
-        maxUsers: 1000, // TODO: check this
+        maxUsers: 2000, // This is Kernel's default
         userParcels: []
       }
       scene.realms.push(realm)
