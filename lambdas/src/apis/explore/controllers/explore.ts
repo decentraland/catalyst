@@ -62,7 +62,7 @@ type ServerStatusLambdas = {
   version: string
 }
 type ServerStatusBff = {
-  usersCount: number
+  userCount: number
   healthy: boolean
   commitHash: string
 }
@@ -125,7 +125,7 @@ function toRealmsInfo(server: ServerStatus): RealmInfo[] {
     {
       serverName: server.configurations.realmName,
       url: server.url,
-      usersCount: server.comms.usersCount,
+      usersCount: server.comms.usersCount || server.bff.userCount,
       maxUsers: 2000, // This is Kernel's default
       userParcels: toParcelCoord(server.parcels)
     }
