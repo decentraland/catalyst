@@ -76,6 +76,7 @@ type ParcelsInfo = {
 }
 
 type ServerStatus = {
+  url: string
   healthy: boolean
   configurations: ServerStatusConfig
   content: ServerStatusContent
@@ -124,22 +125,21 @@ function toRealmsInfo(server: ServerStatus): RealmInfo[] {
     {
       serverName: server.configurations.realmName,
       url: server.url,
-      usersCount: server.usersCount!,
-      maxUsers: server.maxUsers,
-      userParcels: server.usersParcels!
+      usersCount: server.comms.usersCount,
+      maxUsers: 1000, // TODO: Check this
+      userParcels: toParcelCoord(server.parcels)
     }
   ]
 }
 
 async function fetchRealmsData(daoCache: DAOCache): Promise<RealmInfo[]> {
-  const statuses = await fetchCatalystStatuses(daoCache)
+  const statuses: ServerStatus[] = await fetchCatalystStatuses(daoCache)
 
   return statuses.flatMap(toRealmsInfo).sort((realm1, realm2) => realm2.usersCount - realm1.usersCount)
 }
 
 async function fetchHotScenesData(daoCache: DAOCache, contentClient: SmartContentClient): Promise<HotSceneInfo[]> {
-  // TODO: Check this too
-  const statuses = await fetchCatalystStatuses(daoCache)
+  const statuses: ServerStatus[] = await fetchCatalystStatuses(daoCache)
   const tiles = getOccupiedTiles(statuses)
 
   if (tiles.length > 0) {
@@ -159,7 +159,7 @@ async function fetchHotScenesData(daoCache: DAOCache, contentClient: SmartConten
   }
 }
 
-async function fetchCatalystStatuses(daoCache: DAOCache) {
+async function fetchCatalystStatuses(daoCache: DAOCache): Promise<ServerStatus[]> {
   const nodes = await daoCache.getServers()
   const statuses = await fetchStatuses(nodes)
   return statuses
@@ -167,22 +167,21 @@ async function fetchCatalystStatuses(daoCache: DAOCache) {
 
 function countUsers(hotScenes: HotSceneInfo[], statuses: ServerStatus[]) {
   statuses.forEach((server) => {
-    server.usersParcels.forEach((parcel) => countUser(parcel, server, hotScenes))
+    server.parcels.forEach((p) => countUser([p.parcel.x, p.parcel.y], server, hotScenes))
   })
 }
 
-function countUser(parcel: ParcelCoord, server: ServerStatus, hotScenes: HotSceneInfo[], layer?: Layer) {
+function countUser(parcel: ParcelCoord, server: ServerStatus, hotScenes: HotSceneInfo[]) {
   const scene = hotScenes.find((it) => it.parcels?.some((sceneParcel) => parcelEqual(parcel, sceneParcel)))
   if (scene) {
     scene.usersTotalCount += 1
-    let realm = scene.realms.find((it) => it.serverName === server.name && it.layer === layer?.name)
+    let realm = scene.realms.find((it) => it.serverName === server.configurations.realmName)
     if (!realm) {
       realm = {
-        serverName: server.name,
+        serverName: server.configurations.realmName,
         url: server.url,
-        layer: layer?.name,
         usersCount: 0,
-        maxUsers: layer?.maxUsers ?? server.maxUsers,
+        maxUsers: 1000, // TODO: check this
         userParcels: []
       }
       scene.realms.push(realm)
@@ -196,7 +195,7 @@ function getTilesOfServer(status: ServerStatus) {
   function toTiles(parcelCoords: ParcelCoord[]) {
     return parcelCoords.map((parcel) => `${parcel[0]},${parcel[1]}`)
   }
-  return toTiles(status.usersParcels)
+  return toTiles(toParcelCoord(status.parcels))
 }
 
 function getOccupiedTiles(statuses: ServerStatus[]) {
@@ -246,19 +245,19 @@ function getCoords(coordsAsString: string): ParcelCoord {
 }
 
 async function fetchStatuses(nodes: Set<ServerMetadata>): Promise<ServerStatus[]> {
-  return (await Promise.all([...nodes].map((it) => fetchStatus(it))))
-    .filter((it) => it[0] !== 'rejected')
-    .map((it) => it[1])
+  return (await Promise.all([...nodes].map((it) => fetchStatus(it)))).filter((c) => !!c).map((d) => d as ServerStatus)
 }
 
-async function fetchStatus(serverData: ServerMetadata) {
+async function fetchStatus(serverData: ServerMetadata): Promise<ServerStatus | undefined> {
   try {
     const about = await (await fetch(`${serverData.baseUrl}/about`)).json()
-    console.debug(about)
     const statsParcels = await (await fetch(`${serverData.baseUrl}/stats/parcels`)).json()
-    console.debug(statsParcels)
-    return ['fulfilled', { ...about, ...statsParcels, url: serverData.baseUrl }]
+    return { ...about, ...statsParcels, url: serverData.baseUrl }
   } catch (error) {
-    return ['rejected', error]
+    return undefined
   }
+}
+
+function toParcelCoord(parcels: ParcelsInfo[]): ParcelCoord[] {
+  return parcels.map((p) => [p.parcel.x, p.parcel.y])
 }
