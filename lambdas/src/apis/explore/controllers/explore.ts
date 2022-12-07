@@ -188,7 +188,7 @@ function countUser(parcel: ParcelsInfo, server: ServerStatus, hotScenes: HotScen
       }
       scene.realms.push(realm)
     }
-    realm.usersCount += 1
+    realm.usersCount += parcel.peersCount
     for (let i = 0; i < parcel.peersCount; i++) {
       realm.userParcels.push([parcel.parcel.x, parcel.parcel.y])
     }
