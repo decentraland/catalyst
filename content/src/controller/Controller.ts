@@ -25,7 +25,7 @@ import { ControllerDeploymentFactory } from './ControllerDeploymentFactory'
 import { ControllerEntityFactory } from './ControllerEntityFactory'
 
 export class Controller {
-  private static LOGGER: ILoggerComponent.ILogger
+  private logger: ILoggerComponent.ILogger
 
   constructor(
     private readonly components: Pick<
@@ -45,7 +45,7 @@ export class Controller {
     >,
     private readonly ethNetwork: string
   ) {
-    Controller.LOGGER = components.logs.getLogger('Controller')
+    this.logger = components.logs.getLogger('Controller')
   }
 
   /**
@@ -89,8 +89,8 @@ export class Controller {
       const maskedEntities: Entity[] = entities.map((entity) => ControllerEntityFactory.maskEntity(entity, enumFields))
       res.send(maskedEntities)
     } catch (error) {
-      Controller.LOGGER.error(`POST /entities/:type - Internal server error '${error}'`)
-      Controller.LOGGER.error(error)
+      this.logger.error(`POST /entities/:type - Internal server error '${error}'`)
+      this.logger.error(error)
       res.status(500).end()
     }
   }
@@ -124,8 +124,8 @@ export class Controller {
 
       res.send(entities)
     } catch (error) {
-      Controller.LOGGER.error(`POST /entities/active - Internal server error '${error}'`)
-      Controller.LOGGER.error(error)
+      this.logger.error(`POST /entities/active - Internal server error '${error}'`)
+      this.logger.error(error)
       res.status(500).end()
     }
   }
@@ -188,21 +188,21 @@ export class Controller {
         res.send({ creationTimestamp: deploymentResult })
       } else if (isInvalidDeployment(deploymentResult)) {
         this.components.metrics.increment('dcl_deployments_endpoint_counter', { kind: 'validation_error' })
-        Controller.LOGGER.error(`POST /entities - Deployment failed (${deploymentResult.errors.join(',')})`)
+        this.logger.error(`POST /entities - Deployment failed (${deploymentResult.errors.join(',')})`)
         res.status(400).send({ errors: deploymentResult.errors }).end()
       } else {
-        Controller.LOGGER.error(`deploymentResult is invalid ${JSON.stringify(deploymentResult)}`)
+        this.logger.error(`deploymentResult is invalid ${JSON.stringify(deploymentResult)}`)
         throw new Error('deploymentResult is invalid')
       }
     } catch (error) {
       this.components.metrics.increment('dcl_deployments_endpoint_counter', { kind: 'error' })
-      Controller.LOGGER.error(`POST /entities - Internal server error '${error}'`, {
+      this.logger.error(`POST /entities - Internal server error '${error}'`, {
         entityId,
         authChain: JSON.stringify(authChain),
         ethAddress,
         signature
       })
-      Controller.LOGGER.error(error)
+      this.logger.error(error)
       res.status(500).end()
     } finally {
       await this.deleteUploadedFiles(deployFiles)
