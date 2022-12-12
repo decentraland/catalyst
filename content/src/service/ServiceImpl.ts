@@ -133,7 +133,7 @@ export class ServiceImpl implements MetaverseContentService {
         })
         return InvalidResult({ errors: ['An internal server error occurred. This will raise an automatic alarm.'] })
       } else if (isInvalidDeployment(storeResult)) {
-        ServiceImpl.LOGGER.error(`Error deploying entity`, {
+        ServiceImpl.LOGGER.warn(`Error deploying entity`, {
           entityId,
           pointers: entity.pointers.join(' '),
           errors: storeResult.errors.join(' ')
