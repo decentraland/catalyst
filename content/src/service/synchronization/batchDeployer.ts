@@ -30,7 +30,6 @@ export function createBatchDeployerComponent(
     | 'storage'
     | 'failedDeployments'
     | 'clock'
-    | 'processedSnapshots'
   >,
   syncOptions: {
     ignoredTypes: Set<string>
@@ -45,11 +44,13 @@ export function createBatchDeployerComponent(
   const deploymentsMap = new Map<string, CannonicalEntityDeployment>()
   const successfulDeployments = new Set<string>()
 
+  type DeployableEntity = Parameters<IDeployerComponent['deployEntity']>[0]
+
   /**
    * This function is used to filter out (ignore) deployments coming from remote
    * servers only. Local deployments using POST /entities _ARE NOT_ filtered by this function.
    */
-  async function shouldRemoteEntityDeploymentBeIgnored(entity: SnapshotSyncDeployment): Promise<boolean> {
+  async function shouldRemoteEntityDeploymentBeIgnored(entity: DeployableEntity): Promise<boolean> {
     // ignore specific entity types using EnvironmentConfig.SYNC_IGNORED_ENTITY_TYPES
     if (syncOptions.ignoredTypes.has(entity.entityType)) {
       return true
@@ -67,15 +68,12 @@ export function createBatchDeployerComponent(
     return false
   }
 
-  async function handleDeploymentFromServer(
-    entity: SnapshotSyncDeployment & { snapshotHash?: string },
-    contentServer: string
-  ) {
+  async function handleDeploymentFromServer(entity: DeployableEntity, contentServer: string) {
     if (await shouldRemoteEntityDeploymentBeIgnored(entity)) {
       // early return to prevent noops
       components.metrics.increment('dcl_ignored_sync_deployments')
-      if (entity.snapshotHash) {
-        await components.processedSnapshots.entityProcessedFrom(entity.snapshotHash)
+      if (entity.markAsDeployed) {
+        await entity.markAsDeployed()
       }
       return
     }
@@ -146,8 +144,8 @@ export function createBatchDeployerComponent(
           } finally {
             // decrement the gauge of enqueued deployments
             components.metrics.decrement('dcl_pending_deployment_gauge', metricLabels)
-            if (entity.snapshotHash && wasEntityProcessed) {
-              await components.processedSnapshots.entityProcessedFrom(entity.snapshotHash)
+            if (entity.markAsDeployed && wasEntityProcessed) {
+              await entity.markAsDeployed()
             }
           }
         }, operationPriority)
@@ -164,7 +162,7 @@ export function createBatchDeployerComponent(
       return parallelDeploymentJobs.onIdle()
     },
     async deployEntity(
-      entity: SnapshotSyncDeployment & { snapshotHash?: string },
+      entity: SnapshotSyncDeployment & { markAsDeployed?: () => Promise<void> },
       contentServers: string[]
     ): Promise<void> {
       for (const contentServer of contentServers) {
