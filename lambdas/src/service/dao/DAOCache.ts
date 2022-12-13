@@ -44,9 +44,9 @@ export class DAOCache {
   private pois: TimeRefreshedDataHolder<Set<string>>
   private denylistedNames: TimeRefreshedDataHolder<Set<string>>
 
-  constructor(ethereumProvider: HTTPProvider, polygonProvider: HTTPProvider) {
+  constructor(ethereumProvider: HTTPProvider, poisProvider: HTTPProvider) {
     this.servers = new TimeRefreshedDataHolder(() => getServers(ethereumProvider), REFRESH_TIME)
-    this.pois = new TimeRefreshedDataHolder(() => getPois(polygonProvider), REFRESH_TIME)
+    this.pois = new TimeRefreshedDataHolder(() => getPois(poisProvider), REFRESH_TIME)
     this.denylistedNames = new TimeRefreshedDataHolder(() => getBannedNames(ethereumProvider), REFRESH_TIME)
   }
 
