@@ -265,9 +265,13 @@ export class EnvironmentBuilder {
       `https://rpc.decentraland.org/${encodeURIComponent(ethNetwork)}?project=catalyst-lambdas`,
       { fetch }
     )
+    const polygonProvider = new HTTPProvider(
+      `https://rpc.decentraland.org/${encodeURIComponent('polygon')}?project=catalyst-lambdas`,
+      { fetch }
+    )
 
     this.registerBeanIfNotAlreadySet(env, Bean.ETHEREUM_PROVIDER, () => ethereumProvider)
-    this.registerBeanIfNotAlreadySet(env, Bean.DAO, () => new DAOCache(ethereumProvider))
+    this.registerBeanIfNotAlreadySet(env, Bean.DAO, () => new DAOCache(ethereumProvider, polygonProvider))
     this.registerBeanIfNotAlreadySet(env, Bean.ENS_OWNERSHIP, () => EnsOwnershipFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.WEARABLES_OWNERSHIP, () => WearablesOwnershipFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.EMOTES_OWNERSHIP, () => EmotesOwnershipFactory.create(env))

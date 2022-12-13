@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@dcl/catalyst-api-specs": "^2.0.14",
-    "@dcl/catalyst-contracts": "^3.0.0",
+    "@dcl/catalyst-contracts": "tag-polygon-pois",
     "@dcl/crypto": "^3.2.2",
     "@dcl/schemas": "^5.29.0",
     "@dcl/urn-resolver": "^2.0.3",
