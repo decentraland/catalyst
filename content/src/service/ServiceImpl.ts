@@ -89,7 +89,7 @@ export class ServiceImpl implements MetaverseContentService {
         return InvalidResult({ errors: ['There was a problem parsing the entity, it was null'] })
       }
     } catch (error) {
-      this.logger.error(`There was an error parsing the entity: ${error}`)
+      this.logger.warn(`There was an error parsing the entity: ${error}`)
       return InvalidResult({ errors: ['There was a problem parsing the entity'] })
     }
 
