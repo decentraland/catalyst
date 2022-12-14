@@ -2,7 +2,7 @@ import { ExternalCalls, Validator } from '@dcl/content-validator'
 import { EntityType, SyncDeployment } from '@dcl/schemas'
 import { IDeployerComponent, SynchronizerComponent } from '@dcl/snapshots-fetcher'
 import { IJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
-import { IProcessedSnapshotsComponent, IProcessedSnapshotStorageComponent } from '@dcl/snapshots-fetcher/dist/types'
+import { IProcessedSnapshotStorageComponent } from '@dcl/snapshots-fetcher/dist/types'
 import { IFetchComponent } from '@well-known-components/http-server'
 import { ILoggerComponent, IMetricsComponent } from '@well-known-components/interfaces'
 import { Fetcher } from 'dcl-catalyst-commons'
@@ -51,7 +51,10 @@ export type AppComponents = {
   }
   batchDeployer: IDeployerComponent
   synchronizer: SynchronizerComponent
-  synchronizationState: SynchronizationState
+  synchronizationState: {
+    state: SynchronizationState
+    toSyncing: () => void
+  }
   deployedEntitiesBloomFilter: DeployedEntitiesBloomFilter
   controller: Controller
   snapshotManager: ISnapshotManager
@@ -78,7 +81,6 @@ export type AppComponents = {
   fs: FSComponent
   ethereumProvider: HTTPProvider
   snapshotGenerator: SnapshotGenerator
-  processedSnapshots: IProcessedSnapshotsComponent
   processedSnapshotStorage: IProcessedSnapshotStorageComponent
   clock: Clock
 }

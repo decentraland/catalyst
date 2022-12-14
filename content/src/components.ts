@@ -1,6 +1,6 @@
 import { createTheGraphClient } from '@dcl/content-validator'
 import { EntityType } from '@dcl/schemas'
-import { createProcessedSnapshotsComponent, createSynchronizer } from '@dcl/snapshots-fetcher'
+import { createSynchronizer } from '@dcl/snapshots-fetcher'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
 import { createLogComponent } from '@well-known-components/logger'
@@ -172,8 +172,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const processedSnapshotStorage = createProcessedSnapshotStorage({ database, clock, logs })
 
-  const processedSnapshots = createProcessedSnapshotsComponent({ processedSnapshotStorage, logs })
-
   const batchDeployer = createBatchDeployerComponent(
     {
       logs,
@@ -186,8 +184,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       deployedEntitiesBloomFilter: deployedEntitiesBloomFilter,
       storage,
       failedDeployments,
-      clock,
-      processedSnapshots
+      clock
     },
     {
       ignoredTypes: new Set(ignoredTypes),
@@ -207,27 +204,40 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       metrics,
       deployer: batchDeployer,
       storage,
-      processedSnapshotStorage,
-      processedSnapshots
+      processedSnapshotStorage
     },
     {
+      // reconnection options
+      bootstrapReconnection: {
+        reconnectTime: 5000 /* five second */,
+        reconnectRetryTimeExponent: 1.5,
+        maxReconnectionTime: 3_600_000 /* one hour */
+      },
+      syncingReconnection: {
+        reconnectTime: 1000 /* one second */,
+        reconnectRetryTimeExponent: 1.2,
+        maxReconnectionTime: 3_600_000 /* one hour */
+      },
+
+      // snapshot stream options
       tmpDownloadFolder: staticConfigs.tmpDownloadFolder,
-
-      // time between every poll to /pointer-changes
-      pointerChangesWaitTime: 5000,
-
-      // reconnection time for the whole catalyst
-      reconnectTime: 1000 /* one second */,
-      reconnectRetryTimeExponent: 1.2,
-      maxReconnectionTime: 3_600_000 /* one hour */,
-
       // download entities retry
       requestMaxRetries: 10,
-      requestRetryWaitTime: 5000
+      requestRetryWaitTime: 5000,
+
+      // pointer chagnes stream options
+      // time between every poll to /pointer-changes
+      pointerChangesWaitTime: 5000
     }
   )
 
-  const synchronizationState = SynchronizationState.BOOTSTRAPPING
+  let state = SynchronizationState.BOOTSTRAPPING
+  const synchronizationState = {
+    state,
+    toSyncing() {
+      state = SynchronizationState.SYNCING
+    }
+  }
 
   const retryFailedDeployments = createRetryFailedDeployments({
     env,
@@ -318,7 +328,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     ethereumProvider,
     fs,
     snapshotGenerator,
-    processedSnapshots,
     processedSnapshotStorage,
     clock
   }

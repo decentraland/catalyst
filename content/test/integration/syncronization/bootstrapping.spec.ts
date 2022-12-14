@@ -1,7 +1,7 @@
+import * as loggerComponent from '@well-known-components/logger'
 import future from 'fp-future'
-import ms from 'ms'
 import SQL from 'sql-template-strings'
-import { getProcessedSnapshots } from '../../../src/logic/database-queries/snapshots-queries'
+import { findSnapshotsStrictlyContainedInTimeRange, getProcessedSnapshots } from '../../../src/logic/database-queries/snapshots-queries'
 import * as timeRangeLogic from '../../../src/logic/time-range'
 import { Deployment } from '../../../src/service/deployments/types'
 import { assertDeploymentsAreReported, buildDeployment } from '../E2EAssertions'
@@ -10,16 +10,29 @@ import { buildDeployData } from '../E2ETestUtils'
 import { TestProgram } from '../TestProgram'
 
 loadTestEnvironment()('Bootstrapping synchronization tests', function (testEnv) {
-  const SYNC_INTERVAL: number = ms('1s')
   let server1: TestProgram, server2: TestProgram
   const initialTimestamp = 1577836800000
-  const emptySnapshotHash = 'bafkreig6sfhegnp4okzecgx3v6gj6pohh5qzw6zjtrdqtggx64743rkmz4'
+  // const emptySnapshotHash = 'bafkreig6sfhegnp4okzecgx3v6gj6pohh5qzw6zjtrdqtggx64743rkmz4'
+
+  let loggerIndex = 1
+
+  beforeAll(() => {
+    const originalCreateLogComponent = loggerComponent.createLogComponent
+    jest.spyOn(loggerComponent, 'createLogComponent').mockImplementation(async (components) => {
+      const logComponent = await originalCreateLogComponent(components)
+      const originalGetLogger = logComponent.getLogger
+      const assignedLoggerIndex = loggerIndex
+      logComponent.getLogger = (loggerName) => originalGetLogger(`server${assignedLoggerIndex}/${loggerName}`)
+      loggerIndex++
+      return logComponent
+    })
+  })
 
   let fakeNow: () => number
   let baseTimestamp = 0
 
   beforeEach(async () => {
-    ;[server1, server2] = await testEnv.configServer(SYNC_INTERVAL).andBuildMany(2)
+    ;[server1, server2] = await testEnv.configServer().andBuildMany(2)
     jest.restoreAllMocks()
 
     const now = Date.now()
@@ -29,6 +42,7 @@ loadTestEnvironment()('Bootstrapping synchronization tests', function (testEnv) 
     jest.spyOn(server2.components.clock, 'now').mockImplementation(fakeNow)
     jest.spyOn(server1.components.validator, 'validate').mockResolvedValue({ ok: true })
     jest.spyOn(server2.components.validator, 'validate').mockResolvedValue({ ok: true })
+    loggerIndex = 1
   })
 
   it('when a server bootstraps, it should processed the snapshots of other servers', async () => {
@@ -95,18 +109,20 @@ loadTestEnvironment()('Bootstrapping synchronization tests', function (testEnv) 
     advanceTime(6 * timeRangeLogic.MS_PER_DAY)
     if (server1.components.snapshotGenerator.start) await server1.components.snapshotGenerator.start({ started: jest.fn(), live: jest.fn(), getComponents: jest.fn() })
 
-    // now we start a new server 2 so it processes the 3 snapshots: the first one, the second one and the 5 empty ones (only one is processed)
-    // const markSnapshotProcessedSpy = jest.spyOn(server2.components.processedSnapshotStorage, 'markSnapshotProcessed')
-    // const saveProcessedSpy = jest.spyOn(server2.components.processedSnapshotStorage, 'saveProcessed')
-    const endStreamOfSpy = jest.spyOn(server2.components.processedSnapshots, 'endStreamOf')
-
+    // now we start a new server 2 so it processes the 3 snapshots: the first one, the second one and the 5 empty ones (only one of these processed)
+    const saveProcessedSpy = jest.spyOn(server2.components.processedSnapshotStorage, 'saveProcessed')
     await startProgramAndWaitUntilBootstrapFinishes(server2)
-
-    expect(endStreamOfSpy).toHaveBeenNthCalledWith(2, expect.anything(), 1)
-    expect(endStreamOfSpy).toHaveBeenNthCalledWith(1, emptySnapshotHash, 0)
+    const sevenDaysSnapshots = await findSnapshotsStrictlyContainedInTimeRange(server1.components, {
+      initTimestamp: initialTimestamp,
+      endTimestamp: fakeNow()
+    })
+    expect(sevenDaysSnapshots).toHaveLength(7)
+    expect(saveProcessedSpy).toBeCalledTimes(3)
+    for (const snapshotHash of sevenDaysSnapshots.map(s => s.hash)) {
+      expect(saveProcessedSpy).toBeCalledWith(snapshotHash)
+    }
 
     // now we deploy a new entity for the 8th day
-    // advanceTime(timeRangeLogic.MS_PER_DAY)
     const deployment3 = await deployEntityAtTimestamp(server1, 'p3', fakeNow() + 1)
     await assertDeploymentsAreReported(server1, deployment1, deployment2, deployment3)
 
@@ -119,13 +135,27 @@ loadTestEnvironment()('Bootstrapping synchronization tests', function (testEnv) 
     // now we run the sync from snapshots again in server 2 (would be nice to have a mechanism to restart the server)
     // it should save the weekly snapshot as already processed as it already processed the 7 ones that it's replacing
     // it should process only the last empty daily snapshot
-    endStreamOfSpy.mockReset()
+    saveProcessedSpy.mockReset()
     await server2.components.synchronizer.syncSnapshotsForSyncingServers()
-    expect(endStreamOfSpy).toHaveBeenNthCalledWith(1, expect.anything(), 1)
+    await server2.components.downloadQueue.onIdle()
+    await server2.components.batchDeployer.onIdle()
+    const eightDaysSnapshots = await findSnapshotsStrictlyContainedInTimeRange(server1.components, {
+      initTimestamp: initialTimestamp,
+      endTimestamp: fakeNow()
+    })
+    expect(eightDaysSnapshots).toHaveLength(2)
+    const oldSnapshots = new Set(sevenDaysSnapshots)
+    for (const newSnapshotHash of eightDaysSnapshots) {
+      expect(oldSnapshots.has(newSnapshotHash)).toBeFalsy()
+    }
+    expect(saveProcessedSpy).toBeCalledTimes(2)
+    for (const snapshotHash of eightDaysSnapshots.map(s => s.hash)) {
+      expect(saveProcessedSpy).toBeCalledWith(snapshotHash)
+    }
   })
 
   it('when a server bootstraps, it should persist failed deployments but mark as processed the snapshots', async () => {
-    jest.spyOn(server2.components.validator, 'validate').mockResolvedValue({ ok: false })
+    jest.spyOn(server2.components.validator, 'validate').mockResolvedValue({ ok: false, errors: ['error set in the test'] })
 
     // it should create 7 daily empty snapshots starting at initialTimestamp
     await server1.startProgram()

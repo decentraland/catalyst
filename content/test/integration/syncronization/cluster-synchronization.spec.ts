@@ -1,5 +1,4 @@
 import * as loggerComponent from '@well-known-components/logger'
-import ms from 'ms'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import {
   assertDeploymentsAreReported,
@@ -14,7 +13,6 @@ import { awaitUntil, buildDeployData, buildDeployDataAfterEntity } from '../E2ET
 import { TestProgram } from '../TestProgram'
 
 loadTestEnvironment()('End 2 end synchronization tests', function (testEnv) {
-  const SYNC_INTERVAL: number = ms('1s')
   let server1: TestProgram, server2: TestProgram, server3: TestProgram
 
   let loggerIndex = 1
@@ -116,7 +114,7 @@ loadTestEnvironment()('End 2 end synchronization tests', function (testEnv) {
    */
   // TODO: [new-sync]
   xit("When a lost update is detected, previous entities are deleted but new ones aren't", async () => {
-    ;[server1, server2, server3] = await testEnv.configServer(SYNC_INTERVAL).andBuildMany(3)
+    ;[server1, server2, server3] = await testEnv.configServer().andBuildMany(3)
     makeNoopValidator(server1.components)
     makeNoopValidator(server2.components)
     makeNoopValidator(server3.components)
