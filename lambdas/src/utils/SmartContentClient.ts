@@ -44,13 +44,17 @@ export class SmartContentClient implements ContentAPI {
   }
 
   async fetchAuditInfo(type: EntityType, id: string, options?: RequestOptions) {
-    const client = await this.getClient()
-    return client.fetchAuditInfo(type, id, options)
+    const contentUrl = (await this.getClient()).getContentUrl()
+    const fetcher = new Fetcher()
+
+    return (await fetcher.fetch(`${contentUrl}/audit/${type}/${id}`, options)).json()
   }
 
   async fetchContentStatus(options?: RequestOptions): Promise<ServerStatus> {
-    const client = await this.getClient()
-    return client.fetchContentStatus(options)
+    const contentUrl = (await this.getClient()).getContentUrl()
+    const fetcher = new Fetcher()
+
+    return (await fetcher.fetch(`${contentUrl}/status`, options)).json()
   }
 
   async downloadContent(contentHash: string, options?: RequestOptions): Promise<Buffer> {
@@ -58,18 +62,45 @@ export class SmartContentClient implements ContentAPI {
     return client.downloadContent(contentHash, options)
   }
 
+  private KNOWN_HEADERS: string[] = [
+    'Content-Type',
+    'Access-Control-Allow-Origin',
+    'Access-Control-Expose-Headers',
+    'ETag',
+    'Date',
+    'Content-Length',
+    'Cache-Control'
+  ]
+
+  private findFixedHeader(headerName: string): string | undefined {
+    return this.KNOWN_HEADERS.find((item) => item.toLowerCase() === headerName.toLowerCase())
+  }
+
+  private onlyKnownHeaders(headersFromResponse: Headers): Map<string, string> {
+    const headers: Map<string, string> = new Map()
+    headersFromResponse?.forEach((headerValue, headerName) => {
+      const fixedHeaderFound = this.findFixedHeader(headerName)
+      if (fixedHeaderFound) {
+        headers.set(fixedHeaderFound, headerValue)
+      }
+    })
+    return headers
+  }
+
   async pipeContent(
     contentHash: string,
     responseTo: any,
     options?: Partial<CompleteRequestOptions>
   ): Promise<Map<string, string>> {
-    const client = await this.getClient()
-    return await client.pipeContent(contentHash, responseTo, options)
+    const contentUrl = (await this.getClient()).getContentUrl()
+    const fetcher = new Fetcher()
+    return this.onlyKnownHeaders(await fetcher.fetchPipe(`${contentUrl}/contents/${contentHash}`, responseTo, options))
   }
 
   async isContentAvailable(cids: string[], options?: RequestOptions): Promise<AvailableContentResult> {
-    const client = await this.getClient()
-    return client.isContentAvailable(cids, options)
+    // TODO: Upgrade catalyst-client package to avoid implementing this
+    // To be done as soon as the PR on catalyst-client is merged
+    throw new Error('New deployments are currently not supported')
   }
 
   deployEntity(deployData: DeploymentData, fix?: boolean, options?: RequestOptions): Promise<number> {
