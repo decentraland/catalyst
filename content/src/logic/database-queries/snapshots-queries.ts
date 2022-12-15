@@ -161,6 +161,23 @@ export async function deleteSnapshotsInTimeRange(
   await database.queryWithValues(query, 'save_snapshot')
 }
 
+export async function getNumberOfActiveEntitiesInTimeRange(
+  components: Pick<AppComponents, 'database'>,
+  timeRange: TimeRange
+): Promise<number> {
+  const result = await components.database.queryWithValues<{ numberOfEntities: number }>(
+    SQL`
+  SELECT
+    COUNT(*) AS "numberOfEntities"
+  FROM deployments
+  WHERE deleter_deployment IS NULL
+  AND entity_timestamp BETWEEN to_timestamp(${timeRange.initTimestamp} / 1000.0) AND to_timestamp(${timeRange.endTimestamp} / 1000.0)
+  `,
+    'number_of_active_entities'
+  )
+  return result.rows[0].numberOfEntities
+}
+
 export async function saveProcessedSnapshot(
   database: AppComponents['database'],
   processedSnapshotHash: string,
