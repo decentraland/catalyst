@@ -3,6 +3,7 @@ import { AppComponents } from '../types'
 import {
   deleteSnapshotsInTimeRange,
   findSnapshotsStrictlyContainedInTimeRange,
+  getNumberOfActiveEntitiesInTimeRange,
   getSnapshotHashesNotInTimeRange,
   saveSnapshot,
   streamActiveDeploymentsInTimeRange
@@ -71,8 +72,15 @@ export async function generateSnapshotsInMultipleTimeRanges(
     const multipleSnapshotsShouldBeReplaced = isTimeRangeCoveredByOtherSnapshots && savedSnapshots.length > 1
     const existSnapshots = await components.storage.existMultiple(savedSnapshots.map((s) => s.hash))
     const allSnapshotsAreStored = Array.from(existSnapshots.values()).every((exist) => exist == true)
+    const snapshotHasInactiveEntities =
+      savedSnapshots.length == 1 &&
+      (await getNumberOfActiveEntitiesInTimeRange(components, savedSnapshots[0].timeRange)) <
+        savedSnapshots[0].numberOfEntities
     const shouldGenerateNewSnapshot =
-      !isTimeRangeCoveredByOtherSnapshots || multipleSnapshotsShouldBeReplaced || !allSnapshotsAreStored
+      !isTimeRangeCoveredByOtherSnapshots ||
+      multipleSnapshotsShouldBeReplaced ||
+      !allSnapshotsAreStored ||
+      snapshotHasInactiveEntities
 
     if (shouldGenerateNewSnapshot) {
       logger.debug(
@@ -82,7 +90,8 @@ export async function generateSnapshotsInMultipleTimeRanges(
           ).toISOString()}]`,
           isTimeRangeCoveredByOtherSnapshots,
           multipleSnapshotsShouldBeReplaced,
-          allSnapshotsAreStored
+          allSnapshotsAreStored,
+          snapshotHasInactiveEntities
         })
       )
 
