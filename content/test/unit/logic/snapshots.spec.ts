@@ -113,8 +113,10 @@ describe('generate snapshot in multiple', () => {
   let logs: ILoggerComponent
   const saveFn = snapshotQueries.saveSnapshot
   const deleteFn = snapshotQueries.deleteSnapshotsInTimeRange
+  // const activeEntitiesFn = snapshotQueries.getNumberOfActiveEntitiesInTimeRange
   let saveSpy: jest.SpyInstance<ReturnType<typeof saveFn>, Parameters<typeof saveFn>>
   let deleteSpy: jest.SpyInstance<ReturnType<typeof deleteFn>, Parameters<typeof deleteFn>>
+  // let activeEntitiesSpy: jest.SpyInstance<ReturnType<typeof activeEntitiesFn>, Parameters<typeof activeEntitiesFn>>
 
   beforeAll(async () => {
     logs = await createLogComponent({ config: createConfigComponent({ LOG_LEVEL: 'DEBUG' }) })
@@ -125,6 +127,7 @@ describe('generate snapshot in multiple', () => {
     jest.spyOn(database, 'transaction').mockImplementation(async (f) => { await f(database) })
     saveSpy = jest.spyOn(snapshotQueries, 'saveSnapshot').mockImplementation()
     deleteSpy = jest.spyOn(snapshotQueries, 'deleteSnapshotsInTimeRange').mockImplementation()
+    jest.spyOn(snapshotQueries, 'getNumberOfActiveEntitiesInTimeRange').mockImplementation()
     jest.spyOn(snapshotQueries, 'getSnapshotHashesNotInTimeRange').mockResolvedValue(new Set())
   })
 
