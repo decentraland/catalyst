@@ -1,4 +1,3 @@
-import { EntityType } from '@dcl/schemas'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TimeRefreshedDataHolder } from '../../../utils/TimeRefreshedDataHolder'
 import { ItemFilters, LambdasWearable, WearableId } from '../types'
@@ -61,7 +60,8 @@ export class OffChainWearablesManager {
     const localDefinitions: LocalOffChainWearables = []
 
     for (const [collectionId, wearableIds] of Object.entries(collections)) {
-      const entities = await client.fetchEntitiesByPointers(EntityType.WEARABLE, wearableIds)
+      const entities = await client.fetchEntitiesByPointers(wearableIds)
+
       entities
         .map((entity) => translateEntityIntoWearable(client, entity))
         .filter((wearable): wearable is LambdasWearable => !!wearable)

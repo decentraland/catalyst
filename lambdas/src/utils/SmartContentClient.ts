@@ -7,13 +7,7 @@ import {
   DeploymentData,
   DeploymentPreparationData
 } from 'dcl-catalyst-client'
-import {
-  AvailableContentResult,
-  CompleteRequestOptions,
-  Fetcher,
-  RequestOptions,
-  ServerStatus
-} from 'dcl-catalyst-commons'
+import { CompleteRequestOptions, Fetcher, RequestOptions, ServerStatus } from 'dcl-catalyst-commons'
 import future, { IFuture } from 'fp-future'
 import log4js from 'log4js'
 /**
@@ -28,19 +22,19 @@ export class SmartContentClient implements ContentAPI {
 
   constructor(private readonly externalContentServerUrl: string) {}
 
-  async fetchEntitiesByPointers(type: EntityType, pointers: string[], options?: RequestOptions): Promise<Entity[]> {
+  async fetchEntitiesByPointers(pointers: string[], options?: RequestOptions): Promise<Entity[]> {
     const client = await this.getClient()
-    return client.fetchEntitiesByPointers(type, pointers, options)
+    return client.fetchEntitiesByPointers(pointers, options)
   }
 
-  async fetchEntitiesByIds(type: EntityType, ids: string[], options?: RequestOptions): Promise<Entity[]> {
+  async fetchEntitiesByIds(ids: string[], options?: RequestOptions): Promise<Entity[]> {
     const client = await this.getClient()
-    return client.fetchEntitiesByIds(type, ids, options)
+    return client.fetchEntitiesByIds(ids, options)
   }
 
-  async fetchEntityById(type: EntityType, id: string, options?: RequestOptions): Promise<Entity> {
+  async fetchEntityById(id: string, options?: RequestOptions): Promise<Entity> {
     const client = await this.getClient()
-    return client.fetchEntityById(type, id, options)
+    return client.fetchEntityById(id, options)
   }
 
   async fetchAuditInfo(type: EntityType, id: string, options?: RequestOptions) {
@@ -95,12 +89,6 @@ export class SmartContentClient implements ContentAPI {
     const contentUrl = (await this.getClient()).getContentUrl()
     const fetcher = new Fetcher()
     return this.onlyKnownHeaders(await fetcher.fetchPipe(`${contentUrl}/contents/${contentHash}`, responseTo, options))
-  }
-
-  async isContentAvailable(cids: string[], options?: RequestOptions): Promise<AvailableContentResult> {
-    // TODO: Upgrade catalyst-client package to avoid implementing this
-    // To be done as soon as the PR on catalyst-client is merged
-    throw new Error('New deployments are currently not supported')
   }
 
   deployEntity(deployData: DeploymentData, fix?: boolean, options?: RequestOptions): Promise<number> {
