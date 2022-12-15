@@ -75,6 +75,17 @@ export async function generateSnapshotsInMultipleTimeRanges(
       !isTimeRangeCoveredByOtherSnapshots || multipleSnapshotsShouldBeReplaced || !allSnapshotsAreStored
 
     if (shouldGenerateNewSnapshot) {
+      logger.debug(
+        JSON.stringify({
+          generatingInterval: `[${new Date(timeRange.initTimestamp).toISOString()}, ${new Date(
+            timeRange.endTimestamp
+          ).toISOString()}]`,
+          isTimeRangeCoveredByOtherSnapshots,
+          multipleSnapshotsShouldBeReplaced,
+          allSnapshotsAreStored
+        })
+      )
+
       const { hash, numberOfEntities } = await generateAndStoreSnapshot(components, timeRange)
       const savedSnapshotHashes = savedSnapshots.map((s) => s.hash)
       await components.database.transaction(async (txDatabase) => {
