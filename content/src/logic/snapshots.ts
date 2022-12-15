@@ -97,7 +97,7 @@ export async function generateSnapshotsInMultipleTimeRanges(
           timeRange
         )
         const snapshotHashesToDeleteInStorage = savedSnapshotHashes.filter(
-          (hash) => !snapshotHashesUsedInOtherTimeRanges.has(hash)
+          (hash) => !snapshotHashesUsedInOtherTimeRanges.has(hash) && hash != newSnapshot.hash
         )
         // The order is important, the snapshot to save could have the same hash of one of the ones to be deleted
         await deleteSnapshotsInTimeRange(txDatabase, savedSnapshotHashes, timeRange)
