@@ -65,7 +65,8 @@ export async function findSnapshotsStrictlyContainedInTimeRange(
     date_part('epoch', init_timestamp) * 1000  AS "initTimestamp",
     date_part('epoch', end_timestamp) * 1000  AS "endTimestamp",
     replaced_hashes AS "replacedSnapshotHashes",
-    number_of_entities AS "numberOfEntities"
+    number_of_entities AS "numberOfEntities",
+    generation_time AS "generationTimestamp"
   FROM snapshots s
   WHERE init_timestamp >= to_timestamp(${timerange.initTimestamp} / 1000.0)
   AND end_timestamp <= to_timestamp(${timerange.endTimestamp} / 1000.0)
@@ -83,8 +84,9 @@ export async function findSnapshotsStrictlyContainedInTimeRange(
       endTimestamp: number
       replacedSnapshotHashes: string[]
       numberOfEntities: number
+      generationTimestamp: number
     }>(query, 'find_snapshots_in_timerange')
-  ).rows.map(({ hash, initTimestamp, endTimestamp, replacedSnapshotHashes, numberOfEntities }) => {
+  ).rows.map(({ hash, initTimestamp, endTimestamp, replacedSnapshotHashes, numberOfEntities, generationTimestamp }) => {
     return {
       hash,
       timeRange: {
@@ -92,15 +94,15 @@ export async function findSnapshotsStrictlyContainedInTimeRange(
         endTimestamp
       },
       replacedSnapshotHashes,
-      numberOfEntities
+      numberOfEntities,
+      generationTimestamp
     }
   })
 }
 
 export async function saveSnapshot(
   database: AppComponents['database'],
-  snapshotMetadata: NewSnapshotMetadata,
-  generationTimestampSecs: number
+  snapshotMetadata: NewSnapshotMetadata
 ): Promise<void> {
   const query = SQL`
   INSERT INTO snapshots
@@ -112,7 +114,7 @@ export async function saveSnapshot(
     to_timestamp(${snapshotMetadata.timeRange.endTimestamp} / 1000.0),
     ${snapshotMetadata.replacedSnapshotHashes ?? []},
     ${snapshotMetadata.numberOfEntities},
-    to_timestamp(${generationTimestampSecs} / 1000.0)
+    to_timestamp(${snapshotMetadata.generationTimestamp} / 1000.0)
   )
   RETURNING hash
   `

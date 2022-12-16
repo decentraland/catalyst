@@ -100,6 +100,10 @@ loadStandaloneTestEnvironment()('snapshot generator - ', (testEnv) => {
       await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(7))
       const snapshots = await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(8))
 
+      // It's called one time every time a snapshot is created
+      // 7 daily + (1 weekly + 1 daily)
+      expect(clockSpy).toBeCalledTimes(9)
+
       const weeklySnapshot = snapshots[0]
       expect(weeklySnapshot).toEqual({
         hash: emptySnapshot.hash,
@@ -113,7 +117,8 @@ loadStandaloneTestEnvironment()('snapshot generator - ', (testEnv) => {
           emptySnapshot.hash,
           emptySnapshot.hash,
           emptySnapshot.hash
-        ]
+        ],
+        generationTimestamp: clockSpy.mock.results[7].value
       })
       // daily snapshot
       expect(snapshots[1]).toEqual({
@@ -123,7 +128,8 @@ loadStandaloneTestEnvironment()('snapshot generator - ', (testEnv) => {
           endTimestamp: timeRangeOfDaysFromInitialTimestamp(8).endTimestamp
         },
         numberOfEntities: 0,
-        replacedSnapshotHashes: []
+        replacedSnapshotHashes: [],
+        generationTimestamp: clockSpy.mock.results[8].value
       })
       // It's called one time every time a snapshot is created
       // 7 daily + (1 weekly + 1 daily)
@@ -145,12 +151,17 @@ loadStandaloneTestEnvironment()('snapshot generator - ', (testEnv) => {
       // now we supose the server is down for a few days, so 6th and 7th daily snapshots are not generated
       const snapshots = await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(8))
 
+      // It's called one time every time a snapshot is created
+      // 5 daily + (1 weekly + 1 daily)
+      expect(clockSpy).toBeCalledTimes(7)
+
       const weeklySnapshot = snapshots[0]
       expect(weeklySnapshot).toEqual({
         hash: emptySnapshot.hash,
         timeRange: timeRangeOfDaysFromInitialTimestamp(7),
         numberOfEntities: 0,
-        replacedSnapshotHashes: []
+        replacedSnapshotHashes: [],
+        generationTimestamp: clockSpy.mock.results[5].value
       })
       // daily snapshot
       expect(snapshots[1]).toEqual({
@@ -160,11 +171,9 @@ loadStandaloneTestEnvironment()('snapshot generator - ', (testEnv) => {
           endTimestamp: timeRangeOfDaysFromInitialTimestamp(8).endTimestamp
         },
         numberOfEntities: 0,
-        replacedSnapshotHashes: []
+        replacedSnapshotHashes: [],
+        generationTimestamp: clockSpy.mock.results[6].value
       })
-      // It's called one time every time a snapshot is created
-      // 5 daily + (1 weekly + 1 daily)
-      expect(clockSpy).toBeCalledTimes(7)
     }
   )
 

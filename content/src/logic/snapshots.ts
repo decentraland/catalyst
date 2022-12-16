@@ -15,6 +15,7 @@ export type NewSnapshotMetadata = {
   timeRange: TimeRange
   numberOfEntities: number
   replacedSnapshotHashes?: string[]
+  generationTimestamp: number
 }
 
 export async function generateAndStoreSnapshot(
@@ -100,7 +101,13 @@ export async function generateSnapshotsInMultipleTimeRanges(
       await components.database.transaction(async (txDatabase) => {
         const replacedSnapshotHashes =
           isTimeRangeCoveredByOtherSnapshots || snapshotHasInactiveEntities ? savedSnapshotHashes : []
-        const newSnapshot = { hash, timeRange, replacedSnapshotHashes, numberOfEntities }
+        const newSnapshot = {
+          hash,
+          timeRange,
+          replacedSnapshotHashes,
+          numberOfEntities,
+          generationTimestamp: components.clock.now()
+        }
         const snapshotHashesUsedInOtherTimeRanges = await getSnapshotHashesNotInTimeRange(
           txDatabase,
           savedSnapshotHashes,
@@ -111,7 +118,7 @@ export async function generateSnapshotsInMultipleTimeRanges(
         )
         // The order is important, the snapshot to save could have the same hash of one of the ones to be deleted
         await deleteSnapshotsInTimeRange(txDatabase, savedSnapshotHashes, timeRange)
-        await saveSnapshot(txDatabase, newSnapshot, components.clock.now())
+        await saveSnapshot(txDatabase, newSnapshot)
         await components.storage.delete(snapshotHashesToDeleteInStorage)
         snapshotMetadatas.push(newSnapshot)
       })
