@@ -6,6 +6,7 @@ import {
   getNumberOfActiveEntitiesInTimeRange,
   getSnapshotHashesNotInTimeRange,
   saveSnapshot,
+  snapshotIsOutdated,
   streamActiveDeploymentsInTimeRange
 } from './database-queries/snapshots-queries'
 import { divideTimeInYearsMonthsWeeksAndDays, intervalSizeLabel, isTimeRangeCoveredBy, TimeRange } from './time-range'
@@ -77,11 +78,15 @@ export async function generateSnapshotsInMultipleTimeRanges(
       savedSnapshots.length == 1 &&
       (await getNumberOfActiveEntitiesInTimeRange(components, savedSnapshots[0].timeRange)) <
         savedSnapshots[0].numberOfEntities
+
+    const isOutdated = savedSnapshots.length == 1 && (await snapshotIsOutdated(components, savedSnapshots[0]))
+
     const shouldGenerateNewSnapshot =
       !isTimeRangeCoveredByOtherSnapshots ||
       multipleSnapshotsShouldBeReplaced ||
       !allSnapshotsAreStored ||
-      snapshotHasInactiveEntities
+      snapshotHasInactiveEntities ||
+      isOutdated
 
     if (shouldGenerateNewSnapshot) {
       logger.debug(
@@ -92,7 +97,8 @@ export async function generateSnapshotsInMultipleTimeRanges(
           isTimeRangeCoveredByOtherSnapshots,
           multipleSnapshotsShouldBeReplaced,
           allSnapshotsAreStored,
-          snapshotHasInactiveEntities
+          snapshotHasInactiveEntities,
+          isOutdated
         })
       )
 

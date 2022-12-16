@@ -66,7 +66,7 @@ export async function findSnapshotsStrictlyContainedInTimeRange(
     date_part('epoch', end_timestamp) * 1000  AS "endTimestamp",
     replaced_hashes AS "replacedSnapshotHashes",
     number_of_entities AS "numberOfEntities",
-    generation_time AS "generationTimestamp"
+    date_part('epoch', generation_time) * 1000  AS "generationTimestamp"
   FROM snapshots s
   WHERE init_timestamp >= to_timestamp(${timerange.initTimestamp} / 1000.0)
   AND end_timestamp <= to_timestamp(${timerange.endTimestamp} / 1000.0)
@@ -161,6 +161,28 @@ export async function deleteSnapshotsInTimeRange(
   hashes.forEach((hash) => query.append(hash))
   query.append(`);`)
   await database.queryWithValues(query, 'save_snapshot')
+}
+
+/**
+ * A snapshot is outdated if there are entities with entity timestamp within the time range of the snapshot, but
+ * they were not included because they were deployed after the generation timestamp of the snapshot.
+ * In this case, the snapshot should be recreated in order to include these entities.
+ */
+export async function snapshotIsOutdated(
+  components: Pick<AppComponents, 'database'>,
+  snapshot: NewSnapshotMetadata
+): Promise<boolean> {
+  const result = await components.database.queryWithValues<{ numberOfEntities: number }>(
+    SQL`
+  SELECT 1 FROM deployments
+  WHERE deleter_deployment IS null
+  AND entity_timestamp BETWEEN to_timestamp(${snapshot.timeRange.initTimestamp} / 1000.0) AND to_timestamp(${snapshot.timeRange.endTimestamp} / 1000.0)
+  AND local_timestamp > to_timestamp(${snapshot.generationTimestamp} / 1000.0);
+
+  `,
+    'snapshot_is_outdated'
+  )
+  return result.rowCount > 0
 }
 
 export async function getNumberOfActiveEntitiesInTimeRange(

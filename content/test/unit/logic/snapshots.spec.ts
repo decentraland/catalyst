@@ -128,6 +128,7 @@ describe('generate snapshot in multiple', () => {
     deleteSpy = jest.spyOn(snapshotQueries, 'deleteSnapshotsInTimeRange').mockImplementation()
     jest.spyOn(snapshotQueries, 'getNumberOfActiveEntitiesInTimeRange').mockImplementation()
     jest.spyOn(snapshotQueries, 'getSnapshotHashesNotInTimeRange').mockResolvedValue(new Set())
+    jest.spyOn(snapshotQueries, 'snapshotIsOutdated').mockResolvedValue(false)
     generationTimestamp = Date.now()
     jest.spyOn(clock, 'now').mockReturnValue(generationTimestamp)
   })
