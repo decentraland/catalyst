@@ -70,12 +70,6 @@ export async function findSnapshotsStrictlyContainedInTimeRange(
   FROM snapshots s
   WHERE init_timestamp >= to_timestamp(${timerange.initTimestamp} / 1000.0)
   AND end_timestamp <= to_timestamp(${timerange.endTimestamp} / 1000.0)
-  AND NOT EXISTS (
-    SELECT id FROM deployments
-      WHERE deleter_deployment IS null
-      AND entity_timestamp BETWEEN s.init_timestamp AND s.end_timestamp
-      AND local_timestamp > generation_time
-    );
   `
   return (
     await components.database.queryWithValues<{
