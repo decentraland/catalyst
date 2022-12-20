@@ -27,6 +27,7 @@ import { createDatabaseComponent } from './ports/postgres'
 import { createProcessedSnapshotStorage } from './ports/processedSnapshotStorage'
 import { createSequentialTaskExecutor } from './ports/sequecuentialTaskExecutor'
 import { createSnapshotGenerator } from './ports/snapshotGenerator'
+import { createSynchronizationState } from './ports/synchronizationState'
 import { createSystemProperties } from './ports/system-properties'
 import { ContentAuthenticator } from './service/auth/Authenticator'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
@@ -42,7 +43,7 @@ import { ContentCluster } from './service/synchronization/ContentCluster'
 import { createRetryFailedDeployments } from './service/synchronization/retryFailedDeployments'
 import { createServerValidator } from './service/validations/server'
 import { createExternalCalls, createSubGraphsComponent, createValidator } from './service/validations/validator'
-import { AppComponents, SynchronizationState } from './types'
+import { AppComponents } from './types'
 
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
   const clock = createClock()
@@ -231,13 +232,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     }
   )
 
-  let state = SynchronizationState.BOOTSTRAPPING
-  const synchronizationState = {
-    state,
-    toSyncing() {
-      state = SynchronizationState.SYNCING
-    }
-  }
+  const synchronizationState = createSynchronizationState({ logs })
 
   const retryFailedDeployments = createRetryFailedDeployments({
     env,

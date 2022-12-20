@@ -1,0 +1,22 @@
+import { AppComponents } from '../types'
+
+export enum State {
+  BOOTSTRAPPING = 'Bootstrapping',
+  SYNCING = 'Syncing'
+}
+
+export interface SynchronizationState {
+  state: State
+  toSyncing: () => void
+}
+
+export function createSynchronizationState(components: Pick<AppComponents, 'logs'>): SynchronizationState {
+  let state = State.BOOTSTRAPPING
+  return {
+    state,
+    toSyncing() {
+      components.logs.getLogger('synchronization-state').info('Switching to syncing state...')
+      state = State.SYNCING
+    }
+  }
+}

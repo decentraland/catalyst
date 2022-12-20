@@ -22,6 +22,7 @@ import { FSComponent } from './ports/fs'
 import { IDatabaseComponent } from './ports/postgres'
 import { ISequentialTaskExecutorComponent } from './ports/sequecuentialTaskExecutor'
 import { SnapshotGenerator } from './ports/snapshotGenerator'
+import { SynchronizationState } from './ports/synchronizationState'
 import { SystemProperties } from './ports/system-properties'
 import { ContentAuthenticator } from './service/auth/Authenticator'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
@@ -51,10 +52,7 @@ export type AppComponents = {
   }
   batchDeployer: IDeployerComponent
   synchronizer: SynchronizerComponent
-  synchronizationState: {
-    state: SynchronizationState
-    toSyncing: () => void
-  }
+  synchronizationState: SynchronizationState
   deployedEntitiesBloomFilter: DeployedEntitiesBloomFilter
   controller: Controller
   snapshotManager: ISnapshotManager
@@ -127,8 +125,3 @@ export function parseEntityType(strType: string): EntityType {
 }
 
 export type DeploymentId = number
-
-export enum SynchronizationState {
-  BOOTSTRAPPING = 'Bootstrapping',
-  SYNCING = 'Syncing'
-}

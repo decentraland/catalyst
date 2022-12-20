@@ -53,7 +53,6 @@ export async function createDenylist(
   const loadDenylistFromFile = async () => {
     if (!fileName) return
     if (!(await components.fs.existPath(fileName))) {
-      logger.info("Denylist file doesn't exist", { fileName })
       return
     }
 
