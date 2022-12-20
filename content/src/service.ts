@@ -27,9 +27,11 @@ export async function main(program: Lifecycle.EntryPointParameters<AppComponents
       await components.downloadQueue.onIdle()
       await components.batchDeployer.onIdle()
       components.synchronizationState.toSyncing()
+      components.metrics.observe('dcl_content_server_sync_state', {}, 1)
     })
     await components.synchronizer.syncWithServers(new Set(components.contentCluster.getAllServersInCluster()))
     components.contentCluster.onSyncFinished(components.synchronizer.syncWithServers)
+  } else {
+    components.metrics.observe('dcl_content_server_sync_state', {}, 1)
   }
-  components.metrics.observe('dcl_content_server_sync_state', {}, 1)
 }
