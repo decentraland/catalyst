@@ -631,7 +631,7 @@ export class Controller {
       ethNetwork: this.ethNetwork,
       synchronizationStatus: {
         ...this.components.contentCluster.getStatus(),
-        synchronizationState: this.components.synchronizationState.state
+        synchronizationState: this.components.synchronizationState.getState()
       }
     })
   }
