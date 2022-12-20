@@ -17,10 +17,10 @@
     "test:unit": "jest --selectProjects unit --runInBand --forceExit --detectOpenHandles --coverage"
   },
   "dependencies": {
-    "@dcl/block-indexer": "1.0.0-20221104165356.commit-33f3aac",
+    "@dcl/block-indexer": "1.0.0-20221219151053.commit-69f0ed7",
     "@dcl/catalyst-api-specs": "^2.0.14",
     "@dcl/catalyst-contracts": "^3.0.0",
-    "@dcl/content-validator": "4.0.18-20221107162835.commit-f4726e5",
+    "@dcl/content-validator": "^4.0.21-20221220140243.commit-bc03010",
     "@dcl/crypto": "^3.2.2",
     "@dcl/hashing": "^1.1.1",
     "@dcl/schemas": "^5.26.1",

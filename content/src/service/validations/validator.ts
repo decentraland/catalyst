@@ -43,8 +43,24 @@ export async function createSubGraphsComponent(
 
   const l1EthereumProvider: EthereumProvider = createEthereumProvider(components.ethereumProvider)
   const l2EthereumProvider: EthereumProvider = createEthereumProvider(components.maticProvider)
-  const l1BlockSearch = createAvlBlockSearch(createBlockRepository(createCachingEthereumProvider(l1EthereumProvider)))
-  const l2BlockSearch = createAvlBlockSearch(createBlockRepository(createCachingEthereumProvider(l2EthereumProvider)))
+  const l1BlockSearch = createAvlBlockSearch({
+    blockRepository: createBlockRepository({
+      metrics: components.metrics,
+      logs: components.logs,
+      ethereumProvider: createCachingEthereumProvider(l1EthereumProvider)
+    }),
+    metrics: components.metrics,
+    logs: components.logs
+  })
+  const l2BlockSearch = createAvlBlockSearch({
+    blockRepository: createBlockRepository({
+      metrics: components.metrics,
+      logs: components.logs,
+      ethereumProvider: createCachingEthereumProvider(l2EthereumProvider)
+    }),
+    metrics: components.metrics,
+    logs: components.logs
+  })
 
   const converter: (row: any[]) => { key: number; value: BlockInfo } = (row) => ({
     key: parseInt(row[0]),
@@ -68,28 +84,11 @@ export async function createSubGraphsComponent(
   await warmUpCache(l1BlockSearch.tree, ethNetwork)
   await warmUpCache(l2BlockSearch.tree, ethNetwork === 'mainnet' ? 'polygon' : 'mumbai')
 
-  // const converter: (k: number, v: BlockInfo) => any[] = (k, v) => [k, v.block]
-  // const callback = (tree: AvlTree<number, BlockInfo>, networkName: string) => async () => {
-  //   console.log(`saving snapshots for ${networkName}`)
-  //   const start = new Date().getTime()
-  //   try {
-  //     await saveTree(tree, `tree-export-${networkName}-${start}.csv`, converter)
-  //   } finally {
-  //     console.log(`saving snapshot for ${networkName} took ${new Date().getTime() - start} ms.`)
-  //   }
-  // }
-  // setInterval(callback(l1BlockSearch.tree, 'l1'), 60 * 60_000) // Every hour
-  // setInterval(callback(l2BlockSearch.tree, 'l2'), 60 * 60_000) // Every hour
-
   return {
     L1: {
       landManager: await createSubgraphComponent(
         baseComponents,
         components.env.getConfig(EnvironmentConfig.LAND_MANAGER_SUBGRAPH_URL)
-      ),
-      blocks: await createSubgraphComponent(
-        baseComponents,
-        components.env.getConfig(EnvironmentConfig.BLOCKS_L1_SUBGRAPH_URL)
       ),
       collections: await createSubgraphComponent(
         baseComponents,
@@ -101,10 +100,6 @@ export async function createSubGraphsComponent(
       )
     },
     L2: {
-      blocks: await createSubgraphComponent(
-        baseComponents,
-        components.env.getConfig(EnvironmentConfig.BLOCKS_L2_SUBGRAPH_URL)
-      ),
       collections: await createSubgraphComponent(
         baseComponents,
         components.env.getConfig(EnvironmentConfig.COLLECTIONS_L2_SUBGRAPH_URL)
