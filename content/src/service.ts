@@ -28,6 +28,12 @@ export async function main(program: Lifecycle.EntryPointParameters<AppComponents
       await components.batchDeployer.onIdle()
       components.synchronizationState.toSyncing()
       components.metrics.observe('dcl_content_server_sync_state', {}, 1)
+      // Configure retry for failed deployments
+      components.retryFailedDeployments.schedule().catch(() => {
+        components.logs
+          .getLogger('retryFailedDeployments')
+          .error('There was an error during the retry of failed deployments.')
+      })
     })
     await components.synchronizer.syncWithServers(new Set(components.contentCluster.getAllServersInCluster()))
     components.contentCluster.onSyncFinished(components.synchronizer.syncWithServers)
