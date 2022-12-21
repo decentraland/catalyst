@@ -1,4 +1,5 @@
 import { Entity } from '@dcl/schemas'
+import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { FailedDeployment } from '../ports/failedDeployments'
 import { IDatabaseComponent } from '../ports/postgres'
@@ -60,6 +61,7 @@ export async function retryFailedDeploymentExecution(
   const contentServersUrls = components.contentCluster.getAllServersInCluster()
 
   // TODO: Implement an exponential backoff for retrying
+  let numberOfDeploymentsTried = 0
   for (const failedDeployment of failedDeployments) {
     // Build Deployment from other servers
     const { entityId, entityType, authChain } = failedDeployment
@@ -87,6 +89,10 @@ export async function retryFailedDeploymentExecution(
       }
     } else {
       logs.info(`Can't retry failed deployment. Because it lacks of authChain`, { entityId, entityType })
+    }
+    numberOfDeploymentsTried++
+    if (numberOfDeploymentsTried % 5 == 0) {
+      await sleep(3000)
     }
   }
 }
