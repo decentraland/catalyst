@@ -73,7 +73,7 @@ export async function generateSnapshotsInMultipleTimeRanges(
     )
     const multipleSnapshotsShouldBeReplaced = isTimeRangeCoveredByOtherSnapshots && savedSnapshots.length > 1
     const existSnapshots = await components.storage.existMultiple(savedSnapshots.map((s) => s.hash))
-    const allSnapshotsAreStored = Array.from(existSnapshots.values()).every((exist) => exist == true)
+    const allSavedSnapshotsAreStored = Array.from(existSnapshots.values()).every((exist) => exist == true)
     const snapshotHasInactiveEntities =
       savedSnapshots.length == 1 &&
       (await getNumberOfActiveEntitiesInTimeRange(components, savedSnapshots[0].timeRange)) <
@@ -84,7 +84,7 @@ export async function generateSnapshotsInMultipleTimeRanges(
     const shouldGenerateNewSnapshot =
       !isTimeRangeCoveredByOtherSnapshots ||
       multipleSnapshotsShouldBeReplaced ||
-      !allSnapshotsAreStored ||
+      !allSavedSnapshotsAreStored ||
       snapshotHasInactiveEntities ||
       isOutdated
 
@@ -96,7 +96,7 @@ export async function generateSnapshotsInMultipleTimeRanges(
           ).toISOString()}]`,
           isTimeRangeCoveredByOtherSnapshots,
           multipleSnapshotsShouldBeReplaced,
-          allSnapshotsAreStored,
+          allSavedSnapshotsAreStored,
           snapshotHasInactiveEntities,
           isOutdated
         })
@@ -125,6 +125,7 @@ export async function generateSnapshotsInMultipleTimeRanges(
         // The order is important, the snapshot to save could have the same hash of one of the ones to be deleted
         await deleteSnapshotsInTimeRange(txDatabase, savedSnapshotHashes, timeRange)
         await saveSnapshot(txDatabase, newSnapshot)
+        logger.debug(`Snapshots to delete: ${JSON.stringify(Array.from(snapshotHashesToDeleteInStorage))}`)
         await components.storage.delete(snapshotHashesToDeleteInStorage)
         snapshotMetadatas.push(newSnapshot)
       })
