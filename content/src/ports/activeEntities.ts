@@ -106,7 +106,7 @@ export const createActiveEntitiesComponent = (
   const update = async (pointers: string[], entity: Entity | NotActiveEntity): Promise<void> => {
     for (const pointer of pointers) {
       setPreviousEntityAsNone(pointer)
-      entityIdByPointers.set(pointer, isEntityPresent(entity) ? entity.id : entity)
+      entityIdByPointers.set(pointer.toLowerCase(), isEntityPresent(entity) ? entity.id : entity)
     }
     if (isEntityPresent(entity)) {
       cache.set(entity.id, entity)
