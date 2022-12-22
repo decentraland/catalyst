@@ -371,10 +371,19 @@
     eth-connect "^6.0.3"
     ethereum-cryptography "^1.0.3"
 
-"@dcl/hashing@1.1.1", "@dcl/hashing@^1.0.0", "@dcl/hashing@^1.1.0", "@dcl/hashing@^1.1.1":
+"@dcl/hashing@1.1.1", "@dcl/hashing@^1.0.0", "@dcl/hashing@^1.1.1":
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/@dcl/hashing/-/hashing-1.1.1.tgz#4ecbe9fba3e4f34eebed097eb0080c673a90d3fc"
   integrity sha512-0IjZMuJij09P61C1BZkMZKJVDuCbzkINjkM6jRNqy/tuypa4hyzF/v0SoI8Ob7WvZmZ6VJuSmfnY1cPBfEykcg==
+  dependencies:
+    ethereum-cryptography "^1.0.3"
+    ipfs-unixfs-importer "^7.0.3"
+    multiformats "^9.6.3"
+
+"@dcl/hashing@^1.1.0":
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/@dcl/hashing/-/hashing-1.1.2.tgz#f72334eae2fdafac8b69299b297ff6a0c37b5544"
+  integrity sha512-edCbqZH4ZEHpacY6LIn/D+qRx2cSmRAjfJIgSNifURLKXQ0LWXc8bVzfhlM3R9D+RLyQIgddWObCCXoa6YS+eA==
   dependencies:
     ethereum-cryptography "^1.0.3"
     ipfs-unixfs-importer "^7.0.3"
@@ -2692,10 +2701,10 @@ date-format@^4.0.10, date-format@^4.0.13:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-4.0.13.tgz#87c3aab3a4f6f37582c5f5f63692d2956fa67890"
   integrity sha512-bnYCwf8Emc3pTD8pXnre+wfnjGtfi5ncMDKy7+cWZXbmRAsdWkOQHrfC1yz/KiwP5thDp2kCHWYWKBX4HP1hoQ==
 
-dcl-catalyst-client@^13.0.13:
-  version "13.0.13"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-13.0.13.tgz#51fab9f7d76b768a0fe98e9a3a34a3c83c3533cc"
-  integrity sha512-U7fX4QlYx7PN7gI8TGf+O3OegFHMuAWfbignd/P8Mwlim8t/uJ3hAMf2yV3iCEZyUg0O266oHZUkOlVyPWj+bQ==
+dcl-catalyst-client@^14.0.1:
+  version "14.0.1"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-14.0.1.tgz#b00219e2e8c399df5ecefaa222fc52c71914f247"
+  integrity sha512-ImHRvHmGZKG61w0ijyEvbnT38hXr0+Qt7EtGxHxZWQaGzyzHAAUHmFWjz5VkxH5hI/jXfZK9owWGvVvDiWmB7A==
   dependencies:
     "@dcl/catalyst-contracts" "^3.0.0"
     "@dcl/hashing" "^1.1.0"
@@ -2706,9 +2715,9 @@ dcl-catalyst-client@^13.0.13:
     form-data "^4.0.0"
 
 dcl-catalyst-commons@^9.0.6:
-  version "9.0.13"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-9.0.13.tgz#5525ab6d0d95219b7d8c6b73cdb98852eb135b3d"
-  integrity sha512-FXX92KhRu7En6ryo/V57V4Ti6KnZB1v5eG1VjxSX6NmH5f1W9qWLLPUFyZ1KBh1GcZgJz9+GdDwaO1ErSW5b8w==
+  version "9.0.14"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-9.0.14.tgz#f781e5ab8a83fbc329ad6ce9d88d2cdda96bf9b1"
+  integrity sha512-2XtbUEJJiN79oiKRlXCNZQP9ZlN3TPkX150p2p4Yci0MRsGvs5/9bokXeKw4KcBIbprmyI5oP0RVZLGu3YoXNw==
   dependencies:
     "@dcl/schemas" "^5.4.2"
     abort-controller "^3.0.0"
