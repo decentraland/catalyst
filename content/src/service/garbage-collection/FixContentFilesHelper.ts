@@ -18,15 +18,17 @@ export async function fixMissingProfilesContentFiles({
 }: GarbageCollectionManagerComponents) {
   const logger = logs.getLogger('FixMissingFilesHelper')
 
+  const start = Date.now()
   logger.info('Fixing missing content files from profiles deployed without references to them')
 
-  let contentsFolder = join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
-  while (contentsFolder.endsWith('/')) {
-    contentsFolder = contentsFolder.slice(0, -1)
-  }
-  await fs.ensureDirectoryExists(contentsFolder)
+  try {
+    let contentsFolder = join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
+    while (contentsFolder.endsWith('/')) {
+      contentsFolder = contentsFolder.slice(0, -1)
+    }
+    await fs.ensureDirectoryExists(contentsFolder)
 
-  const result = await database.query(`
+    const result = await database.query(`
       SELECT *
       FROM deployments d
       WHERE NOT EXISTS(
@@ -36,21 +38,24 @@ export async function fixMissingProfilesContentFiles({
           )
         AND d.deleter_deployment IS NULL
         AND entity_type = 'profile'`)
-  logger.info(`Found ${result.rowCount} profiles with missing content files.`)
+    logger.info(`Found ${result.rowCount} profiles with missing content files.`)
 
-  for (const deployment of result.rows) {
-    const contentFiles: ContentMapping[] = deployment['entity_metadata']['v']['avatars']
-      .map((avatar) => [
-        { file: 'body.png', hash: avatar.avatar.snapshots['body'] },
-        { file: 'face256.png', hash: avatar.avatar.snapshots['face256'] }
-      ])
-      .flat()
+    for (const deployment of result.rows) {
+      const contentFiles: ContentMapping[] = deployment['entity_metadata']['v']['avatars']
+        .map((avatar) => [
+          { file: 'body.png', hash: avatar.avatar.snapshots['body'] },
+          { file: 'face256.png', hash: avatar.avatar.snapshots['face256'] }
+        ])
+        .flat()
 
-    for (const file of contentFiles) {
-      await ensureFileExistsInStorage(env, logger, storage, fetcher, file.hash)
+      for (const file of contentFiles) {
+        await ensureFileExistsInStorage(env, logger, storage, fetcher, file.hash)
+      }
+
+      await saveContentFiles(database, deployment.id, contentFiles)
     }
-
-    await saveContentFiles(database, deployment.id, contentFiles)
+  } finally {
+    logger.info(`Fixing missing content files took ${Date.now() - start} ms`)
   }
 }
 
