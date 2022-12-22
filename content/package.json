@@ -11,6 +11,7 @@
     "report-api-coverage": "node ./reportApiCoverage.js",
     "start:db": "node ./dist/src/entrypoints/run-local-database.js",
     "start:maintenance": "node ./dist/src/entrypoints/run-maintenance.js",
+    "start:mariano": "node ./dist/src/entrypoints/run-mariano.js",
     "start:server": "node ./dist/src/entrypoints/run-server.js",
     "test": "jest --runInBand --forceExit --detectOpenHandles --coverage",
     "test:integration": "jest --selectProjects integration --runInBand --forceExit --detectOpenHandles --coverage",
