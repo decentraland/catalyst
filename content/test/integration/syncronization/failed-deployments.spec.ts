@@ -10,10 +10,10 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
   describe('Deploy an entity on server 1', function () {
     beforeEach(async function () {
       this.identity = createIdentity()
-        ;[this.server1, this.server2] = await testEnv
-          .configServer('2s')
-          .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, this.identity.address)
-          .andBuildMany(2)
+      ;[this.server1, this.server2] = await testEnv
+        .configServer('2s')
+        .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, this.identity.address)
+        .andBuildMany(2)
 
       // Start server1
       await this.server1.startProgram()
@@ -38,7 +38,7 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
       this.controllerEntity = entityCombo.controllerEntity
 
       // Deploy the entity
-      await this.server1.deploy(this.deployData)
+      await this.server1.deployEntity(this.deployData)
       await awaitUntil(() => assertEntitiesAreActiveOnServer(this.server1, this.controllerEntity))
 
       // Start server2
@@ -64,7 +64,7 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
         )
 
         // Fix the entity
-        await this.server2.deploy(this.deployData, true)
+        await this.server2.deployEntity(this.deployData, true)
       })
 
       it('is correctly deployed', async function () {
@@ -90,11 +90,11 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
           metadata: { a: 'metadata2' }
         })
         // Deploy entity 2 on server 2
-        await this.server2.deploy(this.anotherEntityCombo.deployData)
+        await this.server2.deployEntity(this.anotherEntityCombo.deployData)
         await awaitUntil(() => assertEntitiesAreActiveOnServer(this.server2, this.anotherEntityCombo.controllerEntity))
 
         // Fix the entity
-        await this.server2.deploy(this.deployData, true)
+        await this.server2.deployEntity(this.deployData, true)
       })
 
       it('the active entity is not modified', async function () {
@@ -116,7 +116,7 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
           metadata: { a: 'metadata2' }
         })
         // Deploy entity 2 on server 2
-        await this.server2.deploy(this.anotherEntityCombo.deployData)
+        await this.server2.deployEntity(this.anotherEntityCombo.deployData)
         await awaitUntil(() => assertEntitiesAreActiveOnServer(this.server2, this.anotherEntityCombo.controllerEntity))
         await awaitUntil(() =>
           assertDeploymentFailed(this.server2, FailureReason.DEPLOYMENT_ERROR, this.controllerEntity)
@@ -169,7 +169,7 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
 
     it('fails', async function () {
       await assertDeploymentFailsWith(
-        () => this.server1.deploy(this.deployData, true),
+        () => this.server1.deployEntity(this.deployData, true),
         'You are trying to fix an entity that is not marked as failed'
       )
     })

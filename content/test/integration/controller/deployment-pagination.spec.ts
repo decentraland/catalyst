@@ -224,7 +224,7 @@ loadStandaloneTestEnvironment()('Integration - Deployment Pagination', (testEnv)
   async function deploy(...entities: EntityCombo[]): Promise<number[]> {
     const timestamps: number[] = []
     for (const { deployData } of entities) {
-      const deploymentResult = await server.deploy(deployData)
+      const deploymentResult = await server.deployEntity(deployData)
       timestamps.push(deploymentResult)
     }
     return timestamps
