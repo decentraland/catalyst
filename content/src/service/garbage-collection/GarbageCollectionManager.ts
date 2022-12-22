@@ -31,7 +31,6 @@ export class GarbageCollectionManager {
       this.stopping = false
       const lastCollectionTime = await this.components.systemProperties.get(SYSTEM_PROPERTIES.lastGarbageCollectionTime)
       this.lastTimeOfCollection = lastCollectionTime ?? 0
-
       await this.performSweep()
     }
   }
