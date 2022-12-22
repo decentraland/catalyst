@@ -41,7 +41,12 @@ export function createBatchDeployerComponent(
   const parallelDeploymentJobs = createJobQueue(syncOptions.queueOptions)
 
   // accumulator of all deployments
-  const deploymentsMap = new Map<string, CannonicalEntityDeployment>()
+  const deploymentsMap = new Map<
+    string,
+    CannonicalEntityDeployment & {
+      markAsDeployesFns: Required<DeployableEntity['markAsDeployed'][]>
+    }
+  >()
   const successfulDeployments = new Set<string>()
 
   type DeployableEntity = Parameters<IDeployerComponent['deployEntity']>[0]
@@ -84,10 +89,14 @@ export function createBatchDeployerComponent(
       if (!elementInMap.servers.includes(contentServer)) {
         elementInMap.servers.push(contentServer)
       }
+      if (entity.markAsDeployed) {
+        elementInMap.markAsDeployesFns.push(entity.markAsDeployed)
+      }
     } else {
       elementInMap = {
         entity,
-        servers: [contentServer]
+        servers: [contentServer],
+        markAsDeployesFns: entity.markAsDeployed ? [entity.markAsDeployed] : []
       }
 
       deploymentsMap.set(entity.entityId, elementInMap)
@@ -144,8 +153,10 @@ export function createBatchDeployerComponent(
           } finally {
             // decrement the gauge of enqueued deployments
             components.metrics.decrement('dcl_pending_deployment_gauge', metricLabels)
-            if (entity.markAsDeployed && wasEntityProcessed) {
-              await entity.markAsDeployed()
+            if (wasEntityProcessed && elementInMap) {
+              for (const markAsDeployed of elementInMap.markAsDeployesFns) {
+                await markAsDeployed()
+              }
             }
           }
         }, operationPriority)

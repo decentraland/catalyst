@@ -132,7 +132,7 @@ export async function generateSnapshotsInMultipleTimeRanges(
       logger.info(
         `Snapshot generated for interval: [${new Date(timeRange.initTimestamp).toISOString()}, ${new Date(
           timeRange.endTimestamp
-        ).toISOString()}].`
+        ).toISOString()}]. Hash: ${hash}.`
       )
     } else {
       snapshotMetadatas.push(...savedSnapshots)
