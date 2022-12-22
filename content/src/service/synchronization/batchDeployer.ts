@@ -90,7 +90,15 @@ export function createBatchDeployerComponent(
         elementInMap.servers.push(contentServer)
       }
       if (entity.markAsDeployed) {
-        elementInMap.markAsDeployesFns.push(entity.markAsDeployed)
+        logs.debug('Entering mark as deployed zone')
+        if (
+          successfulDeployments.has(entity.entityId) ||
+          (await components.failedDeployments.findFailedDeployment(entity.entityId))
+        ) {
+          await entity.markAsDeployed()
+        } else {
+          elementInMap.markAsDeployesFns.push(entity.markAsDeployed)
+        }
       }
     } else {
       elementInMap = {
