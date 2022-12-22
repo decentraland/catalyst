@@ -1,6 +1,5 @@
-import { Entity, EntityType } from '@dcl/schemas'
+import { BodyShape, Entity, EntityType, Rarity, Wearable, WearableCategory } from '@dcl/schemas'
 import { instance, mock, when } from 'ts-mockito'
-import { WearableMetadata } from '../../../src/apis/collections/types'
 import { translateEntityIntoWearable } from '../../../src/apis/collections/Utils'
 import { SmartContentClient } from '../../../src/utils/SmartContentClient'
 
@@ -13,11 +12,13 @@ describe('Collection Utils', () => {
     const client = getClient()
     const entity = buildEntity()
 
-    const wearable = translateEntityIntoWearable(client, entity)
-    const entityMetadata: WearableMetadata = entity.metadata
+    let wearable = translateEntityIntoWearable(client, entity)
+    const entityMetadata: Wearable = entity.metadata
 
     // Compare top level properties
     assertAreEqualExceptProperties(wearable, entityMetadata, 'thumbnail', 'image', 'data')
+    expect(wearable).toBeDefined()
+    wearable = wearable!
     expect(wearable.thumbnail).toEqual(`${EXTERNAL_URL}/contents/${CONTENT_HASH1}`)
     expect(wearable.image).toEqual(`${EXTERNAL_URL}/contents/${CONTENT_HASH2}`)
 
@@ -77,24 +78,24 @@ function buildEntity(): Entity {
   }
 }
 
-function buildMetadata(): WearableMetadata {
+function buildMetadata(): Wearable {
   return {
     id: 'id',
+    name: 'my wearable',
     description: 'description',
     thumbnail: CONTENT_KEY1,
     image: CONTENT_KEY2,
-    rarity: 'rarity',
+    rarity: Rarity.UNCOMMON,
+    collectionAddress: 'address',
     i18n: [],
-    createdAt: 10,
-    updatedAt: 20,
     data: {
       replaces: [],
       hides: [],
       tags: [],
-      category: 'category',
+      category: WearableCategory.EYES,
       representations: [
         {
-          bodyShapes: ['some-shape'],
+          bodyShapes: [BodyShape.MALE],
           mainFile: CONTENT_KEY3,
           contents: [CONTENT_KEY3],
           overrideHides: [],

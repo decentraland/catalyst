@@ -1,5 +1,5 @@
-import { Request, Response, Router } from 'express'
 import { HTTPProvider } from 'eth-connect'
+import { Request, Response, Router } from 'express'
 import { validateSignature } from './controllers/crypto'
 
 export function initializeCryptoRoutes(router: Router, ethereumProvider: HTTPProvider): Router {

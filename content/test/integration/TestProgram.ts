@@ -1,7 +1,6 @@
 import { Entity, EntityType } from '@dcl/schemas'
 import { ILoggerComponent, Lifecycle } from '@well-known-components/interfaces'
 import { ContentClient, DeploymentData } from 'dcl-catalyst-client'
-import { ContentFileHash, ServerStatus } from 'dcl-catalyst-commons'
 import fetch from 'node-fetch'
 import { EnvironmentConfig } from '../../src/Environment'
 import { FailedDeployment } from '../../src/ports/failedDeploymentsCache'
@@ -61,7 +60,7 @@ export class TestProgram {
     }
   }
 
-  async deploy(deployData: DeploymentData, fix: boolean = false): Promise<number> {
+  async deployEntity(deployData: DeploymentData, fix: boolean = false): Promise<number> {
     this.logger.info('Deploying entity ' + deployData.entityId)
     const returnValue = await this.client.deployEntity(deployData, fix)
     if (isInvalidDeployment(returnValue)) {
@@ -76,27 +75,23 @@ export class TestProgram {
   }
 
   getEntitiesByPointers(type: EntityType, pointers: string[]): Promise<Entity[]> {
-    return this.client.fetchEntitiesByPointers(type, pointers)
-  }
-
-  getStatus(): Promise<ServerStatus> {
-    return this.client.fetchContentStatus()
+    return this.client.fetchEntitiesByPointers(pointers)
   }
 
   getEntitiesByIds(type: EntityType, ...ids: string[]): Promise<Entity[]> {
-    return this.client.fetchEntitiesByIds(type, ids)
+    return this.client.fetchEntitiesByIds(ids)
   }
 
   getEntityById(type: EntityType, id: string): Promise<Entity> {
-    return this.client.fetchEntityById(type, id)
+    return this.client.fetchEntityById(id)
   }
 
-  downloadContent(fileHash: ContentFileHash): Promise<Buffer> {
+  downloadContent(fileHash: string): Promise<Buffer> {
     return this.client.downloadContent(fileHash)
   }
 
   async getAuditInfo(entity: Entity): Promise<AuditInfo> {
-    const legacyAuditInfo = await this.client.fetchAuditInfo(entity.type, entity.id)
+    const legacyAuditInfo = (await fetch(`${this.getUrl()}/audit/${entity.type}/${entity.id}`)).json()
     return { ...legacyAuditInfo, localTimestamp: 0 }
   }
 

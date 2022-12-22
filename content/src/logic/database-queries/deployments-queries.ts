@@ -1,9 +1,15 @@
-import { AuthChain } from '@dcl/crypto'
-import { DeploymentWithAuthChain, EntityType } from '@dcl/schemas'
+import { AuthChain, Authenticator } from '@dcl/crypto'
+import { ContentMapping, DeploymentWithAuthChain, Entity, EntityType } from '@dcl/schemas'
 import pg from 'pg'
 import SQL, { SQLStatement } from 'sql-template-strings'
-import { DeploymentFilters, DeploymentSorting, SortingField, SortingOrder } from '../../service/deployments/types'
-import { AppComponents } from '../../types'
+import {
+  AuditInfo,
+  DeploymentFilters,
+  DeploymentSorting,
+  SortingField,
+  SortingOrder
+} from '../../service/deployments/types'
+import { AppComponents, DeploymentId } from '../../types'
 
 export type HistoricalDeployment = DeploymentWithAuthChain & {
   deploymentId: number
@@ -36,11 +42,14 @@ export async function deploymentExists(
 ): Promise<boolean> {
   const { database } = components
 
-  const result = await database.queryWithValues(SQL`
+  const result = await database.queryWithValues(
+    SQL`
     SELECT 1
     FROM deployments
     WHERE entity_id = ${entityId}
-  `)
+  `,
+    'deployment_exists'
+  )
 
   return result.rowCount > 0
 }
@@ -54,7 +63,8 @@ export async function* streamAllEntityIds(
     SQL`
       SELECT entity_id FROM deployments
     `,
-    { batchSize: 10000 }
+    { batchSize: 10000 },
+    'stream_all_entities'
   )) {
     yield {
       entityId: row.entity_id
@@ -238,9 +248,150 @@ export async function getActiveDeploymentsByContentHash(
   const query = SQL`SELECT deployment.entity_id FROM deployments as deployment INNER JOIN content_files ON content_files.deployment=deployment.id
     WHERE content_hash=${contentHash} AND deployment.deleter_deployment IS NULL;`
 
-  const queryResult = (await components.database.queryWithValues(query)).rows
+  const queryResult = (await components.database.queryWithValues(query, 'active_deployments_by_hash')).rows
 
   const entities = queryResult.map((deployment: { entity_id: string }) => deployment.entity_id)
 
   return entities
+}
+
+export async function getEntityById(
+  components: Pick<AppComponents, 'database'>,
+  entityId: string
+): Promise<{ entityId: string; localTimestamp: number } | undefined> {
+  const queryResult = await components.database.queryWithValues<{ entityId: string; localTimestamp: number }>(
+    SQL`
+    SELECT
+      entity_id AS "entityId",
+      date_part('epoch', d.local_timestamp) * 1000 AS "localTimestamp"
+    FROM deployments d WHERE entity_id = ${entityId}
+    LIMIT 1
+  `,
+    'entity_by_id'
+  )
+
+  if (queryResult && queryResult.rowCount > 0) {
+    return queryResult.rows[0]
+  }
+  return undefined
+}
+
+export async function saveDeployment(
+  database: AppComponents['database'],
+  entity: Entity,
+  auditInfo: AuditInfo,
+  overwrittenBy: DeploymentId | null
+): Promise<DeploymentId> {
+  const deployer = Authenticator.ownerAddress(auditInfo.authChain)
+  const metadata = entity.metadata ? { v: entity.metadata } : null // We want to be able to store whatever we want, but psql is heavily typed. So we will wrap the metadata with an object
+  const query = SQL`INSERT INTO deployments
+  (deployer_address, version, entity_type, entity_id, entity_timestamp, entity_pointers, entity_metadata, local_timestamp, auth_chain, deleter_deployment)
+  VALUES
+  (${deployer}, ${entity.version}, ${entity.type}, ${entity.id}, to_timestamp(${entity.timestamp} / 1000.0), ${
+    entity.pointers
+  }, ${metadata}, to_timestamp(${auditInfo.localTimestamp} / 1000.0), ${JSON.stringify(
+    auditInfo.authChain
+  )}, ${overwrittenBy})
+  RETURNING id`
+  const queryResult = await database.queryWithValues<{ id: number }>(query, 'save_deployment')
+  return queryResult.rows[0].id
+}
+
+export async function saveContentFiles(
+  database: AppComponents['database'],
+  deploymentId: DeploymentId,
+  content: ContentMapping[]
+): Promise<void> {
+  const queries = content.map(
+    (item) =>
+      SQL`INSERT INTO content_files (deployment, key, content_hash) VALUES (${deploymentId}, ${item.file}, ${item.hash})`
+  )
+  await database.transaction(async (databaseClient) => {
+    for (const query of queries) {
+      await databaseClient.queryWithValues(query)
+    }
+  }, 'save_content_files')
+}
+
+export async function getDeployments(
+  database: AppComponents['database'],
+  deploymentIds: Set<number>
+): Promise<{ id: number; pointers: string[] }[]> {
+  if (deploymentIds.size === 0) return []
+  const query = SQL`SELECT id, entity_pointers as pointers FROM deployments WHERE id IN (`
+  const ids = Array.from(deploymentIds).map((id, idx) => (idx < deploymentIds.size - 1 ? SQL`${id},` : SQL`${id}`))
+  ids.forEach((id) => query.append(id))
+  query.append(`);`)
+  const queryResult = await database.queryWithValues<{ id: number; pointers: string[] }>(query, 'get_deployments')
+  return queryResult.rows
+}
+
+export async function setEntitiesAsOverwritten(
+  database: AppComponents['database'],
+  allOverwritten: Set<DeploymentId>,
+  overwrittenBy: DeploymentId
+): Promise<void> {
+  const queries = Array.from(allOverwritten.values()).map(
+    (overwritten) => SQL`UPDATE deployments SET deleter_deployment = ${overwrittenBy} WHERE id = ${overwritten}`
+  )
+  await database.transaction(async (databaseClient) => {
+    for (const query of queries) {
+      await databaseClient.queryWithValues(query)
+    }
+  }, 'set_entities_overwritter')
+}
+
+export async function calculateOverwrote(database: AppComponents['database'], entity: Entity): Promise<DeploymentId[]> {
+  return (
+    await database.queryWithValues<{ id: number }>(
+      SQL`
+          SELECT dep1.id
+          FROM deployments AS dep1
+          LEFT JOIN deployments AS dep2 ON dep1.deleter_deployment = dep2.id
+          WHERE dep1.entity_type = ${entity.type} AND
+              dep1.entity_pointers && ${entity.pointers} AND
+              (dep1.entity_timestamp < to_timestamp(${entity.timestamp} / 1000.0) OR (dep1.entity_timestamp = to_timestamp(${entity.timestamp} / 1000.0) AND dep1.entity_id < ${entity.id})) AND
+              (dep2.id IS NULL OR dep2.entity_timestamp > to_timestamp(${entity.timestamp} / 1000.0) OR (dep2.entity_timestamp = to_timestamp(${entity.timestamp} / 1000.0) AND dep2.entity_id > ${entity.id}))
+          ORDER BY dep1.entity_timestamp DESC, dep1.entity_id DESC`
+    )
+  ).rows.map((row) => row.id)
+}
+
+export async function calculateOverwrittenByManyFast(
+  database: AppComponents['database'],
+  entity: Entity
+): Promise<{ id: number }[]> {
+  const q = SQL`
+  SELECT deployments.id
+  FROM active_pointers as ap
+           INNER JOIN deployments on ap.entity_id = deployments.entity_id
+  WHERE ap.pointer IN (`
+  const pointers = Array.from(entity.pointers).map((pointer, idx) =>
+    idx < entity.pointers.length - 1 ? SQL`${pointer},` : SQL`${pointer}`
+  )
+  pointers.forEach((pointer) => q.append(pointer))
+  q.append(SQL`)
+          AND deployments.entity_type = ${entity.type}
+          AND (deployments.entity_timestamp > to_timestamp(${entity.timestamp} / 1000.0) OR (deployments.entity_timestamp = to_timestamp(${entity.timestamp} / 1000.0) AND deployments.entity_id > ${entity.id}))
+        ORDER BY deployments.entity_timestamp, deployments.entity_id
+        LIMIT 1`)
+  return (await database.queryWithValues<{ id: number }>(q)).rows
+}
+
+export async function calculateOverwrittenBySlow(
+  database: AppComponents['database'],
+  entity: Entity
+): Promise<{ id: number }[]> {
+  return (
+    await database.queryWithValues<{ id: number }>(
+      SQL`
+    SELECT deployments.id
+    FROM deployments
+    WHERE deployments.entity_type = ${entity.type} AND
+        deployments.entity_pointers && ${entity.pointers} AND
+        (deployments.entity_timestamp > to_timestamp(${entity.timestamp} / 1000.0) OR (deployments.entity_timestamp = to_timestamp(${entity.timestamp} / 1000.0) AND deployments.entity_id > ${entity.id}))
+    ORDER BY deployments.entity_timestamp, deployments.entity_id
+    LIMIT 1`
+    )
+  ).rows
 }

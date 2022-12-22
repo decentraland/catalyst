@@ -1,7 +1,7 @@
 import { Entity, EntityType } from '@dcl/schemas'
 import { anything, deepEqual, instance, mock, objectContaining, resetCalls, verify, when } from 'ts-mockito'
 import { OffChainWearablesManager } from '../../../../src/apis/collections/off-chain/OffChainWearablesManager'
-import { Wearable, WearableId } from '../../../../src/apis/collections/types'
+import { LambdasWearable, WearableId } from '../../../../src/apis/collections/types'
 import { SmartContentClient } from '../../../../src/utils/SmartContentClient'
 
 const COLLECTION_ID_1 = 'some-collection'
@@ -15,7 +15,6 @@ const COLLECTIONS = {
 }
 
 describe('OffChainWearablesManager', () => {
-
   beforeEach(() => jest.useFakeTimers())
 
   afterAll(() => jest.useRealTimers())
@@ -54,11 +53,15 @@ describe('OffChainWearablesManager', () => {
     const t1 = 1
     const t2 = 2
 
-    when(contentClientMock.fetchEntitiesByPointers(anything(), objectContaining([WEARABLE_ID_3])))
+    when(contentClientMock.fetchEntitiesByPointers(objectContaining([WEARABLE_ID_3])))
       .thenResolve([buildEntityWithTimestampInMetadata(WEARABLE_ID_3, t1)])
       .thenResolve([buildEntityWithTimestampInMetadata(WEARABLE_ID_3, t2)])
 
-    const manager = new OffChainWearablesManager({ client: contentClient, collections: { [COLLECTION_ID_2]: [WEARABLE_ID_3] }, refreshTime: '2s' })
+    const manager = new OffChainWearablesManager({
+      client: contentClient,
+      collections: { [COLLECTION_ID_2]: [WEARABLE_ID_3] },
+      refreshTime: '2s'
+    })
 
     const firstWearables = await manager.find({ collectionIds: [COLLECTION_ID_2] })
     expect(firstWearables.length).toBe(1)
@@ -68,7 +71,7 @@ describe('OffChainWearablesManager', () => {
     resetCalls(contentClientMock)
     jest.advanceTimersByTime(2000)
     // Needed to finish the promise in the TimeRefreshedDataHolder that calls the content server
-    await new Promise(process.nextTick);
+    await new Promise(process.nextTick)
     const secondWearables = await manager.find({ collectionIds: [COLLECTION_ID_2] })
     expect(secondWearables.length).toBe(1)
     expect(secondWearables[0].id).toBe(WEARABLE_ID_3)
@@ -101,7 +104,7 @@ describe('OffChainWearablesManager', () => {
     const { instance: contentClient } = contentServer()
     const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS, refreshTime: '2s' })
 
-    const wearables = await manager.find({ wearableIds: [WEARABLE_ID_2, WEARABLE_ID_3] })
+    const wearables = await manager.find({ itemIds: [WEARABLE_ID_2, WEARABLE_ID_3] })
 
     assertReturnWearablesAre(wearables, WEARABLE_ID_2, WEARABLE_ID_3)
   })
@@ -125,18 +128,18 @@ describe('OffChainWearablesManager', () => {
   })
 })
 
-function assertReturnWearablesAre(wearables: Wearable[], ...ids: WearableId[]) {
+function assertReturnWearablesAre(wearables: LambdasWearable[], ...ids: WearableId[]) {
   const returnedIds = new Set(wearables.map(({ id }) => id))
   expect(returnedIds).toEqual(new Set(ids))
 }
 
 function assertContentServerWasCalledOnceWithIds(contentClient: SmartContentClient, ...ids: WearableId[]) {
-  verify(contentClient.fetchEntitiesByPointers(EntityType.WEARABLE, deepEqual(ids))).once()
+  verify(contentClient.fetchEntitiesByPointers(deepEqual(ids))).once()
 }
 
 function contentServer() {
   const mockedClient = mock(SmartContentClient)
-  when(mockedClient.fetchEntitiesByPointers(anything(), anything())).thenCall((_, ids) =>
+  when(mockedClient.fetchEntitiesByPointers(anything())).thenCall((ids) =>
     Promise.resolve(ids.map((id) => buildEntity(id)))
   )
   return { instance: instance(mockedClient), mock: mockedClient }

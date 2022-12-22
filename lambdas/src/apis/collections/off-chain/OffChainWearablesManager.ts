@@ -1,7 +1,6 @@
-import { EntityType } from '@dcl/schemas'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TimeRefreshedDataHolder } from '../../../utils/TimeRefreshedDataHolder'
-import { Wearable, WearableId, WearablesFilters } from '../types'
+import { ItemFilters, LambdasWearable, WearableId } from '../types'
 import { preferEnglish, translateEntityIntoWearable } from '../Utils'
 import baseAvatars from './base-avatars'
 
@@ -27,7 +26,7 @@ export class OffChainWearablesManager {
     )
   }
 
-  public async find(filters: WearablesFilters, lastId?: string): Promise<Wearable[]> {
+  public async find(filters: ItemFilters, lastId?: string): Promise<LambdasWearable[]> {
     const definitions = await this.definitions.get()
     return definitions.filter(this.buildFilter(filters, lastId)).map(({ wearable }) => wearable)
   }
@@ -36,10 +35,7 @@ export class OffChainWearablesManager {
    * Note: So far, we have few off-chain wearables and no plans to add more. If we do add more in the future, then it
    * might make sense to modify this filter, since many optimizations could be added
    */
-  private buildFilter(
-    filters: WearablesFilters,
-    lastId: string | undefined
-  ): (wearable: LocalOffChainWearable) => boolean {
+  private buildFilter(filters: ItemFilters, lastId: string | undefined): (wearable: LocalOffChainWearable) => boolean {
     return ({ collectionId, wearable }) => {
       const lowerCaseWearableId = wearable.id.toLowerCase()
       const okByLastId = !lastId || lowerCaseWearableId > lastId
@@ -48,7 +44,7 @@ export class OffChainWearablesManager {
       const okByCollection = !filters.collectionIds || filters.collectionIds.includes(collectionId)
       if (!okByCollection) return false
 
-      const okByIds = !filters.wearableIds || filters.wearableIds.includes(lowerCaseWearableId)
+      const okByIds = !filters.itemIds || filters.itemIds.includes(lowerCaseWearableId)
       if (!okByIds) return false
 
       const text = preferEnglish(wearable.i18n)?.toLowerCase()
@@ -64,9 +60,11 @@ export class OffChainWearablesManager {
     const localDefinitions: LocalOffChainWearables = []
 
     for (const [collectionId, wearableIds] of Object.entries(collections)) {
-      const entities = await client.fetchEntitiesByPointers(EntityType.WEARABLE, wearableIds)
+      const entities = await client.fetchEntitiesByPointers(wearableIds)
+
       entities
         .map((entity) => translateEntityIntoWearable(client, entity))
+        .filter((wearable): wearable is LambdasWearable => !!wearable)
         .sort((wearable1, wearable2) => wearable1.id.toLowerCase().localeCompare(wearable2.id.toLowerCase()))
         .forEach((wearable) => localDefinitions.push({ collectionId, wearable }))
     }
@@ -82,6 +80,6 @@ const DEFAULT_COLLECTIONS: OffChainCollections = {
 }
 
 type LocalOffChainWearables = LocalOffChainWearable[]
-type LocalOffChainWearable = { collectionId: OffChainCollectionId; wearable: Wearable }
+type LocalOffChainWearable = { collectionId: OffChainCollectionId; wearable: LambdasWearable }
 type OffChainCollections = { [collectionId: string]: WearableId[] }
 type OffChainCollectionId = string

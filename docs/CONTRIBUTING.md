@@ -24,7 +24,7 @@ Pull requests are the best way to propose changes to the codebase (we use [Githu
 
 ## Creating a pull request
 
-We follow the [Git style guide](https://github.com/decentraland/adr/blob/main/docs/ADR-6-git-style-guide.md) for git usage
+We follow the [Git style guide](https://adr.decentraland.org/adr/ADR-6) for git usage
 
 1. In case the PR is done using a branch within the service, it should have the semantic prefix.
 2. Before merging into `main` make sure the squash commit has the correct semantic type prefix.

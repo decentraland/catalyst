@@ -1,11 +1,12 @@
+import { HTTPProvider } from 'eth-connect'
 import log4js from 'log4js'
 import ms from 'ms'
+import fetch from 'node-fetch'
 import { OffChainWearablesManagerFactory } from './apis/collections/off-chain/OffChainWearablesManagerFactory'
+import { EmotesOwnershipFactory } from './apis/profiles/EmotesOwnershipFactory'
 import { EnsOwnershipFactory } from './apis/profiles/EnsOwnershipFactory'
 import { WearablesOwnershipFactory } from './apis/profiles/WearablesOwnershipFactory'
 import { DAOCache } from './service/dao/DAOCache'
-import { HTTPProvider } from 'eth-connect'
-import fetch from 'node-fetch'
 import { getCommsServerUrl } from './utils/commons'
 import { SmartContentClientFactory } from './utils/SmartContentClientFactory'
 import { SmartContentServerFetcherFactory } from './utils/SmartContentServerFetcherFactory'
@@ -75,6 +76,7 @@ export const enum Bean {
   DAO,
   ENS_OWNERSHIP,
   WEARABLES_OWNERSHIP,
+  EMOTES_OWNERSHIP,
   THE_GRAPH_CLIENT,
   OFF_CHAIN_MANAGER,
   ETHEREUM_PROVIDER
@@ -104,7 +106,8 @@ export const enum EnvironmentConfig {
   METRICS,
   OFF_CHAIN_WEARABLES_REFRESH_TIME,
   VALIDATE_API,
-  PROFILES_CACHE_TTL
+  PROFILES_CACHE_TTL,
+  COMMS_PROTOCOL
 }
 
 export class EnvironmentBuilder {
@@ -243,6 +246,8 @@ export class EnvironmentBuilder {
       parseInt(process.env.PROFILES_CACHE_TTL ?? '300')
     ) // 5 minutes by default
 
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.COMMS_PROTOCOL, () => process.env.COMMS_PROTOCOL ?? 'v2')
+
     // Please put special attention on the bean registration order.
     // Some beans depend on other beans, so the required beans should be registered before
 
@@ -250,7 +255,9 @@ export class EnvironmentBuilder {
       SmartContentServerFetcherFactory.create(env)
     )
     this.registerBeanIfNotAlreadySet(env, Bean.SMART_CONTENT_SERVER_CLIENT, () => SmartContentClientFactory.create(env))
-    this.registerBeanIfNotAlreadySet(env, Bean.THE_GRAPH_CLIENT, () => TheGraphClientFactory.create(env))
+
+    const theGraphClient = await TheGraphClientFactory.create(env)
+    this.registerBeanIfNotAlreadySet(env, Bean.THE_GRAPH_CLIENT, () => theGraphClient)
     this.registerBeanIfNotAlreadySet(env, Bean.OFF_CHAIN_MANAGER, () => OffChainWearablesManagerFactory.create(env))
 
     const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK)
@@ -263,6 +270,7 @@ export class EnvironmentBuilder {
     this.registerBeanIfNotAlreadySet(env, Bean.DAO, () => new DAOCache(ethereumProvider))
     this.registerBeanIfNotAlreadySet(env, Bean.ENS_OWNERSHIP, () => EnsOwnershipFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.WEARABLES_OWNERSHIP, () => WearablesOwnershipFactory.create(env))
+    this.registerBeanIfNotAlreadySet(env, Bean.EMOTES_OWNERSHIP, () => EmotesOwnershipFactory.create(env))
 
     return env
   }

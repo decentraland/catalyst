@@ -21,7 +21,8 @@ export async function* streamActiveDeployments(
       FROM deployments d
       WHERE d.deleter_deployment IS NULL
     `,
-    options
+    options,
+    'stream_active_deployments'
   )) {
     yield {
       entityId: row.entity_id,

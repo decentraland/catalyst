@@ -7,7 +7,7 @@ import {
   updateActiveDeployments
 } from '../logic/database-queries/pointers-queries'
 import { mapDeploymentsToEntities } from '../logic/deployments'
-import { getDeployments } from '../service/deployments/deployments'
+import { getDeploymentsForActiveEntities } from '../service/deployments/deployments'
 import { AppComponents } from '../types'
 
 export type NotActiveEntity = 'NOT_ACTIVE_ENTITY'
@@ -160,10 +160,7 @@ export const createActiveEntitiesComponent = (
     entityIds?: string[]
     pointers?: string[]
   }): Promise<Entity[]> => {
-    const filters = entityIds ? { entityIds } : { pointers }
-    const { deployments } = await getDeployments(components, {
-      filters: { ...filters, onlyCurrentlyPointed: true }
-    })
+    const deployments = await getDeploymentsForActiveEntities(components, entityIds, pointers)
     for (const deployment of deployments) {
       reportCacheAccess(deployment.entityType, 'miss')
     }

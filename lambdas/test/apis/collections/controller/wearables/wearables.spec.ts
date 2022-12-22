@@ -5,7 +5,7 @@ import {
   BASE_AVATARS_COLLECTION_ID,
   OffChainWearablesManager
 } from '../../../../../src/apis/collections/off-chain/OffChainWearablesManager'
-import { Wearable, WearableId } from '../../../../../src/apis/collections/types'
+import { LambdasWearable, WearableId } from '../../../../../src/apis/collections/types'
 import { SmartContentClient } from '../../../../../src/utils/SmartContentClient'
 import { TheGraphClient } from '../../../../../src/utils/TheGraphClient'
 
@@ -24,7 +24,7 @@ describe('wearables', () => {
 
     const pagination = { limit: 3, lastId: undefined }
     const response = await getWearables(
-      { wearableIds: [OFF_CHAIN_WEARABLE_ID] },
+      { itemIds: [OFF_CHAIN_WEARABLE_ID] },
       pagination,
       contentClient,
       graphClient,
@@ -33,7 +33,7 @@ describe('wearables', () => {
 
     expect(response.wearables).toEqual([OFF_CHAIN_WEARABLE])
     expect(response.lastId).toBeUndefined()
-    verify(graphClientMock.findWearablesByFilters(anything(), anything())).never()
+    verify(graphClientMock.findWearableUrnsByFilters(anything(), anything())).never()
     verify(contentServerMock.fetchEntitiesByPointers(anything(), anything())).never()
   })
 })
@@ -45,7 +45,7 @@ it(`When on-chain ids are requested, then content servers is queried, but subgra
 
   const pagination = { limit: 3, lastId: undefined }
   const response = await getWearables(
-    { wearableIds: [OFF_CHAIN_WEARABLE_ID, ON_CHAIN_WEARABLE_ID] },
+    { itemIds: [OFF_CHAIN_WEARABLE_ID, ON_CHAIN_WEARABLE_ID] },
     pagination,
     contentClient,
     graphClient,
@@ -54,8 +54,8 @@ it(`When on-chain ids are requested, then content servers is queried, but subgra
 
   expectWearablesToBe(response, OFF_CHAIN_WEARABLE_ID, ON_CHAIN_WEARABLE_ID)
   expect(response.lastId).toBeUndefined()
-  verify(contentServerMock.fetchEntitiesByPointers(EntityType.WEARABLE, deepEqual([ON_CHAIN_WEARABLE_ID]))).once()
-  verify(graphClientMock.findWearablesByFilters(anything(), anything())).never()
+  verify(contentServerMock.fetchEntitiesByPointers(deepEqual([ON_CHAIN_WEARABLE_ID]))).once()
+  verify(graphClientMock.findWearableUrnsByFilters(anything(), anything())).never()
 })
 
 it(`When lastId isn't base avatar, then the offChainManager isn't called`, async () => {
@@ -69,7 +69,7 @@ it(`When lastId isn't base avatar, then the offChainManager isn't called`, async
 
   expect(response.wearables.length).toEqual(0)
   verify(offChainMock.find(anything(), anything())).never()
-  verify(graphClientMock.findWearablesByFilters(filters, deepEqual(pagination))).once()
+  verify(graphClientMock.findWearableUrnsByFilters(filters, deepEqual(pagination))).once()
 })
 
 it(`When lastId is a base avatar, then the offChainManager is called`, async () => {
@@ -83,7 +83,7 @@ it(`When lastId is a base avatar, then the offChainManager is called`, async () 
 
   expect(response.wearables.length).toEqual(0)
   verify(offChainMock.find(filters, OFF_CHAIN_WEARABLE_ID)).once()
-  verify(graphClientMock.findWearablesByFilters(filters, deepEqual({ ...pagination, lastId: undefined }))).once()
+  verify(graphClientMock.findWearableUrnsByFilters(filters, deepEqual({ ...pagination, lastId: undefined }))).once()
 })
 
 it(`When collection id is base avatars, then subgraph is never queried`, async () => {
@@ -97,7 +97,7 @@ it(`When collection id is base avatars, then subgraph is never queried`, async (
 
   expect(response.wearables.length).toEqual(0)
   verify(offChainMock.find(filters, undefined)).once()
-  verify(graphClientMock.findWearablesByFilters(anything(), anything())).never()
+  verify(graphClientMock.findWearableUrnsByFilters(anything(), anything())).never()
 })
 
 it(`When there is more data than the one returned, then last id is included`, async () => {
@@ -112,15 +112,15 @@ it(`When there is more data than the one returned, then last id is included`, as
   expect(response.wearables.length).toEqual(1)
   expect(response.lastId).toEqual(OFF_CHAIN_WEARABLE_ID)
   verify(offChainMock.find(filters, undefined)).once()
-  verify(graphClientMock.findWearablesByFilters(filters, deepEqual({ limit: 0, lastId: undefined }))).once()
-  verify(contentServerMock.fetchEntitiesByPointers(EntityType.WEARABLE, deepEqual([ON_CHAIN_WEARABLE_ID]))).once()
+  verify(graphClientMock.findWearableUrnsByFilters(filters, deepEqual({ limit: 0, lastId: undefined }))).once()
+  verify(contentServerMock.fetchEntitiesByPointers(deepEqual([ON_CHAIN_WEARABLE_ID]))).once()
 })
 
 function emptyContentServer() {
   return contentServerThatReturns()
 }
 
-function expectWearablesToBe(response: { wearables: Wearable[] }, ...expectedIds: WearableId[]) {
+function expectWearablesToBe(response: { wearables: LambdasWearable[] }, ...expectedIds: WearableId[]) {
   const ids = response.wearables.map(({ id }) => id)
   expect(ids).toEqual(expectedIds)
 }
@@ -129,7 +129,7 @@ function emptyOffChainManager(): { instance: OffChainWearablesManager; mock: Off
   return offChainManagerWith()
 }
 
-function offChainManagerWith(...wearables: Wearable[]): {
+function offChainManagerWith(...wearables: LambdasWearable[]): {
   instance: OffChainWearablesManager
   mock: OffChainWearablesManager
 } {
@@ -156,7 +156,7 @@ function contentServerThatReturns(id?: WearableId) {
     }
   }
   const mockedClient = mock(SmartContentClient)
-  when(mockedClient.fetchEntitiesByPointers(anything(), anything())).thenResolve(id ? [entity] : [])
+  when(mockedClient.fetchEntitiesByPointers(anything())).thenResolve(id ? [entity] : [])
   return { instance: instance(mockedClient), mock: mockedClient }
 }
 
@@ -166,6 +166,6 @@ function noExistingWearables() {
 
 function existingWearables(...existingWearables: WearableId[]) {
   const mockedClient = mock(TheGraphClient)
-  when(mockedClient.findWearablesByFilters(anything(), anything())).thenResolve(existingWearables)
+  when(mockedClient.findWearableUrnsByFilters(anything(), anything())).thenResolve(existingWearables)
   return { instance: instance(mockedClient), mock: mockedClient }
 }

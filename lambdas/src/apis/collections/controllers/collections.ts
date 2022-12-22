@@ -1,16 +1,20 @@
-import { ChainId, Entity, EntityType } from '@dcl/schemas'
+import { BodyShape, ChainId, Emote, Entity, StandardProps, Wearable, WearableRepresentation } from '@dcl/schemas'
 import { Request, Response } from 'express'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TheGraphClient } from '../../../utils/TheGraphClient'
 import { BASE_AVATARS_COLLECTION_ID } from '../off-chain/OffChainWearablesManager'
-import {
-  Collection,
-  ERC721StandardTrait,
-  WearableBodyShape,
-  WearableMetadata,
-  WearableMetadataRepresentation
-} from '../types'
+import { Collection, ERC721StandardTrait } from '../types'
 import { createExternalContentUrl, findHashForFile, preferEnglish } from '../Utils'
+
+type StandardWearable = Wearable & StandardProps
+type StandardEmote = Emote & StandardProps
+type ItemData = {
+  replaces?: any[]
+  hides?: any[]
+  tags: string[]
+  representations: any[]
+  category: any
+}
 
 export async function getStandardErc721(client: SmartContentClient, req: Request, res: Response) {
   // Method: GET
@@ -27,30 +31,33 @@ export async function getStandardErc721(client: SmartContentClient, req: Request
     const urn = buildUrn(protocol, contract, option)
     const entity = await fetchEntity(client, urn)
     if (entity) {
-      const wearableMetadata: WearableMetadata = entity.metadata
-      const name = preferEnglish(wearableMetadata.i18n)
-      const totalEmission = RARITIES_EMISSIONS[wearableMetadata.rarity]
+      const itemMetadata: StandardWearable | StandardEmote = entity.metadata
+      const name = preferEnglish(itemMetadata.i18n)
+      if (!itemMetadata.rarity) {
+        throw new Error('Wearable is not standard.')
+      }
+
+      const totalEmission = RARITIES_EMISSIONS[itemMetadata.rarity]
       const description = emission ? `DCL Wearable ${emission}/${totalEmission}` : ''
-      const image = createExternalContentUrl(client, entity, wearableMetadata.image)
-      const thumbnail = createExternalContentUrl(client, entity, wearableMetadata.thumbnail)
-      const bodyShapeTraits = getBodyShapes(wearableMetadata.data.representations).reduce(
+      const image = createExternalContentUrl(client, entity, itemMetadata.image)
+      const thumbnail = createExternalContentUrl(client, entity, itemMetadata.thumbnail)
+      const itemData: ItemData =
+        (itemMetadata as StandardEmote).emoteDataADR74 ?? (itemMetadata as StandardWearable).data
+      const bodyShapeTraits = getBodyShapes(itemData.representations).reduce(
         (bodyShapes: ERC721StandardTrait[], bodyShape) => {
           bodyShapes.push({
             trait_type: 'Body Shape',
             value: bodyShape
           })
-
           return bodyShapes
         },
         []
       )
-
-      const tagTraits = wearableMetadata.data.tags.reduce((tags: ERC721StandardTrait[], tag) => {
+      const tagTraits = itemData.tags.reduce((tags: ERC721StandardTrait[], tag) => {
         tags.push({
           trait_type: 'Tag',
           value: tag
         })
-
         return tags
       }, [])
 
@@ -64,11 +71,11 @@ export async function getStandardErc721(client: SmartContentClient, req: Request
         attributes: [
           {
             trait_type: 'Rarity',
-            value: wearableMetadata.rarity
+            value: itemMetadata.rarity
           },
           {
             trait_type: 'Category',
-            value: wearableMetadata.data.category
+            value: itemData.category
           },
           ...tagTraits,
           ...bodyShapeTraits
@@ -129,8 +136,6 @@ function getProtocol(chainId: string): string | undefined {
   switch (parseInt(chainId, 10)) {
     case ChainId.ETHEREUM_MAINNET:
       return 'ethereum'
-    case ChainId.ETHEREUM_ROPSTEN:
-      return 'ropsten'
     case ChainId.ETHEREUM_RINKEBY:
       return 'rinkeby'
     case ChainId.ETHEREUM_GOERLI:
@@ -153,12 +158,12 @@ async function internalContents(
   client: SmartContentClient,
   res: Response,
   urn: string,
-  selector: (metadata: WearableMetadata) => string | undefined
+  selector: (metadata: Wearable) => string | undefined
 ): Promise<void> {
   try {
     const entity = await fetchEntity(client, urn)
     if (entity) {
-      const wearableMetadata: WearableMetadata = entity.metadata
+      const wearableMetadata: Wearable = entity.metadata
       const hash = findHashForFile(entity, selector(wearableMetadata))
       if (hash) {
         const headers: Map<string, string> = await client.pipeContent(hash, res as any as ReadableStream<Uint8Array>)
@@ -175,15 +180,19 @@ async function internalContents(
 }
 
 async function fetchEntity(client: SmartContentClient, urn: string): Promise<Entity | undefined> {
-  const entities: Entity[] = await client.fetchEntitiesByPointers(EntityType.WEARABLE, [urn])
+  const entities: Entity[] = await client.fetchEntitiesByPointers([urn])
   return entities && entities.length > 0 && entities[0].metadata ? entities[0] : undefined
 }
 
-export function getBodyShapes(representations: WearableMetadataRepresentation[]) {
-  const bodyShapes = new Set<WearableBodyShape>()
+export function getBodyShapes(representations: WearableRepresentation[]) {
+  const bodyShapes = new Set<string>()
   for (const representation of representations) {
     for (const bodyShape of representation.bodyShapes) {
-      bodyShapes.add(bodyShape.split(':').pop()!)
+      if (bodyShape === BodyShape[BodyShape.MALE]) {
+        bodyShapes.add('BaseMale')
+      } else if (bodyShape === BodyShape[BodyShape.FEMALE]) {
+        bodyShapes.add('BaseFemale')
+      }
     }
   }
   return Array.from(bodyShapes)
