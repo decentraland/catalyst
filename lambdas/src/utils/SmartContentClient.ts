@@ -7,13 +7,7 @@ import {
   DeploymentData,
   DeploymentPreparationData
 } from 'dcl-catalyst-client'
-import {
-  AvailableContentResult,
-  CompleteRequestOptions,
-  Fetcher,
-  RequestOptions,
-  ServerStatus
-} from 'dcl-catalyst-commons'
+import { CompleteRequestOptions, Fetcher, RequestOptions, ServerStatus } from 'dcl-catalyst-commons'
 import future, { IFuture } from 'fp-future'
 import log4js from 'log4js'
 /**
@@ -28,29 +22,33 @@ export class SmartContentClient implements ContentAPI {
 
   constructor(private readonly externalContentServerUrl: string) {}
 
-  async fetchEntitiesByPointers(type: EntityType, pointers: string[], options?: RequestOptions): Promise<Entity[]> {
+  async fetchEntitiesByPointers(pointers: string[], options?: RequestOptions): Promise<Entity[]> {
     const client = await this.getClient()
-    return client.fetchEntitiesByPointers(type, pointers, options)
+    return client.fetchEntitiesByPointers(pointers, options)
   }
 
-  async fetchEntitiesByIds(type: EntityType, ids: string[], options?: RequestOptions): Promise<Entity[]> {
+  async fetchEntitiesByIds(ids: string[], options?: RequestOptions): Promise<Entity[]> {
     const client = await this.getClient()
-    return client.fetchEntitiesByIds(type, ids, options)
+    return client.fetchEntitiesByIds(ids, options)
   }
 
-  async fetchEntityById(type: EntityType, id: string, options?: RequestOptions): Promise<Entity> {
+  async fetchEntityById(id: string, options?: RequestOptions): Promise<Entity> {
     const client = await this.getClient()
-    return client.fetchEntityById(type, id, options)
+    return client.fetchEntityById(id, options)
   }
 
   async fetchAuditInfo(type: EntityType, id: string, options?: RequestOptions) {
-    const client = await this.getClient()
-    return client.fetchAuditInfo(type, id, options)
+    const contentUrl = (await this.getClient()).getContentUrl()
+    const fetcher = new Fetcher()
+
+    return (await fetcher.fetch(`${contentUrl}/audit/${type}/${id}`, options)).json()
   }
 
   async fetchContentStatus(options?: RequestOptions): Promise<ServerStatus> {
-    const client = await this.getClient()
-    return client.fetchContentStatus(options)
+    const contentUrl = (await this.getClient()).getContentUrl()
+    const fetcher = new Fetcher()
+
+    return (await fetcher.fetch(`${contentUrl}/status`, options)).json()
   }
 
   async downloadContent(contentHash: string, options?: RequestOptions): Promise<Buffer> {
@@ -58,18 +56,39 @@ export class SmartContentClient implements ContentAPI {
     return client.downloadContent(contentHash, options)
   }
 
+  private KNOWN_HEADERS: string[] = [
+    'Content-Type',
+    'Access-Control-Allow-Origin',
+    'Access-Control-Expose-Headers',
+    'ETag',
+    'Date',
+    'Content-Length',
+    'Cache-Control'
+  ]
+
+  private findFixedHeader(headerName: string): string | undefined {
+    return this.KNOWN_HEADERS.find((item) => item.toLowerCase() === headerName.toLowerCase())
+  }
+
+  private onlyKnownHeaders(headersFromResponse: Headers): Map<string, string> {
+    const headers: Map<string, string> = new Map()
+    headersFromResponse?.forEach((headerValue, headerName) => {
+      const fixedHeaderFound = this.findFixedHeader(headerName)
+      if (fixedHeaderFound) {
+        headers.set(fixedHeaderFound, headerValue)
+      }
+    })
+    return headers
+  }
+
   async pipeContent(
     contentHash: string,
     responseTo: any,
     options?: Partial<CompleteRequestOptions>
   ): Promise<Map<string, string>> {
-    const client = await this.getClient()
-    return await client.pipeContent(contentHash, responseTo, options)
-  }
-
-  async isContentAvailable(cids: string[], options?: RequestOptions): Promise<AvailableContentResult> {
-    const client = await this.getClient()
-    return client.isContentAvailable(cids, options)
+    const contentUrl = (await this.getClient()).getContentUrl()
+    const fetcher = new Fetcher()
+    return this.onlyKnownHeaders(await fetcher.fetchPipe(`${contentUrl}/contents/${contentHash}`, responseTo, options))
   }
 
   deployEntity(deployData: DeploymentData, fix?: boolean, options?: RequestOptions): Promise<number> {

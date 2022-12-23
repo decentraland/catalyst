@@ -1,4 +1,3 @@
-import { EntityType } from '@dcl/schemas'
 import { Request, Response } from 'express'
 import log4js from 'log4js'
 import { findThirdPartyItemUrns } from '../../../logic/third-party-urn-finder'
@@ -201,7 +200,7 @@ async function fetchWearables(wearableUrns: string[], client: SmartContentClient
     return []
   }
 
-  const entities = await client.fetchEntitiesByPointers(EntityType.WEARABLE, wearableUrns)
+  const entities = await client.fetchEntitiesByPointers(wearableUrns)
   const wearables = entities
     .map((entity) => translateEntityIntoWearable(client, entity))
     .filter((wearable): wearable is LambdasWearable => !!wearable)

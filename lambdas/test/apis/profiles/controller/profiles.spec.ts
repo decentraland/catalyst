@@ -30,7 +30,15 @@ describe('profiles', () => {
     const wearablesOwnership = ownedNFTs(WearablesOwnership, SOME_ADDRESS, WEARABLE_ID_1)
     const emotesOwnership = ownedNFTs(EmotesOwnership, SOME_ADDRESS, WEARABLE_ID_1)
 
-    const profiles = (await pfs.fetchProfiles([SOME_ADDRESS], theGraphClient, client, ensOwnership, wearablesOwnership, emotesOwnership, thirdPartyFetcher))!
+    const profiles = (await pfs.fetchProfiles(
+      [SOME_ADDRESS],
+      theGraphClient,
+      client,
+      ensOwnership,
+      wearablesOwnership,
+      emotesOwnership,
+      thirdPartyFetcher
+    ))!
 
     expect(profiles.length).toEqual(1)
     expect(profiles[0]).toEqual(metadata)
@@ -43,7 +51,15 @@ describe('profiles', () => {
     const wearablesOwnership = noNFTs(WearablesOwnership)
     const emotesOwnership = ownedNFTs(EmotesOwnership, SOME_ADDRESS, WEARABLE_ID_1)
 
-    const profiles = (await pfs.fetchProfiles([SOME_ADDRESS], theGraphClient, client, ensOwnership, wearablesOwnership, emotesOwnership, thirdPartyFetcher))!
+    const profiles = (await pfs.fetchProfiles(
+      [SOME_ADDRESS],
+      theGraphClient,
+      client,
+      ensOwnership,
+      wearablesOwnership,
+      emotesOwnership,
+      thirdPartyFetcher
+    ))!
 
     expect(profiles.length).toEqual(1)
     expect(profiles[0].avatars[0].name).toEqual(SOME_NAME)
@@ -57,7 +73,15 @@ describe('profiles', () => {
     const wearablesOwnership = noNFTs(WearablesOwnership)
     const emotesOwnership = ownedNFTs(EmotesOwnership, SOME_ADDRESS, WEARABLE_ID_1)
 
-    const profiles = (await pfs.fetchProfiles([SOME_ADDRESS], theGraphClient, client, ensOwnership, wearablesOwnership, emotesOwnership, thirdPartyFetcher))!
+    const profiles = (await pfs.fetchProfiles(
+      [SOME_ADDRESS],
+      theGraphClient,
+      client,
+      ensOwnership,
+      wearablesOwnership,
+      emotesOwnership,
+      thirdPartyFetcher
+    ))!
 
     expect(profiles.length).toEqual(1)
     expect(profiles[0].avatars[0].avatar.wearables.length).toEqual(0)
@@ -72,7 +96,15 @@ describe('profiles', () => {
     tpWearablesOwnership.mockReturnValue(Promise.resolve(new Map([[SOME_ADDRESS, [TPW_ID]]])))
     const emotesOwnership = ownedNFTs(EmotesOwnership, SOME_ADDRESS, WEARABLE_ID_1)
 
-    const profiles = (await pfs.fetchProfiles([SOME_ADDRESS], theGraphClient, client, ensOwnership, wearablesOwnership, emotesOwnership, thirdPartyFetcher))!
+    const profiles = (await pfs.fetchProfiles(
+      [SOME_ADDRESS],
+      theGraphClient,
+      client,
+      ensOwnership,
+      wearablesOwnership,
+      emotesOwnership,
+      thirdPartyFetcher
+    ))!
 
     expect(profiles.length).toEqual(1)
     expect(profiles[0]).toEqual(metadata)
@@ -90,7 +122,15 @@ describe('profiles', () => {
     tpUrnFinderMock.mockReturnValue(Promise.resolve([TPW_ID]))
     const emotesOwnership = ownedNFTs(EmotesOwnership, SOME_ADDRESS, WEARABLE_ID_1)
 
-    const profiles = (await pfs.fetchProfiles([SOME_ADDRESS], theGraphClient, client, ensOwnership, wearablesOwnership, emotesOwnership, thirdPartyFetcher))!
+    const profiles = (await pfs.fetchProfiles(
+      [SOME_ADDRESS],
+      theGraphClient,
+      client,
+      ensOwnership,
+      wearablesOwnership,
+      emotesOwnership,
+      thirdPartyFetcher
+    ))!
 
     expect(profiles.length).toEqual(1)
     metadata.avatars[0].avatar.wearables = [TPW_ID]
@@ -106,7 +146,15 @@ describe('profiles', () => {
     tpWearablesOwnership.mockReturnValue(Promise.resolve(new Map()))
     const emotesOwnership = ownedNFTs(EmotesOwnership, SOME_ADDRESS, WEARABLE_ID_1)
 
-    const profiles = (await pfs.fetchProfiles([SOME_ADDRESS], theGraphClient, client, ensOwnership, wearablesOwnership, emotesOwnership, thirdPartyFetcher))!
+    const profiles = (await pfs.fetchProfiles(
+      [SOME_ADDRESS],
+      theGraphClient,
+      client,
+      ensOwnership,
+      wearablesOwnership,
+      emotesOwnership,
+      thirdPartyFetcher
+    ))!
 
     expect(profiles.length).toEqual(1)
     expect(profiles[0].avatars[0].avatar.wearables.length).toEqual(0)
@@ -118,7 +166,15 @@ describe('profiles', () => {
     const wearablesOwnership = noNFTs(WearablesOwnership)
     const emotesOwnership = ownedNFTs(EmotesOwnership, SOME_ADDRESS, WEARABLE_ID_1)
 
-    const profiles = (await pfs.fetchProfiles([SOME_ADDRESS], theGraphClient, client, ensOwnership, wearablesOwnership, emotesOwnership, thirdPartyFetcher))!
+    const profiles = (await pfs.fetchProfiles(
+      [SOME_ADDRESS],
+      theGraphClient,
+      client,
+      ensOwnership,
+      wearablesOwnership,
+      emotesOwnership,
+      thirdPartyFetcher
+    ))!
 
     expect(profiles.length).toEqual(0)
   })
@@ -130,7 +186,15 @@ describe('profiles', () => {
     const wearablesOwnership = noNFTs(WearablesOwnership)
     const emotesOwnership = ownedNFTs(EmotesOwnership, SOME_ADDRESS, WEARABLE_ID_1)
 
-    const profiles = (await pfs.fetchProfiles([SOME_ADDRESS], theGraphClient, client, ensOwnership, wearablesOwnership, emotesOwnership, thirdPartyFetcher))!
+    const profiles = (await pfs.fetchProfiles(
+      [SOME_ADDRESS],
+      theGraphClient,
+      client,
+      ensOwnership,
+      wearablesOwnership,
+      emotesOwnership,
+      thirdPartyFetcher
+    ))!
 
     expect(profiles.length).toEqual(1)
     expect(profiles[0].avatars[0].avatar.snapshots.aKey).toEqual(`${EXTERNAL_URL}/contents/aHash`)
@@ -146,7 +210,15 @@ describe('profiles', () => {
     const wearablesOwnership = noNFTs(WearablesOwnership)
     const emotesOwnership = ownedNFTs(EmotesOwnership, SOME_ADDRESS, WEARABLE_ID_1)
 
-    const profiles = (await pfs.fetchProfiles([SOME_ADDRESS], theGraphClient, client, ensOwnership, wearablesOwnership, emotesOwnership, thirdPartyFetcher))!
+    const profiles = (await pfs.fetchProfiles(
+      [SOME_ADDRESS],
+      theGraphClient,
+      client,
+      ensOwnership,
+      wearablesOwnership,
+      emotesOwnership,
+      thirdPartyFetcher
+    ))!
 
     expect(profiles.length).toEqual(1)
     expect(profiles[0].avatars[0].avatar.snapshots.aKey).toEqual(`${EXTERNAL_URL}/contents/fileHash`)
@@ -159,8 +231,30 @@ describe('profiles', () => {
     const wearablesOwnership = ownedNFTs(WearablesOwnership, SOME_ADDRESS, WEARABLE_ID_1)
     const emotesOwnership = ownedNFTs(EmotesOwnership, SOME_ADDRESS, WEARABLE_ID_1)
 
-    expect(await pfs.fetchProfiles([SOME_ADDRESS], theGraphClient, client, ensOwnership, wearablesOwnership, emotesOwnership, thirdPartyFetcher, 2000)).toBe(undefined)
-    expect(await pfs.fetchProfiles([SOME_ADDRESS], theGraphClient, client, ensOwnership, wearablesOwnership, emotesOwnership, thirdPartyFetcher, 3000)).toBe(undefined)
+    expect(
+      await pfs.fetchProfiles(
+        [SOME_ADDRESS],
+        theGraphClient,
+        client,
+        ensOwnership,
+        wearablesOwnership,
+        emotesOwnership,
+        thirdPartyFetcher,
+        2000
+      )
+    ).toBe(undefined)
+    expect(
+      await pfs.fetchProfiles(
+        [SOME_ADDRESS],
+        theGraphClient,
+        client,
+        ensOwnership,
+        wearablesOwnership,
+        emotesOwnership,
+        thirdPartyFetcher,
+        3000
+      )
+    ).toBe(undefined)
   })
 })
 
@@ -171,7 +265,7 @@ function profileWith(
     wearables?: string[]
     snapshots?: Record<string, string>
     content?: { file: string; hash: string }
-    emotes?: { slot: number, urn: string }[]
+    emotes?: { slot: number; urn: string }[]
   }
 ): { entity: Entity; metadata: pfs.ProfileMetadata } {
   const metadata = {
@@ -210,7 +304,7 @@ function profileWith(
 
 function contentServerThatReturns(profile?: Entity): SmartContentClient {
   const mockedClient = mock(SmartContentClient)
-  when(mockedClient.fetchEntitiesByPointers(anything(), anything())).thenResolve(profile ? [profile] : [])
+  when(mockedClient.fetchEntitiesByPointers(anything())).thenResolve(profile ? [profile] : [])
   when(mockedClient.getExternalContentServerUrl()).thenReturn(EXTERNAL_URL)
   return instance(mockedClient)
 }

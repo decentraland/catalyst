@@ -15,7 +15,6 @@ const COLLECTIONS = {
 }
 
 describe('OffChainWearablesManager', () => {
-
   beforeEach(() => jest.useFakeTimers())
 
   afterAll(() => jest.useRealTimers())
@@ -54,11 +53,15 @@ describe('OffChainWearablesManager', () => {
     const t1 = 1
     const t2 = 2
 
-    when(contentClientMock.fetchEntitiesByPointers(anything(), objectContaining([WEARABLE_ID_3])))
+    when(contentClientMock.fetchEntitiesByPointers(objectContaining([WEARABLE_ID_3])))
       .thenResolve([buildEntityWithTimestampInMetadata(WEARABLE_ID_3, t1)])
       .thenResolve([buildEntityWithTimestampInMetadata(WEARABLE_ID_3, t2)])
 
-    const manager = new OffChainWearablesManager({ client: contentClient, collections: { [COLLECTION_ID_2]: [WEARABLE_ID_3] }, refreshTime: '2s' })
+    const manager = new OffChainWearablesManager({
+      client: contentClient,
+      collections: { [COLLECTION_ID_2]: [WEARABLE_ID_3] },
+      refreshTime: '2s'
+    })
 
     const firstWearables = await manager.find({ collectionIds: [COLLECTION_ID_2] })
     expect(firstWearables.length).toBe(1)
@@ -131,12 +134,12 @@ function assertReturnWearablesAre(wearables: LambdasWearable[], ...ids: Wearable
 }
 
 function assertContentServerWasCalledOnceWithIds(contentClient: SmartContentClient, ...ids: WearableId[]) {
-  verify(contentClient.fetchEntitiesByPointers(EntityType.WEARABLE, deepEqual(ids))).once()
+  verify(contentClient.fetchEntitiesByPointers(deepEqual(ids))).once()
 }
 
 function contentServer() {
   const mockedClient = mock(SmartContentClient)
-  when(mockedClient.fetchEntitiesByPointers(anything(), anything())).thenCall((_, ids) =>
+  when(mockedClient.fetchEntitiesByPointers(anything())).thenCall((ids) =>
     Promise.resolve(ids.map((id) => buildEntity(id)))
   )
   return { instance: instance(mockedClient), mock: mockedClient }

@@ -1,4 +1,3 @@
-import { EntityType } from '@dcl/schemas'
 import { Logger } from 'log4js'
 import ms from 'ms'
 import { SmartContentClient } from '../../utils/SmartContentClient'
@@ -47,7 +46,7 @@ export async function refreshContentServerStatus(
 
 async function timeContentDeployments(contentService: SmartContentClient): Promise<number> {
   const startingTime = Date.now()
-  await contentService.fetchEntitiesByPointers(EntityType.SCENE, ['0,0'])
+  await contentService.fetchEntitiesByPointers(['0,0'])
   const endingTime = Date.now()
 
   return endingTime - startingTime
