@@ -17,9 +17,9 @@
     "test:unit": "jest --selectProjects unit --runInBand --forceExit --detectOpenHandles --coverage"
   },
   "dependencies": {
-    "@dcl/block-indexer": "1.0.0-20221219151053.commit-69f0ed7",
+    "@dcl/block-indexer": "^1.0.0-20221223191317.commit-2d753e7",
     "@dcl/catalyst-api-specs": "^2.0.14",
-    "@dcl/catalyst-contracts": "^3.0.0",
+    "@dcl/catalyst-contracts": "^3.0.1",
     "@dcl/content-validator": "^4.0.21-20221220140243.commit-bc03010",
     "@dcl/crypto": "^3.2.2",
     "@dcl/hashing": "^1.1.1",

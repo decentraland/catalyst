@@ -3,7 +3,8 @@ import {
   createValidator as validator,
   ExternalCalls,
   SubGraphs,
-  Validator as IValidatorComponent
+  Validator as IValidatorComponent,
+  Checker
 } from '@dcl/content-validator'
 import { Authenticator } from '@dcl/crypto'
 import { EnvironmentConfig } from '../../Environment'
@@ -21,7 +22,8 @@ import {
   EthereumProvider,
   loadTree
 } from '@dcl/block-indexer'
-import { HTTPProvider, RequestManager } from 'eth-connect'
+import { ContractFactory, HTTPProvider, RequestManager } from 'eth-connect'
+import { checkerAbi, checkerContracts } from '@dcl/catalyst-contracts'
 
 const createEthereumProvider = (httpProvider: HTTPProvider): EthereumProvider => {
   const reqMan = new RequestManager(httpProvider)
@@ -31,6 +33,23 @@ const createEthereumProvider = (httpProvider: HTTPProvider): EthereumProvider =>
     },
     getBlock: async (block: number): Promise<{ timestamp: string | number }> => {
       return await reqMan.eth_getBlockByNumber(block, false)
+    }
+  }
+}
+
+type CheckerContracts = {
+  landContractAddress: string
+  stateContractAddress: string
+  checkerContractAddress: string
+}
+
+async function createChecker(ethereumProvider: HTTPProvider, contracts: CheckerContracts): Promise<Checker> {
+  const factory = new ContractFactory(new RequestManager(ethereumProvider), checkerAbi)
+  const checker = (await factory.at(contracts.checkerContractAddress)) as any
+
+  return {
+    checkLAND: (ethAddress: string, x: number, y: number, block: number) => {
+      return checker.checkLAND(ethAddress, contracts.landContractAddress, contracts.stateContractAddress, x, y, block)
     }
   }
 }
@@ -86,10 +105,7 @@ export async function createSubGraphsComponent(
 
   return {
     L1: {
-      landManager: await createSubgraphComponent(
-        baseComponents,
-        components.env.getConfig(EnvironmentConfig.LAND_MANAGER_SUBGRAPH_URL)
-      ),
+      checker: await createChecker(components.ethereumProvider, checkerContracts[ethNetwork === 'mainnet' ? '1' : '5']),
       collections: await createSubgraphComponent(
         baseComponents,
         components.env.getConfig(EnvironmentConfig.COLLECTIONS_L1_SUBGRAPH_URL)

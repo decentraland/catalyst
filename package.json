@@ -53,5 +53,8 @@
   },
   "jest-junit": {
     "addFileAttribute": "true"
+  },
+  "dependencies": {
+    "@dcl/block-indexer": "^1.0.0-20221223191317.commit-2d753e7"
   }
 }
