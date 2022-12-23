@@ -31,21 +31,36 @@ export async function fixMissingProfilesContentFiles({
     const result = await database.query(`
       SELECT *
       FROM deployments d
-      WHERE NOT EXISTS(
+      WHERE entity_type = 'profile'
+      AND NOT EXISTS(
               SELECT 1
               FROM content_files cf
               WHERE cf.deployment = d.id
           )
         AND d.deleter_deployment IS NULL
-        AND entity_type = 'profile'`)
+    `)
     logger.info(`Found ${result.rowCount} profiles with missing content files.`)
+
+    const regex = /Qm[a-zA-Z0-9]{44}$|^baf[a-zA-Z0-9]{56}/
+    function extract(value: string): string {
+      if (value && value.startsWith('http')) {
+        const matches = value.match(regex)
+        if (matches && matches.length > 0) {
+          return matches[0]
+        }
+      }
+      return value
+    }
 
     for (const deployment of result.rows) {
       const contentFiles: ContentMapping[] = deployment['entity_metadata']['v']['avatars']
-        .map((avatar) => [
-          { file: 'body.png', hash: avatar.avatar.snapshots['body'] },
-          { file: 'face256.png', hash: avatar.avatar.snapshots['face256'] }
-        ])
+        .map((avatar) => {
+          const images: { file: string; hash: string }[] = []
+          for (const [key, value] of Object.entries(avatar.avatar.snapshots)) {
+            images.push({ file: `${key}.png`, hash: extract(value as string) })
+          }
+          return images
+        })
         .flat()
 
       try {
@@ -53,7 +68,9 @@ export async function fixMissingProfilesContentFiles({
           await ensureFileExistsInStorage(env, logger, storage, fetcher, file.hash)
         }
 
+        // if (false) {
         await saveContentFiles(database, deployment.id, contentFiles)
+        // }
       } catch (e) {
         logger.warn(
           `Error processing deployment id ${deployment.id} for entity id ${
@@ -74,6 +91,10 @@ async function ensureFileExistsInStorage(
   fetcher: IFetchComponent,
   file: string
 ): Promise<void> {
+  if (!file) {
+    logger.info(`Invalid file ${file}`)
+    return
+  }
   if (await storage.exist(file)) {
     logger.info(`File ${file} already exists`)
     return
