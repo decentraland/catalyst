@@ -73,7 +73,7 @@ export function createBatchDeployerComponent(
     return false
   }
 
-  async function handleDeploymentFromServer(entity: DeployableEntity, contentServer: string) {
+  async function handleDeploymentFromServers(entity: DeployableEntity, contentServers: string[]) {
     if (await shouldRemoteEntityDeploymentBeIgnored(entity)) {
       // early return to prevent noops
       components.metrics.increment('dcl_ignored_sync_deployments')
@@ -86,8 +86,10 @@ export function createBatchDeployerComponent(
     let elementInMap = deploymentsMap.get(entity.entityId)
     if (elementInMap) {
       // if the element to deploy exists in the map, then we add the server to the list for load balancing
-      if (!elementInMap.servers.includes(contentServer)) {
-        elementInMap.servers.push(contentServer)
+      for (const contentServer of contentServers) {
+        if (!elementInMap.servers.includes(contentServer)) {
+          elementInMap.servers.push(contentServer)
+        }
       }
       if (entity.markAsDeployed) {
         logs.debug('Entering mark as deployed zone')
@@ -103,7 +105,7 @@ export function createBatchDeployerComponent(
     } else {
       elementInMap = {
         entity,
-        servers: [contentServer],
+        servers: contentServers,
         markAsDeployesFns: entity.markAsDeployed ? [entity.markAsDeployed] : []
       }
 
@@ -161,10 +163,13 @@ export function createBatchDeployerComponent(
           } finally {
             // decrement the gauge of enqueued deployments
             components.metrics.decrement('dcl_pending_deployment_gauge', metricLabels)
-            if (wasEntityProcessed && elementInMap) {
-              for (const markAsDeployed of elementInMap.markAsDeployesFns) {
-                await markAsDeployed()
-              }
+            // if (wasEntityProcessed && elementInMap) {
+            //   for (const markAsDeployed of elementInMap.markAsDeployesFns) {
+            //     await markAsDeployed()
+            //   }
+            // }
+            if (wasEntityProcessed && entity.markAsDeployed) {
+              await entity.markAsDeployed()
             }
           }
         }, operationPriority)
@@ -184,9 +189,8 @@ export function createBatchDeployerComponent(
       entity: SnapshotSyncDeployment & { markAsDeployed?: () => Promise<void> },
       contentServers: string[]
     ): Promise<void> {
-      for (const contentServer of contentServers) {
-        await handleDeploymentFromServer(entity, contentServer)
-      }
+      await handleDeploymentFromServers(entity, contentServers)
+      components.metrics.increment('dcl_batch_deployer_deployed_entitites_total')
     }
   }
 }
