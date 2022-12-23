@@ -246,8 +246,8 @@ export const createActiveEntitiesComponent = (
     clear,
 
     getCachedEntity: (idOrPointer) => {
-      if (cache.has(idOrPointer)) {
-        const cachedEntity = cache.get(idOrPointer)
+      if (cache.has(idOrPointer.toLowerCase())) {
+        const cachedEntity = cache.get(idOrPointer.toLowerCase())
         return isEntityPresent(cachedEntity) ? cachedEntity.id : cachedEntity
       }
       return entityIdByPointers.get(idOrPointer.toLowerCase())
