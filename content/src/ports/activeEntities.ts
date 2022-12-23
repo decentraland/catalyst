@@ -104,7 +104,7 @@ export const createActiveEntitiesComponent = (
    * useful to retrieve entities by pointers
    */
   const update = async (pointers: string[], entity: Entity | NotActiveEntity): Promise<void> => {
-    for (const pointer of pointers.map((pointer) => pointer.toLowerCase())) {
+    for (const pointer of pointers.map(normalizeKey)) {
       setPreviousEntityAsNone(pointer)
       entityIdByPointers.set(pointer, isEntityPresent(entity) ? entity.id : entity)
     }
@@ -133,7 +133,7 @@ export const createActiveEntitiesComponent = (
         (pointer) => !entities.some((entity) => entity.pointers.includes(pointer))
       )
 
-      for (const pointer of pointersWithoutActiveEntity.map((pointer) => pointer.toLowerCase())) {
+      for (const pointer of pointersWithoutActiveEntity.map(normalizeKey)) {
         entityIdByPointers.set(pointer, 'NOT_ACTIVE_ENTITY')
         logger.debug('pointer has no active entity', { pointer })
       }
@@ -142,7 +142,7 @@ export const createActiveEntitiesComponent = (
         (entityId) => !entities.some((entity) => entity.id === entityId)
       )
 
-      for (const entityId of entityIdsWithoutActiveEntity.map((pointer) => pointer.toLowerCase())) {
+      for (const entityId of entityIdsWithoutActiveEntity.map(normalizeKey)) {
         cache.set(entityId, 'NOT_ACTIVE_ENTITY')
         logger.debug('entityId has no active entity', { entityId })
       }
@@ -176,7 +176,7 @@ export const createActiveEntitiesComponent = (
    */
   const withIds = async (entityIds: string[]): Promise<Entity[]> => {
     // check what is on the cache
-    const uniqueEntityIds = new Set(entityIds.map((entityId) => entityId.toLowerCase()))
+    const uniqueEntityIds = new Set(entityIds.map(normalizeKey))
     const onCache: (Entity | NotActiveEntity)[] = []
     const remaining: string[] = []
     for (const entityId of uniqueEntityIds) {
@@ -202,7 +202,7 @@ export const createActiveEntitiesComponent = (
    * Retrieve active entities that are pointed by the given pointers
    */
   const withPointers = async (pointers: string[]) => {
-    const uniquePointers = new Set(pointers.map((pointer) => pointer.toLowerCase()))
+    const uniquePointers = new Set(pointers.map(normalizeKey))
     const uniqueEntityIds = new Set<string>() // entityIds that are associated to the given pointers
     const remaining: string[] = [] // pointers that are not associated to any entity
 
@@ -235,8 +235,10 @@ export const createActiveEntitiesComponent = (
    * Retrieve active entities that are pointed by pointers that match the urn prefix
    */
   const withPrefix = async (collectionUrn: string) => {
-    return getActiveDeploymentsByUrnPrefix({ database: components.database }, collectionUrn.toLowerCase())
+    return getActiveDeploymentsByUrnPrefix({ database: components.database }, normalizeKey(collectionUrn))
   }
+
+  const normalizeKey = (key: string) => key.toLowerCase()
 
   return {
     withIds,
@@ -246,11 +248,11 @@ export const createActiveEntitiesComponent = (
     clear,
 
     getCachedEntity: (idOrPointer) => {
-      if (cache.has(idOrPointer.toLowerCase())) {
-        const cachedEntity = cache.get(idOrPointer.toLowerCase())
+      if (cache.has(normalizeKey(idOrPointer))) {
+        const cachedEntity = cache.get(normalizeKey(idOrPointer))
         return isEntityPresent(cachedEntity) ? cachedEntity.id : cachedEntity
       }
-      return entityIdByPointers.get(idOrPointer.toLowerCase())
+      return entityIdByPointers.get(normalizeKey(idOrPointer))
     }
   }
 }
