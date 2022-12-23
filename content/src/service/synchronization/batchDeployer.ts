@@ -44,7 +44,7 @@ export function createBatchDeployerComponent(
   const deploymentsMap = new Map<
     string,
     CannonicalEntityDeployment & {
-      markAsDeployesFns: Required<DeployableEntity['markAsDeployed'][]>
+      markAsDeployedFns: Required<DeployableEntity['markAsDeployed'][]>
     }
   >()
   const successfulDeployments = new Set<string>()
@@ -83,33 +83,32 @@ export function createBatchDeployerComponent(
       return
     }
 
-    let elementInMap = deploymentsMap.get(entity.entityId)
-    if (elementInMap) {
+    const existentElementInMap = deploymentsMap.get(entity.entityId)
+    if (existentElementInMap) {
       // if the element to deploy exists in the map, then we add the server to the list for load balancing
       for (const contentServer of contentServers) {
-        if (!elementInMap.servers.includes(contentServer)) {
-          elementInMap.servers.push(contentServer)
+        if (!existentElementInMap.servers.includes(contentServer)) {
+          existentElementInMap.servers.push(contentServer)
         }
       }
       if (entity.markAsDeployed) {
-        logs.debug('Entering mark as deployed zone')
         if (
           successfulDeployments.has(entity.entityId) ||
           (await components.failedDeployments.findFailedDeployment(entity.entityId))
         ) {
           await entity.markAsDeployed()
         } else {
-          elementInMap.markAsDeployesFns.push(entity.markAsDeployed)
+          existentElementInMap.markAsDeployedFns.push(entity.markAsDeployed)
         }
       }
     } else {
-      elementInMap = {
+      const newElementInMap = {
         entity,
         servers: contentServers,
-        markAsDeployesFns: entity.markAsDeployed ? [entity.markAsDeployed] : []
+        markAsDeployedFns: entity.markAsDeployed ? [entity.markAsDeployed] : []
       }
 
-      deploymentsMap.set(entity.entityId, elementInMap)
+      deploymentsMap.set(entity.entityId, newElementInMap)
 
       const metricLabels = { entity_type: entity.entityType }
       // increment the gauge of enqueued deployments
@@ -126,6 +125,13 @@ export function createBatchDeployerComponent(
            *  3. The entity failed to be deployed but was successfully persisted as failed deployment
            */
           let wasEntityProcessed = false
+
+          const elementInMap = deploymentsMap.get(entity.entityId)
+          if (!elementInMap) {
+            // This should never happen as this scheduled fn is added after the deploymentsMap is set the entityId
+            throw new Error('element in map doesn not exist! this should never happen')
+          }
+
           try {
             if (await isEntityDeployed(components, entity.entityId)) {
               wasEntityProcessed = true
@@ -137,7 +143,7 @@ export function createBatchDeployerComponent(
               entity.entityId,
               entity.entityType,
               entity.authChain,
-              elementInMap!.servers,
+              elementInMap.servers,
               DeploymentContext.SYNCED
             )
             wasEntityProcessed = true
@@ -163,13 +169,10 @@ export function createBatchDeployerComponent(
           } finally {
             // decrement the gauge of enqueued deployments
             components.metrics.decrement('dcl_pending_deployment_gauge', metricLabels)
-            // if (wasEntityProcessed && elementInMap) {
-            //   for (const markAsDeployed of elementInMap.markAsDeployesFns) {
-            //     await markAsDeployed()
-            //   }
-            // }
-            if (wasEntityProcessed && entity.markAsDeployed) {
-              await entity.markAsDeployed()
+            if (wasEntityProcessed && elementInMap) {
+              for (const markAsDeployed of elementInMap?.markAsDeployedFns) {
+                await markAsDeployed()
+              }
             }
           }
         }, operationPriority)
@@ -190,7 +193,6 @@ export function createBatchDeployerComponent(
       contentServers: string[]
     ): Promise<void> {
       await handleDeploymentFromServers(entity, contentServers)
-      components.metrics.increment('dcl_batch_deployer_deployed_entitites_total')
     }
   }
 }
