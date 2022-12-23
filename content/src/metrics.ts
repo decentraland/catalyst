@@ -160,9 +160,5 @@ export const metricsDeclaration = validateMetricsDeclaration({
     help: 'Histogram of time spent generating full snapshots',
     type: 'histogram',
     labelNames: ['result', 'interval_size'] // result=('success'|'error')
-  },
-  dcl_batch_deployer_deployed_entitites_total: {
-    help: 'Total entities deployed by the batch deployer',
-    type: 'counter'
   }
 })
