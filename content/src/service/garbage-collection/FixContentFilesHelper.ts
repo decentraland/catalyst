@@ -48,11 +48,19 @@ export async function fixMissingProfilesContentFiles({
         ])
         .flat()
 
-      for (const file of contentFiles) {
-        await ensureFileExistsInStorage(env, logger, storage, fetcher, file.hash)
-      }
+      try {
+        for (const file of contentFiles) {
+          await ensureFileExistsInStorage(env, logger, storage, fetcher, file.hash)
+        }
 
-      await saveContentFiles(database, deployment.id, contentFiles)
+        await saveContentFiles(database, deployment.id, contentFiles)
+      } catch (e) {
+        logger.warn(
+          `Error processing deployment id ${deployment.id} for entity id ${
+            deployment.entityId
+          }. ContentFiles: ${JSON.stringify(contentFiles)}`
+        )
+      }
     }
   } finally {
     logger.info(`Fixing missing content files took ${Date.now() - start} ms`)
