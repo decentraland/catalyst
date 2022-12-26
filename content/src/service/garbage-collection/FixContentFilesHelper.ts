@@ -68,9 +68,7 @@ export async function fixMissingProfilesContentFiles({
           await ensureFileExistsInStorage(env, logger, storage, fetcher, file.hash)
         }
 
-        // if (false) {
         await saveContentFiles(database, deployment.id, contentFiles)
-        // }
       } catch (e) {
         logger.warn(
           `Error processing deployment id ${deployment.id} for entity id ${
