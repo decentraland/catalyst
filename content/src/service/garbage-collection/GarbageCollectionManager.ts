@@ -5,11 +5,6 @@ import { SYSTEM_PROPERTIES } from '../../ports/system-properties'
 import { AppComponents } from '../../types'
 import { fixMissingProfilesContentFiles } from './FixContentFilesHelper'
 
-export type GarbageCollectionManagerComponents = Pick<
-  AppComponents,
-  'database' | 'env' | 'fetcher' | 'fs' | 'logs' | 'metrics' | 'storage' | 'systemProperties'
->
-
 export class GarbageCollectionManager {
   private LOGGER: ILoggerComponent.ILogger
   private hashesDeletedInLastSweep: Set<string> = new Set()
@@ -19,7 +14,10 @@ export class GarbageCollectionManager {
   private sweeping = false
 
   constructor(
-    private readonly components: GarbageCollectionManagerComponents,
+    private readonly components: Pick<
+      AppComponents,
+      'database' | 'env' | 'fetcher' | 'logs' | 'metrics' | 'storage' | 'systemProperties'
+    >,
     private readonly performGarbageCollection: boolean,
     private readonly sweepInterval: number
   ) {

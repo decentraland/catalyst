@@ -7,10 +7,7 @@ import { ILoggerComponent } from '@well-known-components/interfaces'
 import { IFetchComponent } from '@well-known-components/http-server'
 import { AppComponents } from '../../types'
 
-export type ContentFilesFixerComponents = Pick<
-  AppComponents,
-  'database' | 'env' | 'fetcher' | 'fs' | 'logs' | 'storage'
->
+export type ContentFilesFixerComponents = Pick<AppComponents, 'database' | 'env' | 'fetcher' | 'logs' | 'storage'>
 
 export async function fixMissingProfilesContentFiles({
   database,
