@@ -50,8 +50,12 @@ export async function fixMissingProfilesContentFiles({
       const contentFiles: ContentMapping[] = deployment['entity_metadata']['v']['avatars']
         .map((avatar) => {
           const images: { file: string; hash: string }[] = []
-          for (const [key, value] of Object.entries(avatar.avatar.snapshots)) {
-            images.push({ file: `${key}.png`, hash: extract(value as string) })
+          if (!avatar.avatar.snapshots) {
+            logger.warn(`Found profile without snapshots: ${JSON.stringify(avatar)}`)
+          } else {
+            for (const [key, value] of Object.entries(avatar.avatar.snapshots || [])) {
+              images.push({ file: `${key}.png`, hash: extract(value as string) })
+            }
           }
           return images
         })
