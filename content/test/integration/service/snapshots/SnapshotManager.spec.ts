@@ -58,7 +58,7 @@ loadStandaloneTestEnvironment()('Integration - Snapshot Manager', (testEnv) => {
     // Assert snapshot was created
     expect(snapshotMetadata).toBeDefined()
     expect(isSuccessfulDeployment(deploymentResult)).toBeTruthy()
-    expect(snapshotMetadata!.lastIncludedDeploymentTimestamp).toEqual(Math.max(E1.entity.timestamp, E2.entity.timestamp))
+    expect(snapshotMetadata!.lastIncludedDeploymentTimestamp).toEqual(deploymentResult)
     // Assert snapshot content is correct
     await assertGZipSnapshotContains(snapshotMetadata, E1, E2)
   })
@@ -77,7 +77,8 @@ loadStandaloneTestEnvironment()('Integration - Snapshot Manager', (testEnv) => {
     // Assert snapshot was created
     expect(snapshotMetadata).toBeDefined()
     expect(isSuccessfulDeployment(deploymentResult)).toBeTruthy()
-    expect(snapshotMetadata!.entities.scene.lastIncludedDeploymentTimestamp).toEqual(Math.max(E1.entity.timestamp, E2.entity.timestamp))
+    // expect(snapshotMetadata!.entities.scene.lastIncludedDeploymentTimestamp).toEqual(Math.max(E1.entity.timestamp, E2.entity.timestamp))
+    expect(snapshotMetadata!.entities.scene.lastIncludedDeploymentTimestamp).toEqual(deploymentResult)
     // Assert snapshot content is correct
     await assertGZipSnapshotContains(snapshotMetadata!.entities.scene, E1, E2)
   })
