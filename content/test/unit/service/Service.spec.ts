@@ -1,7 +1,7 @@
 import { Authenticator } from '@dcl/crypto'
 import { hashV1 } from '@dcl/hashing'
 import { Entity, EntityType, EthAddress } from '@dcl/schemas'
-import { createConfigComponent } from '@well-known-components/env-config-provider'
+import { createConfigComponent } from "@well-known-components/env-config-provider"
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import assert from 'assert'
@@ -14,22 +14,22 @@ import * as deploymentLogic from '../../../src/logic/deployments'
 import { metricsDeclaration } from '../../../src/metrics'
 import { createActiveEntitiesComponent } from '../../../src/ports/activeEntities'
 import { Denylist } from '../../../src/ports/denylist'
-import { createDeployRateLimiter } from '../../../src/ports/deployRateLimiterComponent'
 import { createDeployedEntitiesBloomFilter } from '../../../src/ports/deployedEntitiesBloomFilter'
+import { createDeployRateLimiter } from '../../../src/ports/deployRateLimiterComponent'
 import { createFailedDeploymentsCache } from '../../../src/ports/failedDeploymentsCache'
 import { createTestDatabaseComponent } from '../../../src/ports/postgres'
 import { createSequentialTaskExecutor } from '../../../src/ports/sequecuentialTaskExecutor'
-import {
-  DeploymentContext,
-  DeploymentResult,
-  LocalDeploymentAuditInfo,
-  isInvalidDeployment
-} from '../../../src/service/Service'
-import { ServiceImpl } from '../../../src/service/ServiceImpl'
 import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
 import * as deployments from '../../../src/service/deployments/deployments'
 import { Deployment } from '../../../src/service/deployments/types'
 import { DELTA_POINTER_RESULT } from '../../../src/service/pointers/PointerManager'
+import {
+  DeploymentContext,
+  DeploymentResult,
+  isInvalidDeployment,
+  LocalDeploymentAuditInfo
+} from '../../../src/service/Service'
+import { ServiceImpl } from '../../../src/service/ServiceImpl'
 import { EntityVersion } from '../../../src/types'
 import { buildEntityAndFile } from '../../helpers/service/EntityTestFactory'
 import { NoOpServerValidator, NoOpValidator } from '../../helpers/service/validations/NoOpValidator'
@@ -52,15 +52,17 @@ describe('Service', function () {
   // starts the variables
   beforeAll(async () => {
     randomFileHash = await hashV1(randomFile)
-    ;[entity, entityFile] = await buildEntityAndFile(
-      EntityType.SCENE,
-      POINTERS,
-      Date.now(),
-      new Map([['file', randomFileHash]]),
-      { metadata: 'metadata' }
-    )
+      ;[entity, entityFile] = await buildEntityAndFile(
+        EntityType.SCENE,
+        POINTERS,
+        Date.now(),
+        new Map([['file', randomFileHash]]),
+        { 'metadata': 'metadata' }
+      )
 
-    jest.spyOn(pointers, 'updateActiveDeployments').mockImplementation(() => Promise.resolve())
+    jest.spyOn(pointers, 'updateActiveDeployments').mockImplementation(() =>
+      Promise.resolve()
+    )
   })
 
   it(`When no file matches the given entity id, then deployment fails`, async () => {
@@ -122,20 +124,16 @@ describe('Service', function () {
     expect(storeSpy).not.toHaveBeenCalledWith(randomFileHash, expect.anything())
   })
 
-  it(`When the same pointer is asked twice, then the second time cached the result in lowercase and is returned`, async () => {
+  it(`When the same pointer is asked twice, then the second time cached the result is returned`, async () => {
     const service = await buildService()
-    const serviceSpy = jest
-      .spyOn(deployments, 'getDeploymentsForActiveEntities')
-      .mockImplementation(() => Promise.resolve([fakeDeployment()]))
+    const serviceSpy = jest.spyOn(deployments, 'getDeploymentsForActiveEntities').mockImplementation(() =>
+      Promise.resolve([fakeDeployment()])
+    )
 
     // Call the first time
     await service.components.activeEntities.withPointers(POINTERS)
     // When a pointer is asked the first time, then the database is reached
-    expect(serviceSpy).toHaveBeenCalledWith(
-      expect.anything(),
-      undefined,
-      POINTERS.map((pointer) => pointer.toLowerCase())
-    )
+    expect(serviceSpy).toHaveBeenCalledWith(expect.anything(), undefined, POINTERS)
 
     // Reset spy and call again
     serviceSpy.mockReset()
@@ -143,20 +141,16 @@ describe('Service', function () {
     expect(serviceSpy).not.toHaveBeenCalled()
   })
 
-  it(`Given a pointer with no deployment, when is asked twice, then the second time cached the result is returned using lowercases`, async () => {
+  it(`Given a pointer with no deployment, when is asked twice, then the second time cached the result is returned`, async () => {
     const service = await buildService()
-    const serviceSpy = jest
-      .spyOn(deployments, 'getDeploymentsForActiveEntities')
-      .mockImplementation(() => Promise.resolve([fakeDeployment()]))
+    const serviceSpy = jest.spyOn(deployments, 'getDeploymentsForActiveEntities').mockImplementation(() =>
+      Promise.resolve([fakeDeployment()])
+    )
 
     // Call the first time
     await service.components.activeEntities.withPointers(POINTERS)
 
-    expect(serviceSpy).toHaveBeenCalledWith(
-      expect.anything(),
-      undefined,
-      POINTERS.map((pointer) => pointer.toLowerCase())
-    )
+    expect(serviceSpy).toHaveBeenCalledWith(expect.anything(), undefined, POINTERS)
 
     // Reset spy and call again
     serviceSpy.mockReset()
@@ -164,7 +158,7 @@ describe('Service', function () {
     expect(serviceSpy).not.toHaveBeenCalled()
   })
 
-  it(`When a pointer is affected by a deployment, then it is updated in the cache using lowercases`, async () => {
+  it(`When a pointer is affected by a deployment, then it is updated in the cache`, async () => {
     const service = await buildService()
     jest.spyOn(service.components.pointerManager, 'referenceEntityFromPointers').mockImplementation(() =>
       Promise.resolve(
@@ -175,20 +169,16 @@ describe('Service', function () {
       )
     )
 
-    let serviceSpy = jest
-      .spyOn(deployments, 'getDeploymentsForActiveEntities')
-      .mockImplementation(() => Promise.resolve([fakeDeployment()]))
+    let serviceSpy = jest.spyOn(deployments, 'getDeploymentsForActiveEntities').mockImplementation(() =>
+      Promise.resolve([fakeDeployment()])
+    )
 
     jest.spyOn(deploymentLogic, 'saveDeploymentAndContentFiles').mockImplementation(() => Promise.resolve(1))
     jest.spyOn(deploymentQueries, 'setEntitiesAsOverwritten').mockImplementation(() => Promise.resolve())
 
     // Call the first time
     await service.components.activeEntities.withPointers(POINTERS)
-    expect(serviceSpy).toHaveBeenCalledWith(
-      expect.anything(),
-      undefined,
-      POINTERS.map((pointer) => pointer.toLowerCase())
-    )
+    expect(serviceSpy).toHaveBeenCalledWith(expect.anything(), undefined, POINTERS)
 
     // Make deployment that should update the cache
     await service.deployEntity([entityFile, randomFile], entity.id, auditInfo, DeploymentContext.LOCAL)
@@ -196,9 +186,9 @@ describe('Service', function () {
     // Reset spy and call again
     serviceSpy.mockReset()
 
-    serviceSpy = jest
-      .spyOn(deployments, 'getDeploymentsForActiveEntities')
-      .mockImplementation(() => Promise.resolve([fakeDeployment('QmSQc2mGpzanz1DDtTf2ZCFnwTpJvAbcwzsS4An5PXaTqg')]))
+    serviceSpy = jest.spyOn(deployments, 'getDeploymentsForActiveEntities').mockImplementation(() =>
+      Promise.resolve([fakeDeployment('QmSQc2mGpzanz1DDtTf2ZCFnwTpJvAbcwzsS4An5PXaTqg')])
+    )
     await service.components.activeEntities.withPointers(POINTERS)
 
     // expect(serviceSpy).toHaveBeenCalledWith(expect.anything(), ['QmSQc2mGpzanz1DDtTf2ZCFnwTpJvAbcwzsS4An5PXaTqg'], undefined)
@@ -227,10 +217,7 @@ describe('Service', function () {
     const failedDeploymentsCache = createFailedDeploymentsCache({ metrics })
     const storage = new MockedStorage()
     const pointerManager = NoOpPointerManager.build()
-    const authenticator = new ContentAuthenticator(
-      new HTTPProvider('https://rpc.decentraland.org/mainnet?project=catalyst-ci'),
-      DECENTRALAND_ADDRESS
-    )
+    const authenticator = new ContentAuthenticator(new HTTPProvider("https://rpc.decentraland.org/mainnet?project=catalyst-ci"), DECENTRALAND_ADDRESS)
     const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs })
     env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)
     const denylist: Denylist = { isDenylisted: () => false }
