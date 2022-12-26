@@ -1,4 +1,4 @@
-import { SnapshotSyncDeployment } from '@dcl/schemas'
+import { PointerChangesSyncDeployment, SnapshotSyncDeployment } from '@dcl/schemas'
 import SQL from 'sql-template-strings'
 import { AppComponents } from '../../types'
 import { NewSnapshotMetadata } from '../snapshots'
@@ -6,7 +6,7 @@ import { TimeRange } from '../time-range'
 
 export async function* streamActiveDeployments(
   components: Pick<AppComponents, 'database'>
-): AsyncIterable<SnapshotSyncDeployment> {
+): AsyncIterable<PointerChangesSyncDeployment> {
   const { database } = components
 
   const options = { batchSize: 1000 }
@@ -19,7 +19,7 @@ export async function* streamActiveDeployments(
         entity_type AS "entityType",
         entity_pointers AS "pointers",
         auth_chain AS "authChain",
-        date_part('epoch', entity_timestamp) * 1000 AS "entityTimestamp"
+        date_part('epoch', local_timestamp) * 1000 AS "localTimestamp"
       FROM deployments d
       WHERE d.deleter_deployment IS NULL
     `,
