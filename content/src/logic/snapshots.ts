@@ -3,7 +3,6 @@ import { AppComponents } from '../types'
 import {
   deleteSnapshotsInTimeRange,
   findSnapshotsStrictlyContainedInTimeRange,
-  getNumberOfActiveEntitiesInTimeRange,
   getSnapshotHashesNotInTimeRange,
   saveSnapshot,
   snapshotIsOutdated,
@@ -74,10 +73,10 @@ export async function generateSnapshotsInMultipleTimeRanges(
     const multipleSnapshotsShouldBeReplaced = isTimeRangeCoveredByOtherSnapshots && savedSnapshots.length > 1
     const existSnapshots = await components.storage.existMultiple(savedSnapshots.map((s) => s.hash))
     const allSavedSnapshotsAreStored = Array.from(existSnapshots.values()).every((exist) => exist == true)
-    const snapshotHasInactiveEntities =
-      savedSnapshots.length == 1 &&
-      (await getNumberOfActiveEntitiesInTimeRange(components, savedSnapshots[0].timeRange)) <
-        savedSnapshots[0].numberOfEntities
+    // const snapshotHasInactiveEntities =
+    //   savedSnapshots.length == 1 &&
+    //   (await getNumberOfActiveEntitiesInTimeRange(components, savedSnapshots[0].timeRange)) <
+    //     savedSnapshots[0].numberOfEntities
 
     const isOutdated = savedSnapshots.length == 1 && (await snapshotIsOutdated(components, savedSnapshots[0]))
 
@@ -85,7 +84,7 @@ export async function generateSnapshotsInMultipleTimeRanges(
       !isTimeRangeCoveredByOtherSnapshots ||
       multipleSnapshotsShouldBeReplaced ||
       !allSavedSnapshotsAreStored ||
-      snapshotHasInactiveEntities ||
+      // snapshotHasInactiveEntities ||
       isOutdated
 
     if (shouldGenerateNewSnapshot) {
@@ -97,7 +96,7 @@ export async function generateSnapshotsInMultipleTimeRanges(
           isTimeRangeCoveredByOtherSnapshots,
           multipleSnapshotsShouldBeReplaced,
           allSavedSnapshotsAreStored,
-          snapshotHasInactiveEntities,
+          // snapshotHasInactiveEntities,
           isOutdated
         })
       )
@@ -105,8 +104,9 @@ export async function generateSnapshotsInMultipleTimeRanges(
       const { hash, numberOfEntities } = await generateAndStoreSnapshot(components, timeRange)
       const savedSnapshotHashes = savedSnapshots.map((s) => s.hash)
       await components.database.transaction(async (txDatabase) => {
-        const replacedSnapshotHashes =
-          isTimeRangeCoveredByOtherSnapshots || snapshotHasInactiveEntities ? savedSnapshotHashes : []
+        // const replacedSnapshotHashes =
+        //   isTimeRangeCoveredByOtherSnapshots || snapshotHasInactiveEntities ? savedSnapshotHashes : []
+        const replacedSnapshotHashes = isTimeRangeCoveredByOtherSnapshots ? savedSnapshotHashes : []
         const newSnapshot = {
           hash,
           timeRange,
