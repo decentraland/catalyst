@@ -3,7 +3,6 @@ import { EnvironmentConfig } from './Environment'
 import { migrateContentFolderStructure } from './migrations/ContentFolderMigrationManager'
 import { bootstrapFromSnapshots } from './service/synchronization/bootstrapFromSnapshots'
 import { AppComponents } from './types'
-import { fixMissingProfilesContentFiles } from './service/garbage-collection/FixContentFilesHelper'
 
 // this function wires the business logic (adapters & controllers) with the components (ports)
 export async function main(program: Lifecycle.EntryPointParameters<AppComponents>): Promise<void> {
@@ -16,8 +15,6 @@ export async function main(program: Lifecycle.EntryPointParameters<AppComponents
 
   // TODO: move this purgeUploadsDirectory method to a standalone function inside src/logic/ folder
   await components.server.purgeUploadsDirectory()
-
-  await fixMissingProfilesContentFiles(components)
 
   // start ports: db, listeners, synchronizations, etc
   await startComponents()

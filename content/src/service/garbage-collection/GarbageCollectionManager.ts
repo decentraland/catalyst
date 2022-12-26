@@ -7,7 +7,7 @@ import { fixMissingProfilesContentFiles } from './FixContentFilesHelper'
 
 export type GarbageCollectionManagerComponents = Pick<
   AppComponents,
-  'database' | 'deployer' | 'env' | 'fetcher' | 'fs' | 'logs' | 'metrics' | 'storage' | 'systemProperties'
+  'database' | 'env' | 'fetcher' | 'fs' | 'logs' | 'metrics' | 'storage' | 'systemProperties'
 >
 
 export class GarbageCollectionManager {

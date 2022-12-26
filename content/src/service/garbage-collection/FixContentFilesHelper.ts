@@ -1,33 +1,30 @@
 import { ContentMapping } from '@dcl/schemas'
 import { saveContentFiles } from '../../logic/database-queries/deployments-queries'
-import { join } from 'path'
 import { Environment, EnvironmentConfig } from '../../Environment'
 import { ContentStorage } from '../../ports/contentStorage/contentStorage'
 import { Readable } from 'stream'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { IFetchComponent } from '@well-known-components/http-server'
-import { GarbageCollectionManagerComponents } from './GarbageCollectionManager'
+import { AppComponents } from '../../types'
+
+export type ContentFilesFixerComponents = Pick<
+  AppComponents,
+  'database' | 'env' | 'fetcher' | 'fs' | 'logs' | 'storage'
+>
 
 export async function fixMissingProfilesContentFiles({
   database,
   env,
   fetcher,
-  fs,
   logs,
   storage
-}: GarbageCollectionManagerComponents) {
+}: ContentFilesFixerComponents) {
   const logger = logs.getLogger('FixMissingFilesHelper')
 
   const start = Date.now()
   logger.info('Fixing missing content files from profiles deployed without references to them')
 
   try {
-    let contentsFolder = join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
-    while (contentsFolder.endsWith('/')) {
-      contentsFolder = contentsFolder.slice(0, -1)
-    }
-    await fs.ensureDirectoryExists(contentsFolder)
-
     const result = await database.query(`
       SELECT *
       FROM deployments d
