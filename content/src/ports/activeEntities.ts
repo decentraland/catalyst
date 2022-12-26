@@ -133,7 +133,7 @@ export const createActiveEntitiesComponent = (
         (pointer) => !entities.some((entity) => entity.pointers.includes(pointer))
       )
 
-      for (const pointer of pointersWithoutActiveEntity.map(normalizeKey)) {
+      for (const pointer of pointersWithoutActiveEntity) {
         entityIdByPointers.set(pointer, 'NOT_ACTIVE_ENTITY')
         logger.debug('pointer has no active entity', { pointer })
       }
@@ -252,7 +252,7 @@ export const createActiveEntitiesComponent = (
         const cachedEntity = cache.get(normalizeKey(idOrPointer))
         return isEntityPresent(cachedEntity) ? cachedEntity.id : cachedEntity
       }
-      return entityIdByPointers.get(normalizeKey(idOrPointer))
+      return entityIdByPointers.get(idOrPointer)
     }
   }
 }
