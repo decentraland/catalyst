@@ -348,13 +348,13 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@^4.0.17":
-  version "4.0.17"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.0.17.tgz#24a452c47423543d7e3082977e6f1f6c0527987e"
-  integrity sha512-wlvfHrJAtzexMrcv0iZsWqJP5mD27tgeQSt+QWarqG1zup9Y8pdt9irfwz1LT/62FsH/8WYnQjnBjhs84G5kBw==
+"@dcl/content-validator@^4.0.23":
+  version "4.0.23"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.0.23.tgz#056c071f3ae7173f37752695ae98be6d636a5758"
+  integrity sha512-5Jfp+RQatQjBz9LdSkNhdihlD50TO4Q5HHI0+Qsk7x+AT6zl1vvoUyEi6OSqV/Jh9oNC/XzXQ+BVEVQR3sCRjg==
   dependencies:
     "@dcl/content-hash-tree" "^1.1.3"
-    "@dcl/hashing" "1.1.1"
+    "@dcl/hashing" "1.1.2"
     "@dcl/schemas" "^5.4.2"
     "@dcl/urn-resolver" "2.0.3"
     "@well-known-components/interfaces" "1.1.3"
@@ -371,16 +371,7 @@
     eth-connect "^6.0.3"
     ethereum-cryptography "^1.0.3"
 
-"@dcl/hashing@1.1.1", "@dcl/hashing@^1.0.0", "@dcl/hashing@^1.1.1":
-  version "1.1.1"
-  resolved "https://registry.yarnpkg.com/@dcl/hashing/-/hashing-1.1.1.tgz#4ecbe9fba3e4f34eebed097eb0080c673a90d3fc"
-  integrity sha512-0IjZMuJij09P61C1BZkMZKJVDuCbzkINjkM6jRNqy/tuypa4hyzF/v0SoI8Ob7WvZmZ6VJuSmfnY1cPBfEykcg==
-  dependencies:
-    ethereum-cryptography "^1.0.3"
-    ipfs-unixfs-importer "^7.0.3"
-    multiformats "^9.6.3"
-
-"@dcl/hashing@^1.1.0":
+"@dcl/hashing@1.1.2", "@dcl/hashing@^1.0.0", "@dcl/hashing@^1.1.0", "@dcl/hashing@^1.1.1":
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/@dcl/hashing/-/hashing-1.1.2.tgz#f72334eae2fdafac8b69299b297ff6a0c37b5544"
   integrity sha512-edCbqZH4ZEHpacY6LIn/D+qRx2cSmRAjfJIgSNifURLKXQ0LWXc8bVzfhlM3R9D+RLyQIgddWObCCXoa6YS+eA==
@@ -1688,15 +1679,7 @@
   dependencies:
     prom-client "^14.1.0"
 
-"@well-known-components/thegraph-component@^1.2.0":
-  version "1.3.2"
-  resolved "https://registry.yarnpkg.com/@well-known-components/thegraph-component/-/thegraph-component-1.3.2.tgz#299ac90495e7af518952c86ee98ba35910d66a04"
-  integrity sha512-E6jzQ3CKxOY7G5E8bMHXwhYu6JCYh0P1vdOoPZqrEZdeOeeJkwb7gyNie6rJsNQcw5Fy8DG4VLy9crlWvi5sFg==
-  dependencies:
-    "@well-known-components/http-server" "^1.1.0"
-    "@well-known-components/interfaces" "^1.1.0"
-
-"@well-known-components/thegraph-component@^1.4.1":
+"@well-known-components/thegraph-component@^1.2.0", "@well-known-components/thegraph-component@^1.4.1":
   version "1.4.1"
   resolved "https://registry.yarnpkg.com/@well-known-components/thegraph-component/-/thegraph-component-1.4.1.tgz#bf4f0e0fc1eb0401d2cdc30a2d4a7d94ba7fd536"
   integrity sha512-NwMHs+rS9L+CcB6Nxx+74Q9daK/3A1Hoav9loO5Eyw0T+LEu3PHdGY+hf3bzFMYpILByrMoX656E9DhT7/GHaQ==
