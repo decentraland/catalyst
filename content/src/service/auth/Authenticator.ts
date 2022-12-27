@@ -1,8 +1,8 @@
 import { AuthChain, Authenticator, EthAddress, ValidationResult } from '@dcl/crypto'
-import { HTTPProvider } from 'eth-connect'
+import { ethers } from 'ethers'
 
 export class ContentAuthenticator {
-  constructor(private readonly provider: HTTPProvider, private readonly decentralandAddress: EthAddress) {}
+  constructor(private readonly provider: ethers.providers.Provider, private readonly decentralandAddress: EthAddress) {}
 
   /** Return whether the given address used is owned by Decentraland */
   isAddressOwnedByDecentraland(address: EthAddress): boolean {

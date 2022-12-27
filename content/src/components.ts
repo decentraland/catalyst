@@ -6,7 +6,6 @@ import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
-import { HTTPProvider } from 'eth-connect'
 import ms from 'ms'
 import path from 'path'
 import { Controller } from './controller/Controller'
@@ -42,6 +41,7 @@ import { createSynchronizationManager } from './service/synchronization/Synchron
 import { createServerValidator } from './service/validations/server'
 import { createExternalCalls, createSubGraphsComponent, createValidator } from './service/validations/validator'
 import { AppComponents } from './types'
+import { ethers } from 'ethers'
 
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
   const metrics = createTestMetricsComponent(metricsDeclaration)
@@ -76,19 +76,13 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const storage = await createFileSystemContentStorage({ fs }, contentFolder)
 
   const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK)
-  const ethereumProvider = new HTTPProvider(
-    `https://rpc.decentraland.org/${encodeURIComponent(ethNetwork)}?project=catalyst-content`,
-    {
-      fetch: fetcher.fetch
-    }
+  const ethereumProvider = new ethers.providers.JsonRpcProvider(
+    `https://rpc.decentraland.org/${encodeURIComponent(ethNetwork)}?project=catalyst-content`
   )
-  const maticProvider = new HTTPProvider(
+  const maticProvider = new ethers.providers.JsonRpcProvider(
     ethNetwork === 'mainnet'
       ? `https://rpc.decentraland.org/polygon?project=catalyst-content`
-      : `https://rpc.decentraland.org/mumbai?project=catalyst-content`,
-    {
-      fetch: fetcher.fetch
-    }
+      : `https://rpc.decentraland.org/mumbai?project=catalyst-content`
   )
   const daoClient = await DAOClientFactory.create(env, ethereumProvider)
   const authenticator = new ContentAuthenticator(

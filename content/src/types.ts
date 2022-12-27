@@ -6,7 +6,7 @@ import { IJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { IFetchComponent } from '@well-known-components/http-server'
 import { ILoggerComponent, IMetricsComponent } from '@well-known-components/interfaces'
 import { Fetcher } from 'dcl-catalyst-commons'
-import { HTTPProvider } from 'eth-connect'
+import { ethers } from 'ethers'
 import { Controller } from './controller/Controller'
 import { Environment } from './Environment'
 import { metricsDeclaration } from './metrics'
@@ -75,8 +75,8 @@ export type AppComponents = {
   sequentialExecutor: ISequentialTaskExecutorComponent
   denylist: Denylist
   fs: FSComponent
-  ethereumProvider: HTTPProvider
-  maticProvider: HTTPProvider
+  ethereumProvider: ethers.providers.Provider
+  maticProvider: ethers.providers.Provider
 }
 
 export type MaintenanceComponents = {

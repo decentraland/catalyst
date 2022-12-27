@@ -17,11 +17,12 @@
     "test:unit": "jest --selectProjects unit --runInBand --forceExit --detectOpenHandles --coverage"
   },
   "dependencies": {
+    "@0xsequence/multicall": "^0.43.7",
     "@dcl/block-indexer": "^1.0.0-20221223191317.commit-2d753e7",
     "@dcl/catalyst-api-specs": "^2.0.14",
     "@dcl/catalyst-contracts": "^3.0.1",
-    "@dcl/content-validator": "^4.0.21-20221220140243.commit-bc03010",
-    "@dcl/crypto": "^3.2.2",
+    "@dcl/content-validator": "4.0.22-20221227190540.commit-91581f6",
+    "@dcl/crypto": "^3.2.3",
     "@dcl/hashing": "^1.1.1",
     "@dcl/schemas": "^5.29.0",
     "@dcl/snapshots-fetcher": "^4.0.18",
@@ -36,7 +37,7 @@
     "compression": "1.7.4",
     "cors": "2.8.5",
     "dcl-catalyst-client": "^14.0.1",
-    "eth-connect": "^6.0.3",
+    "ethers": "^5.7.2",
     "express": "4.18.1",
     "express-openapi-validator": "4.13.8",
     "form-data": "^4.0.0",

@@ -6,6 +6,7 @@ import {
   Validator as IValidatorComponent,
   Checker
 } from '@dcl/content-validator'
+import { providers } from '@0xsequence/multicall'
 import { Authenticator } from '@dcl/crypto'
 import { EnvironmentConfig } from '../../Environment'
 import { streamToBuffer } from '../../ports/contentStorage/contentStorage'
@@ -22,20 +23,8 @@ import {
   EthereumProvider,
   loadTree
 } from '@dcl/block-indexer'
-import { ContractFactory, HTTPProvider, RequestManager } from 'eth-connect'
 import { checkerAbi, checkerContracts } from '@dcl/catalyst-contracts'
-
-const createEthereumProvider = (httpProvider: HTTPProvider): EthereumProvider => {
-  const reqMan = new RequestManager(httpProvider)
-  return {
-    getBlockNumber: async (): Promise<number> => {
-      return (await reqMan.eth_blockNumber()) as number
-    },
-    getBlock: async (block: number): Promise<{ timestamp: string | number }> => {
-      return await reqMan.eth_getBlockByNumber(block, false)
-    }
-  }
-}
+import { ethers } from 'ethers'
 
 type CheckerContracts = {
   landContractAddress: string
@@ -43,13 +32,19 @@ type CheckerContracts = {
   checkerContractAddress: string
 }
 
-async function createChecker(ethereumProvider: HTTPProvider, contracts: CheckerContracts): Promise<Checker> {
-  const factory = new ContractFactory(new RequestManager(ethereumProvider), checkerAbi)
-  const checker = (await factory.at(contracts.checkerContractAddress)) as any
+async function createChecker(provider: ethers.providers.Provider, contracts: CheckerContracts): Promise<Checker> {
+  const multicallProvider = new providers.MulticallProvider(provider)
+  const checker = new ethers.Contract(contracts.checkerContractAddress, checkerAbi, multicallProvider)
 
   return {
-    checkLAND: (ethAddress: string, x: number, y: number, block: number) => {
-      return checker.checkLAND(ethAddress, contracts.landContractAddress, contracts.stateContractAddress, x, y, block)
+    checkLAND: async (ethAddress: string, parcels: [number, number][], block: number) => {
+      return Promise.all(
+        parcels.map(([x, y]) =>
+          checker.checkLAND(ethAddress, contracts.landContractAddress, contracts.stateContractAddress, x, y, {
+            blockTag: block
+          })
+        )
+      )
     }
   }
 }
@@ -60,8 +55,8 @@ export async function createSubGraphsComponent(
   const config: IConfigComponent = createConfigComponent({}) // TODO Get config from higher level
   const baseComponents = { config, fetch: components.fetcher, metrics: components.metrics, logs: components.logs }
 
-  const l1EthereumProvider: EthereumProvider = createEthereumProvider(components.ethereumProvider)
-  const l2EthereumProvider: EthereumProvider = createEthereumProvider(components.maticProvider)
+  const l1EthereumProvider: EthereumProvider = components.ethereumProvider
+  const l2EthereumProvider: EthereumProvider = components.maticProvider
   const l1BlockSearch = createAvlBlockSearch({
     blockRepository: createBlockRepository({
       metrics: components.metrics,
