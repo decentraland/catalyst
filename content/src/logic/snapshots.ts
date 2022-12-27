@@ -3,12 +3,19 @@ import { AppComponents } from '../types'
 import {
   deleteSnapshotsInTimeRange,
   findSnapshotsStrictlyContainedInTimeRange,
+  getNumberOfActiveEntitiesInTimeRange,
   getSnapshotHashesNotInTimeRange,
   saveSnapshot,
   snapshotIsOutdated,
   streamActiveDeploymentsInTimeRange
 } from './database-queries/snapshots-queries'
-import { divideTimeInYearsMonthsWeeksAndDays, intervalSizeLabel, isTimeRangeCoveredBy, TimeRange } from './time-range'
+import {
+  divideTimeInYearsMonthsWeeksAndDays,
+  intervalSizeLabel,
+  isTimeRangeCoveredBy,
+  MS_PER_MONTH,
+  TimeRange
+} from './time-range'
 
 export type NewSnapshotMetadata = {
   hash: string
@@ -20,13 +27,15 @@ export type NewSnapshotMetadata = {
 
 export async function generateAndStoreSnapshot(
   components: Pick<AppComponents, 'database' | 'fs' | 'metrics' | 'storage' | 'logs' | 'denylist' | 'staticConfigs'>,
-  timeRange: TimeRange
+  timeRange: TimeRange,
+  reason?: string
 ): Promise<{
   hash: string
   numberOfEntities: number
 }> {
   const { end: endTimer } = components.metrics.startTimer('dcl_content_server_snapshot_generation_time', {
-    interval_size: intervalSizeLabel(timeRange)
+    interval_size: intervalSizeLabel(timeRange),
+    reason: reason || 'unknown'
   })
   let numberOfEntities = 0
   let fileWriter: IFile | undefined
@@ -73,10 +82,12 @@ export async function generateSnapshotsInMultipleTimeRanges(
     const multipleSnapshotsShouldBeReplaced = isTimeRangeCoveredByOtherSnapshots && savedSnapshots.length > 1
     const existSnapshots = await components.storage.existMultiple(savedSnapshots.map((s) => s.hash))
     const allSavedSnapshotsAreStored = Array.from(existSnapshots.values()).every((exist) => exist == true)
-    // const snapshotHasInactiveEntities =
-    //   savedSnapshots.length == 1 &&
-    //   (await getNumberOfActiveEntitiesInTimeRange(components, savedSnapshots[0].timeRange)) <
-    //     savedSnapshots[0].numberOfEntities
+    const snapshotHasInactiveEntities =
+      savedSnapshots.length == 1 &&
+      // If snapshot is 1 month old, we recompile it if there are inactive entities
+      savedSnapshots[0].generationTimestamp < Date.now() - MS_PER_MONTH &&
+      (await getNumberOfActiveEntitiesInTimeRange(components, savedSnapshots[0].timeRange)) <
+        savedSnapshots[0].numberOfEntities
 
     const isOutdated = savedSnapshots.length == 1 && (await snapshotIsOutdated(components, savedSnapshots[0]))
 
@@ -84,7 +95,7 @@ export async function generateSnapshotsInMultipleTimeRanges(
       !isTimeRangeCoveredByOtherSnapshots ||
       multipleSnapshotsShouldBeReplaced ||
       !allSavedSnapshotsAreStored ||
-      // snapshotHasInactiveEntities ||
+      snapshotHasInactiveEntities ||
       isOutdated
 
     if (shouldGenerateNewSnapshot) {
@@ -96,17 +107,26 @@ export async function generateSnapshotsInMultipleTimeRanges(
           isTimeRangeCoveredByOtherSnapshots,
           multipleSnapshotsShouldBeReplaced,
           allSavedSnapshotsAreStored,
-          // snapshotHasInactiveEntities,
+          snapshotHasInactiveEntities,
           isOutdated
         })
       )
 
-      const { hash, numberOfEntities } = await generateAndStoreSnapshot(components, timeRange)
+      const { hash, numberOfEntities } = await generateAndStoreSnapshot(
+        components,
+        timeRange,
+        getReasonForMetric({
+          isTimeRangeCoveredByOtherSnapshots,
+          multipleSnapshotsShouldBeReplaced,
+          allSavedSnapshotsAreStored,
+          snapshotHasInactiveEntities,
+          isOutdated
+        })
+      )
       const savedSnapshotHashes = savedSnapshots.map((s) => s.hash)
       await components.database.transaction(async (txDatabase) => {
-        // const replacedSnapshotHashes =
-        //   isTimeRangeCoveredByOtherSnapshots || snapshotHasInactiveEntities ? savedSnapshotHashes : []
-        const replacedSnapshotHashes = isTimeRangeCoveredByOtherSnapshots ? savedSnapshotHashes : []
+        const replacedSnapshotHashes =
+          isTimeRangeCoveredByOtherSnapshots || snapshotHasInactiveEntities ? savedSnapshotHashes : []
         const newSnapshot = {
           hash,
           timeRange,
@@ -139,4 +159,25 @@ export async function generateSnapshotsInMultipleTimeRanges(
     }
   }
   return snapshotMetadatas
+}
+
+function getReasonForMetric(props: {
+  isTimeRangeCoveredByOtherSnapshots: boolean
+  multipleSnapshotsShouldBeReplaced: boolean
+  allSavedSnapshotsAreStored: boolean
+  snapshotHasInactiveEntities: boolean
+  isOutdated: boolean
+}): string {
+  if (!props.isTimeRangeCoveredByOtherSnapshots) {
+    return 'cover_time_range'
+  } else if (props.multipleSnapshotsShouldBeReplaced) {
+    return 'replace_multiple_snapshots'
+  } else if (!props.allSavedSnapshotsAreStored) {
+    return 'snapshots_not_stored'
+  } else if (props.snapshotHasInactiveEntities) {
+    return 'inactive_entities'
+  } else if (props.isOutdated) {
+    return 'is_outdated'
+  }
+  return 'unkown'
 }
