@@ -159,6 +159,6 @@ export const metricsDeclaration = validateMetricsDeclaration({
   dcl_content_server_snapshot_generation_time: {
     help: 'Histogram of time spent generating full snapshots',
     type: 'histogram',
-    labelNames: ['result', 'interval_size'] // result=('success'|'error')
+    labelNames: ['result', 'interval_size', 'reason'] // result=('success'|'error')
   }
 })
