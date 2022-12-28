@@ -121,6 +121,7 @@ export enum EnvironmentConfig {
   PG_IDLE_TIMEOUT,
   PG_QUERY_TIMEOUT,
   PG_STREAM_QUERY_TIMEOUT,
+  PG_STREAM_BATCH_SIZE,
   GARBAGE_COLLECTION,
   GARBAGE_COLLECTION_INTERVAL,
   SNAPSHOT_FREQUENCY_IN_MILLISECONDS,
@@ -351,6 +352,11 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PG_STREAM_QUERY_TIMEOUT, () =>
       process.env.PG_STREAM_QUERY_TIMEOUT ? ms(process.env.PG_STREAM_QUERY_TIMEOUT) : ms('10m')
     )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PG_STREAM_BATCH_SIZE, () =>
+      process.env.PG_STREAM_BATCH_SIZE ? ms(process.env.PG_STREAM_BATCH_SIZE) : 10_000
+    )
+
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.SNAPSHOT_FREQUENCY_IN_MILLISECONDS,

@@ -224,7 +224,7 @@ describe('Service', function () {
     const storage = new MockedStorage()
     const pointerManager = NoOpPointerManager.build()
     const authenticator = new ContentAuthenticator(new HTTPProvider("https://rpc.decentraland.org/mainnet?project=catalyst-ci"), DECENTRALAND_ADDRESS)
-    const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, clock })
+    const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, clock, env })
     env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)
     const denylist: Denylist = { isDenylisted: () => false }
     const sequentialExecutor = createSequentialTaskExecutor({ logs, metrics })
@@ -243,7 +243,7 @@ describe('Service', function () {
       logs,
       authenticator,
       database,
-      deployedEntitiesBloomFilter: deployedEntitiesBloomFilter,
+      deployedEntitiesBloomFilter,
       activeEntities,
       denylist,
       clock

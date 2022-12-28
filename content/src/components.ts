@@ -132,7 +132,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const validator = createValidator({ config, externalCalls, logs, theGraphClient, subGraphs })
   const serverValidator = createServerValidator({ failedDeployments, metrics, clock })
 
-  const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, clock })
+  const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, clock, env })
   const activeEntities = createActiveEntitiesComponent({ database, env, logs, metrics, denylist, sequentialExecutor })
 
   const deployer: MetaverseContentService = new ServiceImpl({

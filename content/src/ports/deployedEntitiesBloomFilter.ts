@@ -1,6 +1,7 @@
 import { IBaseComponent } from '@well-known-components/interfaces'
 import * as bf from 'bloom-filters'
 import future from 'fp-future'
+import { EnvironmentConfig } from '../Environment'
 import { runLoggingPerformance } from '../instrument'
 import { streamAllEntityIds } from '../logic/database-queries/deployments-queries'
 import { AppComponents } from '../types'
@@ -11,9 +12,11 @@ export type DeployedEntitiesBloomFilter = {
 }
 
 export function createDeployedEntitiesBloomFilter(
-  components: Pick<AppComponents, 'database' | 'logs' | 'clock'>
+  components: Pick<AppComponents, 'database' | 'logs' | 'clock' | 'env'>
 ): DeployedEntitiesBloomFilter & IBaseComponent {
   const logger = components.logs.getLogger('DeployedEntitiesBloomFilter')
+
+  const batchSize = components.env.getConfig<number>(EnvironmentConfig.PG_STREAM_BATCH_SIZE)
 
   const deploymentsBloomFilter = bf.BloomFilter.create(5_000_000, 0.001)
 
@@ -23,7 +26,7 @@ export function createDeployedEntitiesBloomFilter(
     const start = components.clock.now()
     logger.info(`Creating bloom filter`, {})
     let elements = 0
-    for await (const row of streamAllEntityIds(components)) {
+    for await (const row of streamAllEntityIds(components, batchSize)) {
       elements++
       deploymentsBloomFilter.add(row.entityId)
     }

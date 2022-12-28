@@ -55,7 +55,8 @@ export async function deploymentExists(
 }
 
 export async function* streamAllEntityIds(
-  components: Pick<AppComponents, 'database'>
+  components: Pick<AppComponents, 'database'>,
+  batchSize: number
 ): AsyncIterable<{ entityId: string }> {
   const { database } = components
 
@@ -63,7 +64,7 @@ export async function* streamAllEntityIds(
     SQL`
       SELECT entity_id FROM deployments
     `,
-    { batchSize: 10000 },
+    { batchSize },
     'stream_all_entities'
   )) {
     yield {
