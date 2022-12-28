@@ -106,7 +106,7 @@ export const createActiveEntitiesComponent = (
   const update = async (pointers: string[], entity: Entity | NotActiveEntity): Promise<void> => {
     for (const pointer of pointers) {
       setPreviousEntityAsNone(pointer)
-      entityIdByPointers.set(pointer, isEntityPresent(entity) ? entity.id : entity)
+      entityIdByPointers.set(normalizePointer(pointer), isEntityPresent(entity) ? entity.id : entity)
     }
     if (isEntityPresent(entity)) {
       cache.set(entity.id, entity)
@@ -198,6 +198,8 @@ export const createActiveEntitiesComponent = (
     return [...onCache.filter(isEntityPresent), ...remainingEntities]
   }
 
+  const normalizePointer = (pointer: string) => pointer.toLowerCase()
+
   /**
    * Retrieve active entities that are pointed by the given pointers
    */
@@ -208,7 +210,7 @@ export const createActiveEntitiesComponent = (
 
     // get associated entity ids to pointers or save for later
     for (const pointer of uniquePointers) {
-      const entityId = entityIdByPointers.get(pointer)
+      const entityId = entityIdByPointers.get(normalizePointer(pointer))
       if (!entityId) {
         logger.debug('Entity with given pointer not found on cache', { pointer })
         remaining.push(pointer)
