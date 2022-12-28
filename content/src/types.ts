@@ -91,6 +91,7 @@ export type MaintenanceComponents = {
   storage: ContentStorage
   fs: FSComponent
   migrationManager: MigrationManager
+  deployedEntitiesBloomFilter: DeployedEntitiesBloomFilter
 }
 
 export type Timestamp = number
