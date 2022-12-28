@@ -1,7 +1,6 @@
 import * as loggerComponent from '@well-known-components/logger'
 import future from 'fp-future'
 import SQL from 'sql-template-strings'
-import { EnvironmentConfig } from '../../../src/Environment'
 import { findSnapshotsStrictlyContainedInTimeRange, getProcessedSnapshots } from '../../../src/logic/database-queries/snapshots-queries'
 import * as timeRangeLogic from '../../../src/logic/time-range'
 import { Deployment } from '../../../src/service/deployments/types'
@@ -194,15 +193,15 @@ loadTestEnvironment()('Bootstrapping synchronization tests', function (testEnv) 
     expect(deployments).toHaveLength(0)
   })
 
-  it('old snapshot is still served', async () => {
-    ; const [server] = await testEnv.configServer().andBuildMany(1)
+  // it('old snapshot is still served', async () => {
+  //   ; const [server] = await testEnv.configServer().andBuildMany(1)
 
-    await startProgramAndWaitUntilBootstrapFinishes(server)
+  //   await startProgramAndWaitUntilBootstrapFinishes(server)
 
-    const httpResult = await server.components.fetcher.fetch(`${server.components.env.getConfig(EnvironmentConfig.CONTENT_SERVER_ADDRESS)}/snapshot`)
+  //   const httpResult = await server.components.fetcher.fetch(`${server.components.env.getConfig(EnvironmentConfig.CONTENT_SERVER_ADDRESS)}/snapshot`)
 
-    expect(httpResult.status).toBe(200)
-  })
+  //   expect(httpResult.status).toBe(200)
+  // })
 
   function advanceTime(msToAdvance: number) {
     baseTimestamp += msToAdvance
