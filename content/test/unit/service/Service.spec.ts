@@ -122,24 +122,6 @@ describe('Service', function () {
     expect(storeSpy).not.toHaveBeenCalledWith(randomFileHash, expect.anything())
   })
 
-  // Here
-  it(`When the same pointer is asked twice, then the second time cached the result is returned`, async () => {
-    const service = await buildService()
-    const serviceSpy = jest
-      .spyOn(deployments, 'getDeploymentsForActiveEntities')
-      .mockImplementation(() => Promise.resolve([fakeDeployment()]))
-
-    // Call the first time
-    await service.components.activeEntities.withPointers(POINTERS)
-    // When a pointer is asked the first time, then the database is reached
-    expect(serviceSpy).toHaveBeenCalledWith(expect.anything(), undefined, POINTERS)
-
-    // Reset spy and call again
-    serviceSpy.mockClear()
-    await service.components.activeEntities.withPointers(POINTERS)
-    expect(serviceSpy).not.toHaveBeenCalled()
-  })
-
   it(`Given a pointer with no deployment, when is asked twice, then the second time cached the result is returned`, async () => {
     const service = await buildService()
     const serviceSpy = jest
@@ -191,78 +173,6 @@ describe('Service', function () {
     await service.components.activeEntities.withPointers(POINTERS)
 
     // expect(serviceSpy).toHaveBeenCalledWith(expect.anything(), ['QmSQc2mGpzanz1DDtTf2ZCFnwTpJvAbcwzsS4An5PXaTqg'], undefined)
-  })
-
-  it(`When the same pointer is asked twice but with different cases, then the second time cached the result is returned`, async () => {
-    const customPointers = {
-      Lowercase: ['apointer'],
-      Uppercase: ['APointer']
-    }
-    const service = await buildService()
-    const serviceSpy = jest
-      .spyOn(deployments, 'getDeploymentsForActiveEntities')
-      .mockImplementation(() => Promise.resolve([{ ...fakeDeployment(), pointers: customPointers.Lowercase }]))
-
-    // Call the first time
-    await service.components.activeEntities.withPointers(customPointers.Lowercase)
-    // When a pointer is asked the first time, then the database is reached
-    expect(serviceSpy).toHaveBeenCalledWith(expect.anything(), undefined, customPointers.Lowercase)
-
-    // Reset spy and call again
-    serviceSpy.mockClear()
-    await service.components.activeEntities.withPointers(customPointers.Uppercase)
-    expect(serviceSpy).not.toHaveBeenCalled()
-  })
-
-  it(`When the same pointer is asked three times but with different cases, then the second time cached the result is returned`, async () => {
-    const customPointers = {
-      Lowercase: ['apointer'],
-      Uppercase: ['APointer']
-    }
-    const service = await buildService()
-    const serviceSpy = jest
-      .spyOn(deployments, 'getDeploymentsForActiveEntities')
-      .mockImplementation(() => Promise.resolve([{ ...fakeDeployment(), pointers: customPointers.Lowercase }]))
-
-    // Call the first time
-    await service.components.activeEntities.withPointers(customPointers.Lowercase)
-    // When a pointer is asked the first time, then the database is reached
-    expect(serviceSpy).toHaveBeenCalledWith(expect.anything(), undefined, customPointers.Lowercase)
-
-    // Reset spy and call again
-    serviceSpy.mockClear()
-    await service.components.activeEntities.withPointers(customPointers.Uppercase)
-    expect(serviceSpy).not.toHaveBeenCalled()
-
-    await service.components.activeEntities.withPointers(customPointers.Uppercase)
-    expect(serviceSpy).not.toHaveBeenCalled()
-  })
-
-  it(`When the same pointer is asked four times but with different cases, then the second time cached the result is returned`, async () => {
-    const customPointers = {
-      Lowercase: ['apointer'],
-      Uppercase: ['APointer']
-    }
-    const service = await buildService()
-    const serviceSpy = jest
-      .spyOn(deployments, 'getDeploymentsForActiveEntities')
-      .mockImplementation(() => Promise.resolve([{ ...fakeDeployment(), pointers: customPointers.Lowercase }]))
-
-    // Call the first time
-    await service.components.activeEntities.withPointers(customPointers.Lowercase)
-    // When a pointer is asked the first time, then the database is reached
-    expect(serviceSpy).toHaveBeenCalledWith(expect.anything(), undefined, customPointers.Lowercase)
-
-    // Reset spy and call again
-    serviceSpy.mockClear()
-    await service.components.activeEntities.withPointers(customPointers.Uppercase)
-    expect(serviceSpy).not.toHaveBeenCalled()
-
-    await service.components.activeEntities.withPointers(customPointers.Uppercase)
-    expect(serviceSpy).not.toHaveBeenCalled()
-
-    await service.components.activeEntities.withPointers(customPointers.Lowercase)
-    expect(serviceSpy).not.toHaveBeenCalled()
   })
 
   async function buildService() {
