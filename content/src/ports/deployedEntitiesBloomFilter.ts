@@ -17,7 +17,7 @@ export function createDeployedEntitiesBloomFilter(
 ): DeployedEntitiesBloomFilter & IBaseComponent {
   const logger = components.logs.getLogger('DeployedEntitiesBloomFilter')
 
-  const batchSize = components.env.getConfig<number>(EnvironmentConfig.PG_STREAM_BATCH_SIZE)
+  const batchSize = components.env.getConfig<number>(EnvironmentConfig.PG_STREAM_BATCH_SIZE) ?? 10_000
 
   const deploymentsBloomFilter = bf.BloomFilter.create(5_000_000, 0.001)
 
