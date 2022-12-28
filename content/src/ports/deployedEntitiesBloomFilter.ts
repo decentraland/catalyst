@@ -1,3 +1,4 @@
+import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { IBaseComponent } from '@well-known-components/interfaces'
 import * as bf from 'bloom-filters'
 import future from 'fp-future'
@@ -22,14 +23,23 @@ export function createDeployedEntitiesBloomFilter(
 
   const initialized = future<void>()
 
+  const addToBFQueue = createJobQueue({
+    autoStart: true,
+    concurrency: batchSize * 3,
+    timeout: 60000
+  })
+
   async function addFromDb() {
     const start = components.clock.now()
     logger.info(`Creating bloom filter`, {})
     let elements = 0
     for await (const row of streamAllEntityIds(components, batchSize)) {
       elements++
-      deploymentsBloomFilter.add(row.entityId)
+      await addToBFQueue.scheduleJob(async () => {
+        deploymentsBloomFilter.add(row.entityId)
+      })
     }
+    await addToBFQueue.onIdle()
     logger.info(`Bloom filter recreated.`, {
       timeMs: components.clock.now() - start,
       elements,
