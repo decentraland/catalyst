@@ -10,7 +10,8 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     failure_time: { type: 'timestamp', notNull: true },
     reason: { type: 'text', notNull: true },
     auth_chain: { type: 'json', notNull: true },
-    error_description: { type: 'text', notNull: true }
+    error_description: { type: 'text', notNull: true },
+    snapshot_hash: { type: 'text', notNull: true }
   })
 }
 

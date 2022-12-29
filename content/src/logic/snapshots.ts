@@ -99,7 +99,7 @@ export async function generateSnapshotsInMultipleTimeRanges(
       isOutdated
 
     if (shouldGenerateNewSnapshot) {
-      logger.debug(
+      logger.info(
         JSON.stringify({
           generatingInterval: `[${new Date(timeRange.initTimestamp).toISOString()}, ${new Date(
             timeRange.endTimestamp
@@ -145,7 +145,7 @@ export async function generateSnapshotsInMultipleTimeRanges(
         // The order is important, the snapshot to save could have the same hash of one of the ones to be deleted
         await deleteSnapshotsInTimeRange(txDatabase, savedSnapshotHashes, timeRange)
         await saveSnapshot(txDatabase, newSnapshot)
-        logger.debug(`Snapshots to delete: ${JSON.stringify(Array.from(snapshotHashesToDeleteInStorage))}`)
+        logger.info(`Snapshots to delete: ${JSON.stringify(Array.from(snapshotHashesToDeleteInStorage))}`)
         await components.storage.delete(snapshotHashesToDeleteInStorage)
         snapshotMetadatas.push(newSnapshot)
       })

@@ -1,6 +1,6 @@
-import { SnapshotSyncDeployment } from '@dcl/schemas'
 import { IDeployerComponent } from '@dcl/snapshots-fetcher'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
+import { DeployableEntity } from '@dcl/snapshots-fetcher/dist/types'
 import { IBaseComponent } from '@well-known-components/interfaces'
 import { isEntityDeployed } from '../../logic/deployments'
 import { FailureReason } from '../../ports/failedDeployments'
@@ -48,8 +48,6 @@ export function createBatchDeployerComponent(
     }
   >()
   const successfulDeployments = new Set<string>()
-
-  type DeployableEntity = Parameters<IDeployerComponent['deployEntity']>[0]
 
   /**
    * This function is used to filter out (ignore) deployments coming from remote
@@ -163,7 +161,8 @@ export function createBatchDeployerComponent(
               reason: FailureReason.DEPLOYMENT_ERROR,
               authChain: entity.authChain,
               errorDescription,
-              failureTimestamp: components.clock.now()
+              failureTimestamp: components.clock.now(),
+              snapshotHash: entity.snapshotHash
             })
             wasEntityProcessed = true
           } finally {
@@ -188,10 +187,7 @@ export function createBatchDeployerComponent(
     onIdle() {
       return parallelDeploymentJobs.onIdle()
     },
-    async deployEntity(
-      entity: SnapshotSyncDeployment & { markAsDeployed?: () => Promise<void> },
-      contentServers: string[]
-    ): Promise<void> {
+    async deployEntity(entity: DeployableEntity, contentServers: string[]): Promise<void> {
       await handleDeploymentFromServers(entity, contentServers)
     }
   }
