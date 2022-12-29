@@ -67,7 +67,7 @@ describe('Service', function () {
   })
 
   it(`When no file matches the given entity id, then deployment fails`, async () => {
-    jest.spyOn(failedDeploymentQueries, 'getFailedDeployments').mockResolvedValue([])
+    jest.spyOn(failedDeploymentQueries, 'getSnapshotFailedDeployments').mockResolvedValue([])
     jest.spyOn(failedDeploymentQueries, 'deleteFailedDeployment').mockResolvedValue()
     const service = await buildService()
     const deploymentResult = await service.deployEntity(
@@ -84,7 +84,7 @@ describe('Service', function () {
   })
 
   it(`When an entity is successfully deployed, then the content is stored correctly`, async () => {
-    jest.spyOn(failedDeploymentQueries, 'getFailedDeployments').mockResolvedValue([])
+    jest.spyOn(failedDeploymentQueries, 'getSnapshotFailedDeployments').mockResolvedValue([])
     jest.spyOn(failedDeploymentQueries, 'deleteFailedDeployment').mockResolvedValue()
     const service = await buildService()
     const storageSpy = jest.spyOn(service.components.storage, 'storeStream')
