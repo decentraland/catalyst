@@ -323,10 +323,10 @@
   dependencies:
     yaml "2.1.1"
 
-"@dcl/catalyst-contracts@^3.0.0", "@dcl/catalyst-contracts@^3.0.1":
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/@dcl/catalyst-contracts/-/catalyst-contracts-3.0.1.tgz#53fc710e8a0292b911ba8da0e212639cce172d45"
-  integrity sha512-+9cUElVgsGgG8aC1j3G5GT/mBVudQRQZx6PmVzi/qmrF3A2rGjOwWXhM3p1xbAMalTZBJwAF1IaLQ+axCa3seA==
+"@dcl/catalyst-contracts@^3.0.0", "@dcl/catalyst-contracts@^3.1.0":
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-contracts/-/catalyst-contracts-3.1.0.tgz#23f764dca183914cefc06db96cc9c43e88585b47"
+  integrity sha512-ctnzngEY+TaD7PM9UZwlb/twnuuFDnp5FJciIxIau/WPhOmvJEQlQX//2rzXctfrflJEswNG1M0OSIsXxKDaBA==
   dependencies:
     eth-connect "^6.0.2"
 
