@@ -9,7 +9,7 @@ export async function saveSnapshotFailedDeployment(
   const { entityId, entityType, failureTimestamp, reason, authChain, errorDescription } = failedDeployment
   const query = SQL`
   INSERT INTO failed_deployments
-  (entity_id, entity_type, failure_time, reason, auth_chain, error_description)
+  (entity_id, entity_type, failure_time, reason, auth_chain, error_description, snapshot_hash)
   VALUES
   (${entityId}, ${entityType}, to_timestamp(${failureTimestamp} / 1000.0), ${reason}, ${JSON.stringify(
     authChain

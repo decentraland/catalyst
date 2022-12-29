@@ -1,7 +1,7 @@
 import { EntityType } from '@dcl/schemas'
 import { IBaseComponent } from '@well-known-components/interfaces'
-import { saveFailedDeployment } from '../../../src/logic/database-queries/failed-deployments-queries'
-import { FailedDeployment, FailureReason } from '../../../src/ports/failedDeployments'
+import { saveSnapshotFailedDeployment } from '../../../src/logic/database-queries/failed-deployments-queries'
+import { FailedDeployment, FailureReason, SnapshotFailedDeployment } from '../../../src/ports/failedDeployments'
 import { AppComponents } from '../../../src/types'
 import { loadStandaloneTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
 
@@ -14,7 +14,8 @@ loadStandaloneTestEnvironment()('failed deployments - ', (testEnv) => {
     failureTimestamp: 123,
     reason: FailureReason.DEPLOYMENT_ERROR,
     authChain: [],
-    errorDescription: 'some-error'
+    errorDescription: 'some-error',
+    snapshotHash: 'someHash'
   }
 
   testCaseWithComponents(
@@ -98,11 +99,11 @@ loadStandaloneTestEnvironment()('failed deployments - ', (testEnv) => {
 async function startComponentsWithBaseFailedDeployments(
   components: Pick<AppComponents, 'database' | 'metrics' | 'failedDeployments'>,
   startOptions: IBaseComponent.ComponentStartOptions,
-  baseFailedDeployments: FailedDeployment[]) {
+  baseFailedDeployments: SnapshotFailedDeployment[]) {
   await startComponent(components.metrics, startOptions)
   await startComponent(components.database, startOptions)
   for (const failedDeployment of baseFailedDeployments) {
-    await saveFailedDeployment(components, failedDeployment)
+    await saveSnapshotFailedDeployment(components, failedDeployment)
   }
   await startComponent(components.failedDeployments, startOptions)
 }
