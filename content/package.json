@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@dcl/catalyst-api-specs": "^2.0.14",
-    "@dcl/catalyst-contracts": "tag-polygon-pois",
+    "@dcl/catalyst-contracts": "tag-test-mumbai",
     "@dcl/content-validator": "^4.0.17",
     "@dcl/crypto": "^3.2.2",
     "@dcl/hashing": "^1.1.1",

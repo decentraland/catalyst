@@ -265,11 +265,7 @@ export class EnvironmentBuilder {
       `https://rpc.decentraland.org/${encodeURIComponent(ethNetwork)}?project=catalyst-lambdas`,
       { fetch }
     )
-    const polygonProvider = new HTTPProvider(
-      `https://rpc.decentraland.org/${encodeURIComponent('polygon')}?project=catalyst-lambdas`,
-      { fetch }
-    )
-    const poisProvider = ethNetwork === 'mainnet' ? polygonProvider : ethereumProvider
+    const poisProvider = this.newPoisProvider(ethNetwork)
 
     this.registerBeanIfNotAlreadySet(env, Bean.ETHEREUM_PROVIDER, () => ethereumProvider)
     this.registerBeanIfNotAlreadySet(env, Bean.DAO, () => new DAOCache(ethereumProvider, poisProvider))
@@ -278,6 +274,18 @@ export class EnvironmentBuilder {
     this.registerBeanIfNotAlreadySet(env, Bean.EMOTES_OWNERSHIP, () => EmotesOwnershipFactory.create(env))
 
     return env
+  }
+
+  private newPoisProvider(ethNetwork: string) {
+    if (ethNetwork === 'mainnet') {
+      return new HTTPProvider(
+        `https://rpc.decentraland.org/${encodeURIComponent('polygon')}?project=catalyst-lambdas`,
+        { fetch }
+      )
+    }
+    return new HTTPProvider(`https://rpc.decentraland.org/${encodeURIComponent('mumbai')}?project=catalyst-lambdas`, {
+      fetch
+    })
   }
 
   private registerConfigIfNotAlreadySet(env: Environment, key: EnvironmentConfig, valueProvider: () => any): void {

@@ -330,10 +330,10 @@
   dependencies:
     eth-connect "^6.0.2"
 
-"@dcl/catalyst-contracts@tag-polygon-pois":
-  version "3.0.1-20221213163653.commit-10796ea"
-  resolved "https://registry.yarnpkg.com/@dcl/catalyst-contracts/-/catalyst-contracts-3.0.1-20221213163653.commit-10796ea.tgz#2b3f2387e14ccee63b4572c91f4e79150a43675f"
-  integrity sha512-UiqK89NJCLRN4zTr967oS+9lWs5ufmo/0alDC5OdOXZ8C8EMMC717uBVrLbnEDmcM+vYjJKOWlwJme87+S/WJQ==
+"@dcl/catalyst-contracts@tag-test-mumbai":
+  version "3.0.2-20221228164856.commit-14a9cdd"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-contracts/-/catalyst-contracts-3.0.2-20221228164856.commit-14a9cdd.tgz#5b1a088a5d9a427c43c65041ec2f9eb262beab5d"
+  integrity sha512-WNqU0JDcoKn6kn+vMAzPBy6zaUQa8RDtFcxB5Q5JtevLVzwfAtO4CA1xwBkn4g4LoPsa6hv4JQYovWfzyL8qGg==
   dependencies:
     eth-connect "^6.0.2"
 
