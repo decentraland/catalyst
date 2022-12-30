@@ -330,10 +330,10 @@
   dependencies:
     eth-connect "^6.0.2"
 
-"@dcl/catalyst-contracts@tag-test-mumbai":
-  version "3.0.2-20221228164856.commit-14a9cdd"
-  resolved "https://registry.yarnpkg.com/@dcl/catalyst-contracts/-/catalyst-contracts-3.0.2-20221228164856.commit-14a9cdd.tgz#5b1a088a5d9a427c43c65041ec2f9eb262beab5d"
-  integrity sha512-WNqU0JDcoKn6kn+vMAzPBy6zaUQa8RDtFcxB5Q5JtevLVzwfAtO4CA1xwBkn4g4LoPsa6hv4JQYovWfzyL8qGg==
+"@dcl/catalyst-contracts@^3.1.0":
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-contracts/-/catalyst-contracts-3.1.0.tgz#23f764dca183914cefc06db96cc9c43e88585b47"
+  integrity sha512-ctnzngEY+TaD7PM9UZwlb/twnuuFDnp5FJciIxIau/WPhOmvJEQlQX//2rzXctfrflJEswNG1M0OSIsXxKDaBA==
   dependencies:
     eth-connect "^6.0.2"
 
