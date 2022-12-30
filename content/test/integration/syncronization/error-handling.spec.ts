@@ -60,7 +60,7 @@ loadTestEnvironment()('End 2 end - Error handling', (testEnv) => {
     })
 
     // Deploy entity 1
-    await server1.deploy(deployData1)
+    await server1.deployEntity(deployData1)
 
     // Cause sync failure
     // TODO!: Add sync failure
@@ -76,10 +76,10 @@ loadTestEnvironment()('End 2 end - Error handling', (testEnv) => {
     )
 
     // Deploy entity 2 on server 2
-    await server2.deploy(deployData2)
+    await server2.deployEntity(deployData2)
 
     // Fix entity 1 on server 2
-    await server2.deploy(deployData1, true)
+    await server2.deployEntity(deployData1, true)
 
     // Assert there are no more failed deployments
     const newFailedDeployments: FailedDeployment[] = await server2.getFailedDeployments()
@@ -100,7 +100,7 @@ loadTestEnvironment()('End 2 end - Error handling', (testEnv) => {
     const { deployData, controllerEntity } = await buildDeployData(['0,0', '0,1'], { metadata: { a: 'metadata' } })
 
     // Try to deploy the entity, and fail
-    await server1.deploy(deployData, true)
+    await server1.deployEntity(deployData, true)
 
     // asser that the entity got deployed
     await assertEntitiesAreActiveOnServer(server1, controllerEntity)
@@ -114,10 +114,10 @@ loadTestEnvironment()('End 2 end - Error handling', (testEnv) => {
     const { deployData } = await buildDeployData(['0,0', '0,1'], { metadata: { a: 'metadata' } })
 
     // Deploy the entity
-    const firstDeploymentDatetime = await server1.deploy(deployData)
+    const firstDeploymentDatetime = await server1.deployEntity(deployData)
 
     // Try to fix the entity, and fail
-    const fixDatetime = await server1.deploy(deployData, true)
+    const fixDatetime = await server1.deployEntity(deployData, true)
 
     // expect idempotent operation to return the datetime of the deploy
     expect(firstDeploymentDatetime).toEqual(fixDatetime)
@@ -138,7 +138,7 @@ loadTestEnvironment()('End 2 end - Error handling', (testEnv) => {
     })
 
     // Deploy the entity
-    const deploymentTimestamp = await server1.deploy(deployData)
+    const deploymentTimestamp = await server1.deployEntity(deployData)
 
     // Cause failure
     await causeOfFailure(entityBeingDeployed)
@@ -160,7 +160,7 @@ loadTestEnvironment()('End 2 end - Error handling', (testEnv) => {
     if (removeCauseOfFailure) await removeCauseOfFailure()
 
     // Fix the entity
-    await server2.deploy(deployData, true)
+    await server2.deployEntity(deployData, true)
 
     // Assert there are no more failed deployments
     const newFailedDeployments: FailedDeployment[] = await server2.getFailedDeployments()

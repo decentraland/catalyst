@@ -22,14 +22,16 @@ loadStandaloneTestEnvironment()('End 2 end deploy test', (testEnv) => {
 
   it('When a user tries to deploy the same entity twice, then an exception is thrown', async () => {
     // Build data for deployment
-    const { deployData } = await buildDeployData([POINTER0, POINTER1], { metadata: { a: 'this is just some metadata"' } })
+    const { deployData } = await buildDeployData([POINTER0, POINTER1], {
+      metadata: { a: 'this is just some metadata"' }
+    })
 
     // Execute first deploy
-    const ret1 = await server.deploy(deployData)
+    const ret1 = await server.deployEntity(deployData)
 
     await sleep(100)
 
-    const ret2 = await server.deploy(deployData)
+    const ret2 = await server.deployEntity(deployData)
 
     // Try to re deploy, and don't fail since it is an idempotent operation
     expect(ret1).toEqual(ret2)
@@ -44,7 +46,7 @@ loadStandaloneTestEnvironment()('End 2 end deploy test', (testEnv) => {
       contentPaths: ['test/integration/resources/some-binary-file.png', 'test/integration/resources/some-text-file.txt']
     })
 
-    const creationTimestamp = await server.deploy(deployData)
+    const creationTimestamp = await server.deployEntity(deployData)
     const deployment = buildDeployment(deployData, entityBeingDeployed, creationTimestamp)
     const deltaTimestamp = Date.now() - creationTimestamp
     expect(deltaTimestamp).toBeLessThanOrEqual(100)
