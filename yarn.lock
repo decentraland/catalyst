@@ -330,6 +330,13 @@
   dependencies:
     eth-connect "^6.0.2"
 
+"@dcl/catalyst-contracts@^3.1.0":
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-contracts/-/catalyst-contracts-3.1.0.tgz#23f764dca183914cefc06db96cc9c43e88585b47"
+  integrity sha512-ctnzngEY+TaD7PM9UZwlb/twnuuFDnp5FJciIxIau/WPhOmvJEQlQX//2rzXctfrflJEswNG1M0OSIsXxKDaBA==
+  dependencies:
+    eth-connect "^6.0.2"
+
 "@dcl/catalyst-storage@^2.0.0":
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/@dcl/catalyst-storage/-/catalyst-storage-2.0.0.tgz#e41376fd652ecdb23a8525d6a5abddadca5ddbb8"
