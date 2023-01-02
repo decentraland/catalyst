@@ -46,7 +46,7 @@ yarn test
 ```
 
 ## Dependencies
-For a list of other Decentraland libraries that Catalyst servers depend on, please check the [library dependencies](docs/dependencies/dependencies.md)
+For a list of other Decentraland libraries that Catalyst servers depend on, please check the [library dependencies](docs/dependencies.md)
 
 ## Contributing
 
