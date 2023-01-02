@@ -4,6 +4,7 @@ import { ContentClient, DeploymentData } from 'dcl-catalyst-client'
 import { ServerStatus } from 'dcl-catalyst-commons'
 import fetch from 'node-fetch'
 import { EnvironmentConfig } from '../../src/Environment'
+import * as synchronization from '../../src/logic/synchronization'
 import { FailedDeployment } from '../../src/ports/failedDeployments'
 import { main } from '../../src/service'
 import { AuditInfo, Deployment, DeploymentOptions } from '../../src/service/deployments/types'
@@ -111,4 +112,14 @@ export class TestProgram {
     expect(response.ok).toBe(true)
     return response.json()
   }
+}
+
+export async function startProgramAndWaitUntilBootstrapFinishes(server: TestProgram) {
+  const startSyncOriginal = synchronization.startSynchronization
+  jest.spyOn(synchronization, 'startSynchronization').mockImplementation(async (...args) => {
+    const [a, b] = await startSyncOriginal(...args)
+    await b
+    return [a, b]
+  })
+  await server.startProgram()
 }
