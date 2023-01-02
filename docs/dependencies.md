@@ -24,7 +24,7 @@ snapshotsfetcher --> catalyststorage["@dcl/catalyst-storage"]
 snapshotsfetcher --> hashing
 snapshotsfetcher --> schemas
 
-click ethconnect "https://github.com/decentraland/eth-connect" _blank
+click ethconnect href "https://github.com/decentraland/eth-connect" _blank
 ```
 
 # Lambdas Server dependencies
@@ -44,6 +44,5 @@ catalystcontracts --> ethconnect["eth-connect"]
 crypto --> schemas
 crypto --> ethconnect
 
-click ethconnect "https://github.com/decentraland/eth-connect" _blank
-
+click ethconnect href "https://github.com/decentraland/eth-connect" _blank
 ```
