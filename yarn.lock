@@ -1799,9 +1799,9 @@ ajv@^6.10.0, ajv@^6.12.4, ajv@^6.12.6:
     uri-js "^4.2.2"
 
 ajv@^8.11.0:
-  version "8.11.0"
-  resolved "https://registry.yarnpkg.com/ajv/-/ajv-8.11.0.tgz#977e91dd96ca669f54a11e23e378e33b884a565f"
-  integrity sha512-wGgprdCvMalC0BztXvitD2hC04YffAvtsUn93JbGXYLAtCUO4xd17mCCZQxUOItiBwZvJScWo8NIvQMQ71rdpg==
+  version "8.11.2"
+  resolved "https://registry.yarnpkg.com/ajv/-/ajv-8.11.2.tgz#aecb20b50607acf2569b6382167b65a96008bb78"
+  integrity sha512-E4bfmKAhGiSTvMfL1Myyycaub+cUEU2/IvpylXkUu7CHBkBj1f/ikdzbD7YQ6FKUbixDxeYvB/xY4fvyroDlQg==
   dependencies:
     fast-deep-equal "^3.1.1"
     json-schema-traverse "^1.0.0"
@@ -2714,9 +2714,9 @@ dcl-catalyst-client@^14.0.1:
     form-data "^4.0.0"
 
 dcl-catalyst-commons@^9.0.6:
-  version "9.0.14"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-9.0.14.tgz#f781e5ab8a83fbc329ad6ce9d88d2cdda96bf9b1"
-  integrity sha512-2XtbUEJJiN79oiKRlXCNZQP9ZlN3TPkX150p2p4Yci0MRsGvs5/9bokXeKw4KcBIbprmyI5oP0RVZLGu3YoXNw==
+  version "9.0.15"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-9.0.15.tgz#fb24871901afc790c4452dc04e6efca8e61c26ca"
+  integrity sha512-crlsc8IDUSwwi0+Kv3QTqLR67PSJCzcBAMBEBIfyHxl+9K65yjj0lVqsI/KH7tj6NAFyeQ8eFU8EIv206aTF4A==
   dependencies:
     "@dcl/schemas" "^5.4.2"
     abort-controller "^3.0.0"
