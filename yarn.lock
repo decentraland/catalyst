@@ -362,10 +362,10 @@
     ms "2.1.3"
     sharp "^0.30.6"
 
-"@dcl/crypto@^3.2.3":
-  version "3.2.3"
-  resolved "https://registry.yarnpkg.com/@dcl/crypto/-/crypto-3.2.3.tgz#768d3b0ea4d62b7078d7466fa8159d096f1cb618"
-  integrity sha512-0fscXbo8FRjs3Fy3ekBWRNBmUB4McWncEpsa+VFmhBRvjYI7xK00W0E/MM5eiWoQxt92fewkIR68vEPTCaqLwA==
+"@dcl/crypto@^3.2.4":
+  version "3.2.4"
+  resolved "https://registry.yarnpkg.com/@dcl/crypto/-/crypto-3.2.4.tgz#50a7da229a98abf962a952e6db5b0c03645723a9"
+  integrity sha512-arrfn02SZfAepHYjxHW2oUIJHjUKvu97+ImyAU+kdIz2j3ypIHxbO6hZFfKBREd8fhX35zSY/ayXYNYWAGF9ag==
   dependencies:
     "@dcl/schemas" "^5.4.2"
     eth-connect "^6.0.3"
