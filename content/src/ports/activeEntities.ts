@@ -64,7 +64,26 @@ export const createActiveEntitiesComponent = (
   const cache = new LRU<string, Entity | NotActiveEntity>({
     max: components.env.getConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE)
   })
-  const entityIdByPointers = new Map<string, string | NotActiveEntity>()
+
+  const normalizePointerCacheKey = (pointer: string) => pointer.toLowerCase()
+
+  const createEntityByPointersCache = (): Map<string, string | NotActiveEntity> => {
+    const entityIdByPointers = new Map<string, string | NotActiveEntity>()
+    return {
+      ...entityIdByPointers,
+      get(pointer: string) {
+        return entityIdByPointers.get(normalizePointerCacheKey(pointer))
+      },
+      set(pointer: string, entity: string | NotActiveEntity) {
+        return entityIdByPointers.set(normalizePointerCacheKey(pointer), entity)
+      },
+      has(pointer: string) {
+        return entityIdByPointers.has(normalizePointerCacheKey(pointer))
+      }
+    }
+  }
+
+  const entityIdByPointers = createEntityByPointersCache()
 
   // init gauge metrics
   components.metrics.observe('dcl_entities_cache_storage_max_size', {}, cache.max)
@@ -130,7 +149,10 @@ export const createActiveEntitiesComponent = (
     // Check which pointers or ids doesn't have an active entity and set as NONE
     if (pointers) {
       const pointersWithoutActiveEntity = pointers.filter(
-        (pointer) => !entities.some((entity) => entity.pointers.includes(pointer))
+        (pointer) =>
+          !entities.some((entity) =>
+            entity.pointers.map(normalizePointerCacheKey).includes(normalizePointerCacheKey(pointer))
+          )
       )
 
       for (const pointer of pointersWithoutActiveEntity) {
