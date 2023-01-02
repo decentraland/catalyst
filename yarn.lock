@@ -348,13 +348,13 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@^4.0.24":
-  version "4.0.24"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.0.24.tgz#3d5e7a1aff8492f4f7eb734c950161824c1633ff"
-  integrity sha512-h+35fJWBwf/8DaZf8sqReAw+KYo5iiAtaeBdeMtSc5TG99zxvUm50FM1cbc/fiZ6R7X/SaQ/c3BNEVt7tv24YA==
+"@dcl/content-validator@^4.0.26":
+  version "4.0.26"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.0.26.tgz#e9025102eea8efefe0a3952a7ad99d01923a73ee"
+  integrity sha512-gMyOhqWp+pQ1ABvdbPdbfmsFzI2i76JIZsXkIwcqFL/GFGW2BAGDNpqo+HPxdXzDtV9KAzPMfJ9k+8tu2bQCPw==
   dependencies:
     "@dcl/content-hash-tree" "^1.1.3"
-    "@dcl/hashing" "1.1.2"
+    "@dcl/hashing" "1.1.3"
     "@dcl/schemas" "^5.4.2"
     "@dcl/urn-resolver" "2.0.3"
     "@well-known-components/interfaces" "1.1.3"
@@ -371,16 +371,7 @@
     eth-connect "^6.0.3"
     ethereum-cryptography "^1.0.3"
 
-"@dcl/hashing@1.1.2":
-  version "1.1.2"
-  resolved "https://registry.yarnpkg.com/@dcl/hashing/-/hashing-1.1.2.tgz#f72334eae2fdafac8b69299b297ff6a0c37b5544"
-  integrity sha512-edCbqZH4ZEHpacY6LIn/D+qRx2cSmRAjfJIgSNifURLKXQ0LWXc8bVzfhlM3R9D+RLyQIgddWObCCXoa6YS+eA==
-  dependencies:
-    ethereum-cryptography "^1.0.3"
-    ipfs-unixfs-importer "^7.0.3"
-    multiformats "^9.6.3"
-
-"@dcl/hashing@^1.0.0", "@dcl/hashing@^1.1.0", "@dcl/hashing@^1.1.3":
+"@dcl/hashing@1.1.3", "@dcl/hashing@^1.0.0", "@dcl/hashing@^1.1.0", "@dcl/hashing@^1.1.3":
   version "1.1.3"
   resolved "https://registry.yarnpkg.com/@dcl/hashing/-/hashing-1.1.3.tgz#9ca331495333d8cf87310dc563475ca532d7f827"
   integrity sha512-mU1+Q8jcFLAR1hSBOd6WcnLwvQmKIPAH8+UPf2DZUk+Ntu7jWqSOqG+PoWRlh7/gPfI/gKofeW0a+HzVUK6N/g==
