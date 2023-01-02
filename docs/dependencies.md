@@ -1,6 +1,6 @@
 # Content Server dependencies
 ```mermaid
-graph
+graph LR
 
 contentserver[Content Server] --> catalystapispecs[catalyst-api-specs]
 contentserver --> catalystclient["dcl-catalyst-client"]
@@ -27,7 +27,7 @@ snapshotsfetcher --> schemas
 
 # Lambdas Server dependencies
 ```mermaid
-graph
+graph LR
 
 lambdasserver["Lambdas Server"] --> catalystapispecs["catalyst-api-specs"]
 lambdasserver --> catalystcontracts["@dcl/catalyst-contracts"]
