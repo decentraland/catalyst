@@ -14,7 +14,7 @@
     "@dcl/catalyst-api-specs": "^2.0.18",
     "@dcl/catalyst-contracts": "^3.1.0",
     "@dcl/crypto": "^3.2.3",
-    "@dcl/schemas": "^5.31.0",
+    "@dcl/schemas": "^5.32.0",
     "@dcl/urn-resolver": "^2.0.3",
     "@well-known-components/env-config-provider": "^1.2.0",
     "@well-known-components/http-server": "1.1.6",
