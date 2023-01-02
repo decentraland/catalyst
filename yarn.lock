@@ -323,14 +323,7 @@
   dependencies:
     yaml "2.2.1"
 
-"@dcl/catalyst-contracts@^3.0.0", "@dcl/catalyst-contracts@^3.0.1":
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/@dcl/catalyst-contracts/-/catalyst-contracts-3.0.1.tgz#53fc710e8a0292b911ba8da0e212639cce172d45"
-  integrity sha512-+9cUElVgsGgG8aC1j3G5GT/mBVudQRQZx6PmVzi/qmrF3A2rGjOwWXhM3p1xbAMalTZBJwAF1IaLQ+axCa3seA==
-  dependencies:
-    eth-connect "^6.0.2"
-
-"@dcl/catalyst-contracts@^3.1.0":
+"@dcl/catalyst-contracts@^3.0.0", "@dcl/catalyst-contracts@^3.0.1", "@dcl/catalyst-contracts@^3.1.0":
   version "3.1.0"
   resolved "https://registry.yarnpkg.com/@dcl/catalyst-contracts/-/catalyst-contracts-3.1.0.tgz#23f764dca183914cefc06db96cc9c43e88585b47"
   integrity sha512-ctnzngEY+TaD7PM9UZwlb/twnuuFDnp5FJciIxIau/WPhOmvJEQlQX//2rzXctfrflJEswNG1M0OSIsXxKDaBA==
@@ -2691,10 +2684,10 @@ date-format@^4.0.10, date-format@^4.0.13:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-4.0.13.tgz#87c3aab3a4f6f37582c5f5f63692d2956fa67890"
   integrity sha512-bnYCwf8Emc3pTD8pXnre+wfnjGtfi5ncMDKy7+cWZXbmRAsdWkOQHrfC1yz/KiwP5thDp2kCHWYWKBX4HP1hoQ==
 
-dcl-catalyst-client@^14.0.1:
-  version "14.0.1"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-14.0.1.tgz#b00219e2e8c399df5ecefaa222fc52c71914f247"
-  integrity sha512-ImHRvHmGZKG61w0ijyEvbnT38hXr0+Qt7EtGxHxZWQaGzyzHAAUHmFWjz5VkxH5hI/jXfZK9owWGvVvDiWmB7A==
+dcl-catalyst-client@^14.0.6:
+  version "14.0.6"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-14.0.6.tgz#281390f7278f11b70c56791b5812f46a9a5b9a6c"
+  integrity sha512-/9Z6kA3uPqvvmiJY2yg6PHfWHe5B0kfsVD+Y+WNys2D0VM1CIqFBgpox6DrGNOBelS7Mv2v9R8D/+zyN8dfq0A==
   dependencies:
     "@dcl/catalyst-contracts" "^3.0.0"
     "@dcl/hashing" "^1.1.0"
