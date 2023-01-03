@@ -90,10 +90,10 @@ export function createBatchDeployerComponent(
         }
       }
       if (entity.markAsDeployed) {
-        if (
+        const wasAlreadyProcessed =
           successfulDeployments.has(entity.entityId) ||
           (await components.failedDeployments.findFailedDeployment(entity.entityId))
-        ) {
+        if (wasAlreadyProcessed) {
           await entity.markAsDeployed()
         } else {
           existentElementInMap.markAsDeployedFns.push(entity.markAsDeployed)
@@ -122,57 +122,65 @@ export function createBatchDeployerComponent(
            *  2. The entity was sucessfully deployed.
            *  3. The entity failed to be deployed but was successfully persisted as failed deployment
            */
-          let wasEntityProcessed = false
-
-          const elementInMap = deploymentsMap.get(entity.entityId)
-          if (!elementInMap) {
-            // This should never happen as this scheduled fn is added after the deploymentsMap is set the entityId
-            throw new Error('element in map doesn not exist! this should never happen')
-          }
-
-          try {
-            if (await isEntityDeployed(components, entity.entityId)) {
-              wasEntityProcessed = true
-              return
+          // 1. The entity is already deployed, early return.
+          if (await isEntityDeployed(components, entity.entityId)) {
+            const markAsDeployedFns = deploymentsMap.get(entity.entityId)?.markAsDeployedFns ?? []
+            for (const markAsDeployed of markAsDeployedFns) {
+              await markAsDeployed()
             }
-
-            await deployEntityFromRemoteServer(
-              components,
-              entity.entityId,
-              entity.entityType,
-              entity.authChain,
-              elementInMap.servers,
-              DeploymentContext.SYNCED
-            )
-            wasEntityProcessed = true
             successfulDeployments.add(entity.entityId)
             deploymentsMap.delete(entity.entityId)
-          } catch (err: any) {
-            const errorDescription = err.toString()
-            logs.warn(`Entity deployment failed`, {
-              entityType: entity.entityType,
-              entityId: entity.entityId,
-              reason: errorDescription
-            })
-            // failed deployments are automatically rescheduled
-            await components.failedDeployments.reportFailure({
-              entityType: entity.entityType as any,
-              entityId: entity.entityId,
-              reason: FailureReason.DEPLOYMENT_ERROR,
-              authChain: entity.authChain,
-              errorDescription,
-              failureTimestamp: components.clock.now(),
-              snapshotHash: entity.snapshotHash
-            })
-            wasEntityProcessed = true
-          } finally {
-            // decrement the gauge of enqueued deployments
-            components.metrics.decrement('dcl_pending_deployment_gauge', metricLabels)
-            if (wasEntityProcessed && elementInMap) {
-              for (const markAsDeployed of elementInMap?.markAsDeployedFns) {
-                await markAsDeployed()
+            return
+          }
+
+          // 2. and 3. We try to deploy the entity or add it to fail deployments
+          let wasEntityProcessed = false
+          let elementInMap = deploymentsMap.get(entity.entityId)
+          if (elementInMap) {
+            try {
+              await deployEntityFromRemoteServer(
+                components,
+                entity.entityId,
+                entity.entityType,
+                entity.authChain,
+                elementInMap.servers,
+                DeploymentContext.SYNCED
+              )
+              wasEntityProcessed = true
+              successfulDeployments.add(entity.entityId)
+            } catch (err: any) {
+              const errorDescription = err.toString()
+              logs.warn(`Entity deployment failed`, {
+                entityType: entity.entityType,
+                entityId: entity.entityId,
+                reason: errorDescription
+              })
+              // failed deployments are automatically rescheduled
+              await components.failedDeployments.reportFailure({
+                entityType: entity.entityType as any,
+                entityId: entity.entityId,
+                reason: FailureReason.DEPLOYMENT_ERROR,
+                authChain: entity.authChain,
+                errorDescription,
+                failureTimestamp: components.clock.now(),
+                snapshotHash: entity.snapshotHash
+              })
+              wasEntityProcessed = true
+            } finally {
+              // We get the element again, because in the middle of the deploy/failed it could be added new 'markAsDeployed'
+              elementInMap = deploymentsMap.get(entity.entityId) ?? elementInMap
+              // decrement the gauge of enqueued deployments
+              components.metrics.decrement('dcl_pending_deployment_gauge', metricLabels)
+              if (wasEntityProcessed) {
+                for (const markAsDeployed of elementInMap?.markAsDeployedFns) {
+                  await markAsDeployed()
+                }
               }
+              deploymentsMap.delete(entity.entityId)
             }
+          } else {
+            // This should never happen as this scheduled fn is added after the deploymentsMap is set the entityId
+            throw new Error('element in map does not exist! this should never happen')
           }
         }, operationPriority)
         .catch(logs.error)
