@@ -1,6 +1,6 @@
 import { EntityType } from '@dcl/schemas'
 import { IBaseComponent } from '@well-known-components/interfaces'
-import { findSnapshotsStrictlyContainedInTimeRange } from '../../../src/logic/database-queries/snapshots-queries'
+import * as snapshotQueries from '../../../src/logic/database-queries/snapshots-queries'
 import { generateSnapshotsInMultipleTimeRanges } from '../../../src/logic/snapshots'
 import * as timeRangeLogic from '../../../src/logic/time-range'
 import { DeploymentContext } from '../../../src/service/Service'
@@ -18,6 +18,8 @@ loadStandaloneTestEnvironment()('snapshot generator - ', (testEnv) => {
   }
 
   const initialTimestamp = 1577836800000
+
+  beforeEach(() => jest.restoreAllMocks())
 
   testCaseWithComponents(
     testEnv,
@@ -260,6 +262,69 @@ loadStandaloneTestEnvironment()('snapshot generator - ', (testEnv) => {
 
   testCaseWithComponents(
     testEnv,
+    'should recreate the snapshot if it is not stored',
+    async (components) => {
+      makeNoopServerValidator(components)
+      makeNoopValidator(components)
+      await startSnapshotNeededComponents(components)
+
+      await deployAnEntityAtTimestamp(components, '0x00000', daysAfterInitialTimestamp(0) + 1)
+
+      const storeSpy = jest.spyOn(components.storage, 'storeStreamAndCompress')
+
+      // snapshot is generated and assert is correctly stored
+      const snapshots = await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(1))
+
+      expect(snapshots).toEqual(expect.arrayContaining([expect.objectContaining({ numberOfEntities: 1 })]))
+      expect(storeSpy).toBeCalledWith(snapshots[0].hash, expect.anything())
+      expect(await components.storage.exist(snapshots[0].hash)).toBeTruthy()
+
+      // now the snapshot is deleted from storage so it needs to be re-generated
+      storeSpy.mockClear()
+      await components.storage.delete([snapshots[0].hash])
+      expect(await components.storage.exist(snapshots[0].hash)).toBeFalsy()
+
+      // now the snapshot is re-generated and stored again
+      const snapshots2 = await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(1))
+      expect(snapshots2).toEqual(expect.arrayContaining([expect.objectContaining({ numberOfEntities: 1 })]))
+      expect(storeSpy).toBeCalledWith(snapshots2[0].hash, expect.anything())
+      expect(await components.storage.exist(snapshots2[0].hash)).toBeTruthy()
+    }
+  )
+
+  testCaseWithComponents(
+    testEnv,
+    'should not delete replaced snapshot if it is used in another timerange',
+    async (components) => {
+      makeNoopServerValidator(components)
+      makeNoopValidator(components)
+      await startSnapshotNeededComponents(components)
+
+      await deployAnEntityAtTimestamp(components, '0x00000', daysAfterInitialTimestamp(0) + 1)
+
+      jest.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([{
+        hash: 'h1',
+        replacedSnapshotHashes: [],
+        numberOfEntities: 5,
+        timeRange: { initTimestamp: 1, endTimestamp: 2 },
+        generationTimestamp: 1
+      }])
+
+      // the re-generation is forced
+      jest.spyOn(snapshotQueries, 'snapshotIsOutdated').mockResolvedValue(true)
+      const snapshotsNotInTimeRangeSpy = jest.spyOn(snapshotQueries, 'getSnapshotHashesNotInTimeRange').mockResolvedValue(new Set(['h1']))
+
+      // snapshot is generated and assert is correctly stored
+      const snapshots = await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(1))
+
+      expect(snapshots).toEqual(expect.arrayContaining([expect.objectContaining({ numberOfEntities: 1 })]))
+      expect(await components.storage.exist(snapshots[0].hash)).toBeTruthy()
+      expect(snapshotsNotInTimeRangeSpy).toBeCalledWith(expect.anything(), expect.arrayContaining(['h1']), expect.anything())
+    }
+  )
+
+  testCaseWithComponents(
+    testEnv,
     'should not delete from db nor storage a snapshot in other timerange that has the same hash of one of those being replaced',
     async (components) => {
       makeNoopServerValidator(components)
@@ -276,7 +341,7 @@ loadStandaloneTestEnvironment()('snapshot generator - ', (testEnv) => {
       //  - The last the daily snapshot, has a different snapshot hash as it has one deployment.
       await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(15))
       // expect first week snapshot to be present
-      const snapshots = await findSnapshotsStrictlyContainedInTimeRange(components, timeRangeOfDaysFromInitialTimestamp(15))
+      const snapshots = await snapshotQueries.findSnapshotsStrictlyContainedInTimeRange(components, timeRangeOfDaysFromInitialTimestamp(15))
       expect(snapshots[0].timeRange).toEqual(timeRangeOfDaysFromInitialTimestamp(7))
       const hashesExist = await components.storage.existMultiple(snapshots.map(s => s.hash))
       expect(Array.from(hashesExist.values()).every(e => e)).toBeTruthy()
