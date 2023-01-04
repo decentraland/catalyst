@@ -348,6 +348,73 @@ loadStandaloneTestEnvironment()('snapshot generator - ', (testEnv) => {
     }
   )
 
+  testCaseWithComponents(
+    testEnv,
+    'should re-generate snapshot if it is outdated (an entity for the time range was deployed after the generation timestamp of the snapshot)',
+    async (components) => {
+      makeNoopServerValidator(components)
+      makeNoopValidator(components)
+      await startSnapshotNeededComponents(components)
+
+      const firstDayTimeRange = timeRangeOfDaysFromInitialTimestamp(1)
+      // first a snapshot is generated for the first day, with a generationTimestamp older than a month
+      const oldSnapshot = {
+        hash: 'aHash',
+        timeRange: firstDayTimeRange,
+        numberOfEntities: 0,
+        generationTimestamp: firstDayTimeRange.endTimestamp + 1
+      }
+      await snapshotQueries.saveSnapshot(components.database, oldSnapshot)
+
+      jest.spyOn(components.storage, 'existMultiple').mockImplementation(async (hashes) => {
+        const e = new Map()
+        for (const h of hashes) e.set(h, true)
+        return e
+      })
+
+      // an entity is deployed in the time range of the snapshot but with local timestamp after the snapshot generation
+      // so the snapshot becomes outdated
+      await deployAnEntityAtTimestamp(components, '0x00000', daysAfterInitialTimestamp(0) + 1, oldSnapshot.generationTimestamp + 1)
+      const snapshots = await generateSnapshotsInMultipleTimeRanges(components, firstDayTimeRange)
+
+      expect(snapshots).toHaveLength(1)
+      const snapshot = snapshots[0]
+      expect(snapshot.hash).not.toEqual('aHash')
+      expect(snapshot.timeRange).toEqual(firstDayTimeRange)
+      expect(snapshot.numberOfEntities).toEqual(1)
+      expect(snapshot.generationTimestamp).toBeGreaterThan(oldSnapshot.generationTimestamp)
+      expect(snapshot.replacedSnapshotHashes).toEqual(expect.arrayContaining([]))
+    }
+  )
+
+  testCaseWithComponents(
+    testEnv,
+    'should re-generate snapshot if it has inactive entities and is older than a month (and replace the old one)',
+    async (components) => {
+      makeNoopServerValidator(components)
+      makeNoopValidator(components)
+      await startSnapshotNeededComponents(components)
+
+      const firstDayTimeRange = timeRangeOfDaysFromInitialTimestamp(1)
+
+      await deployAnEntityAtTimestamp(components, '0x00000', daysAfterInitialTimestamp(0) + 1)
+      const snapshots = await generateSnapshotsInMultipleTimeRanges(components, firstDayTimeRange)
+      expect(snapshots).toEqual(expect.arrayContaining([
+        expect.objectContaining({ numberOfEntities: 1, timeRange: firstDayTimeRange }),
+      ]))
+
+      // now and entity with the same pointer is deployed but for outside the original timeRange
+      // so now the entity in the previous snapshot is inactive
+      await deployAnEntityAtTimestamp(components, '0x00000', daysAfterInitialTimestamp(2), daysAfterInitialTimestamp(30))
+      const snapshots2 = await generateSnapshotsInMultipleTimeRanges(components, firstDayTimeRange)
+      expect(snapshots2).toEqual(expect.arrayContaining([
+        expect.objectContaining({ numberOfEntities: 0, timeRange: firstDayTimeRange }),
+      ]))
+      expect(snapshots2[0].hash).not.toEqual(snapshots[0].hash)
+      expect(snapshots2[0].replacedSnapshotHashes).toEqual(expect.arrayContaining([snapshots[0].hash]))
+    }
+  )
+
   function timeRangeOfDaysFromInitialTimestamp(numberOfDays: number) {
     return {
       initTimestamp: initialTimestamp,
@@ -378,11 +445,16 @@ async function startSnapshotNeededComponents(components: Pick<
   await startComponent(components.staticConfigs as IBaseComponent, startOptions)
 }
 
-async function deployAnEntityAtTimestamp(components: Pick<AppComponents, 'deployer' | 'clock'>, pointer: string, deployTimestmap: number) {
-  jest.spyOn(components.clock, 'now').mockReturnValue(deployTimestmap)
+async function deployAnEntityAtTimestamp(
+  components: Pick<AppComponents, 'deployer' | 'clock'>,
+  pointer: string,
+  entityTimestamp: number,
+  localTimestamp?: number
+) {
+  jest.spyOn(components.clock, 'now').mockReturnValue(localTimestamp ?? entityTimestamp)
   const anEntity: EntityCombo = await buildDeployData([pointer], {
     type: EntityType.PROFILE,
-    timestamp: deployTimestmap,
+    timestamp: entityTimestamp,
     metadata: { a: 'metadata' }
   })
   await components.deployer.deployEntity(
