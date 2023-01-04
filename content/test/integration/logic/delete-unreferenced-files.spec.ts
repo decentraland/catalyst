@@ -1,10 +1,13 @@
+import { IBaseComponent } from '@well-known-components/interfaces'
 import { mkdirSync, mkdtempSync, rmSync } from 'fs'
 import os from 'os'
 import path from 'path'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { deleteUnreferencedFiles } from '../../../src/logic/delete-unreferenced-files'
+import { MS_PER_DAY } from '../../../src/logic/time-range'
 import { bufferToStream } from '../../../src/ports/contentStorage/contentStorage'
 import { ServiceImpl } from '../../../src/service/ServiceImpl'
+import { AppComponents } from '../../../src/types'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { loadStandaloneTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
@@ -56,6 +59,7 @@ loadStandaloneTestEnvironment({ [EnvironmentConfig.STORAGE_ROOT_FOLDER]: tmpRoot
     const components = server.components
     makeNoopValidator(components)
     await server.startProgram()
+
     const deployResult = await buildDeployData(['0,0', '0,1'], {
       metadata: { a: 'this is just some metadata' },
       contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
@@ -73,6 +77,29 @@ loadStandaloneTestEnvironment({ [EnvironmentConfig.STORAGE_ROOT_FOLDER]: tmpRoot
       expect(await components.storage.exist(usedHash)).toBeTruthy()
     }
   })
+
+  testCaseWithComponents(
+    testEnv,
+    'should not delete snapshot file',
+    async (components) => {
+      // the clock is mocked so only one snapshot is created
+      jest.spyOn(components.clock, 'now').mockReturnValue(1577836800000 + MS_PER_DAY)
+      await startSnapshotNeededComponents(components)
+
+      const snapshots = components.snapshotGenerator.getCurrentSnapshots()
+
+      expect(snapshots).toHaveLength(1)
+
+      if (snapshots && snapshots.length > 0) {
+        const { hash } = snapshots[0]
+        expect(await components.storage.exist(hash)).toBeTruthy()
+        await deleteUnreferencedFiles(components)
+        expect(await components.storage.exist(hash)).toBeTruthy()
+      } else {
+        expect(true).toBeFalsy()
+      }
+    }
+  )
 
   it('should delete unreferenced files and not referenced ones', async () => {
     const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
@@ -101,3 +128,17 @@ loadStandaloneTestEnvironment({ [EnvironmentConfig.STORAGE_ROOT_FOLDER]: tmpRoot
     expect(await components.storage.exist(unreferencedFileHash)).toBeFalsy()
   })
 })
+
+
+async function startSnapshotNeededComponents(components: Pick<AppComponents, 'logs' | 'database' | 'storage' | 'fs' | 'snapshotGenerator'>) {
+  const startOptions = { started: jest.fn(), live: jest.fn(), getComponents: jest.fn() }
+  await startComponent(components.database, startOptions)
+  await startComponent(components.fs as IBaseComponent, startOptions)
+  await startComponent(components.storage as IBaseComponent, startOptions)
+  await startComponent(components.logs as IBaseComponent, startOptions)
+  await startComponent(components.snapshotGenerator as IBaseComponent, startOptions)
+}
+
+async function startComponent(component: IBaseComponent, startOptions: IBaseComponent.ComponentStartOptions) {
+  if (component.start) await component.start(startOptions)
+}
