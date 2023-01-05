@@ -424,7 +424,7 @@ export class Controller {
     filters?: PointerChangesFilters
   ): string | undefined {
     const nextFilters = Object.assign({}, filters)
-    // It will always use toEntityTimestamp as this endpoint is always sorted with the default config: localTimestamp and DESC
+    // It will always use toLocalTimestamp as this endpoint is always sorted with the default config: localTimestamp and DESC
     nextFilters.to = lastPointerChange.localTimestamp
 
     const nextQueryParams = toQueryParams({
