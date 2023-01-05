@@ -213,6 +213,6 @@ loadTestEnvironment()('Bootstrapping synchronization tests', function (testEnv) 
       metadata: { a: 'metadata' },
       timestamp
     })
-    return buildDeployment(deployData, entityBeingDeployed, await server.deploy(deployData))
+    return buildDeployment(deployData, entityBeingDeployed, await server.deployEntity(deployData))
   }
 })

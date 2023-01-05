@@ -23,7 +23,7 @@ loadStandaloneTestEnvironment()('Integration - Deployment Fields', (testEnv) => 
     })
 
     // Deploy entity
-    await server.deploy(deployData)
+    await server.deployEntity(deployData)
 
     // Fetch deployments
     const withAudit = await fetchDeployment(DeploymentField.AUDIT_INFO)

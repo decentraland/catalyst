@@ -43,7 +43,7 @@ loadStandaloneTestEnvironment({ [EnvironmentConfig.STORAGE_ROOT_FOLDER]: tmpRoot
       metadata: { a: 'this is just some metadata' }
     })
 
-    await server.deploy(deployResult.deployData)
+    await server.deployEntity(deployResult.deployData)
 
     const contentsByHash: Map<string, Uint8Array> = await ServiceImpl.hashFiles(deployResult.deployData.files, deployResult.deployData.entityId)
     const contentFileHashes = Array.from(contentsByHash.keys())
@@ -65,7 +65,7 @@ loadStandaloneTestEnvironment({ [EnvironmentConfig.STORAGE_ROOT_FOLDER]: tmpRoot
       contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
     })
 
-    await server.deploy(deployResult.deployData)
+    await server.deployEntity(deployResult.deployData)
 
     const contentsByHash: Map<string, Uint8Array> = await ServiceImpl.hashFiles(deployResult.deployData.files, deployResult.deployData.entityId)
     const contentFileHashes = Array.from(contentsByHash.keys())
@@ -111,7 +111,7 @@ loadStandaloneTestEnvironment({ [EnvironmentConfig.STORAGE_ROOT_FOLDER]: tmpRoot
       contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
     })
 
-    await server.deploy(deployResult.deployData)
+    await server.deployEntity(deployResult.deployData)
 
     const contentsByHash: Map<string, Uint8Array> = await ServiceImpl.hashFiles(deployResult.deployData.files, deployResult.deployData.entityId)
     const contentFileHashes = Array.from(contentsByHash.keys())

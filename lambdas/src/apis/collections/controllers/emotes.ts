@@ -1,4 +1,3 @@
-import { EntityType } from '@dcl/schemas'
 import { Request, Response } from 'express'
 import log4js from 'log4js'
 import { findThirdPartyItemUrns } from '../../../logic/third-party-urn-finder'
@@ -167,7 +166,7 @@ async function fetchEmotes(emoteUrns: string[], client: SmartContentClient): Pro
   if (emoteUrns.length === 0) {
     return []
   }
-  const entities = await client.fetchEntitiesByPointers(EntityType.EMOTE, emoteUrns)
+  const entities = await client.fetchEntitiesByPointers(emoteUrns)
   const emotes = entities.map((entity) => translateEntityIntoEmote(client, entity))
   return emotes.sort((emote1, emote2) => emote1.id.toLowerCase().localeCompare(emote2.id.toLowerCase()))
 }

@@ -33,7 +33,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     })
 
     // Deploy entity
-    await server.deploy(deployResult.deployData)
+    await server.deployEntity(deployResult.deployData)
 
     const result = await fetchActiveEntityByIds(server, deployResult.entity.id)
     expect(result).toHaveLength(1)
@@ -53,7 +53,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     })
 
     // Deploy entity
-    await server.deploy(deployResult.deployData)
+    await server.deployEntity(deployResult.deployData)
 
     const result = await fetchActiveEntityByPointers(server, ...deployResult.entity.pointers)
 
@@ -75,7 +75,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     })
 
     // Deploy entity
-    await server.deploy(deployResult.deployData)
+    await server.deployEntity(deployResult.deployData)
 
     const newDeployResult = await buildDeployData(['0,0', '0,1'], {
       metadata: {
@@ -85,7 +85,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     })
 
     // Deploy newer entity
-    await server.deploy(newDeployResult.deployData)
+    await server.deployEntity(newDeployResult.deployData)
 
     const result = await fetchActiveEntityByIds(server, newDeployResult.entity.id)
     expect(result).toHaveLength(1)
@@ -105,7 +105,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     })
 
     // Deploy entity
-    await server.deploy(deployResult.deployData)
+    await server.deployEntity(deployResult.deployData)
 
     const deployResult2 = await buildDeployData(['2,0', '2,1'], {
       metadata: { a: 'this is just some metadata' },
@@ -113,7 +113,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     })
 
     // Deploy other entity
-    await server.deploy(deployResult2.deployData)
+    await server.deployEntity(deployResult2.deployData)
 
     const result = await fetchActiveEntityByIds(server, deployResult.entity.id, deployResult2.entity.id)
     expect(result).toHaveLength(2)
@@ -134,7 +134,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     })
 
     // Deploy entity
-    await server.deploy(deployResult.deployData)
+    await server.deployEntity(deployResult.deployData)
 
     const result = await fetchActiveEntityByIds(server, deployResult.entity.id, deployResult.entity.id)
     expect(result).toHaveLength(1)
@@ -155,7 +155,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     })
 
     // Deploy entity
-    await server.deploy(deployResult.deployData)
+    await server.deployEntity(deployResult.deployData)
     const resultWithId = await fetchActiveEntityByIds(server, deployResult.entity.id)
     const resultWithPointers = await fetchActiveEntityByPointers(server, ...pointers)
 
@@ -174,7 +174,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       })
 
       // Deploy entity
-      await server.deploy(deployResult.deployData)
+      await server.deployEntity(deployResult.deployData)
       await fetchActiveEntityByIds(server, deployResult.entity.id)
 
       const zeroZeroActiveEntityId = server.components.activeEntities.getCachedEntity('0,0')
@@ -223,14 +223,14 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       })
 
       // Deploy entity with pointers ['0,0', '0,1']
-      await server.deploy(deployData)
+      await server.deployEntity(deployData)
 
       const { deployData: secondDeployData } = await buildDeployData(['0,1'], {
         metadata: { a: 'this is just some metadata' },
         contentPaths: ['test/integration/resources/some-binary-file.png']
       })
       // Deploy entity with pointer ['0,1']
-      await server.deploy(secondDeployData) // Override entity and invalidate pointer ['0,0']
+      await server.deployEntity(secondDeployData) // Override entity and invalidate pointer ['0,0']
 
       const result = await fetchActiveEntityByPointers(server, '0,0')
       expect(result).toHaveLength(0)
@@ -251,7 +251,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       })
 
       // Deploy entity with pointers ['0,0', '0,1']
-      await server.deploy(deployData)
+      await server.deployEntity(deployData)
 
       const result = await fetchActiveEntityByPointers(server, '0,0', '0,1')
       expect(result).toHaveLength(1)
@@ -269,7 +269,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
         contentPaths: ['test/integration/resources/some-binary-file.png']
       })
       // Deploy new entity with pointers ['0,0', '0,1']
-      await server.deploy(secondDeployData)
+      await server.deployEntity(secondDeployData)
       const newEntityId = activeEntities.getCachedEntity('0,0')
       expect(newEntityId).toBeDefined()
       expect(newEntityId).not.toBe(entityId)
@@ -298,8 +298,8 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
         contentPaths: ['test/integration/resources/some-binary-file.png']
       })
 
-      await server.deploy(deployData)
-      await server.deploy(secondDeployData)
+      await server.deployEntity(deployData)
+      await server.deployEntity(secondDeployData)
 
       const result = await fetchActiveEntityByPointers(server, ...firstPointers, ...secondPointers)
       expect(result).toHaveLength(2)
@@ -336,14 +336,14 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       })
 
       // Deploy entity with pointers ['0,0', '0,1']
-      await server.deploy(deployData)
+      await server.deployEntity(deployData)
 
       const { deployData: secondDeployData } = await buildDeployData(['0,1'], {
         metadata: { a: 'this is just some metadata' },
         contentPaths: ['test/integration/resources/some-binary-file.png']
       })
       // Deploy entity with pointer ['0,1']
-      await server.deploy(secondDeployData) // Override entity and invalidate pointer ['0,0']
+      await server.deployEntity(secondDeployData) // Override entity and invalidate pointer ['0,0']
 
       // given one active entity and one non active entity cached, check getDeployments is not being called
       const serviceSpy = jest.spyOn(deployments, 'getDeployments')
@@ -373,7 +373,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
 
       const response = await fetch(
         server.getUrl() +
-        `/entities/active/collections/urn:decentraland:ethereum:collections-v1:0x32b7495895264ac9d0b12d32afd435453458b1c6`,
+          `/entities/active/collections/urn:decentraland:ethereum:collections-v1:0x32b7495895264ac9d0b12d32afd435453458b1c6`,
         {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' }
@@ -394,7 +394,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       })
 
       // Deploy entity
-      await server.deploy(deployResult.deployData)
+      await server.deployEntity(deployResult.deployData)
       const response = await fetchActiveEntityByUrnPrefix(
         server,
         'urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1'
@@ -417,7 +417,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       })
 
       // Deploy entity
-      await server.deploy(deployResult.deployData)
+      await server.deployEntity(deployResult.deployData)
       const response = await fetchActiveEntityByUrnPrefix(
         server,
         'urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection'
@@ -440,7 +440,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       })
 
       // Deploy entity
-      await server.deploy(deployResult.deployData)
+      await server.deployEntity(deployResult.deployData)
       const response = await fetchActiveEntityByUrnPrefix(
         server,
         'urn:decentraland:mumbai:collections-thirdparty:aThirdParty'
@@ -462,7 +462,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       })
 
       // Deploy entity
-      await server.deploy(deployResult.deployData)
+      await server.deployEntity(deployResult.deployData)
       const response = await fetchActiveEntityByUrnPrefix(
         server,
         'urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection'
@@ -487,8 +487,8 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       })
 
       // Deploy entity
-      await server.deploy(firstDeploy.deployData)
-      await server.deploy(secondDeploy.deployData)
+      await server.deployEntity(firstDeploy.deployData)
+      await server.deployEntity(secondDeploy.deployData)
       const response = await fetchActiveEntityByUrnPrefix(
         server,
         'urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection'

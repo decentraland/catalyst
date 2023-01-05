@@ -40,11 +40,11 @@ loadTestEnvironment()('End 2 end - Node onboarding', function (testEnv) {
     )
 
     // Deploy entity1 on server 1
-    const deploymentTimestamp1 = await server1.deploy(deployData1)
+    const deploymentTimestamp1 = await server1.deployEntity(deployData1)
     const deployment1 = buildDeployment(deployData1, entity1, deploymentTimestamp1)
 
     // Deploy entity2 on server 2
-    const deploymentTimestamp2 = await server2.deploy(deployData2)
+    const deploymentTimestamp2 = await server2.deployEntity(deployData2)
     const deployment2 = buildDeployment(deployData2, entity2, deploymentTimestamp2)
 
     // Wait for servers to sync and assert servers 1 and 2 are synced
@@ -76,7 +76,7 @@ loadTestEnvironment()('End 2 end - Node onboarding', function (testEnv) {
     const entityContentHash = entity.content![0].hash
 
     // Deploy entity on server 1
-    const deploymentTimestamp = await server1.deploy(deployData)
+    const deploymentTimestamp = await server1.deployEntity(deployData)
     const deployment = buildDeployment(deployData, entity, deploymentTimestamp)
 
     // Wait for sync and assert servers 1 and 2 are synced

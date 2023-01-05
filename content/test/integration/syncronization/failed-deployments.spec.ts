@@ -50,7 +50,7 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
       deployData = entityCombo.deployData
 
       // Deploy the entity
-      await server1.deploy(deployData)
+      await server1.deployEntity(deployData)
       await awaitUntil(() => assertEntitiesAreActiveOnServer(server1, controllerEntity))
 
       // Start server2
@@ -68,7 +68,7 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
     it('fix the failed entity on server2 when retrying it, is correclty deployed', async () => {
       await awaitUntil(() => assertDeploymentFailed(server2, FailureReason.DEPLOYMENT_ERROR, controllerEntity))
       // Fix the entity
-      await server2.deploy(deployData, true)
+      await server2.deployEntity(deployData, true)
       await awaitUntil(() => assertEntitiesAreActiveOnServer(server2, controllerEntity))
       const newFailedDeployments: FailedDeployment[] = await server2.getFailedDeployments()
       expect(newFailedDeployments.length).toBe(0)
@@ -82,11 +82,11 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
         metadata: { a: 'metadata2' }
       })
       // Deploy entity 2 on server 2
-      await server2.deploy(anotherEntityCombo.deployData)
+      await server2.deployEntity(anotherEntityCombo.deployData)
       await awaitUntil(() => assertEntitiesAreActiveOnServer(server2, anotherEntityCombo.controllerEntity))
 
       // Fix the entity
-      await server2.deploy(deployData, true)
+      await server2.deployEntity(deployData, true)
 
 
       // The active entity is not modified
@@ -107,7 +107,7 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
       // Wait until entity from sync is deployed and failed
       await awaitUntil(() => assertDeploymentFailed(server2, FailureReason.DEPLOYMENT_ERROR, controllerEntity))
       // Deploy entity 2 (with same pointers) on server 2
-      await server2.deploy(anotherEntityCombo.deployData)
+      await server2.deployEntity(anotherEntityCombo.deployData)
       await awaitUntil(() => assertEntitiesAreActiveOnServer(server2, anotherEntityCombo.controllerEntity))
 
       // Restore server validations to detect the newer entity
@@ -148,7 +148,7 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
     controllerEntity = entityCombo.controllerEntity
 
     await assertDeploymentFailsWith(
-      () => server1.deploy(deployData, true),
+      () => server1.deployEntity(deployData, true),
       'You are trying to fix an entity that is not marked as failed'
     )
   })
