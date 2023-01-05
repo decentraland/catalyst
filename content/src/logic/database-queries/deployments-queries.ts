@@ -1,5 +1,5 @@
 import { AuthChain, Authenticator } from '@dcl/crypto'
-import { ContentMapping, DeploymentWithAuthChain, Entity, EntityType } from '@dcl/schemas'
+import { ContentMapping, Entity, EntityType, SnapshotSyncDeployment } from '@dcl/schemas'
 import pg from 'pg'
 import SQL, { SQLStatement } from 'sql-template-strings'
 import {
@@ -11,9 +11,9 @@ import {
 } from '../../service/deployments/types'
 import { AppComponents, DeploymentId } from '../../types'
 
-export type HistoricalDeployment = DeploymentWithAuthChain & {
+export type HistoricalDeployment = SnapshotSyncDeployment & {
   deploymentId: number
-  entityTimestamp: number
+  localTimestamp: number
   metadata: any
   deployerAddress: string
   version: string

@@ -5,9 +5,8 @@ import assert from 'assert'
 import { DeploymentData } from 'dcl-catalyst-client'
 import { EntityContentItemReference } from 'dcl-catalyst-commons'
 import { Response } from 'node-fetch'
-import { FailedDeployment, FailureReason } from '../../src/ports/failedDeploymentsCache'
+import { FailedDeployment, FailureReason } from '../../src/ports/failedDeployments'
 import { Deployment } from '../../src/service/deployments/types'
-import { DeploymentResult, isSuccessfulDeployment } from '../../src/service/Service'
 import { EntityVersion } from '../../src/types'
 import { assertPromiseIsRejected, assertPromiseRejectionGeneric } from '../helpers/PromiseAssertions'
 import { TestProgram } from './TestProgram'
@@ -305,13 +304,5 @@ async function getEntitiesDeployment(server: TestProgram, entity: Entity): Promi
 export async function assertResponseIsOkOrThrow(response: Response) {
   if (!response.ok) {
     throw new Error(await response.text())
-  }
-}
-
-export function assertResultIsSuccessfulWithTimestamp(result: DeploymentResult, expectedTimestamp: number): void {
-  if (isSuccessfulDeployment(result)) {
-    expect(result).toEqual(expectedTimestamp)
-  } else {
-    assert.fail('The deployment result: ' + result + ' was expected to be successful, it was invalid instead.')
   }
 }

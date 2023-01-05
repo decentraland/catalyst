@@ -20,7 +20,7 @@ export const createRetryFailedDeployments = (
     | 'logs'
     | 'deployer'
     | 'contentCluster'
-    | 'failedDeploymentsCache'
+    | 'failedDeployments'
     | 'storage'
   >
 ): IRetryFailedDeploymentsComponent => {

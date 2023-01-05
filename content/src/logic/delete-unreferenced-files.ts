@@ -3,6 +3,7 @@ import PQueue from 'p-queue'
 import { runLoggingPerformance } from '../instrument'
 import { AppComponents } from '../types'
 import {
+  getAllSnapshotHashes,
   streamAllDistinctContentFileHashes,
   streamAllDistinctEntityIds
 } from './database-queries/unreferenced-files-queries'
@@ -34,7 +35,15 @@ export async function deleteUnreferencedFiles(
       'add of stream content file hashes to bloom filter',
       async () => await addAllToBloomFilter(streamAllDistinctContentFileHashes(components))
     )
-    logger.info(`Created bloom filter with ${totalEntityIds} entity ids and ${totalContentFileHashes} content hashes.`)
+
+    const totalSnapshotHashes = await runLoggingPerformance(
+      logger,
+      'add of stream snapshot hashes to bloom filter',
+      async () => await addAllToBloomFilter(getAllSnapshotHashes(components))
+    )
+    logger.info(
+      `Created bloom filter with ${totalEntityIds} entity ids, ${totalContentFileHashes} content hashes and ${totalSnapshotHashes} snapshot hashes.`
+    )
   })
 
   const queue = new PQueue({ concurrency: 1000 })

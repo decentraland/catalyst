@@ -23,7 +23,8 @@ export type FileInterface = {
 }
 
 export function createContentFileWriterComponent<T extends symbol | string>(
-  components: Pick<AppComponents, 'logs' | 'staticConfigs' | 'fs'>
+  components: Pick<AppComponents, 'logs' | 'staticConfigs' | 'fs'>,
+  prefixTempFiles?: string
 ): IContentFileWriterComponent<T> {
   const logger = components.logs.getLogger('ContentFileWriter')
 
@@ -32,7 +33,7 @@ export function createContentFileWriterComponent<T extends symbol | string>(
   function fileNameFromType(type: T): string {
     return path.resolve(
       components.staticConfigs.contentStorageFolder,
-      `tmp-snapshot-file-${typeof type == 'symbol' ? 'all' : String(type)}`
+      `${prefixTempFiles ?? ''}tmp-snapshot-file-${typeof type == 'symbol' ? 'all' : String(type)}`
     )
   }
 

@@ -1,12 +1,12 @@
-import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { IDeployerComponent } from '@dcl/snapshots-fetcher'
+import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
+import { DeployableEntity } from '@dcl/snapshots-fetcher/dist/types'
 import { IBaseComponent } from '@well-known-components/interfaces'
 import { isEntityDeployed } from '../../logic/deployments'
-import { FailureReason } from '../../ports/failedDeploymentsCache'
+import { FailureReason } from '../../ports/failedDeployments'
 import { AppComponents, CannonicalEntityDeployment } from '../../types'
 import { DeploymentContext } from '../Service'
 import { deployEntityFromRemoteServer } from './deployRemoteEntity'
-import { DeploymentWithAuthChain } from '@dcl/schemas'
 
 /**
  * An IDeployerComponent parallelizes deployments with a JobQueue.
@@ -28,6 +28,8 @@ export function createBatchDeployerComponent(
     | 'database'
     | 'deployedEntitiesBloomFilter'
     | 'storage'
+    | 'failedDeployments'
+    | 'clock'
   >,
   syncOptions: {
     ignoredTypes: Set<string>
@@ -39,14 +41,19 @@ export function createBatchDeployerComponent(
   const parallelDeploymentJobs = createJobQueue(syncOptions.queueOptions)
 
   // accumulator of all deployments
-  const deploymentsMap = new Map<string, CannonicalEntityDeployment>()
+  const deploymentsMap = new Map<
+    string,
+    CannonicalEntityDeployment & {
+      markAsDeployedFns: Required<DeployableEntity['markAsDeployed'][]>
+    }
+  >()
   const successfulDeployments = new Set<string>()
 
   /**
    * This function is used to filter out (ignore) deployments coming from remote
    * servers only. Local deployments using POST /entities _ARE NOT_ filtered by this function.
    */
-  async function shouldRemoteEntityDeploymentBeIgnored(entity: DeploymentWithAuthChain): Promise<boolean> {
+  async function shouldRemoteEntityDeploymentBeIgnored(entity: DeployableEntity): Promise<boolean> {
     // ignore specific entity types using EnvironmentConfig.SYNC_IGNORED_ENTITY_TYPES
     if (syncOptions.ignoredTypes.has(entity.entityType)) {
       return true
@@ -64,26 +71,42 @@ export function createBatchDeployerComponent(
     return false
   }
 
-  async function handleDeploymentFromServer(entity: DeploymentWithAuthChain, contentServer: string) {
+  async function handleDeploymentFromServers(entity: DeployableEntity, contentServers: string[]) {
     if (await shouldRemoteEntityDeploymentBeIgnored(entity)) {
       // early return to prevent noops
       components.metrics.increment('dcl_ignored_sync_deployments')
+      if (entity.markAsDeployed) {
+        await entity.markAsDeployed()
+      }
       return
     }
 
-    let elementInMap = deploymentsMap.get(entity.entityId)
-    if (elementInMap) {
+    const existentElementInMap = deploymentsMap.get(entity.entityId)
+    if (existentElementInMap) {
       // if the element to deploy exists in the map, then we add the server to the list for load balancing
-      if (!elementInMap.servers.includes(contentServer)) {
-        elementInMap.servers.push(contentServer)
+      for (const contentServer of contentServers) {
+        if (!existentElementInMap.servers.includes(contentServer)) {
+          existentElementInMap.servers.push(contentServer)
+        }
+      }
+      if (entity.markAsDeployed) {
+        const wasAlreadyProcessed =
+          successfulDeployments.has(entity.entityId) ||
+          (await components.failedDeployments.findFailedDeployment(entity.entityId))
+        if (wasAlreadyProcessed) {
+          await entity.markAsDeployed()
+        } else {
+          existentElementInMap.markAsDeployedFns.push(entity.markAsDeployed)
+        }
       }
     } else {
-      elementInMap = {
+      const newElementInMap = {
         entity,
-        servers: [contentServer]
+        servers: contentServers,
+        markAsDeployedFns: entity.markAsDeployed ? [entity.markAsDeployed] : []
       }
 
-      deploymentsMap.set(entity.entityId, elementInMap)
+      deploymentsMap.set(entity.entityId, newElementInMap)
 
       const metricLabels = { entity_type: entity.entityType }
       // increment the gauge of enqueued deployments
@@ -93,34 +116,71 @@ export function createBatchDeployerComponent(
 
       parallelDeploymentJobs
         .scheduleJobWithPriority(async () => {
-          try {
-            if (await isEntityDeployed(components, entity.entityId)) {
-              return
+          /**
+           *  Entity should be marked as processed in the snapshot if anyone of these conditions is met:
+           *  1. The entity is already deployed.
+           *  2. The entity was sucessfully deployed.
+           *  3. The entity failed to be deployed but was successfully persisted as failed deployment
+           */
+          // 1. The entity is already deployed, early return.
+          if (await isEntityDeployed(components, entity.entityId)) {
+            const markAsDeployedFns = deploymentsMap.get(entity.entityId)?.markAsDeployedFns ?? []
+            for (const markAsDeployed of markAsDeployedFns) {
+              await markAsDeployed()
             }
-
-            await deployEntityFromRemoteServer(
-              components,
-              entity.entityId,
-              entity.entityType,
-              entity.authChain,
-              elementInMap!.servers,
-              DeploymentContext.SYNCED
-            )
-
             successfulDeployments.add(entity.entityId)
             deploymentsMap.delete(entity.entityId)
-          } catch (err: any) {
-            // failed deployments are automatically rescheduled
-            components.deployer.reportErrorDuringSync(
-              entity.entityType as any,
-              entity.entityId,
-              FailureReason.DEPLOYMENT_ERROR,
-              entity.authChain,
-              err.toString()
-            )
-          } finally {
-            // decrement the gauge of enqueued deployments
-            components.metrics.decrement('dcl_pending_deployment_gauge', metricLabels)
+            return
+          }
+
+          // 2. and 3. We try to deploy the entity or add it to fail deployments
+          let wasEntityProcessed = false
+          let elementInMap = deploymentsMap.get(entity.entityId)
+          if (elementInMap) {
+            try {
+              await deployEntityFromRemoteServer(
+                components,
+                entity.entityId,
+                entity.entityType,
+                entity.authChain,
+                elementInMap.servers,
+                DeploymentContext.SYNCED
+              )
+              wasEntityProcessed = true
+              successfulDeployments.add(entity.entityId)
+            } catch (err: any) {
+              const errorDescription = err.toString()
+              logs.warn(`Entity deployment failed`, {
+                entityType: entity.entityType,
+                entityId: entity.entityId,
+                reason: errorDescription
+              })
+              // failed deployments are automatically rescheduled
+              await components.failedDeployments.reportFailure({
+                entityType: entity.entityType as any,
+                entityId: entity.entityId,
+                reason: FailureReason.DEPLOYMENT_ERROR,
+                authChain: entity.authChain,
+                errorDescription,
+                failureTimestamp: components.clock.now(),
+                snapshotHash: entity.snapshotHash
+              })
+              wasEntityProcessed = true
+            } finally {
+              // We get the element again, because in the middle of the deploy/failed it could be added new 'markAsDeployed'
+              elementInMap = deploymentsMap.get(entity.entityId) ?? elementInMap
+              // decrement the gauge of enqueued deployments
+              components.metrics.decrement('dcl_pending_deployment_gauge', metricLabels)
+              if (wasEntityProcessed) {
+                for (const markAsDeployed of elementInMap?.markAsDeployedFns) {
+                  await markAsDeployed()
+                }
+              }
+              deploymentsMap.delete(entity.entityId)
+            }
+          } else {
+            // This should never happen as this scheduled fn is added after the deploymentsMap is set the entityId
+            throw new Error('element in map does not exist! this should never happen')
           }
         }, operationPriority)
         .catch(logs.error)
@@ -135,10 +195,8 @@ export function createBatchDeployerComponent(
     onIdle() {
       return parallelDeploymentJobs.onIdle()
     },
-    async deployEntity(entity: DeploymentWithAuthChain, contentServers: string[]): Promise<void> {
-      for (const contentServer of contentServers) {
-        await handleDeploymentFromServer(entity, contentServer)
-      }
+    async deployEntity(entity: DeployableEntity, contentServers: string[]): Promise<void> {
+      await handleDeploymentFromServers(entity, contentServers)
     }
   }
 }

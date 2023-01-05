@@ -8,16 +8,17 @@ import ms from 'ms'
 import { DEFAULT_ENTITIES_CACHE_SIZE, Environment, EnvironmentConfig } from '../../../src/Environment'
 import { metricsDeclaration } from '../../../src/metrics'
 import { createActiveEntitiesComponent } from '../../../src/ports/activeEntities'
+import { createClock } from '../../../src/ports/clock'
 import { Denylist } from '../../../src/ports/denylist'
-import { createDeployRateLimiter } from '../../../src/ports/deployRateLimiterComponent'
 import { createDeployedEntitiesBloomFilter } from '../../../src/ports/deployedEntitiesBloomFilter'
-import { createFailedDeploymentsCache } from '../../../src/ports/failedDeploymentsCache'
+import { createDeployRateLimiter } from '../../../src/ports/deployRateLimiterComponent'
+import { createFailedDeployments } from '../../../src/ports/failedDeployments'
 import { createTestDatabaseComponent } from '../../../src/ports/postgres'
 import { createSequentialTaskExecutor } from '../../../src/ports/sequecuentialTaskExecutor'
-import { ServiceImpl } from '../../../src/service/ServiceImpl'
 import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
 import * as deployments from '../../../src/service/deployments/deployments'
 import { Deployment } from '../../../src/service/deployments/types'
+import { ServiceImpl } from '../../../src/service/ServiceImpl'
 import { EntityVersion } from '../../../src/types'
 import { NoOpServerValidator, NoOpValidator } from '../../helpers/service/validations/NoOpValidator'
 import { MockedStorage } from '../ports/contentStorage/MockedStorage'
@@ -295,7 +296,7 @@ async function buildService() {
   const env = new Environment()
   env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, 'inexistent')
   env.setConfig(EnvironmentConfig.DENYLIST_FILE_NAME, 'file')
-
+  const clock = createClock()
   const validator = new NoOpValidator()
   const serverValidator = new NoOpServerValidator()
   const logs = await createLogComponent({
@@ -308,14 +309,14 @@ async function buildService() {
     { defaultMax: 300, defaultTtl: ms('1m'), entitiesConfigMax: new Map(), entitiesConfigTtl: new Map() }
   )
   const metrics = createTestMetricsComponent(metricsDeclaration)
-  const failedDeploymentsCache = createFailedDeploymentsCache({ metrics })
+  const failedDeployments = await createFailedDeployments({ metrics, database })
   const storage = new MockedStorage()
   const pointerManager = NoOpPointerManager.build()
   const authenticator = new ContentAuthenticator(
     new HTTPProvider('https://rpc.decentraland.org/mainnet?project=catalyst-ci'),
     DECENTRALAND_ADDRESS
   )
-  const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs })
+  const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, clock })
   env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)
   const denylist: Denylist = { isDenylisted: () => false }
   const sequentialExecutor = createSequentialTaskExecutor({ logs, metrics })
@@ -324,7 +325,8 @@ async function buildService() {
   return new ServiceImpl({
     env,
     pointerManager,
-    failedDeploymentsCache,
+    failedDeployments,
+    clock,
     deployRateLimiter,
     storage,
     validator,
@@ -333,7 +335,7 @@ async function buildService() {
     logs,
     authenticator,
     database,
-    deployedEntitiesBloomFilter: deployedEntitiesBloomFilter,
+    deployedEntitiesBloomFilter,
     activeEntities,
     denylist
   })

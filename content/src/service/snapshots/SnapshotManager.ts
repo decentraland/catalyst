@@ -1,8 +1,6 @@
 import { hashV1 } from '@dcl/hashing'
 import { EntityType } from '@dcl/schemas'
-import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { ILoggerComponent } from '@well-known-components/interfaces'
-import future from 'fp-future'
 import * as fs from 'fs'
 import { streamActiveDeployments } from '../../logic/database-queries/snapshots-queries'
 import { createContentFileWriterComponent } from '../../ports/contentFileWriter'
@@ -24,7 +22,6 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
   private lastSnapshots: Map<EntityType, SnapshotMetadata> = new Map()
   private lastSnapshotsPerEntityType: Map<EntityType | ALL_ENTITIES, SnapshotMetadata> = new Map()
   private LOGGER: ILoggerComponent.ILogger
-  private runningJobs: Set<() => Promise<any>> = new Set()
 
   private statusEndpointData: { entities: Partial<Record<EntityType, number>>; lastUpdatedTime: number } = {
     entities: {},
@@ -34,9 +31,8 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
   constructor(
     private readonly components: Pick<
       AppComponents,
-      'database' | 'metrics' | 'staticConfigs' | 'logs' | 'storage' | 'denylist' | 'fs'
-    >,
-    private readonly snapshotFrequencyInMilliSeconds: number
+      'database' | 'metrics' | 'staticConfigs' | 'logs' | 'storage' | 'denylist' | 'fs' | 'clock'
+    >
   ) {
     this.LOGGER = components.logs.getLogger('SnapshotManager')
   }
@@ -45,59 +41,6 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
     return {
       name: NAME_FOR_STATUS_ENDPOINT,
       data: this.statusEndpointData
-    }
-  }
-
-  async start() {
-    // generate a first snapshot
-    await this.generateSnapshots()
-
-    // start a job
-    await this.startCalculateFullSnapshots()
-  }
-
-  async stop() {
-    // end jobs
-    for (const stopFunction of this.runningJobs) {
-      await stopFunction()
-    }
-  }
-
-  async startCalculateFullSnapshots(): Promise<{ stop: () => Promise<boolean> }> {
-    // async job to generate snapshots
-    const stopPromise = future<void>()
-
-    const stopped = new Promise<boolean>(async (resolve) => {
-      while (stopPromise.isPending) {
-        // use race to not wait for the delay to stop when stopping the job
-        await Promise.race([sleep(this.snapshotFrequencyInMilliSeconds), stopPromise])
-
-        // actually do the generation
-        try {
-          await this.generateSnapshots()
-        } catch (e: any) {
-          if (!stopPromise.isPending && e.toString().includes('Cannot use a pool after calling end on the pool')) {
-            // noop
-          } else {
-            this.LOGGER.error(e)
-          }
-        }
-      }
-      // signal that stop finished correctly
-      resolve(true)
-    })
-
-    const stop = () => {
-      this.runningJobs.delete(stop)
-      this.LOGGER.info('Stopping snapshot generation job')
-      stopPromise.resolve()
-      return stopped
-    }
-
-    this.runningJobs.add(stop)
-
-    return {
-      stop
     }
   }
 
@@ -220,7 +163,7 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
     }
 
     // update the snapshot sizes
-    this.statusEndpointData.lastUpdatedTime = Date.now()
+    this.statusEndpointData.lastUpdatedTime = this.components.clock.now()
     for (const key in inMemoryArrays) {
       this.statusEndpointData.entities[key] = inMemoryArrays[key].length
       this.components.metrics.observe('dcl_content_server_snapshot_entities', { type: key }, inMemoryArrays[key].length)
