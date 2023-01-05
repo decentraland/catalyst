@@ -389,6 +389,15 @@
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
 
+"@dcl/schemas@^6.2.0":
+  version "6.2.0"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-6.2.0.tgz#0ce52cc92050097804cd46b058969b4bb122301f"
+  integrity sha512-/6st9o23cUWM6fSUBa1fVt193Fm8fhTGlGJdJnanK3094/ab5lr8lT0HSO5bscKqjwwWlaKpTEfKHMYsCmMnhg==
+  dependencies:
+    ajv "^8.11.0"
+    ajv-errors "^3.0.0"
+    ajv-keywords "^5.1.0"
+
 "@dcl/schemas@tag-fast-bootstrapping-5":
   version "5.29.1-20221110202018.commit-b02a4b7"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-5.29.1-20221110202018.commit-b02a4b7.tgz#15691992f8f34b07a63e91cbab74701655e9f0e7"
@@ -398,23 +407,14 @@
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
 
-"@dcl/schemas@tag-fast-bootstrapping-6":
-  version "6.1.1-20230105152235.commit-8e7a916"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-6.1.1-20230105152235.commit-8e7a916.tgz#64c40cac4772dfbe9c8637142bf71809a2bb78a3"
-  integrity sha512-rQBTf7O90+22fDKNbz7r8bWPaXZU0eixjr85NNnoEXq1Ft6E4nmu+iObUzxra6RBx5uS3PXOKz2TTdu9yH6FHw==
-  dependencies:
-    ajv "^8.11.0"
-    ajv-errors "^3.0.0"
-    ajv-keywords "^5.1.0"
-
-"@dcl/snapshots-fetcher@tag-fetch-new-snapshots-74":
-  version "4.0.19-20221230205740.commit-58370a7"
-  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-4.0.19-20221230205740.commit-58370a7.tgz#20aefbc0722a7b95f2b21d4f4ee7eafde90ef221"
-  integrity sha512-wOPgWWAa0rKHNXOv6Bb1J+EvGm/cXfsyf0CGlaL9hroR5Ol2HShyjrkGfXnLKDW6lKNlUu9zJN+P+FL6zbMPtQ==
+"@dcl/snapshots-fetcher@^5.0.0":
+  version "5.0.0"
+  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-5.0.0.tgz#bed00cdf08263c49fe13426534aaa8120898f9ff"
+  integrity sha512-sR42vK9bYhujra92SF3h9wHRbLXLVD15F4ln3LJwwx9mVvog1dfe+AsvKDJU6sQq0iVRtXcLxRTA+PpWjWetJw==
   dependencies:
     "@dcl/catalyst-storage" "^2.0.0"
     "@dcl/hashing" "^1.0.0"
-    "@dcl/schemas" tag-fast-bootstrapping-5
+    "@dcl/schemas" "^6.2.0"
     "@well-known-components/interfaces" "^1.1.0"
     "@well-known-components/metrics" "^2.0.0"
     p-queue "^6.6.2"
