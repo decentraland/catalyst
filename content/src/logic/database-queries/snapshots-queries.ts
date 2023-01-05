@@ -35,6 +35,7 @@ export async function* streamActiveDeploymentsInTimeRange(
   timeRange: TimeRange
 ): AsyncIterable<SnapshotSyncDeployment> {
   // IT IS IMPORTANT THAT THIS QUERY NEVER CHANGES
+  // It ensures the snapshots immutability and convergency (the order and the select of static fields)
   for await (const row of components.database.streamQuery<SnapshotSyncDeployment>(
     SQL`
     SELECT
