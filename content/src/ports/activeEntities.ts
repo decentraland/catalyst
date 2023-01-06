@@ -80,15 +80,15 @@ export const createActiveEntitiesComponent = (
   }
 
   const setPreviousEntityAsNone = (pointer: string): void => {
-    if (entityIdByPointers.has(pointer.toLowerCase())) {
+    if (entityIdByPointers.has(pointer)) {
       // pointer now have a different active entity, let's update the old one
-      const entityId = entityIdByPointers.get(pointer.toLowerCase())
+      const entityId = entityIdByPointers.get(pointer)
       if (isPointingToEntity(entityId)) {
         const entity = cache.get(entityId) // it should be present
         if (isEntityPresent(entity)) {
           cache.set(entityId, 'NOT_ACTIVE_ENTITY')
           for (const pointer of entity.pointers) {
-            entityIdByPointers.set(pointer.toLowerCase(), 'NOT_ACTIVE_ENTITY')
+            entityIdByPointers.set(pointer, 'NOT_ACTIVE_ENTITY')
           }
         }
       }
@@ -106,7 +106,7 @@ export const createActiveEntitiesComponent = (
   const update = async (pointers: string[], entity: Entity | NotActiveEntity): Promise<void> => {
     for (const pointer of pointers) {
       setPreviousEntityAsNone(pointer)
-      entityIdByPointers.set(pointer.toLowerCase(), isEntityPresent(entity) ? entity.id : entity)
+      entityIdByPointers.set(pointer, isEntityPresent(entity) ? entity.id : entity)
     }
     if (isEntityPresent(entity)) {
       cache.set(entity.id, entity)
@@ -134,7 +134,7 @@ export const createActiveEntitiesComponent = (
       )
 
       for (const pointer of pointersWithoutActiveEntity) {
-        entityIdByPointers.set(pointer.toLowerCase(), 'NOT_ACTIVE_ENTITY')
+        entityIdByPointers.set(pointer, 'NOT_ACTIVE_ENTITY')
         logger.debug('pointer has no active entity', { pointer })
       }
     } else if (entityIds) {
@@ -208,7 +208,7 @@ export const createActiveEntitiesComponent = (
 
     // get associated entity ids to pointers or save for later
     for (const pointer of uniquePointers) {
-      const entityId = entityIdByPointers.get(pointer.toLowerCase())
+      const entityId = entityIdByPointers.get(pointer)
       if (!entityId) {
         logger.debug('Entity with given pointer not found on cache', { pointer })
         remaining.push(pointer)
@@ -250,7 +250,7 @@ export const createActiveEntitiesComponent = (
         const cachedEntity = cache.get(idOrPointer)
         return isEntityPresent(cachedEntity) ? cachedEntity.id : cachedEntity
       }
-      return entityIdByPointers.get(idOrPointer.toLowerCase())
+      return entityIdByPointers.get(idOrPointer)
     }
   }
 }
