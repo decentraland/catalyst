@@ -116,6 +116,17 @@ export async function saveSnapshot(
   await database.queryWithValues(query, 'save_snapshot')
 }
 
+export async function isOwnSnapshot(
+  components: Pick<AppComponents, 'database'>,
+  snapshotHash: string
+): Promise<boolean> {
+  const queryResult = await components.database.queryWithValues<{ hash: string }>(
+    SQL`SELECT hash from snapshots WHERE hash = ${snapshotHash}`,
+    'has_snapshot'
+  )
+  return queryResult.rowCount > 0
+}
+
 export async function getSnapshotHashesNotInTimeRange(
   database: AppComponents['database'],
   snapshotHashes: string[],

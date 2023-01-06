@@ -27,6 +27,7 @@ import { createDatabaseComponent } from './ports/postgres'
 import { createProcessedSnapshotStorage } from './ports/processedSnapshotStorage'
 import { createSequentialTaskExecutor } from './ports/sequecuentialTaskExecutor'
 import { createSnapshotGenerator } from './ports/snapshotGenerator'
+import { createSnapshotStorage } from './ports/snapshotStorage'
 import { createSynchronizationState } from './ports/synchronizationState'
 import { createSystemProperties } from './ports/system-properties'
 import { ContentAuthenticator } from './service/auth/Authenticator'
@@ -197,6 +198,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     }
   )
 
+  const snapshotStorage = createSnapshotStorage({ database })
+
   const synchronizer = await createSynchronizer(
     {
       logs,
@@ -205,7 +208,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       metrics,
       deployer: batchDeployer,
       storage,
-      processedSnapshotStorage
+      processedSnapshotStorage,
+      snapshotStorage
     },
     {
       // reconnection options
@@ -324,6 +328,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     fs,
     snapshotGenerator,
     processedSnapshotStorage,
-    clock
+    clock,
+    snapshotStorage
   }
 }

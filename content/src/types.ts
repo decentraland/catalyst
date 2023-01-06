@@ -2,7 +2,7 @@ import { ExternalCalls, Validator } from '@dcl/content-validator'
 import { EntityType, SyncDeployment } from '@dcl/schemas'
 import { IDeployerComponent, SynchronizerComponent } from '@dcl/snapshots-fetcher'
 import { IJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
-import { IProcessedSnapshotStorageComponent } from '@dcl/snapshots-fetcher/dist/types'
+import { IProcessedSnapshotStorageComponent, ISnapshotStorageComponent } from '@dcl/snapshots-fetcher/dist/types'
 import { IFetchComponent } from '@well-known-components/http-server'
 import { ILoggerComponent, IMetricsComponent } from '@well-known-components/interfaces'
 import { Fetcher } from 'dcl-catalyst-commons'
@@ -81,6 +81,7 @@ export type AppComponents = {
   snapshotGenerator: SnapshotGenerator
   processedSnapshotStorage: IProcessedSnapshotStorageComponent
   clock: Clock
+  snapshotStorage: ISnapshotStorageComponent
 }
 
 export type MaintenanceComponents = {

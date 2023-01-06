@@ -49,6 +49,7 @@ loadTestEnvironment()('Bootstrapping synchronization tests', function (testEnv) 
     advanceTime(timeRangeLogic.MS_PER_WEEK)
     await server1.startProgram()
 
+    jest.spyOn(server2.components.snapshotStorage, 'has').mockResolvedValue(false)
     await startProgramAndWaitUntilBootstrapFinishes(server2)
 
     // once the bootstrap from snapshots finished, it should have processed the server1 snapshots.
@@ -110,6 +111,7 @@ loadTestEnvironment()('Bootstrapping synchronization tests', function (testEnv) 
 
     // now we start a new server 2 so it processes the 3 snapshots: the first one, the second one and the 5 empty ones (only one of these processed)
     const saveProcessedSpy = jest.spyOn(server2.components.processedSnapshotStorage, 'saveProcessed')
+    jest.spyOn(server2.components.snapshotStorage, 'has').mockResolvedValue(false)
     await startProgramAndWaitUntilBootstrapFinishes(server2)
     const sevenDaysSnapshots = await findSnapshotsStrictlyContainedInTimeRange(server1.components, {
       initTimestamp: initialTimestamp,
