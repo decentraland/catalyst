@@ -4,7 +4,8 @@ import {
   deleteSnapshotsInTimeRange,
   findSnapshotsStrictlyContainedInTimeRange,
   getNumberOfActiveEntitiesInTimeRange,
-  getSnapshotHashesNotInTimeRange, saveSnapshot,
+  getSnapshotHashesNotInTimeRange,
+  saveSnapshot,
   snapshotIsOutdated,
   streamActiveDeploymentsInTimeRange
 } from './database-queries/snapshots-queries'

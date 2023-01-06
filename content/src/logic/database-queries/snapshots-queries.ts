@@ -116,7 +116,10 @@ export async function saveSnapshot(
   await database.queryWithValues(query, 'save_snapshot')
 }
 
-export async function hasSnapshot(components: Pick<AppComponents, 'database'>, snapshotHash: string): Promise<boolean> {
+export async function isOwnSnapshot(
+  components: Pick<AppComponents, 'database'>,
+  snapshotHash: string
+): Promise<boolean> {
   const queryResult = await components.database.queryWithValues<{ hash: string }>(
     SQL`SELECT hash from snapshots WHERE hash = ${snapshotHash}`,
     'has_snapshot'
