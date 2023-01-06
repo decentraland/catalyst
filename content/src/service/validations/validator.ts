@@ -92,25 +92,37 @@ async function createL1Checker(provider: ethers.providers.Provider, network: str
   }
 }
 
-async function createL2Checker(provider: ethers.providers.Provider, network: string): Promise<L2Checker> {
+async function createL2Checker(
+  provider: ethers.providers.Provider,
+  network: string,
+  blockSearch: BlockSearch
+): Promise<L2Checker> {
   const multicallProvider = new providers.MulticallProvider(provider)
-  const checker = new ethers.Contract(checkerContracts[network], checkerAbi, multicallProvider)
+  const checker = new ethers.Contract(
+    checkerContracts[network],
+    checkerAbi,
+    multicallProvider
+  ) as any as ICheckerContract
 
   const { v2, v3 } = collectionFactoryContracts[network]
 
   const factories = [v2, v3]
 
   return {
-    validateWearables(
+    async validateWearables(
       ethAddress: string,
       contractAddress: string,
       assetId: string,
       hash: string,
-      block: number
+      blocks: number[]
     ): Promise<boolean> {
-      return checker.validateWearables(ethAddress, factories, contractAddress, assetId, hash, {
-        blockTag: block
-      })
+      const result = await Promise.all(
+        blocks.map((block) =>
+          checker.validateWearables(ethAddress, factories, contractAddress, assetId, hash, { blockTag: block })
+        )
+      )
+
+      return result.some((r) => r)
     },
     validateThirdParty(ethAddress: string, tpId: string, root: Buffer, block: number): Promise<boolean> {
       const registry = thirdPartyContracts[network]
@@ -180,7 +192,7 @@ export async function createSubGraphsComponent(
       )
     },
     L2: {
-      checker: await createL2Checker(components.maticProvider, l2Network),
+      checker: await createL2Checker(components.maticProvider, l2Network, l2BlockSearch),
       collections: await createSubgraphComponent(
         baseComponents,
         components.env.getConfig(EnvironmentConfig.COLLECTIONS_L2_SUBGRAPH_URL)
