@@ -11,6 +11,7 @@
   "scripts": {
     "build": "yarn list-mismatches && yarn workspaces run build",
     "build:content": "yarn list-mismatches && yarn workspace @catalyst/content-server build",
+    "build:content:sourcemap": "yarn list-mismatches && yarn workspace @catalyst/content-server build:sourcemap",
     "build:lambdas": "yarn list-mismatches && yarn workspace @catalyst/lambdas-server build",
     "cleanup": "yarn workspaces run cleanup && rm -rf node_modules",
     "lint:check": "eslint '**/*.{js,ts}'",

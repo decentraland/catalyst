@@ -1,8 +1,8 @@
 import { ExternalCalls, Validator } from '@dcl/content-validator'
-import { DeploymentWithAuthChain, EntityType } from '@dcl/schemas'
-import { IDeployerComponent } from '@dcl/snapshots-fetcher'
-import { JobLifecycleManagerComponent } from '@dcl/snapshots-fetcher/dist/job-lifecycle-manager'
+import { EntityType, SyncDeployment } from '@dcl/schemas'
+import { IDeployerComponent, SynchronizerComponent } from '@dcl/snapshots-fetcher'
 import { IJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
+import { IProcessedSnapshotStorageComponent, ISnapshotStorageComponent } from '@dcl/snapshots-fetcher/dist/types'
 import { IFetchComponent } from '@well-known-components/http-server'
 import { ILoggerComponent, IMetricsComponent } from '@well-known-components/interfaces'
 import { Fetcher } from 'dcl-catalyst-commons'
@@ -12,14 +12,17 @@ import { Environment } from './Environment'
 import { metricsDeclaration } from './metrics'
 import { MigrationManager } from './migrations/MigrationManager'
 import { ActiveEntities } from './ports/activeEntities'
+import { Clock } from './ports/clock'
 import { ContentStorage } from './ports/contentStorage/contentStorage'
 import { Denylist } from './ports/denylist'
 import { DeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
 import { IDeployRateLimiterComponent } from './ports/deployRateLimiterComponent'
-import { IFailedDeploymentsCacheComponent } from './ports/failedDeploymentsCache'
+import { IFailedDeploymentsComponent } from './ports/failedDeployments'
 import { FSComponent } from './ports/fs'
 import { IDatabaseComponent } from './ports/postgres'
 import { ISequentialTaskExecutorComponent } from './ports/sequecuentialTaskExecutor'
+import { SnapshotGenerator } from './ports/snapshotGenerator'
+import { SynchronizationState } from './ports/synchronizationState'
 import { SystemProperties } from './ports/system-properties'
 import { ContentAuthenticator } from './service/auth/Authenticator'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
@@ -31,7 +34,6 @@ import { IChallengeSupervisor } from './service/synchronization/ChallengeSupervi
 import { DaoComponent } from './service/synchronization/clients/HardcodedDAOClient'
 import { ContentCluster } from './service/synchronization/ContentCluster'
 import { IRetryFailedDeploymentsComponent } from './service/synchronization/retryFailedDeployments'
-import { ISynchronizationManager } from './service/synchronization/SynchronizationManager'
 import { ServerValidator } from './service/validations/server'
 
 // Minimum amount of needed stuff to make the sync work
@@ -49,15 +51,15 @@ export type AppComponents = {
     tmpDownloadFolder: string
   }
   batchDeployer: IDeployerComponent
-  synchronizationJobManager: JobLifecycleManagerComponent
-  synchronizationManager: ISynchronizationManager
+  synchronizer: SynchronizerComponent
+  synchronizationState: SynchronizationState
   deployedEntitiesBloomFilter: DeployedEntitiesBloomFilter
   controller: Controller
   snapshotManager: ISnapshotManager
   challengeSupervisor: IChallengeSupervisor
   contentCluster: ContentCluster
   pointerManager: PointerManager
-  failedDeploymentsCache: IFailedDeploymentsCacheComponent
+  failedDeployments: IFailedDeploymentsComponent
   deployRateLimiter: IDeployRateLimiterComponent
   storage: ContentStorage
   authenticator: ContentAuthenticator
@@ -77,6 +79,10 @@ export type AppComponents = {
   fs: FSComponent
   ethereumProvider: ethers.providers.Provider
   maticProvider: ethers.providers.Provider
+  snapshotGenerator: SnapshotGenerator
+  processedSnapshotStorage: IProcessedSnapshotStorageComponent
+  clock: Clock
+  snapshotStorage: ISnapshotStorageComponent
 }
 
 export type MaintenanceComponents = {
@@ -97,7 +103,7 @@ export enum EntityVersion {
   V4 = 'v4'
 }
 
-export type CannonicalEntityDeployment = { entity: DeploymentWithAuthChain; servers: string[] }
+export type CannonicalEntityDeployment = { entity: SyncDeployment; servers: string[] }
 
 export type StatusProbeResult = {
   /** name is used as unique key for the status map */

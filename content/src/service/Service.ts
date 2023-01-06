@@ -1,6 +1,4 @@
-import { AuthChain, EntityType } from '@dcl/schemas'
 import { ContentItem } from '../ports/contentStorage/contentStorage'
-import { FailedDeployment } from '../ports/failedDeploymentsCache'
 import { AuditInfo, Deployment, DeploymentOptions, PartialDeploymentHistory } from './deployments/types'
 
 /**x
@@ -17,14 +15,6 @@ export interface MetaverseContentService {
   isContentAvailable(fileHashes: string[]): Promise<Map<string, boolean>>
   getContent(fileHash: string): Promise<ContentItem | undefined>
   getDeployments(options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>>
-  getAllFailedDeployments(): FailedDeployment[]
-  reportErrorDuringSync(
-    entityType: EntityType,
-    entityId: string,
-    reason: string,
-    authChain: AuthChain,
-    errorDescription?: string
-  ): void
 }
 
 export type LocalDeploymentAuditInfo = Pick<AuditInfo, 'authChain'>

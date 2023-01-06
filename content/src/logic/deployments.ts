@@ -1,6 +1,6 @@
 import { Entity } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
-import { FailedDeployment } from '../ports/failedDeploymentsCache'
+import { FailedDeployment } from '../ports/failedDeployments'
 import { IDatabaseComponent } from '../ports/postgres'
 import { AuditInfo, Deployment } from '../service/deployments/types'
 import { DeploymentContext } from '../service/Service'
@@ -47,14 +47,14 @@ export async function retryFailedDeploymentExecution(
     | 'logs'
     | 'deployer'
     | 'contentCluster'
-    | 'failedDeploymentsCache'
+    | 'failedDeployments'
     | 'storage'
   >,
   logger?: ILoggerComponent.ILogger
 ): Promise<void> {
   const logs = logger || components.logs.getLogger('retryFailedDeploymentExecution')
   // Get Failed Deployments from local storage
-  const failedDeployments: FailedDeployment[] = components.deployer.getAllFailedDeployments()
+  const failedDeployments: FailedDeployment[] = await components.failedDeployments.getAllFailedDeployments()
 
   // TODO: there may be chances that failed deployments are not part of all catalyst in cluster
   const contentServersUrls = components.contentCluster.getAllServersInCluster()
@@ -79,7 +79,7 @@ export async function retryFailedDeploymentExecution(
         const errorDescription = error.message + ''
 
         if (!errorDescription.includes(IGNORING_FIX_ERROR)) {
-          components.failedDeploymentsCache.reportFailure({ ...failedDeployment, errorDescription })
+          await components.failedDeployments.reportFailure({ ...failedDeployment, errorDescription })
         }
 
         logs.error(`Failed to fix deployment of entity`, { entityId, entityType, errorDescription })

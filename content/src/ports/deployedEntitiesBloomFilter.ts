@@ -11,7 +11,7 @@ export type DeployedEntitiesBloomFilter = {
 }
 
 export function createDeployedEntitiesBloomFilter(
-  components: Pick<AppComponents, 'database' | 'logs'>
+  components: Pick<AppComponents, 'database' | 'logs' | 'clock'>
 ): DeployedEntitiesBloomFilter & IBaseComponent {
   const logger = components.logs.getLogger('DeployedEntitiesBloomFilter')
 
@@ -20,7 +20,7 @@ export function createDeployedEntitiesBloomFilter(
   const initialized = future<void>()
 
   async function addFromDb() {
-    const start = Date.now()
+    const start = components.clock.now()
     logger.info(`Creating bloom filter`, {})
     let elements = 0
     for await (const row of streamAllEntityIds(components)) {
@@ -28,7 +28,7 @@ export function createDeployedEntitiesBloomFilter(
       deploymentsBloomFilter.add(row.entityId)
     }
     logger.info(`Bloom filter recreated.`, {
-      timeMs: Date.now() - start,
+      timeMs: components.clock.now() - start,
       elements,
       rate: deploymentsBloomFilter.rate()
     })

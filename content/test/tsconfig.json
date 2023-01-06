@@ -3,5 +3,8 @@
   "compilerOptions": {
     "allowJs": true,
     "noEmit": true,
+    "sourceMap": true,
+    "declarationMap": true,
+    "declaration": true,
   }
 }

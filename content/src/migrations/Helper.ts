@@ -1,6 +1,6 @@
 import { EntityType } from '@dcl/schemas'
 import { MigrationBuilder } from 'node-pg-migrate'
-import { FailureReason } from '../ports/failedDeploymentsCache'
+import { FailureReason } from '../ports/failedDeployments'
 
 export function deleteFailedDeployments(pgm: MigrationBuilder, ...entityIds: string[]): void {
   const inClause = entityIds.map((entityId) => `'${entityId}'`).join(',')

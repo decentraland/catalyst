@@ -1,7 +1,7 @@
 import { Entity } from '@dcl/schemas'
 import ms from 'ms'
 import { EnvironmentConfig } from '../../../src/Environment'
-import { FailedDeployment, FailureReason } from '../../../src/ports/failedDeploymentsCache'
+import { FailedDeployment, FailureReason } from '../../../src/ports/failedDeployments'
 import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import {
   assertDeploymentFailed,
@@ -22,7 +22,7 @@ loadTestEnvironment()('End 2 end - Error handling', (testEnv) => {
 
   beforeEach(async () => {
     ;[server1, server2] = await testEnv
-      .configServer('2s')
+      .configServer()
       .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
       .withConfig(EnvironmentConfig.REQUEST_TTL_BACKWARDS, ms('2s'))
       .andBuildMany(2)

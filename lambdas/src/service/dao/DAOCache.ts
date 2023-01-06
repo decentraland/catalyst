@@ -1,12 +1,12 @@
-import { ServerMetadata } from 'dcl-catalyst-client'
 import {
   getAllCatalystFromProvider,
   ListContract,
   nameDenylistForProvider,
   poiListForProvider
 } from '@dcl/catalyst-contracts'
+import { ServerMetadata } from 'dcl-catalyst-client'
+import { bytesToHex, HTTPProvider } from 'eth-connect'
 import { TimeRefreshedDataHolder } from '../../utils/TimeRefreshedDataHolder'
-import { HTTPProvider, bytesToHex } from 'eth-connect'
 
 const REFRESH_TIME: string = '30m'
 
@@ -44,9 +44,9 @@ export class DAOCache {
   private pois: TimeRefreshedDataHolder<Set<string>>
   private denylistedNames: TimeRefreshedDataHolder<Set<string>>
 
-  constructor(ethereumProvider: HTTPProvider) {
+  constructor(ethereumProvider: HTTPProvider, poisProvider: HTTPProvider) {
     this.servers = new TimeRefreshedDataHolder(() => getServers(ethereumProvider), REFRESH_TIME)
-    this.pois = new TimeRefreshedDataHolder(() => getPois(ethereumProvider), REFRESH_TIME)
+    this.pois = new TimeRefreshedDataHolder(() => getPois(poisProvider), REFRESH_TIME)
     this.denylistedNames = new TimeRefreshedDataHolder(() => getBannedNames(ethereumProvider), REFRESH_TIME)
   }
 

@@ -6,7 +6,6 @@ import { getEntityById, setEntitiesAsOverwritten } from '../logic/database-queri
 import { calculateOverwrites, saveDeploymentAndContentFiles } from '../logic/deployments'
 import { calculateDeprecatedHashes, calculateIPFSHashes } from '../logic/hashing'
 import { bufferToStream, ContentItem } from '../ports/contentStorage/contentStorage'
-import { FailedDeployment, FailureReason } from '../ports/failedDeploymentsCache'
 import { AppComponents, EntityVersion } from '../types'
 import { getDeployments } from './deployments/deployments'
 import { AuditInfo, Deployment, DeploymentOptions, PartialDeploymentHistory } from './deployments/types'
@@ -24,7 +23,7 @@ import {
 import { happenedBefore } from './time/TimeSorting'
 
 export class ServiceImpl implements MetaverseContentService {
-  private static LOGGER: ILoggerComponent.ILogger
+  private logger: ILoggerComponent.ILogger
   private readonly pointersBeingDeployed: Map<EntityType, Set<string>> = new Map()
 
   private readonly LEGACY_CONTENT_MIGRATION_TIMESTAMP: Date = new Date(1582167600000) // DCL Launch Day
@@ -39,7 +38,7 @@ export class ServiceImpl implements MetaverseContentService {
       | 'metrics'
       | 'storage'
       | 'pointerManager'
-      | 'failedDeploymentsCache'
+      | 'failedDeployments'
       | 'deployRateLimiter'
       | 'validator'
       | 'serverValidator'
@@ -50,9 +49,10 @@ export class ServiceImpl implements MetaverseContentService {
       | 'env'
       | 'activeEntities'
       | 'denylist'
+      | 'clock'
     >
   ) {
-    ServiceImpl.LOGGER = components.logs.getLogger('ServiceImpl')
+    this.logger = components.logs.getLogger('ServiceImpl')
   }
 
   async deployEntity(
@@ -64,10 +64,10 @@ export class ServiceImpl implements MetaverseContentService {
     const deployedEntity = await getEntityById(this.components, entityId)
     // entity deployments are idempotent operations
     if (deployedEntity) {
-      ServiceImpl.LOGGER.debug(`Entity was already deployed`, {
+      this.logger.debug(`Entity was already deployed`, {
         entityId,
         deployedTimestamp: deployedEntity.localTimestamp,
-        delta: Date.now() - deployedEntity.localTimestamp
+        delta: this.components.clock.now() - deployedEntity.localTimestamp
       })
       return deployedEntity.localTimestamp
     }
@@ -89,7 +89,7 @@ export class ServiceImpl implements MetaverseContentService {
         return InvalidResult({ errors: ['There was a problem parsing the entity, it was null'] })
       }
     } catch (error) {
-      ServiceImpl.LOGGER.error(`There was an error parsing the entity: ${error}`)
+      this.logger.warn(`There was an error parsing the entity: ${error}`)
       return InvalidResult({ errors: ['There was a problem parsing the entity'] })
     }
 
@@ -116,7 +116,7 @@ export class ServiceImpl implements MetaverseContentService {
     const contextToDeploy: DeploymentContext = this.calculateIfLegacy(entity, auditInfo.authChain, context)
 
     try {
-      ServiceImpl.LOGGER.info(`Deploying entity`, {
+      this.logger.info(`Deploying entity`, {
         entityId,
         pointers: entity.pointers.join(' ')
       })
@@ -124,7 +124,7 @@ export class ServiceImpl implements MetaverseContentService {
       const storeResult = await this.storeDeploymentInDatabase(entityId, entity, auditInfo, hashes, contextToDeploy)
 
       if (!storeResult) {
-        ServiceImpl.LOGGER.error(`Error calling storeDeploymentInDatabase, returned void`, {
+        this.logger.error(`Error calling storeDeploymentInDatabase, returned void`, {
           entityId,
           auditInfo: JSON.stringify(auditInfo),
           entity: JSON.stringify(entity),
@@ -133,13 +133,13 @@ export class ServiceImpl implements MetaverseContentService {
         })
         return InvalidResult({ errors: ['An internal server error occurred. This will raise an automatic alarm.'] })
       } else if (isInvalidDeployment(storeResult)) {
-        ServiceImpl.LOGGER.warn(`Error deploying entity`, {
+        this.logger.error(`Error deploying entity`, {
           entityId,
           pointers: entity.pointers.join(' '),
           errors: storeResult.errors.join(' ')
         })
         if (storeResult.errors.length == 0) {
-          ServiceImpl.LOGGER.error(`Invalid InvalidResult, got 0 errors`, {
+          this.logger.error(`Invalid InvalidResult, got 0 errors`, {
             entityId,
             auditInfo: JSON.stringify(auditInfo),
             entity: JSON.stringify(entity),
@@ -148,7 +148,7 @@ export class ServiceImpl implements MetaverseContentService {
         }
         return storeResult
       } else if (storeResult.wasEntityDeployed) {
-        ServiceImpl.LOGGER.info(`Entity deployed`, {
+        this.logger.info(`Entity deployed`, {
           entityId,
           pointers: entity.pointers.join(' ')
         })
@@ -170,15 +170,15 @@ export class ServiceImpl implements MetaverseContentService {
       this.components.deployedEntitiesBloomFilter.add(entity.id)
 
       if (!storeResult.auditInfoComplete.localTimestamp) {
-        ServiceImpl.LOGGER.error(`auditInfoComplete is misbehaving`, {
+        this.logger.error(`auditInfoComplete is misbehaving`, {
           auditInfoComplete: JSON.stringify(storeResult.auditInfoComplete)
         })
       }
 
       // TODO: review this
-      return storeResult.auditInfoComplete.localTimestamp || Date.now()
+      return storeResult.auditInfoComplete.localTimestamp || this.components.clock.now()
     } catch (error) {
-      ServiceImpl.LOGGER.error(`There was an error deploying the entity: ${error}`, { entityId })
+      this.logger.error(`There was an error deploying the entity: ${error}`, { entityId })
       return InvalidResult({
         errors: [`There was an error deploying the entity`]
       })
@@ -219,7 +219,7 @@ export class ServiceImpl implements MetaverseContentService {
     const validationResult = await this.validateDeployment(entity, context, isEntityAlreadyDeployed, auditInfo, hashes)
 
     if (!validationResult.ok) {
-      ServiceImpl.LOGGER.warn(`Validations for deployment failed`, {
+      this.logger.warn(`Validations for deployment failed`, {
         entityId,
         errors: validationResult.errors?.join(',') ?? ''
       })
@@ -236,7 +236,7 @@ export class ServiceImpl implements MetaverseContentService {
     const auditInfoComplete: AuditInfo = {
       ...auditInfo,
       version: EntityVersion.V3,
-      localTimestamp: Date.now()
+      localTimestamp: this.components.clock.now()
     }
 
     if (!isEntityAlreadyDeployed) {
@@ -266,12 +266,12 @@ export class ServiceImpl implements MetaverseContentService {
         await setEntitiesAsOverwritten(database, overwrote, deploymentId)
       })
     } else {
-      ServiceImpl.LOGGER.info(`Entity already deployed`, { entityId })
+      this.logger.info(`Entity already deployed`, { entityId })
       auditInfoComplete.localTimestamp = deployedEntity.localTimestamp
     }
 
     // Mark deployment as successful (this does nothing it if hadn't failed on the first place)
-    this.components.failedDeploymentsCache.removeFailedDeployment(entity.id)
+    await this.components.failedDeployments.removeFailedDeployment(entity.id)
 
     return { auditInfoComplete, wasEntityDeployed: !isEntityAlreadyDeployed }
   }
@@ -291,26 +291,6 @@ export class ServiceImpl implements MetaverseContentService {
 
     // update pointer (points to the new entity that is active)
     if (setPointers.length > 0) await this.components.activeEntities.update(setPointers, entity)
-  }
-
-  reportErrorDuringSync(
-    entityType: EntityType,
-    entityId: string,
-    reason: FailureReason,
-    authChain: AuthChain,
-    errorDescription?: string
-  ): void {
-    ServiceImpl.LOGGER.warn(
-      `Deployment of entity (${entityType}, ${entityId}) failed. Reason was: '${errorDescription}'`
-    )
-    return this.components.failedDeploymentsCache.reportFailure({
-      entityType,
-      entityId,
-      reason,
-      authChain,
-      errorDescription,
-      failureTimestamp: Date.now()
-    })
   }
 
   // todo: review if we can use entities cache to determine if there is a newer deployment
@@ -374,10 +354,6 @@ export class ServiceImpl implements MetaverseContentService {
     return getDeployments(this.components, options)
   }
 
-  getAllFailedDeployments(): FailedDeployment[] {
-    return this.components.failedDeploymentsCache.getAllFailedDeployments()
-  }
-
   private async validateDeployment(
     entity: Entity,
     context: DeploymentContext,
@@ -390,10 +366,11 @@ export class ServiceImpl implements MetaverseContentService {
       areThereNewerEntities: (entity) => this.areThereNewerEntitiesOnPointers(entity),
       isEntityDeployedAlready: () => isEntityDeployedAlready,
       isNotFailedDeployment: (entity) =>
-        this.components.failedDeploymentsCache.findFailedDeployment(entity.id) === undefined,
+        this.components.failedDeployments.findFailedDeployment(entity.id) === undefined,
       isEntityRateLimited: (entity) => this.components.deployRateLimiter.isRateLimited(entity.type, entity.pointers),
       isRequestTtlBackwards: (entity) =>
-        Date.now() - entity.timestamp > this.components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
+        this.components.clock.now() - entity.timestamp >
+        this.components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
     })
 
     // If there is an error in the server side validation, we won't run protocol validations

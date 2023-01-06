@@ -9,6 +9,7 @@ import { ethers } from 'ethers'
 import ms from 'ms'
 import { DEFAULT_ENTITIES_CACHE_SIZE, Environment, EnvironmentConfig } from '../../../src/Environment'
 import * as deploymentQueries from '../../../src/logic/database-queries/deployments-queries'
+import * as failedDeploymentQueries from '../../../src/logic/database-queries/failed-deployments-queries'
 import * as pointers from '../../../src/logic/database-queries/pointers-queries'
 import * as deploymentLogic from '../../../src/logic/deployments'
 import { metricsDeclaration } from '../../../src/metrics'
@@ -16,7 +17,7 @@ import { createActiveEntitiesComponent } from '../../../src/ports/activeEntities
 import { Denylist } from '../../../src/ports/denylist'
 import { createDeployedEntitiesBloomFilter } from '../../../src/ports/deployedEntitiesBloomFilter'
 import { createDeployRateLimiter } from '../../../src/ports/deployRateLimiterComponent'
-import { createFailedDeploymentsCache } from '../../../src/ports/failedDeploymentsCache'
+import { createFailedDeployments } from '../../../src/ports/failedDeployments'
 import { createTestDatabaseComponent } from '../../../src/ports/postgres'
 import { createSequentialTaskExecutor } from '../../../src/ports/sequecuentialTaskExecutor'
 import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
@@ -25,9 +26,7 @@ import { Deployment } from '../../../src/service/deployments/types'
 import { DELTA_POINTER_RESULT } from '../../../src/service/pointers/PointerManager'
 import {
   DeploymentContext,
-  DeploymentResult,
-  isInvalidDeployment,
-  LocalDeploymentAuditInfo
+  DeploymentResult, isInvalidDeployment, LocalDeploymentAuditInfo
 } from '../../../src/service/Service'
 import { ServiceImpl } from '../../../src/service/ServiceImpl'
 import { EntityVersion } from '../../../src/types'
@@ -52,18 +51,20 @@ describe('Service', function () {
   // starts the variables
   beforeAll(async () => {
     randomFileHash = await hashV1(randomFile)
-    ;[entity, entityFile] = await buildEntityAndFile(
-      EntityType.SCENE,
-      POINTERS,
-      Date.now(),
-      new Map([['file', randomFileHash]]),
-      { metadata: 'metadata' }
-    )
+      ;[entity, entityFile] = await buildEntityAndFile(
+        EntityType.SCENE,
+        POINTERS,
+        Date.now(),
+        new Map([['file', randomFileHash]]),
+        { metadata: 'metadata' }
+      )
 
     jest.spyOn(pointers, 'updateActiveDeployments').mockImplementation(() => Promise.resolve())
   })
 
   it(`When no file matches the given entity id, then deployment fails`, async () => {
+    jest.spyOn(failedDeploymentQueries, 'getSnapshotFailedDeployments').mockResolvedValue([])
+    jest.spyOn(failedDeploymentQueries, 'deleteFailedDeployment').mockResolvedValue()
     const service = await buildService()
     const deploymentResult = await service.deployEntity(
       [randomFile],
@@ -79,6 +80,8 @@ describe('Service', function () {
   })
 
   it(`When an entity is successfully deployed, then the content is stored correctly`, async () => {
+    jest.spyOn(failedDeploymentQueries, 'getSnapshotFailedDeployments').mockResolvedValue([])
+    jest.spyOn(failedDeploymentQueries, 'deleteFailedDeployment').mockResolvedValue()
     const service = await buildService()
     const storageSpy = jest.spyOn(service.components.storage, 'storeStream')
 
@@ -90,7 +93,7 @@ describe('Service', function () {
     )
     if (isInvalidDeployment(deploymentResult)) {
       assert.fail(
-        'The deployment result: ' + deploymentResult + ' was expected to be successful, it was invalid instead.'
+        'The deployment result: ' + JSON.stringify(deploymentResult) + ' was expected to be successful, it was invalid instead.'
       )
     } else {
       const deltaMilliseconds = Date.now() - deploymentResult
@@ -151,7 +154,7 @@ describe('Service', function () {
     expect(serviceSpy).toHaveBeenCalledWith(expect.anything(), undefined, POINTERS)
 
     // Reset spy and call again
-    serviceSpy.mockReset()
+    serviceSpy.mockClear()
     await service.components.activeEntities.withPointers(POINTERS)
     expect(serviceSpy).not.toHaveBeenCalled()
   })
@@ -182,7 +185,7 @@ describe('Service', function () {
     await service.deployEntity([entityFile, randomFile], entity.id, auditInfo, DeploymentContext.LOCAL)
 
     // Reset spy and call again
-    serviceSpy.mockReset()
+    serviceSpy.mockClear()
 
     serviceSpy = jest
       .spyOn(deployments, 'getDeploymentsForActiveEntities')
@@ -193,8 +196,9 @@ describe('Service', function () {
   })
 
   async function buildService() {
+    const clock = { now: Date.now }
     const database = createTestDatabaseComponent()
-    database.queryWithValues = () => Promise.resolve({ rows: [], rowCount: 0 })
+    database.queryWithValues = () => Promise.resolve({ rows: [], rowCount: 0 } as any)
     database.transaction = () => Promise.resolve()
     const env = new Environment()
     env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, 'inexistent')
@@ -212,23 +216,24 @@ describe('Service', function () {
       { defaultMax: 300, defaultTtl: ms('1m'), entitiesConfigMax: new Map(), entitiesConfigTtl: new Map() }
     )
     const metrics = createTestMetricsComponent(metricsDeclaration)
-    const failedDeploymentsCache = createFailedDeploymentsCache({ metrics })
+    const failedDeployments = await createFailedDeployments({ metrics, database })
     const storage = new MockedStorage()
     const pointerManager = NoOpPointerManager.build()
     const authenticator = new ContentAuthenticator(
       new ethers.providers.JsonRpcProvider('https://rpc.decentraland.org/mainnet?project=catalyst-ci'),
       DECENTRALAND_ADDRESS
     )
-    const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs })
+    const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, clock })
     env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)
     const denylist: Denylist = { isDenylisted: () => false }
     const sequentialExecutor = createSequentialTaskExecutor({ logs, metrics })
     const activeEntities = createActiveEntitiesComponent({ database, logs, env, metrics, denylist, sequentialExecutor })
+    await failedDeployments.start()
 
     return new ServiceImpl({
       env,
       pointerManager,
-      failedDeploymentsCache,
+      failedDeployments,
       deployRateLimiter,
       storage,
       validator,
@@ -239,7 +244,8 @@ describe('Service', function () {
       database,
       deployedEntitiesBloomFilter: deployedEntitiesBloomFilter,
       activeEntities,
-      denylist
+      denylist,
+      clock
     })
   }
   function fakeDeployment(entityId?: string): Deployment {
