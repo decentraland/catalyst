@@ -323,7 +323,7 @@
   dependencies:
     yaml "2.2.1"
 
-"@dcl/catalyst-contracts@^3.0.0", "@dcl/catalyst-contracts@^3.0.1", "@dcl/catalyst-contracts@^3.1.0":
+"@dcl/catalyst-contracts@^3.0.0", "@dcl/catalyst-contracts@^3.1.0":
   version "3.1.0"
   resolved "https://registry.yarnpkg.com/@dcl/catalyst-contracts/-/catalyst-contracts-3.1.0.tgz#23f764dca183914cefc06db96cc9c43e88585b47"
   integrity sha512-ctnzngEY+TaD7PM9UZwlb/twnuuFDnp5FJciIxIau/WPhOmvJEQlQX//2rzXctfrflJEswNG1M0OSIsXxKDaBA==
@@ -393,15 +393,6 @@
   version "6.2.0"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-6.2.0.tgz#0ce52cc92050097804cd46b058969b4bb122301f"
   integrity sha512-/6st9o23cUWM6fSUBa1fVt193Fm8fhTGlGJdJnanK3094/ab5lr8lT0HSO5bscKqjwwWlaKpTEfKHMYsCmMnhg==
-  dependencies:
-    ajv "^8.11.0"
-    ajv-errors "^3.0.0"
-    ajv-keywords "^5.1.0"
-
-"@dcl/schemas@tag-fast-bootstrapping-5":
-  version "5.29.1-20221110202018.commit-b02a4b7"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-5.29.1-20221110202018.commit-b02a4b7.tgz#15691992f8f34b07a63e91cbab74701655e9f0e7"
-  integrity sha512-B37SGTVVBWcmRwmaWQt3boH902vrAHJKDHZWZZRSjIAyg9kwJG1mFOoE6EFUXkI0a79+d2MNdrEwa3OA9kT1iw==
   dependencies:
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
