@@ -4,9 +4,7 @@ import {
   deleteSnapshotsInTimeRange,
   findSnapshotsStrictlyContainedInTimeRange,
   getNumberOfActiveEntitiesInTimeRange,
-  getSnapshotHashesNotInTimeRange,
-  saveProcessedSnapshot,
-  saveSnapshot,
+  getSnapshotHashesNotInTimeRange, saveSnapshot,
   snapshotIsOutdated,
   streamActiveDeploymentsInTimeRange
 } from './database-queries/snapshots-queries'
@@ -148,8 +146,6 @@ export async function generateSnapshotsInMultipleTimeRanges(
         await saveSnapshot(txDatabase, newSnapshot)
         logger.info(`Snapshots to delete: ${JSON.stringify(Array.from(snapshotHashesToDeleteInStorage))}`)
         await components.storage.delete(snapshotHashesToDeleteInStorage)
-        await saveProcessedSnapshot(components.database, newSnapshot.hash, components.clock.now())
-        logger.info(`Own snapshot saved as Processed Snapshot`, { snapshotHash: newSnapshot.hash })
         snapshotMetadatas.push(newSnapshot)
       })
       logger.info(
