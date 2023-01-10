@@ -7,7 +7,6 @@ import {
   L1Checker,
   L2Checker
 } from '@dcl/content-validator'
-import { providers } from '@0xsequence/multicall'
 import { Authenticator } from '@dcl/crypto'
 import { EnvironmentConfig } from '../../Environment'
 import { streamToBuffer } from '../../ports/contentStorage/contentStorage'
@@ -65,12 +64,7 @@ type ICheckerContract = {
 }
 
 async function createL1Checker(provider: ethers.providers.Provider, network: string): Promise<L1Checker> {
-  const multicallProvider = new providers.MulticallProvider(provider)
-  const checker = new ethers.Contract(
-    checkerContracts[network],
-    checkerAbi,
-    multicallProvider
-  ) as any as ICheckerContract
+  const checker = new ethers.Contract(checkerContracts[network], checkerAbi, provider) as any as ICheckerContract
   return {
     checkLAND(ethAddress: string, parcels: [number, number][], block: number): Promise<boolean[]> {
       const contracts = landContracts[network]
@@ -93,12 +87,7 @@ async function createL1Checker(provider: ethers.providers.Provider, network: str
 }
 
 async function createL2Checker(provider: ethers.providers.Provider, network: string): Promise<L2Checker> {
-  const multicallProvider = new providers.MulticallProvider(provider)
-  const checker = new ethers.Contract(
-    checkerContracts[network],
-    checkerAbi,
-    multicallProvider
-  ) as any as ICheckerContract
+  const checker = new ethers.Contract(checkerContracts[network], checkerAbi, provider) as any as ICheckerContract
 
   const { v2, v3 } = collectionFactoryContracts[network]
 

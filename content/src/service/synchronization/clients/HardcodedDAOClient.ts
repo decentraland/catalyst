@@ -1,7 +1,6 @@
 import { CatalystByIdResult, catalystDeployments, catalystAbiItems } from '@dcl/catalyst-contracts'
 import { ethers } from 'ethers'
 import { arrayify } from 'ethers/lib/utils'
-import { providers } from '@0xsequence/multicall'
 
 export interface DaoComponent {
   getAllContentServers(): Promise<Array<CatalystByIdResult>>
@@ -24,8 +23,7 @@ export class DAOClient implements DaoComponent {
     }
     const contractAddress = (catalystDeployments as any)[networkId]
 
-    const provider = new providers.MulticallProvider(this.provider)
-    const contract = new ethers.Contract(contractAddress, catalystAbiItems as any, provider)
+    const contract = new ethers.Contract(contractAddress, catalystAbiItems as any, this.provider)
 
     const count = (await contract.catalystCount()).toNumber()
     const nodes: CatalystByIdResult[] = []
