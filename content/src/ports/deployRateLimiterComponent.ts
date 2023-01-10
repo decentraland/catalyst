@@ -1,10 +1,10 @@
-import { ILoggerComponent } from '@well-known-components/interfaces'
+import { IBaseComponent, ILoggerComponent } from '@well-known-components/interfaces'
 import { EntityType } from '@dcl/schemas'
 import ms from 'ms'
 import NodeCache from 'node-cache'
 import { AppComponents } from '../types'
 
-export type IDeployRateLimiterComponent = {
+export type IDeployRateLimiterComponent = IBaseComponent & {
   newDeployment(entityType: EntityType, pointers: string[], localTimestamp: number): void
   isRateLimited(entityType: EntityType, pointers: string[]): boolean
 }
@@ -51,6 +51,9 @@ export function createDeployRateLimiter(
         pointers.some((p) => !!cacheByEntityType.cache.get(p)) ||
         cacheByEntityType.cache.stats.keys > cacheByEntityType.maxSize
       )
+    },
+    async stop() {
+      deploymentCacheMap.clear()
     }
   }
 }

@@ -9,6 +9,7 @@ import {
 import { mapDeploymentsToEntities } from '../logic/deployments'
 import { getDeploymentsForActiveEntities } from '../service/deployments/deployments'
 import { AppComponents } from '../types'
+import { IBaseComponent } from '@well-known-components/interfaces'
 
 export type NotActiveEntity = 'NOT_ACTIVE_ENTITY'
 
@@ -17,7 +18,7 @@ export const isEntityPresent = (result: Entity | NotActiveEntity | undefined): r
 export const isPointingToEntity = (result: string | NotActiveEntity | undefined): result is string =>
   result !== undefined && result !== 'NOT_ACTIVE_ENTITY'
 
-export type ActiveEntities = {
+export type ActiveEntities = IBaseComponent & {
   /**
    * Retrieve active entities that are pointed by the given pointers
    * Note: result is cached, even if the pointer has no active entity
@@ -79,6 +80,9 @@ export const createActiveEntitiesComponent = (
       },
       has(pointer: string) {
         return entityIdByPointers.has(normalizePointerCacheKey(pointer))
+      },
+      clear() {
+        entityIdByPointers.clear()
       }
     }
   }
@@ -273,6 +277,10 @@ export const createActiveEntitiesComponent = (
         return isEntityPresent(cachedEntity) ? cachedEntity.id : cachedEntity
       }
       return entityIdByPointers.get(idOrPointer)
+    },
+    stop: async () => {
+      entityIdByPointers.clear()
+      cache.clear()
     }
   }
 }

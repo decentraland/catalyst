@@ -41,6 +41,7 @@ export type IFailedDeploymentsComponent = {
   removeFailedDeployment(entityId: string): Promise<void>
   reportFailure(failedDeployment: FailedDeployment): Promise<void>
   start(): Promise<void>
+  stop(): Promise<void>
 }
 
 export async function createFailedDeployments(
@@ -85,6 +86,9 @@ export async function createFailedDeployments(
       }
       failedDeploymentsByEntityIdCache.set(failedDeployment.entityId, failedDeployment)
       components.metrics.observe('dcl_content_server_failed_deployments', {}, failedDeploymentsByEntityIdCache.size)
+    },
+    async stop() {
+      failedDeploymentsByEntityIdCache.clear()
     }
   }
 }

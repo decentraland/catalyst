@@ -1,11 +1,12 @@
 import { checkFileExists } from '@dcl/snapshots-fetcher/dist/utils'
+import { IBaseComponent } from '@well-known-components/interfaces'
 import path from 'path'
 import { AppComponents } from '../types'
 
 // this component opens file descriptors and enables us to write to them and close all the FD at once
 // it also has a buffering algorithm to write to disk less often and reduce IO latency
 
-export type IContentFileWriterComponent<T> = {
+export type IContentFileWriterComponent<T> = IBaseComponent & {
   allFiles: Map<T, FileInterface>
   /**
    * Append is debounced. Often the contents of the files are only written after `await close()`
@@ -93,17 +94,18 @@ export function createContentFileWriterComponent<T extends symbol | string>(
     return ret
   }
 
+  async function flushToDiskAndCloseFiles() {
+    for (const [_, { close }] of allFiles) {
+      await close()
+    }
+  }
+
   return {
     allFiles,
     async appendToFile(type: T, buffer: string) {
       const { appendDebounced } = await getFile(type)
 
       await appendDebounced(buffer)
-    },
-    async flushToDiskAndCloseFiles() {
-      for (const [_, { close }] of allFiles) {
-        await close()
-      }
     },
     async openFile(type: T) {
       await getFile(type)
@@ -118,6 +120,10 @@ export function createContentFileWriterComponent<T extends symbol | string>(
           }
         }
       }
+    },
+    flushToDiskAndCloseFiles,
+    async stop() {
+      return flushToDiskAndCloseFiles()
     }
   }
 }
