@@ -5,21 +5,21 @@ import { EnvironmentConfig } from '../Environment'
 import { getEntityById, setEntitiesAsOverwritten } from '../logic/database-queries/deployments-queries'
 import { calculateOverwrites, saveDeploymentAndContentFiles } from '../logic/deployments'
 import { calculateDeprecatedHashes, calculateIPFSHashes } from '../logic/hashing'
-import { bufferToStream, ContentItem } from '../ports/contentStorage/contentStorage'
+import { ContentItem, bufferToStream } from '../ports/contentStorage/contentStorage'
 import { AppComponents, EntityVersion } from '../types'
-import { getDeployments } from './deployments/deployments'
-import { AuditInfo, Deployment, DeploymentOptions, PartialDeploymentHistory } from './deployments/types'
 import { EntityFactory } from './EntityFactory'
-import { DELTA_POINTER_RESULT, DeploymentResult as DeploymentPointersResult } from './pointers/PointerManager'
 import {
   DeploymentContext,
   DeploymentFiles,
   DeploymentResult,
   InvalidResult,
-  isInvalidDeployment,
   LocalDeploymentAuditInfo,
-  MetaverseContentService
+  MetaverseContentService,
+  isInvalidDeployment
 } from './Service'
+import { getDeployments } from './deployments/deployments'
+import { AuditInfo, Deployment, DeploymentOptions, PartialDeploymentHistory } from './deployments/types'
+import { DELTA_POINTER_RESULT, DeploymentResult as DeploymentPointersResult } from './pointers/PointerManager'
 import { happenedBefore } from './time/TimeSorting'
 
 export class ServiceImpl implements MetaverseContentService {
@@ -27,10 +27,6 @@ export class ServiceImpl implements MetaverseContentService {
   private readonly pointersBeingDeployed: Map<EntityType, Set<string>> = new Map()
 
   private readonly LEGACY_CONTENT_MIGRATION_TIMESTAMP: Date = new Date(1582167600000) // DCL Launch Day
-
-  private readonly ADR_45_TIMESTAMP: number = process.env.ADR_45_TIMESTAMP
-    ? parseInt(process.env.ADR_45_TIMESTAMP)
-    : 1652191200000
 
   constructor(
     public components: Pick<
@@ -227,11 +223,6 @@ export class ServiceImpl implements MetaverseContentService {
         errors: validationResult.errors ?? ['The validateDeployment was not successful but it did not return any error']
       }
     }
-
-    if (entity.version !== 'v3' && entity.timestamp > this.ADR_45_TIMESTAMP)
-      return {
-        errors: ['Only entities v3 are allowed after ADR-45']
-      }
 
     const auditInfoComplete: AuditInfo = {
       ...auditInfo,
