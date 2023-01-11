@@ -5,7 +5,7 @@
 import { createConfigComponent } from '@well-known-components/env-config-provider'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
-// import { HTTPProvider } from 'eth-connect'
+import { HTTPProvider } from 'eth-connect'
 // import ms from 'ms'
 import path from 'path'
 // import { Controller } from './controller/Controller'
@@ -25,12 +25,12 @@ import { createFetchComponent } from './ports/fetcher'
 import { createFsComponent } from './ports/fs'
 import { createDatabaseComponent } from './ports/postgres'
 // import { createProcessedSnapshotStorage } from './ports/processedSnapshotStorage'
-// import { createSequentialTaskExecutor } from './ports/sequecuentialTaskExecutor'
+import { createSequentialTaskExecutor } from './ports/sequecuentialTaskExecutor'
 // import { createSnapshotGenerator } from './ports/snapshotGenerator'
 // import { createSnapshotStorage } from './ports/snapshotStorage'
 // import { createSynchronizationState } from './ports/synchronizationState'
-// import { createSystemProperties } from './ports/system-properties'
-// import { ContentAuthenticator } from './service/auth/Authenticator'
+import { createSystemProperties } from './ports/system-properties'
+import { ContentAuthenticator } from './service/auth/Authenticator'
 // import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { PointerManager } from './service/pointers/PointerManager'
 // import { Server } from './service/Server'
@@ -38,8 +38,8 @@ import { PointerManager } from './service/pointers/PointerManager'
 // import { ServiceImpl } from './service/ServiceImpl'
 // import { SnapshotManager } from './service/snapshots/SnapshotManager'
 // import { createBatchDeployerComponent } from './service/synchronization/batchDeployer'
-// import { ChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
-// import { DAOClientFactory } from './service/synchronization/clients/DAOClientFactory'
+import { ChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
+import { DAOClientFactory } from './service/synchronization/clients/DAOClientFactory'
 // import { ContentCluster } from './service/synchronization/ContentCluster'
 // import { createRetryFailedDeployments } from './service/synchronization/retryFailedDeployments'
 // import { createServerValidator } from './service/validations/server'
@@ -69,28 +69,28 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const database = await createDatabaseComponent({ logs, env, metrics })
 
-  // const sequentialExecutor = createSequentialTaskExecutor({ metrics, logs })
+  const sequentialExecutor = createSequentialTaskExecutor({ metrics, logs })
 
-  // const systemProperties = createSystemProperties({ database })
+  const systemProperties = createSystemProperties({ database })
 
-  // const challengeSupervisor = new ChallengeSupervisor()
+  const challengeSupervisor = new ChallengeSupervisor()
 
   // const catalystFetcher = FetcherFactory.create({ env })
   const contentFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
   const storage = await createFileSystemContentStorage({ fs }, contentFolder)
 
-  // const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK)
-  // const ethereumProvider = new HTTPProvider(
-  //   `https://rpc.decentraland.org/${encodeURIComponent(ethNetwork)}?project=catalyst-content`,
-  //   {
-  //     fetch: fetcher.fetch
-  //   }
-  // )
-  // const daoClient = await DAOClientFactory.create(env, ethereumProvider)
-  // const authenticator = new ContentAuthenticator(
-  //   ethereumProvider,
-  //   env.getConfig(EnvironmentConfig.DECENTRALAND_ADDRESS)
-  // )
+  const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK)
+  const ethereumProvider = new HTTPProvider(
+    `https://rpc.decentraland.org/${encodeURIComponent(ethNetwork)}?project=catalyst-content`,
+    {
+      fetch: fetcher.fetch
+    }
+  )
+  const daoClient = await DAOClientFactory.create(env, ethereumProvider)
+  const authenticator = new ContentAuthenticator(
+    ethereumProvider,
+    env.getConfig(EnvironmentConfig.DECENTRALAND_ADDRESS)
+  )
 
   // const contentCluster = new ContentCluster(
   //   {
@@ -303,28 +303,28 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     // controller,
     // synchronizer,
     // synchronizationState,
-    // challengeSupervisor,
+    challengeSupervisor,
     // snapshotManager,
     // contentCluster,
     // failedDeployments,
     // deployRateLimiter,
     pointerManager,
     storage,
-    // authenticator,
+    authenticator,
     // migrationManager,
     // externalCalls,
     // validator,
     // serverValidator,
     // garbageCollectionManager,
-    // systemProperties,
+    systemProperties,
     // catalystFetcher,
-    // daoClient,
+    daoClient,
     // server,
     // retryFailedDeployments,
     // activeEntities,
-    // sequentialExecutor,
+    sequentialExecutor,
     denylist,
-    // ethereumProvider,
+    ethereumProvider,
     fs,
     // snapshotGenerator,
     // processedSnapshotStorage,
