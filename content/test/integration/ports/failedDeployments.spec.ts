@@ -3,9 +3,10 @@ import { IBaseComponent } from '@well-known-components/interfaces'
 import { saveSnapshotFailedDeployment } from '../../../src/logic/database-queries/failed-deployments-queries'
 import { FailedDeployment, FailureReason, SnapshotFailedDeployment } from '../../../src/ports/failedDeployments'
 import { AppComponents } from '../../../src/types'
-import { loadStandaloneTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
+import { setupTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
 
-loadStandaloneTestEnvironment()('failed deployments - ', (testEnv) => {
+describe('failed deployments - ', () => {
+  const getTestEnv = setupTestEnvironment()
 
   const startOptions = { started: jest.fn(), live: jest.fn(), getComponents: jest.fn() }
   const aFailedDeployment = {
@@ -19,7 +20,7 @@ loadStandaloneTestEnvironment()('failed deployments - ', (testEnv) => {
   }
 
   testCaseWithComponents(
-    testEnv,
+    getTestEnv,
     'should return no failed deployments after start if there no one in the db',
     async (components) => {
       await startComponentsWithBaseFailedDeployments(components, startOptions, [])
@@ -30,44 +31,32 @@ loadStandaloneTestEnvironment()('failed deployments - ', (testEnv) => {
     }
   )
 
-  testCaseWithComponents(
-    testEnv,
-    'should return all failed deployments from db after start',
-    async (components) => {
-      await startComponentsWithBaseFailedDeployments(components, startOptions, [aFailedDeployment])
+  testCaseWithComponents(getTestEnv, 'should return all failed deployments from db after start', async (components) => {
+    await startComponentsWithBaseFailedDeployments(components, startOptions, [aFailedDeployment])
 
-      const failedDeps = await components.failedDeployments.getAllFailedDeployments()
+    const failedDeps = await components.failedDeployments.getAllFailedDeployments()
 
-      expect(failedDeps).toEqual(expect.arrayContaining([aFailedDeployment]))
-    }
-  )
+    expect(failedDeps).toEqual(expect.arrayContaining([aFailedDeployment]))
+  })
 
-  testCaseWithComponents(
-    testEnv,
-    'should find failed deploymenet by entity id after start',
-    async (components) => {
-      await startComponentsWithBaseFailedDeployments(components, startOptions, [aFailedDeployment])
+  testCaseWithComponents(getTestEnv, 'should find failed deploymenet by entity id after start', async (components) => {
+    await startComponentsWithBaseFailedDeployments(components, startOptions, [aFailedDeployment])
 
-      const failedDep = await components.failedDeployments.findFailedDeployment(aFailedDeployment.entityId)
+    const failedDep = await components.failedDeployments.findFailedDeployment(aFailedDeployment.entityId)
 
-      expect(failedDep).toEqual(aFailedDeployment)
-    }
-  )
+    expect(failedDep).toEqual(aFailedDeployment)
+  })
 
-  testCaseWithComponents(
-    testEnv,
-    'should remove failed deployment',
-    async (components) => {
-      await startComponentsWithBaseFailedDeployments(components, startOptions, [aFailedDeployment])
+  testCaseWithComponents(getTestEnv, 'should remove failed deployment', async (components) => {
+    await startComponentsWithBaseFailedDeployments(components, startOptions, [aFailedDeployment])
 
-      await components.failedDeployments.removeFailedDeployment(aFailedDeployment.entityId)
+    await components.failedDeployments.removeFailedDeployment(aFailedDeployment.entityId)
 
-      await restartFailedDeploymentsAndAssertStoredDeployments(components, startOptions, [])
-    }
-  )
+    await restartFailedDeploymentsAndAssertStoredDeployments(components, startOptions, [])
+  })
 
   testCaseWithComponents(
-    testEnv,
+    getTestEnv,
     'should report failure when there wasn`t a failed deployment with the same entity id',
     async (components) => {
       await startComponentsWithBaseFailedDeployments(components, startOptions, [aFailedDeployment])
@@ -75,12 +64,15 @@ loadStandaloneTestEnvironment()('failed deployments - ', (testEnv) => {
 
       await components.failedDeployments.reportFailure(newFailedDeployment)
 
-      await restartFailedDeploymentsAndAssertStoredDeployments(components, startOptions, [aFailedDeployment, newFailedDeployment])
+      await restartFailedDeploymentsAndAssertStoredDeployments(components, startOptions, [
+        aFailedDeployment,
+        newFailedDeployment
+      ])
     }
   )
 
   testCaseWithComponents(
-    testEnv,
+    getTestEnv,
     'should report failed deployment and delete the previous one if there was one with the same entity id',
     async (components) => {
       await startComponentsWithBaseFailedDeployments(components, startOptions, [aFailedDeployment])
@@ -91,7 +83,9 @@ loadStandaloneTestEnvironment()('failed deployments - ', (testEnv) => {
 
       await components.failedDeployments.reportFailure(newFailedDeploymentWithSameId)
 
-      await restartFailedDeploymentsAndAssertStoredDeployments(components, startOptions, [newFailedDeploymentWithSameId])
+      await restartFailedDeploymentsAndAssertStoredDeployments(components, startOptions, [
+        newFailedDeploymentWithSameId
+      ])
     }
   )
 })
@@ -99,7 +93,8 @@ loadStandaloneTestEnvironment()('failed deployments - ', (testEnv) => {
 async function startComponentsWithBaseFailedDeployments(
   components: Pick<AppComponents, 'database' | 'metrics' | 'failedDeployments'>,
   startOptions: IBaseComponent.ComponentStartOptions,
-  baseFailedDeployments: SnapshotFailedDeployment[]) {
+  baseFailedDeployments: SnapshotFailedDeployment[]
+) {
   await startComponent(components.metrics, startOptions)
   await startComponent(components.database, startOptions)
   for (const failedDeployment of baseFailedDeployments) {
@@ -118,7 +113,8 @@ async function startComponent(component: any, startOptions: IBaseComponent.Compo
 async function restartFailedDeploymentsAndAssertStoredDeployments(
   components: Pick<AppComponents, 'failedDeployments'>,
   startOptions: IBaseComponent.ComponentStartOptions,
-  storedFailedDeployments: FailedDeployment[]) {
+  storedFailedDeployments: FailedDeployment[]
+) {
   await startComponent(components.failedDeployments, startOptions)
   const failedDeps = await components.failedDeployments.getAllFailedDeployments()
   expect(failedDeps).toEqual(expect.arrayContaining(storedFailedDeployments))

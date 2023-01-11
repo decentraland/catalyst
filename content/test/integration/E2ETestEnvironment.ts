@@ -4,7 +4,6 @@ import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { random } from 'faker'
 import ms from 'ms'
-import { spy } from 'sinon'
 import { DEFAULT_DATABASE_CONFIG, Environment, EnvironmentBuilder, EnvironmentConfig } from '../../src/Environment'
 import { stopAllComponents } from '../../src/logic/components-lifecycle'
 import { metricsDeclaration } from '../../src/metrics'
@@ -186,12 +185,12 @@ export class ServerBuilder {
 
       if (this.dao) {
         // mock DAO client
-        components.daoClient.getAllContentServers = spy(() => {
-          return this.dao.getAllContentServers()
-        })
-        components.daoClient.getAllServers = spy(() => {
-          return this.dao.getAllServers()
-        })
+        // components.daoClient.getAllContentServers = () => {
+        //   return this.dao.getAllContentServers()
+        // }
+        // components.daoClient.getAllServers = () => {
+        //   return this.dao.getAllServers()
+        // }
       }
 
       servers[i] = new TestProgram(components)
@@ -229,7 +228,7 @@ export function setupTestEnvironment(overrideConfigs?: Record<number, any>) {
     expect(await detector.isLeaking()).toBe(false)
   })
 
-  return testEnv
+  return () => testEnv
 }
 /**
  * This is an easy way to load a test environment into a test suite
@@ -270,12 +269,12 @@ export function loadTestEnvironment(
  * It does not start the components.
  */
 export function testCaseWithComponents(
-  testEnv: E2ETestEnvironment,
+  getTestEnv: () => E2ETestEnvironment,
   name: string,
   fn: (components: AppComponents) => Promise<void>
 ) {
   it(name, async () => {
-    const components = await testEnv.buildService()
+    const components = await getTestEnv().buildService()
     try {
       await fn(components)
     } finally {

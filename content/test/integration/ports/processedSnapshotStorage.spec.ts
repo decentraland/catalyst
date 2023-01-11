@@ -1,43 +1,41 @@
 import * as snapshotQueries from '../../../src/logic/database-queries/snapshots-queries'
 import { saveProcessedSnapshot } from '../../../src/logic/database-queries/snapshots-queries'
-import { loadStandaloneTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
+import { setupTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
 
-loadStandaloneTestEnvironment()('precessed snapshot storage', (testEnv) => {
+describe('precessed snapshot storage', () => {
+  const getTestEnv = setupTestEnvironment()
 
   describe('processedFrom', () => {
-
     beforeEach(() => jest.restoreAllMocks())
 
     testCaseWithComponents(
-      testEnv,
+      getTestEnv,
       'should return the result from they query when the hashes are not in cache',
       async (components) => {
         const processedSnapshot = 'someHash'
         await saveProcessedSnapshot(components.database, processedSnapshot, Date.now())
 
-        expect(await components.processedSnapshotStorage.processedFrom([processedSnapshot])).toEqual(new Set([processedSnapshot]))
+        expect(await components.processedSnapshotStorage.processedFrom([processedSnapshot])).toEqual(
+          new Set([processedSnapshot])
+        )
       }
     )
 
-    testCaseWithComponents(
-      testEnv,
-      'should cache the processed snapshots',
-      async (components) => {
-        const processedSnapshot = 'someHash'
-        await saveProcessedSnapshot(components.database, processedSnapshot, Date.now())
+    testCaseWithComponents(getTestEnv, 'should cache the processed snapshots', async (components) => {
+      const processedSnapshot = 'someHash'
+      await saveProcessedSnapshot(components.database, processedSnapshot, Date.now())
 
-        const dbQuerySpy = jest.spyOn(snapshotQueries, 'getProcessedSnapshots')
-        await components.processedSnapshotStorage.processedFrom([processedSnapshot])
-        expect(dbQuerySpy).toBeCalledTimes(1)
-        // now the result should be cached
-        dbQuerySpy.mockReset()
-        await components.processedSnapshotStorage.processedFrom([processedSnapshot])
-        expect(dbQuerySpy).toBeCalledTimes(0)
-      }
-    )
+      const dbQuerySpy = jest.spyOn(snapshotQueries, 'getProcessedSnapshots')
+      await components.processedSnapshotStorage.processedFrom([processedSnapshot])
+      expect(dbQuerySpy).toBeCalledTimes(1)
+      // now the result should be cached
+      dbQuerySpy.mockReset()
+      await components.processedSnapshotStorage.processedFrom([processedSnapshot])
+      expect(dbQuerySpy).toBeCalledTimes(0)
+    })
 
     testCaseWithComponents(
-      testEnv,
+      getTestEnv,
       'should query the db if not ALL the snapshots are in the cache',
       async (components) => {
         const processedSnapshot = 'someHash'
@@ -48,12 +46,15 @@ loadStandaloneTestEnvironment()('precessed snapshot storage', (testEnv) => {
         const anotherHashNotInCache = 'anotherHashNotInCache'
         const dbQuerySpy = jest.spyOn(snapshotQueries, 'getProcessedSnapshots')
         await components.processedSnapshotStorage.processedFrom([processedSnapshot, anotherHashNotInCache])
-        expect(dbQuerySpy).toBeCalledWith(expect.anything(), expect.arrayContaining([processedSnapshot, anotherHashNotInCache]))
+        expect(dbQuerySpy).toBeCalledWith(
+          expect.anything(),
+          expect.arrayContaining([processedSnapshot, anotherHashNotInCache])
+        )
       }
     )
 
     testCaseWithComponents(
-      testEnv,
+      getTestEnv,
       'should not query the db if ALL the snapshots are in the cache',
       async (components) => {
         const processedSnapshot = 'someHash'
@@ -68,16 +69,19 @@ loadStandaloneTestEnvironment()('precessed snapshot storage', (testEnv) => {
         await components.processedSnapshotStorage.processedFrom([anotherProcessedSnapshot])
 
         const dbQuerySpy = jest.spyOn(snapshotQueries, 'getProcessedSnapshots')
-        await components.processedSnapshotStorage.processedFrom([processedSnapshot, otherProcessedSnapshot, anotherProcessedSnapshot])
+        await components.processedSnapshotStorage.processedFrom([
+          processedSnapshot,
+          otherProcessedSnapshot,
+          anotherProcessedSnapshot
+        ])
         expect(dbQuerySpy).toBeCalledTimes(0)
       }
     )
   })
 
   describe('saveProcessed', () => {
-
     testCaseWithComponents(
-      testEnv,
+      getTestEnv,
       'should save the snapshot and set the current process time',
       async (components) => {
         const processedSnapshot = 'someHash'
@@ -92,7 +96,7 @@ loadStandaloneTestEnvironment()('precessed snapshot storage', (testEnv) => {
     )
 
     testCaseWithComponents(
-      testEnv,
+      getTestEnv,
       'should cache the processed snapshot when saving a snapshot',
       async (components) => {
         const processedSnapshot = 'someHash'
