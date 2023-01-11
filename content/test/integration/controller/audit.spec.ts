@@ -2,12 +2,17 @@ import { EntityType } from '@dcl/schemas'
 import fetch from 'node-fetch'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
-import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
+import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData, deployEntitiesCombo } from '../E2ETestUtils'
 
-loadStandaloneTestEnvironment()('Integration - Audit', (testEnv) => {
+describe('Integration - Audit', () => {
+  const getTestEnv = setupTestEnvironment()
+
   it('returns the audit information about the entity', async () => {
-    const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+    const server = await getTestEnv()
+      .configServer()
+      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+      .andBuild()
 
     makeNoopValidator(server.components)
 
@@ -23,7 +28,10 @@ loadStandaloneTestEnvironment()('Integration - Audit', (testEnv) => {
   })
 
   it('returns 400 when the entity type is invalid', async () => {
-    const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+    const server = await getTestEnv()
+      .configServer()
+      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+      .andBuild()
 
     makeNoopValidator(server.components)
 
@@ -36,7 +44,10 @@ loadStandaloneTestEnvironment()('Integration - Audit', (testEnv) => {
   })
 
   it('returns 404 when it cannot find the entity', async () => {
-    const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+    const server = await getTestEnv()
+      .configServer()
+      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+      .andBuild()
 
     makeNoopValidator(server.components)
 

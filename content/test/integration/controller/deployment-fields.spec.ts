@@ -2,16 +2,18 @@ import { Fetcher } from 'dcl-catalyst-commons'
 import { DeploymentField } from '../../../src/controller/Controller'
 import { Deployment } from '../../../src/service/deployments/types'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
-import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
+import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
 import { TestProgram } from '../TestProgram'
 
-loadStandaloneTestEnvironment()('Integration - Deployment Fields', (testEnv) => {
+describe('Integration - Deployment Fields', () => {
+  const getTestEnv = setupTestEnvironment()
+
   let server: TestProgram
   const fetcher = new Fetcher()
 
   beforeEach(async () => {
-    server = await testEnv.configServer().andBuild()
+    server = await getTestEnv().configServer().andBuild()
     makeNoopValidator(server.components)
     await server.startProgram()
   })
