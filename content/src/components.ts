@@ -14,11 +14,11 @@ import { FetcherFactory } from './helpers/FetcherFactory'
 // import { splitByCommaTrimAndRemoveEmptyElements } from './logic/config-helpers'
 import { metricsDeclaration } from './metrics'
 // import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
-// import { createActiveEntitiesComponent } from './ports/activeEntities'
+import { createActiveEntitiesComponent } from './ports/activeEntities'
 import { createClock } from './ports/clock'
 import { createFileSystemContentStorage } from './ports/contentStorage/fileSystemContentStorage'
 import { createDenylist } from './ports/denylist'
-// import { createDeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
+import { createDeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
 import { createDeployRateLimiter } from './ports/deployRateLimiterComponent'
 import { createFailedDeployments } from './ports/failedDeployments'
 import { createFetchComponent } from './ports/fetcher'
@@ -42,7 +42,7 @@ import { ChallengeSupervisor } from './service/synchronization/ChallengeSupervis
 import { DAOClientFactory } from './service/synchronization/clients/DAOClientFactory'
 import { ContentCluster } from './service/synchronization/ContentCluster'
 // import { createRetryFailedDeployments } from './service/synchronization/retryFailedDeployments'
-// import { createServerValidator } from './service/validations/server'
+import { createServerValidator } from './service/validations/server'
 import { createExternalCalls, createSubGraphsComponent, createValidator } from './service/validations/validator'
 import { AppComponents } from './types'
 
@@ -131,10 +131,10 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   })
   const theGraphClient = createTheGraphClient({ subGraphs, logs })
   const validator = createValidator({ config, externalCalls, logs, theGraphClient, subGraphs })
-  // const serverValidator = createServerValidator({ failedDeployments, metrics, clock })
+  const serverValidator = createServerValidator({ failedDeployments, metrics, clock })
 
-  // const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, clock })
-  // const activeEntities = createActiveEntitiesComponent({ database, env, logs, metrics, denylist, sequentialExecutor })
+  const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, clock })
+  const activeEntities = createActiveEntitiesComponent({ database, env, logs, metrics, denylist, sequentialExecutor })
 
   // const deployer: MetaverseContentService = new ServiceImpl({
   //   metrics,
@@ -299,7 +299,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     staticConfigs,
     // batchDeployer,
     // downloadQueue,
-    // deployedEntitiesBloomFilter,
+    deployedEntitiesBloomFilter,
     // controller,
     // synchronizer,
     // synchronizationState,
@@ -314,14 +314,14 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     // migrationManager,
     externalCalls,
     validator,
-    // serverValidator,
+    serverValidator,
     // garbageCollectionManager,
     systemProperties,
     catalystFetcher,
     daoClient,
     // server,
     // retryFailedDeployments,
-    // activeEntities,
+    activeEntities,
     sequentialExecutor,
     denylist,
     ethereumProvider,
