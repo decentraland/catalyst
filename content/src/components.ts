@@ -1,4 +1,4 @@
-// import { createTheGraphClient } from '@dcl/content-validator'
+import { createTheGraphClient } from '@dcl/content-validator'
 import { EntityType } from '@dcl/schemas'
 // import { createSynchronizer } from '@dcl/snapshots-fetcher'
 // import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
@@ -43,7 +43,7 @@ import { DAOClientFactory } from './service/synchronization/clients/DAOClientFac
 import { ContentCluster } from './service/synchronization/ContentCluster'
 // import { createRetryFailedDeployments } from './service/synchronization/retryFailedDeployments'
 // import { createServerValidator } from './service/validations/server'
-// import { createExternalCalls, createSubGraphsComponent, createValidator } from './service/validations/validator'
+import { createExternalCalls, createSubGraphsComponent, createValidator } from './service/validations/validator'
 import { AppComponents } from './types'
 
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
@@ -121,16 +121,16 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     }
   )
 
-  // const subGraphs = await createSubGraphsComponent({ env, metrics, logs, fetcher })
-  // const externalCalls = await createExternalCalls({
-  //   storage,
-  //   authenticator,
-  //   catalystFetcher,
-  //   env,
-  //   logs
-  // })
-  // const theGraphClient = createTheGraphClient({ subGraphs, logs })
-  // const validator = createValidator({ config, externalCalls, logs, theGraphClient, subGraphs })
+  const subGraphs = await createSubGraphsComponent({ env, metrics, logs, fetcher })
+  const externalCalls = await createExternalCalls({
+    storage,
+    authenticator,
+    catalystFetcher,
+    env,
+    logs
+  })
+  const theGraphClient = createTheGraphClient({ subGraphs, logs })
+  const validator = createValidator({ config, externalCalls, logs, theGraphClient, subGraphs })
   // const serverValidator = createServerValidator({ failedDeployments, metrics, clock })
 
   // const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, clock })
@@ -312,8 +312,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     storage,
     authenticator,
     // migrationManager,
-    // externalCalls,
-    // validator,
+    externalCalls,
+    validator,
     // serverValidator,
     // garbageCollectionManager,
     systemProperties,
