@@ -16,14 +16,14 @@ import { metricsDeclaration } from './metrics'
 // import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
 // import { createActiveEntitiesComponent } from './ports/activeEntities'
 import { createClock } from './ports/clock'
-// import { createFileSystemContentStorage } from './ports/contentStorage/fileSystemContentStorage'
+import { createFileSystemContentStorage } from './ports/contentStorage/fileSystemContentStorage'
 import { createDenylist } from './ports/denylist'
 // import { createDeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
 // import { createDeployRateLimiter } from './ports/deployRateLimiterComponent'
 // import { createFailedDeployments } from './ports/failedDeployments'
 import { createFetchComponent } from './ports/fetcher'
 import { createFsComponent } from './ports/fs'
-// import { createDatabaseComponent } from './ports/postgres'
+import { createDatabaseComponent } from './ports/postgres'
 // import { createProcessedSnapshotStorage } from './ports/processedSnapshotStorage'
 // import { createSequentialTaskExecutor } from './ports/sequecuentialTaskExecutor'
 // import { createSnapshotGenerator } from './ports/snapshotGenerator'
@@ -32,7 +32,7 @@ import { createFsComponent } from './ports/fs'
 // import { createSystemProperties } from './ports/system-properties'
 // import { ContentAuthenticator } from './service/auth/Authenticator'
 // import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
-// import { PointerManager } from './service/pointers/PointerManager'
+import { PointerManager } from './service/pointers/PointerManager'
 // import { Server } from './service/Server'
 // import { MetaverseContentService } from './service/Service'
 // import { ServiceImpl } from './service/ServiceImpl'
@@ -67,7 +67,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     tmpDownloadFolder
   }
 
-  // const database = await createDatabaseComponent({ logs, env, metrics })
+  const database = await createDatabaseComponent({ logs, env, metrics })
 
   // const sequentialExecutor = createSequentialTaskExecutor({ metrics, logs })
 
@@ -76,8 +76,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   // const challengeSupervisor = new ChallengeSupervisor()
 
   // const catalystFetcher = FetcherFactory.create({ env })
-  // const contentFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
-  // const storage = await createFileSystemContentStorage({ fs }, contentFolder)
+  const contentFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
+  const storage = await createFileSystemContentStorage({ fs }, contentFolder)
 
   // const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK)
   // const ethereumProvider = new HTTPProvider(
@@ -105,7 +105,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   // )
 
   // // TODO: this should be in the src/logic folder. It is not a component
-  // const pointerManager = new PointerManager()
+  const pointerManager = new PointerManager()
 
   // const failedDeployments = await createFailedDeployments({ metrics, database })
 
@@ -291,7 +291,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   return {
     env,
-    // database,
+    database,
     // deployer,
     metrics,
     fetcher,
@@ -308,8 +308,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     // contentCluster,
     // failedDeployments,
     // deployRateLimiter,
-    // pointerManager,
-    // storage,
+    pointerManager,
+    storage,
     // authenticator,
     // migrationManager,
     // externalCalls,
