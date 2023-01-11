@@ -63,7 +63,11 @@ export class Server implements IBaseComponent {
     }
 
     this.app.use(cors(corsOptions))
-    this.app.use(express.json())
+    this.app.use(
+      express.json({
+        limit: '1mb'
+      })
+    )
     if (env.getConfig(EnvironmentConfig.LOG_REQUESTS)) {
       this.app.use(morgan('combined'))
     }
