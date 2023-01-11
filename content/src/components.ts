@@ -10,7 +10,7 @@ import { HTTPProvider } from 'eth-connect'
 import path from 'path'
 // import { Controller } from './controller/Controller'
 import { Environment, EnvironmentConfig } from './Environment'
-// import { FetcherFactory } from './helpers/FetcherFactory'
+import { FetcherFactory } from './helpers/FetcherFactory'
 // import { splitByCommaTrimAndRemoveEmptyElements } from './logic/config-helpers'
 import { metricsDeclaration } from './metrics'
 // import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
@@ -75,7 +75,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const challengeSupervisor = new ChallengeSupervisor()
 
-  // const catalystFetcher = FetcherFactory.create({ env })
+  const catalystFetcher = FetcherFactory.create({ env })
   const contentFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
   const storage = await createFileSystemContentStorage({ fs }, contentFolder)
 
@@ -317,7 +317,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     // serverValidator,
     // garbageCollectionManager,
     systemProperties,
-    // catalystFetcher,
+    catalystFetcher,
     daoClient,
     // server,
     // retryFailedDeployments,
