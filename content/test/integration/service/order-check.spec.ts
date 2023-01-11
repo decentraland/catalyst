@@ -1,12 +1,14 @@
 import { AppComponents } from '../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
-import { loadStandaloneTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
+import { setupTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
 import { buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo, EntityCombo } from '../E2ETestUtils'
 
 /**
  * This test verifies that the active entity and overwrites are calculated correctly, regardless of the order in which the entities where deployed.
  */
-loadStandaloneTestEnvironment()('Integration - Order Check', (testEnv) => {
+describe('Integration - Order Check', () => {
+  const getTestEnv = setupTestEnvironment()
+
   const P1 = 'X1,Y1'
   const P2 = 'X2,Y2'
   const P3 = 'X3,Y3'
@@ -27,7 +29,7 @@ loadStandaloneTestEnvironment()('Integration - Order Check', (testEnv) => {
 
   permutator([0, 1, 2, 3, 4]).forEach(function (indices) {
     const names = indices.map((idx) => `E${idx + 1}`).join(' -> ')
-    testCaseWithComponents(testEnv, names, async (components) => {
+    testCaseWithComponents(getTestEnv, names, async (components) => {
       // make noop validator
       makeNoopValidator(components)
       makeNoopServerValidator(components)
@@ -54,7 +56,6 @@ loadStandaloneTestEnvironment()('Integration - Order Check', (testEnv) => {
     })
     return deployments
   }
-
 
   function permutator<T>(array: Array<T>): Array<Array<T>> {
     const result: Array<Array<T>> = []

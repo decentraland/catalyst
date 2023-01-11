@@ -201,10 +201,6 @@ export class ServerBuilder {
   }
 }
 
-export function loadStandaloneTestEnvironment(overrideConfigs?: Record<number, any>) {
-  return loadTestEnvironment({ [EnvironmentConfig.DISABLE_SYNCHRONIZATION]: true, ...overrideConfigs })
-}
-
 export function setupTestEnvironment(overrideConfigs?: Record<number, any>) {
   let testEnv = new E2ETestEnvironment()
 
@@ -229,39 +225,6 @@ export function setupTestEnvironment(overrideConfigs?: Record<number, any>) {
   })
 
   return () => testEnv
-}
-/**
- * This is an easy way to load a test environment into a test suite
- */
-export function loadTestEnvironment(
-  overrideConfigs?: Record<number, any>
-): (name: string, test: (testEnv: E2ETestEnvironment) => void) => void {
-  return function (name, test) {
-    describe(name, () => {
-      const testEnv = new E2ETestEnvironment()
-
-      beforeAll(async () => {
-        await testEnv.start(overrideConfigs)
-      })
-
-      describe('use cases for test environment', () => {
-        beforeEach(() => {
-          testEnv.resetDAOAndServers()
-        })
-
-        afterEach(async () => {
-          await testEnv.clearDatabases()
-          await testEnv.stopAllComponentsFromAllServersAndDeref()
-        })
-
-        test(testEnv)
-      })
-
-      afterAll(async () => {
-        await testEnv.stop()
-      })
-    })
-  }
 }
 
 /**

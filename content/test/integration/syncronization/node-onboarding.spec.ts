@@ -6,16 +6,18 @@ import {
   assertFileIsOnServer,
   buildDeployment
 } from '../E2EAssertions'
-import { loadTestEnvironment } from '../E2ETestEnvironment'
+import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { awaitUntil, buildDeployData, buildDeployDataAfterEntity } from '../E2ETestUtils'
 import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
 import { TestProgram } from '../TestProgram'
 
-loadTestEnvironment()('End 2 end - Node onboarding', function (testEnv) {
+describe('End 2 end - Node onboarding', function () {
+  const getTestEnv = setupTestEnvironment()
+
   let server1: TestProgram, server2: TestProgram, server3: TestProgram
 
   beforeEach(async () => {
-    ;[server1, server2, server3] = await testEnv.configServer().andBuildMany(3)
+    ;[server1, server2, server3] = await getTestEnv().configServer().andBuildMany(3)
 
     makeNoopValidator(server1.components)
     makeNoopValidator(server2.components)
@@ -86,7 +88,7 @@ loadTestEnvironment()('End 2 end - Node onboarding', function (testEnv) {
     await assertFileIsOnServer(server2, entityContentHash)
 
     // Remove server 1 from the DAO
-    testEnv.removeFromDAO(server1.getUrl())
+    getTestEnv().removeFromDAO(server1.getUrl())
 
     // Start server 3
     await server3.startProgram()

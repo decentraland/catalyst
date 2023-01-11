@@ -1,4 +1,3 @@
-
 import { Entity } from '@dcl/schemas'
 import { DeploymentData } from 'dcl-catalyst-client'
 import { SinonStub, stub } from 'sinon'
@@ -6,12 +5,14 @@ import { EnvironmentConfig } from '../../../src/Environment'
 import { retryFailedDeploymentExecution } from '../../../src/logic/deployments'
 import { FailedDeployment, FailureReason } from '../../../src/ports/failedDeployments'
 import { assertDeploymentFailed, assertDeploymentFailsWith, assertEntitiesAreActiveOnServer } from '../E2EAssertions'
-import { loadTestEnvironment } from '../E2ETestEnvironment'
+import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { awaitUntil, buildDeployData, buildDeployDataAfterEntity, createIdentity } from '../E2ETestUtils'
 import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
 import { startProgramAndWaitUntilBootstrapFinishes, TestProgram } from '../TestProgram'
 
-loadTestEnvironment()('Errors during sync', (testEnv) => {
+describe('Errors during sync', () => {
+  const getTestEnv = setupTestEnvironment()
+
   let server1: TestProgram
   let server2: TestProgram
   let controllerEntity: Entity
@@ -22,10 +23,10 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
   describe('Deploy an entity on server 1', function () {
     beforeEach(async function () {
       const identity = createIdentity()
-        ;[server1, server2] = await testEnv
-          .configServer()
-          .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
-          .andBuildMany(2)
+      ;[server1, server2] = await getTestEnv()
+        .configServer()
+        .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
+        .andBuildMany(2)
       // Start server1
       await server1.startProgram()
 
@@ -88,7 +89,6 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
       // Fix the entity
       await server2.deployEntity(deployData, true)
 
-
       // The active entity is not modified
       await awaitUntil(() => assertEntitiesAreActiveOnServer(server2, anotherEntityCombo.controllerEntity))
 
@@ -125,7 +125,7 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
 
   it('Deploy as fix a not failed entity fails', async () => {
     const identity = createIdentity()
-    server1 = await testEnv
+    server1 = await getTestEnv()
       .configServer()
       .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
       .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)

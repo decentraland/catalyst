@@ -5,7 +5,7 @@ import { EnvironmentBuilder, EnvironmentConfig } from '../../../../src/Environme
 import { stopAllComponents } from '../../../../src/logic/components-lifecycle'
 import { AppComponents } from '../../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
-import { loadStandaloneTestEnvironment } from '../../E2ETestEnvironment'
+import { setupTestEnvironment } from '../../E2ETestEnvironment'
 import {
   awaitUntil,
   buildDeployData,
@@ -14,10 +14,12 @@ import {
   EntityCombo
 } from '../../E2ETestUtils'
 
-loadStandaloneTestEnvironment({
-  [EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL]: ms('2s'),
-  [EnvironmentConfig.GARBAGE_COLLECTION]: 'true'
-})('Integration - Garbage Collection', (testEnv) => {
+describe('Integration - Garbage Collection', () => {
+  const getTestEnv = setupTestEnvironment({
+    [EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL]: ms('2s'),
+    [EnvironmentConfig.GARBAGE_COLLECTION]: 'true'
+  })
+
   const P1 = 'X1,Y1',
     P2 = 'X2,Y2'
   let E1: EntityCombo, E2: EntityCombo, E3: EntityCombo
@@ -28,19 +30,22 @@ loadStandaloneTestEnvironment({
 
   beforeAll(async () => {
     E1 = await buildDeployData([P1], {
-      contentPaths: ['test/integration/resources/some-binary-file.png', 'test/integration/resources/some-text-file.txt'],
-      metadata: {a:'metadata'}
+      contentPaths: [
+        'test/integration/resources/some-binary-file.png',
+        'test/integration/resources/some-text-file.txt'
+      ],
+      metadata: { a: 'metadata' }
     })
     E2 = await buildDeployDataAfterEntity(E1, [P1], {
       contentPaths: ['test/integration/resources/some-binary-file.png'],
-      metadata: {a:'metadata'}
+      metadata: { a: 'metadata' }
     })
     E3 = await buildDeployDataAfterEntity(E2, [P2])
-      ;[sharedContent, onlyE1Content] = E1.entity.content?.map(({ hash }) => hash) ?? []
+    ;[sharedContent, onlyE1Content] = E1.entity.content?.map(({ hash }) => hash) ?? []
   })
 
   beforeEach(async () => {
-    const baseEnv = await testEnv.getEnvForNewDatabase()
+    const baseEnv = await getTestEnv().getEnvForNewDatabase()
     components = await new EnvironmentBuilder(baseEnv)
       .withConfig(EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL, ms('2s'))
       .withConfig(EnvironmentConfig.GARBAGE_COLLECTION, 'true')
