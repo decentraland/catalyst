@@ -13,7 +13,8 @@ import { DaoComponent } from '../../src/service/synchronization/clients/Hardcode
 import { AppComponents } from '../../src/types'
 import { MockedDAOClient } from '../helpers/service/synchronization/clients/MockedDAOClient'
 import { TestProgram } from './TestProgram'
-// import LeakDetector from 'jest-leak-detector'
+import * as sinon from 'sinon'
+import LeakDetector from 'jest-leak-detector'
 
 export class E2ETestEnvironment {
   public static TEST_SCHEMA = 'e2etest'
@@ -185,12 +186,8 @@ export class ServerBuilder {
 
       if (this.dao) {
         // mock DAO client
-        components.daoClient.getAllContentServers = () => {
-          return this.dao.getAllContentServers()
-        }
-        components.daoClient.getAllServers = () => {
-          return this.dao.getAllServers()
-        }
+        sinon.stub(components.daoClient, 'getAllContentServers').callsFake(() => this.dao.getAllContentServers())
+        sinon.stub(components.daoClient, 'getAllServers').callsFake(() => this.dao.getAllServers())
       }
 
       servers[i] = new TestProgram(components)
@@ -218,10 +215,11 @@ export function setupTestEnvironment(overrideConfigs?: Record<number, any>) {
   })
 
   afterAll(async () => {
-    // const detector = new LeakDetector(testEnv)
+    sinon.restore()
+    const detector = new LeakDetector(testEnv)
     await testEnv.stop()
     testEnv = null as any
-    // expect(await detector.isLeaking()).toBe(false)
+    expect(await detector.isLeaking()).toBe(false)
   })
 
   return () => testEnv
