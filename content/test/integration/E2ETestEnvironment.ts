@@ -55,9 +55,6 @@ export class E2ETestEnvironment {
     this.database = await createDatabaseComponent({ logs: this.logs, env: this.sharedEnv, metrics })
     if (this.database.start) this.database.start()
   }
-  test() {
-    return false
-  }
 
   async stop(): Promise<void> {
     // first kill the servers
