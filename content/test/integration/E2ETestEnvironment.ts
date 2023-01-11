@@ -1,5 +1,5 @@
-import { createConfigComponent } from "@well-known-components/env-config-provider"
-import { ILoggerComponent } from "@well-known-components/interfaces"
+import { createConfigComponent } from '@well-known-components/env-config-provider'
+import { ILoggerComponent } from '@well-known-components/interfaces'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { random } from 'faker'
@@ -14,6 +14,8 @@ import { DaoComponent } from '../../src/service/synchronization/clients/Hardcode
 import { AppComponents } from '../../src/types'
 import { MockedDAOClient } from '../helpers/service/synchronization/clients/MockedDAOClient'
 import { TestProgram } from './TestProgram'
+import LeakDetector from 'jest-leak-detector'
+
 export class E2ETestEnvironment {
   public static TEST_SCHEMA = 'e2etest'
   public static POSTGRES_PORT = 5432
@@ -53,6 +55,9 @@ export class E2ETestEnvironment {
     this.database = await createDatabaseComponent({ logs: this.logs, env: this.sharedEnv, metrics })
     if (this.database.start) this.database.start()
   }
+  test() {
+    return false
+  }
 
   async stop(): Promise<void> {
     // first kill the servers
@@ -73,7 +78,7 @@ export class E2ETestEnvironment {
   async stopAllComponentsFromAllServersAndDeref(): Promise<void> {
     if (this.runningServers) {
       await Promise.all(this.runningServers.map((server) => server.stopProgram()))
-      this.runningServers.length = 0
+      this.runningServers = []
     }
   }
 
@@ -201,6 +206,31 @@ export function loadStandaloneTestEnvironment(overrideConfigs?: Record<number, a
   return loadTestEnvironment({ [EnvironmentConfig.DISABLE_SYNCHRONIZATION]: true, ...overrideConfigs })
 }
 
+export function setupTestEnvironment(overrideConfigs?: Record<number, any>) {
+  let testEnv = new E2ETestEnvironment()
+
+  beforeAll(async () => {
+    await testEnv.start(overrideConfigs)
+  })
+
+  beforeEach(() => {
+    testEnv.resetDAOAndServers()
+  })
+
+  afterEach(async () => {
+    await testEnv.clearDatabases()
+    await testEnv.stopAllComponentsFromAllServersAndDeref()
+  })
+
+  afterAll(async () => {
+    const detector = new LeakDetector(testEnv)
+    await testEnv.stop()
+    testEnv = null as any
+    expect(await detector.isLeaking()).toBe(false)
+  })
+
+  return testEnv
+}
 /**
  * This is an easy way to load a test environment into a test suite
  */
