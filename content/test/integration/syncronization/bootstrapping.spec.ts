@@ -35,7 +35,7 @@ describe('Bootstrapping synchronization tests', function () {
   let baseTimestamp = 0
 
   beforeEach(async () => {
-    ;[server1, server2] = await testEnv.configServer().andBuildMany(2)
+    ;[server1, server2] = await getTestEnv().configServer().andBuildMany(2)
     jest.restoreAllMocks()
 
     const now = Date.now()

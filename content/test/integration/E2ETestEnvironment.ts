@@ -185,12 +185,12 @@ export class ServerBuilder {
 
       if (this.dao) {
         // mock DAO client
-        // components.daoClient.getAllContentServers = () => {
-        //   return this.dao.getAllContentServers()
-        // }
-        // components.daoClient.getAllServers = () => {
-        //   return this.dao.getAllServers()
-        // }
+        components.daoClient.getAllContentServers = () => {
+          return this.dao.getAllContentServers()
+        }
+        components.daoClient.getAllServers = () => {
+          return this.dao.getAllServers()
+        }
       }
 
       servers[i] = new TestProgram(components)
@@ -225,6 +225,39 @@ export function setupTestEnvironment(overrideConfigs?: Record<number, any>) {
   })
 
   return () => testEnv
+}
+/**
+ * This is an easy way to load a test environment into a test suite
+ */
+export function loadTestEnvironment(
+  overrideConfigs?: Record<number, any>
+): (name: string, test: (testEnv: E2ETestEnvironment) => void) => void {
+  return function (name, test) {
+    describe(name, () => {
+      const testEnv = new E2ETestEnvironment()
+
+      beforeAll(async () => {
+        await testEnv.start(overrideConfigs)
+      })
+
+      describe('use cases for test environment', () => {
+        beforeEach(() => {
+          testEnv.resetDAOAndServers()
+        })
+
+        afterEach(async () => {
+          await testEnv.clearDatabases()
+          await testEnv.stopAllComponentsFromAllServersAndDeref()
+        })
+
+        test(testEnv)
+      })
+
+      afterAll(async () => {
+        await testEnv.stop()
+      })
+    })
+  }
 }
 
 /**

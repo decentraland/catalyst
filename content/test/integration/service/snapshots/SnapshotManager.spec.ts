@@ -3,7 +3,7 @@ import { processDeploymentsInStream } from '@dcl/snapshots-fetcher/dist/file-pro
 import { createConfigComponent } from '@well-known-components/env-config-provider'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { createLogComponent } from '@well-known-components/logger'
-import { setupTestEnvironment } from 'test/integration/E2ETestEnvironment'
+import { setupTestEnvironment } from '../../E2ETestEnvironment'
 import { inspect } from 'util'
 import { EnvironmentBuilder } from '../../../../src/Environment'
 import { stopAllComponents } from '../../../../src/logic/components-lifecycle'
