@@ -104,7 +104,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     env.getConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL)
   )
 
-  // // TODO: this should be in the src/logic folder. It is not a component
+  // TODO: this should be in the src/logic folder. It is not a component
   const pointerManager = new PointerManager()
 
   const failedDeployments = await createFailedDeployments({ metrics, database })
