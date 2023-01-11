@@ -1,12 +1,12 @@
 // import { createTheGraphClient } from '@dcl/content-validator'
-// import { EntityType } from '@dcl/schemas'
+import { EntityType } from '@dcl/schemas'
 // import { createSynchronizer } from '@dcl/snapshots-fetcher'
 // import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { HTTPProvider } from 'eth-connect'
-// import ms from 'ms'
+import ms from 'ms'
 import path from 'path'
 // import { Controller } from './controller/Controller'
 import { Environment, EnvironmentConfig } from './Environment'
@@ -19,8 +19,8 @@ import { createClock } from './ports/clock'
 import { createFileSystemContentStorage } from './ports/contentStorage/fileSystemContentStorage'
 import { createDenylist } from './ports/denylist'
 // import { createDeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
-// import { createDeployRateLimiter } from './ports/deployRateLimiterComponent'
-// import { createFailedDeployments } from './ports/failedDeployments'
+import { createDeployRateLimiter } from './ports/deployRateLimiterComponent'
+import { createFailedDeployments } from './ports/failedDeployments'
 import { createFetchComponent } from './ports/fetcher'
 import { createFsComponent } from './ports/fs'
 import { createDatabaseComponent } from './ports/postgres'
@@ -40,7 +40,7 @@ import { PointerManager } from './service/pointers/PointerManager'
 // import { createBatchDeployerComponent } from './service/synchronization/batchDeployer'
 import { ChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
 import { DAOClientFactory } from './service/synchronization/clients/DAOClientFactory'
-// import { ContentCluster } from './service/synchronization/ContentCluster'
+import { ContentCluster } from './service/synchronization/ContentCluster'
 // import { createRetryFailedDeployments } from './service/synchronization/retryFailedDeployments'
 // import { createServerValidator } from './service/validations/server'
 // import { createExternalCalls, createSubGraphsComponent, createValidator } from './service/validations/validator'
@@ -92,34 +92,34 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     env.getConfig(EnvironmentConfig.DECENTRALAND_ADDRESS)
   )
 
-  // const contentCluster = new ContentCluster(
-  //   {
-  //     daoClient,
-  //     challengeSupervisor,
-  //     fetcher,
-  //     logs,
-  //     env,
-  //     clock
-  //   },
-  //   env.getConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL)
-  // )
+  const contentCluster = new ContentCluster(
+    {
+      daoClient,
+      challengeSupervisor,
+      fetcher,
+      logs,
+      env,
+      clock
+    },
+    env.getConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL)
+  )
 
   // // TODO: this should be in the src/logic folder. It is not a component
   const pointerManager = new PointerManager()
 
-  // const failedDeployments = await createFailedDeployments({ metrics, database })
+  const failedDeployments = await createFailedDeployments({ metrics, database })
 
-  // const deployRateLimiter = createDeployRateLimiter(
-  //   { logs },
-  //   {
-  //     defaultTtl: env.getConfig(EnvironmentConfig.DEPLOYMENTS_DEFAULT_RATE_LIMIT_TTL) ?? ms('1m'),
-  //     defaultMax: env.getConfig(EnvironmentConfig.DEPLOYMENTS_DEFAULT_RATE_LIMIT_MAX) ?? 300,
-  //     entitiesConfigTtl:
-  //       env.getConfig<Map<EntityType, number>>(EnvironmentConfig.DEPLOYMENT_RATE_LIMIT_TTL) ?? new Map(),
-  //     entitiesConfigMax:
-  //       env.getConfig<Map<EntityType, number>>(EnvironmentConfig.DEPLOYMENT_RATE_LIMIT_MAX) ?? new Map()
-  //   }
-  // )
+  const deployRateLimiter = createDeployRateLimiter(
+    { logs },
+    {
+      defaultTtl: env.getConfig(EnvironmentConfig.DEPLOYMENTS_DEFAULT_RATE_LIMIT_TTL) ?? ms('1m'),
+      defaultMax: env.getConfig(EnvironmentConfig.DEPLOYMENTS_DEFAULT_RATE_LIMIT_MAX) ?? 300,
+      entitiesConfigTtl:
+        env.getConfig<Map<EntityType, number>>(EnvironmentConfig.DEPLOYMENT_RATE_LIMIT_TTL) ?? new Map(),
+      entitiesConfigMax:
+        env.getConfig<Map<EntityType, number>>(EnvironmentConfig.DEPLOYMENT_RATE_LIMIT_MAX) ?? new Map()
+    }
+  )
 
   // const subGraphs = await createSubGraphsComponent({ env, metrics, logs, fetcher })
   // const externalCalls = await createExternalCalls({
@@ -305,9 +305,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     // synchronizationState,
     challengeSupervisor,
     // snapshotManager,
-    // contentCluster,
-    // failedDeployments,
-    // deployRateLimiter,
+    contentCluster,
+    failedDeployments,
+    deployRateLimiter,
     pointerManager,
     storage,
     authenticator,
