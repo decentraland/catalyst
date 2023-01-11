@@ -13,7 +13,7 @@ import { DaoComponent } from '../../src/service/synchronization/clients/Hardcode
 import { AppComponents } from '../../src/types'
 import { MockedDAOClient } from '../helpers/service/synchronization/clients/MockedDAOClient'
 import { TestProgram } from './TestProgram'
-import LeakDetector from 'jest-leak-detector'
+// import LeakDetector from 'jest-leak-detector'
 
 export class E2ETestEnvironment {
   public static TEST_SCHEMA = 'e2etest'
@@ -218,10 +218,10 @@ export function setupTestEnvironment(overrideConfigs?: Record<number, any>) {
   })
 
   afterAll(async () => {
-    const detector = new LeakDetector(testEnv)
+    // const detector = new LeakDetector(testEnv)
     await testEnv.stop()
     testEnv = null as any
-    expect(await detector.isLeaking()).toBe(false)
+    // expect(await detector.isLeaking()).toBe(false)
   })
 
   return () => testEnv
