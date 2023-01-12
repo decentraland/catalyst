@@ -1,5 +1,5 @@
 import { AuthChain, Authenticator, AuthLink, EthAddress, Signature } from '@dcl/crypto'
-import { DeploymentWithAuthChain, Entity, EntityType } from '@dcl/schemas'
+import { Entity, EntityType, PointerChangesSyncDeployment } from '@dcl/schemas'
 import { DecentralandAssetIdentifier, parseUrn } from '@dcl/urn-resolver'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import destroy from 'destroy'
@@ -25,12 +25,11 @@ import { ControllerDeploymentFactory } from './ControllerDeploymentFactory'
 import { ControllerEntityFactory } from './ControllerEntityFactory'
 
 export class Controller {
-  private static LOGGER: ILoggerComponent.ILogger
+  private logger: ILoggerComponent.ILogger
 
   constructor(
     private readonly components: Pick<
       AppComponents,
-      | 'synchronizationManager'
       | 'snapshotManager'
       | 'deployer'
       | 'challengeSupervisor'
@@ -41,10 +40,14 @@ export class Controller {
       | 'activeEntities'
       | 'denylist'
       | 'fs'
+      | 'snapshotGenerator'
+      | 'failedDeployments'
+      | 'contentCluster'
+      | 'synchronizationState'
     >,
     private readonly ethNetwork: string
   ) {
-    Controller.LOGGER = components.logs.getLogger('Controller')
+    this.logger = components.logs.getLogger('Controller')
   }
 
   /**
@@ -88,8 +91,8 @@ export class Controller {
       const maskedEntities: Entity[] = entities.map((entity) => ControllerEntityFactory.maskEntity(entity, enumFields))
       res.send(maskedEntities)
     } catch (error) {
-      Controller.LOGGER.error(`POST /entities/:type - Internal server error '${error}'`)
-      Controller.LOGGER.error(error)
+      this.logger.error(`POST /entities/:type - Internal server error '${error}'`)
+      this.logger.error(error)
       res.status(500).end()
     }
   }
@@ -123,8 +126,8 @@ export class Controller {
 
       res.send(entities)
     } catch (error) {
-      Controller.LOGGER.error(`POST /entities/active - Internal server error '${error}'`)
-      Controller.LOGGER.error(error)
+      this.logger.error(`POST /entities/active - Internal server error '${error}'`)
+      this.logger.error(error)
       res.status(500).end()
     }
   }
@@ -187,21 +190,21 @@ export class Controller {
         res.send({ creationTimestamp: deploymentResult })
       } else if (isInvalidDeployment(deploymentResult)) {
         this.components.metrics.increment('dcl_deployments_endpoint_counter', { kind: 'validation_error' })
-        Controller.LOGGER.error(`POST /entities - Deployment failed (${deploymentResult.errors.join(',')})`)
+        this.logger.error(`POST /entities - Deployment failed (${deploymentResult.errors.join(',')})`)
         res.status(400).send({ errors: deploymentResult.errors }).end()
       } else {
-        Controller.LOGGER.error(`deploymentResult is invalid ${JSON.stringify(deploymentResult)}`)
+        this.logger.error(`deploymentResult is invalid ${JSON.stringify(deploymentResult)}`)
         throw new Error('deploymentResult is invalid')
       }
     } catch (error) {
       this.components.metrics.increment('dcl_deployments_endpoint_counter', { kind: 'error' })
-      Controller.LOGGER.error(`POST /entities - Internal server error '${error}'`, {
+      this.logger.error(`POST /entities - Internal server error '${error}'`, {
         entityId,
         authChain: JSON.stringify(authChain),
         ethAddress,
         signature
       })
-      Controller.LOGGER.error(error)
+      this.logger.error(error)
       res.status(500).end()
     } finally {
       await this.deleteUploadedFiles(deployFiles)
@@ -416,12 +419,12 @@ export class Controller {
   }
 
   private calculateNextRelativePathForPointer(
-    lastPointerChange: DeploymentWithAuthChain,
+    lastPointerChange: PointerChangesSyncDeployment,
     limit: number,
     filters?: PointerChangesFilters
   ): string | undefined {
     const nextFilters = Object.assign({}, filters)
-    // It will always use toLocalTimestamp as this endpoint is always sorted with the default config: local and DESC
+    // It will always use toLocalTimestamp as this endpoint is always sorted with the default config: localTimestamp and DESC
     nextFilters.to = lastPointerChange.localTimestamp
 
     const nextQueryParams = toQueryParams({
@@ -625,7 +628,11 @@ export class Controller {
       version: CURRENT_CONTENT_VERSION,
       commitHash: CURRENT_COMMIT_HASH,
       catalystVersion: CURRENT_CATALYST_VERSION,
-      ethNetwork: this.ethNetwork
+      ethNetwork: this.ethNetwork,
+      synchronizationStatus: {
+        ...this.components.contentCluster.getStatus(),
+        synchronizationState: this.components.synchronizationState.getState()
+      }
     })
   }
 
@@ -666,11 +673,24 @@ export class Controller {
     }
   }
 
+  async getAllNewSnapshots(req: express.Request, res: express.Response): Promise<void> {
+    // Method: GET
+    // Path: /snapshots
+
+    const metadata = this.components.snapshotGenerator.getCurrentSnapshots()
+
+    if (!metadata) {
+      res.status(503).send({ error: 'New Snapshots not yet created' })
+    } else {
+      res.send(metadata)
+    }
+  }
+
   async getFailedDeployments(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
     // Path: /failed-deployments
 
-    const failedDeployments = await this.components.deployer.getAllFailedDeployments()
+    const failedDeployments = await this.components.failedDeployments.getAllFailedDeployments()
     res.send(failedDeployments)
   }
 

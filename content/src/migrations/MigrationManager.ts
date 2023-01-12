@@ -21,7 +21,8 @@ export class MigrationManager {
       createMigrationsSchema: true,
       count: Infinity,
       databaseUrl: databaseConfig,
-      log: () => {}
+      log: () => {},
+      ignorePattern: '..*map'
     }
 
     if (process.env.CI !== 'true' && process.env.RUNNING_TESTS !== 'true') {

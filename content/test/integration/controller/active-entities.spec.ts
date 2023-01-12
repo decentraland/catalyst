@@ -3,13 +3,18 @@ import fetch from 'node-fetch'
 import { EnvironmentConfig } from '../../../src/Environment'
 import * as deployments from '../../../src/service/deployments/deployments'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
-import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
+import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
 import { TestProgram } from '../TestProgram'
 
-loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) => {
+describe('Integration - Get Active Entities', () => {
+  const getTestEnv = setupTestEnvironment()
+
   it('when asking without params, it returns client error', async () => {
-    const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+    const server = await getTestEnv()
+      .configServer()
+      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+      .andBuild()
     makeNoopValidator(server.components)
     await server.startProgram()
 
@@ -20,8 +25,12 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
 
     expect(result.status).toBe(400)
   })
+
   it('when asking by ID, it returns active entities with given ID', async () => {
-    const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+    const server = await getTestEnv()
+      .configServer()
+      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+      .andBuild()
 
     makeNoopValidator(server.components)
 
@@ -41,7 +50,10 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
   })
 
   it('when asking by Pointer, it returns active entities with given pointer', async () => {
-    const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+    const server = await getTestEnv()
+      .configServer()
+      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+      .andBuild()
 
     makeNoopValidator(server.components)
 
@@ -63,7 +75,10 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
   })
 
   it('when asking for active entities, only active entities are returned', async () => {
-    const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+    const server = await getTestEnv()
+      .configServer()
+      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+      .andBuild()
 
     makeNoopValidator(server.components)
 
@@ -93,7 +108,10 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
   })
 
   it('when there are multiple active entities, they are returned', async () => {
-    const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+    const server = await getTestEnv()
+      .configServer()
+      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+      .andBuild()
 
     makeNoopValidator(server.components)
 
@@ -122,7 +140,10 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
   })
 
   it('when asking with duplicated IDs, entity is returned once', async () => {
-    const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+    const server = await getTestEnv()
+      .configServer()
+      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+      .andBuild()
 
     makeNoopValidator(server.components)
 
@@ -142,7 +163,10 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
   })
 
   it('when asking with ID and pointer of same entity, result should be the same', async () => {
-    const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+    const server = await getTestEnv()
+      .configServer()
+      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+      .andBuild()
 
     makeNoopValidator(server.components)
 
@@ -164,7 +188,10 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
 
   describe('Active Entities cache', () => {
     it('when fetching active entity by ids, then entity is cached', async () => {
-      const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+      const server = await getTestEnv()
+        .configServer()
+        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+        .andBuild()
       makeNoopValidator(server.components)
       await server.startProgram()
       const pointers = ['0,0', '0,1']
@@ -186,7 +213,10 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     })
 
     it('when fetching active entities by pointer but there is no one, then entity is cached as NOT_ACTIVE', async () => {
-      const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+      const server = await getTestEnv()
+        .configServer()
+        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+        .andBuild()
       makeNoopValidator(server.components)
       await server.startProgram()
 
@@ -199,7 +229,10 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     })
 
     it('when fetching active entities by id but there is no one, then is cached as NOT_ACTIVE', async () => {
-      const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+      const server = await getTestEnv()
+        .configServer()
+        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+        .andBuild()
       makeNoopValidator(server.components)
       await server.startProgram()
 
@@ -213,7 +246,10 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     })
 
     it('when overriding an entity, then cache is updated', async () => {
-      const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+      const server = await getTestEnv()
+        .configServer()
+        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+        .andBuild()
       makeNoopValidator(server.components)
       await server.startProgram()
       const pointers = ['0,0', '0,1']
@@ -240,7 +276,10 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     })
 
     it('when deploying a new entity with same pointer, then cache is updated', async () => {
-      const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+      const server = await getTestEnv()
+        .configServer()
+        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+        .andBuild()
       makeNoopValidator(server.components)
       await server.startProgram()
       const activeEntities = server.components.activeEntities
@@ -283,7 +322,10 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     })
 
     it('when fetching multiple active entities, all are cached', async () => {
-      const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+      const server = await getTestEnv()
+        .configServer()
+        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+        .andBuild()
       makeNoopValidator(server.components)
       await server.startProgram()
       const firstPointers = ['0,0', '0,1']
@@ -314,7 +356,10 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     })
 
     it('when fetching a non active entity, result is cached', async () => {
-      const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+      const server = await getTestEnv()
+        .configServer()
+        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+        .andBuild()
       makeNoopValidator(server.components)
       await server.startProgram()
 
@@ -326,7 +371,10 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     })
 
     it('when results are cached, getDeployments is not called', async () => {
-      const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+      const server = await getTestEnv()
+        .configServer()
+        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+        .andBuild()
       makeNoopValidator(server.components)
       await server.startProgram()
       const pointers = ['0,0', '0,1']
@@ -355,7 +403,10 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
 
   describe('Urn Prefix', () => {
     it('when fetching entities with invalid chars urn prefix, then a client error is returned', async () => {
-      const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+      const server = await getTestEnv()
+        .configServer()
+        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+        .andBuild()
       makeNoopValidator(server.components)
       await server.startProgram()
 
@@ -367,7 +418,10 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       expect(response.status).toBe(400)
     })
     it('when fetching entities with invalid urn prefix, then a client error is returned', async () => {
-      const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+      const server = await getTestEnv()
+        .configServer()
+        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+        .andBuild()
       makeNoopValidator(server.components)
       await server.startProgram()
 
@@ -383,7 +437,10 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       expect(response.status).toBe(400)
     })
     it('when fetching entities by item, then matching entity is retrieved', async () => {
-      const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+      const server = await getTestEnv()
+        .configServer()
+        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+        .andBuild()
       makeNoopValidator(server.components)
       await server.startProgram()
       const pointer = ['urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1']
@@ -406,7 +463,10 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       expect(response[0].pointer).toBe('urn:decentraland:mumbai:collections-thirdparty:athirdparty:wintercollection:1')
     })
     it('when fetching entities by collection name, then matching entity is retrieved', async () => {
-      const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+      const server = await getTestEnv()
+        .configServer()
+        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+        .andBuild()
       makeNoopValidator(server.components)
       await server.startProgram()
       const pointer = ['urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1']
@@ -429,7 +489,10 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       expect(response[0].pointer).toBe('urn:decentraland:mumbai:collections-thirdparty:athirdparty:wintercollection:1')
     })
     it('when fetching entities by third party name, then matching entity is retrieved', async () => {
-      const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+      const server = await getTestEnv()
+        .configServer()
+        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+        .andBuild()
       makeNoopValidator(server.components)
       await server.startProgram()
       const pointer = ['urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1']
@@ -452,7 +515,10 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       expect(response[0].pointer).toBe('urn:decentraland:mumbai:collections-thirdparty:athirdparty:wintercollection:1')
     })
     it('when fetching entities by not matching urn prefix, then none is retrieved', async () => {
-      const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+      const server = await getTestEnv()
+        .configServer()
+        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+        .andBuild()
       makeNoopValidator(server.components)
       await server.startProgram()
       const pointer = ['urn:dcl:collection:itemId']
@@ -473,7 +539,10 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     })
 
     it('when pointer is updated and getting by prefix, the new one is retrieved', async () => {
-      const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+      const server = await getTestEnv()
+        .configServer()
+        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+        .andBuild()
       makeNoopValidator(server.components)
       await server.startProgram()
       const pointer = ['urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1']

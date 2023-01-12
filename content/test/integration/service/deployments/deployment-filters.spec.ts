@@ -8,13 +8,15 @@ import {
 } from '../../../../src/service/Service'
 import { AppComponents } from '../../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
-import { loadStandaloneTestEnvironment, testCaseWithComponents } from '../../E2ETestEnvironment'
+import { setupTestEnvironment, testCaseWithComponents } from '../../E2ETestEnvironment'
 import { buildDeployData, buildDeployDataAfterEntity, EntityCombo } from '../../E2ETestUtils'
 
 /**
  * This test verifies that all deployment filters are working correctly
  */
-loadStandaloneTestEnvironment()('Integration - Deployment Filters', (testEnv) => {
+describe('Integration - Deployment Filters', () => {
+  const getTestEnv = setupTestEnvironment()
+
   const P1 = 'x1,y1'
   const P2 = 'x2,y2'
   const P3 = 'x3,y3'
@@ -27,7 +29,7 @@ loadStandaloneTestEnvironment()('Integration - Deployment Filters', (testEnv) =>
   })
 
   testCaseWithComponents(
-    testEnv,
+    getTestEnv,
     'When local timestamp filter is set, then results are calculated correctly',
     async (components) => {
       // make noop validator
@@ -45,7 +47,7 @@ loadStandaloneTestEnvironment()('Integration - Deployment Filters', (testEnv) =>
   )
 
   testCaseWithComponents(
-    testEnv,
+    getTestEnv,
     'When entity types filter is set, then results are calculated correctly',
     async (components) => {
       // make noop validator
@@ -63,7 +65,7 @@ loadStandaloneTestEnvironment()('Integration - Deployment Filters', (testEnv) =>
   )
 
   testCaseWithComponents(
-    testEnv,
+    getTestEnv,
     'When entity ids filter is set, then results are calculated correctly',
     async (components) => {
       // make noop validator
@@ -81,7 +83,7 @@ loadStandaloneTestEnvironment()('Integration - Deployment Filters', (testEnv) =>
   )
 
   testCaseWithComponents(
-    testEnv,
+    getTestEnv,
     'When pointers filter is set, then results are calculated correctly',
     async (components) => {
       // make noop validator
@@ -99,7 +101,7 @@ loadStandaloneTestEnvironment()('Integration - Deployment Filters', (testEnv) =>
   )
 
   testCaseWithComponents(
-    testEnv,
+    getTestEnv,
     'When pointers filter is set, then results are calculated case insensitive',
     async (components) => {
       // make noop validator

@@ -157,5 +157,10 @@ export const metricsDeclaration = validateMetricsDeclaration({
   dcl_content_server_failed_deployments: {
     help: 'Failed deployments.',
     type: 'gauge'
+  },
+  dcl_content_server_snapshot_generation_time: {
+    help: 'Histogram of time spent generating full snapshots',
+    type: 'histogram',
+    labelNames: ['result', 'interval_size', 'reason'] // result=('success'|'error')
   }
 })

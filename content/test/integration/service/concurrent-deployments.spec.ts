@@ -2,13 +2,15 @@ import { EntityType } from '@dcl/schemas'
 import { MetaverseContentService } from '../../../src/service/Service'
 import { AppComponents } from '../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
-import { loadStandaloneTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
+import { setupTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
 import { buildDeployData, deployEntitiesCombo, EntityCombo } from '../E2ETestUtils'
 
 /**
  * This test verifies that if concurrent deployments are made, then only one remains as active
  */
-loadStandaloneTestEnvironment()('Integration - Concurrent deployments', (testEnv) => {
+describe('Integration - Concurrent deployments', () => {
+  const getTestEnv = setupTestEnvironment()
+
   const P1 = 'x1,y1'
   const AMOUNT_OF_DEPLOYMENTS = 500
   const type = EntityType.PROFILE
@@ -23,7 +25,7 @@ loadStandaloneTestEnvironment()('Integration - Concurrent deployments', (testEnv
   })
 
   testCaseWithComponents(
-    testEnv,
+    getTestEnv,
     `When deployments are executed concurrently, then only one remains active`,
     async (components) => {
       const { deployer } = components

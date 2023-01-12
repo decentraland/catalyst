@@ -200,7 +200,7 @@ export async function createDatabase(
         } catch (error) {
           await client.query('ROLLBACK')
           endTimer({ status: 'error' })
-          logger.error('Error running transaction:')
+          logger.error(`Error running ${durationQueryNameLabel ?? ''} transaction:`)
           logger.error(error)
           throw error
         } finally {

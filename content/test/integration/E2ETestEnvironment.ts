@@ -1,9 +1,9 @@
-import { createConfigComponent } from "@well-known-components/env-config-provider"
+import { createConfigComponent } from '@well-known-components/env-config-provider'
+import { ILoggerComponent } from '@well-known-components/interfaces'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { random } from 'faker'
 import ms from 'ms'
-import { spy } from 'sinon'
 import { DEFAULT_DATABASE_CONFIG, Environment, EnvironmentBuilder, EnvironmentConfig } from '../../src/Environment'
 import { stopAllComponents } from '../../src/logic/components-lifecycle'
 import { metricsDeclaration } from '../../src/metrics'
@@ -13,6 +13,9 @@ import { DaoComponent } from '../../src/service/synchronization/clients/Hardcode
 import { AppComponents } from '../../src/types'
 import { MockedDAOClient } from '../helpers/service/synchronization/clients/MockedDAOClient'
 import { TestProgram } from './TestProgram'
+import * as sinon from 'sinon'
+import LeakDetector from 'jest-leak-detector'
+
 export class E2ETestEnvironment {
   public static TEST_SCHEMA = 'e2etest'
   public static POSTGRES_PORT = 5432
@@ -20,6 +23,7 @@ export class E2ETestEnvironment {
   private database: IDatabaseComponent
   private sharedEnv: Environment
   private dao: MockedDAOClient
+  private logs: ILoggerComponent
 
   async start(overrideConfigs?: Record<number, any>): Promise<void> {
     const port = process.env.MAPPED_POSTGRES_PORT
@@ -43,12 +47,12 @@ export class E2ETestEnvironment {
       }
     }
     const metrics = createTestMetricsComponent(metricsDeclaration)
-    const logs = await createLogComponent({
+    this.logs = await createLogComponent({
       config: createConfigComponent({
         LOG_LEVEL: 'DEBUG'
       })
     })
-    this.database = await createDatabaseComponent({ logs, env: this.sharedEnv, metrics })
+    this.database = await createDatabaseComponent({ logs: this.logs, env: this.sharedEnv, metrics })
     if (this.database.start) this.database.start()
   }
 
@@ -71,7 +75,7 @@ export class E2ETestEnvironment {
   async stopAllComponentsFromAllServersAndDeref(): Promise<void> {
     if (this.runningServers) {
       await Promise.all(this.runningServers.map((server) => server.stopProgram()))
-      this.runningServers.length = 0
+      this.runningServers = []
     }
   }
 
@@ -91,9 +95,7 @@ export class E2ETestEnvironment {
 
     if (syncInternal) {
       const interval = typeof syncInternal === 'number' ? syncInternal : ms(syncInternal)
-      builder
-        .withConfig(EnvironmentConfig.SYNC_WITH_SERVERS_INTERVAL, interval)
-        .withConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL, interval)
+      builder.withConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL, interval)
     }
     return builder
   }
@@ -102,14 +104,7 @@ export class E2ETestEnvironment {
   async getEnvForNewDatabase(): Promise<Environment> {
     const [dbName] = await this.createDatabases(1)
     const env = new Environment(this.sharedEnv).setConfig(EnvironmentConfig.PSQL_DATABASE, dbName)
-    const migrationManager = MigrationManagerFactory.create({
-      logs: await createLogComponent({
-        config: createConfigComponent({
-          LOG_LEVEL: 'DEBUG'
-        })
-      }),
-      env
-    })
+    const migrationManager = MigrationManagerFactory.create({ logs: this.logs, env })
     await migrationManager.run()
     await stopAllComponents({ migrationManager })
     return env
@@ -188,12 +183,8 @@ export class ServerBuilder {
 
       if (this.dao) {
         // mock DAO client
-        components.daoClient.getAllContentServers = spy(() => {
-          return this.dao.getAllContentServers()
-        })
-        components.daoClient.getAllServers = spy(() => {
-          return this.dao.getAllServers()
-        })
+        sinon.stub(components.daoClient, 'getAllContentServers').callsFake(() => this.dao.getAllContentServers())
+        sinon.stub(components.daoClient, 'getAllServers').callsFake(() => this.dao.getAllServers())
       }
 
       servers[i] = new TestProgram(components)
@@ -204,10 +195,32 @@ export class ServerBuilder {
   }
 }
 
-export function loadStandaloneTestEnvironment(overrideConfigs?: Record<number, any>) {
-  return loadTestEnvironment({ [EnvironmentConfig.DISABLE_SYNCHRONIZATION]: true, ...overrideConfigs })
-}
+export function setupTestEnvironment(overrideConfigs?: Record<number, any>) {
+  let testEnv = new E2ETestEnvironment()
 
+  beforeAll(async () => {
+    await testEnv.start(overrideConfigs)
+  })
+
+  beforeEach(() => {
+    testEnv.resetDAOAndServers()
+  })
+
+  afterEach(async () => {
+    await testEnv.clearDatabases()
+    await testEnv.stopAllComponentsFromAllServersAndDeref()
+  })
+
+  afterAll(async () => {
+    sinon.restore()
+    const detector = new LeakDetector(testEnv)
+    await testEnv.stop()
+    testEnv = null as any
+    expect(await detector.isLeaking()).toBe(false)
+  })
+
+  return () => testEnv
+}
 /**
  * This is an easy way to load a test environment into a test suite
  */
@@ -247,12 +260,12 @@ export function loadTestEnvironment(
  * It does not start the components.
  */
 export function testCaseWithComponents(
-  testEnv: E2ETestEnvironment,
+  getTestEnv: () => E2ETestEnvironment,
   name: string,
   fn: (components: AppComponents) => Promise<void>
 ) {
   it(name, async () => {
-    const components = await testEnv.buildService()
+    const components = await getTestEnv().buildService()
     try {
       await fn(components)
     } finally {

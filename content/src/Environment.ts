@@ -98,8 +98,6 @@ export enum EnvironmentConfig {
   SERVER_PORT,
   LOG_REQUESTS,
   UPDATE_FROM_DAO_INTERVAL,
-  SYNC_WITH_SERVERS_INTERVAL,
-  CHECK_SYNC_RANGE,
   DECENTRALAND_ADDRESS,
   DEPLOYMENTS_DEFAULT_RATE_LIMIT_TTL,
   DEPLOYMENTS_DEFAULT_RATE_LIMIT_MAX,
@@ -207,16 +205,6 @@ export class EnvironmentBuilder {
       env,
       EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL,
       () => process.env.UPDATE_FROM_DAO_INTERVAL ?? ms('30m')
-    )
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.SYNC_WITH_SERVERS_INTERVAL,
-      () => process.env.SYNC_WITH_SERVERS_INTERVAL ?? ms('45s')
-    )
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.CHECK_SYNC_RANGE,
-      () => process.env.CHECK_SYNC_RANGE ?? ms('20m')
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DECENTRALAND_ADDRESS, () => DECENTRALAND_ADDRESS)
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DEPLOYMENTS_DEFAULT_RATE_LIMIT_TTL, () =>

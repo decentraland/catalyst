@@ -1,7 +1,7 @@
+import { Entity, EntityType, PointerChangesSyncDeployment } from '@dcl/schemas'
 import fetch from 'node-fetch'
 import { stub } from 'sinon'
 import { EnvironmentConfig } from '../../src/Environment'
-import { DeploymentWithAuthChain, Entity, EntityType } from '@dcl/schemas'
 import { SimpleContentItem } from '../../src/ports/contentStorage/contentStorage'
 import { Server } from '../../src/service/Server'
 import { randomEntity } from '../helpers/service/EntityTestFactory'
@@ -89,7 +89,7 @@ describe('Integration - Server', () => {
   it(`PointerChanges`, async () => {
     const response = await fetch(`${address}/pointer-changes?entityType=${entity1.type}`)
     expect(response.ok).toBe(true)
-    const { deltas }: { deltas: DeploymentWithAuthChain[] } = await response.json()
+    const { deltas }: { deltas: PointerChangesSyncDeployment[] } = await response.json()
     expect(Array.isArray(deltas)).toBe(true)
   })
 
