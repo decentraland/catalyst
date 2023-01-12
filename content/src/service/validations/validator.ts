@@ -20,10 +20,9 @@ import {
   createAvlBlockSearch,
   createBlockRepository,
   createCachingEthereumProvider,
-  EthereumProvider,
+  // EthereumProvider,
   loadTree
 } from '@dcl/block-indexer'
-import { ContractFactory, HTTPProvider, RequestManager } from 'eth-connect'
 import {
   checkerAbi,
   checkerContracts,
@@ -32,22 +31,23 @@ import {
   registrarContracts,
   thirdPartyContracts
 } from '@dcl/catalyst-contracts'
+// import { providers } from '@0xsequence/multicall'
+import { ethers } from 'ethers'
 
-const createEthereumProvider = (httpProvider: HTTPProvider): EthereumProvider => {
-  const reqMan = new RequestManager(httpProvider)
-  return {
-    getBlockNumber: async (): Promise<number> => {
-      return (await reqMan.eth_blockNumber()) as number
-    },
-    getBlock: async (block: number): Promise<{ timestamp: string | number }> => {
-      return await reqMan.eth_getBlockByNumber(block, false)
-    }
-  }
-}
+// const createEthereumProvider = (httpProvider: HTTPProvider): EthereumProvider => {
+//   const reqMan = new RequestManager(httpProvider)
+//   return {
+//     getBlockNumber: async (): Promise<number> => {
+//       return (await reqMan.eth_blockNumber()) as number
+//     },
+//     getBlock: async (block: number): Promise<{ timestamp: string | number }> => {
+//       return await reqMan.eth_getBlockByNumber(block, false)
+//     }
+//   }
+// }
 
-async function createL1Checker(provider: HTTPProvider, network: string): Promise<L1Checker> {
-  const factory = new ContractFactory(new RequestManager(provider), checkerAbi)
-  const checker = (await factory.at(checkerContracts[network])) as any
+async function createL1Checker(provider: ethers.providers.Provider, network: string): Promise<L1Checker> {
+  const checker = new ethers.Contract(checkerContracts[network], checkerAbi, provider)
   return {
     checkLAND(ethAddress: string, parcels: [number, number][], block: number): Promise<boolean[]> {
       const contracts = landContracts[network]
@@ -65,9 +65,8 @@ async function createL1Checker(provider: HTTPProvider, network: string): Promise
   }
 }
 
-async function createL2Checker(provider: HTTPProvider, network: string): Promise<L2Checker> {
-  const factory = new ContractFactory(new RequestManager(provider), checkerAbi)
-  const checker = (await factory.at(checkerContracts[network])) as any
+async function createL2Checker(provider: ethers.providers.Provider, network: string): Promise<L2Checker> {
+  const checker = new ethers.Contract(checkerContracts[network], checkerAbi, provider)
 
   const { v2, v3 } = collectionFactoryContracts[network]
 
@@ -91,18 +90,30 @@ async function createL2Checker(provider: HTTPProvider, network: string): Promise
 }
 
 export async function createSubGraphsComponent(
-  components: Pick<AppComponents, 'env' | 'logs' | 'metrics' | 'fetcher' | 'ethereumProvider' | 'maticProvider'>
+  components: Pick<AppComponents, 'env' | 'logs' | 'metrics' | 'fetcher'>
 ): Promise<SubGraphs> {
   const config: IConfigComponent = createConfigComponent({}) // TODO Get config from higher level
   const baseComponents = { config, fetch: components.fetcher, metrics: components.metrics, logs: components.logs }
 
-  const l1EthereumProvider: EthereumProvider = createEthereumProvider(components.ethereumProvider)
-  const l2EthereumProvider: EthereumProvider = createEthereumProvider(components.maticProvider)
+  const l1Network: string = components.env.getConfig(EnvironmentConfig.ETH_NETWORK)
+  const l2Network = l1Network === 'mainnet' ? 'polygon' : 'mumbai'
+
+  const ethereumProvider = new ethers.providers.JsonRpcProvider(
+    `https://rpc.decentraland.org/${encodeURIComponent(l1Network)}?project=catalyst-content`
+  )
+  const maticProvider = new ethers.providers.JsonRpcProvider(
+    l1Network === 'mainnet'
+      ? `https://rpc.decentraland.org/polygon?project=catalyst-content`
+      : `https://rpc.decentraland.org/mumbai?project=catalyst-content`
+  )
+
+  // const l1EthereumProvider: EthereumProvider = createEthereumProvider(components.ethereumProvider)
+  // const l2EthereumProvider: EthereumProvider = createEthereumProvider(components.maticProvider)
   const l1BlockSearch = createAvlBlockSearch({
     blockRepository: createBlockRepository({
       metrics: components.metrics,
       logs: components.logs,
-      ethereumProvider: createCachingEthereumProvider(l1EthereumProvider)
+      ethereumProvider: createCachingEthereumProvider(ethereumProvider)
     }),
     metrics: components.metrics,
     logs: components.logs
@@ -111,7 +122,7 @@ export async function createSubGraphsComponent(
     blockRepository: createBlockRepository({
       metrics: components.metrics,
       logs: components.logs,
-      ethereumProvider: createCachingEthereumProvider(l2EthereumProvider)
+      ethereumProvider: createCachingEthereumProvider(maticProvider)
     }),
     metrics: components.metrics,
     logs: components.logs
@@ -134,22 +145,19 @@ export async function createSubGraphsComponent(
       console.log(`failed to load cache file ${file}`, e.toString())
     }
   }
-  const l1Network: string = components.env.getConfig(EnvironmentConfig.ETH_NETWORK)
-  const l2Network = l1Network === 'mainnet' ? 'polygon' : 'mumbai'
-
   await warmUpCache(l1BlockSearch.tree, l1Network)
   await warmUpCache(l2BlockSearch.tree, l2Network)
 
   return {
     L1: {
-      checker: await createL1Checker(components.ethereumProvider, l1Network),
+      checker: await createL1Checker(ethereumProvider, l1Network),
       collections: await createSubgraphComponent(
         baseComponents,
         components.env.getConfig(EnvironmentConfig.COLLECTIONS_L1_SUBGRAPH_URL)
       )
     },
     L2: {
-      checker: await createL2Checker(components.maticProvider, l2Network),
+      checker: await createL2Checker(maticProvider, l2Network),
       collections: await createSubgraphComponent(
         baseComponents,
         components.env.getConfig(EnvironmentConfig.COLLECTIONS_L2_SUBGRAPH_URL)
