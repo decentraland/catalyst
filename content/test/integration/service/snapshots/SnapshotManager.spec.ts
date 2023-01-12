@@ -3,6 +3,7 @@ import { processDeploymentsInStream } from '@dcl/snapshots-fetcher/dist/file-pro
 import { createConfigComponent } from '@well-known-components/env-config-provider'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { createLogComponent } from '@well-known-components/logger'
+import { setupTestEnvironment } from '../../E2ETestEnvironment'
 import { inspect } from 'util'
 import { EnvironmentBuilder } from '../../../../src/Environment'
 import { stopAllComponents } from '../../../../src/logic/components-lifecycle'
@@ -11,10 +12,11 @@ import { isSuccessfulDeployment } from '../../../../src/service/Service'
 import { SnapshotMetadata } from '../../../../src/service/snapshots/SnapshotManager'
 import { AppComponents } from '../../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
-import { loadStandaloneTestEnvironment } from '../../E2ETestEnvironment'
 import { buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo, EntityCombo } from '../../E2ETestUtils'
 
-loadStandaloneTestEnvironment()('Integration - Snapshot Manager', (testEnv) => {
+describe('Integration - Snapshot Manager', () => {
+  const getTestEnv = setupTestEnvironment()
+
   const P1 = 'X1,Y1',
     P2 = 'X2,Y2'
   let E1: EntityCombo, E2: EntityCombo
@@ -31,7 +33,7 @@ loadStandaloneTestEnvironment()('Integration - Snapshot Manager', (testEnv) => {
   })
 
   beforeEach(async () => {
-    const baseEnv = await testEnv.getEnvForNewDatabase()
+    const baseEnv = await getTestEnv().getEnvForNewDatabase()
     components = await new EnvironmentBuilder(baseEnv).buildConfigAndComponents()
     makeNoopValidator(components)
     makeNoopServerValidator(components)

@@ -12,16 +12,17 @@ import {
   assertThereIsAFailedDeployment,
   buildDeployment
 } from '../E2EAssertions'
-import { loadTestEnvironment } from '../E2ETestEnvironment'
+import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { awaitUntil, buildDeployData, buildDeployDataAfterEntity, createIdentity } from '../E2ETestUtils'
 import { TestProgram } from '../TestProgram'
 
-loadTestEnvironment()('End 2 end - Error handling', (testEnv) => {
+describe('End 2 end - Error handling', () => {
   const identity = createIdentity()
+  const getTestEnv = setupTestEnvironment()
   let server1: TestProgram, server2: TestProgram
 
   beforeEach(async () => {
-    ;[server1, server2] = await testEnv
+    ;[server1, server2] = await getTestEnv()
       .configServer()
       .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
       .withConfig(EnvironmentConfig.REQUEST_TTL_BACKWARDS, ms('2s'))

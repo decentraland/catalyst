@@ -2,30 +2,31 @@ import fetch from 'node-fetch'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { createFsComponent } from '../../../src/ports/fs'
 import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
-import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
 import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
 import { TestProgram } from '../TestProgram'
-import FormData = require("form-data")
+import FormData = require('form-data')
+import { setupTestEnvironment } from '../E2ETestEnvironment'
 
 interface ActivePointersRow {
-  entity_id: string,
+  entity_id: string
   pointer: string
 }
 
 interface DeploymentsRow {
-  entity_id: string,
+  entity_id: string
   deleter_entity_id: string
 }
 
 const fs = createFsComponent()
 
-loadStandaloneTestEnvironment()('Integration - Create entities', (testEnv) => {
+describe('Integration - Create entities', () => {
+  const getTestEnv = setupTestEnvironment()
 
   let server: TestProgram
 
   beforeEach(async () => {
     // Initialize server
-    server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+    server = await getTestEnv().configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
     makeNoopValidator(server.components)
     makeNoopServerValidator(server.components)
     await server.startProgram()
@@ -128,7 +129,6 @@ loadStandaloneTestEnvironment()('Integration - Create entities', (testEnv) => {
     await assertQueryResultPointers(overwriteSceneEntityId, ['0,0', '1,0'])
   })
 
-
   it('when overwriting multiple scenes, unused pointers should be deleted from active-pointers table', async () => {
     // Create scene
     let form = createForm(originalSceneEntityId, 'scene_original.json')
@@ -187,19 +187,25 @@ loadStandaloneTestEnvironment()('Integration - Create entities', (testEnv) => {
   })
 
   async function assertQueryResultPointers(entityId: string, pointers: string[]) {
-    let queryResult = await server.components.database.query<ActivePointersRow>(`select * from active_pointers where entity_id='${entityId}'`)
+    let queryResult = await server.components.database.query<ActivePointersRow>(
+      `select * from active_pointers where entity_id='${entityId}'`
+    )
     expect(queryResult.rowCount).toBe(pointers.length)
     pointers.forEach((pointer, index) => expect(queryResult.rows[index].pointer).toBe(pointer))
   }
 
   async function assertQueryResultEntityIds(pointer: string, entityIds: string[]) {
-    let queryResult = await server.components.database.query<ActivePointersRow>(`select * from active_pointers where pointer='${pointer}'`)
+    let queryResult = await server.components.database.query<ActivePointersRow>(
+      `select * from active_pointers where pointer='${pointer}'`
+    )
     expect(queryResult.rowCount).toBe(entityIds.length)
     entityIds.forEach((entityId, index) => expect(queryResult.rows[index].entity_id).toBe(entityId))
   }
 
   async function assertDeleterDeployment(entityId: string, deleterDeploymentId: string) {
-    let queryResult = await server.components.database.query<DeploymentsRow>(`select dep1.*, dep2.entity_id as deleter_entity_id from deployments dep1 inner join deployments dep2 on dep1.deleter_deployment = dep2.id where dep1.entity_id='${entityId}'`)
+    let queryResult = await server.components.database.query<DeploymentsRow>(
+      `select dep1.*, dep2.entity_id as deleter_entity_id from deployments dep1 inner join deployments dep2 on dep1.deleter_deployment = dep2.id where dep1.entity_id='${entityId}'`
+    )
     expect(queryResult.rowCount).toBe(1)
     expect(queryResult.rows[0].deleter_entity_id).toBe(deleterDeploymentId)
   }
@@ -219,18 +225,21 @@ function createForm(entityId: string, filename: string) {
   // Add authChain. Just as a example
   const authChain = [
     {
-      type: "SIGNER",
-      payload: "0x716954738e57686a08902d9dd586e813490fee23"
+      type: 'SIGNER',
+      payload: '0x716954738e57686a08902d9dd586e813490fee23'
     },
     {
-      type: "ECDSA_EPHEMERAL",
-      payload: "Decentraland Login\nEphemeral address: 0x90a43461d3e970785B945FFe8f7628F2BC962D6a\nExpiration: 2021-07-10T20:55:42.215Z",
-      signature: "0xe64e46fdd7d8789c0debec54422ae77e31b77e5a28287e072998e1114e252c57328c17756400d321e9e77032347c9d05e63fb59a3b6c3ab754565f9db86b8c481b"
+      type: 'ECDSA_EPHEMERAL',
+      payload:
+        'Decentraland Login\nEphemeral address: 0x90a43461d3e970785B945FFe8f7628F2BC962D6a\nExpiration: 2021-07-10T20:55:42.215Z',
+      signature:
+        '0xe64e46fdd7d8789c0debec54422ae77e31b77e5a28287e072998e1114e252c57328c17756400d321e9e77032347c9d05e63fb59a3b6c3ab754565f9db86b8c481b'
     },
     {
-      type: "ECDSA_SIGNED_ENTITY",
-      payload: "QmNMZBy7khBxdigikA8mcJMyv6yeBXfMv3iAcUiBr6n72C",
-      signature: "0xbed22719dcdc19580353108027c41c65863404879592c65014d806efa961c629777adc76986193eaee4e48f278ec59feb1c289827254230af85b2955157ec8061b"
+      type: 'ECDSA_SIGNED_ENTITY',
+      payload: 'QmNMZBy7khBxdigikA8mcJMyv6yeBXfMv3iAcUiBr6n72C',
+      signature:
+        '0xbed22719dcdc19580353108027c41c65863404879592c65014d806efa961c629777adc76986193eaee4e48f278ec59feb1c289827254230af85b2955157ec8061b'
     }
   ]
   form.append('authChain', JSON.stringify(authChain))

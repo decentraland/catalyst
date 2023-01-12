@@ -1,13 +1,18 @@
 import fetch from 'node-fetch'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
-import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
+import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
 import { TestProgram } from '../TestProgram'
 
-loadStandaloneTestEnvironment()('Integration - Get Active Entities By Content Hash', (testEnv) => {
+describe('Integration - Get Active Entities By Content Hash', () => {
+  const getTestEnv = setupTestEnvironment()
+
   it("When the deployment doesn't exist returns 404", async () => {
-    const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+    const server = await getTestEnv()
+      .configServer()
+      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+      .andBuild()
 
     await server.startProgram()
 
@@ -21,7 +26,10 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities By Content Ha
   })
 
   it('When the deployment exists returns the entity id', async () => {
-    const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+    const server = await getTestEnv()
+      .configServer()
+      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+      .andBuild()
 
     makeNoopValidator(server.components)
 

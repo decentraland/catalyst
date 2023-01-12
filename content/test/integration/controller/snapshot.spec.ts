@@ -1,11 +1,16 @@
 import fetch from 'node-fetch'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
-import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
+import { setupTestEnvironment } from '../E2ETestEnvironment'
 
-loadStandaloneTestEnvironment()('Integration - Snapshot', (testEnv) => {
+describe('Integration - Snapshot', () => {
+  const getTestEnv = setupTestEnvironment()
+
   it('returns 503 when the snapshot has no metadata', async () => {
-    const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+    const server = await getTestEnv()
+      .configServer()
+      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+      .andBuild()
     jest.spyOn(server.components.snapshotManager, 'getFullSnapshotMetadata').mockReturnValue(undefined)
 
     makeNoopValidator(server.components)

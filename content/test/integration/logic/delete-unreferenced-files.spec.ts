@@ -9,31 +9,30 @@ import { bufferToStream } from '../../../src/ports/contentStorage/contentStorage
 import { ServiceImpl } from '../../../src/service/ServiceImpl'
 import { AppComponents } from '../../../src/types'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
-import { loadStandaloneTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
+import { setupTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
 import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
 
 const tmpRootDir = mkdtempSync(path.join(os.tmpdir(), 'delete-unreferenced-files-'))
 
-loadStandaloneTestEnvironment({ [EnvironmentConfig.STORAGE_ROOT_FOLDER]: tmpRootDir })('Delete unreferenced files - ', (testEnv) => {
-  const fileContent = Buffer.from("some random content")
+describe('Delete unreferenced files - ', () => {
+  const getTestEnv = setupTestEnvironment({ [EnvironmentConfig.STORAGE_ROOT_FOLDER]: tmpRootDir })
+
+  const fileContent = Buffer.from('some random content')
   beforeEach(() => mkdirSync(tmpRootDir, { recursive: true }))
   afterEach(() => rmSync(tmpRootDir, { recursive: true, force: false }))
 
-  testCaseWithComponents(
-    testEnv,
-    'should delete unreferenced snapshot',
-    async (components) => {
-      const unreferencedFileHash = 'a-hash'
-      await components.storage.storeStream(unreferencedFileHash, bufferToStream(fileContent))
-      expect(await components.storage.exist(unreferencedFileHash)).toBeTruthy()
-      await deleteUnreferencedFiles(components)
-      expect(await components.storage.exist(unreferencedFileHash)).toBeFalsy()
-    }
-  )
+  testCaseWithComponents(getTestEnv, 'should delete unreferenced snapshot', async (components) => {
+    const unreferencedFileHash = 'a-hash'
+    await components.storage.storeStream(unreferencedFileHash, bufferToStream(fileContent))
+    expect(await components.storage.exist(unreferencedFileHash)).toBeTruthy()
+    await deleteUnreferencedFiles(components)
+    expect(await components.storage.exist(unreferencedFileHash)).toBeFalsy()
+  })
 
   it('should not delete entity file', async () => {
-    const server = await testEnv.configServer()
+    const server = await getTestEnv()
+      .configServer()
       .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
       .andBuild()
     const components = server.components
@@ -45,7 +44,10 @@ loadStandaloneTestEnvironment({ [EnvironmentConfig.STORAGE_ROOT_FOLDER]: tmpRoot
 
     await server.deployEntity(deployResult.deployData)
 
-    const contentsByHash: Map<string, Uint8Array> = await ServiceImpl.hashFiles(deployResult.deployData.files, deployResult.deployData.entityId)
+    const contentsByHash: Map<string, Uint8Array> = await ServiceImpl.hashFiles(
+      deployResult.deployData.files,
+      deployResult.deployData.entityId
+    )
     const contentFileHashes = Array.from(contentsByHash.keys())
 
     await deleteUnreferencedFiles(components)
@@ -55,7 +57,10 @@ loadStandaloneTestEnvironment({ [EnvironmentConfig.STORAGE_ROOT_FOLDER]: tmpRoot
   })
 
   it('should not delete entity file and its content file', async () => {
-    const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+    const server = await getTestEnv()
+      .configServer()
+      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+      .andBuild()
     const components = server.components
     makeNoopValidator(components)
     await server.startProgram()
@@ -67,7 +72,10 @@ loadStandaloneTestEnvironment({ [EnvironmentConfig.STORAGE_ROOT_FOLDER]: tmpRoot
 
     await server.deployEntity(deployResult.deployData)
 
-    const contentsByHash: Map<string, Uint8Array> = await ServiceImpl.hashFiles(deployResult.deployData.files, deployResult.deployData.entityId)
+    const contentsByHash: Map<string, Uint8Array> = await ServiceImpl.hashFiles(
+      deployResult.deployData.files,
+      deployResult.deployData.entityId
+    )
     const contentFileHashes = Array.from(contentsByHash.keys())
 
     await deleteUnreferencedFiles(components)
@@ -78,31 +86,30 @@ loadStandaloneTestEnvironment({ [EnvironmentConfig.STORAGE_ROOT_FOLDER]: tmpRoot
     }
   })
 
-  testCaseWithComponents(
-    testEnv,
-    'should not delete snapshot file',
-    async (components) => {
-      // the clock is mocked so only one snapshot is created
-      jest.spyOn(components.clock, 'now').mockReturnValue(1577836800000 + MS_PER_DAY)
-      await startSnapshotNeededComponents(components)
+  testCaseWithComponents(getTestEnv, 'should not delete snapshot file', async (components) => {
+    // the clock is mocked so only one snapshot is created
+    jest.spyOn(components.clock, 'now').mockReturnValue(1577836800000 + MS_PER_DAY)
+    await startSnapshotNeededComponents(components)
 
-      const snapshots = components.snapshotGenerator.getCurrentSnapshots()
+    const snapshots = components.snapshotGenerator.getCurrentSnapshots()
 
-      expect(snapshots).toHaveLength(1)
+    expect(snapshots).toHaveLength(1)
 
-      if (snapshots && snapshots.length > 0) {
-        const { hash } = snapshots[0]
-        expect(await components.storage.exist(hash)).toBeTruthy()
-        await deleteUnreferencedFiles(components)
-        expect(await components.storage.exist(hash)).toBeTruthy()
-      } else {
-        expect(true).toBeFalsy()
-      }
+    if (snapshots && snapshots.length > 0) {
+      const { hash } = snapshots[0]
+      expect(await components.storage.exist(hash)).toBeTruthy()
+      await deleteUnreferencedFiles(components)
+      expect(await components.storage.exist(hash)).toBeTruthy()
+    } else {
+      expect(true).toBeFalsy()
     }
-  )
+  })
 
   it('should delete unreferenced files and not referenced ones', async () => {
-    const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+    const server = await getTestEnv()
+      .configServer()
+      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+      .andBuild()
     const components = server.components
     makeNoopValidator(components)
     await server.startProgram()
@@ -113,7 +120,10 @@ loadStandaloneTestEnvironment({ [EnvironmentConfig.STORAGE_ROOT_FOLDER]: tmpRoot
 
     await server.deployEntity(deployResult.deployData)
 
-    const contentsByHash: Map<string, Uint8Array> = await ServiceImpl.hashFiles(deployResult.deployData.files, deployResult.deployData.entityId)
+    const contentsByHash: Map<string, Uint8Array> = await ServiceImpl.hashFiles(
+      deployResult.deployData.files,
+      deployResult.deployData.entityId
+    )
     const contentFileHashes = Array.from(contentsByHash.keys())
 
     const unreferencedFileHash = 'a-hash'
@@ -129,8 +139,9 @@ loadStandaloneTestEnvironment({ [EnvironmentConfig.STORAGE_ROOT_FOLDER]: tmpRoot
   })
 })
 
-
-async function startSnapshotNeededComponents(components: Pick<AppComponents, 'logs' | 'database' | 'storage' | 'fs' | 'snapshotGenerator'>) {
+async function startSnapshotNeededComponents(
+  components: Pick<AppComponents, 'logs' | 'database' | 'storage' | 'fs' | 'snapshotGenerator'>
+) {
   const startOptions = { started: jest.fn(), live: jest.fn(), getComponents: jest.fn() }
   await startComponent(components.database, startOptions)
   await startComponent(components.fs as IBaseComponent, startOptions)
