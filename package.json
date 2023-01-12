@@ -11,6 +11,7 @@
   "scripts": {
     "build": "yarn list-mismatches && yarn workspaces run build",
     "build:content": "yarn list-mismatches && yarn workspace @catalyst/content-server build",
+    "build:content:sourcemap": "yarn list-mismatches && yarn workspace @catalyst/content-server build:sourcemap",
     "build:lambdas": "yarn list-mismatches && yarn workspace @catalyst/lambdas-server build",
     "cleanup": "yarn workspaces run cleanup && rm -rf node_modules",
     "lint:check": "eslint '**/*.{js,ts}'",
@@ -48,13 +49,10 @@
     "eslint-plugin-prettier": "4.2.1",
     "lint-staged": "13.0.3",
     "prettier": "2.7.1",
-    "syncpack": "8.2.4",
-    "typescript": "^4.7.4"
+    "typescript": "^4.7.4",
+    "syncpack": "8.2.4"
   },
   "jest-junit": {
     "addFileAttribute": "true"
-  },
-  "dependencies": {
-    "@dcl/block-indexer": "^1.0.0-20221223191317.commit-2d753e7"
   }
 }

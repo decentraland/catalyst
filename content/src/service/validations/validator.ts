@@ -4,7 +4,8 @@ import {
   ExternalCalls,
   SubGraphs,
   Validator as IValidatorComponent,
-  Checker
+  L1Checker,
+  L2Checker
 } from '@dcl/content-validator'
 import { Authenticator } from '@dcl/crypto'
 import { EnvironmentConfig } from '../../Environment'
@@ -23,7 +24,13 @@ import {
   loadTree
 } from '@dcl/block-indexer'
 import { ContractFactory, HTTPProvider, RequestManager } from 'eth-connect'
-import { checkerAbi, checkerContracts } from '@dcl/catalyst-contracts'
+import {
+  checkerAbi,
+  checkerContracts,
+  collectionFactoryContracts,
+  landContracts,
+  thirdPartyContracts
+} from '@dcl/catalyst-contracts'
 
 const createEthereumProvider = (httpProvider: HTTPProvider): EthereumProvider => {
   const reqMan = new RequestManager(httpProvider)
@@ -37,19 +44,73 @@ const createEthereumProvider = (httpProvider: HTTPProvider): EthereumProvider =>
   }
 }
 
-type CheckerContracts = {
-  landContractAddress: string
-  stateContractAddress: string
-  checkerContractAddress: string
+// type CheckerContracts = {
+//   landContractAddress: string
+//   stateContractAddress: string
+//   checkerContractAddress: string
+// }
+
+// async function createChecker(ethereumProvider: HTTPProvider, contracts: CheckerContracts): Promise<Checker> {
+//   const factory = new ContractFactory(new RequestManager(ethereumProvider), checkerAbi)
+//   const checker = (await factory.at(contracts.checkerContractAddress)) as any
+
+//   return {
+//     checkLAND: (ethAddress: string, x: number, y: number, block: number) => {
+//       return checker.checkLAND(ethAddress, contracts.landContractAddress, contracts.stateContractAddress, x, y, block)
+//     }
+//   }
+// }
+
+async function createL1Checker(provider: HTTPProvider, network: string): Promise<L1Checker> {
+  const factory = new ContractFactory(new RequestManager(provider), checkerAbi)
+  const checker = (await factory.at(checkerContracts[network])) as any
+  // const checker = new ethers.Contract(
+  //   checkerContracts[network],
+  //   checkerAbi,
+  //   provider
+  // ) as any as ICheckerContract
+  return {
+    checkLAND(ethAddress: string, parcels: [number, number][], block: number): Promise<boolean[]> {
+      const contracts = landContracts[network]
+      return Promise.all(
+        parcels.map(([x, y]) =>
+          checker.checkLAND(ethAddress, contracts.landContractAddress, contracts.stateContractAddress, x, y, {
+            blockTag: block
+          })
+        )
+      )
+    }
+  }
 }
 
-async function createChecker(ethereumProvider: HTTPProvider, contracts: CheckerContracts): Promise<Checker> {
-  const factory = new ContractFactory(new RequestManager(ethereumProvider), checkerAbi)
-  const checker = (await factory.at(contracts.checkerContractAddress)) as any
+async function createL2Checker(provider: HTTPProvider, network: string): Promise<L2Checker> {
+  const factory = new ContractFactory(new RequestManager(provider), checkerAbi)
+  const checker = (await factory.at(checkerContracts[network])) as any
+  // const checker = new ethers.Contract(
+  //   checkerContracts[network],
+  //   checkerAbi,
+  //   multicallProvider
+  // ) as any as ICheckerContract
+
+  const { v2, v3 } = collectionFactoryContracts[network]
+
+  const factories = [v2, v3]
 
   return {
-    checkLAND: (ethAddress: string, x: number, y: number, block: number) => {
-      return checker.checkLAND(ethAddress, contracts.landContractAddress, contracts.stateContractAddress, x, y, block)
+    async validateWearables(
+      ethAddress: string,
+      contractAddress: string,
+      assetId: string,
+      hash: string,
+      block: number
+    ): Promise<boolean> {
+      return checker.validateWearables(ethAddress, factories, contractAddress, assetId, hash, { blockTag: block })
+    },
+    validateThirdParty(ethAddress: string, tpId: string, root: Buffer, block: number): Promise<boolean> {
+      const registry = thirdPartyContracts[network]
+      return checker.validateThirdParty(ethAddress, registry, tpId, new Uint8Array(root), {
+        blockTag: block
+      })
     }
   }
 }
@@ -98,14 +159,15 @@ export async function createSubGraphsComponent(
       console.log(`failed to load cache file ${file}`, e.toString())
     }
   }
-  const ethNetwork: string = components.env.getConfig(EnvironmentConfig.ETH_NETWORK)
+  const l1Network: string = components.env.getConfig(EnvironmentConfig.ETH_NETWORK)
+  const l2Network = l1Network === 'mainnet' ? 'polygon' : 'mumbai'
 
-  await warmUpCache(l1BlockSearch.tree, ethNetwork)
-  await warmUpCache(l2BlockSearch.tree, ethNetwork === 'mainnet' ? 'polygon' : 'mumbai')
+  await warmUpCache(l1BlockSearch.tree, l1Network)
+  await warmUpCache(l2BlockSearch.tree, l2Network)
 
   return {
     L1: {
-      checker: await createChecker(components.ethereumProvider, checkerContracts[ethNetwork === 'mainnet' ? '1' : '5']),
+      checker: await createL1Checker(components.ethereumProvider, l1Network),
       collections: await createSubgraphComponent(
         baseComponents,
         components.env.getConfig(EnvironmentConfig.COLLECTIONS_L1_SUBGRAPH_URL)
@@ -116,13 +178,10 @@ export async function createSubGraphsComponent(
       )
     },
     L2: {
+      checker: await createL2Checker(components.maticProvider, l2Network),
       collections: await createSubgraphComponent(
         baseComponents,
         components.env.getConfig(EnvironmentConfig.COLLECTIONS_L2_SUBGRAPH_URL)
-      ),
-      thirdPartyRegistry: await createSubgraphComponent(
-        baseComponents,
-        components.env.getConfig(EnvironmentConfig.THIRD_PARTY_REGISTRY_L2_SUBGRAPH_URL)
       )
     },
     l1BlockSearch,
