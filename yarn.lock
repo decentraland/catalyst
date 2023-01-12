@@ -348,14 +348,14 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@^4.1.0":
-  version "4.1.0"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.1.0.tgz#a23e785dafac91146c17c582c345949ab9fa41ab"
-  integrity sha512-S4EUOA1fLGKLBbc78Q4XlEZo4QUUWH7jyUI8Dmm7BQdRL+NHb9YQlmYmOHfFWf5JZmWXXhv+OaP+qnP0Tmeawg==
+"@dcl/content-validator@^4.2.0":
+  version "4.2.0"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.2.0.tgz#de71e3cd662917b6fd7ab4c2905ba14bf9d07fa3"
+  integrity sha512-5aYBf9CQMZY+BYPBIaHmi/l646j8+q8R4raJ1PuP5evv4/GXwFWrA4TkkPFjItuO3VTIm6FLkZ4+N8WGQF1Ouw==
   dependencies:
     "@dcl/content-hash-tree" "^1.1.3"
     "@dcl/hashing" "1.1.3"
-    "@dcl/schemas" "^5.4.2"
+    "@dcl/schemas" "^6.4.0"
     "@dcl/urn-resolver" "2.0.3"
     "@well-known-components/interfaces" "1.1.3"
     "@well-known-components/thegraph-component" "^1.2.0"
@@ -389,10 +389,10 @@
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
 
-"@dcl/schemas@^6.2.0":
-  version "6.2.0"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-6.2.0.tgz#0ce52cc92050097804cd46b058969b4bb122301f"
-  integrity sha512-/6st9o23cUWM6fSUBa1fVt193Fm8fhTGlGJdJnanK3094/ab5lr8lT0HSO5bscKqjwwWlaKpTEfKHMYsCmMnhg==
+"@dcl/schemas@^6.2.0", "@dcl/schemas@^6.4.0":
+  version "6.4.0"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-6.4.0.tgz#9fae79e04575f63b9613afc485b7640d947cc045"
+  integrity sha512-azsrQxf5pIhIcHkhiWeAOXq6wEFuhv37RHS4lpHKGAHYNVcgGFeP5E0PCaQcmBd8AFM5uqeIjcw2xB7sTCQuAg==
   dependencies:
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
@@ -1672,19 +1672,10 @@
     on-finished "^2.4.1"
     path-to-regexp "^6.2.1"
 
-"@well-known-components/interfaces@1.1.3", "@well-known-components/interfaces@^1.1.3":
+"@well-known-components/interfaces@1.1.3", "@well-known-components/interfaces@^1.1.0", "@well-known-components/interfaces@^1.1.1", "@well-known-components/interfaces@^1.1.3":
   version "1.1.3"
   resolved "https://registry.yarnpkg.com/@well-known-components/interfaces/-/interfaces-1.1.3.tgz#7f69c4f82366587a9adfb1e032e228fbe5852b26"
   integrity sha512-hQvm9Vzx0VN85thbO7OudjylEUVzD39dEue2irKnfvZKPfpKxGzt0u9t47egt6bYo1DeUr6JkBtWIckXpnlFEQ==
-  dependencies:
-    "@types/node" "^16.11.19"
-    "@types/node-fetch" "^2.5.12"
-    typed-url-params "^1.0.1"
-
-"@well-known-components/interfaces@^1.1.0", "@well-known-components/interfaces@^1.1.1":
-  version "1.1.2"
-  resolved "https://registry.yarnpkg.com/@well-known-components/interfaces/-/interfaces-1.1.2.tgz#754ad83ffd434a63d57773be69177bce9869c554"
-  integrity sha512-hLqjVXZPHObloSbscauQWP9LI1r0jqW/kGlpJ+cZxEOhclvG4ot0JIiu4YeK436YgbjRYJxsGOkJGl37RLvKOg==
   dependencies:
     "@types/node" "^16.11.19"
     "@types/node-fetch" "^2.5.12"
