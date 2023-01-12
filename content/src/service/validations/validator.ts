@@ -20,7 +20,7 @@ import {
   createAvlBlockSearch,
   createBlockRepository,
   createCachingEthereumProvider,
-  // EthereumProvider,
+  EthereumProvider,
   loadTree
 } from '@dcl/block-indexer'
 import {
@@ -33,18 +33,19 @@ import {
 } from '@dcl/catalyst-contracts'
 // import { providers } from '@0xsequence/multicall'
 import { ethers } from 'ethers'
+import { HTTPProvider, RequestManager } from 'eth-connect'
 
-// const createEthereumProvider = (httpProvider: HTTPProvider): EthereumProvider => {
-//   const reqMan = new RequestManager(httpProvider)
-//   return {
-//     getBlockNumber: async (): Promise<number> => {
-//       return (await reqMan.eth_blockNumber()) as number
-//     },
-//     getBlock: async (block: number): Promise<{ timestamp: string | number }> => {
-//       return await reqMan.eth_getBlockByNumber(block, false)
-//     }
-//   }
-// }
+const createEthereumProvider = (httpProvider: HTTPProvider): EthereumProvider => {
+  const reqMan = new RequestManager(httpProvider)
+  return {
+    getBlockNumber: async (): Promise<number> => {
+      return (await reqMan.eth_blockNumber()) as number
+    },
+    getBlock: async (block: number): Promise<{ timestamp: string | number }> => {
+      return await reqMan.eth_getBlockByNumber(block, false)
+    }
+  }
+}
 
 async function createL1Checker(provider: ethers.providers.Provider, network: string): Promise<L1Checker> {
   const checker = new ethers.Contract(checkerContracts[network], checkerAbi, provider)
@@ -90,7 +91,7 @@ async function createL2Checker(provider: ethers.providers.Provider, network: str
 }
 
 export async function createSubGraphsComponent(
-  components: Pick<AppComponents, 'env' | 'logs' | 'metrics' | 'fetcher'>
+  components: Pick<AppComponents, 'env' | 'logs' | 'metrics' | 'fetcher' | 'ethereumProvider' | 'maticProvider'>
 ): Promise<SubGraphs> {
   const config: IConfigComponent = createConfigComponent({}) // TODO Get config from higher level
   const baseComponents = { config, fetch: components.fetcher, metrics: components.metrics, logs: components.logs }
@@ -107,13 +108,13 @@ export async function createSubGraphsComponent(
       : `https://rpc.decentraland.org/mumbai?project=catalyst-content`
   )
 
-  // const l1EthereumProvider: EthereumProvider = createEthereumProvider(components.ethereumProvider)
-  // const l2EthereumProvider: EthereumProvider = createEthereumProvider(components.maticProvider)
+  const l1EthereumProvider: EthereumProvider = createEthereumProvider(components.ethereumProvider)
+  const l2EthereumProvider: EthereumProvider = createEthereumProvider(components.maticProvider)
   const l1BlockSearch = createAvlBlockSearch({
     blockRepository: createBlockRepository({
       metrics: components.metrics,
       logs: components.logs,
-      ethereumProvider: createCachingEthereumProvider(ethereumProvider)
+      ethereumProvider: createCachingEthereumProvider(l1EthereumProvider)
     }),
     metrics: components.metrics,
     logs: components.logs
@@ -122,7 +123,7 @@ export async function createSubGraphsComponent(
     blockRepository: createBlockRepository({
       metrics: components.metrics,
       logs: components.logs,
-      ethereumProvider: createCachingEthereumProvider(maticProvider)
+      ethereumProvider: createCachingEthereumProvider(l2EthereumProvider)
     }),
     metrics: components.metrics,
     logs: components.logs
