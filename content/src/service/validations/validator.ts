@@ -23,14 +23,6 @@ import {
   EthereumProvider,
   loadTree
 } from '@dcl/block-indexer'
-import {
-  checkerAbi,
-  checkerContracts
-  // collectionFactoryContracts,
-  // landContracts,
-  // registrarContracts,
-  // thirdPartyContracts
-} from '@dcl/catalyst-contracts'
 import { ethers } from 'ethers'
 import { HTTPProvider, RequestManager } from 'eth-connect'
 
@@ -103,10 +95,10 @@ export async function createSubGraphsComponent(
   const l1Network: string = components.env.getConfig(EnvironmentConfig.ETH_NETWORK)
   const l2Network = l1Network === 'mainnet' ? 'polygon' : 'mumbai'
 
-  const ethereumProvider = new ethers.providers.JsonRpcProvider(
+  const ethereumProvider = new ethers.providers.StaticJsonRpcProvider(
     `https://rpc.decentraland.org/${encodeURIComponent(l1Network)}?project=catalyst-content`
   )
-  const maticProvider = new ethers.providers.JsonRpcProvider(
+  const maticProvider = new ethers.providers.StaticJsonRpcProvider(
     l1Network === 'mainnet'
       ? `https://rpc.decentraland.org/polygon?project=catalyst-content`
       : `https://rpc.decentraland.org/mumbai?project=catalyst-content`
