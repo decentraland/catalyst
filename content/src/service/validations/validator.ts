@@ -47,7 +47,7 @@ const createEthereumProvider = (httpProvider: HTTPProvider): EthereumProvider =>
 }
 
 async function createL1Checker(provider: ethers.providers.Provider, network: string): Promise<L1Checker> {
-  new ethers.Contract(checkerContracts[network], checkerAbi, provider)
+  // new ethers.Contract(checkerContracts[network], checkerAbi, provider)
   return {
     checkLAND(ethAddress: string, parcels: [number, number][], block: number): Promise<boolean[]> {
       // const contracts = landContracts[network]
@@ -69,7 +69,7 @@ async function createL1Checker(provider: ethers.providers.Provider, network: str
 }
 
 async function createL2Checker(provider: ethers.providers.Provider, network: string): Promise<L2Checker> {
-  new ethers.Contract(checkerContracts[network], checkerAbi, provider)
+  // new ethers.Contract(checkerContracts[network], checkerAbi, provider)
 
   // const { v2, v3 } = collectionFactoryContracts[network]
 
