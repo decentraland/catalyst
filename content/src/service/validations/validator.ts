@@ -25,13 +25,12 @@ import {
 } from '@dcl/block-indexer'
 import {
   checkerAbi,
-  checkerContracts,
-  collectionFactoryContracts,
-  landContracts,
-  registrarContracts,
-  thirdPartyContracts
+  checkerContracts
+  // collectionFactoryContracts,
+  // landContracts,
+  // registrarContracts,
+  // thirdPartyContracts
 } from '@dcl/catalyst-contracts'
-// import { providers } from '@0xsequence/multicall'
 import { ethers } from 'ethers'
 import { HTTPProvider, RequestManager } from 'eth-connect'
 
@@ -48,30 +47,33 @@ const createEthereumProvider = (httpProvider: HTTPProvider): EthereumProvider =>
 }
 
 async function createL1Checker(provider: ethers.providers.Provider, network: string): Promise<L1Checker> {
-  const checker = new ethers.Contract(checkerContracts[network], checkerAbi, provider)
+  new ethers.Contract(checkerContracts[network], checkerAbi, provider)
   return {
     checkLAND(ethAddress: string, parcels: [number, number][], block: number): Promise<boolean[]> {
-      const contracts = landContracts[network]
-      return Promise.all(
-        parcels.map(([x, y]) =>
-          checker.checkLAND(ethAddress, contracts.landContractAddress, contracts.stateContractAddress, x, y, block)
-        )
-      )
+      // const contracts = landContracts[network]
+      // return Promise.all(
+      //   parcels.map(([x, y]) =>
+      //     checker.checkLAND(ethAddress, contracts.landContractAddress, contracts.stateContractAddress, x, y, block)
+      //   )
+      // )
+      return Promise.resolve(parcels.map(() => false))
     },
     checkNames(ethAddress: string, names: string[], block: number): Promise<boolean[]> {
-      const registrar = registrarContracts[network]
+      // const registrar = registrarContracts[network]
 
-      return Promise.all(names.map((name) => checker.checkName(ethAddress, registrar, name, block)))
+      // return Promise.all(names.map((name) => checker.checkName(ethAddress, registrar, name, block)))
+
+      return Promise.resolve(names.map(() => false))
     }
   }
 }
 
 async function createL2Checker(provider: ethers.providers.Provider, network: string): Promise<L2Checker> {
-  const checker = new ethers.Contract(checkerContracts[network], checkerAbi, provider)
+  new ethers.Contract(checkerContracts[network], checkerAbi, provider)
 
-  const { v2, v3 } = collectionFactoryContracts[network]
+  // const { v2, v3 } = collectionFactoryContracts[network]
 
-  const factories = [v2, v3]
+  // const factories = [v2, v3]
 
   return {
     async validateWearables(
@@ -81,11 +83,13 @@ async function createL2Checker(provider: ethers.providers.Provider, network: str
       hash: string,
       block: number
     ): Promise<boolean> {
-      return checker.validateWearables(ethAddress, factories, contractAddress, assetId, hash, block)
+      // return checker.validateWearables(ethAddress, factories, contractAddress, assetId, hash, block)
+      return Promise.resolve(false)
     },
     validateThirdParty(ethAddress: string, tpId: string, root: Buffer, block: number): Promise<boolean> {
-      const registry = thirdPartyContracts[network]
-      return checker.validateThirdParty(ethAddress, registry, tpId, new Uint8Array(root), block)
+      // const registry = thirdPartyContracts[network]
+      // return checker.validateThirdParty(ethAddress, registry, tpId, new Uint8Array(root), block)
+      return Promise.resolve(false)
     }
   }
 }
