@@ -5,8 +5,8 @@ import { createConfigComponent } from '@well-known-components/env-config-provide
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import assert from 'assert'
-import { HTTPProvider } from 'eth-connect'
 import ms from 'ms'
+import { createMockWeb3Component } from 'test/helpers/web3'
 import { DEFAULT_ENTITIES_CACHE_SIZE, Environment, EnvironmentConfig } from '../../../src/Environment'
 import * as deploymentQueries from '../../../src/logic/database-queries/deployments-queries'
 import * as failedDeploymentQueries from '../../../src/logic/database-queries/failed-deployments-queries'
@@ -26,7 +26,9 @@ import { Deployment } from '../../../src/service/deployments/types'
 import { DELTA_POINTER_RESULT } from '../../../src/service/pointers/PointerManager'
 import {
   DeploymentContext,
-  DeploymentResult, isInvalidDeployment, LocalDeploymentAuditInfo
+  DeploymentResult,
+  isInvalidDeployment,
+  LocalDeploymentAuditInfo
 } from '../../../src/service/Service'
 import { ServiceImpl } from '../../../src/service/ServiceImpl'
 import { EntityVersion } from '../../../src/types'
@@ -51,13 +53,13 @@ describe('Service', function () {
   // starts the variables
   beforeAll(async () => {
     randomFileHash = await hashV1(randomFile)
-      ;[entity, entityFile] = await buildEntityAndFile(
-        EntityType.SCENE,
-        POINTERS,
-        Date.now(),
-        new Map([['file', randomFileHash]]),
-        { metadata: 'metadata' }
-      )
+    ;[entity, entityFile] = await buildEntityAndFile(
+      EntityType.SCENE,
+      POINTERS,
+      Date.now(),
+      new Map([['file', randomFileHash]]),
+      { metadata: 'metadata' }
+    )
 
     jest.spyOn(pointers, 'updateActiveDeployments').mockImplementation(() => Promise.resolve())
   })
@@ -93,7 +95,9 @@ describe('Service', function () {
     )
     if (isInvalidDeployment(deploymentResult)) {
       assert.fail(
-        'The deployment result: ' + JSON.stringify(deploymentResult) + ' was expected to be successful, it was invalid instead.'
+        'The deployment result: ' +
+          JSON.stringify(deploymentResult) +
+          ' was expected to be successful, it was invalid instead.'
       )
     } else {
       const deltaMilliseconds = Date.now() - deploymentResult
@@ -202,10 +206,7 @@ describe('Service', function () {
     const failedDeployments = await createFailedDeployments({ metrics, database })
     const storage = new MockedStorage()
     const pointerManager = NoOpPointerManager.build()
-    const authenticator = new ContentAuthenticator(
-      new HTTPProvider('https://rpc.decentraland.org/mainnet?project=catalyst-ci'),
-      DECENTRALAND_ADDRESS
-    )
+    const authenticator = new ContentAuthenticator(createMockWeb3Component(), DECENTRALAND_ADDRESS)
     const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, clock })
     env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)
     const denylist: Denylist = { isDenylisted: () => false }

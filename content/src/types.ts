@@ -6,7 +6,6 @@ import { IProcessedSnapshotStorageComponent, ISnapshotStorageComponent } from '@
 import { IFetchComponent } from '@well-known-components/http-server'
 import { ILoggerComponent, IMetricsComponent } from '@well-known-components/interfaces'
 import { Fetcher } from 'dcl-catalyst-commons'
-import { HTTPProvider } from 'eth-connect'
 import { Controller } from './controller/Controller'
 import { Environment } from './Environment'
 import { metricsDeclaration } from './metrics'
@@ -24,6 +23,7 @@ import { ISequentialTaskExecutorComponent } from './ports/sequecuentialTaskExecu
 import { SnapshotGenerator } from './ports/snapshotGenerator'
 import { SynchronizationState } from './ports/synchronizationState'
 import { SystemProperties } from './ports/system-properties'
+import { IWeb3Component } from './ports/web3'
 import { ContentAuthenticator } from './service/auth/Authenticator'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { PointerManager } from './service/pointers/PointerManager'
@@ -77,8 +77,7 @@ export type AppComponents = {
   sequentialExecutor: ISequentialTaskExecutorComponent
   denylist: Denylist
   fs: FSComponent
-  ethereumProvider: HTTPProvider
-  maticProvider: HTTPProvider
+  web3: IWeb3Component
   snapshotGenerator: SnapshotGenerator
   processedSnapshotStorage: IProcessedSnapshotStorageComponent
   clock: Clock

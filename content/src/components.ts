@@ -5,7 +5,6 @@ import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
-import { HTTPProvider } from 'eth-connect'
 import ms from 'ms'
 import path from 'path'
 import { Controller } from './controller/Controller'
@@ -30,6 +29,7 @@ import { createSnapshotGenerator } from './ports/snapshotGenerator'
 import { createSnapshotStorage } from './ports/snapshotStorage'
 import { createSynchronizationState } from './ports/synchronizationState'
 import { createSystemProperties } from './ports/system-properties'
+import { createWeb3Component } from './ports/web3'
 import { ContentAuthenticator } from './service/auth/Authenticator'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { PointerManager } from './service/pointers/PointerManager'
@@ -79,26 +79,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const contentFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
   const storage = await createFileSystemContentStorage({ fs }, contentFolder)
 
-  const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK)
-  const ethereumProvider = new HTTPProvider(
-    `https://rpc.decentraland.org/${encodeURIComponent(ethNetwork)}?project=catalyst-content`,
-    {
-      fetch: fetcher.fetch
-    }
-  )
-  const maticProvider = new HTTPProvider(
-    ethNetwork === 'mainnet'
-      ? `https://rpc.decentraland.org/polygon?project=catalyst-content`
-      : `https://rpc.decentraland.org/mumbai?project=catalyst-content`,
-    {
-      fetch: fetcher.fetch
-    }
-  )
-  const daoClient = await DAOClientFactory.create(env, ethereumProvider)
-  const authenticator = new ContentAuthenticator(
-    ethereumProvider,
-    env.getConfig(EnvironmentConfig.DECENTRALAND_ADDRESS)
-  )
+  const web3 = createWeb3Component({ env, logs, fetcher })
+  const daoClient = await DAOClientFactory.create(env, web3)
+  const authenticator = new ContentAuthenticator(web3, env.getConfig(EnvironmentConfig.DECENTRALAND_ADDRESS))
 
   const contentCluster = new ContentCluster(
     {
@@ -129,7 +112,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     }
   )
 
-  const subGraphs = await createSubGraphsComponent({ env, metrics, logs, fetcher, ethereumProvider, maticProvider })
+  const subGraphs = await createSubGraphsComponent({ env, metrics, logs, fetcher, web3 })
   const externalCalls = await createExternalCalls({
     storage,
     authenticator,
@@ -271,6 +254,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     clock
   })
 
+  const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK)
   const controller = new Controller(
     {
       challengeSupervisor,
@@ -332,8 +316,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     activeEntities,
     sequentialExecutor,
     denylist,
-    ethereumProvider,
-    maticProvider,
+    web3,
     fs,
     snapshotGenerator,
     processedSnapshotStorage,

@@ -20,8 +20,8 @@ import {
   createAvlBlockSearch,
   createBlockRepository,
   createCachingEthereumProvider,
-  EthereumProvider,
-  loadTree
+  loadTree,
+  EthereumProvider
 } from '@dcl/block-indexer'
 import { ethers } from 'ethers'
 import { providers } from '@0xsequence/multicall'
@@ -33,19 +33,7 @@ import {
   registrarContracts,
   thirdPartyContracts
 } from '@dcl/catalyst-contracts'
-import RequestManager, { HTTPProvider } from 'eth-connect'
-
-const createEthereumProvider = (httpProvider: HTTPProvider): EthereumProvider => {
-  const reqMan = new RequestManager(httpProvider)
-  return {
-    getBlockNumber: async (): Promise<number> => {
-      return (await reqMan.eth_blockNumber()) as number
-    },
-    getBlock: async (block: number): Promise<{ timestamp: string | number }> => {
-      return await reqMan.eth_getBlockByNumber(block, false)
-    }
-  }
-}
+import { IWeb3Component } from 'src/ports/web3'
 
 export type ICheckerContract = {
   checkLAND(
@@ -77,20 +65,23 @@ export type ICheckerContract = {
   ): Promise<boolean>
 }
 
-function createCheckerContract(network: string): ICheckerContract {
-  // NOTE(hugo): this provider leaks, not a problem for normal operations, but if left unmocked in tests, they will eventually crash
-  const provider = new ethers.providers.JsonRpcProvider(
-    `https://rpc.decentraland.org/${network}?project=catalyst-content`
-  )
+function createCheckerContract(provider: ethers.providers.Provider, network: string): ICheckerContract {
   const multicallProvider = new providers.MulticallProvider(provider)
   const contract = new ethers.Contract(checkerContracts[network], checkerAbi, multicallProvider)
   return contract as any
 }
 
-async function createL1Checker(network: string): Promise<L1Checker> {
-  const checker = createCheckerContract(network)
+async function createL1Checker(web3: IWeb3Component, network: string): Promise<L1Checker> {
+  let checker: ICheckerContract | undefined = undefined
+  function getChecker() {
+    if (!checker) {
+      checker = createCheckerContract(web3.getL1EthersProvider(), network)
+    }
+    return checker
+  }
   return {
     checkLAND(ethAddress: string, parcels: [number, number][], block: number): Promise<boolean[]> {
+      const checker = getChecker()
       const contracts = landContracts[network]
       return Promise.all(
         parcels.map(([x, y]) =>
@@ -101,6 +92,7 @@ async function createL1Checker(network: string): Promise<L1Checker> {
       )
     },
     checkNames(ethAddress: string, names: string[], block: number): Promise<boolean[]> {
+      const checker = getChecker()
       const registrar = registrarContracts[network]
 
       return Promise.all(names.map((name) => checker.checkName(ethAddress, registrar, name, { blockTag: block })))
@@ -108,8 +100,15 @@ async function createL1Checker(network: string): Promise<L1Checker> {
   }
 }
 
-async function createL2Checker(network: string): Promise<L2Checker> {
-  const checker = createCheckerContract(network)
+async function createL2Checker(web3: IWeb3Component, network: string): Promise<L2Checker> {
+  let checker: ICheckerContract | undefined = undefined
+  function getChecker() {
+    if (!checker) {
+      checker = createCheckerContract(web3.getL2EthersProvider(), network)
+    }
+    return checker
+  }
+
   const { v2, v3 } = collectionFactoryContracts[network]
 
   const factories = [v2, v3]
@@ -122,9 +121,11 @@ async function createL2Checker(network: string): Promise<L2Checker> {
       hash: string,
       block: number
     ): Promise<boolean> {
+      const checker = getChecker()
       return checker.validateWearables(ethAddress, factories, contractAddress, assetId, hash, { blockTag: block })
     },
     validateThirdParty(ethAddress: string, tpId: string, root: Buffer, block: number): Promise<boolean> {
+      const checker = getChecker()
       const registry = thirdPartyContracts[network]
       return checker.validateThirdParty(ethAddress, registry, tpId, new Uint8Array(root), { blockTag: block })
     }
@@ -132,7 +133,7 @@ async function createL2Checker(network: string): Promise<L2Checker> {
 }
 
 export async function createSubGraphsComponent(
-  components: Pick<AppComponents, 'env' | 'logs' | 'metrics' | 'fetcher' | 'ethereumProvider' | 'maticProvider'>
+  components: Pick<AppComponents, 'env' | 'logs' | 'metrics' | 'fetcher' | 'web3'>
 ): Promise<SubGraphs> {
   const config: IConfigComponent = createConfigComponent({}) // TODO Get config from higher level
   const baseComponents = { config, fetch: components.fetcher, metrics: components.metrics, logs: components.logs }
@@ -140,8 +141,22 @@ export async function createSubGraphsComponent(
   const l1Network: string = components.env.getConfig(EnvironmentConfig.ETH_NETWORK)
   const l2Network = l1Network === 'mainnet' ? 'polygon' : 'mumbai'
 
-  const l1EthereumProvider: EthereumProvider = createEthereumProvider(components.ethereumProvider)
-  const l2EthereumProvider: EthereumProvider = createEthereumProvider(components.maticProvider)
+  const l1EthereumProvider: EthereumProvider = {
+    getBlockNumber: (): Promise<number> => {
+      return components.web3.getL1EthersProvider().getBlockNumber()
+    },
+    getBlock: async (block: number): Promise<{ timestamp: string | number }> => {
+      return components.web3.getL1EthersProvider().getBlock(block)
+    }
+  }
+  const l2EthereumProvider: EthereumProvider = {
+    getBlockNumber: (): Promise<number> => {
+      return components.web3.getL2EthersProvider().getBlockNumber()
+    },
+    getBlock: async (block: number): Promise<{ timestamp: string | number }> => {
+      return components.web3.getL2EthersProvider().getBlock(block)
+    }
+  }
   const l1BlockSearch = createAvlBlockSearch({
     blockRepository: createBlockRepository({
       metrics: components.metrics,
@@ -183,14 +198,14 @@ export async function createSubGraphsComponent(
 
   return {
     L1: {
-      checker: await createL1Checker(l1Network),
+      checker: await createL1Checker(components.web3, l1Network),
       collections: await createSubgraphComponent(
         baseComponents,
         components.env.getConfig(EnvironmentConfig.COLLECTIONS_L1_SUBGRAPH_URL)
       )
     },
     L2: {
-      checker: await createL2Checker(l2Network),
+      checker: await createL2Checker(components.web3, l2Network),
       collections: await createSubgraphComponent(
         baseComponents,
         components.env.getConfig(EnvironmentConfig.COLLECTIONS_L2_SUBGRAPH_URL)
