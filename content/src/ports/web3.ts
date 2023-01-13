@@ -1,7 +1,7 @@
 import { HTTPProvider } from 'eth-connect'
 import { ethers } from 'ethers'
-import { EnvironmentConfig } from 'src/Environment'
-import { AppComponents } from 'src/types'
+import { EnvironmentConfig } from '../Environment'
+import { AppComponents } from '../types'
 
 export type IWeb3Component = {
   getL1EthConnectProvider(): HTTPProvider
