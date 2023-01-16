@@ -21,7 +21,7 @@
     "@0xsequence/multicall": "^0.43.7",
     "@dcl/catalyst-api-specs": "^2.0.18",
     "@dcl/catalyst-contracts": "^3.1.3",
-    "@dcl/content-validator": "4.0.27-20230106194717.commit-dd49367",
+    "@dcl/content-validator": "4.2.3-20230116175244.commit-84aaedb",
     "@dcl/crypto": "^3.2.4",
     "@dcl/hashing": "^1.1.3",
     "@dcl/schemas": "^6.4.1",
