@@ -1,3 +1,4 @@
+import { IContentStorageComponent } from '@dcl/catalyst-storage'
 import { ExternalCalls, Validator } from '@dcl/content-validator'
 import { EntityType, SyncDeployment } from '@dcl/schemas'
 import { IDeployerComponent, SynchronizerComponent } from '@dcl/snapshots-fetcher'
@@ -13,7 +14,6 @@ import { metricsDeclaration } from './metrics'
 import { MigrationManager } from './migrations/MigrationManager'
 import { ActiveEntities } from './ports/activeEntities'
 import { Clock } from './ports/clock'
-import { ContentStorage } from './ports/contentStorage/contentStorage'
 import { Denylist } from './ports/denylist'
 import { DeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
 import { IDeployRateLimiterComponent } from './ports/deployRateLimiterComponent'
@@ -61,7 +61,7 @@ export type AppComponents = {
   pointerManager: PointerManager
   failedDeployments: IFailedDeploymentsComponent
   deployRateLimiter: IDeployRateLimiterComponent
-  storage: ContentStorage
+  storage: IContentStorageComponent
   authenticator: ContentAuthenticator
   migrationManager: MigrationManager
   serverValidator: ServerValidator
@@ -89,7 +89,7 @@ export type MaintenanceComponents = {
   metrics: IMetricsComponent<keyof typeof metricsDeclaration>
   logs: ILoggerComponent
   database: IDatabaseComponent
-  storage: ContentStorage
+  storage: IContentStorageComponent
   fs: FSComponent
   migrationManager: MigrationManager
 }

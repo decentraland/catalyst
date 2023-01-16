@@ -1,3 +1,4 @@
+import { createFolderBasedFileSystemContentStorage } from '@dcl/catalyst-storage'
 import { createTheGraphClient } from '@dcl/content-validator'
 import { EntityType } from '@dcl/schemas'
 import { createSynchronizer } from '@dcl/snapshots-fetcher'
@@ -16,7 +17,6 @@ import { metricsDeclaration } from './metrics'
 import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
 import { createActiveEntitiesComponent } from './ports/activeEntities'
 import { createClock } from './ports/clock'
-import { createFileSystemContentStorage } from './ports/contentStorage/fileSystemContentStorage'
 import { createDenylist } from './ports/denylist'
 import { createDeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
 import { createDeployRateLimiter } from './ports/deployRateLimiterComponent'
@@ -77,7 +77,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const catalystFetcher = FetcherFactory.create({ env })
   const contentFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
-  const storage = await createFileSystemContentStorage({ fs }, contentFolder)
+  // const storage = await createFileSystemContentStorage({ fs }, contentFolder)
+  const storage = await createFolderBasedFileSystemContentStorage({ fs }, contentFolder)
 
   const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK)
   const ethereumProvider = new HTTPProvider(

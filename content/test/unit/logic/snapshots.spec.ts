@@ -1,3 +1,4 @@
+import { IContentStorageComponent } from '@dcl/catalyst-storage'
 import { SnapshotSyncDeployment } from '@dcl/schemas'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
 import { ILoggerComponent } from '@well-known-components/interfaces'
@@ -7,7 +8,6 @@ import * as snapshotQueries from '../../../src/logic/database-queries/snapshots-
 import { generateAndStoreSnapshot, generateSnapshotsInMultipleTimeRanges } from '../../../src/logic/snapshots'
 import * as tr from '../../../src/logic/time-range'
 import { metricsDeclaration } from '../../../src/metrics'
-import { ContentStorage } from '../../../src/ports/contentStorage/contentStorage'
 import { Denylist } from '../../../src/ports/denylist'
 import * as fileWriter from '../../../src/ports/fileWriter'
 import { IFile } from '../../../src/ports/fileWriter'
@@ -22,7 +22,7 @@ describe('generate snapshot', () => {
   const staticConfigs = { contentStorageFolder: '', tmpDownloadFolder: '' }
   const denylist: Denylist = { isDenylisted: jest.fn() }
   const aTimeRange = { initTimestamp: 1, endTimestamp: 2 }
-  const storage: ContentStorage = {
+  const storage: IContentStorageComponent = {
     storeStream: jest.fn(),
     storeStreamAndCompress: jest.fn(),
     delete: jest.fn(),
@@ -95,7 +95,7 @@ describe('generate snapshot in multiple', () => {
   const staticConfigs = { contentStorageFolder: '', tmpDownloadFolder: '' }
   const denylist: Denylist = { isDenylisted: jest.fn() }
   const clock = { now: Date.now }
-  const storage: ContentStorage = {
+  const storage: IContentStorageComponent = {
     storeStream: jest.fn(),
     storeStreamAndCompress: jest.fn(),
     delete: jest.fn(),
