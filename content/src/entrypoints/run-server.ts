@@ -1,5 +1,5 @@
 import { Lifecycle } from '@well-known-components/interfaces'
-import { defaultComponentsBuilder } from 'src/components'
+import { defaultComponentsBuilder } from '../../src/components'
 import { AppComponents } from '../../src/types'
 import { EnvironmentBuilder } from '../Environment'
 import { main } from '../service'
