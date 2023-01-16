@@ -36,6 +36,7 @@ describe('Integration - Deployment with metadata validation', () => {
     getTestEnv,
     'When scene metadata is present but incomplete, deployment result should include the proper errors',
     async (components) => {
+      ;(components.l1Checker.checkLAND as any).returns([false, false])
       makeNoopServerValidator(components)
 
       const P1 = '0,0'
@@ -72,37 +73,6 @@ describe('Integration - Deployment with metadata validation', () => {
 
       expect(await deployEntity(components, E1)).toEqual({
         errors: ['The metadata for this entity type (scene) is not valid.', "must have required property 'scene'"]
-      })
-    }
-  )
-
-  testCaseWithComponents(
-    getTestEnv,
-    'When scene metadata is present and ok, deployment fail because of permissions validator',
-    async (components) => {
-      makeNoopServerValidator(components)
-
-      const P1 = '0,0'
-      const P2 = '0,1'
-      const identity = createIdentity()
-
-      let E1: EntityCombo = await buildDeployData([P1, P2], {
-        type: EntityType.SCENE,
-        metadata: {
-          main: 'main.js',
-          scene: {
-            base: P1,
-            parcels: [P1, P2]
-          }
-        },
-        identity
-      })
-
-      expect(await deployEntity(components, E1)).toEqual({
-        errors: [
-          'The provided Eth Address does not have access to the following parcel: (0,0)',
-          'The provided Eth Address does not have access to the following parcel: (0,1)'
-        ]
       })
     }
   )

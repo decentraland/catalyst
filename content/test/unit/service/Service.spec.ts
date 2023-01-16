@@ -5,8 +5,8 @@ import { createConfigComponent } from '@well-known-components/env-config-provide
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import assert from 'assert'
+import { HTTPProvider } from 'eth-connect'
 import ms from 'ms'
-import { createMockWeb3Component } from 'test/helpers/web3'
 import { DEFAULT_ENTITIES_CACHE_SIZE, Environment, EnvironmentConfig } from '../../../src/Environment'
 import * as deploymentQueries from '../../../src/logic/database-queries/deployments-queries'
 import * as failedDeploymentQueries from '../../../src/logic/database-queries/failed-deployments-queries'
@@ -206,7 +206,10 @@ describe('Service', function () {
     const failedDeployments = await createFailedDeployments({ metrics, database })
     const storage = new MockedStorage()
     const pointerManager = NoOpPointerManager.build()
-    const authenticator = new ContentAuthenticator(createMockWeb3Component(), DECENTRALAND_ADDRESS)
+    const authenticator = new ContentAuthenticator(
+      new HTTPProvider('https://rpc.decentraland.org/mainnet?project=catalyst-ci'),
+      DECENTRALAND_ADDRESS
+    )
     const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, clock })
     env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)
     const denylist: Denylist = { isDenylisted: () => false }

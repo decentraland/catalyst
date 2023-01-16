@@ -1,10 +1,12 @@
-import { createTheGraphClient } from '@dcl/content-validator'
+import { createTheGraphClient, L1Checker, L2Checker } from '@dcl/content-validator'
 import { EntityType } from '@dcl/schemas'
 import { createSynchronizer } from '@dcl/snapshots-fetcher'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
+import { IFetchComponent } from '@well-known-components/http-server'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
+import { HTTPProvider } from 'eth-connect'
 import ms from 'ms'
 import path from 'path'
 import { Controller } from './controller/Controller'
@@ -29,7 +31,6 @@ import { createSnapshotGenerator } from './ports/snapshotGenerator'
 import { createSnapshotStorage } from './ports/snapshotStorage'
 import { createSynchronizationState } from './ports/synchronizationState'
 import { createSystemProperties } from './ports/system-properties'
-import { createWeb3Component } from './ports/web3'
 import { ContentAuthenticator } from './service/auth/Authenticator'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { PointerManager } from './service/pointers/PointerManager'
@@ -44,9 +45,85 @@ import { ContentCluster } from './service/synchronization/ContentCluster'
 import { createRetryFailedDeployments } from './service/synchronization/retryFailedDeployments'
 import { createServerValidator } from './service/validations/server'
 import { createExternalCalls, createSubGraphsComponent, createValidator } from './service/validations/validator'
-import { AppComponents } from './types'
+import { AppComponents, ComponentsBuilder } from './types'
+import { ethers } from 'ethers'
+// import {
+//   checkerAbi,
+//   checkerContracts,
+//   collectionFactoryContracts,
+//   landContracts,
+//   registrarContracts,
+//   thirdPartyContracts
+// } from '@dcl/catalyst-contracts'
+// import { providers } from '@0xsequence/multicall'
 
-export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
+// function createCheckerContract(provider: ethers.providers.Provider, network: string): ICheckerContract {
+//   const multicallProvider = new providers.MulticallProvider(provider)
+//   const contract = new ethers.Contract(checkerContracts[network], checkerAbi, multicallProvider)
+//   return contract as any
+// }
+
+export const defaultComponentsBuilder = {
+  createEthConnectProvider(fetcher: IFetchComponent, network: string): HTTPProvider {
+    throw new Error('no')
+    // return new HTTPProvider(`https://rpc.decentraland.org/${encodeURIComponent(network)}?project=catalyst-content`, {
+    //   fetch: fetcher.fetch
+    // })
+  },
+  createEthersProvider(network: string): ethers.providers.Provider {
+    throw new Error('no')
+    // return new ethers.providers.JsonRpcProvider(
+    //   `https://rpc.decentraland.org/${encodeURIComponent(network)}?project=catalyst-content`
+    // )
+  },
+  createL1Checker(provider: ethers.providers.Provider, network: string): L1Checker {
+    throw new Error('no')
+    // const checker = createCheckerContract(provider, network)
+    // return {
+    //   checkLAND(ethAddress: string, parcels: [number, number][], block: number): Promise<boolean[]> {
+    //     const contracts = landContracts[network]
+    //     return Promise.all(
+    //       parcels.map(([x, y]) =>
+    //         checker.checkLAND(ethAddress, contracts.landContractAddress, contracts.stateContractAddress, x, y, {
+    //           blockTag: block
+    //         })
+    //       )
+    //     )
+    //   },
+    //   checkNames(ethAddress: string, names: string[], block: number): Promise<boolean[]> {
+    //     const registrar = registrarContracts[network]
+
+    //     return Promise.all(names.map((name) => checker.checkName(ethAddress, registrar, name, { blockTag: block })))
+    //   }
+    // }
+  },
+  createL2Checker(provider: ethers.providers.Provider, network: string): L2Checker {
+    throw new Error('no')
+    // const checker = createCheckerContract(provider, network)
+
+    // const { v2, v3 } = collectionFactoryContracts[network]
+
+    // const factories = [v2, v3]
+
+    // return {
+    //   async validateWearables(
+    //     ethAddress: string,
+    //     contractAddress: string,
+    //     assetId: string,
+    //     hash: string,
+    //     block: number
+    //   ): Promise<boolean> {
+    //     return checker.validateWearables(ethAddress, factories, contractAddress, assetId, hash, { blockTag: block })
+    //   },
+    //   validateThirdParty(ethAddress: string, tpId: string, root: Buffer, block: number): Promise<boolean> {
+    //     const registry = thirdPartyContracts[network]
+    //     return checker.validateThirdParty(ethAddress, registry, tpId, new Uint8Array(root), { blockTag: block })
+    //   }
+    // }
+  }
+}
+
+export async function initComponentsWithEnv(env: Environment, builder: ComponentsBuilder): Promise<AppComponents> {
   const clock = createClock()
   const metrics = createTestMetricsComponent(metricsDeclaration)
   const config = createConfigComponent({
@@ -67,6 +144,15 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     tmpDownloadFolder
   }
 
+  const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK)
+  const l2Network = ethNetwork === 'mainnet' ? 'polygon' : 'mumbai'
+  const l1EthConnectProvider = builder.createEthConnectProvider(fetcher, ethNetwork)
+  const l2EthConnectProvider = builder.createEthConnectProvider(fetcher, l2Network)
+  const l1EthersProvider = builder.createEthersProvider(ethNetwork)
+  const l2EthersProvider = builder.createEthersProvider(l2Network)
+  const l1Checker = builder.createL1Checker(l1EthersProvider, ethNetwork)
+  const l2Checker = builder.createL2Checker(l2EthersProvider, l2Network)
+
   const database = await createDatabaseComponent({ logs, env, metrics })
 
   const sequentialExecutor = createSequentialTaskExecutor({ metrics, logs })
@@ -79,9 +165,11 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const contentFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
   const storage = await createFileSystemContentStorage({ fs }, contentFolder)
 
-  const web3 = createWeb3Component({ env, logs, fetcher })
-  const daoClient = await DAOClientFactory.create(env, web3)
-  const authenticator = new ContentAuthenticator(web3, env.getConfig(EnvironmentConfig.DECENTRALAND_ADDRESS))
+  const daoClient = await DAOClientFactory.create(env, l1EthConnectProvider)
+  const authenticator = new ContentAuthenticator(
+    l1EthConnectProvider,
+    env.getConfig(EnvironmentConfig.DECENTRALAND_ADDRESS)
+  )
 
   const contentCluster = new ContentCluster(
     {
@@ -112,7 +200,16 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     }
   )
 
-  const subGraphs = await createSubGraphsComponent({ env, metrics, logs, fetcher, web3 })
+  const subGraphs = await createSubGraphsComponent({
+    env,
+    metrics,
+    logs,
+    fetcher,
+    l1EthersProvider,
+    l2EthersProvider,
+    l1Checker,
+    l2Checker
+  })
   const externalCalls = await createExternalCalls({
     storage,
     authenticator,
@@ -254,7 +351,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     clock
   })
 
-  const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK)
   const controller = new Controller(
     {
       challengeSupervisor,
@@ -316,7 +412,12 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     activeEntities,
     sequentialExecutor,
     denylist,
-    web3,
+    l1EthConnectProvider,
+    l2EthConnectProvider,
+    l1EthersProvider,
+    l2EthersProvider,
+    l1Checker,
+    l2Checker,
     fs,
     snapshotGenerator,
     processedSnapshotStorage,

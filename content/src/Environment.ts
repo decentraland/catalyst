@@ -2,7 +2,7 @@ import { EntityType, EthAddress } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import ms from 'ms'
 import { initComponentsWithEnv } from './components'
-import { AppComponents, parseEntityType } from './types'
+import { ComponentsBuilder, AppComponents, parseEntityType } from './types'
 
 export const CURRENT_CONTENT_VERSION = 'v3'
 const DEFAULT_STORAGE_ROOT_FOLDER = 'storage'
@@ -163,8 +163,8 @@ export class EnvironmentBuilder {
     return this
   }
 
-  async buildConfigAndComponents(): Promise<AppComponents> {
-    return await initComponentsWithEnv(await this.build())
+  async buildConfigAndComponents(builder: ComponentsBuilder): Promise<AppComponents> {
+    return await initComponentsWithEnv(await this.build(), builder)
   }
 
   async build(): Promise<Environment> {

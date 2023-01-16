@@ -1,4 +1,4 @@
-import { ExternalCalls, Validator } from '@dcl/content-validator'
+import { ExternalCalls, L1Checker, L2Checker, Validator } from '@dcl/content-validator'
 import { EntityType, SyncDeployment } from '@dcl/schemas'
 import { IDeployerComponent, SynchronizerComponent } from '@dcl/snapshots-fetcher'
 import { IJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
@@ -23,7 +23,8 @@ import { ISequentialTaskExecutorComponent } from './ports/sequecuentialTaskExecu
 import { SnapshotGenerator } from './ports/snapshotGenerator'
 import { SynchronizationState } from './ports/synchronizationState'
 import { SystemProperties } from './ports/system-properties'
-import { IWeb3Component } from './ports/web3'
+import { HTTPProvider } from 'eth-connect'
+import { ethers } from 'ethers'
 import { ContentAuthenticator } from './service/auth/Authenticator'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { PointerManager } from './service/pointers/PointerManager'
@@ -77,11 +78,23 @@ export type AppComponents = {
   sequentialExecutor: ISequentialTaskExecutorComponent
   denylist: Denylist
   fs: FSComponent
-  web3: IWeb3Component
+  l1EthConnectProvider: HTTPProvider
+  l2EthConnectProvider: HTTPProvider
+  l1EthersProvider: ethers.providers.Provider
+  l2EthersProvider: ethers.providers.Provider
+  l1Checker: L1Checker
+  l2Checker: L2Checker
   snapshotGenerator: SnapshotGenerator
   processedSnapshotStorage: IProcessedSnapshotStorageComponent
   clock: Clock
   snapshotStorage: ISnapshotStorageComponent
+}
+
+export type ComponentsBuilder = {
+  createEthConnectProvider(fetcher: IFetchComponent, network: string): HTTPProvider
+  createEthersProvider(network: string): ethers.providers.Provider
+  createL1Checker(provider: ethers.providers.Provider, network: string): L1Checker
+  createL2Checker(provider: ethers.providers.Provider, network: string): L2Checker
 }
 
 export type MaintenanceComponents = {
@@ -126,3 +139,33 @@ export function parseEntityType(strType: string): EntityType {
 }
 
 export type DeploymentId = number
+
+export type ICheckerContract = {
+  checkLAND(
+    ethAddress: string,
+    landAddress: string,
+    stateAddress: string,
+    x: number,
+    y: number,
+    options: { blockTag: number }
+  ): Promise<boolean>
+
+  checkName(ethAddress: string, registrar: string, name: string, options: { blockTag: number }): Promise<boolean>
+
+  validateWearables(
+    ethAddress: string,
+    factories: string[],
+    contractAddress: string,
+    assetId: string,
+    hash: string,
+    options: { blockTag: number }
+  ): Promise<boolean>
+
+  validateThirdParty(
+    ethAddress: string,
+    registry: string,
+    tpId: string,
+    root: Uint8Array,
+    options: { blockTag: number }
+  ): Promise<boolean>
+}

@@ -1,8 +1,8 @@
 import { AuthChain, Authenticator, EthAddress, ValidationResult } from '@dcl/crypto'
-import { IWeb3Component } from 'src/ports/web3'
+import { HTTPProvider } from 'eth-connect'
 
 export class ContentAuthenticator {
-  constructor(private readonly web3: IWeb3Component, private readonly decentralandAddress: EthAddress) {}
+  constructor(private readonly provider: HTTPProvider, private readonly decentralandAddress: EthAddress) {}
 
   /** Return whether the given address used is owned by Decentraland */
   isAddressOwnedByDecentraland(address: EthAddress): boolean {
@@ -18,7 +18,7 @@ export class ContentAuthenticator {
     return Authenticator.validateSignature(
       expectedFinalAuthority,
       authChain,
-      this.web3.getL1EthConnectProvider(),
+      this.provider,
       dateToValidateExpirationInMillis
     )
   }

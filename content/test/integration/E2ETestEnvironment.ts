@@ -15,6 +15,7 @@ import { MockedDAOClient } from '../helpers/service/synchronization/clients/Mock
 import { TestProgram } from './TestProgram'
 import * as sinon from 'sinon'
 import LeakDetector from 'jest-leak-detector'
+import { createTestComponentBuilder } from '../helpers/builder'
 
 export class E2ETestEnvironment {
   public static TEST_SCHEMA = 'e2etest'
@@ -113,7 +114,7 @@ export class E2ETestEnvironment {
   /** Returns a service that connects to the database, with the migrations run */
   async buildService(): Promise<AppComponents> {
     const baseEnv = await this.getEnvForNewDatabase()
-    const components = await new EnvironmentBuilder(baseEnv).buildConfigAndComponents()
+    const components = await new EnvironmentBuilder(baseEnv).buildConfigAndComponents(createTestComponentBuilder())
     return components
   }
 
@@ -179,7 +180,7 @@ export class ServerBuilder {
         .withConfig(EnvironmentConfig.SERVER_PORT, port)
         .withConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, `${this.storageBaseFolder}/${port}`)
         .withConfig(EnvironmentConfig.PSQL_DATABASE, databaseNames[i])
-        .buildConfigAndComponents()
+        .buildConfigAndComponents(createTestComponentBuilder())
 
       if (this.dao) {
         // mock DAO client

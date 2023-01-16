@@ -13,6 +13,7 @@ import { SnapshotMetadata } from '../../../../src/service/snapshots/SnapshotMana
 import { AppComponents } from '../../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo, EntityCombo } from '../../E2ETestUtils'
+import { createTestComponentBuilder } from '../../../helpers/builder'
 
 describe('Integration - Snapshot Manager', () => {
   const getTestEnv = setupTestEnvironment()
@@ -34,7 +35,7 @@ describe('Integration - Snapshot Manager', () => {
 
   beforeEach(async () => {
     const baseEnv = await getTestEnv().getEnvForNewDatabase()
-    components = await new EnvironmentBuilder(baseEnv).buildConfigAndComponents()
+    components = await new EnvironmentBuilder(baseEnv).buildConfigAndComponents(createTestComponentBuilder())
     makeNoopValidator(components)
     makeNoopServerValidator(components)
   })

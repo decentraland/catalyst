@@ -1,6 +1,5 @@
 import { CatalystByIdResult, getAllCatalystFromProvider } from '@dcl/catalyst-contracts'
-import { hexToBytes } from 'eth-connect'
-import { IWeb3Component } from 'src/ports/web3'
+import { hexToBytes, HTTPProvider } from 'eth-connect'
 
 export interface DaoComponent {
   getAllContentServers(): Promise<Array<CatalystByIdResult>>
@@ -8,7 +7,7 @@ export interface DaoComponent {
 }
 
 export class DAOClient implements DaoComponent {
-  constructor(private web3: IWeb3Component) {}
+  constructor(private provider: HTTPProvider) {}
 
   async getAllContentServers(): Promise<Array<CatalystByIdResult>> {
     const servers = await this.getAllServers()
@@ -16,8 +15,7 @@ export class DAOClient implements DaoComponent {
   }
 
   async getAllServers(): Promise<Array<CatalystByIdResult>> {
-    const provider = this.web3.getL1EthConnectProvider()
-    return await getAllCatalystFromProvider(provider)
+    return await getAllCatalystFromProvider(this.provider)
   }
 }
 
