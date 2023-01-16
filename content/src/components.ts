@@ -45,20 +45,19 @@ import { ContentCluster } from './service/synchronization/ContentCluster'
 import { createRetryFailedDeployments } from './service/synchronization/retryFailedDeployments'
 import { createServerValidator } from './service/validations/server'
 import { createExternalCalls, createSubGraphsComponent, createValidator } from './service/validations/validator'
-import { AppComponents, ComponentsBuilder, ICheckerContract } from './types'
-import { ethers } from 'ethers'
+import { AppComponents, ComponentsBuilder, EthersProvider, ICheckerContract } from './types'
 import {
   checkerAbi,
   checkerContracts,
-  collectionFactoryContracts
-  // collectionFactoryContracts,
-  // landContracts,
-  // registrarContracts,
-  // thirdPartyContracts
+  collectionFactoryContracts,
+  landContracts,
+  registrarContracts,
+  thirdPartyContracts
 } from '@dcl/catalyst-contracts'
-import { providers } from '@0xsequence/multicall'
 
-function createCheckerContract(provider: ethers.providers.Provider, network: string): ICheckerContract {
+async function createCheckerContract(provider: any, network: string): Promise<ICheckerContract> {
+  const { providers } = await import('@0xsequence/multicall')
+  const { ethers } = await import('ethers')
   const multicallProvider = new providers.MulticallProvider(provider)
   const contract = new ethers.Contract(checkerContracts[network], checkerAbi, multicallProvider)
   return contract as any
@@ -66,63 +65,57 @@ function createCheckerContract(provider: ethers.providers.Provider, network: str
 
 export const defaultComponentsBuilder = {
   createEthConnectProvider(fetcher: IFetchComponent, network: string): HTTPProvider {
-    throw new Error('no')
-    // return new HTTPProvider(`https://rpc.decentraland.org/${encodeURIComponent(network)}?project=catalyst-content`, {
-    //   fetch: fetcher.fetch
-    // })
+    return new HTTPProvider(`https://rpc.decentraland.org/${encodeURIComponent(network)}?project=catalyst-content`, {
+      fetch: fetcher.fetch
+    })
   },
-  createEthersProvider(network: string): ethers.providers.Provider {
-    throw new Error('no')
-    // return new ethers.providers.JsonRpcProvider(
-    //   `https://rpc.decentraland.org/${encodeURIComponent(network)}?project=catalyst-content`
-    // )
+  async createEthersProvider(network: string): Promise<EthersProvider> {
+    const { ethers } = await import('ethers')
+    return new ethers.providers.JsonRpcProvider(
+      `https://rpc.decentraland.org/${encodeURIComponent(network)}?project=catalyst-content`
+    )
   },
-  createL1Checker(provider: ethers.providers.Provider, network: string): L1Checker {
-    const checker = createCheckerContract(provider, network)
-    console.log(checker)
-    throw new Error('no')
-    // return {
-    //   checkLAND(ethAddress: string, parcels: [number, number][], block: number): Promise<boolean[]> {
-    //     const contracts = landContracts[network]
-    //     return Promise.all(
-    //       parcels.map(([x, y]) =>
-    //         checker.checkLAND(ethAddress, contracts.landContractAddress, contracts.stateContractAddress, x, y, {
-    //           blockTag: block
-    //         })
-    //       )
-    //     )
-    //   },
-    //   checkNames(ethAddress: string, names: string[], block: number): Promise<boolean[]> {
-    //     const registrar = registrarContracts[network]
+  async createL1Checker(provider: EthersProvider, network: string): Promise<L1Checker> {
+    const checker = await createCheckerContract(provider, network)
+    return {
+      checkLAND(ethAddress: string, parcels: [number, number][], block: number): Promise<boolean[]> {
+        const contracts = landContracts[network]
+        return Promise.all(
+          parcels.map(([x, y]) =>
+            checker.checkLAND(ethAddress, contracts.landContractAddress, contracts.stateContractAddress, x, y, {
+              blockTag: block
+            })
+          )
+        )
+      },
+      checkNames(ethAddress: string, names: string[], block: number): Promise<boolean[]> {
+        const registrar = registrarContracts[network]
 
-    //     return Promise.all(names.map((name) => checker.checkName(ethAddress, registrar, name, { blockTag: block })))
-    //   }
-    // }
+        return Promise.all(names.map((name) => checker.checkName(ethAddress, registrar, name, { blockTag: block })))
+      }
+    }
   },
-  createL2Checker(provider: ethers.providers.Provider, network: string): L2Checker {
-    const checker = createCheckerContract(provider, network)
+  async createL2Checker(provider: EthersProvider, network: string): Promise<L2Checker> {
+    const checker = await createCheckerContract(provider, network)
 
     const { v2, v3 } = collectionFactoryContracts[network]
 
     const factories = [v2, v3]
-
-    console.log(checker, factories)
-    throw new Error('no')
-    // return {
-    //   async validateWearables(
-    //     ethAddress: string,
-    //     contractAddress: string,
-    //     assetId: string,
-    //     hash: string,
-    //     block: number
-    //   ): Promise<boolean> {
-    //     return checker.validateWearables(ethAddress, factories, contractAddress, assetId, hash, { blockTag: block })
-    //   },
-    //   validateThirdParty(ethAddress: string, tpId: string, root: Buffer, block: number): Promise<boolean> {
-    //     const registry = thirdPartyContracts[network]
-    //     return checker.validateThirdParty(ethAddress, registry, tpId, new Uint8Array(root), { blockTag: block })
-    //   }
-    // }
+    return {
+      async validateWearables(
+        ethAddress: string,
+        contractAddress: string,
+        assetId: string,
+        hash: string,
+        block: number
+      ): Promise<boolean> {
+        return checker.validateWearables(ethAddress, factories, contractAddress, assetId, hash, { blockTag: block })
+      },
+      validateThirdParty(ethAddress: string, tpId: string, root: Buffer, block: number): Promise<boolean> {
+        const registry = thirdPartyContracts[network]
+        return checker.validateThirdParty(ethAddress, registry, tpId, new Uint8Array(root), { blockTag: block })
+      }
+    }
   }
 }
 
@@ -151,10 +144,10 @@ export async function initComponentsWithEnv(env: Environment, builder: Component
   const l2Network = ethNetwork === 'mainnet' ? 'polygon' : 'mumbai'
   const l1EthConnectProvider = builder.createEthConnectProvider(fetcher, ethNetwork)
   const l2EthConnectProvider = builder.createEthConnectProvider(fetcher, l2Network)
-  const l1EthersProvider = builder.createEthersProvider(ethNetwork)
-  const l2EthersProvider = builder.createEthersProvider(l2Network)
-  const l1Checker = builder.createL1Checker(l1EthersProvider, ethNetwork)
-  const l2Checker = builder.createL2Checker(l2EthersProvider, l2Network)
+  const l1EthersProvider = await builder.createEthersProvider(ethNetwork)
+  const l2EthersProvider = await builder.createEthersProvider(l2Network)
+  const l1Checker = await builder.createL1Checker(l1EthersProvider, ethNetwork)
+  const l2Checker = await builder.createL2Checker(l2EthersProvider, l2Network)
 
   const database = await createDatabaseComponent({ logs, env, metrics })
 

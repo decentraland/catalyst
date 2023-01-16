@@ -24,7 +24,6 @@ import { SnapshotGenerator } from './ports/snapshotGenerator'
 import { SynchronizationState } from './ports/synchronizationState'
 import { SystemProperties } from './ports/system-properties'
 import { HTTPProvider } from 'eth-connect'
-import { ethers } from 'ethers'
 import { ContentAuthenticator } from './service/auth/Authenticator'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { PointerManager } from './service/pointers/PointerManager'
@@ -36,6 +35,11 @@ import { DaoComponent } from './service/synchronization/clients/HardcodedDAOClie
 import { ContentCluster } from './service/synchronization/ContentCluster'
 import { IRetryFailedDeploymentsComponent } from './service/synchronization/retryFailedDeployments'
 import { ServerValidator } from './service/validations/server'
+
+export type EthersProvider = {
+  getBlockNumber(): Promise<number>
+  getBlock(block: number): Promise<{ timestamp: string | number }>
+}
 
 // Minimum amount of needed stuff to make the sync work
 
@@ -80,8 +84,8 @@ export type AppComponents = {
   fs: FSComponent
   l1EthConnectProvider: HTTPProvider
   l2EthConnectProvider: HTTPProvider
-  l1EthersProvider: ethers.providers.Provider
-  l2EthersProvider: ethers.providers.Provider
+  l1EthersProvider: EthersProvider
+  l2EthersProvider: EthersProvider
   l1Checker: L1Checker
   l2Checker: L2Checker
   snapshotGenerator: SnapshotGenerator
@@ -92,9 +96,9 @@ export type AppComponents = {
 
 export type ComponentsBuilder = {
   createEthConnectProvider(fetcher: IFetchComponent, network: string): HTTPProvider
-  createEthersProvider(network: string): ethers.providers.Provider
-  createL1Checker(provider: ethers.providers.Provider, network: string): L1Checker
-  createL2Checker(provider: ethers.providers.Provider, network: string): L2Checker
+  createEthersProvider(network: string): Promise<EthersProvider>
+  createL1Checker(provider: EthersProvider, network: string): Promise<L1Checker>
+  createL2Checker(provider: EthersProvider, network: string): Promise<L2Checker>
 }
 
 export type MaintenanceComponents = {
