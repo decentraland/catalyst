@@ -45,23 +45,24 @@ import { ContentCluster } from './service/synchronization/ContentCluster'
 import { createRetryFailedDeployments } from './service/synchronization/retryFailedDeployments'
 import { createServerValidator } from './service/validations/server'
 import { createExternalCalls, createSubGraphsComponent, createValidator } from './service/validations/validator'
-import { AppComponents, ComponentsBuilder } from './types'
+import { AppComponents, ComponentsBuilder, ICheckerContract } from './types'
 import { ethers } from 'ethers'
-// import {
-//   checkerAbi,
-//   checkerContracts,
-//   collectionFactoryContracts,
-//   landContracts,
-//   registrarContracts,
-//   thirdPartyContracts
-// } from '@dcl/catalyst-contracts'
-// import { providers } from '@0xsequence/multicall'
+import {
+  checkerAbi,
+  checkerContracts,
+  collectionFactoryContracts
+  // collectionFactoryContracts,
+  // landContracts,
+  // registrarContracts,
+  // thirdPartyContracts
+} from '@dcl/catalyst-contracts'
+import { providers } from '@0xsequence/multicall'
 
-// function createCheckerContract(provider: ethers.providers.Provider, network: string): ICheckerContract {
-//   const multicallProvider = new providers.MulticallProvider(provider)
-//   const contract = new ethers.Contract(checkerContracts[network], checkerAbi, multicallProvider)
-//   return contract as any
-// }
+function createCheckerContract(provider: ethers.providers.Provider, network: string): ICheckerContract {
+  const multicallProvider = new providers.MulticallProvider(provider)
+  const contract = new ethers.Contract(checkerContracts[network], checkerAbi, multicallProvider)
+  return contract as any
+}
 
 export const defaultComponentsBuilder = {
   createEthConnectProvider(fetcher: IFetchComponent, network: string): HTTPProvider {
@@ -77,8 +78,9 @@ export const defaultComponentsBuilder = {
     // )
   },
   createL1Checker(provider: ethers.providers.Provider, network: string): L1Checker {
+    const checker = createCheckerContract(provider, network)
+    console.log(checker)
     throw new Error('no')
-    // const checker = createCheckerContract(provider, network)
     // return {
     //   checkLAND(ethAddress: string, parcels: [number, number][], block: number): Promise<boolean[]> {
     //     const contracts = landContracts[network]
@@ -98,13 +100,14 @@ export const defaultComponentsBuilder = {
     // }
   },
   createL2Checker(provider: ethers.providers.Provider, network: string): L2Checker {
+    const checker = createCheckerContract(provider, network)
+
+    const { v2, v3 } = collectionFactoryContracts[network]
+
+    const factories = [v2, v3]
+
+    console.log(checker, factories)
     throw new Error('no')
-    // const checker = createCheckerContract(provider, network)
-
-    // const { v2, v3 } = collectionFactoryContracts[network]
-
-    // const factories = [v2, v3]
-
     // return {
     //   async validateWearables(
     //     ethAddress: string,
