@@ -1,4 +1,4 @@
-import { IContentStorageComponent } from '@dcl/catalyst-storage'
+import { createFsComponent, IContentStorageComponent } from '@dcl/catalyst-storage'
 import { SnapshotSyncDeployment } from '@dcl/schemas'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
 import { ILoggerComponent } from '@well-known-components/interfaces'
@@ -11,7 +11,6 @@ import { metricsDeclaration } from '../../../src/metrics'
 import { Denylist } from '../../../src/ports/denylist'
 import * as fileWriter from '../../../src/ports/fileWriter'
 import { IFile } from '../../../src/ports/fileWriter'
-import { createFsComponent } from '../../../src/ports/fs'
 import { createTestDatabaseComponent } from '../../../src/ports/postgres'
 
 describe('generate snapshot', () => {

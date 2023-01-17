@@ -1,11 +1,10 @@
-import { IContentStorageComponent } from '@dcl/catalyst-storage'
+import { createFsComponent, IContentStorageComponent } from '@dcl/catalyst-storage'
 import { createConfigComponent } from "@well-known-components/env-config-provider"
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { Environment, EnvironmentConfig } from '../../../src/Environment'
 import { metricsDeclaration } from '../../../src/metrics'
 import { migrateContentFolderStructure } from '../../../src/migrations/ContentFolderMigrationManager'
-import { createFsComponent } from '../../../src/ports/fs'
 import { FileSystemUtils as fsu } from '../ports/contentStorage/FileSystemUtils'
 
 let files = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']

@@ -1,5 +1,5 @@
+import { createFsComponent } from '@dcl/catalyst-storage'
 import { AuthLinkType, Entity, EntityType } from '@dcl/schemas'
-import { createFsComponent } from '../../../../src/ports/fs'
 import { AuditInfo } from '../../../../src/service/deployments/types'
 import { DeploymentContext, DeploymentResult } from '../../../../src/service/Service'
 import { AppComponents } from '../../../../src/types'

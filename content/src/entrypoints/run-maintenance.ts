@@ -1,4 +1,4 @@
-import { createFolderBasedFileSystemContentStorage } from '@dcl/catalyst-storage'
+import { createFolderBasedFileSystemContentStorage, createFsComponent } from '@dcl/catalyst-storage'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
 import { Lifecycle } from '@well-known-components/interfaces'
 import { createLogComponent } from '@well-known-components/logger'
@@ -9,7 +9,6 @@ import { deleteUnreferencedFiles } from '../logic/delete-unreferenced-files'
 import { metricsDeclaration } from '../metrics'
 import { migrateContentFolderStructure } from '../migrations/ContentFolderMigrationManager'
 import { MigrationManagerFactory } from '../migrations/MigrationManagerFactory'
-import { createFsComponent } from '../ports/fs'
 import { createDatabaseComponent } from '../ports/postgres'
 import { MaintenanceComponents } from '../types'
 
