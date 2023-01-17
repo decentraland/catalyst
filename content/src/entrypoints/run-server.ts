@@ -1,5 +1,4 @@
 import { Lifecycle } from '@well-known-components/interfaces'
-import { defaultComponentsBuilder } from '../../src/components'
 import { AppComponents } from '../../src/types'
 import { EnvironmentBuilder } from '../Environment'
 import { main } from '../service'
@@ -8,6 +7,6 @@ import { main } from '../service'
 void Lifecycle.run<AppComponents>({
   main,
   initComponents() {
-    return new EnvironmentBuilder().buildConfigAndComponents(defaultComponentsBuilder)
+    return new EnvironmentBuilder().buildConfigAndComponents()
   }
 })
