@@ -6,7 +6,7 @@ import { createConfigComponent } from '@well-known-components/env-config-provide
 import { IFetchComponent } from '@well-known-components/http-server'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
-import { HTTPProvider } from 'eth-connect'
+import RequestManager, { ContractFactory, HTTPProvider } from 'eth-connect'
 import ms from 'ms'
 import path from 'path'
 import { Controller } from './controller/Controller'
@@ -45,7 +45,7 @@ import { ContentCluster } from './service/synchronization/ContentCluster'
 import { createRetryFailedDeployments } from './service/synchronization/retryFailedDeployments'
 import { createServerValidator } from './service/validations/server'
 import { createExternalCalls, createSubGraphsComponent, createValidator } from './service/validations/validator'
-import { AppComponents, ComponentsBuilder, EthersProvider, ICheckerContract } from './types'
+import { AppComponents, ComponentsBuilder, ICheckerContract } from './types'
 import {
   checkerAbi,
   checkerContracts,
@@ -55,12 +55,9 @@ import {
   thirdPartyContracts
 } from '@dcl/catalyst-contracts'
 
-async function createCheckerContract(provider: any, network: string): Promise<ICheckerContract> {
-  const { providers } = await import('@0xsequence/multicall')
-  const { ethers } = await import('ethers')
-  const multicallProvider = new providers.MulticallProvider(provider)
-  const contract = new ethers.Contract(checkerContracts[network], checkerAbi, multicallProvider)
-  return contract as any
+async function createCheckerContract(provider: HTTPProvider, network: string): Promise<ICheckerContract> {
+  const factory = new ContractFactory(new RequestManager(provider), checkerAbi)
+  return (await factory.at(checkerContracts[network])) as any
 }
 
 export const defaultComponentsBuilder = {
@@ -69,33 +66,32 @@ export const defaultComponentsBuilder = {
       fetch: fetcher.fetch
     })
   },
-  async createEthersProvider(network: string): Promise<EthersProvider> {
-    const { ethers } = await import('ethers')
-    return new ethers.providers.JsonRpcProvider(
-      `https://rpc.decentraland.org/${encodeURIComponent(network)}?project=catalyst-content`
-    )
-  },
-  async createL1Checker(provider: EthersProvider, network: string): Promise<L1Checker> {
+  async createL1Checker(provider: HTTPProvider, network: string): Promise<L1Checker> {
     const checker = await createCheckerContract(provider, network)
     return {
       checkLAND(ethAddress: string, parcels: [number, number][], block: number): Promise<boolean[]> {
         const contracts = landContracts[network]
         return Promise.all(
-          parcels.map(([x, y]) =>
-            checker.checkLAND(ethAddress, contracts.landContractAddress, contracts.stateContractAddress, x, y, {
-              blockTag: block
-            })
-          )
+          parcels.map(([x, y]) => {
+            return checker.checkLAND(
+              ethAddress,
+              contracts.landContractAddress,
+              contracts.stateContractAddress,
+              x,
+              y,
+              block
+            )
+          })
         )
       },
       checkNames(ethAddress: string, names: string[], block: number): Promise<boolean[]> {
         const registrar = registrarContracts[network]
 
-        return Promise.all(names.map((name) => checker.checkName(ethAddress, registrar, name, { blockTag: block })))
+        return Promise.all(names.map((name) => checker.checkName(ethAddress, registrar, name, block)))
       }
     }
   },
-  async createL2Checker(provider: EthersProvider, network: string): Promise<L2Checker> {
+  async createL2Checker(provider: HTTPProvider, network: string): Promise<L2Checker> {
     const checker = await createCheckerContract(provider, network)
 
     const { v2, v3 } = collectionFactoryContracts[network]
@@ -109,11 +105,11 @@ export const defaultComponentsBuilder = {
         hash: string,
         block: number
       ): Promise<boolean> {
-        return checker.validateWearables(ethAddress, factories, contractAddress, assetId, hash, { blockTag: block })
+        return checker.validateWearables(ethAddress, factories, contractAddress, assetId, hash, block)
       },
       validateThirdParty(ethAddress: string, tpId: string, root: Buffer, block: number): Promise<boolean> {
         const registry = thirdPartyContracts[network]
-        return checker.validateThirdParty(ethAddress, registry, tpId, new Uint8Array(root), { blockTag: block })
+        return checker.validateThirdParty(ethAddress, registry, tpId, new Uint8Array(root), block)
       }
     }
   }
@@ -142,12 +138,11 @@ export async function initComponentsWithEnv(env: Environment, builder: Component
 
   const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK)
   const l2Network = ethNetwork === 'mainnet' ? 'polygon' : 'mumbai'
+
   const l1EthConnectProvider = builder.createEthConnectProvider(fetcher, ethNetwork)
   const l2EthConnectProvider = builder.createEthConnectProvider(fetcher, l2Network)
-  const l1EthersProvider = await builder.createEthersProvider(ethNetwork)
-  const l2EthersProvider = await builder.createEthersProvider(l2Network)
-  const l1Checker = await builder.createL1Checker(l1EthersProvider, ethNetwork)
-  const l2Checker = await builder.createL2Checker(l2EthersProvider, l2Network)
+  const l1Checker = await builder.createL1Checker(l1EthConnectProvider, ethNetwork)
+  const l2Checker = await builder.createL2Checker(l2EthConnectProvider, l2Network)
 
   const database = await createDatabaseComponent({ logs, env, metrics })
 
@@ -201,8 +196,8 @@ export async function initComponentsWithEnv(env: Environment, builder: Component
     metrics,
     logs,
     fetcher,
-    l1EthersProvider,
-    l2EthersProvider,
+    l1EthConnectProvider,
+    l2EthConnectProvider,
     l1Checker,
     l2Checker
   })
@@ -410,8 +405,6 @@ export async function initComponentsWithEnv(env: Environment, builder: Component
     denylist,
     l1EthConnectProvider,
     l2EthConnectProvider,
-    l1EthersProvider,
-    l2EthersProvider,
     l1Checker,
     l2Checker,
     fs,
