@@ -1,4 +1,4 @@
-import { IContentStorageComponent } from '@dcl/catalyst-storage'
+import { IContentStorageComponent, IFileSystemComponent } from '@dcl/catalyst-storage'
 import { ExternalCalls, Validator } from '@dcl/content-validator'
 import { EntityType, SyncDeployment } from '@dcl/schemas'
 import { IDeployerComponent, SynchronizerComponent } from '@dcl/snapshots-fetcher'
@@ -18,7 +18,6 @@ import { Denylist } from './ports/denylist'
 import { DeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
 import { IDeployRateLimiterComponent } from './ports/deployRateLimiterComponent'
 import { IFailedDeploymentsComponent } from './ports/failedDeployments'
-import { FSComponent } from './ports/fs'
 import { IDatabaseComponent } from './ports/postgres'
 import { ISequentialTaskExecutorComponent } from './ports/sequecuentialTaskExecutor'
 import { SnapshotGenerator } from './ports/snapshotGenerator'
@@ -76,7 +75,7 @@ export type AppComponents = {
   activeEntities: ActiveEntities
   sequentialExecutor: ISequentialTaskExecutorComponent
   denylist: Denylist
-  fs: FSComponent
+  fs: IFileSystemComponent
   ethereumProvider: HTTPProvider
   snapshotGenerator: SnapshotGenerator
   processedSnapshotStorage: IProcessedSnapshotStorageComponent
@@ -90,7 +89,7 @@ export type MaintenanceComponents = {
   logs: ILoggerComponent
   database: IDatabaseComponent
   storage: IContentStorageComponent
-  fs: FSComponent
+  fs: IFileSystemComponent
   migrationManager: MigrationManager
 }
 

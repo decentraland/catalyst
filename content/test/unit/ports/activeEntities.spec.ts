@@ -21,8 +21,8 @@ import { Deployment } from '../../../src/service/deployments/types'
 import { ServiceImpl } from '../../../src/service/ServiceImpl'
 import { EntityVersion } from '../../../src/types'
 import { NoOpServerValidator, NoOpValidator } from '../../helpers/service/validations/NoOpValidator'
-import { MockedStorage } from '../ports/contentStorage/MockedStorage'
 import { NoOpPointerManager } from '../service/pointers/NoOpPointerManager'
+import { createStorageMock } from './contentStorage/storage-mock'
 
 export const DECENTRALAND_ADDRESS: EthAddress = '0x1337e0507eb4ab47e08a179573ed4533d9e22a7b'
 
@@ -310,7 +310,7 @@ async function buildService() {
   )
   const metrics = createTestMetricsComponent(metricsDeclaration)
   const failedDeployments = await createFailedDeployments({ metrics, database })
-  const storage = new MockedStorage()
+  const storage = createStorageMock()
   const pointerManager = NoOpPointerManager.build()
   const authenticator = new ContentAuthenticator(
     new HTTPProvider('https://rpc.decentraland.org/mainnet?project=catalyst-ci'),

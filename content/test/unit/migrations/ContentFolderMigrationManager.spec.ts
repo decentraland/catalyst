@@ -55,7 +55,6 @@ async function runMigration(storage: IContentStorageComponent) {
   const fs = createFsComponent()
   fs.unlink = async () => { }
   fs.createReadStream = jest.fn().mockImplementation((x) => x)
-  fs.ensureDirectoryExists = async () => { }
   fs.stat = jest.fn().mockResolvedValue(({ isDirectory: () => false }))
   fs.opendir = jest.fn().mockImplementation(function* () {
     let current = 0

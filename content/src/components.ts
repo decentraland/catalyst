@@ -1,4 +1,4 @@
-import { createFolderBasedFileSystemContentStorage } from '@dcl/catalyst-storage'
+import { createFolderBasedFileSystemContentStorage, createFsComponent } from '@dcl/catalyst-storage'
 import { createTheGraphClient } from '@dcl/content-validator'
 import { EntityType } from '@dcl/schemas'
 import { createSynchronizer } from '@dcl/snapshots-fetcher'
@@ -22,7 +22,6 @@ import { createDeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloom
 import { createDeployRateLimiter } from './ports/deployRateLimiterComponent'
 import { createFailedDeployments } from './ports/failedDeployments'
 import { createFetchComponent } from './ports/fetcher'
-import { createFsComponent } from './ports/fs'
 import { createDatabaseComponent } from './ports/postgres'
 import { createProcessedSnapshotStorage } from './ports/processedSnapshotStorage'
 import { createSequentialTaskExecutor } from './ports/sequecuentialTaskExecutor'
@@ -77,7 +76,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const catalystFetcher = FetcherFactory.create({ env })
   const contentFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
-  // const storage = await createFileSystemContentStorage({ fs }, contentFolder)
   const storage = await createFolderBasedFileSystemContentStorage({ fs }, contentFolder)
 
   const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK)
