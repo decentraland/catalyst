@@ -26,7 +26,7 @@
     "@dcl/schemas": "^6.4.1",
     "@dcl/snapshots-fetcher": "^5.0.1",
     "@dcl/urn-resolver": "^2.0.3",
-    "@dcl/catalyst-storage": "^2.0.2",
+    "@dcl/catalyst-storage": "^2.0.3",
     "@well-known-components/env-config-provider": "^1.2.0",
     "@well-known-components/http-server": "1.1.6",
     "@well-known-components/interfaces": "^1.1.3",

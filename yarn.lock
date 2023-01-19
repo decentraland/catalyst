@@ -341,10 +341,10 @@
     aws-sdk "^2.1248.0"
     destroy "^1.2.0"
 
-"@dcl/catalyst-storage@^2.0.2":
-  version "2.0.2"
-  resolved "https://registry.yarnpkg.com/@dcl/catalyst-storage/-/catalyst-storage-2.0.2.tgz#238f73408000528d6a8b3849e26a6c87604978b2"
-  integrity sha512-fL4xNCwqMIGB7nvhV7UTqOpEEF8Unub3nOMvstjjG6mS7tpUVoeIbXFY8to16awdOShcHNHoi5GvI4WaBKgbnw==
+"@dcl/catalyst-storage@^2.0.3":
+  version "2.0.3"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-storage/-/catalyst-storage-2.0.3.tgz#b85fba04bbbf61e22db2de970f71dd67dae07233"
+  integrity sha512-3Qd0cBG63+BtJgHi1IbZvK/QwDsiEqtfjivzULbvy89N4CtHvlQXH9a0mOnSJ1fdi5GsXxiUb4uqXxEpYavmPg==
   dependencies:
     "@types/destroy" "^1.0.0"
     "@types/node" "^18.6.3"
