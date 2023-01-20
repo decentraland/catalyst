@@ -56,6 +56,6 @@
     "addFileAttribute": "true"
   },
   "dependencies": {
-    "@dcl/snapshots-fetcher": "5.0.2-20230120172800.commit-8412989"
+    "@dcl/snapshots-fetcher": "5.0.2-20230120205243.commit-46cc4ed"
   }
 }
