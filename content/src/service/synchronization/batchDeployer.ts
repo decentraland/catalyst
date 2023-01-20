@@ -114,8 +114,9 @@ export function createBatchDeployerComponent(
 
       const operationPriority = priorityBasedOnEntityType(entity.entityType)
 
-      parallelDeploymentJobs
-        .scheduleJobWithPriority(async () => {
+      try {
+        await parallelDeploymentJobs.onSizeLessThan(1000)
+        await parallelDeploymentJobs.scheduleJobWithPriority(async () => {
           /**
            *  Entity should be marked as processed in the snapshot if anyone of these conditions is met:
            *  1. The entity is already deployed.
@@ -183,7 +184,9 @@ export function createBatchDeployerComponent(
             throw new Error('element in map does not exist! this should never happen')
           }
         }, operationPriority)
-        .catch(logs.error)
+      } catch (err: any) {
+        logs.error(err)
+      }
     }
   }
 
