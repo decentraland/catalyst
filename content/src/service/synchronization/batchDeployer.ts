@@ -113,8 +113,7 @@ export function createBatchDeployerComponent(
       const operationPriority = priorityBasedOnEntityType(entity.entityType)
 
       try {
-        // NOTE(hugo): this promise may resolve for every caller, so in reallity we can have way more than 100 elements
-        await parallelDeploymentJobs.onSizeLessThan(100)
+        await parallelDeploymentJobs.onSizeLessThan(1000)
 
         // increment the gauge of enqueued deployments
         components.metrics.increment('dcl_pending_deployment_gauge', metricLabels)
