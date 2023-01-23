@@ -344,10 +344,10 @@
   dependencies:
     "@cspotcode/source-map-consumer" "0.8.0"
 
-"@dcl/block-indexer@^1.0.0-20221223191317.commit-2d753e7":
-  version "1.0.0-20221223191317.commit-2d753e7"
-  resolved "https://registry.yarnpkg.com/@dcl/block-indexer/-/block-indexer-1.0.0-20221223191317.commit-2d753e7.tgz#a255bfbad56b7af4a37b636a8f6d8b9c0d454fd1"
-  integrity sha512-7aEWfJTY/vPQihDmBYuStYezCRNmeRQrFCcgsNUtYRdU9tmtjQsuT3M+miWTPM+4k/YVPOVPwtYMPbi7uaRTsA==
+"@dcl/block-indexer@1.0.0-20230123163606.commit-b38fa52":
+  version "1.0.0-20230123163606.commit-b38fa52"
+  resolved "https://registry.yarnpkg.com/@dcl/block-indexer/-/block-indexer-1.0.0-20230123163606.commit-b38fa52.tgz#d79392ddb53be7610bc7013858e0c79b1d262e5a"
+  integrity sha512-yhAiy2kPYJnRCb3xrYWXXT0Sxdt3SJQL/W1v9OX24H2i4xMFSfXTx9MRZgPgqGZuV/yYFI6G3IH6LLp0cUqV4Q==
   dependencies:
     "@well-known-components/interfaces" "^1.1.3"
     "@well-known-components/logger" "^3.0.0"
@@ -386,12 +386,12 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@4.2.3-20230116175244.commit-84aaedb":
-  version "4.2.3-20230116175244.commit-84aaedb"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.2.3-20230116175244.commit-84aaedb.tgz#1f3b13793bfb38e282186a45abf6d729ed473624"
-  integrity sha512-wulHF/aJlKgSl4WMrChcVMp4cxEIGUUsBAMQ8LHewZOb1iihjSzKe9rJlicL+wLkQv729pRBAQWOD5aYryt1yg==
+"@dcl/content-validator@4.2.4-20230123164620.commit-1ba0cf1":
+  version "4.2.4-20230123164620.commit-1ba0cf1"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.2.4-20230123164620.commit-1ba0cf1.tgz#9f4136b8df42f447bfe57507b7b35f30181e586e"
+  integrity sha512-uCo2yrEi1WNnlpAiMy0e483Zm1l7Wb+khhpvfuMWZOv9TzGknuXVdnTaNupjrQUDmTHPFMXO1GGMSuTq03Lg3g==
   dependencies:
-    "@dcl/block-indexer" "^1.0.0-20221223191317.commit-2d753e7"
+    "@dcl/block-indexer" "1.0.0-20230123163606.commit-b38fa52"
     "@dcl/content-hash-tree" "^1.1.4"
     "@dcl/hashing" "1.1.3"
     "@dcl/schemas" "^6.4.0"
@@ -1819,9 +1819,9 @@
     form-data "^3.0.0"
 
 "@types/node@*":
-  version "18.11.17"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.11.17.tgz#5c009e1d9c38f4a2a9d45c0b0c493fe6cdb4bcb5"
-  integrity sha512-HJSUJmni4BeDHhfzn6nF0sVmd1SMezP7/4F0Lq+aXzmp2xm9O7WXrUtHW/CHlYVtZUbByEvWidHqRtcJXGF2Ng==
+  version "18.11.18"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.11.18.tgz#8dfb97f0da23c2293e554c5a50d61ef134d7697f"
+  integrity sha512-DHQpWGjyQKSHj3ebjFI/wRKcqQcdR+MoFBygntYOZytCqNfkd2ZC4ARDJ2DQqhjH5p85Nnd3jhUJIXrszFX/JA==
 
 "@types/node@17.0.45":
   version "17.0.45"
@@ -1834,9 +1834,9 @@
   integrity sha512-/xUq6H2aQm261exT6iZTMifUySEt4GR5KX8eYyY+C4MSNPqSh9oNIP7tz2GLKTlFaiBbgZNxffoR3CVRG+cljw==
 
 "@types/node@^16.11.19":
-  version "16.18.10"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-16.18.10.tgz#d7415ef18c94f8d4e4a82ebcc8b8999f965d8920"
-  integrity sha512-XU1+v7h81p7145ddPfjv7jtWvkSilpcnON3mQ+bDi9Yuf7OI56efOglXRyXWgQ57xH3fEQgh7WOJMncRHVew5w==
+  version "16.18.11"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-16.18.11.tgz#cbb15c12ca7c16c85a72b6bdc4d4b01151bb3cae"
+  integrity sha512-3oJbGBUWuS6ahSnEq1eN2XrCyf4YsWI8OyCvo7c64zQJNplk3mO84t53o8lfTk+2ji59g5ycfc6qQ3fdHliHuA==
 
 "@types/node@^18.6.3":
   version "18.11.9"
@@ -6350,10 +6350,17 @@ process-on-spawn@^1.0.0:
   dependencies:
     fromentries "^1.2.0"
 
-prom-client@^14.0.1, prom-client@^14.1.0:
+prom-client@^14.0.1:
   version "14.1.0"
   resolved "https://registry.yarnpkg.com/prom-client/-/prom-client-14.1.0.tgz#049609859483d900844924df740722c76ed1fdbb"
   integrity sha512-iFWCchQmi4170omLpFXbzz62SQTmPhtBL35v0qGEVRHKcqIeiexaoYeP0vfZTujxEq3tA87iqOdRbC9svS1B9A==
+  dependencies:
+    tdigest "^0.1.1"
+
+prom-client@^14.1.0:
+  version "14.1.1"
+  resolved "https://registry.yarnpkg.com/prom-client/-/prom-client-14.1.1.tgz#e9bebef0e2269bfde22a322f4ca803cb52b4a0c0"
+  integrity sha512-hFU32q7UZQ59bVJQGUtm3I2PrJ3gWvoCkilX9sF165ks1qflhugVCeK+S1JjJYHvyt3o5kj68+q3bchormjnzw==
   dependencies:
     tdigest "^0.1.1"
 
