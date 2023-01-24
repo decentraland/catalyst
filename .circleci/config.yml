@@ -135,7 +135,7 @@ jobs:
             TESTFILES="test/unit/logic/content-files-queries.spec.ts"
             yarn test $TESTFILES --coverageDirectory=reports --reporters=jest-junit --reporters=default
             mv reports/coverage-final.json reports/coverage-${CIRCLE_NODE_INDEX:-0}.json
-            mv api-coverage/api-coverage.json api-coverage/api-coverage-${CIRCLE_NODE_INDEX:-0}.json
+            touch api-coverage/api-coverage-${CIRCLE_NODE_INDEX:-0}.json
           environment:
             CI: 'true'
             JEST_JUNIT_OUTPUT_DIR: './test-result'
