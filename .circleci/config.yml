@@ -259,9 +259,6 @@ workflows:
       - accept-publish-docker-for-testing:
           <<: *testing_branches
           type: approval
-          requires:
-            - build-content
-            - build-lambdas
       - publish-content-docker-without-tag:
           <<: *testing_branches
           requires:
