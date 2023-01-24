@@ -128,6 +128,20 @@ jobs:
     working_directory: *workspace_root
     steps:
       - <<: *attach_root
+      - run:
+          name: Run tests
+          command: |
+            cd content
+            TESTFILES="test/unit/logic/content-files-queries.spec.ts"
+            yarn test $TESTFILES --coverageDirectory=reports --reporters=jest-junit --reporters=default
+            mv reports/coverage-final.json reports/coverage-${CIRCLE_NODE_INDEX:-0}.json
+            mv api-coverage/api-coverage.json api-coverage/api-coverage-${CIRCLE_NODE_INDEX:-0}.json
+          environment:
+            CI: 'true'
+            JEST_JUNIT_OUTPUT_DIR: './test-result'
+            JEST_JUNIT_ADD_FILE_ATTRIBUTE: 'true'
+      - store_test_results:
+          path: content/test-result
       - store_artifacts:
           path: content/test-result
       - persist_to_workspace:
@@ -245,20 +259,45 @@ workflows:
             - checkout
 
       # build packages
+      - build-content:
+          <<: *all_branches_and_tags
+          requires:
+            - checkout
+      - report-content-coverage:
+          <<: *all_branches_and_tags
+          requires:
+            - build-content
+      - report-content-api-coverage:
+          <<: *all_branches_and_tags
+          requires:
+            - build-content
+      - build-lambdas:
+          <<: *all_branches_and_tags
+          requires:
+            - checkout
 
       # publish docker images in "main" and semver tags
       # main publishes to @next
       # semver tags publish to @latest
       - publish-content-docker:
           <<: *main_and_tags
+          requires:
+            - build-content
+            - report-content-coverage
+            - report-content-api-coverage
 
       - publish-lambdas-docker:
           <<: *main_and_tags
+          requires:
+            - build-lambdas
 
       # NOT (main | semver) enables manual approval to release untagged docker images
       - accept-publish-docker-for-testing:
           <<: *testing_branches
           type: approval
+          requires:
+            - build-content
+            - build-lambdas
       - publish-content-docker-without-tag:
           <<: *testing_branches
           requires:
