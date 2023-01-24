@@ -251,15 +251,9 @@ workflows:
       # semver tags publish to @latest
       - publish-content-docker:
           <<: *main_and_tags
-          requires:
-            - build-content
-            - report-content-coverage
-            - report-content-api-coverage
 
       - publish-lambdas-docker:
           <<: *main_and_tags
-          requires:
-            - build-lambdas
 
       # NOT (main | semver) enables manual approval to release untagged docker images
       - accept-publish-docker-for-testing:
