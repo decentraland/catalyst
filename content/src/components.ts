@@ -71,7 +71,7 @@ class CustomProvider extends ethers.providers.JsonRpcProvider {
       const hexlifyTransaction = ethers.utils.getStatic<
         (t: ethers.providers.TransactionRequest, a?: { [key: string]: boolean }) => { [key: string]: string }
       >(this.constructor, 'hexlifyTransaction')
-      if (params.transaction.to === this.checkerAddress) {
+      if (params.transaction.to.toLowerCase() === this.checkerAddress.toLowerCase()) {
         return [
           'eth_call',
           [hexlifyTransaction(params.transaction, { from: true }), params.blockTag, this.checkerStateOverride]
