@@ -1,4 +1,3 @@
-import { providers } from '@0xsequence/multicall'
 import {
   checkerAbi,
   checkerContracts,
@@ -87,8 +86,7 @@ class CustomProvider extends ethers.providers.JsonRpcProvider {
 }
 
 async function createCheckerContract(provider: any, network: string): Promise<ICheckerContract> {
-  const multicallProvider = new providers.MulticallProvider(provider)
-  const contract = new ethers.Contract(checkerContracts[network], checkerAbi, multicallProvider)
+  const contract = new ethers.Contract(checkerContracts[network], checkerAbi, provider)
   return contract as any
 }
 
