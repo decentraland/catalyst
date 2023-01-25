@@ -3,7 +3,6 @@ import { delay } from 'dcl-catalyst-commons'
 import { findContentHashesNotBeingUsedAnymore } from '../../logic/database-queries/content-files-queries'
 import { SYSTEM_PROPERTIES } from '../../ports/system-properties'
 import { AppComponents } from '../../types'
-import { fixMissingProfilesContentFiles } from './FixContentFilesHelper'
 
 export class GarbageCollectionManager {
   private LOGGER: ILoggerComponent.ILogger
@@ -16,7 +15,7 @@ export class GarbageCollectionManager {
   constructor(
     private readonly components: Pick<
       AppComponents,
-      'clock' | 'database' | 'env' | 'fetcher' | 'logs' | 'metrics' | 'storage' | 'systemProperties'
+      'systemProperties' | 'metrics' | 'logs' | 'storage' | 'database' | 'clock'
     >,
     private readonly performGarbageCollection: boolean,
     private readonly sweepInterval: number
@@ -46,9 +45,6 @@ export class GarbageCollectionManager {
    * If they are not being used, then we will delete them.
    */
   async performSweep() {
-    // First create the content_files entries that could be missing (from broken profiles)
-    await fixMissingProfilesContentFiles(this.components)
-
     const newTimeOfCollection: number = this.components.clock.now()
     this.sweeping = true
     const { end: endTimer } = this.components.metrics.startTimer('dcl_content_garbage_collection_time')
