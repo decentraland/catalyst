@@ -1,13 +1,15 @@
 import { EntityType } from '@dcl/schemas'
 import { AppComponents } from '../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
-import { loadStandaloneTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
+import { setupTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
 import { buildDeployData, deployEntitiesCombo, EntityCombo } from '../E2ETestUtils'
 
 /**
  * This test verifies that the entities with the same entity timestamp are deployed correctly
  */
-loadStandaloneTestEnvironment()('Integration - Same Timestamp Check', (testEnv) => {
+describe('Integration - Same Timestamp Check', () => {
+  const getTestEnv = setupTestEnvironment()
+
   const P1 = 'X1,Y1'
   const type = EntityType.PROFILE
   let oldestEntity: EntityCombo, newestEntity: EntityCombo
@@ -26,7 +28,7 @@ loadStandaloneTestEnvironment()('Integration - Same Timestamp Check', (testEnv) 
   })
 
   testCaseWithComponents(
-    testEnv,
+    getTestEnv,
     `When oldest is deployed first, the active is the newest`,
     async ({ deployer, validator, serverValidator }) => {
       // make noop validator
@@ -43,7 +45,7 @@ loadStandaloneTestEnvironment()('Integration - Same Timestamp Check', (testEnv) 
   )
 
   testCaseWithComponents(
-    testEnv,
+    getTestEnv,
     `When newest is deployed first, the active is the newest`,
     async ({ deployer, validator, serverValidator }) => {
       // make noop validator
@@ -66,5 +68,4 @@ loadStandaloneTestEnvironment()('Integration - Same Timestamp Check', (testEnv) 
     const [activeEntity] = deployments
     expect(activeEntity.entityId).toEqual(entityCombo.entity.id)
   }
-
 })

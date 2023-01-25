@@ -14,21 +14,6 @@
       ]
     },
     {
-      "type": "node",
-      "request": "launch",
-      "name": "Launch Program",
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
-      "program": "${workspaceFolder}/lighthouse:server",
-      "outFiles": [
-        "${workspaceFolder}/**/*.js"
-      ],
-      "env": {
-        "CI": "true"
-      }
-    },
-    {
       "name": "Debug Jest Tests - Content server",
       "type": "node",
       "request": "launch",
@@ -42,6 +27,22 @@
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
       "port": 9229
+    },
+    {
+      "name": "Debug Content server",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/content/dist/src/entrypoints/run-server.js",
+      "port": 9229,
+    },
+    {
+      "name": "Debug Content server TYPESCRIPT",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/content/src/entrypoints/run-server.ts",
+      "preLaunchTask": "npm: build:content:sourcemap",
+      "cwd": "${workspaceFolder}/content",
+      "port": 9229,
     }
   ]
 }

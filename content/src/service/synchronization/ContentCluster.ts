@@ -22,14 +22,14 @@ function shuffleArray<T>(arr: T[]): T[] {
 }
 
 export class ContentCluster implements IdentityProvider {
-  private static LOGGER: ILoggerComponent.ILogger
+  private logger: ILoggerComponent.ILogger
 
   // Servers that were reached at least once
   private serverClients: Set<string> = new Set()
   // Time of last sync with the DAO
   private timeOfLastSync: number = 0
 
-  private syncFinishedEventCallbacks: Array<() => void> = []
+  private syncFinishedEventCallbacks: Array<(serverClients: Set<string>) => void> = []
 
   private identityFuture: Promise<CatalystByIdResult | undefined> | undefined
 
@@ -37,10 +37,13 @@ export class ContentCluster implements IdentityProvider {
   private stoppedFuture = future<void>()
 
   constructor(
-    private readonly components: Pick<AppComponents, 'logs' | 'daoClient' | 'challengeSupervisor' | 'fetcher' | 'env'>,
+    private readonly components: Pick<
+      AppComponents,
+      'logs' | 'daoClient' | 'challengeSupervisor' | 'fetcher' | 'env' | 'clock'
+    >,
     private readonly timeBetweenSyncs: number
   ) {
-    ContentCluster.LOGGER = components.logs.getLogger('ContentCluster')
+    this.logger = components.logs.getLogger('ContentCluster')
   }
 
   /** Connect to the DAO for the first time */
@@ -52,13 +55,13 @@ export class ContentCluster implements IdentityProvider {
     await this.getContentServersFromDao()
 
     // Start recurrent sync job
-    this.syncWithDAOJob().catch(ContentCluster.LOGGER.error)
+    this.syncWithDAOJob().catch(this.logger.error)
   }
 
   /**
    * Registers an event that is emitted every time the list of catalysts is refreshed.
    */
-  onSyncFinished(cb: () => void): void {
+  onSyncFinished(cb: (serverClients: Set<string>) => void): void {
     this.syncFinishedEventCallbacks.push(cb)
   }
 
@@ -83,7 +86,7 @@ export class ContentCluster implements IdentityProvider {
   }
 
   private async syncWithDAOJob() {
-    ContentCluster.LOGGER.info(`Starting sync with DAO every ${this.timeBetweenSyncs}ms`)
+    this.logger.info(`Starting sync with DAO every ${this.timeBetweenSyncs}ms`)
 
     while (this.stoppedFuture.isPending) {
       await Promise.race([sleep(this.timeBetweenSyncs), this.stoppedFuture])
@@ -109,7 +112,7 @@ export class ContentCluster implements IdentityProvider {
       for (const serverBaseUrl of this.serverClients) {
         if (!allServerBaseUrls.includes(serverBaseUrl)) {
           this.serverClients.delete(serverBaseUrl)
-          ContentCluster.LOGGER.info(`Removing server '${serverBaseUrl}'`)
+          this.logger.info(`Removing server '${serverBaseUrl}'`)
         }
       }
 
@@ -118,18 +121,18 @@ export class ContentCluster implements IdentityProvider {
         if (!this.serverClients.has(serverBaseUrl)) {
           // Create and store the new client
           this.serverClients.add(serverBaseUrl)
-          ContentCluster.LOGGER.info(`Discovered new server '${serverBaseUrl}'`)
+          this.logger.info(`Discovered new server '${serverBaseUrl}'.`)
         }
       }
 
       // Update sync time
-      this.timeOfLastSync = Date.now()
+      this.timeOfLastSync = this.components.clock.now()
 
       for (const cb of this.syncFinishedEventCallbacks) {
-        cb()
+        cb(this.serverClients)
       }
     } catch (error) {
-      ContentCluster.LOGGER.error(`Failed to sync with the DAO \n${error}`)
+      this.logger.error(`Failed to sync with the DAO \n${error}`)
     }
     return Array.from(this.serverClients)
   }

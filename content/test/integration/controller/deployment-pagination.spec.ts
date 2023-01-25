@@ -6,17 +6,19 @@ import { toQueryParams } from '../../../src/logic/toQueryParams'
 import { DeploymentOptions, SortingField, SortingOrder } from '../../../src/service/deployments/types'
 import { PointerChangesFilters } from '../../../src/service/pointers/types'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
-import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
+import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData, EntityCombo } from '../E2ETestUtils'
 import { TestProgram } from '../TestProgram'
 
-loadStandaloneTestEnvironment()('Integration - Deployment Pagination', (testEnv) => {
+describe('Integration - Deployment Pagination', () => {
+  const getTestEnv = setupTestEnvironment()
+
   let E1: EntityCombo, E2: EntityCombo, E3: EntityCombo
 
   let server: TestProgram
 
   beforeEach(async () => {
-    server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+    server = await getTestEnv().configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
     makeNoopValidator(server.components)
     await server.startProgram()
   })

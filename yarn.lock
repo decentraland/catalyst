@@ -316,17 +316,17 @@
   dependencies:
     "@cspotcode/source-map-consumer" "0.8.0"
 
-"@dcl/catalyst-api-specs@^2.0.18":
-  version "2.0.18"
-  resolved "https://registry.yarnpkg.com/@dcl/catalyst-api-specs/-/catalyst-api-specs-2.0.18.tgz#83115c8685582099e6da2ae217188336149d1051"
-  integrity sha512-ZgThrI11+nOGb3N71aVuUgRKDXwekcADQQb2L96wqsiJoT8H+6Ied7imF/FUw0UhOhSXAlACX+YCVdyze2b+Lg==
+"@dcl/catalyst-api-specs@^2.2.0":
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-api-specs/-/catalyst-api-specs-2.2.0.tgz#2f7fd7b7e542423977c2b8e0f54ae7bcf3a6c87b"
+  integrity sha512-CBFUbyWkPLmJB/n8OLr6BjxU201uskwGCy8ZXrQN+B+KFKiAEPfHP73qN1eyfstRya0Mw6odnlf36CfL9D8xLA==
   dependencies:
     yaml "2.2.1"
 
-"@dcl/catalyst-contracts@^3.0.0", "@dcl/catalyst-contracts@^3.0.1", "@dcl/catalyst-contracts@^3.1.0":
-  version "3.1.0"
-  resolved "https://registry.yarnpkg.com/@dcl/catalyst-contracts/-/catalyst-contracts-3.1.0.tgz#23f764dca183914cefc06db96cc9c43e88585b47"
-  integrity sha512-ctnzngEY+TaD7PM9UZwlb/twnuuFDnp5FJciIxIau/WPhOmvJEQlQX//2rzXctfrflJEswNG1M0OSIsXxKDaBA==
+"@dcl/catalyst-contracts@^3.0.0", "@dcl/catalyst-contracts@^3.1.3":
+  version "3.1.3"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-contracts/-/catalyst-contracts-3.1.3.tgz#317f9b1795dc8c61e99dfa41ccfad69cd598873d"
+  integrity sha512-Wq9naCp3WoxfZr/rXNlmKYhVx7uKDrztQ2x1EYDL54Fjj41FSO+McbfVgv4Coia3wjwx1e+wxfUdoBvD5KsYeA==
   dependencies:
     eth-connect "^6.0.2"
 
@@ -348,14 +348,14 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@^4.0.26":
-  version "4.0.26"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.0.26.tgz#e9025102eea8efefe0a3952a7ad99d01923a73ee"
-  integrity sha512-gMyOhqWp+pQ1ABvdbPdbfmsFzI2i76JIZsXkIwcqFL/GFGW2BAGDNpqo+HPxdXzDtV9KAzPMfJ9k+8tu2bQCPw==
+"@dcl/content-validator@^4.2.2":
+  version "4.2.2"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.2.2.tgz#97ca7777365be67acabd4b88575c63fbe340db1c"
+  integrity sha512-yeKLy73kmfC+1NhT9cuYk+gCaeQNefuQM2PMb9jz1fBGk2sOltDYup9z2r6O4zQtP7ia/hzJTcNTvWitiz7arA==
   dependencies:
     "@dcl/content-hash-tree" "^1.1.3"
     "@dcl/hashing" "1.1.3"
-    "@dcl/schemas" "^5.4.2"
+    "@dcl/schemas" "^6.4.0"
     "@dcl/urn-resolver" "2.0.3"
     "@well-known-components/interfaces" "1.1.3"
     "@well-known-components/thegraph-component" "^1.2.0"
@@ -380,7 +380,7 @@
     ipfs-unixfs-importer "^7.0.3"
     multiformats "^9.6.3"
 
-"@dcl/schemas@^5.32.0", "@dcl/schemas@^5.4.2", "@dcl/schemas@^5.5.0":
+"@dcl/schemas@^5.4.2", "@dcl/schemas@^5.5.0":
   version "5.32.0"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-5.32.0.tgz#260884e5cfde135902e77d621edf446154983d85"
   integrity sha512-irvdF66dQMqKfjYib9gINxgGTJWL3NAG2m8ujIctDiRnjpoPpzH2VCPjOj+IKpNjWbMth4XaGr1JO0sfJweseA==
@@ -389,14 +389,23 @@
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
 
-"@dcl/snapshots-fetcher@^4.0.21":
-  version "4.0.21"
-  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-4.0.21.tgz#63dded8742cc94882ba781b12384da99f51a223e"
-  integrity sha512-CCsgBFkowrRimAKYDslusxJjRFMGiw098pKJl3aSh/Nj+K2s1UhFVFD3RjjzBFvSK43TviUfp3CDucfaV0dj1Q==
+"@dcl/schemas@^6.2.0", "@dcl/schemas@^6.4.0", "@dcl/schemas@^6.4.2":
+  version "6.4.2"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-6.4.2.tgz#0f318b7b74943cae9288b24b3ebd8881aea057d3"
+  integrity sha512-yO8GgC7RIU17951VBGIx2tA0xMVRv6Ia7rR6V97yY77/fYLAIn1FqW/20MEmonDzyJJ5YnuDa/8gVk3XusIXYA==
+  dependencies:
+    ajv "^8.11.0"
+    ajv-errors "^3.0.0"
+    ajv-keywords "^5.1.0"
+
+"@dcl/snapshots-fetcher@^5.0.4":
+  version "5.0.4"
+  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-5.0.4.tgz#300f937125c6af7988ab9007e70580eab656c6c8"
+  integrity sha512-170IA/77ZF9EOp8VqzlbhZf8uMkKzjvE2Uy4otPsXPaSJHxco09syiPPfqnJvyD3sWdSeaZI40LeoIjfFxfgmA==
   dependencies:
     "@dcl/catalyst-storage" "^2.0.0"
     "@dcl/hashing" "^1.0.0"
-    "@dcl/schemas" "^5.4.2"
+    "@dcl/schemas" "^6.2.0"
     "@well-known-components/interfaces" "^1.1.0"
     "@well-known-components/metrics" "^2.0.0"
     p-queue "^6.6.2"
@@ -905,6 +914,13 @@
     terminal-link "^2.0.0"
     v8-to-istanbul "^8.1.0"
 
+"@jest/schemas@^29.0.0":
+  version "29.0.0"
+  resolved "https://registry.yarnpkg.com/@jest/schemas/-/schemas-29.0.0.tgz#5f47f5994dd4ef067fb7b4188ceac45f77fe952a"
+  integrity sha512-3Ab5HgYIIAnS0HjqJHQYZS+zXc4tUmTmBH3z83ajI6afXp8X3ZtdLX+nXx+I7LNkJD7uN9LAVhgnjDgZa2z0kA==
+  dependencies:
+    "@sinclair/typebox" "^0.24.1"
+
 "@jest/source-map@^27.5.1":
   version "27.5.1"
   resolved "https://registry.yarnpkg.com/@jest/source-map/-/source-map-27.5.1.tgz#6608391e465add4205eae073b55e7f279e04e8cf"
@@ -1121,6 +1137,11 @@
   dependencies:
     "@noble/hashes" "~1.1.1"
     "@scure/base" "~1.1.0"
+
+"@sinclair/typebox@^0.24.1":
+  version "0.24.51"
+  resolved "https://registry.yarnpkg.com/@sinclair/typebox/-/typebox-0.24.51.tgz#645f33fe4e02defe26f2f5c0410e1c094eac7f5f"
+  integrity sha512-1P1OROm/rdubP5aFDSZQILU0vrLCJ4fvHt6EoqHEM+2D/G5MK3bIaymUKLit8Js9gbns5UyJnkP/TZROLw4tUA==
 
 "@sinonjs/commons@^1.6.0", "@sinonjs/commons@^1.7.0", "@sinonjs/commons@^1.8.3":
   version "1.8.3"
@@ -4467,6 +4488,11 @@ jest-get-type@^27.5.1:
   resolved "https://registry.yarnpkg.com/jest-get-type/-/jest-get-type-27.5.1.tgz#3cd613c507b0f7ace013df407a1c1cd578bcb4f1"
   integrity sha512-2KY95ksYSaK7DMBWQn6dQz3kqAf3BB64y2udeG+hv4KfSOb9qwcYQstTJc1KCbsix+wLZWZYN8t7nwX3GOBLRw==
 
+jest-get-type@^29.2.0:
+  version "29.2.0"
+  resolved "https://registry.yarnpkg.com/jest-get-type/-/jest-get-type-29.2.0.tgz#726646f927ef61d583a3b3adb1ab13f3a5036408"
+  integrity sha512-uXNJlg8hKFEnDgFsrCjznB+sTxdkuqiCL6zMgA75qEbAJjJYTs9XPrvDctrEig2GDow22T/LvHgO57iJhXB/UA==
+
 jest-haste-map@^27.5.1:
   version "27.5.1"
   resolved "https://registry.yarnpkg.com/jest-haste-map/-/jest-haste-map-27.5.1.tgz#9fd8bd7e7b4fa502d9c6164c5640512b4e811e7f"
@@ -4527,6 +4553,14 @@ jest-leak-detector@^27.5.1:
   dependencies:
     jest-get-type "^27.5.1"
     pretty-format "^27.5.1"
+
+jest-leak-detector@^29.3.1:
+  version "29.3.1"
+  resolved "https://registry.yarnpkg.com/jest-leak-detector/-/jest-leak-detector-29.3.1.tgz#95336d020170671db0ee166b75cd8ef647265518"
+  integrity sha512-3DA/VVXj4zFOPagGkuqHnSQf1GZBmmlagpguxEERO6Pla2g84Q1MaVIB3YMxgUaFIaYag8ZnTyQgiZ35YEqAQA==
+  dependencies:
+    jest-get-type "^29.2.0"
+    pretty-format "^29.3.1"
 
 jest-matcher-utils@^27.0.0, jest-matcher-utils@^27.5.1:
   version "27.5.1"
@@ -5866,6 +5900,15 @@ pretty-format@^27.0.0, pretty-format@^27.5.1:
     ansi-styles "^5.0.0"
     react-is "^17.0.1"
 
+pretty-format@^29.3.1:
+  version "29.3.1"
+  resolved "https://registry.yarnpkg.com/pretty-format/-/pretty-format-29.3.1.tgz#1841cac822b02b4da8971dacb03e8a871b4722da"
+  integrity sha512-FyLnmb1cYJV8biEIiRyzRFvs2lry7PPIvOqKVe1GCUEYg4YGmlx1qG9EJNMxArYm7piII4qb8UV1Pncq5dxmcg==
+  dependencies:
+    "@jest/schemas" "^29.0.0"
+    ansi-styles "^5.0.0"
+    react-is "^18.0.0"
+
 process-nextick-args@~2.0.0:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/process-nextick-args/-/process-nextick-args-2.0.1.tgz#7820d9b16120cc55ca9ae7792680ae7dba6d7fe2"
@@ -6015,6 +6058,11 @@ react-is@^17.0.1:
   version "17.0.2"
   resolved "https://registry.yarnpkg.com/react-is/-/react-is-17.0.2.tgz#e691d4a8e9c789365655539ab372762b0efb54f0"
   integrity sha512-w2GsyukL62IJnlaff/nRegPQR94C/XXamvMWmSHRJ4y7Ts/4ocGRmTHvOs8PSE6pB3dWOrD/nueuU5sduBsQ4w==
+
+react-is@^18.0.0:
+  version "18.2.0"
+  resolved "https://registry.yarnpkg.com/react-is/-/react-is-18.2.0.tgz#199431eeaaa2e09f86427efbb4f1473edb47609b"
+  integrity sha512-xWGDIW6x921xtzPkhiULtthJHoJvBbF3q26fzloPCK0hsvxtPVelvftw3zjbHWSkR2km9Z+4uxbDDK/6Zw9B8w==
 
 read-yaml-file@2.1.0:
   version "2.1.0"

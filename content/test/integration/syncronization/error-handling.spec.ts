@@ -1,7 +1,7 @@
 import { Entity } from '@dcl/schemas'
 import ms from 'ms'
 import { EnvironmentConfig } from '../../../src/Environment'
-import { FailedDeployment, FailureReason } from '../../../src/ports/failedDeploymentsCache'
+import { FailedDeployment, FailureReason } from '../../../src/ports/failedDeployments'
 import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import {
   assertDeploymentFailed,
@@ -12,17 +12,18 @@ import {
   assertThereIsAFailedDeployment,
   buildDeployment
 } from '../E2EAssertions'
-import { loadTestEnvironment } from '../E2ETestEnvironment'
+import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { awaitUntil, buildDeployData, buildDeployDataAfterEntity, createIdentity } from '../E2ETestUtils'
 import { TestProgram } from '../TestProgram'
 
-loadTestEnvironment()('End 2 end - Error handling', (testEnv) => {
+describe('End 2 end - Error handling', () => {
   const identity = createIdentity()
+  const getTestEnv = setupTestEnvironment()
   let server1: TestProgram, server2: TestProgram
 
   beforeEach(async () => {
-    ;[server1, server2] = await testEnv
-      .configServer('2s')
+    ;[server1, server2] = await getTestEnv()
+      .configServer()
       .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
       .withConfig(EnvironmentConfig.REQUEST_TTL_BACKWARDS, ms('2s'))
       .andBuildMany(2)

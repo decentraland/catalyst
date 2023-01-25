@@ -16,7 +16,7 @@ export class GarbageCollectionManager {
   constructor(
     private readonly components: Pick<
       AppComponents,
-      'database' | 'env' | 'fetcher' | 'logs' | 'metrics' | 'storage' | 'systemProperties'
+      'clock' | 'database' | 'env' | 'fetcher' | 'logs' | 'metrics' | 'storage' | 'systemProperties'
     >,
     private readonly performGarbageCollection: boolean,
     private readonly sweepInterval: number
@@ -49,7 +49,7 @@ export class GarbageCollectionManager {
     // First create the content_files entries that could be missing (from broken profiles)
     await fixMissingProfilesContentFiles(this.components)
 
-    const newTimeOfCollection: number = Date.now()
+    const newTimeOfCollection: number = this.components.clock.now()
     this.sweeping = true
     const { end: endTimer } = this.components.metrics.startTimer('dcl_content_garbage_collection_time')
     try {

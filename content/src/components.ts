@@ -1,7 +1,6 @@
 import { createTheGraphClient } from '@dcl/content-validator'
 import { EntityType } from '@dcl/schemas'
-import { createCatalystDeploymentStream } from '@dcl/snapshots-fetcher'
-import { createJobLifecycleManagerComponent } from '@dcl/snapshots-fetcher/dist/job-lifecycle-manager'
+import { createSynchronizer } from '@dcl/snapshots-fetcher'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
 import { createLogComponent } from '@well-known-components/logger'
@@ -16,15 +15,20 @@ import { splitByCommaTrimAndRemoveEmptyElements } from './logic/config-helpers'
 import { metricsDeclaration } from './metrics'
 import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
 import { createActiveEntitiesComponent } from './ports/activeEntities'
+import { createClock } from './ports/clock'
 import { createFileSystemContentStorage } from './ports/contentStorage/fileSystemContentStorage'
 import { createDenylist } from './ports/denylist'
 import { createDeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
 import { createDeployRateLimiter } from './ports/deployRateLimiterComponent'
-import { createFailedDeploymentsCache } from './ports/failedDeploymentsCache'
+import { createFailedDeployments } from './ports/failedDeployments'
 import { createFetchComponent } from './ports/fetcher'
 import { createFsComponent } from './ports/fs'
 import { createDatabaseComponent } from './ports/postgres'
+import { createProcessedSnapshotStorage } from './ports/processedSnapshotStorage'
 import { createSequentialTaskExecutor } from './ports/sequecuentialTaskExecutor'
+import { createSnapshotGenerator } from './ports/snapshotGenerator'
+import { createSnapshotStorage } from './ports/snapshotStorage'
+import { createSynchronizationState } from './ports/synchronizationState'
 import { createSystemProperties } from './ports/system-properties'
 import { ContentAuthenticator } from './service/auth/Authenticator'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
@@ -38,12 +42,12 @@ import { ChallengeSupervisor } from './service/synchronization/ChallengeSupervis
 import { DAOClientFactory } from './service/synchronization/clients/DAOClientFactory'
 import { ContentCluster } from './service/synchronization/ContentCluster'
 import { createRetryFailedDeployments } from './service/synchronization/retryFailedDeployments'
-import { createSynchronizationManager } from './service/synchronization/SynchronizationManager'
 import { createServerValidator } from './service/validations/server'
 import { createExternalCalls, createSubGraphsComponent, createValidator } from './service/validations/validator'
 import { AppComponents } from './types'
 
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
+  const clock = createClock()
   const metrics = createTestMetricsComponent(metricsDeclaration)
   const config = createConfigComponent({
     LOG_LEVEL: env.getConfig(EnvironmentConfig.LOG_LEVEL),
@@ -94,7 +98,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       challengeSupervisor,
       fetcher,
       logs,
-      env
+      env,
+      clock
     },
     env.getConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL)
   )
@@ -102,7 +107,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   // TODO: this should be in the src/logic folder. It is not a component
   const pointerManager = new PointerManager()
 
-  const failedDeploymentsCache = createFailedDeploymentsCache({ metrics })
+  const failedDeployments = await createFailedDeployments({ metrics, database })
 
   const deployRateLimiter = createDeployRateLimiter(
     { logs },
@@ -126,15 +131,15 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   })
   const theGraphClient = createTheGraphClient({ subGraphs, logs })
   const validator = createValidator({ config, externalCalls, logs, theGraphClient, subGraphs })
-  const serverValidator = createServerValidator({ failedDeploymentsCache, metrics })
+  const serverValidator = createServerValidator({ failedDeployments, metrics, clock })
 
-  const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs })
+  const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, clock })
   const activeEntities = createActiveEntitiesComponent({ database, env, logs, metrics, denylist, sequentialExecutor })
 
   const deployer: MetaverseContentService = new ServiceImpl({
     metrics,
     storage,
-    failedDeploymentsCache,
+    failedDeployments,
     deployRateLimiter,
     pointerManager,
     validator,
@@ -145,16 +150,14 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     database,
     deployedEntitiesBloomFilter,
     activeEntities,
-    denylist
+    denylist,
+    clock
   })
 
-  const snapshotManager = new SnapshotManager(
-    { database, metrics, staticConfigs, logs, storage, denylist, fs },
-    env.getConfig(EnvironmentConfig.SNAPSHOT_FREQUENCY_IN_MILLISECONDS)
-  )
+  const snapshotManager = new SnapshotManager({ database, metrics, staticConfigs, logs, storage, denylist, fs, clock })
 
   const garbageCollectionManager = new GarbageCollectionManager(
-    { database, env, fetcher, logs, metrics, storage, systemProperties },
+    { clock, database, deployer, env, fetcher, metrics, logs, storage, systemProperties },
     env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION),
     env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL)
   )
@@ -169,6 +172,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     env.getConfig<string>(EnvironmentConfig.SYNC_IGNORED_ENTITY_TYPES)
   )
 
+  const processedSnapshotStorage = createProcessedSnapshotStorage({ database, clock, logs })
+
   const batchDeployer = createBatchDeployerComponent(
     {
       logs,
@@ -179,7 +184,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       deployer,
       staticConfigs,
       deployedEntitiesBloomFilter: deployedEntitiesBloomFilter,
-      storage
+      storage,
+      failedDeployments,
+      clock
     },
     {
       ignoredTypes: new Set(ignoredTypes),
@@ -191,33 +198,45 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     }
   )
 
-  const synchronizationJobManager = createJobLifecycleManagerComponent(
-    { logs },
+  const snapshotStorage = createSnapshotStorage({ database })
+
+  const synchronizer = await createSynchronizer(
     {
-      jobManagerName: 'SynchronizationJobManager',
-      createJob(contentServer) {
-        return createCatalystDeploymentStream(
-          { logs, downloadQueue, fetcher, metrics, deployer: batchDeployer, storage },
-          {
-            tmpDownloadFolder: staticConfigs.tmpDownloadFolder,
-            contentServer,
+      logs,
+      downloadQueue,
+      fetcher,
+      metrics,
+      deployer: batchDeployer,
+      storage,
+      processedSnapshotStorage,
+      snapshotStorage
+    },
+    {
+      // reconnection options
+      bootstrapReconnection: {
+        reconnectTime: 5000 /* five second */,
+        reconnectRetryTimeExponent: 1.5,
+        maxReconnectionTime: 3_600_000 /* one hour */
+      },
+      syncingReconnection: {
+        reconnectTime: 1000 /* one second */,
+        reconnectRetryTimeExponent: 1.2,
+        maxReconnectionTime: 3_600_000 /* one hour */
+      },
 
-            // time between every poll to /pointer-changes
-            pointerChangesWaitTime: 5000,
+      // snapshot stream options
+      tmpDownloadFolder: staticConfigs.tmpDownloadFolder,
+      // download entities retry
+      requestMaxRetries: 10,
+      requestRetryWaitTime: 5000,
 
-            // reconnection time for the whole catalyst
-            reconnectTime: 1000 /* one second */,
-            reconnectRetryTimeExponent: 1.2,
-            maxReconnectionTime: 3_600_000 /* one hour */,
-
-            // download entities retry
-            requestMaxRetries: 10,
-            requestRetryWaitTime: 5000
-          }
-        )
-      }
+      // pointer chagnes stream options
+      // time between every poll to /pointer-changes
+      pointerChangesWaitTime: 5000
     }
   )
+
+  const synchronizationState = createSynchronizationState({ logs })
 
   const retryFailedDeployments = createRetryFailedDeployments({
     env,
@@ -228,21 +247,24 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     logs,
     deployer,
     contentCluster,
-    failedDeploymentsCache,
+    failedDeployments,
     storage
   })
 
-  const synchronizationManager = createSynchronizationManager({
-    synchronizationJobManager,
+  const snapshotGenerator = createSnapshotGenerator({
     logs,
-    contentCluster,
-    retryFailedDeployments,
-    metrics
+    fs,
+    metrics,
+    staticConfigs,
+    storage,
+    database,
+    denylist,
+    snapshotManager,
+    clock
   })
 
   const controller = new Controller(
     {
-      synchronizationManager,
       challengeSupervisor,
       snapshotManager,
       deployer,
@@ -252,7 +274,11 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       sequentialExecutor,
       activeEntities,
       denylist,
-      fs
+      fs,
+      snapshotGenerator,
+      failedDeployments,
+      contentCluster,
+      synchronizationState
     },
     ethNetwork
   )
@@ -273,14 +299,14 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     staticConfigs,
     batchDeployer,
     downloadQueue,
-    synchronizationJobManager,
-    deployedEntitiesBloomFilter: deployedEntitiesBloomFilter,
+    deployedEntitiesBloomFilter,
     controller,
-    synchronizationManager,
+    synchronizer,
+    synchronizationState,
     challengeSupervisor,
     snapshotManager,
     contentCluster,
-    failedDeploymentsCache,
+    failedDeployments,
     deployRateLimiter,
     pointerManager,
     storage,
@@ -299,6 +325,10 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     sequentialExecutor,
     denylist,
     ethereumProvider,
-    fs
+    fs,
+    snapshotGenerator,
+    processedSnapshotStorage,
+    clock,
+    snapshotStorage
   }
 }
