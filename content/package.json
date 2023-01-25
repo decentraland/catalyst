@@ -12,6 +12,7 @@
     "report-api-coverage": "node ./reportApiCoverage.js",
     "start:db": "node ./dist/src/entrypoints/run-local-database.js",
     "start:maintenance": "node ./dist/src/entrypoints/run-maintenance.js",
+    "start:content-files-fixer": "node ./dist/src/entrypoints/run-content-files-fixer.js",
     "start:server": "node ./dist/src/entrypoints/run-server.js",
     "test": "jest --runInBand --forceExit --detectOpenHandles --coverage",
     "test:integration": "jest --selectProjects integration --runInBand --forceExit --detectOpenHandles --coverage",
