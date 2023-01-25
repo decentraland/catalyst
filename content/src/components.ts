@@ -87,7 +87,7 @@ async function createCheckerContract(provider: HTTPProvider, network: string): P
   const checkerAddress = checkerContracts[network]
   const requestManager = new RequestManager(provider)
   const factory = new ContractFactory(requestManager, checkerAbi)
-  const checker = factory.at(checkerAddress) as any
+  const checker = (await factory.at(checkerAddress)) as any
 
   return {
     checkLAND(
