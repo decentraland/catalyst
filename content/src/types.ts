@@ -88,7 +88,6 @@ export type AppComponents = {
 }
 
 export type ComponentsBuilder = {
-  createProvider(fetcher: IFetchComponent, network: string): HTTPProvider
   createL1Checker(provider: HTTPProvider, network: string): Promise<L1Checker>
   createL2Checker(provider: HTTPProvider, network: string): Promise<L2Checker>
 }
