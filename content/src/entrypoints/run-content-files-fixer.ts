@@ -47,13 +47,7 @@ void Lifecycle.run({
   }
 })
 
-export async function fixMissingProfilesContentFiles({
-  database,
-  env,
-  fetcher,
-  logs,
-  storage
-}: ContentFilesFixerComponents) {
+async function fixMissingProfilesContentFiles({ database, env, fetcher, logs, storage }: ContentFilesFixerComponents) {
   const logger = logs.getLogger('FixMissingFilesHelper')
 
   const start = Date.now()
