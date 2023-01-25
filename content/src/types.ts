@@ -36,11 +36,6 @@ import { ContentCluster } from './service/synchronization/ContentCluster'
 import { IRetryFailedDeploymentsComponent } from './service/synchronization/retryFailedDeployments'
 import { ServerValidator } from './service/validations/server'
 
-export type EthersProvider = {
-  getBlockNumber(): Promise<number>
-  getBlock(block: number): Promise<{ timestamp: string | number }>
-}
-
 // Minimum amount of needed stuff to make the sync work
 
 export type AppComponents = {
@@ -82,10 +77,8 @@ export type AppComponents = {
   sequentialExecutor: ISequentialTaskExecutorComponent
   denylist: Denylist
   fs: FSComponent
-  l1EthConnectProvider: HTTPProvider
-  l2EthConnectProvider: HTTPProvider
-  l1EthersProvider: EthersProvider
-  l2EthersProvider: EthersProvider
+  l1Provider: HTTPProvider
+  l2Provider: HTTPProvider
   l1Checker: L1Checker
   l2Checker: L2Checker
   snapshotGenerator: SnapshotGenerator
@@ -95,10 +88,9 @@ export type AppComponents = {
 }
 
 export type ComponentsBuilder = {
-  createEthConnectProvider(fetcher: IFetchComponent, network: string): HTTPProvider
-  createEthersProvider(network: string): Promise<EthersProvider>
-  createL1Checker(provider: EthersProvider, network: string): Promise<L1Checker>
-  createL2Checker(provider: EthersProvider, network: string): Promise<L2Checker>
+  createProvider(fetcher: IFetchComponent, network: string): HTTPProvider
+  createL1Checker(provider: HTTPProvider, network: string): Promise<L1Checker>
+  createL2Checker(provider: HTTPProvider, network: string): Promise<L2Checker>
 }
 
 export type MaintenanceComponents = {
@@ -151,10 +143,10 @@ export type ICheckerContract = {
     stateAddress: string,
     x: number,
     y: number,
-    options: { blockTag: number }
+    block: number
   ): Promise<boolean>
 
-  checkName(ethAddress: string, registrar: string, name: string, options: { blockTag: number }): Promise<boolean>
+  checkName(ethAddress: string, registrar: string, name: string, block: number): Promise<boolean>
 
   validateWearables(
     ethAddress: string,
@@ -162,7 +154,7 @@ export type ICheckerContract = {
     contractAddress: string,
     assetId: string,
     hash: string,
-    options: { blockTag: number }
+    block: number
   ): Promise<boolean>
 
   validateThirdParty(
@@ -170,6 +162,6 @@ export type ICheckerContract = {
     registry: string,
     tpId: string,
     root: Uint8Array,
-    options: { blockTag: number }
+    block: number
   ): Promise<boolean>
 }

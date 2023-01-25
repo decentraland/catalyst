@@ -18,13 +18,27 @@ import {
   createAvlBlockSearch,
   createBlockRepository,
   createCachingEthereumProvider,
+  EthereumProvider,
   loadTree
 } from '@dcl/block-indexer'
+import RequestManager, { HTTPProvider } from 'eth-connect'
+
+const createEthereumProvider = (httpProvider: HTTPProvider): EthereumProvider => {
+  const reqMan = new RequestManager(httpProvider)
+  return {
+    getBlockNumber: async (): Promise<number> => {
+      return (await reqMan.eth_blockNumber()) as number
+    },
+    getBlock: async (block: number): Promise<{ timestamp: string | number }> => {
+      return await reqMan.eth_getBlockByNumber(block, false)
+    }
+  }
+}
 
 export async function createSubGraphsComponent(
   components: Pick<
     AppComponents,
-    'env' | 'logs' | 'metrics' | 'fetcher' | 'l1EthersProvider' | 'l2EthersProvider' | 'l1Checker' | 'l2Checker'
+    'env' | 'logs' | 'metrics' | 'fetcher' | 'l1Provider' | 'l2Provider' | 'l1Checker' | 'l2Checker'
   >
 ): Promise<SubGraphs> {
   const config: IConfigComponent = createConfigComponent({}) // TODO Get config from higher level
@@ -37,7 +51,7 @@ export async function createSubGraphsComponent(
     blockRepository: createBlockRepository({
       metrics: components.metrics,
       logs: components.logs,
-      ethereumProvider: createCachingEthereumProvider(components.l1EthersProvider)
+      ethereumProvider: createCachingEthereumProvider(createEthereumProvider(components.l1Provider))
     }),
     metrics: components.metrics,
     logs: components.logs
@@ -46,7 +60,7 @@ export async function createSubGraphsComponent(
     blockRepository: createBlockRepository({
       metrics: components.metrics,
       logs: components.logs,
-      ethereumProvider: createCachingEthereumProvider(components.l2EthersProvider)
+      ethereumProvider: createCachingEthereumProvider(createEthereumProvider(components.l2Provider))
     }),
     metrics: components.metrics,
     logs: components.logs

@@ -18,7 +18,6 @@
     "test:unit": "jest --selectProjects unit --runInBand --forceExit --detectOpenHandles --coverage"
   },
   "dependencies": {
-    "@0xsequence/multicall": "^0.43.7",
     "@dcl/block-indexer": "^1.0.0-20230124191457.commit-8061099",
     "@dcl/catalyst-api-specs": "^2.0.18",
     "@dcl/catalyst-contracts": "^3.1.3",
@@ -39,7 +38,6 @@
     "cors": "2.8.5",
     "dcl-catalyst-client": "^14.0.6",
     "eth-connect": "^6.0.3",
-    "ethers": "^5.7.2",
     "express": "4.18.1",
     "express-openapi-validator": "4.13.8",
     "form-data": "^4.0.0",

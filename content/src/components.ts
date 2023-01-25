@@ -14,11 +14,8 @@ import { createConfigComponent } from '@well-known-components/env-config-provide
 import { IFetchComponent } from '@well-known-components/http-server'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
-import { HTTPProvider } from 'eth-connect'
-import { ethers } from 'ethers'
 import ms from 'ms'
 import path from 'path'
-import { code } from './code'
 import { Controller } from './controller/Controller'
 import { Environment, EnvironmentConfig } from './Environment'
 import { FetcherFactory } from './helpers/FetcherFactory'
@@ -55,75 +52,128 @@ import { ContentCluster } from './service/synchronization/ContentCluster'
 import { createRetryFailedDeployments } from './service/synchronization/retryFailedDeployments'
 import { createServerValidator } from './service/validations/server'
 import { createExternalCalls, createSubGraphsComponent, createValidator } from './service/validations/validator'
-import { AppComponents, ComponentsBuilder, EthersProvider, ICheckerContract } from './types'
+import { AppComponents, ComponentsBuilder, ICheckerContract } from './types'
+import { code } from './code'
+import { RequestManager, HTTPProvider, ContractFactory, toData, BigNumber } from 'eth-connect'
+import { inputCallFormatter, inputBlockNumberFormatter } from './formatters'
 
-class CustomProvider extends ethers.providers.JsonRpcProvider {
-  private checkerStateOverride: any
-  private checkerAddress: string
-  constructor(url: string, network: string) {
-    super(url)
-    this.checkerAddress = checkerContracts[network]
-    this.checkerStateOverride = { [this.checkerAddress]: { code } }
+async function callCheckerMethod(
+  requestManager: RequestManager,
+  checkerAddress: string,
+  block: number | string,
+  method: any,
+  args: any[]
+) {
+  const payload = await method.toPayload(...args)
+  payload.to = checkerAddress
+
+  // TODO: use stateOverride depending on the block
+  const stateOverride = {
+    [checkerAddress]: { code }
   }
-  prepareRequest(method: string, params: any): [string, Array<any>] {
-    if (method === 'call') {
-      const hexlifyTransaction = ethers.utils.getStatic<
-        (t: ethers.providers.TransactionRequest, a?: { [key: string]: boolean }) => { [key: string]: string }
-      >(this.constructor, 'hexlifyTransaction')
-      if (params.transaction.to.toLowerCase() === this.checkerAddress.toLowerCase()) {
-        return [
-          'eth_call',
-          [hexlifyTransaction(params.transaction, { from: true }), params.blockTag, this.checkerStateOverride]
-        ]
-      } else {
-        console.log('REQUEST TO OTHER', params.transaction.to, this.checkerAddress)
-        return ['eth_call', [hexlifyTransaction(params.transaction, { from: true }), params.blockTag]]
-      }
-    } else {
-      return super.prepareRequest(method, params)
+  const call = {
+    method: 'eth_call',
+    params: [inputCallFormatter(payload), inputBlockNumberFormatter(block), stateOverride]
+  }
+
+  const data = toData(await requestManager.sendAsync(call))
+
+  // NOTE(hugo): all methods return boolean
+  const value = new BigNumber(data, 16)
+  return !value.isZero()
+}
+
+async function createCheckerContract(provider: HTTPProvider, network: string): Promise<ICheckerContract> {
+  const checkerAddress = checkerContracts[network]
+  const requestManager = new RequestManager(provider)
+  const factory = new ContractFactory(requestManager, checkerAbi)
+  const checker = factory.at(checkerAddress) as any
+
+  return {
+    checkLAND(
+      ethAddress: string,
+      landAddress: string,
+      stateAddress: string,
+      x: number,
+      y: number,
+      block: number
+    ): Promise<boolean> {
+      return callCheckerMethod(requestManager, checkerAddress, block, checker.checkLAND, [
+        ethAddress,
+        landAddress,
+        stateAddress,
+        x,
+        y
+      ])
+    },
+
+    checkName(ethAddress: string, registrar: string, name: string, block: number): Promise<boolean> {
+      return callCheckerMethod(requestManager, checkerAddress, block, checker.checkName, [ethAddress, registrar, name])
+    },
+
+    validateWearables(
+      ethAddress: string,
+      factories: string[],
+      contractAddress: string,
+      assetId: string,
+      hash: string,
+      block: number
+    ): Promise<boolean> {
+      return callCheckerMethod(requestManager, checkerAddress, block, checker.validateWearables, [
+        ethAddress,
+        factories,
+        contractAddress,
+        assetId,
+        hash
+      ])
+    },
+
+    validateThirdParty(
+      ethAddress: string,
+      registry: string,
+      tpId: string,
+      root: Uint8Array,
+      block: number
+    ): Promise<boolean> {
+      return callCheckerMethod(requestManager, checkerAddress, block, checker.validateThirdParty, [
+        ethAddress,
+        registry,
+        tpId,
+        root
+      ])
     }
   }
 }
 
-async function createCheckerContract(provider: any, network: string): Promise<ICheckerContract> {
-  const contract = new ethers.Contract(checkerContracts[network], checkerAbi, provider)
-  return contract as any
-}
-
 export const defaultComponentsBuilder = {
-  createEthConnectProvider(fetcher: IFetchComponent, network: string): HTTPProvider {
+  createProvider(fetcher: IFetchComponent, network: string): HTTPProvider {
     return new HTTPProvider(`https://rpc.decentraland.org/${encodeURIComponent(network)}?project=catalyst-content`, {
       fetch: fetcher.fetch
     })
   },
-  async createEthersProvider(network: string): Promise<EthersProvider> {
-    return new CustomProvider(
-      `https://rpc.decentraland.org/${encodeURIComponent(network)}?project=catalyst-content`,
-      network
-    )
-  },
-  async createL1Checker(provider: EthersProvider, network: string): Promise<L1Checker> {
+  async createL1Checker(provider: HTTPProvider, network: string): Promise<L1Checker> {
     const checker = await createCheckerContract(provider, network)
+
     return {
-      checkLAND(ethAddress: string, parcels: [number, number][], block: number): Promise<boolean[]> {
+      async checkLAND(ethAddress: string, parcels: [number, number][], block: number): Promise<boolean[]> {
         const contracts = landContracts[network]
         try {
-          return Promise.all(
+          const result = await Promise.all(
             parcels.map(([x, y]) =>
-              checker.checkLAND(ethAddress, contracts.landContractAddress, contracts.stateContractAddress, x, y, {
-                blockTag: block
-              })
+              checker.checkLAND(ethAddress, contracts.landContractAddress, contracts.stateContractAddress, x, y, block)
             )
           )
+          return result
         } catch (err) {
           console.log('land', err, ethAddress, parcels, block)
           throw err
         }
       },
-      checkNames(ethAddress: string, names: string[], block: number): Promise<boolean[]> {
+      async checkNames(ethAddress: string, names: string[], block: number): Promise<boolean[]> {
         const registrar = registrarContracts[network]
         try {
-          return Promise.all(names.map((name) => checker.checkName(ethAddress, registrar, name, { blockTag: block })))
+          const result = await Promise.all(names.map((name) => checker.checkName(ethAddress, registrar, name, block)))
+          return result
         } catch (err) {
           console.log('name', err, ethAddress, names, block)
           throw err
@@ -131,7 +181,7 @@ export const defaultComponentsBuilder = {
       }
     }
   },
-  async createL2Checker(provider: EthersProvider, network: string): Promise<L2Checker> {
+  async createL2Checker(provider: HTTPProvider, network: string): Promise<L2Checker> {
     const checker = await createCheckerContract(provider, network)
 
     const { v2, v3 } = collectionFactoryContracts[network]
@@ -146,20 +196,21 @@ export const defaultComponentsBuilder = {
         block: number
       ): Promise<boolean> {
         try {
-          const result = await checker.validateWearables(ethAddress, factories, contractAddress, assetId, hash, {
-            blockTag: block
-          })
-          console.log('RESULT', result)
+          const result = await checker.validateWearables(ethAddress, factories, contractAddress, assetId, hash, block)
           return result
         } catch (err) {
           console.log('werables', err, ethAddress, factories, contractAddress, assetId, hash, block)
           throw err
         }
       },
-      validateThirdParty(ethAddress: string, tpId: string, root: Buffer, block: number): Promise<boolean> {
+      async validateThirdParty(ethAddress: string, tpId: string, root: Buffer, block: number): Promise<boolean> {
         const registry = thirdPartyContracts[network]
         try {
-          return checker.validateThirdParty(ethAddress, registry, tpId, new Uint8Array(root), { blockTag: block })
+          const result = await checker.validateThirdParty(ethAddress, registry, tpId, new Uint8Array(root), block)
+          if (!result) {
+            console.log('INVALID THIRD PARTY', ethAddress, registry, tpId, new Uint8Array(root), { blockTag: block })
+          }
+          return result
         } catch (err) {
           console.log('tp', err)
           throw err
@@ -192,12 +243,10 @@ export async function initComponentsWithEnv(env: Environment, builder: Component
 
   const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK)
   const l2Network = ethNetwork === 'mainnet' ? 'polygon' : 'mumbai'
-  const l1EthConnectProvider = builder.createEthConnectProvider(fetcher, ethNetwork)
-  const l2EthConnectProvider = builder.createEthConnectProvider(fetcher, l2Network)
-  const l1EthersProvider = await builder.createEthersProvider(ethNetwork)
-  const l2EthersProvider = await builder.createEthersProvider(l2Network)
-  const l1Checker = await builder.createL1Checker(l1EthersProvider, ethNetwork)
-  const l2Checker = await builder.createL2Checker(l2EthersProvider, l2Network)
+  const l1Provider = builder.createProvider(fetcher, ethNetwork)
+  const l2Provider = builder.createProvider(fetcher, l2Network)
+  const l1Checker = await builder.createL1Checker(l1Provider, ethNetwork)
+  const l2Checker = await builder.createL2Checker(l2Provider, l2Network)
 
   const database = await createDatabaseComponent({ logs, env, metrics })
 
@@ -211,11 +260,8 @@ export async function initComponentsWithEnv(env: Environment, builder: Component
   const contentFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
   const storage = await createFileSystemContentStorage({ fs }, contentFolder)
 
-  const daoClient = await DAOClientFactory.create(env, l1EthConnectProvider)
-  const authenticator = new ContentAuthenticator(
-    l1EthConnectProvider,
-    env.getConfig(EnvironmentConfig.DECENTRALAND_ADDRESS)
-  )
+  const daoClient = await DAOClientFactory.create(env, l1Provider)
+  const authenticator = new ContentAuthenticator(l1Provider, env.getConfig(EnvironmentConfig.DECENTRALAND_ADDRESS))
 
   const contentCluster = new ContentCluster(
     {
@@ -251,8 +297,8 @@ export async function initComponentsWithEnv(env: Environment, builder: Component
     metrics,
     logs,
     fetcher,
-    l1EthersProvider,
-    l2EthersProvider,
+    l1Provider,
+    l2Provider,
     l1Checker,
     l2Checker
   })
@@ -458,10 +504,8 @@ export async function initComponentsWithEnv(env: Environment, builder: Component
     activeEntities,
     sequentialExecutor,
     denylist,
-    l1EthConnectProvider,
-    l2EthConnectProvider,
-    l1EthersProvider,
-    l2EthersProvider,
+    l1Provider,
+    l2Provider,
     l1Checker,
     l2Checker,
     fs,
