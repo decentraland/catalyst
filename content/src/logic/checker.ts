@@ -23,6 +23,7 @@ async function callCheckerMethod(
   payload.to = checkerAddress
 
   // TODO: use stateOverride depending on the block
+  // TODO: batch requests
   const stateOverride = {
     [checkerAddress]: { code }
   }
@@ -106,27 +107,15 @@ export async function createL1Checker(provider: HTTPProvider, network: string): 
   return {
     async checkLAND(ethAddress: string, parcels: [number, number][], block: number): Promise<boolean[]> {
       const contracts = landContracts[network]
-      try {
-        const result = await Promise.all(
-          parcels.map(([x, y]) =>
-            checker.checkLAND(ethAddress, contracts.landContractAddress, contracts.stateContractAddress, x, y, block)
-          )
+      return Promise.all(
+        parcels.map(([x, y]) =>
+          checker.checkLAND(ethAddress, contracts.landContractAddress, contracts.stateContractAddress, x, y, block)
         )
-        return result
-      } catch (err) {
-        console.log('land', err, ethAddress, parcels, block)
-        throw err
-      }
+      )
     },
     async checkNames(ethAddress: string, names: string[], block: number): Promise<boolean[]> {
       const registrar = registrarContracts[network]
-      try {
-        const result = await Promise.all(names.map((name) => checker.checkName(ethAddress, registrar, name, block)))
-        return result
-      } catch (err) {
-        console.log('name', err, ethAddress, names, block)
-        throw err
-      }
+      return Promise.all(names.map((name) => checker.checkName(ethAddress, registrar, name, block)))
     }
   }
 }
@@ -145,26 +134,11 @@ export async function createL2Checker(provider: HTTPProvider, network: string): 
       hash: string,
       block: number
     ): Promise<boolean> {
-      try {
-        const result = await checker.validateWearables(ethAddress, factories, contractAddress, assetId, hash, block)
-        return result
-      } catch (err) {
-        console.log('werables', err, ethAddress, factories, contractAddress, assetId, hash, block)
-        throw err
-      }
+      return checker.validateWearables(ethAddress, factories, contractAddress, assetId, hash, block)
     },
     async validateThirdParty(ethAddress: string, tpId: string, root: Buffer, block: number): Promise<boolean> {
       const registry = thirdPartyContracts[network]
-      try {
-        const result = await checker.validateThirdParty(ethAddress, registry, tpId, new Uint8Array(root), block)
-        if (!result) {
-          console.log('INVALID THIRD PARTY', ethAddress, registry, tpId, new Uint8Array(root), { blockTag: block })
-        }
-        return result
-      } catch (err) {
-        console.log('tp', err)
-        throw err
-      }
+      return checker.validateThirdParty(ethAddress, registry, tpId, new Uint8Array(root), block)
     }
   }
 }
