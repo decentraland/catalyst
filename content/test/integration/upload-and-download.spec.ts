@@ -5,8 +5,8 @@ import { makeNoopValidator } from '../helpers/service/validations/NoOpValidator'
 import { assertDeploymentsAreReported, buildDeployment } from './E2EAssertions'
 import { setupTestEnvironment } from './E2ETestEnvironment'
 import { buildDeployData } from './E2ETestUtils'
-import { getIntegrationResourcePathFor } from './resources/get-resource-path'
 import { TestProgram } from './TestProgram'
+import { getIntegrationResourcePathFor } from './resources/get-resource-path'
 
 describe('End 2 end deploy test', () => {
   const getTestEnv = setupTestEnvironment()
@@ -51,6 +51,7 @@ describe('End 2 end deploy test', () => {
     })
 
     const creationTimestamp = await server.deployEntity(deployData)
+
     const deployment = buildDeployment(deployData, entityBeingDeployed, creationTimestamp)
     const deltaTimestamp = Date.now() - creationTimestamp
     expect(deltaTimestamp).toBeLessThanOrEqual(100)

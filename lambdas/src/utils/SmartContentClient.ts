@@ -5,11 +5,14 @@ import {
   ContentAPI,
   ContentClient,
   DeploymentData,
-  DeploymentPreparationData
+  DeploymentPreparationData,
+  IFetchComponent,
+  RequestOptions
 } from 'dcl-catalyst-client'
-import { CompleteRequestOptions, Fetcher, RequestOptions, ServerStatus } from 'dcl-catalyst-commons'
+import { CompleteRequestOptions, Fetcher, ServerStatus } from 'dcl-catalyst-commons'
 import future, { IFuture } from 'fp-future'
 import log4js from 'log4js'
+
 /**
  * This content client  tries to use the internal docker network to connect lambdas with the content server.
  * If it can't, then it will try to contact it externally
@@ -20,7 +23,7 @@ export class SmartContentClient implements ContentAPI {
 
   private contentClient: IFuture<ContentAPI> | undefined
 
-  constructor(private readonly externalContentServerUrl: string) {}
+  constructor(private readonly externalContentServerUrl: string, private readonly fetcher: IFetchComponent) {}
 
   async fetchEntitiesByPointers(pointers: string[], options?: RequestOptions): Promise<Entity[]> {
     const client = await this.getClient()
@@ -39,16 +42,12 @@ export class SmartContentClient implements ContentAPI {
 
   async fetchAuditInfo(type: EntityType, id: string, options?: RequestOptions) {
     const contentUrl = (await this.getClient()).getContentUrl()
-    const fetcher = new Fetcher()
-
-    return (await fetcher.fetch(`${contentUrl}/audit/${type}/${id}`, options)).json()
+    return (await this.fetcher.fetch(`${contentUrl}/audit/${type}/${id}`, options)).json()
   }
 
   async fetchContentStatus(options?: RequestOptions): Promise<ServerStatus> {
     const contentUrl = (await this.getClient()).getContentUrl()
-    const fetcher = new Fetcher()
-
-    return (await fetcher.fetch(`${contentUrl}/status`, options)).json()
+    return (await this.fetcher.fetch(`${contentUrl}/status`, options)).json()
   }
 
   async downloadContent(contentHash: string, options?: RequestOptions): Promise<Buffer> {
@@ -81,6 +80,7 @@ export class SmartContentClient implements ContentAPI {
     return headers
   }
 
+  // TODO: use catalyst-client fetcher
   async pipeContent(
     contentHash: string,
     responseTo: any,
@@ -129,11 +129,10 @@ export class SmartContentClient implements ContentAPI {
       this.contentClient = future()
       let contentClientUrl = this.externalContentServerUrl
       try {
-        const fetcher = new Fetcher()
-        await fetcher.fetchJson(`${SmartContentClient.INTERNAL_CONTENT_SERVER_URL}/status`, {
+        await this.fetcher.fetch(`${SmartContentClient.INTERNAL_CONTENT_SERVER_URL}/status`, {
           attempts: 6,
           waitTime: '10s'
-        })
+        } as RequestOptions)
         SmartContentClient.LOGGER.info('Will use the internal content server url')
         contentClientUrl = SmartContentClient.INTERNAL_CONTENT_SERVER_URL
       } catch {
@@ -141,7 +140,8 @@ export class SmartContentClient implements ContentAPI {
       }
       this.contentClient.resolve(
         new ContentClient({
-          contentUrl: contentClientUrl
+          contentUrl: contentClientUrl,
+          fetcher: this.fetcher
         })
       )
     }

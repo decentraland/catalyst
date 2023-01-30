@@ -1,10 +1,11 @@
+import { createFetchComponent } from 'dcl-catalyst-client'
 import { Environment, EnvironmentConfig } from '../Environment'
 import { SmartContentClient } from './SmartContentClient'
 
 export class SmartContentClientFactory {
   static create(env: Environment): SmartContentClient {
     const externalUrl = SmartContentClientFactory.baseContentServerUrl(env)
-    return new SmartContentClient(externalUrl)
+    return new SmartContentClient(externalUrl, createFetchComponent())
   }
 
   private static baseContentServerUrl(env: Environment): string {

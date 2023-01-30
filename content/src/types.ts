@@ -1,36 +1,35 @@
-import { ExternalCalls, ValidateFn } from '@dcl/content-validator'
 import { IContentStorageComponent, IFileSystemComponent } from '@dcl/catalyst-storage'
+import { ExternalCalls, ValidateFn } from '@dcl/content-validator'
 import { EntityType, SyncDeployment } from '@dcl/schemas'
 import { IDeployerComponent, SynchronizerComponent } from '@dcl/snapshots-fetcher'
 import { IJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { IProcessedSnapshotStorageComponent, ISnapshotStorageComponent } from '@dcl/snapshots-fetcher/dist/types'
 import { IFetchComponent } from '@well-known-components/http-server'
 import { IConfigComponent, ILoggerComponent, IMetricsComponent } from '@well-known-components/interfaces'
-import { Fetcher } from 'dcl-catalyst-commons'
-import { Controller } from './controller/Controller'
 import { Environment } from './Environment'
+import { Controller } from './controller/Controller'
 import { metricsDeclaration } from './metrics'
 import { MigrationManager } from './migrations/MigrationManager'
 import { ActiveEntities } from './ports/activeEntities'
 import { Clock } from './ports/clock'
 import { Denylist } from './ports/denylist'
+import { IDeployRateLimiterComponent } from './ports/deployRateLimiterComponent'
 import { DeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
 import { Deployer } from './ports/deployer'
-import { IDeployRateLimiterComponent } from './ports/deployRateLimiterComponent'
 import { IFailedDeploymentsComponent } from './ports/failedDeployments'
 import { IDatabaseComponent } from './ports/postgres'
 import { ISequentialTaskExecutorComponent } from './ports/sequecuentialTaskExecutor'
 import { SnapshotGenerator } from './ports/snapshotGenerator'
 import { SynchronizationState } from './ports/synchronizationState'
 import { SystemProperties } from './ports/system-properties'
+import { Server } from './service/Server'
 import { ContentAuthenticator } from './service/auth/Authenticator'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { PointerManager } from './service/pointers/PointerManager'
-import { Server } from './service/Server'
 import { ISnapshotManager } from './service/snapshots/SnapshotManager'
 import { IChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
-import { DaoComponent } from './service/synchronization/clients/HardcodedDAOClient'
 import { ContentCluster } from './service/synchronization/ContentCluster'
+import { DaoComponent } from './service/synchronization/clients/HardcodedDAOClient'
 import { IRetryFailedDeploymentsComponent } from './service/synchronization/retryFailedDeployments'
 import { ServerValidator } from './service/validations/server'
 
@@ -70,7 +69,7 @@ export type AppComponents = {
   }
   garbageCollectionManager: GarbageCollectionManager
   systemProperties: SystemProperties
-  catalystFetcher: Fetcher
+  catalystFetcher: IFetchComponent
   daoClient: DaoComponent
   server: Server
   retryFailedDeployments: IRetryFailedDeploymentsComponent

@@ -1,13 +1,13 @@
 import { EntityType } from '@dcl/schemas'
-import { fetchJson } from 'dcl-catalyst-commons'
+import { IFetchComponent, createFetchComponent } from 'dcl-catalyst-client'
+import { EnvironmentConfig } from '../../../src/Environment'
 import { DeploymentField } from '../../../src/controller/Controller'
 import { DeploymentOptions, SortingField, SortingOrder } from '../../../src/deployment-types'
-import { EnvironmentConfig } from '../../../src/Environment'
 import { toQueryParams } from '../../../src/logic/toQueryParams'
 import { PointerChangesFilters } from '../../../src/service/pointers/types'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { setupTestEnvironment } from '../E2ETestEnvironment'
-import { buildDeployData, EntityCombo } from '../E2ETestUtils'
+import { EntityCombo, buildDeployData } from '../E2ETestUtils'
 import { TestProgram } from '../TestProgram'
 
 describe('Integration - Deployment Pagination', () => {
@@ -16,6 +16,7 @@ describe('Integration - Deployment Pagination', () => {
   let E1: EntityCombo, E2: EntityCombo, E3: EntityCombo
 
   let server: TestProgram
+  let fetcher: IFetchComponent
 
   beforeEach(async () => {
     server = await getTestEnv().configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
@@ -40,6 +41,7 @@ describe('Integration - Deployment Pagination', () => {
       E2 = a
     }
     E3 = await buildDeployData([P3], { type, timestamp: timestamp + 1, metadata: { a: 'metadata3' } })
+    fetcher = createFetchComponent()
   })
 
   it('given local timestamp and asc when getting two elements the next link page is correct', async () => {
@@ -249,11 +251,11 @@ describe('Integration - Deployment Pagination', () => {
         ...newOptions,
         ...composedOptions
       })
-    return fetchJson(url) as any
+    return (await (await fetcher.fetch(url)).json()) as any
   }
 
   async function fetchPointerChanges(filters: PointerChangesFilters, limit: number) {
     const url = server.getUrl() + `/pointer-changes?` + toQueryParams({ ...filters, limit: limit })
-    return fetchJson(url) as any
+    return (await (await fetcher.fetch(url)).json()) as any
   }
 })
