@@ -8,7 +8,7 @@ import {
 } from '@dcl/catalyst-contracts'
 import { L1Checker, L2Checker } from '@dcl/content-validator'
 import { inputCallFormatter, inputBlockNumberFormatter } from './formatters'
-import { RequestManager, HTTPProvider, ContractFactory, toData, BigNumber } from 'eth-connect'
+import { RequestManager, HTTPProvider, ContractFactory, toData } from 'eth-connect'
 import { code } from './code'
 import { ICheckerContract } from 'src/types'
 
@@ -33,10 +33,7 @@ async function callCheckerMethod(
   }
 
   const data = toData(await requestManager.sendAsync(call))
-
-  // NOTE(hugo): all methods return boolean
-  const value = new BigNumber(data, 16)
-  return !value.isZero()
+  return method.unpackOutput(data)
 }
 
 export async function createCheckerContract(provider: HTTPProvider, network: string): Promise<ICheckerContract> {
