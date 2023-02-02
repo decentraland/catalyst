@@ -380,7 +380,7 @@
     ipfs-unixfs-importer "^7.0.3"
     multiformats "^9.6.3"
 
-"@dcl/schemas@^5.4.2", "@dcl/schemas@^5.5.0":
+"@dcl/schemas@^5.4.2":
   version "5.32.0"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-5.32.0.tgz#260884e5cfde135902e77d621edf446154983d85"
   integrity sha512-irvdF66dQMqKfjYib9gINxgGTJWL3NAG2m8ujIctDiRnjpoPpzH2VCPjOj+IKpNjWbMth4XaGr1JO0sfJweseA==
@@ -2705,14 +2705,14 @@ date-format@^4.0.10, date-format@^4.0.13:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-4.0.13.tgz#87c3aab3a4f6f37582c5f5f63692d2956fa67890"
   integrity sha512-bnYCwf8Emc3pTD8pXnre+wfnjGtfi5ncMDKy7+cWZXbmRAsdWkOQHrfC1yz/KiwP5thDp2kCHWYWKBX4HP1hoQ==
 
-dcl-catalyst-client@^14.0.6:
-  version "14.0.6"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-14.0.6.tgz#281390f7278f11b70c56791b5812f46a9a5b9a6c"
-  integrity sha512-/9Z6kA3uPqvvmiJY2yg6PHfWHe5B0kfsVD+Y+WNys2D0VM1CIqFBgpox6DrGNOBelS7Mv2v9R8D/+zyN8dfq0A==
+dcl-catalyst-client@^14.0.9:
+  version "14.0.9"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-14.0.9.tgz#82afb34f8fc42d31fb9f369e49520e26db057510"
+  integrity sha512-ljFYUve3c3LKbQUwTlM3N3BvWq18II5bRGQyXGnP7bF1y5U+YIl77q6V3HyJKMreeb5Zgh7lKppJ9jRnve70qw==
   dependencies:
     "@dcl/catalyst-contracts" "^3.0.0"
     "@dcl/hashing" "^1.1.0"
-    "@dcl/schemas" "^5.5.0"
+    "@dcl/schemas" "^6.4.2"
     "@types/form-data" "^2.5.0"
     cookie "^0.5.0"
     dcl-catalyst-commons "^9.0.6"
