@@ -26,7 +26,7 @@
     "cors": "2.8.5",
     "dcl-catalyst-client": "^14.0.6",
     "destroy": "1.2.0",
-    "eth-connect": "^6.0.3",
+    "eth-connect": "^6.1.1-20230201175610.commit-3e040da",
     "express": "4.18.1",
     "express-openapi-validator": "4.13.8",
     "fp-future": "^1.0.1",
