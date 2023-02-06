@@ -326,10 +326,10 @@
     "@well-known-components/metrics" "^2.0.1"
     lru-cache "^7.14.0"
 
-"@dcl/block-indexer@^1.0.0-20230124191457.commit-8061099":
-  version "1.0.0-20230124191457.commit-8061099"
-  resolved "https://registry.yarnpkg.com/@dcl/block-indexer/-/block-indexer-1.0.0-20230124191457.commit-8061099.tgz#4b25a59754cf7fbd1e63127e31de194f5290124e"
-  integrity sha512-BV5Vel3eld1gLA/RJdaWU92oP0uS03B68tCtm1+mwd+NJeo/zIVox7Bf7VccrhGJaIzpqd/RCvFLshOOAOqhXw==
+"@dcl/block-indexer@^1.1.1-4056737184.commit-2112891":
+  version "1.1.1-4056737184.commit-2112891"
+  resolved "https://registry.yarnpkg.com/@dcl/block-indexer/-/block-indexer-1.1.1-4056737184.commit-2112891.tgz#8527ad3de9045c0857131a9dc722ae8cbd1c9c6c"
+  integrity sha512-g1UamvNFAKtJQAyGPFlCcl5j//XohpRIqVIa74208phYfU+j5PWpEagTYtfSh40VZgDZqwi36PJ3PyeyZ3TUkA==
   dependencies:
     "@well-known-components/interfaces" "^1.1.3"
     "@well-known-components/logger" "^3.0.0"
