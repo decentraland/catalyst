@@ -316,6 +316,26 @@
   dependencies:
     "@cspotcode/source-map-consumer" "0.8.0"
 
+"@dcl/block-indexer@1.0.0-20230123163606.commit-b38fa52":
+  version "1.0.0-20230123163606.commit-b38fa52"
+  resolved "https://registry.yarnpkg.com/@dcl/block-indexer/-/block-indexer-1.0.0-20230123163606.commit-b38fa52.tgz#d79392ddb53be7610bc7013858e0c79b1d262e5a"
+  integrity sha512-yhAiy2kPYJnRCb3xrYWXXT0Sxdt3SJQL/W1v9OX24H2i4xMFSfXTx9MRZgPgqGZuV/yYFI6G3IH6LLp0cUqV4Q==
+  dependencies:
+    "@well-known-components/interfaces" "^1.1.3"
+    "@well-known-components/logger" "^3.0.0"
+    "@well-known-components/metrics" "^2.0.1"
+    lru-cache "^7.14.0"
+
+"@dcl/block-indexer@^1.1.1-4056737184.commit-2112891":
+  version "1.1.1-4056737184.commit-2112891"
+  resolved "https://registry.yarnpkg.com/@dcl/block-indexer/-/block-indexer-1.1.1-4056737184.commit-2112891.tgz#8527ad3de9045c0857131a9dc722ae8cbd1c9c6c"
+  integrity sha512-g1UamvNFAKtJQAyGPFlCcl5j//XohpRIqVIa74208phYfU+j5PWpEagTYtfSh40VZgDZqwi36PJ3PyeyZ3TUkA==
+  dependencies:
+    "@well-known-components/interfaces" "^1.1.3"
+    "@well-known-components/logger" "^3.0.0"
+    "@well-known-components/metrics" "^2.0.1"
+    lru-cache "^7.14.0"
+
 "@dcl/catalyst-api-specs@^2.2.0":
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/@dcl/catalyst-api-specs/-/catalyst-api-specs-2.2.0.tgz#2f7fd7b7e542423977c2b8e0f54ae7bcf3a6c87b"
@@ -348,6 +368,13 @@
   dependencies:
     ethers "^5.6.8"
 
+"@dcl/content-hash-tree@^1.1.4":
+  version "1.1.4"
+  resolved "https://registry.yarnpkg.com/@dcl/content-hash-tree/-/content-hash-tree-1.1.4.tgz#4cf6f06a79959199b9a02dc1e870b946ba8329b2"
+  integrity sha512-xa9uSIkVOUHV2pkJMaTdmXI7cedbUMuxQbbp6p5tU/WViMbeGW065BkFbM64iGmbfpynLEYZwNsGocBB1o0o9g==
+  dependencies:
+    ethers "^5.6.8"
+
 "@dcl/content-validator@^4.2.3":
   version "4.2.3"
   resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.2.3.tgz#d7e7ce72158eb4352982c3aa76ff210910b141da"
@@ -358,6 +385,22 @@
     "@dcl/schemas" "^6.4.0"
     "@dcl/urn-resolver" "2.0.3"
     "@well-known-components/interfaces" "1.1.3"
+    "@well-known-components/thegraph-component" "^1.2.0"
+    ms "2.1.3"
+    sharp "^0.30.6"
+
+"@dcl/content-validator@https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-content-validator-4.2.4-4064086503.commit-54a8dd7.tgz":
+  version "4.2.4-4064086503.commit-54a8dd7"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-content-validator-4.2.4-4064086503.commit-54a8dd7.tgz#1965c1c72dd6b45f12c6952ac2d7553b8e962fd3"
+  dependencies:
+    "@dcl/block-indexer" "1.0.0-20230123163606.commit-b38fa52"
+    "@dcl/content-hash-tree" "^1.1.4"
+    "@dcl/hashing" "1.1.3"
+    "@dcl/schemas" "^6.4.0"
+    "@dcl/urn-resolver" "2.0.3"
+    "@well-known-components/interfaces" "^1.1.3"
+    "@well-known-components/logger" "^3.0.0"
+    "@well-known-components/metrics" "^2.0.1"
     "@well-known-components/thegraph-component" "^1.2.0"
     ms "2.1.3"
     sharp "^0.30.6"
@@ -1684,7 +1727,7 @@
   dependencies:
     prom-client "^14.0.1"
 
-"@well-known-components/metrics@^2.0.0":
+"@well-known-components/metrics@^2.0.0", "@well-known-components/metrics@^2.0.1":
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/@well-known-components/metrics/-/metrics-2.0.1.tgz#b5f5410c3ba6e5658ef80926a1f7bd81d7aa1f56"
   integrity sha512-jgT9TuxVS9GzVMMYWXNJRM2qXvexuf4xfrFNBYa3w+gqEWCK4Id5R4zBee/bm6/F5yIPauAWxbOS6KNNDBIrGw==
@@ -3207,6 +3250,11 @@ eth-connect@^6.0.2, eth-connect@^6.0.3:
   version "6.0.3"
   resolved "https://registry.yarnpkg.com/eth-connect/-/eth-connect-6.0.3.tgz#dd903bea5a75083ebb010216549e427f2db90fce"
   integrity sha512-jK+zqIhMuZe6RlHkEKOXSZDKgZQw/mPTLlysdFYQsxaJlZtaB1EQSTgY/DrHhOc2wUUmB97raAftmhC8Wk/o7Q==
+
+eth-connect@^6.1.1-20230201175610.commit-3e040da:
+  version "6.1.1-20230201175610.commit-3e040da"
+  resolved "https://registry.yarnpkg.com/eth-connect/-/eth-connect-6.1.1-20230201175610.commit-3e040da.tgz#e189cb006014e76a08d36d35f49068a3b884623d"
+  integrity sha512-bb7Xpnux1WK683XWL0ZZ6VZ8pjkg5u+9WjiNSPrwzjckeWWT85wmLTvz/X0dEUmpnyjZr9IrsaWA1OnxkPOvHg==
 
 ethereum-cryptography@^1.0.3:
   version "1.1.2"
@@ -5095,6 +5143,11 @@ lru-cache@^6.0.0:
   integrity sha512-Jo6dJ04CmSjuznwJSS3pUeWmd/H0ffTlkXXgwZi+eq1UCmqQwCh+eLsYOYCwY991i2Fah4h1BEMCx4qThGbsiA==
   dependencies:
     yallist "^4.0.0"
+
+lru-cache@^7.14.0:
+  version "7.14.1"
+  resolved "https://registry.yarnpkg.com/lru-cache/-/lru-cache-7.14.1.tgz#8da8d2f5f59827edb388e63e459ac23d6d408fea"
+  integrity sha512-ysxwsnTKdAx96aTRdhDOCQfDgbHnt8SK0KY8SEjO0wHinhWOFTESbjVCMPbU1uGXg/ch4lifqx0wfjOawU2+WA==
 
 make-dir@^3.0.0, make-dir@^3.0.2:
   version "3.1.0"
