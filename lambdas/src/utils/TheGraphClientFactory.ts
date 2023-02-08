@@ -32,7 +32,7 @@ export class TheGraphClientFactory {
     )
     const thirdPartyRegistrySubgraph = await createSubgraphComponent(
       baseComponents,
-      env.getConfig(EnvironmentConfig.THIRD_PARTY_REGISTRY_SUBGRAPH_URL)
+      env.getConfig(EnvironmentConfig.THIRD_PARTY_REGISTRY_L2_SUBGRAPH_URL)
     )
     return new TheGraphClient({
       collectionsSubgraph,

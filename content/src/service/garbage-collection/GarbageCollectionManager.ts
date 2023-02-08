@@ -15,7 +15,7 @@ export class GarbageCollectionManager {
   constructor(
     private readonly components: Pick<
       AppComponents,
-      'systemProperties' | 'deployer' | 'metrics' | 'logs' | 'storage' | 'database' | 'clock'
+      'systemProperties' | 'metrics' | 'logs' | 'storage' | 'database' | 'clock'
     >,
     private readonly performGarbageCollection: boolean,
     private readonly sweepInterval: number
