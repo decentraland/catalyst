@@ -1,9 +1,9 @@
+import { bufferToStream } from '@dcl/catalyst-storage/dist/content-item'
 import fs from 'fs'
 import fetch from 'node-fetch'
 import path from 'path'
 import { Controller } from '../../../src/controller/Controller'
 import { EnvironmentConfig } from '../../../src/Environment'
-import { bufferToStream } from '../../../src/ports/contentStorage/contentStorage'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { setupTestEnvironment } from '../E2ETestEnvironment'
 

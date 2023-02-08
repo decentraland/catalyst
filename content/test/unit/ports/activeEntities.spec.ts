@@ -1,3 +1,4 @@
+import { createInMemoryStorage } from '@dcl/catalyst-storage'
 import { Authenticator } from '@dcl/crypto'
 import { EntityType, EthAddress } from '@dcl/schemas'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
@@ -21,7 +22,6 @@ import { Deployment } from '../../../src/service/deployments/types'
 import { ServiceImpl } from '../../../src/service/ServiceImpl'
 import { EntityVersion } from '../../../src/types'
 import { NoOpServerValidator, NoOpValidator } from '../../helpers/service/validations/NoOpValidator'
-import { MockedStorage } from '../ports/contentStorage/MockedStorage'
 import { NoOpPointerManager } from '../service/pointers/NoOpPointerManager'
 
 export const DECENTRALAND_ADDRESS: EthAddress = '0x1337e0507eb4ab47e08a179573ed4533d9e22a7b'
@@ -310,7 +310,7 @@ async function buildService() {
   )
   const metrics = createTestMetricsComponent(metricsDeclaration)
   const failedDeployments = await createFailedDeployments({ metrics, database })
-  const storage = new MockedStorage()
+  const storage = createInMemoryStorage()
   const pointerManager = NoOpPointerManager.build()
   const authenticator = new ContentAuthenticator(
     new HTTPProvider('https://rpc.decentraland.org/mainnet?project=catalyst-ci'),
