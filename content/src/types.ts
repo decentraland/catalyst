@@ -134,33 +134,3 @@ export function parseEntityType(strType: string): EntityType {
 }
 
 export type DeploymentId = number
-
-export type ICheckerContract = {
-  checkLAND(
-    ethAddress: string,
-    landAddress: string,
-    stateAddress: string,
-    x: number,
-    y: number,
-    block: number
-  ): Promise<boolean>
-
-  checkName(ethAddress: string, registrar: string, name: string, block: number): Promise<boolean>
-
-  validateWearables(
-    ethAddress: string,
-    factories: string[],
-    contractAddress: string,
-    assetId: string,
-    hash: string,
-    block: number
-  ): Promise<boolean>
-
-  validateThirdParty(
-    ethAddress: string,
-    registry: string,
-    tpId: string,
-    root: Uint8Array,
-    block: number
-  ): Promise<boolean>
-}
