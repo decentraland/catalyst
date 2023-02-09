@@ -1,20 +1,22 @@
+import {
+  createFolderBasedFileSystemContentStorage,
+  createFsComponent,
+  IContentStorageComponent
+} from '@dcl/catalyst-storage'
+import { ContentMapping } from '@dcl/schemas'
+import { createConfigComponent } from '@well-known-components/env-config-provider'
+import { IFetchComponent } from '@well-known-components/http-server'
 import { ILoggerComponent, Lifecycle } from '@well-known-components/interfaces'
 import { createLogComponent } from '@well-known-components/logger'
-import path from 'path'
-import { Environment, EnvironmentBuilder, EnvironmentConfig } from '../Environment'
-import { createFileSystemContentStorage } from '../ports/contentStorage/fileSystemContentStorage'
-import { createFsComponent } from '../ports/fs'
-import { createDatabaseComponent } from '../ports/postgres'
-import { createConfigComponent } from '@well-known-components/env-config-provider'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
+import path from 'path'
+import { Readable } from 'stream'
+import { Environment, EnvironmentBuilder, EnvironmentConfig } from '../Environment'
+import { saveContentFiles } from '../logic/database-queries/deployments-queries'
 import { metricsDeclaration } from '../metrics'
 import { createFetchComponent } from '../ports/fetcher'
+import { createDatabaseComponent } from '../ports/postgres'
 import { AppComponents } from '../types'
-import { ContentMapping } from '@dcl/schemas'
-import { saveContentFiles } from '../logic/database-queries/deployments-queries'
-import { ContentStorage } from '../ports/contentStorage/contentStorage'
-import { IFetchComponent } from '@well-known-components/http-server'
-import { Readable } from 'stream'
 
 export type ContentFilesFixerComponents = Pick<AppComponents, 'database' | 'env' | 'fetcher' | 'logs' | 'storage'>
 
@@ -41,7 +43,7 @@ void Lifecycle.run({
     const fs = createFsComponent()
     const database = await createDatabaseComponent({ logs, env, metrics })
     const contentStorageFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
-    const storage = await createFileSystemContentStorage({ fs }, contentStorageFolder)
+    const storage = await createFolderBasedFileSystemContentStorage({ fs }, contentStorageFolder)
     env.logConfigValues(logs.getLogger('Environment'))
     return { logs, env, fetcher, database, fs, storage }
   }
@@ -115,7 +117,7 @@ async function fixMissingProfilesContentFiles({ database, env, fetcher, logs, st
 async function ensureFileExistsInStorage(
   env: Environment,
   logger: ILoggerComponent.ILogger,
-  storage: ContentStorage,
+  storage: IContentStorageComponent,
   fetcher: IFetchComponent,
   file: string
 ): Promise<void> {
