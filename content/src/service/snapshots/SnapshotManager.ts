@@ -1,10 +1,10 @@
+import { bufferToStream } from '@dcl/catalyst-storage/dist/content-item'
 import { hashV1 } from '@dcl/hashing'
 import { EntityType } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import * as fs from 'fs'
 import { streamActiveDeployments } from '../../logic/database-queries/snapshots-queries'
 import { createContentFileWriterComponent } from '../../ports/contentFileWriter'
-import { bufferToStream } from '../../ports/contentStorage/contentStorage'
 import { AppComponents, IStatusCapableComponent } from '../../types'
 
 const ALL_ENTITIES = Symbol('allEntities')

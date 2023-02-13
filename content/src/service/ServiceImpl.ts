@@ -1,3 +1,5 @@
+import { ContentItem } from '@dcl/catalyst-storage'
+import { bufferToStream } from '@dcl/catalyst-storage/dist/content-item'
 import { AuthChain, Authenticator } from '@dcl/crypto'
 import { Entity, EntityType, IPFSv2 } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
@@ -5,21 +7,20 @@ import { EnvironmentConfig } from '../Environment'
 import { getEntityById, setEntitiesAsOverwritten } from '../logic/database-queries/deployments-queries'
 import { calculateOverwrites, saveDeploymentAndContentFiles } from '../logic/deployments'
 import { calculateDeprecatedHashes, calculateIPFSHashes } from '../logic/hashing'
-import { ContentItem, bufferToStream } from '../ports/contentStorage/contentStorage'
 import { AppComponents, EntityVersion } from '../types'
+import { getDeployments } from './deployments/deployments'
+import { AuditInfo, Deployment, DeploymentOptions, PartialDeploymentHistory } from './deployments/types'
 import { EntityFactory } from './EntityFactory'
+import { DELTA_POINTER_RESULT, DeploymentResult as DeploymentPointersResult } from './pointers/PointerManager'
 import {
   DeploymentContext,
   DeploymentFiles,
   DeploymentResult,
   InvalidResult,
+  isInvalidDeployment,
   LocalDeploymentAuditInfo,
-  MetaverseContentService,
-  isInvalidDeployment
+  MetaverseContentService
 } from './Service'
-import { getDeployments } from './deployments/deployments'
-import { AuditInfo, Deployment, DeploymentOptions, PartialDeploymentHistory } from './deployments/types'
-import { DELTA_POINTER_RESULT, DeploymentResult as DeploymentPointersResult } from './pointers/PointerManager'
 import { happenedBefore } from './time/TimeSorting'
 
 export class ServiceImpl implements MetaverseContentService {

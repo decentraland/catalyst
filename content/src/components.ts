@@ -1,3 +1,4 @@
+import { createFolderBasedFileSystemContentStorage, createFsComponent } from '@dcl/catalyst-storage'
 import { createTheGraphClient } from '@dcl/content-validator'
 import { EntityType } from '@dcl/schemas'
 import { createSynchronizer } from '@dcl/snapshots-fetcher'
@@ -16,13 +17,11 @@ import { metricsDeclaration } from './metrics'
 import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
 import { createActiveEntitiesComponent } from './ports/activeEntities'
 import { createClock } from './ports/clock'
-import { createFileSystemContentStorage } from './ports/contentStorage/fileSystemContentStorage'
 import { createDenylist } from './ports/denylist'
 import { createDeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
 import { createDeployRateLimiter } from './ports/deployRateLimiterComponent'
 import { createFailedDeployments } from './ports/failedDeployments'
 import { createFetchComponent } from './ports/fetcher'
-import { createFsComponent } from './ports/fs'
 import { createDatabaseComponent } from './ports/postgres'
 import { createProcessedSnapshotStorage } from './ports/processedSnapshotStorage'
 import { createSequentialTaskExecutor } from './ports/sequecuentialTaskExecutor'
@@ -97,7 +96,7 @@ export async function initComponentsWithEnv(env: Environment, builder: Component
 
   const catalystFetcher = FetcherFactory.create({ env })
   const contentFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
-  const storage = await createFileSystemContentStorage({ fs }, contentFolder)
+  const storage = await createFolderBasedFileSystemContentStorage({ fs }, contentFolder)
 
   const daoClient = await DAOClientFactory.create(env, l1Provider)
   const authenticator = new ContentAuthenticator(l1Provider, env.getConfig(EnvironmentConfig.DECENTRALAND_ADDRESS))

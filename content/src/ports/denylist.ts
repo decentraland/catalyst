@@ -1,10 +1,10 @@
+import { IFileSystemComponent } from '@dcl/catalyst-storage'
 import { IBaseComponent } from '@well-known-components/interfaces'
 import { resolve } from 'path'
 import { createInterface } from 'readline'
 import { URL } from 'url'
 import { EnvironmentConfig } from '../Environment'
 import { AppComponents } from '../types'
-import { FSComponent } from './fs'
 
 export interface Denylist {
   isDenylisted(id: string): boolean
@@ -12,7 +12,7 @@ export interface Denylist {
 
 export async function createDenylist(
   components: Pick<AppComponents, 'env' | 'logs' | 'fetcher'> & {
-    fs: Pick<FSComponent, 'createReadStream' | 'existPath'>
+    fs: Pick<IFileSystemComponent, 'createReadStream' | 'existPath'>
   }
 ): Promise<Denylist & IBaseComponent> {
   const logger = components.logs.getLogger('Denylist')

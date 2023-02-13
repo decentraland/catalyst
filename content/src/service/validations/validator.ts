@@ -1,3 +1,8 @@
+import { streamToBuffer } from '@dcl/catalyst-storage/dist/content-item'
+import { IConfigComponent } from '@well-known-components/interfaces'
+import { createSubgraphComponent } from '@well-known-components/thegraph-component'
+import { EnvironmentConfig } from '../../Environment'
+import { AppComponents } from '../../types'
 import {
   ContentValidatorComponents,
   createValidator as validator,
@@ -6,11 +11,6 @@ import {
   Validator as IValidatorComponent
 } from '@dcl/content-validator'
 import { Authenticator } from '@dcl/crypto'
-import { EnvironmentConfig } from '../../Environment'
-import { streamToBuffer } from '../../ports/contentStorage/contentStorage'
-import { AppComponents } from '../../types'
-import { createSubgraphComponent } from '@well-known-components/thegraph-component'
-import { IConfigComponent } from '@well-known-components/interfaces'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
 import {
   AvlTree,

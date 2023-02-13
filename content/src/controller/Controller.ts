@@ -1,3 +1,4 @@
+import { ContentItem } from '@dcl/catalyst-storage'
 import { AuthChain, Authenticator, AuthLink, EthAddress, Signature } from '@dcl/crypto'
 import { Entity, EntityType, PointerChangesSyncDeployment } from '@dcl/schemas'
 import { DecentralandAssetIdentifier, parseUrn } from '@dcl/urn-resolver'
@@ -9,7 +10,6 @@ import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION 
 import { getActiveDeploymentsByContentHash } from '../logic/database-queries/deployments-queries'
 import { statusResponseFromComponents } from '../logic/status-checks'
 import { toQueryParams } from '../logic/toQueryParams'
-import { ContentItem } from '../ports/contentStorage/contentStorage'
 import { getDeployments } from '../service/deployments/deployments'
 import { AuditInfo, Deployment, DeploymentOptions, SortingField, SortingOrder } from '../service/deployments/types'
 import { getPointerChanges } from '../service/pointers/pointers'

@@ -17,7 +17,14 @@ export async function migrateContentFolderStructure(components: ContentFolderMig
     contentsFolder = contentsFolder.slice(0, -1)
   }
 
-  await components.fs.ensureDirectoryExists(contentsFolder)
+  const alreadyExist = await components.fs.existPath(contentsFolder)
+  if (!alreadyExist) {
+    try {
+      await components.fs.mkdir(contentsFolder, { recursive: true })
+    } catch (error) {
+      // Ignore these errors
+    }
+  }
 
   logs.debug('Running folder migration')
 

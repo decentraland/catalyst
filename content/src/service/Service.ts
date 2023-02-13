@@ -1,4 +1,4 @@
-import { ContentItem } from '../ports/contentStorage/contentStorage'
+import { ContentItem } from '@dcl/catalyst-storage'
 import { AuditInfo, Deployment, DeploymentOptions, PartialDeploymentHistory } from './deployments/types'
 
 /**x
