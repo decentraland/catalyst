@@ -75,12 +75,11 @@ export type AppComponents = {
   activeEntities: ActiveEntities
   sequentialExecutor: ISequentialTaskExecutorComponent
   denylist: Denylist
-  fs: FSComponent
+  fs: IFileSystemComponent
   l1Provider: HTTPProvider
   l2Provider: HTTPProvider
   l1Checker: L1Checker
   l2Checker: L2Checker
-  fs: FSComponent
   snapshotGenerator: SnapshotGenerator
   processedSnapshotStorage: IProcessedSnapshotStorageComponent
   clock: Clock
