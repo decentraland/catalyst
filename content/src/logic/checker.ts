@@ -10,6 +10,11 @@ import { inputCallFormatter, inputBlockNumberFormatter } from './formatters'
 import { RequestManager, HTTPProvider, ContractFactory, toData } from 'eth-connect'
 import { code } from './code'
 
+const commiteesContracts = {
+  polygon: ['0x71d9350Ef44E1e451F00e447C0DfF2d1FB75510a', '0xaeec95a8aa671a6d3fec56594827d7804964fa70'],
+  mumbai: ['0x4bb5ACe5ceB3Dd51ea35fa01a8f9B5507c234270', '0xe18B1361d41afC44658216F3Dc27e48c2336e3c2']
+}
+
 const checkerAbi = [
   {
     inputs: [
@@ -140,7 +145,7 @@ const checkerAbi = [
         type: 'address'
       },
       {
-        internalType: 'contract ICollection[]',
+        internalType: 'contract ICollectionFactory[]',
         name: '_factories',
         type: 'address[]'
       },
@@ -158,6 +163,11 @@ const checkerAbi = [
         internalType: 'string',
         name: '_contentHash',
         type: 'string'
+      },
+      {
+        internalType: 'contract ICommittee[]',
+        name: '_committees',
+        type: 'address[]'
       }
     ],
     name: 'validateWearables',
@@ -173,7 +183,7 @@ const checkerAbi = [
   }
 ]
 
-export async function createL1Checker(provider: HTTPProvider, network: string): Promise<L1Checker> {
+export async function createL1Checker(provider: HTTPProvider, network: 'mainnet' | 'goerli'): Promise<L1Checker> {
   const checkerAddress = checkerContracts[network]
   const { landContractAddress, stateContractAddress } = landContracts[network]
   const registrar = registrarContracts[network]
@@ -223,11 +233,12 @@ export async function createL1Checker(provider: HTTPProvider, network: string): 
   }
 }
 
-export async function createL2Checker(provider: HTTPProvider, network: string): Promise<L2Checker> {
+export async function createL2Checker(provider: HTTPProvider, network: 'mumbai' | 'polygon'): Promise<L2Checker> {
   const checkerAddress = checkerContracts[network]
   const requestManager = new RequestManager(provider)
   const factory = new ContractFactory(requestManager, checkerAbi)
   const checker = (await factory.at(checkerAddress)) as any
+  const commitees = commiteesContracts[network]
 
   const stateOverride = {
     [checkerAddress]: { code }
@@ -262,7 +273,7 @@ export async function createL2Checker(provider: HTTPProvider, network: string): 
     ): Promise<boolean> {
       return callCheckerMethod(
         checker.validateWearables,
-        [ethAddress, factories, contractAddress, assetId, hash],
+        [ethAddress, factories, contractAddress, assetId, hash, commitees],
         block
       )
     },
