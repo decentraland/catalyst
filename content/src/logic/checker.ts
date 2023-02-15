@@ -106,11 +106,6 @@ const checkerAbi = [
   {
     inputs: [
       {
-        internalType: 'address',
-        name: '_sender',
-        type: 'address'
-      },
-      {
         internalType: 'contract ITPRegistry',
         name: '_tpRegistry',
         type: 'address'
@@ -277,8 +272,8 @@ export async function createL2Checker(provider: HTTPProvider, network: 'mumbai' 
         block
       )
     },
-    async validateThirdParty(ethAddress: string, tpId: string, root: Buffer, block: number): Promise<boolean> {
-      return callCheckerMethod(checker.validateThirdParty, [ethAddress, registry, tpId, root], block)
+    async validateThirdParty(_ethAddress: string, tpId: string, root: Buffer, block: number): Promise<boolean> {
+      return callCheckerMethod(checker.validateThirdParty, [registry, tpId, root], block)
     }
   }
 }
