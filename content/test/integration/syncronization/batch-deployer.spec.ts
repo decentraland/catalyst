@@ -29,7 +29,7 @@ describe('batch deployer - ', () => {
 
       const numberOfDeployments = 15
       for (let i = 0; i < numberOfDeployments; i++) {
-        await components.batchDeployer.deployEntity(
+        await components.batchDeployer.scheduleEntityDeployment(
           {
             entityId: 'asdf',
             entityTimestamp: 123,
@@ -72,7 +72,7 @@ describe('batch deployer - ', () => {
       const numberOfDeployments = 15
       for (let i = 0; i < numberOfDeployments; i++) {
         batchDeployments.push(
-          components.batchDeployer.deployEntity(
+          components.batchDeployer.scheduleEntityDeployment(
             {
               entityId: 'asdf',
               entityTimestamp: 123,
@@ -119,7 +119,7 @@ describe('batch deployer - ', () => {
       const numberOfDeployments = 15
       for (let i = 0; i < numberOfDeployments; i++) {
         batchDeployments.push(
-          components.batchDeployer.deployEntity(
+          components.batchDeployer.scheduleEntityDeployment(
             {
               entityId: i.toString(),
               entityTimestamp: 123,
@@ -155,7 +155,7 @@ describe('batch deployer - ', () => {
       jest.spyOn(deployments, 'isEntityDeployed').mockResolvedValue(true)
 
       const markedAsDeployed = new Set()
-      await components.batchDeployer.deployEntity(
+      await components.batchDeployer.scheduleEntityDeployment(
         {
           entityId: 'asdf',
           entityTimestamp: 123,
@@ -189,7 +189,7 @@ describe('batch deployer - ', () => {
       const reportFailureSpy = jest.spyOn(components.failedDeployments, 'reportFailure').mockResolvedValue()
 
       const markedAsDeployed = new Set()
-      await components.batchDeployer.deployEntity(
+      await components.batchDeployer.scheduleEntityDeployment(
         {
           entityId: 'asdf',
           entityTimestamp: 123,
@@ -229,7 +229,7 @@ describe('batch deployer - ', () => {
 
       const markedAsDeployed = new Set()
       const entityId = 'asdf'
-      await components.batchDeployer.deployEntity(
+      await components.batchDeployer.scheduleEntityDeployment(
         {
           entityId,
           entityTimestamp: 123,
@@ -245,7 +245,7 @@ describe('batch deployer - ', () => {
       await components.batchDeployer.onIdle()
 
       // Now we deployed an entity with same entityId
-      await components.batchDeployer.deployEntity(
+      await components.batchDeployer.scheduleEntityDeployment(
         {
           entityId,
           entityTimestamp: 123,

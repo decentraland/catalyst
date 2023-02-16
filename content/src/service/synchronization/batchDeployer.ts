@@ -202,7 +202,7 @@ export function createBatchDeployerComponent(
     onIdle() {
       return parallelDeploymentJobs.onIdle()
     },
-    async deployEntity(entity: DeployableEntity, contentServers: string[]): Promise<void> {
+    async scheduleEntityDeployment(entity: DeployableEntity, contentServers: string[]): Promise<void> {
       await handleDeploymentFromServers(entity, contentServers)
     }
   }

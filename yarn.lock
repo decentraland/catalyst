@@ -400,10 +400,10 @@
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
 
-"@dcl/snapshots-fetcher@^5.0.4":
-  version "5.0.4"
-  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-5.0.4.tgz#300f937125c6af7988ab9007e70580eab656c6c8"
-  integrity sha512-170IA/77ZF9EOp8VqzlbhZf8uMkKzjvE2Uy4otPsXPaSJHxco09syiPPfqnJvyD3sWdSeaZI40LeoIjfFxfgmA==
+"@dcl/snapshots-fetcher@tag-refactor-1":
+  version "5.0.5-4196898840.commit-c7b9efe"
+  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-5.0.5-4196898840.commit-c7b9efe.tgz#f195272b7aa016b7dd9315e8d6cf982a4f2044ea"
+  integrity sha512-SC3xyOk5CgBOoYfuxPzyKJM9so8v35VvLXCp6DeyA9JmYYa+HngMuzgBRaXiKYX4YSWE9r09VJf2DvJL3h2y+w==
   dependencies:
     "@dcl/catalyst-storage" "^2.0.0"
     "@dcl/hashing" "^1.0.0"
