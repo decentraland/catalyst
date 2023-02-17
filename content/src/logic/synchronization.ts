@@ -14,7 +14,6 @@ export async function startSynchronization(
     | 'synchronizationState'
   >
 ) {
-  components.metrics.observe('dcl_content_server_sync_state', {}, 0)
   const syncJob = await components.synchronizer.syncWithServers(
     new Set(components.contentCluster.getAllServersInCluster())
   )
@@ -23,7 +22,6 @@ export async function startSynchronization(
     await components.downloadQueue.onIdle()
     await components.batchDeployer.onIdle()
     components.synchronizationState.toSyncing()
-    components.metrics.observe('dcl_content_server_sync_state', {}, 1)
     // Configure retry for failed deployments
     components.retryFailedDeployments.schedule().catch(() => {
       components.logs
