@@ -184,6 +184,9 @@ export async function createDatabase(
          * No need to dispose the client.
          */
         const client: PoolClient = await pool.connect()
+        client.on('error', (err) => {
+          logger.error(`There was an error with the database connection: ${err.message}`)
+        })
         components.metrics.increment('dcl_db_tx_acquired_clients_total')
         try {
           await client.query('BEGIN')
