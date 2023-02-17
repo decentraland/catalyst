@@ -9,8 +9,9 @@ export interface SynchronizationState {
   toSyncing: () => void
 }
 
-export function createSynchronizationState(components: Pick<AppComponents, 'logs'>): SynchronizationState {
+export function createSynchronizationState(components: Pick<AppComponents, 'logs' | 'metrics'>): SynchronizationState {
   let state = State.BOOTSTRAPPING
+  components.metrics.observe('dcl_content_server_sync_state', {}, 0)
   return {
     getState() {
       return state
@@ -18,6 +19,7 @@ export function createSynchronizationState(components: Pick<AppComponents, 'logs
     toSyncing() {
       components.logs.getLogger('synchronization-state').info('Switching to syncing state...')
       state = State.SYNCING
+      components.metrics.observe('dcl_content_server_sync_state', {}, 1)
     }
   }
 }
