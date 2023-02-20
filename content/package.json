@@ -24,7 +24,7 @@
     "@dcl/content-validator": "^4.2.3",
     "@dcl/crypto": "^3.3.1",
     "@dcl/hashing": "^1.1.3",
-    "@dcl/schemas": "^6.4.2",
+    "@dcl/schemas": "^6.11.0",
     "@dcl/snapshots-fetcher": "^5.0.4",
     "@dcl/urn-resolver": "^2.0.3",
     "@dcl/catalyst-storage": "^2.0.3",
