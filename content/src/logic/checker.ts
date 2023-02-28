@@ -64,12 +64,12 @@ const checkerAbi = [
         type: 'address'
       },
       {
-        internalType: 'contract INFT',
+        internalType: 'contract ILAND',
         name: '_land',
         type: 'address'
       },
       {
-        internalType: 'contract INFT',
+        internalType: 'contract IEstate',
         name: '_estate',
         type: 'address'
       },
@@ -146,7 +146,7 @@ const checkerAbi = [
   {
     inputs: [
       {
-        internalType: 'contract ITPRegistry',
+        internalType: 'contract IThirdPartyRegistry',
         name: '_tpRegistry',
         type: 'address'
       },
