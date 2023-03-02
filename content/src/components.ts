@@ -41,9 +41,14 @@ import { DAOClientFactory } from './service/synchronization/clients/DAOClientFac
 import { ContentCluster } from './service/synchronization/ContentCluster'
 import { createRetryFailedDeployments } from './service/synchronization/retryFailedDeployments'
 import { createServerValidator } from './service/validations/server'
-import { createExternalCalls, createOnChainValidator } from './service/validations/validator'
+import {
+  createExternalCalls,
+  createIgnoreBlockchainValidator,
+  createOnChainValidator
+} from './service/validations/validator'
 import { AppComponents } from './types'
 import { HTTPProvider } from 'eth-connect'
+import { ValidateFn } from '@dcl/content-validator'
 
 function createProvider(fetcher: IFetchComponent, network: string): HTTPProvider {
   return new HTTPProvider(`https://rpc.decentraland.org/${encodeURIComponent(network)}?project=catalyst-content`, {
@@ -128,18 +133,30 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     env,
     logs
   })
-  const validator = {
-    validate: await createOnChainValidator({
-      env,
-      metrics,
-      fetcher,
-      l1Provider,
-      l2Provider,
-      config,
-      externalCalls,
-      logs
-    })
+
+  async function createValidator() {
+    const ignoreBlockChainAccess = (await config.getString('IGNORE_BLOCKCHAIN_ACCESS_CHECKS')) === 'true'
+
+    let validate: ValidateFn
+    if (ignoreBlockChainAccess) {
+      validate = await createIgnoreBlockchainValidator({ logs, externalCalls })
+    } else {
+      validate = await createOnChainValidator({
+        env,
+        metrics,
+        fetcher,
+        l1Provider,
+        l2Provider,
+        config,
+        externalCalls,
+        logs
+      })
+    }
+
+    return { validate }
   }
+
+  const validator = await createValidator()
   const serverValidator = createServerValidator({ failedDeployments, metrics, clock })
 
   const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, clock })

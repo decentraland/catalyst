@@ -5,7 +5,6 @@ import { AppComponents, EntityVersion } from '../../../../src/types'
 import { makeNoopServerValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { setupTestEnvironment, testCaseWithComponents } from '../../E2ETestEnvironment'
 import { buildDeployData, createIdentity, EntityCombo } from '../../E2ETestUtils'
-import { stub } from 'sinon'
 
 describe('Integration - Deployment with metadata validation', () => {
   const getTestEnv = setupTestEnvironment()
@@ -37,7 +36,6 @@ describe('Integration - Deployment with metadata validation', () => {
     getTestEnv,
     'When scene metadata is present but incomplete, deployment result should include the proper errors',
     async (components) => {
-      stub(components.validator, 'validate').onFirstCall().resolves({ ok: false })
       makeNoopServerValidator(components)
 
       const P1 = '0,0'
