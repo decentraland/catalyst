@@ -30,9 +30,9 @@ describe('Errors during sync', () => {
       // Start server1
       await server1.startProgram()
 
-      validatorStub1 = stub(server1.components, 'validator')
+      validatorStub1 = stub(server1.components.validator, 'validate')
       validatorStub1.returns(Promise.resolve({ ok: true }))
-      validatorStub2 = stub(server2.components, 'validator')
+      validatorStub2 = stub(server2.components.validator, 'validate')
       validatorStub2.returns(Promise.resolve({ ok: true }))
 
       serverValidatorStub2 = stub(server2.components.serverValidator, 'validate')

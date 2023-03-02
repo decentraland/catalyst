@@ -37,7 +37,7 @@ describe('Integration - Deployment with metadata validation', () => {
     getTestEnv,
     'When scene metadata is present but incomplete, deployment result should include the proper errors',
     async (components) => {
-      stub(components, 'validator').onFirstCall().resolves({ ok: false })
+      stub(components.validator, 'validate').onFirstCall().resolves({ ok: false })
       makeNoopServerValidator(components)
 
       const P1 = '0,0'
