@@ -191,7 +191,6 @@ describe('Service', function () {
     env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, 'inexistent')
     env.setConfig(EnvironmentConfig.DENYLIST_FILE_NAME, 'file')
 
-    const validator = new NoOpValidator()
     const serverValidator = new NoOpServerValidator()
     const logs = await createLogComponent({
       config: createConfigComponent({
@@ -223,7 +222,7 @@ describe('Service', function () {
       failedDeployments,
       deployRateLimiter,
       storage,
-      validator,
+      validator: new NoOpValidator(),
       serverValidator,
       metrics,
       logs,

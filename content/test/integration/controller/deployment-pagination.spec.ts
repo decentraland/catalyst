@@ -10,7 +10,7 @@ import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData, EntityCombo } from '../E2ETestUtils'
 import { TestProgram } from '../TestProgram'
 
-describe('Integration - Deployment Pagination', () => {
+describe.only('Integration - Deployment Pagination', () => {
   const getTestEnv = setupTestEnvironment()
 
   let E1: EntityCombo, E2: EntityCombo, E3: EntityCombo

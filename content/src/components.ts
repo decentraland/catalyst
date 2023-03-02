@@ -1,5 +1,4 @@
 import { createFolderBasedFileSystemContentStorage, createFsComponent } from '@dcl/catalyst-storage'
-import { createTheGraphClient } from '@dcl/content-validator'
 import { EntityType } from '@dcl/schemas'
 import { createSynchronizer } from '@dcl/snapshots-fetcher'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
@@ -42,10 +41,9 @@ import { DAOClientFactory } from './service/synchronization/clients/DAOClientFac
 import { ContentCluster } from './service/synchronization/ContentCluster'
 import { createRetryFailedDeployments } from './service/synchronization/retryFailedDeployments'
 import { createServerValidator } from './service/validations/server'
-import { createExternalCalls, createSubGraphsComponent, createValidator } from './service/validations/validator'
-import { AppComponents, ComponentsBuilder } from './types'
+import { createExternalCalls, createOnChainValidator } from './service/validations/validator'
+import { AppComponents } from './types'
 import { HTTPProvider } from 'eth-connect'
-import { createL1Checker, createL2Checker } from './logic/checker'
 
 function createProvider(fetcher: IFetchComponent, network: string): HTTPProvider {
   return new HTTPProvider(`https://rpc.decentraland.org/${encodeURIComponent(network)}?project=catalyst-content`, {
@@ -53,12 +51,7 @@ function createProvider(fetcher: IFetchComponent, network: string): HTTPProvider
   })
 }
 
-export const defaultComponentsBuilder = {
-  createL1Checker,
-  createL2Checker
-}
-
-export async function initComponentsWithEnv(env: Environment, builder: ComponentsBuilder): Promise<AppComponents> {
+export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
   const clock = createClock()
   const metrics = createTestMetricsComponent(metricsDeclaration)
   const config = createConfigComponent({
@@ -83,8 +76,6 @@ export async function initComponentsWithEnv(env: Environment, builder: Component
   const l2Network = ethNetwork === 'mainnet' ? 'polygon' : 'mumbai'
   const l1Provider = createProvider(fetcher, ethNetwork)
   const l2Provider = createProvider(fetcher, l2Network)
-  const l1Checker = await builder.createL1Checker(l1Provider, ethNetwork)
-  const l2Checker = await builder.createL2Checker(l2Provider, l2Network)
 
   const database = await createDatabaseComponent({ logs, env, metrics })
 
@@ -130,16 +121,6 @@ export async function initComponentsWithEnv(env: Environment, builder: Component
     }
   )
 
-  const subGraphs = await createSubGraphsComponent({
-    env,
-    metrics,
-    logs,
-    fetcher,
-    l1Provider,
-    l2Provider,
-    l1Checker,
-    l2Checker
-  })
   const externalCalls = await createExternalCalls({
     storage,
     authenticator,
@@ -147,8 +128,18 @@ export async function initComponentsWithEnv(env: Environment, builder: Component
     env,
     logs
   })
-  const theGraphClient = createTheGraphClient({ subGraphs, logs })
-  const validator = createValidator({ config, externalCalls, logs, theGraphClient, subGraphs })
+  const validator = {
+    validate: await createOnChainValidator({
+      env,
+      metrics,
+      fetcher,
+      l1Provider,
+      l2Provider,
+      config,
+      externalCalls,
+      logs
+    })
+  }
   const serverValidator = createServerValidator({ failedDeployments, metrics, clock })
 
   const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, clock })
@@ -344,12 +335,11 @@ export async function initComponentsWithEnv(env: Environment, builder: Component
     denylist,
     l1Provider,
     l2Provider,
-    l1Checker,
-    l2Checker,
     fs,
     snapshotGenerator,
     processedSnapshotStorage,
     clock,
-    snapshotStorage
+    snapshotStorage,
+    config
   }
 }

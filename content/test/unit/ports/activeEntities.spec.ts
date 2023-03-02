@@ -297,7 +297,6 @@ async function buildService() {
   env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, 'inexistent')
   env.setConfig(EnvironmentConfig.DENYLIST_FILE_NAME, 'file')
   const clock = createClock()
-  const validator = new NoOpValidator()
   const serverValidator = new NoOpServerValidator()
   const logs = await createLogComponent({
     config: createConfigComponent({
@@ -329,7 +328,7 @@ async function buildService() {
     clock,
     deployRateLimiter,
     storage,
-    validator,
+    validator: new NoOpValidator(),
     serverValidator,
     metrics,
     logs,

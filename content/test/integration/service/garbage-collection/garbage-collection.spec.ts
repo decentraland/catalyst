@@ -1,7 +1,6 @@
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import assert from 'assert'
 import ms from 'ms'
-import { createTestComponentBuilder } from '../../../helpers/builder'
 import { EnvironmentBuilder, EnvironmentConfig } from '../../../../src/Environment'
 import { stopAllComponents } from '../../../../src/logic/components-lifecycle'
 import { AppComponents } from '../../../../src/types'
@@ -50,7 +49,7 @@ describe('Integration - Garbage Collection', () => {
     components = await new EnvironmentBuilder(baseEnv)
       .withConfig(EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL, ms('2s'))
       .withConfig(EnvironmentConfig.GARBAGE_COLLECTION, 'true')
-      .buildConfigAndComponents(createTestComponentBuilder())
+      .buildConfigAndComponents()
     makeNoopValidator(components)
     makeNoopServerValidator(components)
   })

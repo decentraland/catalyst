@@ -74,7 +74,7 @@ describe('Integration - Deployment with Entity Overlaps', () => {
     'When scene is deployed, then server checks for permissions',
     async (components) => {
       // make validators stub
-      stub(components.validator, 'validate')
+      stub(components, 'validator')
         .onFirstCall()
         .resolves({ ok: true })
         .onSecondCall()

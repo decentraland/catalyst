@@ -1,14 +1,15 @@
-import { Validator } from '@dcl/content-validator'
+import { DeploymentToValidate, ValidationResponse } from '@dcl/content-validator'
 import { stub } from 'sinon'
+import { ServerValidator } from 'src/service/validations/server'
 import { AppComponents } from '../../../../src/types'
 
-export class NoOpValidator implements Validator {
-  async validate(): Promise<{ ok: true } | { ok: false; errors: string[] }> {
+export class NoOpValidator {
+  async validate(_d: DeploymentToValidate): Promise<ValidationResponse> {
     return { ok: true }
   }
 }
 
-export class NoOpServerValidator implements Validator {
+export class NoOpServerValidator implements ServerValidator {
   async validate(): Promise<{ ok: true } | { ok: false; message: string }> {
     return { ok: true }
   }

@@ -1,11 +1,11 @@
-import { ExternalCalls, L1Checker, L2Checker, Validator } from '@dcl/content-validator'
+import { ExternalCalls, ValidateFn } from '@dcl/content-validator'
 import { IContentStorageComponent, IFileSystemComponent } from '@dcl/catalyst-storage'
 import { EntityType, SyncDeployment } from '@dcl/schemas'
 import { IDeployerComponent, SynchronizerComponent } from '@dcl/snapshots-fetcher'
 import { IJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { IProcessedSnapshotStorageComponent, ISnapshotStorageComponent } from '@dcl/snapshots-fetcher/dist/types'
 import { IFetchComponent } from '@well-known-components/http-server'
-import { ILoggerComponent, IMetricsComponent } from '@well-known-components/interfaces'
+import { IConfigComponent, ILoggerComponent, IMetricsComponent } from '@well-known-components/interfaces'
 import { Fetcher } from 'dcl-catalyst-commons'
 import { Controller } from './controller/Controller'
 import { Environment } from './Environment'
@@ -45,6 +45,7 @@ export type AppComponents = {
   logs: ILoggerComponent
   database: IDatabaseComponent
   deployer: MetaverseContentService
+  config: IConfigComponent
   staticConfigs: {
     contentStorageFolder: string
     tmpDownloadFolder: string
@@ -65,7 +66,9 @@ export type AppComponents = {
   migrationManager: MigrationManager
   serverValidator: ServerValidator
   externalCalls: ExternalCalls
-  validator: Validator
+  validator: {
+    validate: ValidateFn
+  }
   garbageCollectionManager: GarbageCollectionManager
   systemProperties: SystemProperties
   catalystFetcher: Fetcher
@@ -78,17 +81,10 @@ export type AppComponents = {
   fs: IFileSystemComponent
   l1Provider: HTTPProvider
   l2Provider: HTTPProvider
-  l1Checker: L1Checker
-  l2Checker: L2Checker
   snapshotGenerator: SnapshotGenerator
   processedSnapshotStorage: IProcessedSnapshotStorageComponent
   clock: Clock
   snapshotStorage: ISnapshotStorageComponent
-}
-
-export type ComponentsBuilder = {
-  createL1Checker(provider: HTTPProvider, network: string): Promise<L1Checker>
-  createL2Checker(provider: HTTPProvider, network: string): Promise<L2Checker>
 }
 
 export type MaintenanceComponents = {
