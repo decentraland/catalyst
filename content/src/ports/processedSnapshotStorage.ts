@@ -9,7 +9,7 @@ export function createProcessedSnapshotStorage(
   const processedSnapshotsCache = new Set()
 
   return {
-    async processedFrom(snapshotHashes: string[]) {
+    async filterProcessedSnapshotsFrom(snapshotHashes: string[]) {
       const snapshotsInCache = snapshotHashes.filter((h) => processedSnapshotsCache.has(h))
       if (snapshotsInCache.length == snapshotHashes.length) {
         return new Set(snapshotHashes)
@@ -21,7 +21,7 @@ export function createProcessedSnapshotStorage(
 
       return processedSnapshots
     },
-    async saveProcessed(snapshotHash: string) {
+    async markSnapshotAsProcessed(snapshotHash: string) {
       await saveProcessedSnapshot(components.database, snapshotHash, components.clock.now())
       processedSnapshotsCache.add(snapshotHash)
       logger.info(`Processed Snapshot saved`, { snapshotHash })

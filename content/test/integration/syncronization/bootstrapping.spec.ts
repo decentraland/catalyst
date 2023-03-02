@@ -129,7 +129,7 @@ describe('Bootstrapping synchronization tests', function () {
       })
 
     // now we start a new server 2 so it processes the 3 snapshots: the first one, the second one and the 5 empty ones (only one of these processed)
-    const saveProcessedSpy = jest.spyOn(server2.components.processedSnapshotStorage, 'saveProcessed')
+    const markSnapshotAsProcessedSpy = jest.spyOn(server2.components.processedSnapshotStorage, 'markSnapshotAsProcessed')
     jest.spyOn(server2.components.snapshotStorage, 'has').mockResolvedValue(false)
     await startProgramAndWaitUntilBootstrapFinishes(server2)
     const sevenDaysSnapshots = await findSnapshotsStrictlyContainedInTimeRange(server1.components, {
@@ -137,9 +137,9 @@ describe('Bootstrapping synchronization tests', function () {
       endTimestamp: fakeNow()
     })
     expect(sevenDaysSnapshots).toHaveLength(7)
-    expect(saveProcessedSpy).toBeCalledTimes(3)
+    expect(markSnapshotAsProcessedSpy).toBeCalledTimes(3)
     for (const snapshotHash of sevenDaysSnapshots.map((s) => s.hash)) {
-      expect(saveProcessedSpy).toBeCalledWith(snapshotHash)
+      expect(markSnapshotAsProcessedSpy).toBeCalledWith(snapshotHash)
     }
 
     // now we deploy a new entity for the 8th day
@@ -160,7 +160,7 @@ describe('Bootstrapping synchronization tests', function () {
     // now we run the sync from snapshots again in server 2 (would be nice to have a mechanism to restart the server)
     // it should save the weekly snapshot as already processed as it already processed the 7 ones that it's replacing
     // it should process only the last empty daily snapshot
-    saveProcessedSpy.mockReset()
+    markSnapshotAsProcessedSpy.mockReset()
     // await server2.components.synchronizer.syncSnapshotsForSyncingServers()
     await (await server2.components.synchronizer.syncWithServers(new Set())).onSyncFinished()
     await (
@@ -179,9 +179,9 @@ describe('Bootstrapping synchronization tests', function () {
     for (const newSnapshotHash of eightDaysSnapshots) {
       expect(oldSnapshots.has(newSnapshotHash)).toBeFalsy()
     }
-    expect(saveProcessedSpy).toBeCalledTimes(2)
+    expect(markSnapshotAsProcessedSpy).toBeCalledTimes(2)
     for (const snapshotHash of eightDaysSnapshots.map((s) => s.hash)) {
-      expect(saveProcessedSpy).toBeCalledWith(snapshotHash)
+      expect(markSnapshotAsProcessedSpy).toBeCalledWith(snapshotHash)
     }
   })
 
