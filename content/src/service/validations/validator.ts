@@ -105,7 +105,7 @@ export async function createOnChainValidator(
       block: parseInt(row[1])
     }
   })
-  const warmUpCache = async (tree: AvlTree<number, BlockInfo>, networkName: string): Promise<void> => {
+  async function warmUpCache(tree: AvlTree<number, BlockInfo>, networkName: string): Promise<void> {
     const start = new Date().getTime()
     const file = `blocks-cache-${networkName}.csv`
     try {
@@ -118,40 +118,36 @@ export async function createOnChainValidator(
   await warmUpCache(l1BlockSearch.tree, l1Network)
   await warmUpCache(l2BlockSearch.tree, l2Network)
 
-  const baseComponents = { config, fetch: fetcher, metrics: components.metrics, logs: components.logs }
-
   const L1 = {
     checker: l1Checker,
     collections: await createSubgraphComponent(
-      baseComponents,
+      { config, fetch: fetcher, metrics, logs },
       components.env.getConfig(EnvironmentConfig.COLLECTIONS_L1_SUBGRAPH_URL)
     ),
     blockSearch: l1BlockSearch
   }
+
   const L2 = {
     checker: l2Checker,
     collections: await createSubgraphComponent(
-      baseComponents,
+      { config, fetch: fetcher, metrics, logs },
       components.env.getConfig(EnvironmentConfig.COLLECTIONS_L2_SUBGRAPH_URL)
     ),
     blockSearch: l2BlockSearch
   }
 
-  const client = createOnChainClient({ logs, L1, L2 })
   const validateFns = createOnChainAccessCheckValidateFns({
     logs,
     externalCalls,
-    client,
+    client: createOnChainClient({ logs, L1, L2 }),
     L1,
     L2
   })
 
-  const accessValidateFn = createAccessValidateFn({ externalCalls }, validateFns)
-
   return createValidator({
     logs,
     externalCalls,
-    accessValidateFn
+    accessValidateFn: createAccessValidateFn({ externalCalls }, validateFns)
   })
 }
 
@@ -198,19 +194,16 @@ export async function createSubgraphValidator(
     }
   }
 
-  const theGraphClient = createTheGraphClient({ logs, subGraphs })
   const validateFns = createSubgraphAccessCheckValidateFns({
     logs,
     externalCalls,
-    theGraphClient,
+    theGraphClient: createTheGraphClient({ logs, subGraphs }),
     subGraphs
   })
-
-  const accessValidateFn = createAccessValidateFn({ externalCalls }, validateFns)
 
   return createValidator({
     logs,
     externalCalls,
-    accessValidateFn
+    accessValidateFn: createAccessValidateFn({ externalCalls }, validateFns)
   })
 }
