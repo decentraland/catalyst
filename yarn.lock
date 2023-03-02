@@ -1437,7 +1437,7 @@
     "@types/node" "*"
     form-data "^3.0.0"
 
-"@types/node@*":
+"@types/node@*", "@types/node@>=13.7.0", "@types/node@^18.6.3":
   version "18.11.17"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-18.11.17.tgz#5c009e1d9c38f4a2a9d45c0b0c493fe6cdb4bcb5"
   integrity sha512-HJSUJmni4BeDHhfzn6nF0sVmd1SMezP7/4F0Lq+aXzmp2xm9O7WXrUtHW/CHlYVtZUbByEvWidHqRtcJXGF2Ng==
@@ -1447,20 +1447,10 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-17.0.45.tgz#2c0fafd78705e7a18b7906b5201a522719dc5190"
   integrity sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw==
 
-"@types/node@>=13.7.0":
-  version "18.0.6"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.0.6.tgz#0ba49ac517ad69abe7a1508bc9b3a5483df9d5d7"
-  integrity sha512-/xUq6H2aQm261exT6iZTMifUySEt4GR5KX8eYyY+C4MSNPqSh9oNIP7tz2GLKTlFaiBbgZNxffoR3CVRG+cljw==
-
 "@types/node@^16.11.19":
   version "16.18.10"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-16.18.10.tgz#d7415ef18c94f8d4e4a82ebcc8b8999f965d8920"
   integrity sha512-XU1+v7h81p7145ddPfjv7jtWvkSilpcnON3mQ+bDi9Yuf7OI56efOglXRyXWgQ57xH3fEQgh7WOJMncRHVew5w==
-
-"@types/node@^18.6.3":
-  version "18.11.9"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.11.9.tgz#02d013de7058cea16d36168ef2fc653464cfbad4"
-  integrity sha512-CRpX21/kGdzjOpFsZSkcrXMGIBWMGNIHXXBVFSH+ggkftxg+XYP20TESbh+zFvFj3EQOl5byk0HTRn1IL6hbqg==
 
 "@types/on-finished@2.3.1":
   version "2.3.1"
@@ -1674,10 +1664,19 @@
     on-finished "^2.4.1"
     path-to-regexp "^6.2.1"
 
-"@well-known-components/interfaces@1.1.3", "@well-known-components/interfaces@^1.1.0", "@well-known-components/interfaces@^1.1.1", "@well-known-components/interfaces@^1.1.3":
+"@well-known-components/interfaces@1.1.3":
   version "1.1.3"
   resolved "https://registry.yarnpkg.com/@well-known-components/interfaces/-/interfaces-1.1.3.tgz#7f69c4f82366587a9adfb1e032e228fbe5852b26"
   integrity sha512-hQvm9Vzx0VN85thbO7OudjylEUVzD39dEue2irKnfvZKPfpKxGzt0u9t47egt6bYo1DeUr6JkBtWIckXpnlFEQ==
+  dependencies:
+    "@types/node" "^16.11.19"
+    "@types/node-fetch" "^2.5.12"
+    typed-url-params "^1.0.1"
+
+"@well-known-components/interfaces@^1.1.0", "@well-known-components/interfaces@^1.1.1", "@well-known-components/interfaces@^1.2.0":
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/@well-known-components/interfaces/-/interfaces-1.2.0.tgz#0cb9a0f383f9bc16cc4cbdae2ce6826299a0bfb1"
+  integrity sha512-46up+BJFBS4lNNrUwM6k/dmrg2f65fM5CrSekypawQQz2wYmdtN6ZRVVIdm4j0fTp4uaynUsb/yW81wcPK03+Q==
   dependencies:
     "@types/node" "^16.11.19"
     "@types/node-fetch" "^2.5.12"
