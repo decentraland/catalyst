@@ -369,23 +369,9 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-content-validator-4.3.1-4316115372.commit-17f5e7c.tgz":
-  version "4.3.1-4316115372.commit-17f5e7c"
-  resolved "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-content-validator-4.3.1-4316115372.commit-17f5e7c.tgz#7b71741a51fef99c5a52bc6938714263dce408ae"
-  dependencies:
-    "@dcl/block-indexer" "^1.1.1-4056737184.commit-2112891"
-    "@dcl/content-hash-tree" "^1.1.4"
-    "@dcl/hashing" "1.1.3"
-    "@dcl/schemas" "^6.4.1"
-    "@dcl/urn-resolver" "2.0.3"
-    "@well-known-components/interfaces" "1.1.3"
-    "@well-known-components/thegraph-component" "^1.2.0"
-    ms "2.1.3"
-    sharp "^0.30.6"
-
-"@dcl/content-validator@https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-content-validator-4.3.1-4316659819.commit-61aa580.tgz":
-  version "4.3.1-4316659819.commit-61aa580"
-  resolved "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-content-validator-4.3.1-4316659819.commit-61aa580.tgz#4e763b24fe34dc206be1e5e57d02c43eccb3b9fe"
+"@dcl/content-validator@https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-content-validator-4.3.1-4346167719.commit-b75c2a4.tgz":
+  version "4.3.1-4346167719.commit-b75c2a4"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-content-validator-4.3.1-4346167719.commit-b75c2a4.tgz#11340b984adb824ed03e50208159c1cfe754efb0"
   dependencies:
     "@dcl/block-indexer" "^1.1.1-4056737184.commit-2112891"
     "@dcl/content-hash-tree" "^1.1.4"

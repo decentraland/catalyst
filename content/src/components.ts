@@ -44,11 +44,14 @@ import { createServerValidator } from './service/validations/server'
 import {
   createExternalCalls,
   createIgnoreBlockchainValidator,
-  createOnChainValidator
+  createOnChainValidator,
+  createSubgraphValidator
 } from './service/validations/validator'
 import { AppComponents } from './types'
 import { HTTPProvider } from 'eth-connect'
 import { ValidateFn } from '@dcl/content-validator'
+
+const useOnChain = true
 
 function createProvider(fetcher: IFetchComponent, network: string): HTTPProvider {
   return new HTTPProvider(`https://rpc.decentraland.org/${encodeURIComponent(network)}?project=catalyst-content`, {
@@ -135,13 +138,24 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   })
 
   async function createValidator() {
-    const ignoreBlockChainAccess = (await config.getString('IGNORE_BLOCKCHAIN_ACCESS_CHECKS')) === 'true'
+    let ignoreBlockChainAccess = (await config.getString('IGNORE_BLOCKCHAIN_ACCESS_CHECKS')) === 'true'
 
     let validate: ValidateFn
     if (ignoreBlockChainAccess) {
       validate = await createIgnoreBlockchainValidator({ logs, externalCalls })
-    } else {
+    } else if (useOnChain) {
       validate = await createOnChainValidator({
+        env,
+        metrics,
+        fetcher,
+        l1Provider,
+        l2Provider,
+        config,
+        externalCalls,
+        logs
+      })
+    } else {
+      validate = await createSubgraphValidator({
         env,
         metrics,
         fetcher,
