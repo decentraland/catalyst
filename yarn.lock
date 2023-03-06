@@ -342,9 +342,9 @@
     destroy "^1.2.0"
 
 "@dcl/content-hash-tree@^1.1.3":
-  version "1.1.3"
-  resolved "https://registry.yarnpkg.com/@dcl/content-hash-tree/-/content-hash-tree-1.1.3.tgz#54ab74ab06d496cbe301fb47e3d39d664c20746a"
-  integrity sha512-oxwBwlnmzRD+2C2WgGZjnL2DSMxet+3FHKBQyXOXabhK18+HJPvjScHCVzLZRz6rUlk/CHR3SghLaeXVFEa5Ow==
+  version "1.1.4"
+  resolved "https://registry.yarnpkg.com/@dcl/content-hash-tree/-/content-hash-tree-1.1.4.tgz#4cf6f06a79959199b9a02dc1e870b946ba8329b2"
+  integrity sha512-xa9uSIkVOUHV2pkJMaTdmXI7cedbUMuxQbbp6p5tU/WViMbeGW065BkFbM64iGmbfpynLEYZwNsGocBB1o0o9g==
   dependencies:
     ethers "^5.6.8"
 
