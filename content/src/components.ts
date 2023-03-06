@@ -138,7 +138,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   })
 
   async function createValidator() {
-    let ignoreBlockChainAccess = (await config.getString('IGNORE_BLOCKCHAIN_ACCESS_CHECKS')) === 'true'
+    const ignoreBlockChainAccess = (await config.getString('IGNORE_BLOCKCHAIN_ACCESS_CHECKS')) === 'true'
 
     let validate: ValidateFn
     if (ignoreBlockChainAccess) {
