@@ -330,18 +330,7 @@
   dependencies:
     eth-connect "^6.0.2"
 
-"@dcl/catalyst-storage@^2.0.0":
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/@dcl/catalyst-storage/-/catalyst-storage-2.0.0.tgz#e41376fd652ecdb23a8525d6a5abddadca5ddbb8"
-  integrity sha512-wwSxjaF0gXMIoH9DaBY+y7pNstrGf0YM21lEvQ6KWGFdseli3E4QSv1o1T8j1GeUY0nfH735yClSr07P02dW3g==
-  dependencies:
-    "@types/destroy" "^1.0.0"
-    "@types/node" "^18.6.3"
-    "@well-known-components/interfaces" "^1.1.1"
-    aws-sdk "^2.1248.0"
-    destroy "^1.2.0"
-
-"@dcl/catalyst-storage@^2.0.3":
+"@dcl/catalyst-storage@^2.0.0", "@dcl/catalyst-storage@^2.0.3":
   version "2.0.3"
   resolved "https://registry.yarnpkg.com/@dcl/catalyst-storage/-/catalyst-storage-2.0.3.tgz#b85fba04bbbf61e22db2de970f71dd67dae07233"
   integrity sha512-3Qd0cBG63+BtJgHi1IbZvK/QwDsiEqtfjivzULbvy89N4CtHvlQXH9a0mOnSJ1fdi5GsXxiUb4uqXxEpYavmPg==
