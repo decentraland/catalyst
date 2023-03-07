@@ -3,7 +3,6 @@ import assert from 'assert'
 import ms from 'ms'
 import { EnvironmentBuilder, EnvironmentConfig } from '../../../../src/Environment'
 import { stopAllComponents } from '../../../../src/logic/components-lifecycle'
-import { isContentAvailable } from '../../../../src/logic/deployments'
 import { AppComponents } from '../../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { setupTestEnvironment } from '../../E2ETestEnvironment'
@@ -128,7 +127,7 @@ describe('Integration - Garbage Collection', () => {
   }
 
   async function assertContentIsAvailable(components: AppComponents, ...hashes: string[]) {
-    const result = await isContentAvailable(components, hashes)
+    const result = await components.storage.existMultiple(hashes)
     const allAvailable = Array.from(result.values()).every((available) => available)
     assert.ok(allAvailable)
   }

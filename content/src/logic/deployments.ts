@@ -1,4 +1,3 @@
-import { ContentItem } from '@dcl/catalyst-storage'
 import { Entity, EntityType } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import SQL, { SQLStatement } from 'sql-template-strings'
@@ -148,20 +147,6 @@ export async function calculateOverwrites(
     overwrote: new Set(overwrote),
     overwrittenBy
   }
-}
-
-export async function getContent(
-  components: Pick<AppComponents, 'storage'>,
-  fileHash: string
-): Promise<ContentItem | undefined> {
-  return components.storage.retrieve(fileHash)
-}
-
-export async function isContentAvailable(
-  components: Pick<AppComponents, 'storage'>,
-  fileHashes: string[]
-): Promise<Map<string, boolean>> {
-  return components.storage.existMultiple(fileHashes)
 }
 
 export const MAX_HISTORY_LIMIT = 500

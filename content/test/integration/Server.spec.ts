@@ -4,7 +4,6 @@ import { random } from 'faker'
 import fetch from 'node-fetch'
 import { stub } from 'sinon'
 import { EnvironmentConfig } from '../../src/Environment'
-import * as deploymentsLogic from '../../src/logic/deployments'
 import { Server } from '../../src/service/Server'
 import { randomEntity } from '../helpers/service/EntityTestFactory'
 import { E2ETestEnvironment } from './E2ETestEnvironment'
@@ -42,7 +41,7 @@ describe('Integration - Server', () => {
 
     stub(components.activeEntities, 'withIds').resolves([entity1, entity2])
     stub(components.activeEntities, 'withPointers').resolves([entity1, entity2])
-    stub(deploymentsLogic, 'getContent').resolves(SimpleContentItem.fromBuffer(content.buffer))
+    stub(components.storage, 'retrieve').resolves(SimpleContentItem.fromBuffer(content.buffer))
   })
 
   it(`Get all scenes by id`, async () => {
