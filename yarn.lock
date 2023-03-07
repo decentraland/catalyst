@@ -316,20 +316,10 @@
   dependencies:
     "@cspotcode/source-map-consumer" "0.8.0"
 
-"@dcl/block-indexer@^1.1.1-4056737184.commit-2112891":
-  version "1.1.1-4056737184.commit-2112891"
-  resolved "https://registry.yarnpkg.com/@dcl/block-indexer/-/block-indexer-1.1.1-4056737184.commit-2112891.tgz#8527ad3de9045c0857131a9dc722ae8cbd1c9c6c"
-  integrity sha512-g1UamvNFAKtJQAyGPFlCcl5j//XohpRIqVIa74208phYfU+j5PWpEagTYtfSh40VZgDZqwi36PJ3PyeyZ3TUkA==
-  dependencies:
-    "@well-known-components/interfaces" "^1.1.3"
-    "@well-known-components/logger" "^3.0.0"
-    "@well-known-components/metrics" "^2.0.1"
-    lru-cache "^7.14.0"
-
-"@dcl/catalyst-api-specs@^2.2.0":
-  version "2.2.0"
-  resolved "https://registry.yarnpkg.com/@dcl/catalyst-api-specs/-/catalyst-api-specs-2.2.0.tgz#2f7fd7b7e542423977c2b8e0f54ae7bcf3a6c87b"
-  integrity sha512-CBFUbyWkPLmJB/n8OLr6BjxU201uskwGCy8ZXrQN+B+KFKiAEPfHP73qN1eyfstRya0Mw6odnlf36CfL9D8xLA==
+"@dcl/catalyst-api-specs@^2.2.2":
+  version "2.2.2"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-api-specs/-/catalyst-api-specs-2.2.2.tgz#b5040fddf579ca2bb39f67fc3647b7374a903525"
+  integrity sha512-jC2gNH6A0Up/es7XCkfRMmKQhN8Zzebyo5OsHvZRb3ec6cy+Gm8qCLYv2RyqzlFM3fFEEHYpSmCiQmmntdMzdw==
   dependencies:
     yaml "2.2.1"
 
@@ -340,18 +330,7 @@
   dependencies:
     eth-connect "^6.0.2"
 
-"@dcl/catalyst-storage@^2.0.0":
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/@dcl/catalyst-storage/-/catalyst-storage-2.0.0.tgz#e41376fd652ecdb23a8525d6a5abddadca5ddbb8"
-  integrity sha512-wwSxjaF0gXMIoH9DaBY+y7pNstrGf0YM21lEvQ6KWGFdseli3E4QSv1o1T8j1GeUY0nfH735yClSr07P02dW3g==
-  dependencies:
-    "@types/destroy" "^1.0.0"
-    "@types/node" "^18.6.3"
-    "@well-known-components/interfaces" "^1.1.1"
-    aws-sdk "^2.1248.0"
-    destroy "^1.2.0"
-
-"@dcl/catalyst-storage@^2.0.3":
+"@dcl/catalyst-storage@^2.0.0", "@dcl/catalyst-storage@^2.0.3":
   version "2.0.3"
   resolved "https://registry.yarnpkg.com/@dcl/catalyst-storage/-/catalyst-storage-2.0.3.tgz#b85fba04bbbf61e22db2de970f71dd67dae07233"
   integrity sha512-3Qd0cBG63+BtJgHi1IbZvK/QwDsiEqtfjivzULbvy89N4CtHvlQXH9a0mOnSJ1fdi5GsXxiUb4uqXxEpYavmPg==
@@ -362,19 +341,19 @@
     aws-sdk "^2.1248.0"
     destroy "^1.2.0"
 
-"@dcl/content-hash-tree@^1.1.4":
+"@dcl/content-hash-tree@^1.1.3":
   version "1.1.4"
   resolved "https://registry.yarnpkg.com/@dcl/content-hash-tree/-/content-hash-tree-1.1.4.tgz#4cf6f06a79959199b9a02dc1e870b946ba8329b2"
   integrity sha512-xa9uSIkVOUHV2pkJMaTdmXI7cedbUMuxQbbp6p5tU/WViMbeGW065BkFbM64iGmbfpynLEYZwNsGocBB1o0o9g==
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-content-validator-4.3.1-4346167719.commit-b75c2a4.tgz":
-  version "4.3.1-4346167719.commit-b75c2a4"
-  resolved "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-content-validator-4.3.1-4346167719.commit-b75c2a4.tgz#11340b984adb824ed03e50208159c1cfe754efb0"
+"@dcl/content-validator@^4.3.0":
+  version "4.3.0"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.3.0.tgz#82502c058b23bbfd6ab42e6c131222a46456d782"
+  integrity sha512-vi9IMOI/zIVSOyW9QjwO2lLVF6nwQ5F4FGvAMEbokkgHxr8RB+lGIpz6nIThAp7ACk8WZ0pYMZilrudO2hfm5w==
   dependencies:
-    "@dcl/block-indexer" "^1.1.1-4056737184.commit-2112891"
-    "@dcl/content-hash-tree" "^1.1.4"
+    "@dcl/content-hash-tree" "^1.1.3"
     "@dcl/hashing" "1.1.3"
     "@dcl/schemas" "^6.4.1"
     "@dcl/urn-resolver" "2.0.3"
@@ -401,28 +380,19 @@
     ipfs-unixfs-importer "^7.0.3"
     multiformats "^9.6.3"
 
-"@dcl/schemas@^6.2.0", "@dcl/schemas@^6.4.2":
-  version "6.4.2"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-6.4.2.tgz#0f318b7b74943cae9288b24b3ebd8881aea057d3"
-  integrity sha512-yO8GgC7RIU17951VBGIx2tA0xMVRv6Ia7rR6V97yY77/fYLAIn1FqW/20MEmonDzyJJ5YnuDa/8gVk3XusIXYA==
+"@dcl/schemas@^6.11.1", "@dcl/schemas@^6.2.0", "@dcl/schemas@^6.4.1", "@dcl/schemas@^6.4.2":
+  version "6.11.1"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-6.11.1.tgz#8b5d5a49e22840aadd6ab46c5f71350e61ae2ae6"
+  integrity sha512-KwXZEB9sraL9sypHqh2iquTRIERyPoKBdp31DF+BCS775p+mNEJQUw4iXF8X0XH6S5vnOi8WzZUr2Nk6AE8pCg==
   dependencies:
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
 
-"@dcl/schemas@^6.4.1":
-  version "6.8.0"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-6.8.0.tgz#b060e25ee9bcb5d50e660dd7d0f820793b326ac4"
-  integrity sha512-7EnrJuq3q2BE3f7jTeKStwwRTCxS+IyJCZM11kqEMNJvwhLdXihtNN3S5nQVi8dOlV62YrOIoRpLlMN78YhmKQ==
-  dependencies:
-    ajv "^8.11.0"
-    ajv-errors "^3.0.0"
-    ajv-keywords "^5.1.0"
-
-"@dcl/snapshots-fetcher@^5.0.4":
-  version "5.0.4"
-  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-5.0.4.tgz#300f937125c6af7988ab9007e70580eab656c6c8"
-  integrity sha512-170IA/77ZF9EOp8VqzlbhZf8uMkKzjvE2Uy4otPsXPaSJHxco09syiPPfqnJvyD3sWdSeaZI40LeoIjfFxfgmA==
+"@dcl/snapshots-fetcher@^6.0.0":
+  version "6.0.0"
+  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-6.0.0.tgz#dcd750f4f831456104ec9cbb7b97b6807322fbe2"
+  integrity sha512-oMDpDOj19tya08T9jAmGSqFRvJ7cxk6TGRy9fj0HUAIQwbZ1BwkqrUzVB3u5H6I0UMtqlDjjNS+oUaZk6WNzwA==
   dependencies:
     "@dcl/catalyst-storage" "^2.0.0"
     "@dcl/hashing" "^1.0.0"
@@ -1456,7 +1426,7 @@
     "@types/node" "*"
     form-data "^3.0.0"
 
-"@types/node@*":
+"@types/node@*", "@types/node@>=13.7.0", "@types/node@^18.6.3":
   version "18.11.17"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-18.11.17.tgz#5c009e1d9c38f4a2a9d45c0b0c493fe6cdb4bcb5"
   integrity sha512-HJSUJmni4BeDHhfzn6nF0sVmd1SMezP7/4F0Lq+aXzmp2xm9O7WXrUtHW/CHlYVtZUbByEvWidHqRtcJXGF2Ng==
@@ -1466,20 +1436,10 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-17.0.45.tgz#2c0fafd78705e7a18b7906b5201a522719dc5190"
   integrity sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw==
 
-"@types/node@>=13.7.0":
-  version "18.0.6"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.0.6.tgz#0ba49ac517ad69abe7a1508bc9b3a5483df9d5d7"
-  integrity sha512-/xUq6H2aQm261exT6iZTMifUySEt4GR5KX8eYyY+C4MSNPqSh9oNIP7tz2GLKTlFaiBbgZNxffoR3CVRG+cljw==
-
 "@types/node@^16.11.19":
   version "16.18.10"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-16.18.10.tgz#d7415ef18c94f8d4e4a82ebcc8b8999f965d8920"
   integrity sha512-XU1+v7h81p7145ddPfjv7jtWvkSilpcnON3mQ+bDi9Yuf7OI56efOglXRyXWgQ57xH3fEQgh7WOJMncRHVew5w==
-
-"@types/node@^18.6.3":
-  version "18.11.9"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.11.9.tgz#02d013de7058cea16d36168ef2fc653464cfbad4"
-  integrity sha512-CRpX21/kGdzjOpFsZSkcrXMGIBWMGNIHXXBVFSH+ggkftxg+XYP20TESbh+zFvFj3EQOl5byk0HTRn1IL6hbqg==
 
 "@types/on-finished@2.3.1":
   version "2.3.1"
@@ -1693,7 +1653,7 @@
     on-finished "^2.4.1"
     path-to-regexp "^6.2.1"
 
-"@well-known-components/interfaces@1.1.3", "@well-known-components/interfaces@^1.1.0", "@well-known-components/interfaces@^1.1.1", "@well-known-components/interfaces@^1.1.3":
+"@well-known-components/interfaces@1.1.3":
   version "1.1.3"
   resolved "https://registry.yarnpkg.com/@well-known-components/interfaces/-/interfaces-1.1.3.tgz#7f69c4f82366587a9adfb1e032e228fbe5852b26"
   integrity sha512-hQvm9Vzx0VN85thbO7OudjylEUVzD39dEue2irKnfvZKPfpKxGzt0u9t47egt6bYo1DeUr6JkBtWIckXpnlFEQ==
@@ -1702,10 +1662,19 @@
     "@types/node-fetch" "^2.5.12"
     typed-url-params "^1.0.1"
 
-"@well-known-components/logger@^3.0.0":
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/@well-known-components/logger/-/logger-3.0.0.tgz#19532f6027de92a4e85ed2bf50f3c7171c177531"
-  integrity sha512-UbVTSwV+9VtP1Z0sBW+ICbPYJfvy80sJNJNGHi33SeXq4rNSJRsFK8t7LWTipJNLpZRHyMNq4P9swBBB8yAyFw==
+"@well-known-components/interfaces@^1.1.0", "@well-known-components/interfaces@^1.1.1", "@well-known-components/interfaces@^1.2.0":
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/@well-known-components/interfaces/-/interfaces-1.2.0.tgz#0cb9a0f383f9bc16cc4cbdae2ce6826299a0bfb1"
+  integrity sha512-46up+BJFBS4lNNrUwM6k/dmrg2f65fM5CrSekypawQQz2wYmdtN6ZRVVIdm4j0fTp4uaynUsb/yW81wcPK03+Q==
+  dependencies:
+    "@types/node" "^16.11.19"
+    "@types/node-fetch" "^2.5.12"
+    typed-url-params "^1.0.1"
+
+"@well-known-components/logger@^3.1.2":
+  version "3.1.2"
+  resolved "https://registry.yarnpkg.com/@well-known-components/logger/-/logger-3.1.2.tgz#0644e7a25515235b7ffee4d6c1f0a34fd94b910e"
+  integrity sha512-nT2ULsvtxcaehnUPcmRfVWIspVq6iYTPTzs5D9lBxqE3Pt+j5StzPfo814IqSo4xhN9cJhJAQ/EggMmKuYMaZg==
 
 "@well-known-components/metrics@1.1.3":
   version "1.1.3"
@@ -1714,7 +1683,7 @@
   dependencies:
     prom-client "^14.0.1"
 
-"@well-known-components/metrics@^2.0.0", "@well-known-components/metrics@^2.0.1":
+"@well-known-components/metrics@^2.0.0":
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/@well-known-components/metrics/-/metrics-2.0.1.tgz#b5f5410c3ba6e5658ef80926a1f7bd81d7aa1f56"
   integrity sha512-jgT9TuxVS9GzVMMYWXNJRM2qXvexuf4xfrFNBYa3w+gqEWCK4Id5R4zBee/bm6/F5yIPauAWxbOS6KNNDBIrGw==
@@ -3237,11 +3206,6 @@ eth-connect@^6.0.2, eth-connect@^6.0.3:
   version "6.0.3"
   resolved "https://registry.yarnpkg.com/eth-connect/-/eth-connect-6.0.3.tgz#dd903bea5a75083ebb010216549e427f2db90fce"
   integrity sha512-jK+zqIhMuZe6RlHkEKOXSZDKgZQw/mPTLlysdFYQsxaJlZtaB1EQSTgY/DrHhOc2wUUmB97raAftmhC8Wk/o7Q==
-
-eth-connect@^6.1.1-20230201175610.commit-3e040da:
-  version "6.1.1-20230201175610.commit-3e040da"
-  resolved "https://registry.yarnpkg.com/eth-connect/-/eth-connect-6.1.1-20230201175610.commit-3e040da.tgz#e189cb006014e76a08d36d35f49068a3b884623d"
-  integrity sha512-bb7Xpnux1WK683XWL0ZZ6VZ8pjkg5u+9WjiNSPrwzjckeWWT85wmLTvz/X0dEUmpnyjZr9IrsaWA1OnxkPOvHg==
 
 ethereum-cryptography@^1.0.3:
   version "1.1.2"
@@ -5130,11 +5094,6 @@ lru-cache@^6.0.0:
   integrity sha512-Jo6dJ04CmSjuznwJSS3pUeWmd/H0ffTlkXXgwZi+eq1UCmqQwCh+eLsYOYCwY991i2Fah4h1BEMCx4qThGbsiA==
   dependencies:
     yallist "^4.0.0"
-
-lru-cache@^7.14.0:
-  version "7.14.1"
-  resolved "https://registry.yarnpkg.com/lru-cache/-/lru-cache-7.14.1.tgz#8da8d2f5f59827edb388e63e459ac23d6d408fea"
-  integrity sha512-ysxwsnTKdAx96aTRdhDOCQfDgbHnt8SK0KY8SEjO0wHinhWOFTESbjVCMPbU1uGXg/ch4lifqx0wfjOawU2+WA==
 
 make-dir@^3.0.0, make-dir@^3.0.2:
   version "3.1.0"
