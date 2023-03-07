@@ -3,6 +3,7 @@ import assert from 'assert'
 import ms from 'ms'
 import { EnvironmentBuilder, EnvironmentConfig } from '../../../../src/Environment'
 import { stopAllComponents } from '../../../../src/logic/components-lifecycle'
+import { isContentAvailable } from '../../../../src/logic/deployments'
 import { AppComponents } from '../../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { setupTestEnvironment } from '../../E2ETestEnvironment'
@@ -41,7 +42,7 @@ describe('Integration - Garbage Collection', () => {
       metadata: { a: 'metadata' }
     })
     E3 = await buildDeployDataAfterEntity(E2, [P2])
-    ;[sharedContent, onlyE1Content] = E1.entity.content?.map(({ hash }) => hash) ?? []
+      ;[sharedContent, onlyE1Content] = E1.entity.content?.map(({ hash }) => hash) ?? []
   })
 
   beforeEach(async () => {
@@ -127,7 +128,7 @@ describe('Integration - Garbage Collection', () => {
   }
 
   async function assertContentIsAvailable(...hashes: string[]) {
-    const result = await components.deployer.isContentAvailable(hashes)
+    const result = await isContentAvailable(this.components, hashes)
     const allAvailable = Array.from(result.values()).every((available) => available)
     assert.ok(allAvailable)
   }

@@ -333,10 +333,6 @@ export class ServiceImpl implements MetaverseContentService {
     return IPFSv2.validate(hash)
   }
 
-  isContentAvailable(fileHashes: string[]): Promise<Map<string, boolean>> {
-    return this.components.storage.existMultiple(fileHashes)
-  }
-
   getDeployments(options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>> {
     return getDeployments(this.components, options)
   }

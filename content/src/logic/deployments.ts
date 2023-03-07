@@ -146,3 +146,10 @@ export async function getContent(
 ): Promise<ContentItem | undefined> {
   return components.storage.retrieve(fileHash)
 }
+
+export async function isContentAvailable(
+  components: Pick<AppComponents, 'storage'>,
+  fileHashes: string[]
+): Promise<Map<string, boolean>> {
+  return components.storage.existMultiple(fileHashes)
+}

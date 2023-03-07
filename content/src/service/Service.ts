@@ -11,7 +11,6 @@ export interface MetaverseContentService {
     auditInfo: LocalDeploymentAuditInfo,
     context: DeploymentContext
   ): Promise<DeploymentResult>
-  isContentAvailable(fileHashes: string[]): Promise<Map<string, boolean>>
   getDeployments(options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>>
 }
 

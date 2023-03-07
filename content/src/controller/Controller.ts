@@ -8,7 +8,7 @@ import express from 'express'
 import onFinished from 'on-finished'
 import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
 import { getActiveDeploymentsByContentHash } from '../logic/database-queries/deployments-queries'
-import { getContent } from '../logic/deployments'
+import { getContent, isContentAvailable } from '../logic/deployments'
 import { statusResponseFromComponents } from '../logic/status-checks'
 import { toQueryParams } from '../logic/toQueryParams'
 import { getDeployments } from '../service/deployments/deployments'
@@ -294,7 +294,7 @@ export class Controller {
       res.status(400).send('Please set at least one cid.')
     } else {
       const availableCids = cids.filter((cid) => !this.components.denylist.isDenylisted(cid))
-      const availableContent = await this.components.deployer.isContentAvailable(availableCids)
+      const availableContent = await isContentAvailable(this.components, availableCids)
       res.send(
         Array.from(availableContent.entries()).map(([fileHash, isAvailable]) => ({
           cid: fileHash,
