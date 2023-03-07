@@ -5,14 +5,14 @@ import { DeploymentBuilder, DeploymentData } from 'dcl-catalyst-client'
 import fs from 'fs'
 import path from 'path'
 import { ControllerEntityFactory } from '../../src/controller/ControllerEntityFactory'
-import { retry } from '../../src/helpers/RetryHelper'
-import { EntityFactory } from '../../src/service/EntityFactory'
 import {
   DeploymentContext,
   DeploymentResult,
-  isInvalidDeployment,
-  MetaverseContentService
-} from '../../src/service/Service'
+  isInvalidDeployment
+} from '../../src/deployment-types'
+import { retry } from '../../src/helpers/RetryHelper'
+import { Deployer } from '../../src/ports/deployer'
+import { EntityFactory } from '../../src/service/EntityFactory'
 
 export async function buildDeployDataAfterEntity(
   afterEntity: { timestamp: number } | { entity: { timestamp: number } },
@@ -105,12 +105,12 @@ export function awaitUntil(
 
 /** Returns the deployment timestamp of the last deployed entity */
 export async function deployEntitiesCombo(
-  service: MetaverseContentService,
+  deployer: Deployer,
   ...entitiesCombo: EntityCombo[]
 ): Promise<DeploymentResult> {
   let ret: DeploymentResult = { errors: ['empty entities combo'] }
   for (const { deployData } of entitiesCombo) {
-    const deploymentResult = await service.deployEntity(
+    const deploymentResult = await deployer.deployEntity(
       Array.from(deployData.files.values()),
       deployData.entityId,
       {

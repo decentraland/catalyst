@@ -1,12 +1,12 @@
 import { EntityType } from '@dcl/schemas'
 import { stub } from 'sinon'
-import { AuditInfo } from '../../../../src/service/deployments/types'
 import {
-  DeploymentContext,
+  AuditInfo, DeploymentContext,
   DeploymentResult,
   isInvalidDeployment,
   isSuccessfulDeployment
-} from '../../../../src/service/Service'
+} from '../../../../src/deployment-types'
+import { getDeployments } from '../../../../src/logic/deployments'
 import { AppComponents } from '../../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { setupTestEnvironment, testCaseWithComponents } from '../../E2ETestEnvironment'
@@ -142,8 +142,8 @@ describe('Integration - Deployment with Entity Overlaps', () => {
     }
   )
 
-  async function assertDeploymentsAre(components: Pick<AppComponents, 'deployer'>, ...expectedEntities: EntityCombo[]) {
-    const actualDeployments = await components.deployer.getDeployments({ filters: { onlyCurrentlyPointed: true } })
+  async function assertDeploymentsAre(components: Pick<AppComponents, 'database' | 'denylist' | 'metrics'>, ...expectedEntities: EntityCombo[]) {
+    const actualDeployments = await getDeployments(components, { filters: { onlyCurrentlyPointed: true } })
     const expectedEntityIds = expectedEntities.map((entityCombo) => entityCombo.entity.id).sort()
     const actualEntityIds = actualDeployments.deployments.map(({ entityId }) => entityId).sort()
     expect({ deployedEntityIds: actualEntityIds }).toEqual({ deployedEntityIds: expectedEntityIds })

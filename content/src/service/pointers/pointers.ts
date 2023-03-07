@@ -1,7 +1,7 @@
 import { PointerChangesSyncDeployment } from '@dcl/schemas'
+import { PointerChangesOptions } from '../../deployment-types'
 import { getHistoricalDeployments, HistoricalDeployment } from '../../logic/database-queries/deployments-queries'
 import { AppComponents } from '../../types'
-import { PointerChangesOptions } from '../deployments/types'
 import { DeploymentPointerChanges } from './types'
 
 const MAX_HISTORY_LIMIT = 500

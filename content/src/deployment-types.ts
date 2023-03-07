@@ -1,6 +1,6 @@
 import { AuthChain, EntityType, EthAddress } from '@dcl/schemas'
-import { DeploymentField } from '../../controller/Controller'
-import { EntityVersion } from '../../types'
+import { DeploymentField } from './controller/Controller'
+import { EntityVersion } from './types'
 
 export type DeploymentFilters = {
   from?: number
@@ -83,4 +83,34 @@ export type PartialDeploymentHistory<T extends DeploymentBase> = {
     next?: string
     lastId?: string
   }
+}
+
+export type LocalDeploymentAuditInfo = Pick<AuditInfo, 'authChain'>
+
+export type InvalidResult = { errors: string[] }
+export function InvalidResult(val: InvalidResult): InvalidResult {
+  return val
+}
+
+export type DeploymentResult = number | InvalidResult
+
+export type DeploymentFiles = Uint8Array[] | Map<string, Uint8Array>
+
+export function isSuccessfulDeployment(deploymentResult: DeploymentResult): deploymentResult is number {
+  return typeof deploymentResult === 'number'
+}
+
+export function isInvalidDeployment(deploymentResult: any): deploymentResult is InvalidResult {
+  if (deploymentResult && typeof deploymentResult === 'object' && Array.isArray(deploymentResult['errors'])) {
+    return true
+  }
+
+  return false
+}
+
+export enum DeploymentContext {
+  LOCAL = 'LOCAL',
+  SYNCED = 'SYNCED',
+  SYNCED_LEGACY_ENTITY = 'SYNCED_LEGACY_ENTITY',
+  FIX_ATTEMPT = 'FIX_ATTEMPT'
 }

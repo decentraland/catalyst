@@ -1,7 +1,8 @@
-import { AppComponents } from '../../../src/types'
-import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
-import { setupTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
-import { buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo, EntityCombo } from '../E2ETestUtils'
+import { getDeployments } from '../../../../src/logic/deployments'
+import { AppComponents } from '../../../../src/types'
+import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
+import { setupTestEnvironment, testCaseWithComponents } from '../../E2ETestEnvironment'
+import { buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo, EntityCombo } from '../../E2ETestUtils'
 
 /**
  * This test verifies that the active entity and overwrites are calculated correctly, regardless of the order in which the entities where deployed.
@@ -40,7 +41,7 @@ describe('Integration - Order Check', () => {
     })
   })
 
-  async function assertCommitsWhereDoneCorrectly(components: Pick<AppComponents, 'deployer'>) {
+  async function assertCommitsWhereDoneCorrectly(components: Pick<AppComponents, 'database' | 'denylist' | 'metrics'>) {
     // Assert only E5 is active
     const activeEntities = await getActiveDeployments(components)
     expect(activeEntities.length).toEqual(1)
@@ -48,8 +49,8 @@ describe('Integration - Order Check', () => {
     expect(activeEntity.entityId).toEqual(E5.entity.id)
   }
 
-  async function getActiveDeployments(components: Pick<AppComponents, 'deployer'>) {
-    const { deployments } = await components.deployer.getDeployments({
+  async function getActiveDeployments(components: Pick<AppComponents, 'database' | 'denylist' | 'metrics'>) {
+    const { deployments } = await getDeployments(components, {
       filters: {
         onlyCurrentlyPointed: true
       }

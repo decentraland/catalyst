@@ -6,7 +6,7 @@ import path from 'path'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { deleteUnreferencedFiles } from '../../../src/logic/delete-unreferenced-files'
 import { MS_PER_DAY } from '../../../src/logic/time-range'
-import { ServiceImpl } from '../../../src/service/ServiceImpl'
+import { hashFiles } from '../../../src/ports/deployer'
 import { AppComponents } from '../../../src/types'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { setupTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
@@ -44,7 +44,7 @@ describe('Delete unreferenced files - ', () => {
 
     await server.deployEntity(deployResult.deployData)
 
-    const contentsByHash: Map<string, Uint8Array> = await ServiceImpl.hashFiles(
+    const contentsByHash: Map<string, Uint8Array> = await hashFiles(
       deployResult.deployData.files,
       deployResult.deployData.entityId
     )
@@ -72,7 +72,7 @@ describe('Delete unreferenced files - ', () => {
 
     await server.deployEntity(deployResult.deployData)
 
-    const contentsByHash: Map<string, Uint8Array> = await ServiceImpl.hashFiles(
+    const contentsByHash: Map<string, Uint8Array> = await hashFiles(
       deployResult.deployData.files,
       deployResult.deployData.entityId
     )
@@ -120,7 +120,7 @@ describe('Delete unreferenced files - ', () => {
 
     await server.deployEntity(deployResult.deployData)
 
-    const contentsByHash: Map<string, Uint8Array> = await ServiceImpl.hashFiles(
+    const contentsByHash: Map<string, Uint8Array> = await hashFiles(
       deployResult.deployData.files,
       deployResult.deployData.entityId
     )

@@ -6,20 +6,24 @@ import { ILoggerComponent } from '@well-known-components/interfaces'
 import destroy from 'destroy'
 import express from 'express'
 import onFinished from 'on-finished'
-import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
-import { getActiveDeploymentsByContentHash } from '../logic/database-queries/deployments-queries'
-import { statusResponseFromComponents } from '../logic/status-checks'
-import { toQueryParams } from '../logic/toQueryParams'
-import { getDeployments } from '../service/deployments/deployments'
-import { AuditInfo, Deployment, DeploymentOptions, SortingField, SortingOrder } from '../service/deployments/types'
-import { getPointerChanges } from '../service/pointers/pointers'
-import { PointerChangesFilters } from '../service/pointers/types'
 import {
+  AuditInfo,
+  Deployment,
   DeploymentContext,
+  DeploymentOptions,
   isInvalidDeployment,
   isSuccessfulDeployment,
-  LocalDeploymentAuditInfo
-} from '../service/Service'
+  LocalDeploymentAuditInfo,
+  SortingField,
+  SortingOrder
+} from '../deployment-types'
+import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
+import { getActiveDeploymentsByContentHash } from '../logic/database-queries/deployments-queries'
+import { getDeployments } from '../logic/deployments'
+import { statusResponseFromComponents } from '../logic/status-checks'
+import { toQueryParams } from '../logic/toQueryParams'
+import { getPointerChanges } from '../service/pointers/pointers'
+import { PointerChangesFilters } from '../service/pointers/types'
 import { AppComponents, parseEntityType } from '../types'
 import { ControllerDeploymentFactory } from './ControllerDeploymentFactory'
 import { ControllerEntityFactory } from './ControllerEntityFactory'
@@ -44,6 +48,7 @@ export class Controller {
       | 'failedDeployments'
       | 'contentCluster'
       | 'synchronizationState'
+      | 'storage'
     >,
     private readonly ethNetwork: string
   ) {
@@ -251,7 +256,7 @@ export class Controller {
     // Path: /contents/:hashId
     const hashId = req.params.hashId
 
-    const contentItem: ContentItem | undefined = await this.components.deployer.getContent(hashId)
+    const contentItem: ContentItem | undefined = await this.components.storage.retrieve(hashId)
 
     if (contentItem) {
       await setContentFileHeaders(contentItem, hashId, res)
@@ -266,7 +271,7 @@ export class Controller {
     // Path: /contents/:hashId
     const hashId = req.params.hashId
 
-    const contentItem: ContentItem | undefined = await this.components.deployer.getContent(hashId)
+    const contentItem: ContentItem | undefined = await this.components.storage.retrieve(hashId)
 
     if (contentItem) {
       await setContentFileHeaders(contentItem, hashId, res)
@@ -292,7 +297,7 @@ export class Controller {
       res.status(400).send('Please set at least one cid.')
     } else {
       const availableCids = cids.filter((cid) => !this.components.denylist.isDenylisted(cid))
-      const availableContent = await this.components.deployer.isContentAvailable(availableCids)
+      const availableContent = await this.components.storage.existMultiple(availableCids)
       res.send(
         Array.from(availableContent.entries()).map(([fileHash, isAvailable]) => ({
           cid: fileHash,

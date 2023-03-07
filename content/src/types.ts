@@ -16,6 +16,7 @@ import { ActiveEntities } from './ports/activeEntities'
 import { Clock } from './ports/clock'
 import { Denylist } from './ports/denylist'
 import { DeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
+import { Deployer } from './ports/deployer'
 import { IDeployRateLimiterComponent } from './ports/deployRateLimiterComponent'
 import { IFailedDeploymentsComponent } from './ports/failedDeployments'
 import { IDatabaseComponent } from './ports/postgres'
@@ -27,7 +28,6 @@ import { ContentAuthenticator } from './service/auth/Authenticator'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { PointerManager } from './service/pointers/PointerManager'
 import { Server } from './service/Server'
-import { MetaverseContentService } from './service/Service'
 import { ISnapshotManager } from './service/snapshots/SnapshotManager'
 import { IChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
 import { DaoComponent } from './service/synchronization/clients/HardcodedDAOClient'
@@ -44,7 +44,7 @@ export type AppComponents = {
   downloadQueue: IJobQueue
   logs: ILoggerComponent
   database: IDatabaseComponent
-  deployer: MetaverseContentService
+  deployer: Deployer
   staticConfigs: {
     contentStorageFolder: string
     tmpDownloadFolder: string

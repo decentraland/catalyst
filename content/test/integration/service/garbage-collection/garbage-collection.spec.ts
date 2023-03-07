@@ -41,7 +41,7 @@ describe('Integration - Garbage Collection', () => {
       metadata: { a: 'metadata' }
     })
     E3 = await buildDeployDataAfterEntity(E2, [P2])
-    ;[sharedContent, onlyE1Content] = E1.entity.content?.map(({ hash }) => hash) ?? []
+      ;[sharedContent, onlyE1Content] = E1.entity.content?.map(({ hash }) => hash) ?? []
   })
 
   beforeEach(async () => {
@@ -66,14 +66,14 @@ describe('Integration - Garbage Collection', () => {
     await deployEntitiesCombo(components.deployer, E1)
 
     // Assert all content is available
-    await assertContentIsAvailable(sharedContent, onlyE1Content)
+    await assertContentIsAvailable(components, sharedContent, onlyE1Content)
 
     // Deploy E2
     await deployEntitiesCombo(components.deployer, E2)
 
     // Assert only the shared content is still available
     await awaitUntil(() => assertReportedAsDeletedAre(onlyE1Content))
-    await assertContentIsAvailable(sharedContent)
+    await assertContentIsAvailable(components, sharedContent)
   })
 
   it(`When garbage collection is off, then unused content isn't deleted`, async () => {
@@ -81,7 +81,7 @@ describe('Integration - Garbage Collection', () => {
     await deployEntitiesCombo(components.deployer, E1)
 
     // Assert all content is available
-    await assertContentIsAvailable(sharedContent, onlyE1Content)
+    await assertContentIsAvailable(components, sharedContent, onlyE1Content)
 
     // Deploy E2
     await deployEntitiesCombo(components.deployer, E2)
@@ -90,7 +90,7 @@ describe('Integration - Garbage Collection', () => {
     await sleep(ms('4s'))
 
     // Assert all content is still available
-    await assertContentIsAvailable(sharedContent, onlyE1Content)
+    await assertContentIsAvailable(components, sharedContent, onlyE1Content)
     await assertReportedAsDeletedAre()
   })
 
@@ -103,7 +103,7 @@ describe('Integration - Garbage Collection', () => {
 
     // Assert only the shared content is still available
     await awaitUntil(() => assertReportedAsDeletedAre(onlyE1Content))
-    await assertContentIsAvailable(sharedContent)
+    await assertContentIsAvailable(components, sharedContent)
   })
 
   it(`When entity is not overwritten, then it is not garbage collected`, async () => {
@@ -118,7 +118,7 @@ describe('Integration - Garbage Collection', () => {
 
     // Assert nothing was deleted
     await assertReportedAsDeletedAre()
-    await assertContentIsAvailable(sharedContent, onlyE1Content)
+    await assertContentIsAvailable(components, sharedContent, onlyE1Content)
   })
 
   function assertReportedAsDeletedAre(...fileHashes: string[]) {
@@ -126,8 +126,8 @@ describe('Integration - Garbage Collection', () => {
     return Promise.resolve()
   }
 
-  async function assertContentIsAvailable(...hashes: string[]) {
-    const result = await components.deployer.isContentAvailable(hashes)
+  async function assertContentIsAvailable(components: AppComponents, ...hashes: string[]) {
+    const result = await components.storage.existMultiple(hashes)
     const allAvailable = Array.from(result.values()).every((available) => available)
     assert.ok(allAvailable)
   }
