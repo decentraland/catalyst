@@ -2,10 +2,10 @@ import { EntityType } from '@dcl/schemas'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { safe } from 'jest-extra-utils'
 import { restore, stub } from 'sinon'
+import { Deployment, DeploymentOptions, PartialDeploymentHistory } from '../../../src/deployment-types'
 import { ContentFilesRow } from '../../../src/logic/database-queries/content-files-queries'
 import { HistoricalDeploymentsRow } from '../../../src/logic/database-queries/deployments-queries'
 import { MigrationDataRow } from '../../../src/logic/database-queries/migration-data-queries'
-import { Deployment, DeploymentOptions, PartialDeploymentHistory } from '../../../src/logic/deployment-types'
 import {
   getCuratedLimit,
   getCuratedOffset, getDeployments, MAX_HISTORY_LIMIT

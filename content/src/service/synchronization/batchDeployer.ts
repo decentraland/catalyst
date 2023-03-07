@@ -2,10 +2,10 @@ import { IDeployerComponent } from '@dcl/snapshots-fetcher'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { DeployableEntity } from '@dcl/snapshots-fetcher/dist/types'
 import { IBaseComponent } from '@well-known-components/interfaces'
+import { DeploymentContext } from '../../deployment-types'
 import { isEntityDeployed } from '../../logic/deployments'
 import { FailureReason } from '../../ports/failedDeployments'
 import { AppComponents, CannonicalEntityDeployment } from '../../types'
-import { DeploymentContext } from '../Service'
 import { deployEntityFromRemoteServer } from './deployRemoteEntity'
 
 /**

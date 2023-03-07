@@ -1,5 +1,5 @@
 import { Entity } from '@dcl/schemas'
-import { Deployment } from '../../logic/deployment-types'
+import { Deployment } from '../../deployment-types'
 
 /** Return true if the first object happened before the second one */
 function happenedBeforeComparable(comparable1: EntityComparable, comparable2: EntityComparable): boolean {

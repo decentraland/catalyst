@@ -6,20 +6,24 @@ import { ILoggerComponent } from '@well-known-components/interfaces'
 import destroy from 'destroy'
 import express from 'express'
 import onFinished from 'on-finished'
+import {
+  AuditInfo,
+  Deployment,
+  DeploymentContext,
+  DeploymentOptions,
+  isInvalidDeployment,
+  isSuccessfulDeployment,
+  LocalDeploymentAuditInfo,
+  SortingField,
+  SortingOrder
+} from '../deployment-types'
 import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
 import { getActiveDeploymentsByContentHash } from '../logic/database-queries/deployments-queries'
-import { AuditInfo, Deployment, DeploymentOptions, SortingField, SortingOrder } from '../logic/deployment-types'
 import { getContent, getDeployments, isContentAvailable } from '../logic/deployments'
 import { statusResponseFromComponents } from '../logic/status-checks'
 import { toQueryParams } from '../logic/toQueryParams'
 import { getPointerChanges } from '../service/pointers/pointers'
 import { PointerChangesFilters } from '../service/pointers/types'
-import {
-  DeploymentContext,
-  isInvalidDeployment,
-  isSuccessfulDeployment,
-  LocalDeploymentAuditInfo
-} from '../service/Service'
 import { AppComponents, parseEntityType } from '../types'
 import { ControllerDeploymentFactory } from './ControllerDeploymentFactory'
 import { ControllerEntityFactory } from './ControllerEntityFactory'

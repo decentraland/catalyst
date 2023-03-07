@@ -1,8 +1,8 @@
-import { getDeployments } from '../../../src/logic/deployments'
-import { AppComponents } from '../../../src/types'
-import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
-import { setupTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
-import { buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo, EntityCombo } from '../E2ETestUtils'
+import { getDeployments } from '../../../../src/logic/deployments'
+import { AppComponents } from '../../../../src/types'
+import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
+import { setupTestEnvironment, testCaseWithComponents } from '../../E2ETestEnvironment'
+import { buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo, EntityCombo } from '../../E2ETestUtils'
 
 /**
  * This test verifies that the active entity and overwrites are calculated correctly, regardless of the order in which the entities where deployed.

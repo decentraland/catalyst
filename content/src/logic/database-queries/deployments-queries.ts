@@ -2,8 +2,8 @@ import { AuthChain, Authenticator } from '@dcl/crypto'
 import { ContentMapping, Entity, EntityType, SnapshotSyncDeployment } from '@dcl/schemas'
 import pg from 'pg'
 import SQL, { SQLStatement } from 'sql-template-strings'
+import { AuditInfo, DeploymentFilters, DeploymentSorting, SortingField, SortingOrder } from '../../deployment-types'
 import { AppComponents, DeploymentId } from '../../types'
-import { AuditInfo, DeploymentFilters, DeploymentSorting, SortingField, SortingOrder } from '../deployment-types'
 
 export type HistoricalDeployment = SnapshotSyncDeployment & {
   deploymentId: number

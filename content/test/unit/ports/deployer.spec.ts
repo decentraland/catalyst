@@ -8,36 +8,35 @@ import { createTestMetricsComponent } from '@well-known-components/metrics'
 import assert from 'assert'
 import { HTTPProvider } from 'eth-connect'
 import ms from 'ms'
+import {
+  Deployment, DeploymentContext,
+  DeploymentResult, isInvalidDeployment, LocalDeploymentAuditInfo
+} from '../../../src/deployment-types'
 import { DEFAULT_ENTITIES_CACHE_SIZE, Environment, EnvironmentConfig } from '../../../src/Environment'
 import * as deploymentQueries from '../../../src/logic/database-queries/deployments-queries'
 import * as failedDeploymentQueries from '../../../src/logic/database-queries/failed-deployments-queries'
 import * as pointers from '../../../src/logic/database-queries/pointers-queries'
-import { Deployment } from '../../../src/logic/deployment-types'
 import * as deploymentLogic from '../../../src/logic/deployments'
 import * as deployments from '../../../src/logic/deployments'
 import { metricsDeclaration } from '../../../src/metrics'
 import { createActiveEntitiesComponent } from '../../../src/ports/activeEntities'
 import { Denylist } from '../../../src/ports/denylist'
 import { createDeployedEntitiesBloomFilter } from '../../../src/ports/deployedEntitiesBloomFilter'
+import { createDeployer } from '../../../src/ports/deployer'
 import { createDeployRateLimiter } from '../../../src/ports/deployRateLimiterComponent'
 import { createFailedDeployments } from '../../../src/ports/failedDeployments'
 import { createTestDatabaseComponent } from '../../../src/ports/postgres'
 import { createSequentialTaskExecutor } from '../../../src/ports/sequecuentialTaskExecutor'
 import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
 import { DELTA_POINTER_RESULT } from '../../../src/service/pointers/PointerManager'
-import {
-  DeploymentContext,
-  DeploymentResult, isInvalidDeployment, LocalDeploymentAuditInfo
-} from '../../../src/service/Service'
-import { ServiceImpl } from '../../../src/service/ServiceImpl'
 import { EntityVersion } from '../../../src/types'
 import { buildEntityAndFile } from '../../helpers/service/EntityTestFactory'
 import { NoOpServerValidator, NoOpValidator } from '../../helpers/service/validations/NoOpValidator'
-import { NoOpPointerManager } from './pointers/NoOpPointerManager'
+import { NoOpPointerManager } from '../service/pointers/NoOpPointerManager'
 
 export const DECENTRALAND_ADDRESS: EthAddress = '0x1337e0507eb4ab47e08a179573ed4533d9e22a7b'
 
-describe('Service', function () {
+describe('Deployer', function () {
   const POINTERS = ['X1,Y1', 'X2,Y2']
   const auditInfo: LocalDeploymentAuditInfo = {
     authChain: Authenticator.createSimpleAuthChain('entityId', 'ethAddress', 'signature')
@@ -65,7 +64,7 @@ describe('Service', function () {
   it(`When no file matches the given entity id, then deployment fails`, async () => {
     jest.spyOn(failedDeploymentQueries, 'getSnapshotFailedDeployments').mockResolvedValue([])
     jest.spyOn(failedDeploymentQueries, 'deleteFailedDeployment').mockResolvedValue()
-    const service = await buildService()
+    const service = await buildDeployer()
     const deploymentResult = await service.deployEntity(
       [randomFile],
       'not-actual-hash',
@@ -82,7 +81,7 @@ describe('Service', function () {
   it(`When an entity is successfully deployed, then the content is stored correctly`, async () => {
     jest.spyOn(failedDeploymentQueries, 'getSnapshotFailedDeployments').mockResolvedValue([])
     jest.spyOn(failedDeploymentQueries, 'deleteFailedDeployment').mockResolvedValue()
-    const service = await buildService()
+    const service = await buildDeployer()
     const storageSpy = jest.spyOn(service.components.storage, 'storeStream')
 
     const deploymentResult: DeploymentResult = await service.deployEntity(
@@ -105,7 +104,7 @@ describe('Service', function () {
   })
 
   it(`When a file is already uploaded, then don't try to upload it again`, async () => {
-    const service = await buildService()
+    const service = await buildDeployer()
     jest.spyOn(deploymentQueries, 'getEntityById').mockResolvedValue(undefined)
 
     // Consider the random file as already uploaded, but not the entity file
@@ -126,7 +125,7 @@ describe('Service', function () {
   })
 
   it(`Given a pointer with no deployment, when is asked twice, then the second time cached the result is returned`, async () => {
-    const service = await buildService()
+    const service = await buildDeployer()
     const serviceSpy = jest
       .spyOn(deployments, 'getDeploymentsForActiveEntities')
       .mockImplementation(() => Promise.resolve([fakeDeployment()]))
@@ -143,7 +142,7 @@ describe('Service', function () {
   })
 
   it(`When a pointer is affected by a deployment, then it is updated in the cache`, async () => {
-    const service = await buildService()
+    const service = await buildDeployer()
     jest.spyOn(service.components.pointerManager, 'referenceEntityFromPointers').mockImplementation(() =>
       Promise.resolve(
         new Map([
@@ -178,7 +177,7 @@ describe('Service', function () {
     // expect(serviceSpy).toHaveBeenCalledWith(expect.anything(), ['QmSQc2mGpzanz1DDtTf2ZCFnwTpJvAbcwzsS4An5PXaTqg'], undefined)
   })
 
-  async function buildService() {
+  async function buildDeployer() {
     const clock = { now: Date.now }
     const database = createTestDatabaseComponent()
     database.queryWithValues = () => Promise.resolve({ rows: [], rowCount: 0 } as any)
@@ -212,8 +211,7 @@ describe('Service', function () {
     const sequentialExecutor = createSequentialTaskExecutor({ logs, metrics })
     const activeEntities = createActiveEntitiesComponent({ database, logs, env, metrics, denylist, sequentialExecutor })
     await failedDeployments.start()
-
-    return new ServiceImpl({
+    const deployerComponents = {
       env,
       pointerManager,
       failedDeployments,
@@ -229,7 +227,12 @@ describe('Service', function () {
       activeEntities,
       denylist,
       clock
-    })
+    }
+    const deployer = createDeployer(deployerComponents)
+    return {
+      ...deployer,
+      components: deployerComponents
+    }
   }
   function fakeDeployment(entityId?: string): Deployment {
     return {

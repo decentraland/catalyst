@@ -1,9 +1,9 @@
 import { EntityType } from '@dcl/schemas'
-import { getDeployments } from '../../../src/logic/deployments'
-import { AppComponents } from '../../../src/types'
-import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
-import { setupTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
-import { buildDeployData, deployEntitiesCombo, EntityCombo } from '../E2ETestUtils'
+import { getDeployments } from '../../../../src/logic/deployments'
+import { AppComponents } from '../../../../src/types'
+import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
+import { setupTestEnvironment, testCaseWithComponents } from '../../E2ETestEnvironment'
+import { buildDeployData, deployEntitiesCombo, EntityCombo } from '../../E2ETestUtils'
 
 /**
  * This test verifies that the entities with the same entity timestamp are deployed correctly

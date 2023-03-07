@@ -1,4 +1,4 @@
-import { Deployment, DeploymentBase } from '../logic/deployment-types'
+import { Deployment, DeploymentBase } from '../deployment-types'
 import { DeploymentField } from './Controller'
 
 export class ControllerDeploymentFactory {

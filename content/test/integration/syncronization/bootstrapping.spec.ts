@@ -1,11 +1,11 @@
 import * as loggerComponent from '@well-known-components/logger'
 import SQL from 'sql-template-strings'
+import { Deployment } from '../../../src/deployment-types'
 import { EnvironmentConfig } from '../../../src/Environment'
 import {
   findSnapshotsStrictlyContainedInTimeRange,
   getProcessedSnapshots
 } from '../../../src/logic/database-queries/snapshots-queries'
-import { Deployment } from '../../../src/logic/deployment-types'
 import { getDeployments } from '../../../src/logic/deployments'
 import * as timeRangeLogic from '../../../src/logic/time-range'
 import { assertDeploymentsAreReported, buildDeployment } from '../E2EAssertions'

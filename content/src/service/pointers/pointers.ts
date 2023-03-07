@@ -1,6 +1,6 @@
 import { PointerChangesSyncDeployment } from '@dcl/schemas'
+import { PointerChangesOptions } from '../../deployment-types'
 import { getHistoricalDeployments, HistoricalDeployment } from '../../logic/database-queries/deployments-queries'
-import { PointerChangesOptions } from '../../logic/deployment-types'
 import { AppComponents } from '../../types'
 import { DeploymentPointerChanges } from './types'
 

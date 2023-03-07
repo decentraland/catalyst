@@ -1,10 +1,10 @@
 import { EntityType } from '@dcl/schemas'
-import { getDeployments } from "../../../src/logic/deployments"
-import { MetaverseContentService } from '../../../src/service/Service'
-import { AppComponents } from '../../../src/types'
-import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
-import { setupTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
-import { buildDeployData, deployEntitiesCombo, EntityCombo } from '../E2ETestUtils'
+import { getDeployments } from '../../../../src/logic/deployments'
+import { Deployer } from '../../../../src/ports/deployer'
+import { AppComponents } from '../../../../src/types'
+import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
+import { setupTestEnvironment, testCaseWithComponents } from '../../E2ETestEnvironment'
+import { buildDeployData, deployEntitiesCombo, EntityCombo } from '../../E2ETestUtils'
 
 /**
  * This test verifies that if concurrent deployments are made, then only one remains as active
@@ -45,14 +45,14 @@ describe('Integration - Concurrent deployments', () => {
   )
 
   async function deployEntity(
-    service: MetaverseContentService,
+    deployer: Deployer,
     entity: EntityCombo,
     components: Pick<AppComponents, 'logs'>
   ) {
     const logger = components.logs.getLogger('ConcurrentCheckTest/DeployEntity')
     try {
       logger.info('deploying', entity as any)
-      await deployEntitiesCombo(service, entity)
+      await deployEntitiesCombo(deployer, entity)
     } catch (error) {
       if (!error.message.startsWith(`The following pointers are currently being deployed`)) {
         logger.error('deploying error')

@@ -1,13 +1,12 @@
 import { EntityType } from '@dcl/schemas'
 import { stub } from 'sinon'
-import { AuditInfo } from '../../../../src/logic/deployment-types'
-import { getDeployments } from '../../../../src/logic/deployments'
 import {
-  DeploymentContext,
+  AuditInfo, DeploymentContext,
   DeploymentResult,
   isInvalidDeployment,
   isSuccessfulDeployment
-} from '../../../../src/service/Service'
+} from '../../../../src/deployment-types'
+import { getDeployments } from '../../../../src/logic/deployments'
 import { AppComponents } from '../../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { setupTestEnvironment, testCaseWithComponents } from '../../E2ETestEnvironment'

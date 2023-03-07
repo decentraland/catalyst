@@ -1,6 +1,6 @@
 import SQL from 'sql-template-strings'
+import { DeploymentContent } from '../../deployment-types'
 import { AppComponents, DeploymentId } from '../../types'
-import { DeploymentContent } from '../deployment-types'
 
 export interface ContentFilesRow {
   deployment: number

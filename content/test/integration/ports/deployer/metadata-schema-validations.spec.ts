@@ -1,6 +1,5 @@
 import { EntityType } from '@dcl/schemas'
-import { AuditInfo } from '../../../../src/logic/deployment-types'
-import { DeploymentContext, DeploymentResult } from '../../../../src/service/Service'
+import { AuditInfo, DeploymentContext, DeploymentResult } from '../../../../src/deployment-types'
 import { AppComponents, EntityVersion } from '../../../../src/types'
 import { makeNoopServerValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { setupTestEnvironment, testCaseWithComponents } from '../../E2ETestEnvironment'

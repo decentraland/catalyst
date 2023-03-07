@@ -2,9 +2,15 @@ import { ContentItem } from '@dcl/catalyst-storage'
 import { Entity, EntityType } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import SQL, { SQLStatement } from 'sql-template-strings'
+import {
+  AuditInfo,
+  Deployment,
+  DeploymentContext,
+  DeploymentOptions,
+  PartialDeploymentHistory
+} from '../deployment-types'
 import { FailedDeployment } from '../ports/failedDeployments'
 import { IDatabaseComponent } from '../ports/postgres'
-import { DeploymentContext } from '../service/Service'
 import { deployEntityFromRemoteServer } from '../service/synchronization/deployRemoteEntity'
 import { IGNORING_FIX_ERROR } from '../service/validations/server'
 import { AppComponents, DeploymentId, EntityVersion } from '../types'
@@ -20,7 +26,6 @@ import {
   saveContentFiles,
   saveDeployment
 } from './database-queries/deployments-queries'
-import { AuditInfo, Deployment, DeploymentOptions, PartialDeploymentHistory } from './deployment-types'
 
 export async function isEntityDeployed(
   components: Pick<AppComponents, 'deployedEntitiesBloomFilter' | 'database' | 'metrics'>,
