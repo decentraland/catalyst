@@ -1,4 +1,3 @@
-import { ContentItem } from '@dcl/catalyst-storage'
 import { bufferToStream } from '@dcl/catalyst-storage/dist/content-item'
 import { AuthChain, Authenticator } from '@dcl/crypto'
 import { Entity, EntityType, IPFSv2 } from '@dcl/schemas'
@@ -332,10 +331,6 @@ export class ServiceImpl implements MetaverseContentService {
 
   static isIPFSHash(hash: string): boolean {
     return IPFSv2.validate(hash)
-  }
-
-  getContent(fileHash: string): Promise<ContentItem | undefined> {
-    return this.components.storage.retrieve(fileHash)
   }
 
   isContentAvailable(fileHashes: string[]): Promise<Map<string, boolean>> {

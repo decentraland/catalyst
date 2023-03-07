@@ -277,7 +277,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       snapshotGenerator,
       failedDeployments,
       contentCluster,
-      synchronizationState
+      synchronizationState,
+      storage
     },
     ethNetwork
   )

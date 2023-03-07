@@ -8,6 +8,7 @@ import express from 'express'
 import onFinished from 'on-finished'
 import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
 import { getActiveDeploymentsByContentHash } from '../logic/database-queries/deployments-queries'
+import { getContent } from '../logic/deployments'
 import { statusResponseFromComponents } from '../logic/status-checks'
 import { toQueryParams } from '../logic/toQueryParams'
 import { getDeployments } from '../service/deployments/deployments'
@@ -44,6 +45,7 @@ export class Controller {
       | 'failedDeployments'
       | 'contentCluster'
       | 'synchronizationState'
+      | 'storage'
     >,
     private readonly ethNetwork: string
   ) {
@@ -251,7 +253,7 @@ export class Controller {
     // Path: /contents/:hashId
     const hashId = req.params.hashId
 
-    const contentItem: ContentItem | undefined = await this.components.deployer.getContent(hashId)
+    const contentItem: ContentItem | undefined = await getContent(this.components, hashId)
 
     if (contentItem) {
       await setContentFileHeaders(contentItem, hashId, res)
@@ -266,7 +268,7 @@ export class Controller {
     // Path: /contents/:hashId
     const hashId = req.params.hashId
 
-    const contentItem: ContentItem | undefined = await this.components.deployer.getContent(hashId)
+    const contentItem: ContentItem | undefined = await getContent(this.components, hashId)
 
     if (contentItem) {
       await setContentFileHeaders(contentItem, hashId, res)

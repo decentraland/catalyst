@@ -1,16 +1,20 @@
 import { SimpleContentItem } from '@dcl/catalyst-storage/dist/content-item'
 import { Entity, EntityType, PointerChangesSyncDeployment } from '@dcl/schemas'
+import { random } from 'faker'
 import fetch from 'node-fetch'
 import { stub } from 'sinon'
 import { EnvironmentConfig } from '../../src/Environment'
+import * as deploymentsLogic from '../../src/logic/deployments'
 import { Server } from '../../src/service/Server'
 import { randomEntity } from '../helpers/service/EntityTestFactory'
-import { buildContent } from '../helpers/service/MockedMetaverseContentService'
 import { E2ETestEnvironment } from './E2ETestEnvironment'
 
 describe('Integration - Server', () => {
   let server: Server
-  const content = buildContent()
+  const content = {
+    hash: random.alphaNumeric(10),
+    buffer: Buffer.from(random.alphaNumeric(10))
+  }
   const entity1 = randomEntity(EntityType.SCENE)
   const entity2 = randomEntity(EntityType.SCENE)
 
@@ -38,7 +42,7 @@ describe('Integration - Server', () => {
 
     stub(components.activeEntities, 'withIds').resolves([entity1, entity2])
     stub(components.activeEntities, 'withPointers').resolves([entity1, entity2])
-    stub(components.deployer, 'getContent').resolves(SimpleContentItem.fromBuffer(content.buffer))
+    stub(deploymentsLogic, 'getContent').resolves(SimpleContentItem.fromBuffer(content.buffer))
   })
 
   it(`Get all scenes by id`, async () => {

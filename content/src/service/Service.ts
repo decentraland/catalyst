@@ -1,4 +1,3 @@
-import { ContentItem } from '@dcl/catalyst-storage'
 import { AuditInfo, Deployment, DeploymentOptions, PartialDeploymentHistory } from './deployments/types'
 
 /**x
@@ -13,7 +12,6 @@ export interface MetaverseContentService {
     context: DeploymentContext
   ): Promise<DeploymentResult>
   isContentAvailable(fileHashes: string[]): Promise<Map<string, boolean>>
-  getContent(fileHash: string): Promise<ContentItem | undefined>
   getDeployments(options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>>
 }
 

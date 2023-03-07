@@ -1,3 +1,4 @@
+import { ContentItem } from '@dcl/catalyst-storage'
 import { Entity } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { FailedDeployment } from '../ports/failedDeployments'
@@ -137,4 +138,11 @@ export async function calculateOverwrites(
     overwrote: new Set(overwrote),
     overwrittenBy
   }
+}
+
+export async function getContent(
+  components: Pick<AppComponents, 'storage'>,
+  fileHash: string
+): Promise<ContentItem | undefined> {
+  return components.storage.retrieve(fileHash)
 }
