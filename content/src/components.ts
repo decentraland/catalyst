@@ -51,8 +51,6 @@ import { AppComponents } from './types'
 import { HTTPProvider } from 'eth-connect'
 import { ValidateFn } from '@dcl/content-validator'
 
-const useOnChain = true
-
 function createProvider(fetcher: IFetchComponent, network: string): HTTPProvider {
   return new HTTPProvider(`https://rpc.decentraland.org/${encodeURIComponent(network)}?project=catalyst-content`, {
     fetch: fetcher.fetch
@@ -66,9 +64,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     LOG_LEVEL: env.getConfig(EnvironmentConfig.LOG_LEVEL),
     IGNORE_BLOCKCHAIN_ACCESS_CHECKS: env.getConfig(EnvironmentConfig.IGNORE_BLOCKCHAIN_ACCESS_CHECKS)
   })
-  const logs = await createLogComponent({
-    config
-  })
+  const logs = await createLogComponent({ config })
   const fetcher = createFetchComponent()
   const fs = createFsComponent()
   const denylist = await createDenylist({ env, logs, fs, fetcher })
@@ -139,6 +135,10 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   async function createValidator() {
     const ignoreBlockChainAccess = (await config.getString('IGNORE_BLOCKCHAIN_ACCESS_CHECKS')) === 'true'
+
+    const validatorConfig = env.getConfig(EnvironmentConfig.ACCESS_VALIDATIONS)
+    const useOnChain = validatorConfig === 'onchain'
+    console.log({ useOnChain, validatorConfig })
 
     let validate: ValidateFn
     if (ignoreBlockChainAccess) {
