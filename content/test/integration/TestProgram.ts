@@ -3,10 +3,11 @@ import { ILoggerComponent, Lifecycle } from '@well-known-components/interfaces'
 import { ContentClient, DeploymentData } from 'dcl-catalyst-client'
 import fetch from 'node-fetch'
 import { EnvironmentConfig } from '../../src/Environment'
+import { AuditInfo, Deployment, DeploymentOptions } from '../../src/logic/deployment-types'
+import { getDeployments } from "../../src/logic/deployments"
 import * as synchronization from '../../src/logic/synchronization'
 import { FailedDeployment } from '../../src/ports/failedDeployments'
 import { main } from '../../src/service'
-import { AuditInfo, Deployment, DeploymentOptions } from '../../src/service/deployments/types'
 import { isInvalidDeployment } from '../../src/service/Service'
 import { AppComponents } from '../../src/types'
 import { deleteFolderRecursive } from './E2ETestUtils'
@@ -98,7 +99,7 @@ export class TestProgram {
 
   async getDeployments(options?: DeploymentOptions): Promise<Deployment[]> {
     const filters = Object.assign({ from: 1 }, options?.filters)
-    const deployments = await this.components.deployer.getDeployments({ ...options, filters })
+    const deployments = await getDeployments(this.components, { ...options, filters })
     return deployments.deployments
   }
 

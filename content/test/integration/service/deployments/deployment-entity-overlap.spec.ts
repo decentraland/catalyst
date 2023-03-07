@@ -1,6 +1,7 @@
 import { EntityType } from '@dcl/schemas'
 import { stub } from 'sinon'
-import { AuditInfo } from '../../../../src/service/deployments/types'
+import { AuditInfo } from '../../../../src/logic/deployment-types'
+import { getDeployments } from '../../../../src/logic/deployments'
 import {
   DeploymentContext,
   DeploymentResult,
@@ -142,8 +143,8 @@ describe('Integration - Deployment with Entity Overlaps', () => {
     }
   )
 
-  async function assertDeploymentsAre(components: Pick<AppComponents, 'deployer'>, ...expectedEntities: EntityCombo[]) {
-    const actualDeployments = await components.deployer.getDeployments({ filters: { onlyCurrentlyPointed: true } })
+  async function assertDeploymentsAre(components: Pick<AppComponents, 'database' | 'denylist' | 'metrics'>, ...expectedEntities: EntityCombo[]) {
+    const actualDeployments = await getDeployments(components, { filters: { onlyCurrentlyPointed: true } })
     const expectedEntityIds = expectedEntities.map((entityCombo) => entityCombo.entity.id).sort()
     const actualEntityIds = actualDeployments.deployments.map(({ entityId }) => entityId).sort()
     expect({ deployedEntityIds: actualEntityIds }).toEqual({ deployedEntityIds: expectedEntityIds })

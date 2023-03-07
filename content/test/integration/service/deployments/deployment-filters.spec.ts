@@ -1,5 +1,6 @@
 import { EntityType } from '@dcl/schemas'
-import { AuditInfo, DeploymentFilters } from '../../../../src/service/deployments/types'
+import { AuditInfo, DeploymentFilters } from '../../../../src/logic/deployment-types'
+import { getDeployments } from '../../../../src/logic/deployments'
 import {
   DeploymentContext,
   DeploymentResult,
@@ -122,11 +123,11 @@ describe('Integration - Deployment Filters', () => {
   )
 
   async function assertDeploymentsWithFilterAre(
-    components: Pick<AppComponents, 'deployer'>,
+    components: Pick<AppComponents, 'database' | 'denylist' | 'metrics'>,
     filter: DeploymentFilters,
     ...expectedEntities: EntityCombo[]
   ) {
-    const actualDeployments = await components.deployer.getDeployments({ filters: filter })
+    const actualDeployments = await getDeployments(components, { filters: filter })
     const expectedEntityIds = expectedEntities.map((entityCombo) => entityCombo.entity.id).sort()
     const actualEntityIds = actualDeployments.deployments.map(({ entityId }) => entityId).sort()
     expect({ filter, deployedEntityIds: actualEntityIds }).toEqual({ filter, deployedEntityIds: expectedEntityIds })

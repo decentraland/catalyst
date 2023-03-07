@@ -1,6 +1,6 @@
 import { Fetcher } from 'dcl-catalyst-commons'
 import { DeploymentField } from '../../../src/controller/Controller'
-import { Deployment } from '../../../src/service/deployments/types'
+import { Deployment } from '../../../src/logic/deployment-types'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'

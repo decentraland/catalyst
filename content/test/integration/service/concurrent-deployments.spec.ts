@@ -1,4 +1,5 @@
 import { EntityType } from '@dcl/schemas'
+import { getDeployments } from "../../../src/logic/deployments"
 import { MetaverseContentService } from '../../../src/service/Service'
 import { AppComponents } from '../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
@@ -38,7 +39,7 @@ describe('Integration - Concurrent deployments', () => {
       await Promise.all(entities.map((entityCombo) => deployEntity(deployer, entityCombo, components)))
 
       // Assert that only one is active
-      const { deployments } = await deployer.getDeployments({ filters: { pointers: [P1], onlyCurrentlyPointed: true } })
+      const { deployments } = await getDeployments(components, { filters: { pointers: [P1], onlyCurrentlyPointed: true } })
       expect(deployments.length).toEqual(1)
     }
   )

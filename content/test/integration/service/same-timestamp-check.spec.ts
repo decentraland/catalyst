@@ -1,4 +1,5 @@
 import { EntityType } from '@dcl/schemas'
+import { getDeployments } from '../../../src/logic/deployments'
 import { AppComponents } from '../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { setupTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
@@ -30,7 +31,7 @@ describe('Integration - Same Timestamp Check', () => {
   testCaseWithComponents(
     getTestEnv,
     `When oldest is deployed first, the active is the newest`,
-    async ({ deployer, validator, serverValidator }) => {
+    async ({ deployer, validator, serverValidator, database, denylist, metrics }) => {
       // make noop validator
       makeNoopValidator({ validator })
       makeNoopServerValidator({ serverValidator })
@@ -40,14 +41,14 @@ describe('Integration - Same Timestamp Check', () => {
       await deployEntitiesCombo(deployer, newestEntity)
 
       // Assert newest entity is active
-      await assertIsActive(deployer, newestEntity)
+      await assertIsActive({ database, denylist, metrics }, newestEntity)
     }
   )
 
   testCaseWithComponents(
     getTestEnv,
     `When newest is deployed first, the active is the newest`,
-    async ({ deployer, validator, serverValidator }) => {
+    async ({ deployer, validator, serverValidator, database, denylist, metrics }) => {
       // make noop validator
       makeNoopValidator({ validator })
       makeNoopServerValidator({ serverValidator })
@@ -56,12 +57,12 @@ describe('Integration - Same Timestamp Check', () => {
       await deployEntitiesCombo(deployer, oldestEntity)
 
       // Assert newest entity is active
-      await assertIsActive(deployer, newestEntity)
+      await assertIsActive({ database, denylist, metrics }, newestEntity)
     }
   )
 
-  async function assertIsActive(deployer: AppComponents['deployer'], entityCombo: EntityCombo) {
-    const { deployments } = await deployer.getDeployments({
+  async function assertIsActive(components: Pick<AppComponents, 'database' | 'denylist' | 'metrics'>, entityCombo: EntityCombo) {
+    const { deployments } = await getDeployments(components, {
       filters: { entityIds: [entityCombo.controllerEntity.id], onlyCurrentlyPointed: true }
     })
     expect(deployments.length).toEqual(1)

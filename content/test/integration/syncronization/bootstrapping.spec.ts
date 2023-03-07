@@ -5,8 +5,9 @@ import {
   findSnapshotsStrictlyContainedInTimeRange,
   getProcessedSnapshots
 } from '../../../src/logic/database-queries/snapshots-queries'
+import { Deployment } from '../../../src/logic/deployment-types'
+import { getDeployments } from '../../../src/logic/deployments'
 import * as timeRangeLogic from '../../../src/logic/time-range'
-import { Deployment } from '../../../src/service/deployments/types'
 import { assertDeploymentsAreReported, buildDeployment } from '../E2EAssertions'
 import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
@@ -233,7 +234,7 @@ describe('Bootstrapping synchronization tests', function () {
     )
 
     // assert that the entity was not deployed on server 2
-    const { deployments } = await server2.components.deployer.getDeployments()
+    const { deployments } = await getDeployments(server2.components)
     expect(deployments).toHaveLength(0)
   })
 

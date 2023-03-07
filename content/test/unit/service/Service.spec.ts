@@ -12,7 +12,9 @@ import { DEFAULT_ENTITIES_CACHE_SIZE, Environment, EnvironmentConfig } from '../
 import * as deploymentQueries from '../../../src/logic/database-queries/deployments-queries'
 import * as failedDeploymentQueries from '../../../src/logic/database-queries/failed-deployments-queries'
 import * as pointers from '../../../src/logic/database-queries/pointers-queries'
+import { Deployment } from '../../../src/logic/deployment-types'
 import * as deploymentLogic from '../../../src/logic/deployments'
+import * as deployments from '../../../src/logic/deployments'
 import { metricsDeclaration } from '../../../src/metrics'
 import { createActiveEntitiesComponent } from '../../../src/ports/activeEntities'
 import { Denylist } from '../../../src/ports/denylist'
@@ -22,8 +24,6 @@ import { createFailedDeployments } from '../../../src/ports/failedDeployments'
 import { createTestDatabaseComponent } from '../../../src/ports/postgres'
 import { createSequentialTaskExecutor } from '../../../src/ports/sequecuentialTaskExecutor'
 import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
-import * as deployments from '../../../src/service/deployments/deployments'
-import { Deployment } from '../../../src/service/deployments/types'
 import { DELTA_POINTER_RESULT } from '../../../src/service/pointers/PointerManager'
 import {
   DeploymentContext,

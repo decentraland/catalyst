@@ -4,11 +4,10 @@ import { Entity, EntityType, IPFSv2 } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { EnvironmentConfig } from '../Environment'
 import { getEntityById, setEntitiesAsOverwritten } from '../logic/database-queries/deployments-queries'
-import { calculateOverwrites, saveDeploymentAndContentFiles } from '../logic/deployments'
+import { AuditInfo } from '../logic/deployment-types'
+import { calculateOverwrites, getDeployments, saveDeploymentAndContentFiles } from '../logic/deployments'
 import { calculateDeprecatedHashes, calculateIPFSHashes } from '../logic/hashing'
 import { AppComponents, EntityVersion } from '../types'
-import { getDeployments } from './deployments/deployments'
-import { AuditInfo, Deployment, DeploymentOptions, PartialDeploymentHistory } from './deployments/types'
 import { EntityFactory } from './EntityFactory'
 import { DELTA_POINTER_RESULT, DeploymentResult as DeploymentPointersResult } from './pointers/PointerManager'
 import {
@@ -331,10 +330,6 @@ export class ServiceImpl implements MetaverseContentService {
 
   static isIPFSHash(hash: string): boolean {
     return IPFSv2.validate(hash)
-  }
-
-  getDeployments(options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>> {
-    return getDeployments(this.components, options)
   }
 
   private async validateDeployment(

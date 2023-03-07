@@ -1,6 +1,6 @@
 import { createFsComponent } from '@dcl/catalyst-storage'
 import { AuthLinkType, Entity, EntityType } from '@dcl/schemas'
-import { AuditInfo } from '../../../../src/service/deployments/types'
+import { AuditInfo } from '../../../../src/logic/deployment-types'
 import { DeploymentContext, DeploymentResult } from '../../../../src/service/Service'
 import { AppComponents } from '../../../../src/types'
 import { makeNoopServerValidator } from '../../../helpers/service/validations/NoOpValidator'

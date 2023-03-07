@@ -1,4 +1,4 @@
-import { AuditInfo, Deployment, DeploymentOptions, PartialDeploymentHistory } from './deployments/types'
+import { AuditInfo } from '../logic/deployment-types'
 
 /**x
  * This version of the service can tell clients about the state of the Metaverse. It assumes that all deployments
@@ -11,7 +11,6 @@ export interface MetaverseContentService {
     auditInfo: LocalDeploymentAuditInfo,
     context: DeploymentContext
   ): Promise<DeploymentResult>
-  getDeployments(options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>>
 }
 
 export type LocalDeploymentAuditInfo = Pick<AuditInfo, 'authChain'>
