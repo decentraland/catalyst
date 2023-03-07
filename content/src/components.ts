@@ -276,7 +276,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     }
   )
 
-  const synchronizationState = createSynchronizationState({ logs })
+  const synchronizationState = createSynchronizationState({ logs, metrics })
 
   const retryFailedDeployments = createRetryFailedDeployments({
     env,
