@@ -5,8 +5,9 @@ import assert from 'assert'
 import { DeploymentData } from 'dcl-catalyst-client'
 import { EntityContentItemReference } from 'dcl-catalyst-commons'
 import { Response } from 'node-fetch'
+import { Deployment } from '../../src/deployment-types'
+import { getDeployments } from '../../src/logic/deployments'
 import { FailedDeployment, FailureReason } from '../../src/ports/failedDeployments'
-import { Deployment } from '../../src/service/deployments/types'
 import { EntityVersion } from '../../src/types'
 import { assertPromiseIsRejected, assertPromiseRejectionGeneric } from '../helpers/PromiseAssertions'
 import { TestProgram } from './TestProgram'
@@ -82,7 +83,7 @@ export async function assertDeploymentsAreReported(
   server: TestProgram,
   ...expectedDeployments: Deployment[]
 ) {
-  const { deployments } = await server.components.deployer.getDeployments()
+  const { deployments } = await getDeployments(server.components)
   assert.equal(
     deployments.length,
     expectedDeployments.length,

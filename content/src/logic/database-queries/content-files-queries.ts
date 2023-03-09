@@ -1,5 +1,5 @@
 import SQL from 'sql-template-strings'
-import { DeploymentContent } from '../../service/deployments/types'
+import { DeploymentContent } from '../../deployment-types'
 import { AppComponents, DeploymentId } from '../../types'
 
 export interface ContentFilesRow {

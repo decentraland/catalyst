@@ -6,8 +6,7 @@ import {
   removeActiveDeployments,
   updateActiveDeployments
 } from '../logic/database-queries/pointers-queries'
-import { mapDeploymentsToEntities } from '../logic/deployments'
-import { getDeploymentsForActiveEntities } from '../service/deployments/deployments'
+import { getDeploymentsForActiveEntities, mapDeploymentsToEntities } from '../logic/deployments'
 import { AppComponents } from '../types'
 
 export type NotActiveEntity = 'NOT_ACTIVE_ENTITY'

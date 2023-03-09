@@ -1,7 +1,7 @@
 import { Entity } from '@dcl/schemas'
 import ms from 'ms'
+import { DeploymentContext } from '../../deployment-types'
 import { AppComponents } from '../../types'
-import { DeploymentContext } from '../Service'
 
 type EntityCheck = (entity: Entity) => boolean | Promise<boolean>
 

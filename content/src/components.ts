@@ -18,6 +18,7 @@ import { createActiveEntitiesComponent } from './ports/activeEntities'
 import { createClock } from './ports/clock'
 import { createDenylist } from './ports/denylist'
 import { createDeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
+import { createDeployer } from './ports/deployer'
 import { createDeployRateLimiter } from './ports/deployRateLimiterComponent'
 import { createFailedDeployments } from './ports/failedDeployments'
 import { createFetchComponent } from './ports/fetcher'
@@ -32,8 +33,6 @@ import { ContentAuthenticator } from './service/auth/Authenticator'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { PointerManager } from './service/pointers/PointerManager'
 import { Server } from './service/Server'
-import { MetaverseContentService } from './service/Service'
-import { ServiceImpl } from './service/ServiceImpl'
 import { SnapshotManager } from './service/snapshots/SnapshotManager'
 import { createBatchDeployerComponent } from './service/synchronization/batchDeployer'
 import { ChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
@@ -176,7 +175,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, clock })
   const activeEntities = createActiveEntitiesComponent({ database, env, logs, metrics, denylist, sequentialExecutor })
 
-  const deployer: MetaverseContentService = new ServiceImpl({
+  const deployer = createDeployer({
     metrics,
     storage,
     failedDeployments,
@@ -318,7 +317,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       snapshotGenerator,
       failedDeployments,
       contentCluster,
-      synchronizationState
+      synchronizationState,
+      storage
     },
     ethNetwork
   )

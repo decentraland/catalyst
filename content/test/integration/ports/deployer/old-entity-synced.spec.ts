@@ -1,7 +1,6 @@
 import { createFsComponent } from '@dcl/catalyst-storage'
 import { AuthLinkType, Entity, EntityType } from '@dcl/schemas'
-import { AuditInfo } from '../../../../src/service/deployments/types'
-import { DeploymentContext, DeploymentResult } from '../../../../src/service/Service'
+import { AuditInfo, DeploymentContext, DeploymentResult } from '../../../../src/deployment-types'
 import { AppComponents } from '../../../../src/types'
 import { makeNoopServerValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { setupTestEnvironment, testCaseWithComponents } from '../../E2ETestEnvironment'

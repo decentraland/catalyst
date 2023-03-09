@@ -1,7 +1,7 @@
 import { Entity } from '@dcl/schemas'
 import fetch from 'node-fetch'
 import { EnvironmentConfig } from '../../../src/Environment'
-import * as deployments from '../../../src/service/deployments/deployments'
+import * as deployments from '../../../src/logic/deployments'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
@@ -427,7 +427,7 @@ describe('Integration - Get Active Entities', () => {
 
       const response = await fetch(
         server.getUrl() +
-          `/entities/active/collections/urn:decentraland:ethereum:collections-v1:0x32b7495895264ac9d0b12d32afd435453458b1c6`,
+        `/entities/active/collections/urn:decentraland:ethereum:collections-v1:0x32b7495895264ac9d0b12d32afd435453458b1c6`,
         {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' }
