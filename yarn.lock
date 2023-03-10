@@ -3219,7 +3219,7 @@ eth-connect@^6.0.2, eth-connect@^6.0.3:
   resolved "https://registry.yarnpkg.com/eth-connect/-/eth-connect-6.0.3.tgz#dd903bea5a75083ebb010216549e427f2db90fce"
   integrity sha512-jK+zqIhMuZe6RlHkEKOXSZDKgZQw/mPTLlysdFYQsxaJlZtaB1EQSTgY/DrHhOc2wUUmB97raAftmhC8Wk/o7Q==
 
-eth-connect@^6.1.1-20230201175610.commit-3e040da, eth-connect@^6.1.1-20230207141318.commit-a23c356:
+eth-connect@^6.1.1-20230207141318.commit-a23c356:
   version "6.1.1-20230207141318.commit-a23c356"
   resolved "https://registry.yarnpkg.com/eth-connect/-/eth-connect-6.1.1-20230207141318.commit-a23c356.tgz#ca91ee3e87d4e38f0b6c0280dda8da960f4cd8e7"
   integrity sha512-gFSoPgnSvsnvLGOLcfy4DF2OeGMmFW1Gt3q1wS9u8gjebyB/gzTuUdd2eGhgsvbs3Ht6F1yzXStGvrLF0jl5KA==
