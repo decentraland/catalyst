@@ -36,7 +36,7 @@ export class E2ETestEnvironment {
       .setConfig(EnvironmentConfig.PSQL_SCHEMA, E2ETestEnvironment.TEST_SCHEMA)
       .setConfig(EnvironmentConfig.PSQL_HOST, 'localhost')
       .setConfig(EnvironmentConfig.LOG_REQUESTS, false)
-      .setConfig(EnvironmentConfig.LOG_LEVEL, 'off')
+      .setConfig(EnvironmentConfig.LOG_LEVEL, 'WARN')
       .setConfig(EnvironmentConfig.BOOTSTRAP_FROM_SCRATCH, false)
 
     if (overrideConfigs) {
@@ -49,7 +49,7 @@ export class E2ETestEnvironment {
     const metrics = createTestMetricsComponent(metricsDeclaration)
     this.logs = await createLogComponent({
       config: createConfigComponent({
-        LOG_LEVEL: 'DEBUG'
+        LOG_LEVEL: 'WARN'
       })
     })
     this.database = await createDatabaseComponent({ logs: this.logs, env: this.sharedEnv, metrics })

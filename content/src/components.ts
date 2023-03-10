@@ -137,7 +137,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
     const validatorConfig = env.getConfig(EnvironmentConfig.ACCESS_VALIDATIONS)
     const useOnChain = validatorConfig === 'onchain'
-    console.log({ useOnChain, validatorConfig })
 
     let validate: ValidateFn
     if (ignoreBlockChainAccess) {
