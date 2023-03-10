@@ -34,8 +34,8 @@ export class GarbageCollectionManager {
 
   async stop(): Promise<void> {
     if (this.performGarbageCollection) {
-      clearTimeout(this.nextGarbageCollectionTimeout)
       this.stopping = true
+      clearTimeout(this.nextGarbageCollectionTimeout)
       await this.waitUntilSyncFinishes()
     }
   }
