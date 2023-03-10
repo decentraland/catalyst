@@ -67,12 +67,11 @@ export async function createIgnoreBlockchainValidator(
 }
 
 export async function createOnChainValidator(
-  components: Pick<
-    AppComponents,
-    'env' | 'metrics' | 'config' | 'externalCalls' | 'logs' | 'l1Provider' | 'l2Provider' | 'fetcher'
-  >
+  components: Pick<AppComponents, 'env' | 'metrics' | 'config' | 'externalCalls' | 'logs' | 'fetcher'>,
+  l1Provider: HTTPProvider,
+  l2Provider: HTTPProvider
 ): Promise<ValidateFn> {
-  const { env, metrics, logs, fetcher, l1Provider, l2Provider, config, externalCalls } = components
+  const { env, metrics, logs, fetcher, config, externalCalls } = components
   const l1Network: 'mainnet' | 'goerli' = env.getConfig(EnvironmentConfig.ETH_NETWORK)
   const l2Network = l1Network === 'mainnet' ? 'polygon' : 'mumbai'
 
@@ -152,10 +151,7 @@ export async function createOnChainValidator(
 }
 
 export async function createSubgraphValidator(
-  components: Pick<
-    AppComponents,
-    'env' | 'metrics' | 'config' | 'externalCalls' | 'logs' | 'l1Provider' | 'l2Provider' | 'fetcher'
-  >
+  components: Pick<AppComponents, 'env' | 'metrics' | 'config' | 'externalCalls' | 'logs' | 'fetcher'>
 ): Promise<ValidateFn> {
   const { logs, config, externalCalls } = components
   const baseComponents = { config, fetch: components.fetcher, metrics: components.metrics, logs: components.logs }

@@ -23,7 +23,6 @@ import { ISequentialTaskExecutorComponent } from './ports/sequecuentialTaskExecu
 import { SnapshotGenerator } from './ports/snapshotGenerator'
 import { SynchronizationState } from './ports/synchronizationState'
 import { SystemProperties } from './ports/system-properties'
-import { HTTPProvider } from 'eth-connect'
 import { ContentAuthenticator } from './service/auth/Authenticator'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { PointerManager } from './service/pointers/PointerManager'
@@ -79,8 +78,6 @@ export type AppComponents = {
   sequentialExecutor: ISequentialTaskExecutorComponent
   denylist: Denylist
   fs: IFileSystemComponent
-  l1Provider: HTTPProvider
-  l2Provider: HTTPProvider
   snapshotGenerator: SnapshotGenerator
   processedSnapshotStorage: IProcessedSnapshotStorageComponent
   clock: Clock

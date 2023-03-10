@@ -6,7 +6,6 @@ import { once } from 'events'
 import express, { NextFunction, RequestHandler } from 'express'
 import * as OpenApiValidator from 'express-openapi-validator'
 import http from 'http'
-import log4js from 'log4js'
 import morgan from 'morgan'
 import multer from 'multer'
 import path from 'path'
@@ -32,14 +31,6 @@ export class Server implements IBaseComponent {
   constructor(protected components: Pick<AppComponents, 'controller' | 'metrics' | 'env' | 'logs' | 'fs'>) {
     const { env, controller, metrics, logs } = components
     this.LOGGER = logs.getLogger('HttpServer')
-    // Set logger
-    log4js.configure({
-      appenders: { console: { type: 'console', layout: { type: 'basic' } } },
-      categories: {
-        default: { appenders: ['console'], level: env.getConfig<string>(EnvironmentConfig.LOG_LEVEL) }
-      }
-    })
-
     this.port = env.getConfig(EnvironmentConfig.SERVER_PORT)
 
     this.app = express()

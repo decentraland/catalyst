@@ -142,23 +142,23 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     if (ignoreBlockChainAccess) {
       validate = await createIgnoreBlockchainValidator({ logs, externalCalls })
     } else if (useOnChain) {
-      validate = await createOnChainValidator({
-        env,
-        metrics,
-        fetcher,
+      validate = await createOnChainValidator(
+        {
+          env,
+          metrics,
+          fetcher,
+          config,
+          externalCalls,
+          logs
+        },
         l1Provider,
-        l2Provider,
-        config,
-        externalCalls,
-        logs
-      })
+        l2Provider
+      )
     } else {
       validate = await createSubgraphValidator({
         env,
         metrics,
         fetcher,
-        l1Provider,
-        l2Provider,
         config,
         externalCalls,
         logs
@@ -363,8 +363,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     activeEntities,
     sequentialExecutor,
     denylist,
-    l1Provider,
-    l2Provider,
     fs,
     snapshotGenerator,
     processedSnapshotStorage,
