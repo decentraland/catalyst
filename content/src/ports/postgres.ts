@@ -7,11 +7,8 @@ import { EnvironmentConfig } from '../Environment'
 import { AppComponents } from '../types'
 
 export interface DatabaseClient extends IDatabase {
-  queryWithValues<T extends Record<string, any>>(
-    sql: SQLStatement,
-    durationQueryNameLabel?: string
-  ): Promise<IDatabase.IQueryResult<T>>
-  streamQuery<T extends Record<string, any>>(
+  queryWithValues<T>(sql: SQLStatement, durationQueryNameLabel?: string): Promise<IDatabase.IQueryResult<T>>
+  streamQuery<T = any>(
     sql: SQLStatement,
     config?: { batchSize?: number },
     durationQueryNameLabel?: string
@@ -92,17 +89,14 @@ export async function createDatabase(
     const queryClient = initializedClient ? initializedClient : pool
 
     return {
-      async query<T extends Record<string, any>>(sql: string): Promise<IDatabase.IQueryResult<T>> {
+      async query<T>(sql: string): Promise<IDatabase.IQueryResult<T>> {
         const rows = await queryClient.query<T[]>(sql)
         return {
           rows: rows.rows as any[],
           rowCount: rows.rowCount
         }
       },
-      async queryWithValues<T extends Record<string, any>>(
-        sql: SQLStatement,
-        durationQueryNameLabel?: string
-      ): Promise<IDatabase.IQueryResult<T>> {
+      async queryWithValues<T>(sql: SQLStatement, durationQueryNameLabel?: string): Promise<IDatabase.IQueryResult<T>> {
         const endTimer = startTimer(durationQueryNameLabel)
         try {
           const rows = await queryClient.query<T[]>(sql)
@@ -246,6 +240,8 @@ export async function createDatabase(
       const promise = pool.end()
       let finished = false
 
+      promise.then(() => (finished = true)).catch(() => (finished = true))
+
       while (!finished && pool.totalCount | pool.idleCount | pool.waitingCount) {
         if (pool.totalCount) {
           logger.log('Draining connections', {
@@ -257,7 +253,7 @@ export async function createDatabase(
         }
       }
 
-      await promise.then(() => (finished = true)).catch(() => (finished = true))
+      await promise
     }
   }
 }

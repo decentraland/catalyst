@@ -2,7 +2,6 @@ import { SimpleContentItem } from '@dcl/catalyst-storage/dist/content-item'
 import { Entity, EntityType, PointerChangesSyncDeployment } from '@dcl/schemas'
 import { random } from 'faker'
 import fetch from 'node-fetch'
-import { stub } from 'sinon'
 import { EnvironmentConfig } from '../../src/Environment'
 import { Server } from '../../src/service/Server'
 import { randomEntity } from '../helpers/service/EntityTestFactory'
@@ -39,9 +38,9 @@ describe('Integration - Server', () => {
 
     await server.start()
 
-    stub(components.activeEntities, 'withIds').resolves([entity1, entity2])
-    stub(components.activeEntities, 'withPointers').resolves([entity1, entity2])
-    stub(components.storage, 'retrieve').resolves(SimpleContentItem.fromBuffer(content.buffer))
+    jest.spyOn(components.activeEntities, 'withIds').mockResolvedValue([entity1, entity2])
+    jest.spyOn(components.activeEntities, 'withPointers').mockResolvedValue([entity1, entity2])
+    jest.spyOn(components.storage, 'retrieve').mockResolvedValue(SimpleContentItem.fromBuffer(content.buffer))
   })
 
   it(`Get all scenes by id`, async () => {

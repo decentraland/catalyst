@@ -1,7 +1,7 @@
 import { EntityType } from '@dcl/schemas'
-import { stub } from 'sinon'
 import {
-  AuditInfo, DeploymentContext,
+  AuditInfo,
+  DeploymentContext,
   DeploymentResult,
   isInvalidDeployment,
   isSuccessfulDeployment
@@ -74,11 +74,10 @@ describe('Integration - Deployment with Entity Overlaps', () => {
     'When scene is deployed, then server checks for permissions',
     async (components) => {
       // make validators stub
-      stub(components.validator, 'validate')
-        .onFirstCall()
-        .resolves({ ok: true })
-        .onSecondCall()
-        .resolves({
+      jest
+        .spyOn(components.validator, 'validate')
+        .mockResolvedValueOnce({ ok: true })
+        .mockResolvedValueOnce({
           ok: false,
           errors: [
             `The provided Eth Address does not have access to the following parcel: (${P1})`,
@@ -142,7 +141,10 @@ describe('Integration - Deployment with Entity Overlaps', () => {
     }
   )
 
-  async function assertDeploymentsAre(components: Pick<AppComponents, 'database' | 'denylist' | 'metrics'>, ...expectedEntities: EntityCombo[]) {
+  async function assertDeploymentsAre(
+    components: Pick<AppComponents, 'database' | 'denylist' | 'metrics'>,
+    ...expectedEntities: EntityCombo[]
+  ) {
     const actualDeployments = await getDeployments(components, { filters: { onlyCurrentlyPointed: true } })
     const expectedEntityIds = expectedEntities.map((entityCombo) => entityCombo.entity.id).sort()
     const actualEntityIds = actualDeployments.deployments.map(({ entityId }) => entityId).sort()

@@ -1,6 +1,5 @@
 import { Entity } from '@dcl/schemas'
 import { DeploymentData } from 'dcl-catalyst-client'
-import { SinonStub, stub } from 'sinon'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { retryFailedDeploymentExecution } from '../../../src/logic/deployments'
 import { FailedDeployment, FailureReason } from '../../../src/ports/failedDeployments'
@@ -17,9 +16,8 @@ describe('Errors during sync', () => {
   let server2: TestProgram
   let controllerEntity: Entity
   let deployData: DeploymentData
-  let validatorStub1: SinonStub
-  let validatorStub2: SinonStub
-  let serverValidatorStub2: SinonStub
+  let serverValidatorStub2: jest.SpyInstance
+
   describe('Deploy an entity on server 1', function () {
     beforeEach(async function () {
       const identity = createIdentity()
@@ -30,16 +28,15 @@ describe('Errors during sync', () => {
       // Start server1
       await server1.startProgram()
 
-      validatorStub1 = stub(server1.components.validator, 'validate')
-      validatorStub1.returns(Promise.resolve({ ok: true }))
-      validatorStub2 = stub(server2.components.validator, 'validate')
-      validatorStub2.returns(Promise.resolve({ ok: true }))
+      jest.spyOn(server1.components.validator, 'validate').mockResolvedValue({ ok: true })
+      jest.spyOn(server2.components.validator, 'validate').mockResolvedValue({ ok: true })
 
-      serverValidatorStub2 = stub(server2.components.serverValidator, 'validate')
-      serverValidatorStub2.onCall(0).returns(Promise.resolve({ ok: false, message: 'anyError' }))
-      serverValidatorStub2.onCall(1).returns(Promise.resolve({ ok: true }))
-      serverValidatorStub2.onCall(2).returns(Promise.resolve({ ok: true }))
-      serverValidatorStub2.onCall(3).returns(Promise.resolve({ ok: true }))
+      serverValidatorStub2 = jest
+        .spyOn(server2.components.serverValidator, 'validate')
+        .mockResolvedValueOnce({ ok: false, message: 'anyError' })
+        .mockResolvedValueOnce({ ok: true })
+        .mockResolvedValueOnce({ ok: true })
+        .mockResolvedValueOnce({ ok: true })
 
       // Prepare entity to deploy
       const entityCombo = await buildDeployData(['0,0', '0,1'], {
@@ -111,7 +108,7 @@ describe('Errors during sync', () => {
       await awaitUntil(() => assertEntitiesAreActiveOnServer(server2, anotherEntityCombo.controllerEntity))
 
       // Restore server validations to detect the newer entity
-      serverValidatorStub2.restore()
+      serverValidatorStub2.mockRestore()
 
       await retryFailedDeploymentExecution(server2.components)
 
@@ -131,10 +128,9 @@ describe('Errors during sync', () => {
       .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
       .andBuild()
 
-    validatorStub1 = stub(server1.components.serverValidator, 'validate')
-    validatorStub1.returns(
-      Promise.resolve({ ok: false, message: 'You are trying to fix an entity that is not marked as failed' })
-    )
+    jest
+      .spyOn(server1.components.serverValidator, 'validate')
+      .mockResolvedValue({ ok: false, message: 'You are trying to fix an entity that is not marked as failed' })
 
     // Start server1
     await server1.startProgram()

@@ -1,5 +1,4 @@
 import { createTestMetricsComponent } from '@well-known-components/metrics'
-import { restore, stub } from 'sinon'
 import { ContentFilesRow, getContentFiles } from '../../../src/logic/database-queries/content-files-queries'
 import { metricsDeclaration } from '../../../src/metrics'
 import { AppComponents } from '../../../src/types'
@@ -32,14 +31,10 @@ describe('content files queries', () => {
     ]
 
     beforeAll(() => {
-      stub(components.database, 'queryWithValues').resolves({
+      jest.spyOn(components.database, 'queryWithValues').mockResolvedValue({
         rows: content_files_response,
         rowCount: 2
       })
-    })
-
-    afterAll(() => {
-      restore()
     })
 
     it('should return a map from deployment id to an array of content', async () => {

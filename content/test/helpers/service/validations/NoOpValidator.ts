@@ -1,5 +1,4 @@
 import { DeploymentToValidate, ValidationResponse } from '@dcl/content-validator'
-import { stub } from 'sinon'
 import { ServerValidator } from 'src/service/validations/server'
 import { AppComponents } from '../../../../src/types'
 
@@ -15,9 +14,9 @@ export class NoOpServerValidator implements ServerValidator {
   }
 }
 export function makeNoopValidator(components: Pick<AppComponents, 'validator'>) {
-  stub(components.validator, 'validate').resolves({ ok: true })
+  jest.spyOn(components.validator, 'validate').mockResolvedValue({ ok: true })
 }
 
 export function makeNoopServerValidator(components: Pick<AppComponents, 'serverValidator'>) {
-  stub(components.serverValidator, 'validate').resolves({ ok: true })
+  jest.spyOn(components.serverValidator, 'validate').mockResolvedValue({ ok: true })
 }
