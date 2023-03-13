@@ -1,6 +1,7 @@
 import { createFsComponent } from '@dcl/catalyst-storage'
 import fetch from 'node-fetch'
 import { EnvironmentConfig } from '../../../src/Environment'
+import { stopAllComponents } from '../../../src/logic/components-lifecycle'
 import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
@@ -35,6 +36,8 @@ describe('Integration - Create entities', () => {
   afterEach(async () => {
     await server.stopProgram()
   })
+
+  afterAll(() => stopAllComponents({ fs }))
 
   const profileAddress = '0x31a19cb92ac89f1aa62fa72da5f52521daf130b0'
   const originalProfileEntityId = 'bafkreigiffn5v5j5o2rd24dvirirggghisva44owomrl65dqg5flan47le'

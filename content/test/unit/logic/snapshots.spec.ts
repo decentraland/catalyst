@@ -4,6 +4,7 @@ import { createConfigComponent } from '@well-known-components/env-config-provide
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
+import { stopAllComponents } from '../../../src/logic/components-lifecycle'
 import * as snapshotQueries from '../../../src/logic/database-queries/snapshots-queries'
 import { generateAndStoreSnapshot, generateSnapshotsInMultipleTimeRanges } from '../../../src/logic/snapshots'
 import * as tr from '../../../src/logic/time-range'
@@ -45,6 +46,11 @@ describe('generate snapshot', () => {
     jest.spyOn(database, 'transaction').mockImplementation(async (f) => {
       await f(database)
     })
+  })
+
+  afterAll(() => {
+    jest.restoreAllMocks()
+    return stopAllComponents({ logs, database, metrics, fs })
   })
 
   it('should stream active entities with given time range', async () => {

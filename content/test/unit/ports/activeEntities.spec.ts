@@ -45,6 +45,10 @@ describe('activeEntities', () => {
     .spyOn(deployments, 'getDeploymentsForActiveEntities')
     .mockImplementation(() => Promise.resolve([fakeDeployment]))
 
+  afterAll(() => {
+    jest.restoreAllMocks()
+  })
+
   describe('withPointers should', () => {
     const pointersToUseByCases = {
       lowercase: ['apointer'],

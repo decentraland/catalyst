@@ -20,6 +20,10 @@ describe('ContentCluster', function () {
 
   beforeEach(() => jest.restoreAllMocks())
 
+  afterAll(() => {
+    jest.restoreAllMocks()
+  })
+
   // TODO: review this test, there is no real-world case in which the DAO has no servers
   xit(`When there are no servers on the DAO, then no identity is assigned`, async () => {
     const contentCluster = await new ContentClusterBuilder().build(address2)
