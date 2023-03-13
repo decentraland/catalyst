@@ -1,5 +1,5 @@
 import { CatalystByIdResult, getAllCatalystFromProvider } from '@dcl/catalyst-contracts'
-import { HTTPProvider, hexToBytes } from 'eth-connect'
+import { hexToBytes, HTTPProvider } from 'eth-connect'
 
 export interface DaoComponent {
   getAllContentServers(): Promise<Array<CatalystByIdResult>>

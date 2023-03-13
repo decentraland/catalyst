@@ -26,7 +26,7 @@ export async function* streamActiveDeployments(
     options,
     'stream_active_deployments'
   )) {
-    yield row
+    yield row as any
   }
 }
 

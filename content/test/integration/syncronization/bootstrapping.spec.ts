@@ -37,7 +37,6 @@ describe('Bootstrapping synchronization tests', function () {
 
   beforeEach(async () => {
     ;[server1, server2] = await getTestEnv().configServer().andBuildMany(2)
-    jest.restoreAllMocks()
 
     const now = Date.now()
     baseTimestamp = 0
@@ -130,7 +129,10 @@ describe('Bootstrapping synchronization tests', function () {
       })
 
     // now we start a new server 2 so it processes the 3 snapshots: the first one, the second one and the 5 empty ones (only one of these processed)
-    const markSnapshotAsProcessedSpy = jest.spyOn(server2.components.processedSnapshotStorage, 'markSnapshotAsProcessed')
+    const markSnapshotAsProcessedSpy = jest.spyOn(
+      server2.components.processedSnapshotStorage,
+      'markSnapshotAsProcessed'
+    )
     jest.spyOn(server2.components.snapshotStorage, 'has').mockResolvedValue(false)
     await startProgramAndWaitUntilBootstrapFinishes(server2)
     const sevenDaysSnapshots = await findSnapshotsStrictlyContainedInTimeRange(server1.components, {

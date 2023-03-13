@@ -142,7 +142,8 @@ export enum EnvironmentConfig {
 
   // List of entity types ignored during the synchronization
   SYNC_IGNORED_ENTITY_TYPES,
-  IGNORE_BLOCKCHAIN_ACCESS_CHECKS
+  IGNORE_BLOCKCHAIN_ACCESS_CHECKS,
+  ACCESS_VALIDATIONS
 }
 export class EnvironmentBuilder {
   private baseEnv: Environment
@@ -429,6 +430,8 @@ export class EnvironmentBuilder {
       EnvironmentConfig.IGNORE_BLOCKCHAIN_ACCESS_CHECKS,
       () => process.env.IGNORE_BLOCKCHAIN_ACCESS_CHECKS
     )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ACCESS_VALIDATIONS, () => process.env.ACCESS_VALIDATIONS)
 
     return env
   }

@@ -1,12 +1,11 @@
 import { createFolderBasedFileSystemContentStorage, createFsComponent } from '@dcl/catalyst-storage'
-import { createTheGraphClient } from '@dcl/content-validator'
 import { EntityType } from '@dcl/schemas'
 import { createSynchronizer } from '@dcl/snapshots-fetcher'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
+import { IFetchComponent } from '@well-known-components/http-server'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
-import { HTTPProvider } from 'eth-connect'
 import ms from 'ms'
 import path from 'path'
 import { Controller } from './controller/Controller'
@@ -41,8 +40,21 @@ import { DAOClientFactory } from './service/synchronization/clients/DAOClientFac
 import { ContentCluster } from './service/synchronization/ContentCluster'
 import { createRetryFailedDeployments } from './service/synchronization/retryFailedDeployments'
 import { createServerValidator } from './service/validations/server'
-import { createExternalCalls, createSubGraphsComponent, createValidator } from './service/validations/validator'
+import {
+  createExternalCalls,
+  createIgnoreBlockchainValidator,
+  createOnChainValidator,
+  createSubgraphValidator
+} from './service/validations/validator'
 import { AppComponents } from './types'
+import { HTTPProvider } from 'eth-connect'
+import { ValidateFn } from '@dcl/content-validator'
+
+function createProvider(fetcher: IFetchComponent, network: string): HTTPProvider {
+  return new HTTPProvider(`https://rpc.decentraland.org/${encodeURIComponent(network)}?project=catalyst-content`, {
+    fetch: fetcher.fetch
+  })
+}
 
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
   const clock = createClock()
@@ -51,9 +63,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     LOG_LEVEL: env.getConfig(EnvironmentConfig.LOG_LEVEL),
     IGNORE_BLOCKCHAIN_ACCESS_CHECKS: env.getConfig(EnvironmentConfig.IGNORE_BLOCKCHAIN_ACCESS_CHECKS)
   })
-  const logs = await createLogComponent({
-    config
-  })
+  const logs = await createLogComponent({ config })
   const fetcher = createFetchComponent()
   const fs = createFsComponent()
   const denylist = await createDenylist({ env, logs, fs, fetcher })
@@ -64,6 +74,11 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     contentStorageFolder,
     tmpDownloadFolder
   }
+
+  const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK)
+  const l2Network = ethNetwork === 'mainnet' ? 'polygon' : 'mumbai'
+  const l1Provider = createProvider(fetcher, ethNetwork)
+  const l2Provider = createProvider(fetcher, l2Network)
 
   const database = await createDatabaseComponent({ logs, env, metrics })
 
@@ -77,18 +92,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const contentFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
   const storage = await createFolderBasedFileSystemContentStorage({ fs }, contentFolder)
 
-  const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK)
-  const ethereumProvider = new HTTPProvider(
-    `https://rpc.decentraland.org/${encodeURIComponent(ethNetwork)}?project=catalyst-content`,
-    {
-      fetch: fetcher.fetch
-    }
-  )
-  const daoClient = await DAOClientFactory.create(env, ethereumProvider)
-  const authenticator = new ContentAuthenticator(
-    ethereumProvider,
-    env.getConfig(EnvironmentConfig.DECENTRALAND_ADDRESS)
-  )
+  const daoClient = await DAOClientFactory.create(env, l1Provider)
+  const authenticator = new ContentAuthenticator(l1Provider, env.getConfig(EnvironmentConfig.DECENTRALAND_ADDRESS))
 
   const contentCluster = new ContentCluster(
     {
@@ -119,7 +124,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     }
   )
 
-  const subGraphs = await createSubGraphsComponent({ env, metrics, logs, fetcher })
   const externalCalls = await createExternalCalls({
     storage,
     authenticator,
@@ -127,8 +131,44 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     env,
     logs
   })
-  const theGraphClient = createTheGraphClient({ subGraphs, logs })
-  const validator = createValidator({ config, externalCalls, logs, theGraphClient, subGraphs })
+
+  async function createValidator() {
+    const ignoreBlockChainAccess = (await config.getString('IGNORE_BLOCKCHAIN_ACCESS_CHECKS')) === 'true'
+
+    const validatorConfig = env.getConfig(EnvironmentConfig.ACCESS_VALIDATIONS)
+    const useOnChain = validatorConfig === 'onchain'
+
+    let validate: ValidateFn
+    if (ignoreBlockChainAccess) {
+      validate = await createIgnoreBlockchainValidator({ logs, externalCalls })
+    } else if (useOnChain) {
+      validate = await createOnChainValidator(
+        {
+          env,
+          metrics,
+          fetcher,
+          config,
+          externalCalls,
+          logs
+        },
+        l1Provider,
+        l2Provider
+      )
+    } else {
+      validate = await createSubgraphValidator({
+        env,
+        metrics,
+        fetcher,
+        config,
+        externalCalls,
+        logs
+      })
+    }
+
+    return { validate }
+  }
+
+  const validator = await createValidator()
   const serverValidator = createServerValidator({ failedDeployments, metrics, clock })
 
   const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, clock })
@@ -323,11 +363,11 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     activeEntities,
     sequentialExecutor,
     denylist,
-    ethereumProvider,
     fs,
     snapshotGenerator,
     processedSnapshotStorage,
     clock,
-    snapshotStorage
+    snapshotStorage,
+    config
   }
 }

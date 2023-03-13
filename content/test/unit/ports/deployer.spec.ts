@@ -9,8 +9,11 @@ import assert from 'assert'
 import { HTTPProvider } from 'eth-connect'
 import ms from 'ms'
 import {
-  Deployment, DeploymentContext,
-  DeploymentResult, isInvalidDeployment, LocalDeploymentAuditInfo
+  Deployment,
+  DeploymentContext,
+  DeploymentResult,
+  isInvalidDeployment,
+  LocalDeploymentAuditInfo
 } from '../../../src/deployment-types'
 import { DEFAULT_ENTITIES_CACHE_SIZE, Environment, EnvironmentConfig } from '../../../src/Environment'
 import * as deploymentQueries from '../../../src/logic/database-queries/deployments-queries'
@@ -50,13 +53,13 @@ describe('Deployer', function () {
   // starts the variables
   beforeAll(async () => {
     randomFileHash = await hashV1(randomFile)
-      ;[entity, entityFile] = await buildEntityAndFile(
-        EntityType.SCENE,
-        POINTERS,
-        Date.now(),
-        new Map([['file', randomFileHash]]),
-        { metadata: 'metadata' }
-      )
+    ;[entity, entityFile] = await buildEntityAndFile(
+      EntityType.SCENE,
+      POINTERS,
+      Date.now(),
+      new Map([['file', randomFileHash]]),
+      { metadata: 'metadata' }
+    )
 
     jest.spyOn(pointers, 'updateActiveDeployments').mockImplementation(() => Promise.resolve())
   })
@@ -92,7 +95,9 @@ describe('Deployer', function () {
     )
     if (isInvalidDeployment(deploymentResult)) {
       assert.fail(
-        'The deployment result: ' + JSON.stringify(deploymentResult) + ' was expected to be successful, it was invalid instead.'
+        'The deployment result: ' +
+          JSON.stringify(deploymentResult) +
+          ' was expected to be successful, it was invalid instead.'
       )
     } else {
       const deltaMilliseconds = Date.now() - deploymentResult
@@ -186,7 +191,6 @@ describe('Deployer', function () {
     env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, 'inexistent')
     env.setConfig(EnvironmentConfig.DENYLIST_FILE_NAME, 'file')
 
-    const validator = new NoOpValidator()
     const serverValidator = new NoOpServerValidator()
     const logs = await createLogComponent({
       config: createConfigComponent({
@@ -217,7 +221,7 @@ describe('Deployer', function () {
       failedDeployments,
       deployRateLimiter,
       storage,
-      validator,
+      validator: new NoOpValidator(),
       serverValidator,
       metrics,
       logs,

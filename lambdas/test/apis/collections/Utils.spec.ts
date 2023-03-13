@@ -16,8 +16,8 @@ describe('Collection Utils', () => {
     const entityMetadata: Wearable = entity.metadata
 
     // Compare top level properties
-    assertAreEqualExceptProperties(wearable, entityMetadata, 'thumbnail', 'image', 'data')
     expect(wearable).toBeDefined()
+    assertAreEqualExceptProperties(wearable!, entityMetadata, 'thumbnail', 'image', 'data')
     wearable = wearable!
     expect(wearable.thumbnail).toEqual(`${EXTERNAL_URL}/contents/${CONTENT_HASH1}`)
     expect(wearable.image).toEqual(`${EXTERNAL_URL}/contents/${CONTENT_HASH2}`)
@@ -39,7 +39,7 @@ describe('Collection Utils', () => {
     expect(translatedContent.url).toEqual(`${EXTERNAL_URL}/contents/${CONTENT_HASH3}`)
   })
 
-  function assertAreEqualExceptProperties<Union, T extends Union, K extends Union>(
+  function assertAreEqualExceptProperties<Union extends object, T extends Union, K extends Union>(
     actual: T,
     expected: K,
     ...propertiesToIgnore: (keyof (T & K))[]

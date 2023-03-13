@@ -1,13 +1,12 @@
+import { ExternalCalls, ValidateFn } from '@dcl/content-validator'
 import { IContentStorageComponent, IFileSystemComponent } from '@dcl/catalyst-storage'
-import { ExternalCalls, Validator } from '@dcl/content-validator'
 import { EntityType, SyncDeployment } from '@dcl/schemas'
 import { IDeployerComponent, SynchronizerComponent } from '@dcl/snapshots-fetcher'
 import { IJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { IProcessedSnapshotStorageComponent, ISnapshotStorageComponent } from '@dcl/snapshots-fetcher/dist/types'
 import { IFetchComponent } from '@well-known-components/http-server'
-import { ILoggerComponent, IMetricsComponent } from '@well-known-components/interfaces'
+import { IConfigComponent, ILoggerComponent, IMetricsComponent } from '@well-known-components/interfaces'
 import { Fetcher } from 'dcl-catalyst-commons'
-import { HTTPProvider } from 'eth-connect'
 import { Controller } from './controller/Controller'
 import { Environment } from './Environment'
 import { metricsDeclaration } from './metrics'
@@ -44,6 +43,7 @@ export type AppComponents = {
   downloadQueue: IJobQueue
   logs: ILoggerComponent
   database: IDatabaseComponent
+  config: IConfigComponent
   deployer: Deployer
   staticConfigs: {
     contentStorageFolder: string
@@ -65,7 +65,9 @@ export type AppComponents = {
   migrationManager: MigrationManager
   serverValidator: ServerValidator
   externalCalls: ExternalCalls
-  validator: Validator
+  validator: {
+    validate: ValidateFn
+  }
   garbageCollectionManager: GarbageCollectionManager
   systemProperties: SystemProperties
   catalystFetcher: Fetcher
@@ -76,7 +78,6 @@ export type AppComponents = {
   sequentialExecutor: ISequentialTaskExecutorComponent
   denylist: Denylist
   fs: IFileSystemComponent
-  ethereumProvider: HTTPProvider
   snapshotGenerator: SnapshotGenerator
   processedSnapshotStorage: IProcessedSnapshotStorageComponent
   clock: Clock

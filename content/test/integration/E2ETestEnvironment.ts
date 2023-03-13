@@ -13,7 +13,6 @@ import { DaoComponent } from '../../src/service/synchronization/clients/Hardcode
 import { AppComponents } from '../../src/types'
 import { MockedDAOClient } from '../helpers/service/synchronization/clients/MockedDAOClient'
 import { TestProgram } from './TestProgram'
-import * as sinon from 'sinon'
 import LeakDetector from 'jest-leak-detector'
 
 export class E2ETestEnvironment {
@@ -36,7 +35,7 @@ export class E2ETestEnvironment {
       .setConfig(EnvironmentConfig.PSQL_SCHEMA, E2ETestEnvironment.TEST_SCHEMA)
       .setConfig(EnvironmentConfig.PSQL_HOST, 'localhost')
       .setConfig(EnvironmentConfig.LOG_REQUESTS, false)
-      .setConfig(EnvironmentConfig.LOG_LEVEL, 'off')
+      .setConfig(EnvironmentConfig.LOG_LEVEL, 'WARN')
       .setConfig(EnvironmentConfig.BOOTSTRAP_FROM_SCRATCH, false)
 
     if (overrideConfigs) {
@@ -49,7 +48,7 @@ export class E2ETestEnvironment {
     const metrics = createTestMetricsComponent(metricsDeclaration)
     this.logs = await createLogComponent({
       config: createConfigComponent({
-        LOG_LEVEL: 'DEBUG'
+        LOG_LEVEL: 'WARN'
       })
     })
     this.database = await createDatabaseComponent({ logs: this.logs, env: this.sharedEnv, metrics })
@@ -183,8 +182,10 @@ export class ServerBuilder {
 
       if (this.dao) {
         // mock DAO client
-        sinon.stub(components.daoClient, 'getAllContentServers').callsFake(() => this.dao.getAllContentServers())
-        sinon.stub(components.daoClient, 'getAllServers').callsFake(() => this.dao.getAllServers())
+        jest
+          .spyOn(components.daoClient, 'getAllContentServers')
+          .mockImplementation(() => this.dao.getAllContentServers())
+        jest.spyOn(components.daoClient, 'getAllServers').mockImplementation(() => this.dao.getAllServers())
       }
 
       servers[i] = new TestProgram(components)
@@ -207,12 +208,13 @@ export function setupTestEnvironment(overrideConfigs?: Record<number, any>) {
   })
 
   afterEach(async () => {
+    jest.restoreAllMocks()
     await testEnv.clearDatabases()
     await testEnv.stopAllComponentsFromAllServersAndDeref()
   })
 
   afterAll(async () => {
-    sinon.restore()
+    jest.restoreAllMocks()
     const detector = new LeakDetector(testEnv)
     await testEnv.stop()
     testEnv = null as any

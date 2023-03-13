@@ -4,6 +4,7 @@ RUN apk add --no-cache bash
 
 COPY package.json .
 COPY yarn.lock .
+COPY blocks-cache-*.csv .
 COPY content/package.json content/
 
 # get production dependencies
@@ -25,6 +26,7 @@ COPY --from=dependencies /app/node_modules ./node_modules/
 COPY --from=dependencies /app/content/node_modules ./node_modules/
 
 COPY --from=content-builder /app/content/dist/src content/
+COPY --from=content-builder /app/content/blocks-cache-*.csv .
 
 # https://docs.docker.com/engine/reference/builder/#arg
 ARG CATALYST_VERSION=4.0.0-ci
