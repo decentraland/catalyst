@@ -20,8 +20,6 @@ describe('snapshot generator - ', () => {
 
   const initialTimestamp = 1577836800000
 
-  beforeEach(() => jest.restoreAllMocks())
-
   testCaseWithComponents(getTestEnv, 'should generate snapshot the first time', async (components) => {
     await startSnapshotNeededComponents(components)
     const clockSpy = jest.spyOn(components.clock, 'now')

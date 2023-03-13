@@ -1,4 +1,3 @@
-
 import { EntityType } from '@dcl/schemas'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import * as failedDeploymentQueries from '../../../src/logic/database-queries/failed-deployments-queries'
@@ -7,9 +6,7 @@ import { createFailedDeployments, FailureReason, SnapshotFailedDeployment } from
 import { createTestDatabaseComponent } from '../../../src/ports/postgres'
 import { AppComponents } from '../../../src/types'
 
-
 describe('failed deployments', () => {
-
   const metrics = createTestMetricsComponent(metricsDeclaration)
   const database = createTestDatabaseComponent()
   const aFailedDeployment = {
@@ -21,8 +18,6 @@ describe('failed deployments', () => {
     errorDescription: 'some-error',
     snapshotHash: 'someHash'
   }
-
-  beforeEach(() => jest.restoreAllMocks())
 
   it('should return all failed deployments from db after start', async () => {
     const failedDeployments = await createAndStartFailedDeploymentsWith({ metrics, database }, [aFailedDeployment])
@@ -46,7 +41,7 @@ describe('failed deployments', () => {
     let failedDeploymentsMock = [aFailedDeployment]
     const failedDeployments = await createAndStartFailedDeploymentsWith({ metrics, database }, failedDeploymentsMock)
     jest.spyOn(failedDeploymentQueries, 'deleteFailedDeployment').mockImplementation(async (components, entityId) => {
-      failedDeploymentsMock = failedDeploymentsMock.filter(f => f.entityId != entityId)
+      failedDeploymentsMock = failedDeploymentsMock.filter((f) => f.entityId != entityId)
     })
 
     await failedDeployments.removeFailedDeployment(aFailedDeployment.entityId)
@@ -93,7 +88,8 @@ describe('failed deployments', () => {
 
 async function createAndStartFailedDeploymentsWith(
   components: Pick<AppComponents, 'database' | 'metrics'>,
-  baseFailedDeployments: SnapshotFailedDeployment[]) {
+  baseFailedDeployments: SnapshotFailedDeployment[]
+) {
   jest.spyOn(failedDeploymentQueries, 'getSnapshotFailedDeployments').mockResolvedValue(baseFailedDeployments)
   const failedDeployments = await createFailedDeployments(components)
   await failedDeployments.start()

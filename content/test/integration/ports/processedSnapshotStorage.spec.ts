@@ -6,8 +6,6 @@ describe('precessed snapshot storage', () => {
   const getTestEnv = setupTestEnvironment()
 
   describe('processedFrom', () => {
-    beforeEach(() => jest.restoreAllMocks())
-
     testCaseWithComponents(
       getTestEnv,
       'should return the result from they query when the hashes are not in cache',
@@ -45,7 +43,10 @@ describe('precessed snapshot storage', () => {
         // now the snapshot 'processedSnapshot' is cached
         const anotherHashNotInCache = 'anotherHashNotInCache'
         const dbQuerySpy = jest.spyOn(snapshotQueries, 'getProcessedSnapshots')
-        await components.processedSnapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot, anotherHashNotInCache])
+        await components.processedSnapshotStorage.filterProcessedSnapshotsFrom([
+          processedSnapshot,
+          anotherHashNotInCache
+        ])
         expect(dbQuerySpy).toBeCalledWith(
           expect.anything(),
           expect.arrayContaining([processedSnapshot, anotherHashNotInCache])
@@ -65,7 +66,10 @@ describe('precessed snapshot storage', () => {
         await saveProcessedSnapshot(components.database, anotherProcessedSnapshot, Date.now())
         await saveProcessedSnapshot(components.database, otherProcessedSnapshot, Date.now())
 
-        await components.processedSnapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot, otherProcessedSnapshot])
+        await components.processedSnapshotStorage.filterProcessedSnapshotsFrom([
+          processedSnapshot,
+          otherProcessedSnapshot
+        ])
         await components.processedSnapshotStorage.filterProcessedSnapshotsFrom([anotherProcessedSnapshot])
 
         const dbQuerySpy = jest.spyOn(snapshotQueries, 'getProcessedSnapshots')
@@ -103,7 +107,9 @@ describe('precessed snapshot storage', () => {
 
         await components.processedSnapshotStorage.markSnapshotAsProcessed(processedSnapshot)
         const dbQuerySpy = jest.spyOn(snapshotQueries, 'getProcessedSnapshots')
-        const processedSnapshots = await components.processedSnapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot])
+        const processedSnapshots = await components.processedSnapshotStorage.filterProcessedSnapshotsFrom([
+          processedSnapshot
+        ])
         expect(dbQuerySpy).toBeCalledTimes(0)
         expect(processedSnapshots).toEqual(new Set([processedSnapshot]))
       }

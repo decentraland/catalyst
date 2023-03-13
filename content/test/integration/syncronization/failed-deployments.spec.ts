@@ -55,10 +55,6 @@ describe('Errors during sync', () => {
       await startProgramAndWaitUntilBootstrapFinishes(server2)
     })
 
-    afterEach(async function () {
-      jest.restoreAllMocks()
-    })
-
     it('stores it as failed deployment locally', async function () {
       await awaitUntil(() => assertDeploymentFailed(server2, FailureReason.DEPLOYMENT_ERROR, controllerEntity))
     })

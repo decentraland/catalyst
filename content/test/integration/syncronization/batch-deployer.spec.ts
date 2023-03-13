@@ -6,10 +6,6 @@ import { setupTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironm
 describe('batch deployer - ', () => {
   const getTestEnv = setupTestEnvironment({ [EnvironmentConfig.DISABLE_SYNCHRONIZATION]: true })
 
-  beforeEach(() => {
-    jest.restoreAllMocks()
-  })
-
   testCaseWithComponents(
     getTestEnv,
     'multiple sequential deployments with same entityId is done one time but markAsDeployed is called for both',

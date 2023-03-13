@@ -5,8 +5,6 @@ describe('snapshot storage', () => {
   const getTestEnv = setupTestEnvironment()
 
   describe('has', () => {
-    beforeEach(() => jest.restoreAllMocks())
-
     testCaseWithComponents(getTestEnv, 'should return true if the snapshot is stored', async (components) => {
       const snapshotHash = 'snapshotHash'
       await snapshotQueries.saveSnapshot(components.database, {
