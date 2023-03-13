@@ -19,6 +19,10 @@ describe('failed deployments', () => {
     snapshotHash: 'someHash'
   }
 
+  afterAll(() => {
+    jest.restoreAllMocks()
+  })
+
   it('should return all failed deployments from db after start', async () => {
     const failedDeployments = await createAndStartFailedDeploymentsWith({ metrics, database }, [aFailedDeployment])
 

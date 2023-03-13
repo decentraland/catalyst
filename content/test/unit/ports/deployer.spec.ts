@@ -64,6 +64,10 @@ describe('Deployer', function () {
     jest.spyOn(pointers, 'updateActiveDeployments').mockImplementation(() => Promise.resolve())
   })
 
+  afterAll(() => {
+    jest.restoreAllMocks()
+  })
+
   it(`When no file matches the given entity id, then deployment fails`, async () => {
     jest.spyOn(failedDeploymentQueries, 'getSnapshotFailedDeployments').mockResolvedValue([])
     jest.spyOn(failedDeploymentQueries, 'deleteFailedDeployment').mockResolvedValue()
