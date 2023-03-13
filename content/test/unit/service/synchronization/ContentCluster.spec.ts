@@ -1,8 +1,7 @@
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
-import { createConfigComponent } from "@well-known-components/env-config-provider"
+import { createConfigComponent } from '@well-known-components/env-config-provider'
 import { createLogComponent } from '@well-known-components/logger'
 import { Response } from 'node-fetch'
-import { stub } from 'sinon'
 import { Environment, EnvironmentConfig } from '../../../../src/Environment'
 import { createFetchComponent } from '../../../../src/ports/fetcher'
 import { ChallengeSupervisor, IChallengeSupervisor } from '../../../../src/service/synchronization/ChallengeSupervisor'
@@ -18,7 +17,8 @@ describe('ContentCluster', function () {
   const address1: string = 'http://address1'
   const address2: string = 'http://address2'
   const challengeText: string = 'Some challenge text'
-  beforeEach(() => jest.clearAllMocks())
+
+  beforeEach(() => jest.restoreAllMocks())
 
   // TODO: review this test, there is no real-world case in which the DAO has no servers
   xit(`When there are no servers on the DAO, then no identity is assigned`, async () => {
@@ -63,26 +63,33 @@ describe('ContentCluster', function () {
 
 class ContentClusterBuilder {
   readonly servers: Set<string> = new Set()
-  readonly fetcher = stub(createFetchComponent())
+  readonly fetcher = createFetchComponent()
   localChallenge: string | undefined
 
-  addAddress(baseUrl: string): ContentClusterBuilder {
-    this.servers.add(baseUrl)
-    return this
-  }
-
-  addLocalChallenge(baseUrl: string, challengeText: string): ContentClusterBuilder {
-    this.fetcher.fetch
-      .withArgs(`${baseUrl}/challenge`)
-      .callsFake(async () => new Response(JSON.stringify({ challengeText })))
+  addLocalChallenge(domain: string, challengeText: string): ContentClusterBuilder {
+    const original = this.fetcher.fetch
+    jest.spyOn(this.fetcher, 'fetch').mockImplementation(async (url) => {
+      if (url === `${domain}/challenge`) {
+        return new Response(JSON.stringify({ challengeText }))
+      }
+      {
+        return original(url)
+      }
+    })
     this.localChallenge = challengeText
     return this
   }
 
   addAddressWithEndpoints(domain: string, challengeText: string): ContentClusterBuilder {
-    this.fetcher.fetch
-      .withArgs(`${domain}/challenge`)
-      .callsFake(async () => new Response(JSON.stringify({ challengeText })))
+    const original = this.fetcher.fetch
+    jest.spyOn(this.fetcher, 'fetch').mockImplementation(async (url) => {
+      if (url === `${domain}/challenge`) {
+        return new Response(JSON.stringify({ challengeText }))
+      }
+      {
+        return original(url)
+      }
+    })
     this.servers.add(domain)
     return this
   }
@@ -103,9 +110,9 @@ class ContentClusterBuilder {
 
     const challengeSupervisor: IChallengeSupervisor = this.localChallenge
       ? {
-        getChallengeText: () => this.localChallenge!,
-        isChallengeOk: (text: string) => this.localChallenge === text
-      }
+          getChallengeText: () => this.localChallenge!,
+          isChallengeOk: (text: string) => this.localChallenge === text
+        }
       : new ChallengeSupervisor()
 
     const logs = await createLogComponent({
