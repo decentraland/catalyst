@@ -15,6 +15,10 @@ describe('processed snapshot storage', () => {
     logs = await createLogComponent({ config: createConfigComponent({ LOG_LEVEL: 'DEBUG' }) })
   })
 
+  afterEach(async () => {
+    jest.restoreAllMocks()
+  })
+
   describe('processedFrom', () => {
     it('should return the result from they query when the hashes are not in cache', async () => {
       const processedSnapshotStorage = createProcessedSnapshotStorage({ database, clock, logs })
