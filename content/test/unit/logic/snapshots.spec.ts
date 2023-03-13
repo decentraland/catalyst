@@ -134,6 +134,10 @@ describe('generate snapshot in multiple', () => {
     jest.spyOn(clock, 'now').mockReturnValue(generationTimestamp)
   })
 
+  afterEach(() => {
+    jest.restoreAllMocks()
+  })
+
   it('should generate snapshot for time range when there are no saved snapshots for that time range', async () => {
     mockStreamedActiveEntitiesWith([])
     const oneYearRange = { initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR }
