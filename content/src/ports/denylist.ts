@@ -6,8 +6,10 @@ import { URL } from 'url'
 import { EnvironmentConfig } from '../Environment'
 import { AppComponents } from '../types'
 
-export interface Denylist {
-  isDenylisted(id: string): boolean
+export type Denylist = {
+  isDenylisted: (id: string) => boolean
+  start?: () => Promise<void>
+  stop?: () => Promise<void>
 }
 
 export async function createDenylist(

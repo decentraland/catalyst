@@ -132,10 +132,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     logs
   })
 
+  const ignoreBlockChainAccess = (await config.getString('IGNORE_BLOCKCHAIN_ACCESS_CHECKS')) === 'true'
+  const validatorConfig = env.getConfig(EnvironmentConfig.ACCESS_VALIDATIONS)
   async function createValidator() {
-    const ignoreBlockChainAccess = (await config.getString('IGNORE_BLOCKCHAIN_ACCESS_CHECKS')) === 'true'
-
-    const validatorConfig = env.getConfig(EnvironmentConfig.ACCESS_VALIDATIONS)
     const useOnChain = validatorConfig === 'onchain'
 
     let validate: ValidateFn
