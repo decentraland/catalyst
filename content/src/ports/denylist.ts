@@ -50,51 +50,43 @@ export async function createDenylist(
     }
   }
 
-  const loadDenylistFromFile = async () => {
-    if (!fileName) return
-    if (!(await components.fs.existPath(fileName))) {
-      return
-    }
-
-    const content = components.fs.createReadStream(fileName, { encoding: 'utf-8' })
-
-    const lines = createInterface({ input: content, crlfDelay: Infinity })
-
-    await processLines(lines)
-  }
-
-  const loadDenylistFromUrl = async (downloadableLink: URL) => {
-    try {
-      const response = await components.fetcher.fetch(downloadableLink.toString())
-      const content = await response.text()
-      const lines = content ? content.split(/[\r\n\s]+/) : []
-      await processLines(lines)
-    } catch (err: any) {
-      logger.error(err)
-    }
-  }
-
   const loadDenylists = async () => {
     try {
-      await loadDenylistFromFile()
+      if (fileName && (await components.fs.existPath(fileName))) {
+        const content = components.fs.createReadStream(fileName, { encoding: 'utf-8' })
+
+        const lines = createInterface({ input: content, crlfDelay: Infinity })
+
+        await processLines(lines)
+      }
 
       for (const url of denylistsUrls) {
-        await loadDenylistFromUrl(url)
+        try {
+          const response = await components.fetcher.fetch(url.toString())
+          const content = await response.text()
+          const lines = content ? content.split(/[\r\n\s]+/) : []
+          await processLines(lines)
+        } catch (err: any) {
+          logger.error(err)
+        }
       }
     } catch (err) {
       logger.error(err)
     }
   }
-
-  await loadDenylists()
-  const reloadTimer = setInterval(() => loadDenylists().catch(logger.error), 120_000 /* two minutes */)
-
+  let reloadTimer: NodeJS.Timer | undefined = undefined
   return {
     isDenylisted: (id: string): boolean => {
       return deniedContentIdentifiers.has(id)
     },
+    async start() {
+      await loadDenylists()
+      reloadTimer = setInterval(() => loadDenylists().catch(logger.error), 120_000 /* two minutes */)
+    },
     async stop() {
-      clearInterval(reloadTimer)
+      if (reloadTimer) {
+        clearInterval(reloadTimer)
+      }
     }
   }
 }
