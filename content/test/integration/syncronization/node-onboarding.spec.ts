@@ -97,5 +97,7 @@ describe('End 2 end - Node onboarding', function () {
 
     // Make sure that even the content is properly propagated
     await assertFileIsOnServer(server3, entityContentHash)
+
+    await Promise.all([server1.stopProgram(), server2.stopProgram(), server3.stopProgram()])
   })
 })

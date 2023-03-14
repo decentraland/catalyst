@@ -62,6 +62,8 @@ describe('End 2 end synchronization tests', function () {
     // Assert that the entity was synced from server 1 to server 2
     await awaitUntil(() => assertEntitiesAreActiveOnServer(server2, entityBeingDeployed))
     await assertDeploymentsAreReported(server2, deployment)
+    await server1.stopProgram()
+    await server2.stopProgram()
   })
 
   it(`When a server finds a new deployment with already known content, it can still deploy it successfully`, async () => {
@@ -100,6 +102,9 @@ describe('End 2 end synchronization tests', function () {
     // Assert that the entities were deployed on the servers
     await awaitUntil(() => assertDeploymentsAreReported(server1, deployment1, deployment2))
     await assertDeploymentsAreReported(server2, deployment1, deployment2)
+    await server1.stopProgram()
+    await server2.stopProgram()
+    await server3.stopProgram()
   })
 
   /**
@@ -188,5 +193,8 @@ describe('End 2 end synchronization tests', function () {
     await assertEntityIsOverwrittenBy(server3, entity1, entity2)
     await assertEntityIsOverwrittenBy(server3, entity2, entity3)
     await assertEntityIsNotOverwritten(server3, entity3)
+    await server1.stopProgram()
+    await server2.stopProgram()
+    await server3.stopProgram()
   })
 })

@@ -4,8 +4,8 @@ import { EnvironmentConfig } from '../../../src/Environment'
 import { stopAllComponents } from '../../../src/logic/components-lifecycle'
 import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { setupTestEnvironment } from '../E2ETestEnvironment'
-import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
 import { TestProgram } from '../TestProgram'
+import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
 import FormData = require('form-data')
 
 interface ActivePointersRow {
@@ -33,10 +33,6 @@ describe('Integration - Create entities', () => {
     await server.startProgram()
   })
 
-  afterEach(async () => {
-    await server.stopProgram()
-  })
-
   afterAll(() => stopAllComponents({ fs }))
 
   const profileAddress = '0x31a19cb92ac89f1aa62fa72da5f52521daf130b0'
@@ -53,6 +49,7 @@ describe('Integration - Create entities', () => {
 
     // Check that profile pointer matches only with the entity_id
     await assertQueryResultEntityIds(profileAddress, [originalProfileEntityId])
+    await server.stopProgram()
   })
 
   it('when overwriting a profile, entity id should be replaced in active-pointers table', async () => {
@@ -72,6 +69,7 @@ describe('Integration - Create entities', () => {
 
     // Check that old pointers were deleted
     await assertQueryResultPointers(originalProfileEntityId, [])
+    await server.stopProgram()
   })
 
   it('when overwriting a profile, new profile must be ignored if its timestamp is older', async () => {
@@ -91,6 +89,7 @@ describe('Integration - Create entities', () => {
 
     // Check that old pointer was never added
     await assertQueryResultPointers(originalProfileEntityId, [])
+    await server.stopProgram()
   })
 
   const originalSceneEntityId = 'bafkreigaea5hghqlq2462z5ltdaeualenzjtm44xl3hhog4lxzoh7ooliy'
@@ -109,6 +108,7 @@ describe('Integration - Create entities', () => {
     await assertQueryResultEntityIds('0,0', [originalSceneEntityId])
 
     await assertQueryResultEntityIds('0,1', [originalSceneEntityId])
+    await server.stopProgram()
   })
 
   it('when overwriting a scene, unused pointers should be deleted from active-pointers table', async () => {
@@ -130,6 +130,7 @@ describe('Integration - Create entities', () => {
 
     // Check that entity_id matches scene pointers
     await assertQueryResultPointers(overwriteSceneEntityId, ['0,0', '1,0'])
+    await server.stopProgram()
   })
 
   it('when overwriting multiple scenes, unused pointers should be deleted from active-pointers table', async () => {
@@ -166,6 +167,7 @@ describe('Integration - Create entities', () => {
 
     await assertDeleterDeployment(originalSceneEntityId, overwriteSceneEntityId)
     await assertDeleterDeployment(anotherSceneEntityId, overwriteSceneEntityId)
+    await server.stopProgram()
   })
 
   it('when overwriting a scene, new scene must be ignored if its timestamp is older', async () => {
@@ -187,6 +189,7 @@ describe('Integration - Create entities', () => {
     // Check that old pointers were never added
     await assertQueryResultPointers(originalSceneEntityId, [])
     await assertQueryResultEntityIds('0,1', [])
+    await server.stopProgram()
   })
 
   async function assertQueryResultPointers(entityId: string, pointers: string[]) {

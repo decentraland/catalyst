@@ -105,6 +105,7 @@ describe('End 2 end - Error handling', () => {
 
     // asser that the entity got deployed
     await assertEntitiesAreActiveOnServer(server1, controllerEntity)
+    await server1.stopProgram()
   })
 
   it(`When a user tries to fix an entity that hadn't fail, then it is an idempotent operation`, async () => {
@@ -122,6 +123,7 @@ describe('End 2 end - Error handling', () => {
 
     // expect idempotent operation to return the datetime of the deploy
     expect(firstDeploymentDatetime).toEqual(fixDatetime)
+    await server1.stopProgram()
   })
 
   async function runTest(

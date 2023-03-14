@@ -1,7 +1,7 @@
 import * as loggerComponent from '@well-known-components/logger'
 import SQL from 'sql-template-strings'
-import { Deployment } from '../../../src/deployment-types'
 import { EnvironmentConfig } from '../../../src/Environment'
+import { Deployment } from '../../../src/deployment-types'
 import {
   findSnapshotsStrictlyContainedInTimeRange,
   getProcessedSnapshots
@@ -11,7 +11,7 @@ import * as timeRangeLogic from '../../../src/logic/time-range'
 import { assertDeploymentsAreReported, buildDeployment } from '../E2EAssertions'
 import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
-import { startProgramAndWaitUntilBootstrapFinishes, TestProgram } from '../TestProgram'
+import { TestProgram, startProgramAndWaitUntilBootstrapFinishes } from '../TestProgram'
 
 describe('Bootstrapping synchronization tests', function () {
   const getTestEnv = setupTestEnvironment()
@@ -66,6 +66,8 @@ describe('Bootstrapping synchronization tests', function () {
     const server2ProcessedSnapshots = await getProcessedSnapshots(server2.components, Array.from(server1Snapshots))
     expect(server1Snapshots.size > 0).toBeTruthy()
     expect(server2ProcessedSnapshots).toEqual(server1Snapshots)
+    await server1.stopProgram()
+    await server2.stopProgram()
   })
 
   it('when a server process a snapshot, it deploys the entities inside it', async () => {
@@ -102,6 +104,8 @@ describe('Bootstrapping synchronization tests', function () {
     expect(server1snapshots.rows).toEqual(server2processedSnapshots.rows)
     // Assert that the entity was deployed on server 2
     await assertDeploymentsAreReported(server2, deployment)
+    await server1.stopProgram()
+    await server2.stopProgram()
   })
 
   it('when a server process a snapshot with replaced hashes and it has already processed all of them, it should add the new one in the db, and do not process its entities again', async () => {
@@ -186,6 +190,8 @@ describe('Bootstrapping synchronization tests', function () {
     for (const snapshotHash of eightDaysSnapshots.map((s) => s.hash)) {
       expect(markSnapshotAsProcessedSpy).toBeCalledWith(snapshotHash)
     }
+    await server1.stopProgram()
+    await server2.stopProgram()
   })
 
   it('when a server bootstraps, it should persist failed deployments but mark as processed the snapshots', async () => {
@@ -238,6 +244,8 @@ describe('Bootstrapping synchronization tests', function () {
     // assert that the entity was not deployed on server 2
     const { deployments } = await getDeployments(server2.components)
     expect(deployments).toHaveLength(0)
+    await server1.stopProgram()
+    await server2.stopProgram()
   })
 
   it('old snapshot is still served', async () => {
@@ -250,6 +258,7 @@ describe('Bootstrapping synchronization tests', function () {
     )
 
     expect(httpResult.status).toBe(200)
+    await server.stopProgram()
   })
 
   function advanceTime(msToAdvance: number) {

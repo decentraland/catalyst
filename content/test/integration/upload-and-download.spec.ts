@@ -36,6 +36,7 @@ describe('End 2 end deploy test', () => {
 
     // Try to re deploy, and don't fail since it is an idempotent operation
     expect(ret1).toEqual(ret2)
+    await server.stopProgram()
   })
 
   it(`Deploy and retrieve some content`, async () => {
@@ -70,6 +71,8 @@ describe('End 2 end deploy test', () => {
     await validateReceivedData(scenesByPointer, deployData)
 
     await assertDeploymentsAreReported(server, deployment)
+
+    await server.stopProgram()
   })
 
   async function validateReceivedData(receivedScenes: Entity[], deployData: DeploymentData) {

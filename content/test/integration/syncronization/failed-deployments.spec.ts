@@ -6,8 +6,8 @@ import { FailedDeployment, FailureReason } from '../../../src/ports/failedDeploy
 import { assertDeploymentFailed, assertDeploymentFailsWith, assertEntitiesAreActiveOnServer } from '../E2EAssertions'
 import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { awaitUntil, buildDeployData, buildDeployDataAfterEntity, createIdentity } from '../E2ETestUtils'
+import { TestProgram, startProgramAndWaitUntilBootstrapFinishes } from '../TestProgram'
 import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
-import { startProgramAndWaitUntilBootstrapFinishes, TestProgram } from '../TestProgram'
 
 describe('Errors during sync', () => {
   const getTestEnv = setupTestEnvironment()
@@ -18,7 +18,7 @@ describe('Errors during sync', () => {
   let deployData: DeploymentData
   let serverValidatorStub2: jest.SpyInstance
 
-  describe('Deploy an entity on server 1', function () {
+  describe('Deploy an entity on server 1', () => {
     beforeEach(async function () {
       const identity = createIdentity()
       ;[server1, server2] = await getTestEnv()
@@ -53,10 +53,12 @@ describe('Errors during sync', () => {
 
       // Start server2
       await startProgramAndWaitUntilBootstrapFinishes(server2)
+      await server1.stopProgram()
     })
 
-    it('stores it as failed deployment locally', async function () {
+    it('stores it as failed deployment locally', async () => {
       await awaitUntil(() => assertDeploymentFailed(server2, FailureReason.DEPLOYMENT_ERROR, controllerEntity))
+      await server2.stopProgram()
     })
 
     it('fix the failed entity on server2 when retrying it, is correclty deployed', async () => {
@@ -66,6 +68,7 @@ describe('Errors during sync', () => {
       await awaitUntil(() => assertEntitiesAreActiveOnServer(server2, controllerEntity))
       const newFailedDeployments: FailedDeployment[] = await server2.getFailedDeployments()
       expect(newFailedDeployments.length).toBe(0)
+      await server2.stopProgram()
     })
 
     it('fix the failed entity on server2 after a new one was correctly deployed', async () => {
@@ -90,6 +93,7 @@ describe('Errors during sync', () => {
         const newFailedDeployments: FailedDeployment[] = await server2.getFailedDeployments()
         expect(newFailedDeployments.length).toBe(0)
       })
+      await server2.stopProgram()
     })
 
     it('ignore to fix the failed deployment when there are newer entities', async () => {
@@ -113,6 +117,7 @@ describe('Errors during sync', () => {
         const newFailedDeployments: FailedDeployment[] = await server2.getFailedDeployments()
         expect(newFailedDeployments.length).toBe(0)
       })
+      await server2.stopProgram()
     })
   })
 
@@ -143,5 +148,6 @@ describe('Errors during sync', () => {
       () => server1.deployEntity(deployData, true),
       'You are trying to fix an entity that is not marked as failed'
     )
+    await server1.stopProgram()
   })
 })

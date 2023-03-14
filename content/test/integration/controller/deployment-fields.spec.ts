@@ -40,6 +40,8 @@ describe('Integration - Deployment Fields', () => {
     )
     const nothing = await fetchDeployment()
 
+    await server.stopProgram()
+
     // Assert filters
     assert(withAudit, { auditInfo: true })
     assert(withContent, { content: true })

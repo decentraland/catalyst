@@ -62,6 +62,7 @@ describe('Integration - Deployment Pagination', () => {
     const nextLink = actualDeployments.pagination.next
     expect(nextLink).toContain(`from=${E3Timestamp}`)
     expect(nextLink).toContain(`lastId=${E3.entity.id}`)
+    await server.stopProgram()
   })
 
   it('given local timestamp and desc when getting two elements the next link page is correct', async () => {
@@ -82,6 +83,7 @@ describe('Integration - Deployment Pagination', () => {
     const nextLink = actualDeployments.pagination.next
     expect(nextLink).toContain(`to=${E3Timestamp}`)
     expect(nextLink).toContain(`lastId=${E3.entity.id}`)
+    await server.stopProgram()
   })
 
   it('given entity timestamp and asc when getting two elements the next link page is correct', async () => {
@@ -102,6 +104,7 @@ describe('Integration - Deployment Pagination', () => {
     const nextLink = actualDeployments.pagination.next
     expect(nextLink).toContain(`from=${E2.entity.timestamp}`)
     expect(nextLink).toContain(`lastId=${E2.entity.id}`)
+    await server.stopProgram()
   })
 
   it('given entity timestamp and desc when getting two elements the next link page is correct', async () => {
@@ -122,6 +125,7 @@ describe('Integration - Deployment Pagination', () => {
     const nextLink = actualDeployments.pagination.next
     expect(nextLink).toContain(`to=${E2.entity.timestamp}`)
     expect(nextLink).toContain(`lastId=${E2.entity.id}`)
+    await server.stopProgram()
   })
 
   it('When there is no next page then the link is undefined', async () => {
@@ -135,6 +139,7 @@ describe('Integration - Deployment Pagination', () => {
     expect(actualDeployments.deployments.length).toBe(3)
     const nextLink = actualDeployments.pagination.next
     expect(nextLink).toBeUndefined()
+    await server.stopProgram()
   })
 
   it('When limit is set, then in next it persists', async () => {
@@ -148,6 +153,7 @@ describe('Integration - Deployment Pagination', () => {
     expect(actualDeployments.deployments.length).toBe(2)
     const nextLink = actualDeployments.pagination.next
     expect(nextLink).toContain('limit=2')
+    await server.stopProgram()
   })
 
   it('When no fields are set, then next does not have them either', async () => {
@@ -161,6 +167,7 @@ describe('Integration - Deployment Pagination', () => {
     expect(actualDeployments.deployments.length).toBe(2)
     const nextLink = actualDeployments.pagination.next
     expect(nextLink).not.toContain('fields')
+    await server.stopProgram()
   })
 
   it('When fields are set, then next shows the same fields', async () => {
@@ -175,6 +182,7 @@ describe('Integration - Deployment Pagination', () => {
     expect(actualDeployments.deployments.length).toBe(2)
     const nextLink = actualDeployments.pagination.next
     expect(decodeURIComponent(nextLink)).toContain(`fields=${DeploymentField.CONTENT},${DeploymentField.AUDIT_INFO}`)
+    await server.stopProgram()
   })
 
   it('When getting by last entityId then it returns the correct page', async () => {
@@ -195,6 +203,7 @@ describe('Integration - Deployment Pagination', () => {
 
     expect(deployments.length).toBe(1)
     expect(deployments[0].entityId).toBe(`${E2.entity.id}`)
+    await server.stopProgram()
   })
 
   it('When from is set, then only to is modified in next ', async () => {
@@ -211,6 +220,7 @@ describe('Integration - Deployment Pagination', () => {
     expect(nextLink).toContain(`from=${E1Timestamp}`)
     expect(nextLink).toContain(`to=${E2Timestamp}`)
     expect(nextLink).toContain(`lastId=${E2.entity.id}`)
+    await server.stopProgram()
   })
 
   it('When getting pointer changes then the pagination is correctly done', async () => {
@@ -223,6 +233,7 @@ describe('Integration - Deployment Pagination', () => {
     expect(pointerChanges.pagination.next).toContain(`to=${E2Timestamp}`)
     expect(pointerChanges.pagination.next).toContain(`from=${E1Timestamp}`)
     expect(pointerChanges.pagination.next).toContain(`lastId=${E2.entity.id}`)
+    await server.stopProgram()
   })
 
   async function deploy(...entities: EntityCombo[]): Promise<number[]> {
