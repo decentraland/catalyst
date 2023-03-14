@@ -61,7 +61,8 @@ export class E2ETestEnvironment {
 
     // then the components of the environment
     await stopAllComponents({
-      database: this.database
+      database: this.database,
+      logs: this.logs
     })
   }
 
