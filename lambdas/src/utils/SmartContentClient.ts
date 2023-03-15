@@ -9,7 +9,7 @@ import {
   IFetchComponent,
   RequestOptions
 } from 'dcl-catalyst-client'
-import { CompleteRequestOptions, Fetcher, ServerStatus } from 'dcl-catalyst-commons'
+import { ServerStatus } from 'dcl-catalyst-commons'
 import future, { IFuture } from 'fp-future'
 import log4js from 'log4js'
 
@@ -80,15 +80,21 @@ export class SmartContentClient implements ContentAPI {
     return headers
   }
 
-  // TODO: use catalyst-client fetcher
-  async pipeContent(
-    contentHash: string,
-    responseTo: any,
-    options?: Partial<CompleteRequestOptions>
-  ): Promise<Map<string, string>> {
+  async pipeContent(contentHash: string, responseTo: any): Promise<Map<string, string>> {
     const contentUrl = (await this.getClient()).getContentUrl()
-    const fetcher = new Fetcher()
-    return this.onlyKnownHeaders(await fetcher.fetchPipe(`${contentUrl}/contents/${contentHash}`, responseTo, options))
+    const response = await this.fetcher.fetch(`${contentUrl}/contents/${contentHash}`, {
+      method: 'GET',
+      attempts: 1,
+      waitTime: '1s',
+      timeout: 60000 // 1m
+    })
+
+    if (!response.body || !('pipe' in response.body)) {
+      throw new Error('The function fetchPipe only works in Node.js compatible enviroments')
+    }
+
+    ;(response.body as any).pipe(responseTo)
+    return this.onlyKnownHeaders(response.headers as any)
   }
 
   deployEntity(deployData: DeploymentData, fix?: boolean, options?: RequestOptions): Promise<number> {

@@ -2716,22 +2716,10 @@ date-format@^4.0.10, date-format@^4.0.13:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-4.0.13.tgz#87c3aab3a4f6f37582c5f5f63692d2956fa67890"
   integrity sha512-bnYCwf8Emc3pTD8pXnre+wfnjGtfi5ncMDKy7+cWZXbmRAsdWkOQHrfC1yz/KiwP5thDp2kCHWYWKBX4HP1hoQ==
 
-dcl-catalyst-client@^14.0.9:
-  version "14.0.9"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-14.0.9.tgz#82afb34f8fc42d31fb9f369e49520e26db057510"
-  integrity sha512-ljFYUve3c3LKbQUwTlM3N3BvWq18II5bRGQyXGnP7bF1y5U+YIl77q6V3HyJKMreeb5Zgh7lKppJ9jRnve70qw==
-  dependencies:
-    "@dcl/catalyst-contracts" "^3.0.0"
-    "@dcl/hashing" "^1.1.0"
-    "@dcl/schemas" "^6.4.2"
-    "@types/form-data" "^2.5.0"
-    cookie "^0.5.0"
-    dcl-catalyst-commons "^9.0.6"
-    form-data "^4.0.0"
-
-"dcl-catalyst-client@https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-catalyst-client-14.0.10-4374623481.commit-237fa03.tgz":
-  version "14.0.10-4374623481.commit-237fa03"
-  resolved "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-catalyst-client-14.0.10-4374623481.commit-237fa03.tgz#830222146f16889e90e9ca494d28211585405a16"
+dcl-catalyst-client@^15.0.0:
+  version "15.0.0"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-15.0.0.tgz#230edaa27444dde9f7f53cebf27667d5d5f59ec6"
+  integrity sha512-WG4jvgamR0g2g35SsjiHm4JD+ih2faeWotuXNjAsi82SMV48TeWThIDAVRnBWqBdWEZtXIGgUX6dMDOzFS6FPw==
   dependencies:
     "@dcl/catalyst-contracts" "^3.0.0"
     "@dcl/hashing" "^1.1.0"

@@ -46,7 +46,7 @@ export const CURRENT_CATALYST_VERSION = process.env.CATALYST_VERSION ?? 'Unknown
 export const DEFAULT_DATABASE_CONFIG = {
   password: '12345678',
   user: 'postgres',
-  database: 'postgres',
+  database: 'content',
   host: 'localhost',
   schema: 'public',
   port: 5432
