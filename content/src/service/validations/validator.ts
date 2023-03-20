@@ -2,7 +2,14 @@ import { streamToBuffer } from '@dcl/catalyst-storage/dist/content-item'
 import { createSubgraphComponent } from '@well-known-components/thegraph-component'
 import { EnvironmentConfig } from '../../Environment'
 import { AppComponents } from '../../types'
-import { createValidator, DeploymentToValidate, OK, ExternalCalls, ValidateFn } from '@dcl/content-validator'
+import {
+  createValidator,
+  DeploymentToValidate,
+  OK,
+  ExternalCalls,
+  ValidateFn,
+  TokenAddresses
+} from '@dcl/content-validator'
 import { createAccessValidateFn } from '@dcl/content-validator/dist/validations/access'
 import { createOnChainAccessCheckValidateFns } from '@dcl/content-validator/dist/validations/access/on-chain'
 import { createSubgraphAccessCheckValidateFns } from '@dcl/content-validator/dist/validations/access/subgraph'
@@ -20,6 +27,7 @@ import {
 import RequestManager, { HTTPProvider } from 'eth-connect'
 import { createL1Checker, createL2Checker } from '../../logic/checker'
 import { createTheGraphClient } from '@dcl/content-validator/dist/validations/access/subgraph/the-graph-client'
+import { landContracts } from '@dcl/catalyst-contracts'
 
 const createEthereumProvider = (httpProvider: HTTPProvider): EthereumProvider => {
   const reqMan = new RequestManager(httpProvider)
@@ -190,11 +198,19 @@ export async function createSubgraphValidator(
     }
   }
 
+  const network: 'mainnet' | 'goerli' = components.env.getConfig(EnvironmentConfig.ETH_NETWORK)
+  const contracts = landContracts[network]
+  const tokenAddresses: TokenAddresses = {
+    land: contracts.landContractAddress,
+    estate: contracts.stateContractAddress
+  }
+
   const validateFns = createSubgraphAccessCheckValidateFns({
     logs,
     externalCalls,
     theGraphClient: createTheGraphClient({ logs, subGraphs }),
-    subGraphs
+    subGraphs,
+    tokenAddresses
   })
 
   return createValidator({
