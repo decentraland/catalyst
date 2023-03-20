@@ -206,7 +206,7 @@ describe('Deployer', function () {
       { defaultMax: 300, defaultTtl: ms('1m'), entitiesConfigMax: new Map(), entitiesConfigTtl: new Map() }
     )
     const metrics = createTestMetricsComponent(metricsDeclaration)
-    const failedDeployments = await createFailedDeployments({ metrics, database })
+    const failedDeployments = await createFailedDeployments({ metrics, database, denylist: { isDenylisted: () => false } })
     const storage = createInMemoryStorage()
     const pointerManager = NoOpPointerManager.build()
     const authenticator = new ContentAuthenticator(

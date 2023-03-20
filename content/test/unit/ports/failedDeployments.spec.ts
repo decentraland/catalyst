@@ -9,6 +9,7 @@ import { AppComponents } from '../../../src/types'
 describe('failed deployments', () => {
   const metrics = createTestMetricsComponent(metricsDeclaration)
   const database = createTestDatabaseComponent()
+  const denylist = { isDenylisted: () => false }
   const aFailedDeployment = {
     entityType: EntityType.PROFILE,
     entityId: 'id',
@@ -24,7 +25,7 @@ describe('failed deployments', () => {
   })
 
   it('should return all failed deployments from db after start', async () => {
-    const failedDeployments = await createAndStartFailedDeploymentsWith({ metrics, database }, [aFailedDeployment])
+    const failedDeployments = await createAndStartFailedDeploymentsWith({ metrics, database, denylist }, [aFailedDeployment])
 
     const failed = await failedDeployments.getAllFailedDeployments()
 
@@ -32,7 +33,7 @@ describe('failed deployments', () => {
   })
 
   it('should find failed deploymenet by entity id after start', async () => {
-    const failedDeployments = await createAndStartFailedDeploymentsWith({ metrics, database }, [aFailedDeployment])
+    const failedDeployments = await createAndStartFailedDeploymentsWith({ metrics, database, denylist }, [aFailedDeployment])
 
     const failed = await failedDeployments.findFailedDeployment(aFailedDeployment.entityId)
     const notFailed = await failedDeployments.findFailedDeployment('anotherId')
@@ -43,7 +44,7 @@ describe('failed deployments', () => {
 
   it('should remove failed deployment', async () => {
     let failedDeploymentsMock = [aFailedDeployment]
-    const failedDeployments = await createAndStartFailedDeploymentsWith({ metrics, database }, failedDeploymentsMock)
+    const failedDeployments = await createAndStartFailedDeploymentsWith({ metrics, database, denylist }, failedDeploymentsMock)
     jest.spyOn(failedDeploymentQueries, 'deleteFailedDeployment').mockImplementation(async (components, entityId) => {
       failedDeploymentsMock = failedDeploymentsMock.filter((f) => f.entityId != entityId)
     })
@@ -56,7 +57,7 @@ describe('failed deployments', () => {
 
   it('should report failure when there wasn`t a failed deployment with the same entity id', async () => {
     const saveSpy = jest.spyOn(failedDeploymentQueries, 'saveSnapshotFailedDeployment').mockImplementation()
-    const components = { metrics, database }
+    const components = { metrics, database, denylist }
     const failedDeployments = await createAndStartFailedDeploymentsWith(components, [aFailedDeployment])
     const newFailedDeployment = { ...aFailedDeployment, entityId: 'anotherId' }
 
@@ -71,7 +72,7 @@ describe('failed deployments', () => {
     const saveSpy = jest.spyOn(failedDeploymentQueries, 'saveSnapshotFailedDeployment').mockImplementation()
     const deleteSpy = jest.spyOn(failedDeploymentQueries, 'deleteFailedDeployment').mockImplementation()
     const txSpy = jest.spyOn(database, 'transaction').mockImplementation(async (fnToRun) => await fnToRun(database))
-    const components = { metrics, database }
+    const components = { metrics, database, denylist }
     const failedDeployments = await createAndStartFailedDeploymentsWith(components, [aFailedDeployment])
     const newFailedDeploymentWithSameId = {
       ...aFailedDeployment,
@@ -91,7 +92,7 @@ describe('failed deployments', () => {
 })
 
 async function createAndStartFailedDeploymentsWith(
-  components: Pick<AppComponents, 'database' | 'metrics'>,
+  components: Pick<AppComponents, 'database' | 'metrics' | 'denylist'>,
   baseFailedDeployments: SnapshotFailedDeployment[]
 ) {
   jest.spyOn(failedDeploymentQueries, 'getSnapshotFailedDeployments').mockResolvedValue(baseFailedDeployments)

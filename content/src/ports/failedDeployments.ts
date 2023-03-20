@@ -44,7 +44,7 @@ export type IFailedDeploymentsComponent = {
 }
 
 export async function createFailedDeployments(
-  components: Pick<AppComponents, 'metrics' | 'database'>
+  components: Pick<AppComponents, 'metrics' | 'database' | 'denylist'>
 ): Promise<IFailedDeploymentsComponent> {
   const failedDeploymentsByEntityIdCache: Map<string, FailedDeployment> = new Map()
 
@@ -52,7 +52,12 @@ export async function createFailedDeployments(
     async start() {
       const failedDeployments = await getSnapshotFailedDeployments(components)
       for (const failedDeployment of failedDeployments) {
-        failedDeploymentsByEntityIdCache.set(failedDeployment.entityId, failedDeployment)
+        if (components.denylist.isDenylisted(failedDeployment.entityId)) {
+          console.log('Removing denylisted deployment from failed deployments', failedDeployment.entityId)
+          await deleteFailedDeployment(components, failedDeployment.entityId)
+        } else {
+          failedDeploymentsByEntityIdCache.set(failedDeployment.entityId, failedDeployment)
+        }
       }
       components.metrics.observe('dcl_content_server_failed_deployments', {}, failedDeploymentsByEntityIdCache.size)
     },
