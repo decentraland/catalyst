@@ -95,5 +95,9 @@
     "ts-node": "10.7.0",
     "tsc": "2.0.4",
     "typescript": "^4.7.4"
+  },
+  "resolutions": {
+    "@well-known-components/http-server/path-to-regexp": "^6.2.1",
+    "express/path-to-regexp": "0.1.7"
   }
 }
