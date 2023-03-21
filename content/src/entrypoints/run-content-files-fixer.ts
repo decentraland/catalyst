@@ -5,7 +5,7 @@ import {
 } from '@dcl/catalyst-storage'
 import { ContentMapping } from '@dcl/schemas'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
-import { IFetchComponent } from '@well-known-components/http-server'
+import { IFetchComponent } from '@well-known-components/interfaces'
 import { ILoggerComponent, Lifecycle } from '@well-known-components/interfaces'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
