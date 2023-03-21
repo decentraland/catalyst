@@ -52,6 +52,7 @@
     "node-fetch": "2.6.7",
     "node-pg-migrate": "6.2.2",
     "p-queue": "6.6.2",
+    "path-to-regexp": "^6.2.1",
     "pg": "8.8.0",
     "pg-query-stream": "^4.2.3",
     "sql-template-strings": "^2.2.2",
@@ -94,5 +95,9 @@
     "ts-node": "10.7.0",
     "tsc": "2.0.4",
     "typescript": "^4.7.4"
+  },
+  "resolutions": {
+    "@well-known-components/http-server/path-to-regexp": "^6.2.1",
+    "express/path-to-regexp": "0.1.7"
   }
 }
