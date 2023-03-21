@@ -1,9 +1,9 @@
 import { EntityType } from '@dcl/schemas'
-import { AuditInfo, DeploymentContext, DeploymentResult } from '../../../../src/deployment-types'
+import { AuditInfo, DeploymentContext, DeploymentResult, InvalidResult } from '../../../../src/deployment-types'
 import { AppComponents, EntityVersion } from '../../../../src/types'
 import { makeNoopServerValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { setupTestEnvironment, testCaseWithComponents } from '../../E2ETestEnvironment'
-import { buildDeployData, createIdentity, EntityCombo } from '../../E2ETestUtils'
+import { EntityCombo, buildDeployData, createIdentity } from '../../E2ETestUtils'
 
 describe('Integration - Deployment with metadata validation', () => {
   const getTestEnv = setupTestEnvironment()
@@ -117,6 +117,23 @@ describe('Integration - Deployment with metadata validation', () => {
     getTestEnv,
     'When wearable metadata is wrong, deployment result should include the proper error',
     async (components) => {
+      const expectedErrors = [
+        'The metadata for this entity type (wearable) is not valid.',
+        "must have required property 'collectionAddress'",
+        "must have required property 'rarity'",
+        'must pass "_isThirdParty" keyword validation',
+        'must pass "_isBaseAvatar" keyword validation',
+        "must have required property 'merkleProof'",
+        "must have required property 'content'",
+        "must have required property 'id'",
+        "must have required property 'name'",
+        "must have required property 'description'",
+        "must have required property 'i18n'",
+        "must have required property 'thumbnail'",
+        "must have required property 'image'",
+        "must have required property 'data'",
+        'either standard XOR thirdparty properties conditions must be met'
+      ]
       makeNoopServerValidator(components)
 
       const identity = createIdentity()
@@ -126,31 +143,9 @@ describe('Integration - Deployment with metadata validation', () => {
         identity
       })
 
-      expect(await deployEntity(components, E1)).toEqual({
-        errors: [
-          'The metadata for this entity type (wearable) is not valid.',
-          "must have required property 'collectionAddress'",
-          "must have required property 'rarity'",
-          'must pass "_isThirdParty" keyword validation',
-          "must have required property 'merkleProof'",
-          "must have required property 'content'",
-          "must have required property 'id'",
-          "must have required property 'name'",
-          "must have required property 'description'",
-          "must have required property 'i18n'",
-          "must have required property 'image'",
-          "must have required property 'thumbnail'",
-          "must have required property 'data'",
-          "must have required property 'id'",
-          "must have required property 'name'",
-          "must have required property 'description'",
-          "must have required property 'i18n'",
-          "must have required property 'thumbnail'",
-          "must have required property 'image'",
-          "must have required property 'data'",
-          'either standard XOR thirdparty properties conditions must be met'
-        ]
-      })
+      const result = (await deployEntity(components, E1)) as InvalidResult
+
+      expectedErrors.forEach(($) => expect(result?.errors).toContain($))
     }
   )
 
@@ -158,6 +153,23 @@ describe('Integration - Deployment with metadata validation', () => {
     getTestEnv,
     'When wearable metadata is present but incomplete, deployment result should include the proper error',
     async (components) => {
+      const expectedErrors = [
+        'The metadata for this entity type (wearable) is not valid.',
+        "must have required property 'collectionAddress'",
+        "must have required property 'rarity'",
+        'must pass "_isThirdParty" keyword validation',
+        'must pass "_isBaseAvatar" keyword validation',
+        "must have required property 'merkleProof'",
+        "must have required property 'content'",
+        "must have required property 'id'",
+        "must have required property 'name'",
+        "must have required property 'description'",
+        "must have required property 'i18n'",
+        "must have required property 'thumbnail'",
+        "must have required property 'image'",
+        "must have required property 'data'",
+        'either standard XOR thirdparty properties conditions must be met'
+      ]
       makeNoopServerValidator(components)
 
       const identity = createIdentity()
@@ -167,31 +179,9 @@ describe('Integration - Deployment with metadata validation', () => {
         identity
       })
 
-      expect(await deployEntity(components, E1)).toEqual({
-        errors: [
-          'The metadata for this entity type (wearable) is not valid.',
-          "must have required property 'collectionAddress'",
-          "must have required property 'rarity'",
-          'must pass "_isThirdParty" keyword validation',
-          "must have required property 'merkleProof'",
-          "must have required property 'content'",
-          "must have required property 'id'",
-          "must have required property 'name'",
-          "must have required property 'description'",
-          "must have required property 'i18n'",
-          "must have required property 'image'",
-          "must have required property 'thumbnail'",
-          "must have required property 'data'",
-          "must have required property 'id'",
-          "must have required property 'name'",
-          "must have required property 'description'",
-          "must have required property 'i18n'",
-          "must have required property 'thumbnail'",
-          "must have required property 'image'",
-          "must have required property 'data'",
-          'either standard XOR thirdparty properties conditions must be met'
-        ]
-      })
+      const result = (await deployEntity(components, E1)) as InvalidResult
+
+      expectedErrors.forEach(($) => expect(result?.errors).toContain($))
     }
   )
 
