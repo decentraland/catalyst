@@ -1,5 +1,5 @@
 import { EthAddress } from '@dcl/crypto'
-import { IFetchComponent } from '@well-known-components/http-server'
+import { IFetchComponent } from '@well-known-components/interfaces'
 import { ThirdPartyAPIResponse, ThirdPartyAsset } from '../../apis/collections/types'
 
 export interface ThirdPartyAssetFetcher {
