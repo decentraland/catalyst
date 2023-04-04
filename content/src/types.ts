@@ -1,11 +1,15 @@
-import { ExternalCalls, ValidateFn } from '@dcl/content-validator'
 import { IContentStorageComponent, IFileSystemComponent } from '@dcl/catalyst-storage'
+import { ExternalCalls, ValidateFn } from '@dcl/content-validator'
 import { EntityType, SyncDeployment } from '@dcl/schemas'
 import { IDeployerComponent, SynchronizerComponent } from '@dcl/snapshots-fetcher'
 import { IJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { IProcessedSnapshotStorageComponent, ISnapshotStorageComponent } from '@dcl/snapshots-fetcher/dist/types'
-import { IFetchComponent } from '@well-known-components/interfaces'
-import { IConfigComponent, ILoggerComponent, IMetricsComponent } from '@well-known-components/interfaces'
+import {
+  IConfigComponent,
+  IFetchComponent,
+  ILoggerComponent,
+  IMetricsComponent
+} from '@well-known-components/interfaces'
 import { Fetcher } from 'dcl-catalyst-commons'
 import { Controller } from './controller/Controller'
 import { Environment } from './Environment'
@@ -27,7 +31,6 @@ import { ContentAuthenticator } from './service/auth/Authenticator'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { PointerManager } from './service/pointers/PointerManager'
 import { Server } from './service/Server'
-import { ISnapshotManager } from './service/snapshots/SnapshotManager'
 import { IChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
 import { DaoComponent } from './service/synchronization/clients/HardcodedDAOClient'
 import { ContentCluster } from './service/synchronization/ContentCluster'
@@ -54,7 +57,6 @@ export type AppComponents = {
   synchronizationState: SynchronizationState
   deployedEntitiesBloomFilter: DeployedEntitiesBloomFilter
   controller: Controller
-  snapshotManager: ISnapshotManager
   challengeSupervisor: IChallengeSupervisor
   contentCluster: ContentCluster
   pointerManager: PointerManager

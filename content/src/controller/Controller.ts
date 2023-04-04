@@ -34,7 +34,6 @@ export class Controller {
   constructor(
     private readonly components: Pick<
       AppComponents,
-      | 'snapshotManager'
       | 'deployer'
       | 'challengeSupervisor'
       | 'logs'
@@ -639,43 +638,6 @@ export class Controller {
         synchronizationState: this.components.synchronizationState.getState()
       }
     })
-  }
-
-  /**
-   * @deprecated
-   */
-  async getSnapshot(req: express.Request, res: express.Response): Promise<void> {
-    // Method: GET
-    // Path: /snapshot/:type
-
-    const type = parseEntityType(req.params.type)
-
-    // Validate type is valid
-    if (!type) {
-      res.status(400).send({ error: `Unrecognized type: ${req.params.type}` })
-      return
-    }
-
-    const metadata = this.components.snapshotManager.getSnapshotMetadataPerEntityType(type)
-
-    if (!metadata) {
-      res.status(503).send({ error: 'Snapshot not yet created' })
-    } else {
-      res.send(metadata)
-    }
-  }
-
-  async getAllSnapshots(req: express.Request, res: express.Response): Promise<void> {
-    // Method: GET
-    // Path: /snapshot
-
-    const metadata = this.components.snapshotManager.getFullSnapshotMetadata()
-
-    if (!metadata) {
-      res.status(503).send({ error: 'Snapshot not yet created' })
-    } else {
-      res.send(metadata)
-    }
   }
 
   async getAllNewSnapshots(req: express.Request, res: express.Response): Promise<void> {

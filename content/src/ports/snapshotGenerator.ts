@@ -10,7 +10,7 @@ export type SnapshotGenerator = IBaseComponent & {
 export function createSnapshotGenerator(
   components: Pick<
     AppComponents,
-    'database' | 'fs' | 'metrics' | 'storage' | 'logs' | 'denylist' | 'staticConfigs' | 'snapshotManager' | 'clock'
+    'database' | 'fs' | 'metrics' | 'storage' | 'logs' | 'denylist' | 'staticConfigs' | 'clock'
   >
 ): SnapshotGenerator {
   const logger = components.logs.getLogger('snapshot-generator')
@@ -40,9 +40,6 @@ export function createSnapshotGenerator(
 
   return {
     async start(): Promise<void> {
-      // We have the SnapshotManager here because we need it to run before the new snapshots run to avoid a race
-      // condition with the content storage
-      await components.snapshotManager.generateSnapshots()
       runningGeneration = runGenerationAndScheduleNext()
       await runningGeneration
     },
