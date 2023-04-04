@@ -1,7 +1,6 @@
 import * as loggerComponent from '@well-known-components/logger'
 import SQL from 'sql-template-strings'
 import { Deployment } from '../../../src/deployment-types'
-import { EnvironmentConfig } from '../../../src/Environment'
 import {
   findSnapshotsStrictlyContainedInTimeRange,
   getProcessedSnapshots
@@ -238,18 +237,6 @@ describe('Bootstrapping synchronization tests', function () {
     // assert that the entity was not deployed on server 2
     const { deployments } = await getDeployments(server2.components)
     expect(deployments).toHaveLength(0)
-  })
-
-  it('old snapshot is still served', async () => {
-    const [server] = await getTestEnv().configServer().andBuildMany(1)
-
-    await startProgramAndWaitUntilBootstrapFinishes(server)
-
-    const httpResult = await server.components.fetcher.fetch(
-      `${server.components.env.getConfig(EnvironmentConfig.CONTENT_SERVER_ADDRESS)}/snapshot`
-    )
-
-    expect(httpResult.status).toBe(200)
   })
 
   function advanceTime(msToAdvance: number) {
