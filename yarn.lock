@@ -426,21 +426,10 @@
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
 
-"@dcl/snapshots-fetcher@^6.0.1-4387473683.commit-1d51680":
-  version "6.0.1-4387473683.commit-1d51680"
-  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-6.0.1-4387473683.commit-1d51680.tgz#5174a00506f4d8ecff2fc4124020ca4ba00e97ce"
-  integrity sha512-Fth1ZK2ZFFeUlOjMyet/h6WaeDqvrT8+CfrZPzr4o11b3F6upDB9nDr0wANYIZzcJSSYupaMlqApuxOaCEm9yg==
-  dependencies:
-    "@dcl/catalyst-storage" "^2.0.0"
-    "@dcl/hashing" "^1.0.0"
-    "@dcl/schemas" "^6.2.0"
-    "@well-known-components/interfaces" "^1.1.0"
-    "@well-known-components/metrics" "^2.0.0"
-    p-queue "^6.6.2"
-
-"@dcl/snapshots-fetcher@https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-snapshots-fetcher-6.0.1-4611754825.commit-1f95a71.tgz":
-  version "6.0.1-4611754825.commit-1f95a71"
-  resolved "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-snapshots-fetcher-6.0.1-4611754825.commit-1f95a71.tgz#cefe8bb4efef28f5c8fd2faf61fc649e719f6bb3"
+"@dcl/snapshots-fetcher@^7.0.0":
+  version "7.0.0"
+  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-7.0.0.tgz#c36d4c80c6bd871180387e0cab284a48403ed4d1"
+  integrity sha512-JFmap7EcInOC+WU4EuJAJHfRguVdr8P8ipLv/QrH/mh+nElWR8iga2qnXN7h7O7UT7Ep78OysibRZlQ6CIvrgA==
   dependencies:
     "@dcl/catalyst-storage" "^2.0.0"
     "@dcl/hashing" "^1.0.0"
