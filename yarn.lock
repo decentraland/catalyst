@@ -326,16 +326,6 @@
     "@well-known-components/metrics" "^2.0.1"
     lru-cache "^7.14.0"
 
-"@dcl/block-indexer@^1.1.1-4056737184.commit-2112891":
-  version "1.1.1-4056737184.commit-2112891"
-  resolved "https://registry.yarnpkg.com/@dcl/block-indexer/-/block-indexer-1.1.1-4056737184.commit-2112891.tgz#8527ad3de9045c0857131a9dc722ae8cbd1c9c6c"
-  integrity sha512-g1UamvNFAKtJQAyGPFlCcl5j//XohpRIqVIa74208phYfU+j5PWpEagTYtfSh40VZgDZqwi36PJ3PyeyZ3TUkA==
-  dependencies:
-    "@well-known-components/interfaces" "^1.1.3"
-    "@well-known-components/logger" "^3.0.0"
-    "@well-known-components/metrics" "^2.0.1"
-    lru-cache "^7.14.0"
-
 "@dcl/catalyst-api-specs@^2.2.2":
   version "2.2.2"
   resolved "https://registry.yarnpkg.com/@dcl/catalyst-api-specs/-/catalyst-api-specs-2.2.2.tgz#b5040fddf579ca2bb39f67fc3647b7374a903525"
@@ -375,19 +365,19 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@^4.4.1":
-  version "4.4.1"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.4.1.tgz#24c87de37132b7d8bbb7b63049db175d38e191cd"
-  integrity sha512-7yNOeuiHFgk7iQGwye3tS8B8+IWIWl1STL2dmhJkEiMDrVsIhfVDFpwK5kM1ntu73D86p/QI47RxAuDSmo33bg==
+"@dcl/content-validator@^4.5.0":
+  version "4.5.0"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.5.0.tgz#11b534999bc8b17dc8dce7b4021d014cd186acb3"
+  integrity sha512-5qYiAzF8q7iFuYAIQeiY4NXFmTYXpPUo2TKgNu9HMddKw2UHxiC2cmJrZ1CGzCNYeSkr02PrSpkaeMXY1XsDlQ==
   dependencies:
-    "@dcl/block-indexer" "^1.1.1-4056737184.commit-2112891"
+    "@dcl/block-indexer" "^1.1.0"
     "@dcl/content-hash-tree" "^1.1.4"
-    "@dcl/hashing" "1.1.3"
+    "@dcl/hashing" "^1.1.3"
     "@dcl/schemas" "^6.13.4"
-    "@dcl/urn-resolver" "2.0.3"
-    "@well-known-components/interfaces" "1.2.0"
-    "@well-known-components/thegraph-component" "^1.2.0"
-    ms "2.1.3"
+    "@dcl/urn-resolver" "^2.0.3"
+    "@well-known-components/interfaces" "^1.3.0"
+    "@well-known-components/thegraph-component" "^1.4.3"
+    ms "^2.1.3"
     sharp "^0.30.6"
 
 "@dcl/crypto@^3.3.1":
@@ -399,7 +389,7 @@
     eth-connect "^6.0.3"
     ethereum-cryptography "^1.0.3"
 
-"@dcl/hashing@1.1.3", "@dcl/hashing@^1.0.0", "@dcl/hashing@^1.1.0", "@dcl/hashing@^1.1.3":
+"@dcl/hashing@^1.0.0", "@dcl/hashing@^1.1.0", "@dcl/hashing@^1.1.3":
   version "1.1.3"
   resolved "https://registry.yarnpkg.com/@dcl/hashing/-/hashing-1.1.3.tgz#9ca331495333d8cf87310dc563475ca532d7f827"
   integrity sha512-mU1+Q8jcFLAR1hSBOd6WcnLwvQmKIPAH8+UPf2DZUk+Ntu7jWqSOqG+PoWRlh7/gPfI/gKofeW0a+HzVUK6N/g==
@@ -438,7 +428,7 @@
     "@well-known-components/metrics" "^2.0.0"
     p-queue "^6.6.2"
 
-"@dcl/urn-resolver@2.0.3", "@dcl/urn-resolver@^2.0.3":
+"@dcl/urn-resolver@^2.0.3":
   version "2.0.3"
   resolved "https://registry.yarnpkg.com/@dcl/urn-resolver/-/urn-resolver-2.0.3.tgz#1ec62b8cc1ab4eeb6073c5f06bd4b163e52da89b"
   integrity sha512-/DaBj2ijznphQrbMkDXCudFa/f6IWfefv+C7DJNB1064n+yuxoIdCmYpp0lKjXMfSVkbJDjFS5bVaAzXVb265w==
@@ -1672,7 +1662,7 @@
   dependencies:
     dotenv "^16.0.1"
 
-"@well-known-components/http-server@^1.1.0", "@well-known-components/http-server@^1.1.6":
+"@well-known-components/http-server@^1.1.6":
   version "1.1.6"
   resolved "https://registry.yarnpkg.com/@well-known-components/http-server/-/http-server-1.1.6.tgz#3abc208820512bfc98080e85a4f4f6217ca9d810"
   integrity sha512-ufTiLQg1QPrgiDjr3bYuKdevZyLkJONRpmFd922F6Ty+Wd0CCOoZZzyP0vlanr0DvcrTifkO04N33fEuhg0AsQ==
@@ -1690,7 +1680,7 @@
     on-finished "^2.4.1"
     path-to-regexp "^6.2.1"
 
-"@well-known-components/interfaces@1.2.0", "@well-known-components/interfaces@^1.1.0", "@well-known-components/interfaces@^1.1.1", "@well-known-components/interfaces@^1.1.3":
+"@well-known-components/interfaces@^1.1.0", "@well-known-components/interfaces@^1.1.1", "@well-known-components/interfaces@^1.1.3":
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/@well-known-components/interfaces/-/interfaces-1.2.0.tgz#0cb9a0f383f9bc16cc4cbdae2ce6826299a0bfb1"
   integrity sha512-46up+BJFBS4lNNrUwM6k/dmrg2f65fM5CrSekypawQQz2wYmdtN6ZRVVIdm4j0fTp4uaynUsb/yW81wcPK03+Q==
@@ -1727,18 +1717,17 @@
   dependencies:
     prom-client "^14.1.0"
 
-"@well-known-components/thegraph-component@^1.2.0":
-  version "1.4.1"
-  resolved "https://registry.yarnpkg.com/@well-known-components/thegraph-component/-/thegraph-component-1.4.1.tgz#bf4f0e0fc1eb0401d2cdc30a2d4a7d94ba7fd536"
-  integrity sha512-NwMHs+rS9L+CcB6Nxx+74Q9daK/3A1Hoav9loO5Eyw0T+LEu3PHdGY+hf3bzFMYpILByrMoX656E9DhT7/GHaQ==
-  dependencies:
-    "@well-known-components/http-server" "^1.1.0"
-    "@well-known-components/interfaces" "^1.1.0"
-
 "@well-known-components/thegraph-component@^1.4.2":
   version "1.4.2"
   resolved "https://registry.yarnpkg.com/@well-known-components/thegraph-component/-/thegraph-component-1.4.2.tgz#afe8359ad8f4c756de66df9b63de715e64c9ea37"
   integrity sha512-C4kNJw5ikRCV2IhkadMRLhrxRxMRdInOTXq0L/8XFiZlZaSuH3Lg/SPRYEcHQT6hm7I6y6GKAQ9wI8HSJ8Izgg==
+  dependencies:
+    "@well-known-components/interfaces" "^1.3.0"
+
+"@well-known-components/thegraph-component@^1.4.3":
+  version "1.4.3"
+  resolved "https://registry.yarnpkg.com/@well-known-components/thegraph-component/-/thegraph-component-1.4.3.tgz#30865a4a9b0db972cf598989b7a62d8738301e82"
+  integrity sha512-iTss7aXG5NU1uXnzoMR3LVzycdE+rN5JK+hFRtdIk27zVVsSCmFWERZnNpb38fhmef7GlBci+5dUHiRLPkVyQA==
   dependencies:
     "@well-known-components/interfaces" "^1.3.0"
 
@@ -5312,7 +5301,7 @@ ms@2.1.2:
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.1.2.tgz#d09d1f357b443f493382a8eb3ccd183872ae6009"
   integrity sha512-sGkPx+VjMtmA6MX27oA4FBFELFCZZ4S4XqeGOXCv68tT+jb3vk/RyaKWP0PTKyWtmLSM0b+adUTEvbs1PEaH2w==
 
-ms@2.1.3, ms@^2.1.2:
+ms@2.1.3, ms@^2.1.2, ms@^2.1.3:
   version "2.1.3"
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.1.3.tgz#574c8138ce1d2b5861f0b44579dbadd60c6615b2"
   integrity sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==
