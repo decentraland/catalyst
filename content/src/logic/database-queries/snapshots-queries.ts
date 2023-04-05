@@ -1,8 +1,7 @@
 import { SnapshotSyncDeployment } from '@dcl/schemas'
+import { SnapshotMetadata, TimeRange } from '@dcl/snapshots-fetcher/dist/types'
 import SQL from 'sql-template-strings'
 import { AppComponents } from '../../types'
-import { NewSnapshotMetadata } from '../snapshots'
-import { TimeRange } from '../time-range'
 
 export async function* streamActiveDeploymentsInTimeRange(
   components: Pick<AppComponents, 'database'>,
@@ -33,7 +32,7 @@ export async function* streamActiveDeploymentsInTimeRange(
 export async function findSnapshotsStrictlyContainedInTimeRange(
   components: Pick<AppComponents, 'database'>,
   timerange: TimeRange
-): Promise<NewSnapshotMetadata[]> {
+): Promise<SnapshotMetadata[]> {
   const query = SQL`
   SELECT
     hash,
@@ -71,7 +70,7 @@ export async function findSnapshotsStrictlyContainedInTimeRange(
 
 export async function saveSnapshot(
   database: AppComponents['database'],
-  snapshotMetadata: NewSnapshotMetadata
+  snapshotMetadata: SnapshotMetadata
 ): Promise<void> {
   const query = SQL`
   INSERT INTO snapshots
@@ -150,7 +149,7 @@ export async function deleteSnapshotsInTimeRange(
  */
 export async function snapshotIsOutdated(
   components: Pick<AppComponents, 'database'>,
-  snapshot: NewSnapshotMetadata
+  snapshot: SnapshotMetadata
 ): Promise<boolean> {
   const result = await components.database.queryWithValues<{ numberOfEntities: number }>(
     SQL`

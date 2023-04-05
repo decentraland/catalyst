@@ -438,6 +438,17 @@
     "@well-known-components/metrics" "^2.0.0"
     p-queue "^6.6.2"
 
+"@dcl/snapshots-fetcher@https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-snapshots-fetcher-6.0.1-4611754825.commit-1f95a71.tgz":
+  version "6.0.1-4611754825.commit-1f95a71"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-snapshots-fetcher-6.0.1-4611754825.commit-1f95a71.tgz#cefe8bb4efef28f5c8fd2faf61fc649e719f6bb3"
+  dependencies:
+    "@dcl/catalyst-storage" "^2.0.0"
+    "@dcl/hashing" "^1.0.0"
+    "@dcl/schemas" "^6.2.0"
+    "@well-known-components/interfaces" "^1.1.0"
+    "@well-known-components/metrics" "^2.0.0"
+    p-queue "^6.6.2"
+
 "@dcl/urn-resolver@2.0.3", "@dcl/urn-resolver@^2.0.3":
   version "2.0.3"
   resolved "https://registry.yarnpkg.com/@dcl/urn-resolver/-/urn-resolver-2.0.3.tgz#1ec62b8cc1ab4eeb6073c5f06bd4b163e52da89b"

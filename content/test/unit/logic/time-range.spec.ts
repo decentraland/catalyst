@@ -1,4 +1,5 @@
-import { divideTimeInYearsMonthsWeeksAndDays, intervalSizeLabel, isTimeRangeCoveredBy, MS_PER_DAY, MS_PER_MONTH, MS_PER_WEEK, MS_PER_YEAR, TimeRange, timeRangeSizeInMS } from '../../../src/logic/time-range'
+import { TimeRange } from '@dcl/snapshots-fetcher/dist/types'
+import { divideTimeInYearsMonthsWeeksAndDays, intervalSizeLabel, isTimeRangeCoveredBy, MS_PER_DAY, MS_PER_MONTH, MS_PER_WEEK, MS_PER_YEAR, timeRangeSizeInMS } from '../../../src/logic/time-range'
 
 it('should return correct interval size labels', () => {
   expect(intervalSizeLabel({ initTimestamp: 0, endTimestamp: MS_PER_DAY })).toEqual('day')

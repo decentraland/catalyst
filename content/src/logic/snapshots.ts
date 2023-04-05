@@ -1,3 +1,4 @@
+import { SnapshotMetadata, TimeRange } from '@dcl/snapshots-fetcher/dist/types'
 import { createFileWriter, IFile } from '../ports/fileWriter'
 import { AppComponents } from '../types'
 import {
@@ -13,17 +14,8 @@ import {
   divideTimeInYearsMonthsWeeksAndDays,
   intervalSizeLabel,
   isTimeRangeCoveredBy,
-  MS_PER_MONTH,
-  TimeRange
+  MS_PER_MONTH
 } from './time-range'
-
-export type NewSnapshotMetadata = {
-  hash: string
-  timeRange: TimeRange
-  numberOfEntities: number
-  replacedSnapshotHashes?: string[]
-  generationTimestamp: number
-}
 
 export async function generateAndStoreSnapshot(
   components: Pick<AppComponents, 'database' | 'fs' | 'metrics' | 'storage' | 'logs' | 'denylist' | 'staticConfigs'>,
@@ -68,9 +60,9 @@ export async function generateSnapshotsInMultipleTimeRanges(
     'database' | 'fs' | 'metrics' | 'storage' | 'logs' | 'denylist' | 'staticConfigs' | 'clock' | 'storage'
   >,
   timeRangeToDivide: TimeRange
-): Promise<NewSnapshotMetadata[]> {
+): Promise<SnapshotMetadata[]> {
   const logger = components.logs.getLogger('snapshot-generation')
-  const snapshotMetadatas: NewSnapshotMetadata[] = []
+  const snapshotMetadatas: SnapshotMetadata[] = []
   const timeRangeDivision = divideTimeInYearsMonthsWeeksAndDays(timeRangeToDivide)
   for (const timeRange of timeRangeDivision.intervals) {
     const savedSnapshots = await findSnapshotsStrictlyContainedInTimeRange(components, timeRange)

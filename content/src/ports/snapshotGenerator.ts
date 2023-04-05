@@ -1,10 +1,11 @@
+import { SnapshotMetadata } from '@dcl/snapshots-fetcher/dist/types'
 import { IBaseComponent } from '@well-known-components/interfaces'
 import ms from 'ms'
-import { generateSnapshotsInMultipleTimeRanges, NewSnapshotMetadata } from '../logic/snapshots'
+import { generateSnapshotsInMultipleTimeRanges } from '../logic/snapshots'
 import { AppComponents } from '../types'
 
 export type SnapshotGenerator = IBaseComponent & {
-  getCurrentSnapshots(): NewSnapshotMetadata[] | undefined
+  getCurrentSnapshots(): SnapshotMetadata[] | undefined
 }
 
 export function createSnapshotGenerator(
@@ -19,7 +20,7 @@ export function createSnapshotGenerator(
   let isStopped = false
   let runningGeneration: Promise<void> = Promise.resolve()
   let nextGenerationTimeout: NodeJS.Timeout
-  let currentSnapshots: NewSnapshotMetadata[]
+  let currentSnapshots: SnapshotMetadata[]
 
   async function runGenerationAndScheduleNext() {
     isRunningGeneration = true
@@ -52,7 +53,7 @@ export function createSnapshotGenerator(
       clearTimeout(nextGenerationTimeout)
       return Promise.resolve()
     },
-    getCurrentSnapshots(): NewSnapshotMetadata[] | undefined {
+    getCurrentSnapshots(): SnapshotMetadata[] | undefined {
       return currentSnapshots
     }
   }

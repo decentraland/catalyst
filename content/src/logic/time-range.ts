@@ -1,7 +1,4 @@
-export type TimeRange = {
-  initTimestamp: number
-  endTimestamp: number
-}
+import { TimeRange } from '@dcl/snapshots-fetcher/dist/types'
 
 export type TimeRangeDivision = {
   intervals: TimeRange[]

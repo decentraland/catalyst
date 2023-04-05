@@ -27,7 +27,7 @@
     "@dcl/crypto": "^3.3.1",
     "@dcl/hashing": "^1.1.3",
     "@dcl/schemas": "^6.13.2",
-    "@dcl/snapshots-fetcher": "^6.0.1-4387473683.commit-1d51680",
+    "@dcl/snapshots-fetcher": "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-snapshots-fetcher-6.0.1-4611754825.commit-1f95a71.tgz",
     "@dcl/urn-resolver": "^2.0.3",
     "@well-known-components/env-config-provider": "^1.2.0",
     "@well-known-components/interfaces": "^1.3.0",
