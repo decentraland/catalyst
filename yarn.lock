@@ -1680,16 +1680,7 @@
     on-finished "^2.4.1"
     path-to-regexp "^6.2.1"
 
-"@well-known-components/interfaces@^1.1.0", "@well-known-components/interfaces@^1.1.1", "@well-known-components/interfaces@^1.1.3":
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/@well-known-components/interfaces/-/interfaces-1.2.0.tgz#0cb9a0f383f9bc16cc4cbdae2ce6826299a0bfb1"
-  integrity sha512-46up+BJFBS4lNNrUwM6k/dmrg2f65fM5CrSekypawQQz2wYmdtN6ZRVVIdm4j0fTp4uaynUsb/yW81wcPK03+Q==
-  dependencies:
-    "@types/node" "^16.11.19"
-    "@types/node-fetch" "^2.5.12"
-    typed-url-params "^1.0.1"
-
-"@well-known-components/interfaces@^1.3.0":
+"@well-known-components/interfaces@^1.1.0", "@well-known-components/interfaces@^1.1.1", "@well-known-components/interfaces@^1.1.3", "@well-known-components/interfaces@^1.3.0":
   version "1.3.0"
   resolved "https://registry.yarnpkg.com/@well-known-components/interfaces/-/interfaces-1.3.0.tgz#e1ff8feceb22f0af29e100f7f24ad2e5331810bb"
   integrity sha512-h5upEQJXwNo1ZQQlElBqVUAyIzzBqTnLmkaiNEwv/wZ0kR/mqLzlXcl2KRB/tKuK6Sr7NbKLaXLHy2hT5DY42g==
@@ -1716,13 +1707,6 @@
   integrity sha512-jgT9TuxVS9GzVMMYWXNJRM2qXvexuf4xfrFNBYa3w+gqEWCK4Id5R4zBee/bm6/F5yIPauAWxbOS6KNNDBIrGw==
   dependencies:
     prom-client "^14.1.0"
-
-"@well-known-components/thegraph-component@^1.4.2":
-  version "1.4.2"
-  resolved "https://registry.yarnpkg.com/@well-known-components/thegraph-component/-/thegraph-component-1.4.2.tgz#afe8359ad8f4c756de66df9b63de715e64c9ea37"
-  integrity sha512-C4kNJw5ikRCV2IhkadMRLhrxRxMRdInOTXq0L/8XFiZlZaSuH3Lg/SPRYEcHQT6hm7I6y6GKAQ9wI8HSJ8Izgg==
-  dependencies:
-    "@well-known-components/interfaces" "^1.3.0"
 
 "@well-known-components/thegraph-component@^1.4.3":
   version "1.4.3"
