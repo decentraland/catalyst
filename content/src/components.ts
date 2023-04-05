@@ -1,4 +1,5 @@
 import { createFolderBasedFileSystemContentStorage, createFsComponent } from '@dcl/catalyst-storage'
+import { ValidateFn } from '@dcl/content-validator'
 import { EntityType } from '@dcl/schemas'
 import { createSynchronizer } from '@dcl/snapshots-fetcher'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
@@ -6,6 +7,7 @@ import { createConfigComponent } from '@well-known-components/env-config-provide
 import { IFetchComponent } from '@well-known-components/interfaces'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
+import { HTTPProvider } from 'eth-connect'
 import ms from 'ms'
 import path from 'path'
 import { Controller } from './controller/Controller'
@@ -33,7 +35,6 @@ import { ContentAuthenticator } from './service/auth/Authenticator'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { PointerManager } from './service/pointers/PointerManager'
 import { Server } from './service/Server'
-import { SnapshotManager } from './service/snapshots/SnapshotManager'
 import { createBatchDeployerComponent } from './service/synchronization/batchDeployer'
 import { ChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
 import { DAOClientFactory } from './service/synchronization/clients/DAOClientFactory'
@@ -47,8 +48,6 @@ import {
   createSubgraphValidator
 } from './service/validations/validator'
 import { AppComponents } from './types'
-import { HTTPProvider } from 'eth-connect'
-import { ValidateFn } from '@dcl/content-validator'
 
 function createProvider(fetcher: IFetchComponent, network: string): HTTPProvider {
   return new HTTPProvider(`https://rpc.decentraland.org/${encodeURIComponent(network)}?project=catalyst-content`, {
@@ -191,8 +190,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     clock
   })
 
-  const snapshotManager = new SnapshotManager({ database, metrics, staticConfigs, logs, storage, denylist, fs, clock })
-
   const garbageCollectionManager = new GarbageCollectionManager(
     { clock, database, metrics, logs, storage, systemProperties },
     env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION),
@@ -296,14 +293,12 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     storage,
     database,
     denylist,
-    snapshotManager,
     clock
   })
 
   const controller = new Controller(
     {
       challengeSupervisor,
-      snapshotManager,
       deployer,
       logs,
       metrics,
@@ -342,7 +337,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     synchronizer,
     synchronizationState,
     challengeSupervisor,
-    snapshotManager,
     contentCluster,
     failedDeployments,
     deployRateLimiter,

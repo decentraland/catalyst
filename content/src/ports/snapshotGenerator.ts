@@ -1,16 +1,17 @@
+import { SnapshotMetadata } from '@dcl/snapshots-fetcher/dist/types'
 import { IBaseComponent } from '@well-known-components/interfaces'
 import ms from 'ms'
-import { generateSnapshotsInMultipleTimeRanges, NewSnapshotMetadata } from '../logic/snapshots'
+import { generateSnapshotsInMultipleTimeRanges } from '../logic/snapshots'
 import { AppComponents } from '../types'
 
 export type SnapshotGenerator = IBaseComponent & {
-  getCurrentSnapshots(): NewSnapshotMetadata[] | undefined
+  getCurrentSnapshots(): SnapshotMetadata[] | undefined
 }
 
 export function createSnapshotGenerator(
   components: Pick<
     AppComponents,
-    'database' | 'fs' | 'metrics' | 'storage' | 'logs' | 'denylist' | 'staticConfigs' | 'snapshotManager' | 'clock'
+    'database' | 'fs' | 'metrics' | 'storage' | 'logs' | 'denylist' | 'staticConfigs' | 'clock'
   >
 ): SnapshotGenerator {
   const logger = components.logs.getLogger('snapshot-generator')
@@ -19,7 +20,7 @@ export function createSnapshotGenerator(
   let isStopped = false
   let runningGeneration: Promise<void> = Promise.resolve()
   let nextGenerationTimeout: NodeJS.Timeout
-  let currentSnapshots: NewSnapshotMetadata[]
+  let currentSnapshots: SnapshotMetadata[]
 
   async function runGenerationAndScheduleNext() {
     isRunningGeneration = true
@@ -40,9 +41,6 @@ export function createSnapshotGenerator(
 
   return {
     async start(): Promise<void> {
-      // We have the SnapshotManager here because we need it to run before the new snapshots run to avoid a race
-      // condition with the content storage
-      await components.snapshotManager.generateSnapshots()
       runningGeneration = runGenerationAndScheduleNext()
       await runningGeneration
     },
@@ -55,7 +53,7 @@ export function createSnapshotGenerator(
       clearTimeout(nextGenerationTimeout)
       return Promise.resolve()
     },
-    getCurrentSnapshots(): NewSnapshotMetadata[] | undefined {
+    getCurrentSnapshots(): SnapshotMetadata[] | undefined {
       return currentSnapshots
     }
   }

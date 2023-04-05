@@ -1,34 +1,7 @@
-import { PointerChangesSyncDeployment, SnapshotSyncDeployment } from '@dcl/schemas'
+import { SnapshotSyncDeployment } from '@dcl/schemas'
+import { SnapshotMetadata, TimeRange } from '@dcl/snapshots-fetcher/dist/types'
 import SQL from 'sql-template-strings'
 import { AppComponents } from '../../types'
-import { NewSnapshotMetadata } from '../snapshots'
-import { TimeRange } from '../time-range'
-
-export async function* streamActiveDeployments(
-  components: Pick<AppComponents, 'database'>
-): AsyncIterable<PointerChangesSyncDeployment> {
-  const { database } = components
-
-  const options = { batchSize: 1000 }
-
-  for await (const row of database.streamQuery(
-    // IT IS IMPORTANT THAT THIS QUERY NEVER CHANGES. ORDER IS NOT GUARANTEED
-    SQL`
-      SELECT
-        entity_id AS "entityId",
-        entity_type AS "entityType",
-        entity_pointers AS "pointers",
-        auth_chain AS "authChain",
-        date_part('epoch', local_timestamp) * 1000 AS "localTimestamp"
-      FROM deployments d
-      WHERE d.deleter_deployment IS NULL
-    `,
-    options,
-    'stream_active_deployments'
-  )) {
-    yield row as any
-  }
-}
 
 export async function* streamActiveDeploymentsInTimeRange(
   components: Pick<AppComponents, 'database'>,
@@ -59,7 +32,7 @@ export async function* streamActiveDeploymentsInTimeRange(
 export async function findSnapshotsStrictlyContainedInTimeRange(
   components: Pick<AppComponents, 'database'>,
   timerange: TimeRange
-): Promise<NewSnapshotMetadata[]> {
+): Promise<SnapshotMetadata[]> {
   const query = SQL`
   SELECT
     hash,
@@ -97,7 +70,7 @@ export async function findSnapshotsStrictlyContainedInTimeRange(
 
 export async function saveSnapshot(
   database: AppComponents['database'],
-  snapshotMetadata: NewSnapshotMetadata
+  snapshotMetadata: SnapshotMetadata
 ): Promise<void> {
   const query = SQL`
   INSERT INTO snapshots
@@ -176,7 +149,7 @@ export async function deleteSnapshotsInTimeRange(
  */
 export async function snapshotIsOutdated(
   components: Pick<AppComponents, 'database'>,
-  snapshot: NewSnapshotMetadata
+  snapshot: SnapshotMetadata
 ): Promise<boolean> {
   const result = await components.database.queryWithValues<{ numberOfEntities: number }>(
     SQL`

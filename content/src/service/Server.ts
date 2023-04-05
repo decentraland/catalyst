@@ -93,8 +93,6 @@ export class Server implements IBaseComponent {
     this.registerRoute('/failed-deployments', controller, controller.getFailedDeployments)
     this.registerRoute('/challenge', controller, controller.getChallenge)
     this.registerRoute('/pointer-changes', controller, controller.getPointerChanges)
-    this.registerRoute('/snapshot/:type', controller, controller.getSnapshot) // TODO: Deprecate
-    this.registerRoute('/snapshot', controller, controller.getAllSnapshots) // TODO: Deprecate
     this.registerRoute('/snapshots', controller, controller.getAllNewSnapshots)
 
     if (env.getConfig(EnvironmentConfig.VALIDATE_API) || process.env.CI === 'true') {
