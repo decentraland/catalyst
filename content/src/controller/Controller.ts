@@ -256,11 +256,6 @@ export class Controller {
     // Path: /contents/:hashId
     const hashId = req.params.hashId
 
-    if (this.components.denylist.isDenylisted(hashId)) {
-      res.status(404).send()
-      return
-    }
-
     const contentItem: ContentItem | undefined = await this.components.storage.retrieve(hashId)
 
     if (contentItem) {
@@ -275,11 +270,6 @@ export class Controller {
     // Method: GET
     // Path: /contents/:hashId
     const hashId = req.params.hashId
-
-    if (this.components.denylist.isDenylisted(hashId)) {
-      res.status(404).send()
-      return
-    }
 
     const contentItem: ContentItem | undefined = await this.components.storage.retrieve(hashId)
 
