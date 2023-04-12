@@ -22,6 +22,7 @@ import { getActiveDeploymentsByContentHash } from '../logic/database-queries/dep
 import { getDeployments } from '../logic/deployments'
 import { statusResponseFromComponents } from '../logic/status-checks'
 import { toQueryParams } from '../logic/toQueryParams'
+import { BASE_AVATARS_COLLECTION_ID } from '../ports/activeEntities'
 import { getPointerChanges } from '../service/pointers/pointers'
 import { PointerChangesFilters } from '../service/pointers/types'
 import { AppComponents, parseEntityType } from '../types'
@@ -162,7 +163,7 @@ export class Controller {
       return
     }
 
-    const entities: { pointer: string; entityId: string }[] = await this.components.activeEntities.withPrefix(parsedUrn)
+    const entities: Entity[] = await this.components.activeEntities.withPrefix(parsedUrn)
 
     res.send(entities)
   }
@@ -723,6 +724,9 @@ const DEFAULT_FIELDS_ON_DEPLOYMENTS: DeploymentField[] = [
 async function isUrnPrefixValid(collectionUrn: string): Promise<string | false> {
   const regex = /^[a-zA-Z0-9_.:,-]+$/g
   if (!regex.test(collectionUrn)) return false
+  if (collectionUrn === BASE_AVATARS_COLLECTION_ID) {
+    return collectionUrn
+  }
 
   try {
     const parsedUrn: DecentralandAssetIdentifier | null = await parseUrn(collectionUrn)
