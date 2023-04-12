@@ -311,7 +311,7 @@ async function buildComponents() {
     { defaultMax: 300, defaultTtl: ms('1m'), entitiesConfigMax: new Map(), entitiesConfigTtl: new Map() }
   )
   const metrics = createTestMetricsComponent(metricsDeclaration)
-  const failedDeployments = await createFailedDeployments({ metrics, database, denylist: { isDenylisted: () => false } })
+  const failedDeployments = await createFailedDeployments({ metrics, database })
   const storage = createInMemoryStorage()
   const pointerManager = NoOpPointerManager.build()
   const authenticator = new ContentAuthenticator(
