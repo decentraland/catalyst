@@ -91,7 +91,7 @@ describe('failed deployments', () => {
 })
 
 async function createAndStartFailedDeploymentsWith(
-  components: Pick<AppComponents, 'database' | 'metrics' >,
+  components: Pick<AppComponents, 'database' | 'metrics'>,
   baseFailedDeployments: SnapshotFailedDeployment[]
 ) {
   jest.spyOn(failedDeploymentQueries, 'getSnapshotFailedDeployments').mockResolvedValue(baseFailedDeployments)
