@@ -148,13 +148,9 @@ export enum EnvironmentConfig {
 }
 export class EnvironmentBuilder {
   private baseEnv: Environment
-  constructor(other?: Environment | EnvironmentBuilder) {
+  constructor(other?: Environment) {
     if (other) {
-      if (other instanceof EnvironmentBuilder) {
-        this.baseEnv = new Environment(other.baseEnv)
-      } else {
-        this.baseEnv = new Environment(other)
-      }
+      this.baseEnv = new Environment(other)
     } else {
       this.baseEnv = new Environment()
     }

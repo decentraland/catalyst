@@ -4,7 +4,6 @@ import { EntityType } from '@dcl/schemas'
 import { createSynchronizer } from '@dcl/snapshots-fetcher'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
-import { IFetchComponent } from '@well-known-components/interfaces'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { HTTPProvider } from 'eth-connect'
@@ -71,7 +70,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const l1HttpProviderUrl: string = env.getConfig(EnvironmentConfig.L1_HTTP_PROVIDER_URL)
   const l2HttpProviderUrl: string = env.getConfig(EnvironmentConfig.L2_HTTP_PROVIDER_URL)
-  const useOnChainValidator = l1HttpProviderUrl && l2HttpProviderUrl
+  const useOnChainValidator = !!(l1HttpProviderUrl && l2HttpProviderUrl)
 
   const l2Network = ethNetwork === 'mainnet' ? 'polygon' : 'mumbai'
 
@@ -141,6 +140,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   })
 
   const ignoreBlockChainAccess = env.getConfig(EnvironmentConfig.IGNORE_BLOCKCHAIN_ACCESS_CHECKS) === 'true'
+
+  console.log({ l1HttpProviderUrl, l2HttpProviderUrl, useOnChainValidator, ignoreBlockChainAccess })
 
   let validate: ValidateFn
   if (ignoreBlockChainAccess) {
