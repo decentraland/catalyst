@@ -124,10 +124,11 @@ export class Controller {
         return
       }
 
-      const entities: Entity[] =
+      const entities: Entity[] = (
         ids && ids.length > 0
           ? await this.components.activeEntities.withIds(ids)
           : await this.components.activeEntities.withPointers(pointers)
+      ).filter((result) => !this.components.denylist.isDenylisted(result.id))
 
       res.send(entities)
     } catch (error) {
