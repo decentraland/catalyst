@@ -19,7 +19,7 @@
     "test:unit": "jest --selectProjects unit --runInBand --forceExit --detectOpenHandles --coverage"
   },
   "dependencies": {
-    "@dcl/block-indexer": "^1.1.0",
+    "@dcl/block-indexer": "^1.1.1",
     "@dcl/catalyst-api-specs": "^3.0.0",
     "@dcl/catalyst-contracts": "^3.1.3",
     "@dcl/catalyst-storage": "^2.0.3",
