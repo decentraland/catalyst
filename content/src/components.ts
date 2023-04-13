@@ -141,8 +141,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const ignoreBlockChainAccess = env.getConfig(EnvironmentConfig.IGNORE_BLOCKCHAIN_ACCESS_CHECKS) === 'true'
 
-  console.log({ l1HttpProviderUrl, l2HttpProviderUrl, useOnChainValidator, ignoreBlockChainAccess })
-
   let validate: ValidateFn
   if (ignoreBlockChainAccess) {
     validate = await createIgnoreBlockchainValidator({ logs, externalCalls })
