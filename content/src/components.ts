@@ -4,7 +4,6 @@ import { EntityType } from '@dcl/schemas'
 import { createSynchronizer } from '@dcl/snapshots-fetcher'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
-import { IFetchComponent } from '@well-known-components/interfaces'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { HTTPProvider } from 'eth-connect'
@@ -49,18 +48,11 @@ import {
 } from './service/validations/validator'
 import { AppComponents } from './types'
 
-function createProvider(fetcher: IFetchComponent, network: string): HTTPProvider {
-  return new HTTPProvider(`https://rpc.decentraland.org/${encodeURIComponent(network)}?project=catalyst-content`, {
-    fetch: fetcher.fetch
-  })
-}
-
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
   const clock = createClock()
   const metrics = createTestMetricsComponent(metricsDeclaration)
   const config = createConfigComponent({
-    LOG_LEVEL: env.getConfig(EnvironmentConfig.LOG_LEVEL),
-    IGNORE_BLOCKCHAIN_ACCESS_CHECKS: env.getConfig(EnvironmentConfig.IGNORE_BLOCKCHAIN_ACCESS_CHECKS)
+    LOG_LEVEL: env.getConfig(EnvironmentConfig.LOG_LEVEL)
   })
   const logs = await createLogComponent({ config })
   const fetcher = createFetchComponent()
@@ -75,9 +67,25 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   }
 
   const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK)
+
+  const l1HttpProviderUrl: string = env.getConfig(EnvironmentConfig.L1_HTTP_PROVIDER_URL)
+  const l2HttpProviderUrl: string = env.getConfig(EnvironmentConfig.L2_HTTP_PROVIDER_URL)
+  const useOnChainValidator = !!(l1HttpProviderUrl && l2HttpProviderUrl)
+
   const l2Network = ethNetwork === 'mainnet' ? 'polygon' : 'mumbai'
-  const l1Provider = createProvider(fetcher, ethNetwork)
-  const l2Provider = createProvider(fetcher, l2Network)
+
+  const l1Provider = new HTTPProvider(
+    l1HttpProviderUrl || `https://rpc.decentraland.org/${encodeURIComponent(ethNetwork)}?project=catalyst-content`,
+    {
+      fetch: fetcher.fetch
+    }
+  )
+  const l2Provider = new HTTPProvider(
+    l2HttpProviderUrl || `https://rpc.decentraland.org/${encodeURIComponent(l2Network)}?project=catalyst-content`,
+    {
+      fetch: fetcher.fetch
+    }
+  )
 
   const database = await createDatabaseComponent({ logs, env, metrics })
 
@@ -131,42 +139,37 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     logs
   })
 
-  const ignoreBlockChainAccess = (await config.getString('IGNORE_BLOCKCHAIN_ACCESS_CHECKS')) === 'true'
-  const validatorConfig = env.getConfig(EnvironmentConfig.ACCESS_VALIDATIONS)
-  async function createValidator() {
-    const useOnChain = validatorConfig === 'onchain'
+  const ignoreBlockChainAccess = env.getConfig(EnvironmentConfig.IGNORE_BLOCKCHAIN_ACCESS_CHECKS) === 'true'
 
-    let validate: ValidateFn
-    if (ignoreBlockChainAccess) {
-      validate = await createIgnoreBlockchainValidator({ logs, externalCalls })
-    } else if (useOnChain) {
-      validate = await createOnChainValidator(
-        {
-          env,
-          metrics,
-          fetcher,
-          config,
-          externalCalls,
-          logs
-        },
-        l1Provider,
-        l2Provider
-      )
-    } else {
-      validate = await createSubgraphValidator({
+  let validate: ValidateFn
+  if (ignoreBlockChainAccess) {
+    validate = await createIgnoreBlockchainValidator({ logs, externalCalls })
+  } else if (useOnChainValidator) {
+    validate = await createOnChainValidator(
+      {
         env,
         metrics,
         fetcher,
         config,
         externalCalls,
         logs
-      })
-    }
-
-    return { validate }
+      },
+      l1Provider,
+      l2Provider
+    )
+  } else {
+    validate = await createSubgraphValidator({
+      env,
+      metrics,
+      fetcher,
+      config,
+      externalCalls,
+      logs
+    })
   }
 
-  const validator = await createValidator()
+  const validator = { validate }
+
   const serverValidator = createServerValidator({ failedDeployments, metrics, clock })
 
   const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, clock })

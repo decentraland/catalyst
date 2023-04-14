@@ -143,17 +143,14 @@ export enum EnvironmentConfig {
   // List of entity types ignored during the synchronization
   SYNC_IGNORED_ENTITY_TYPES,
   IGNORE_BLOCKCHAIN_ACCESS_CHECKS,
-  ACCESS_VALIDATIONS
+  L1_HTTP_PROVIDER_URL,
+  L2_HTTP_PROVIDER_URL
 }
 export class EnvironmentBuilder {
   private baseEnv: Environment
-  constructor(other?: Environment | EnvironmentBuilder) {
+  constructor(other?: Environment) {
     if (other) {
-      if (other instanceof EnvironmentBuilder) {
-        this.baseEnv = new Environment(other.baseEnv)
-      } else {
-        this.baseEnv = new Environment(other)
-      }
+      this.baseEnv = new Environment(other)
     } else {
       this.baseEnv = new Environment()
     }
@@ -431,7 +428,17 @@ export class EnvironmentBuilder {
       () => process.env.IGNORE_BLOCKCHAIN_ACCESS_CHECKS
     )
 
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ACCESS_VALIDATIONS, () => process.env.ACCESS_VALIDATIONS)
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.L1_HTTP_PROVIDER_URL,
+      () => process.env.L1_HTTP_PROVIDER_URL ?? ''
+    )
+
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.L2_HTTP_PROVIDER_URL,
+      () => process.env.L2_HTTP_PROVIDER_URL ?? ''
+    )
 
     return env
   }
