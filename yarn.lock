@@ -316,20 +316,20 @@
   dependencies:
     "@cspotcode/source-map-consumer" "0.8.0"
 
-"@dcl/block-indexer@^1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@dcl/block-indexer/-/block-indexer-1.1.0.tgz#3517f5c25f38b1754b63d472fcf545e78856413f"
-  integrity sha512-bf18BRrMQkTCMXEAvTgqC0D4UFzae2spuJfAbgkBPDLk+2nDG2Y26RvUm93xmxgcK2O8ESH2e+osM5xPcGoQXA==
+"@dcl/block-indexer@^1.1.0", "@dcl/block-indexer@^1.1.1":
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/@dcl/block-indexer/-/block-indexer-1.1.1.tgz#b20e98798bf363b7b5ec5f1700e1320d8c8672d3"
+  integrity sha512-1o3nkoQzV8vuVIIm33hw/jqSqgI+tX1FwGUKEOlixGcPWp9SlyI11vRScuFfXU+nKGKOEM2/UOhNm03pLhc9Jg==
   dependencies:
     "@well-known-components/interfaces" "^1.1.3"
     "@well-known-components/logger" "^3.0.0"
     "@well-known-components/metrics" "^2.0.1"
     lru-cache "^7.14.0"
 
-"@dcl/catalyst-api-specs@^3.0.0":
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/@dcl/catalyst-api-specs/-/catalyst-api-specs-3.0.0.tgz#96f8c81bddbaf6652eb483480e506bf92c497be5"
-  integrity sha512-BRRxZSTIIeUq6OjSg4vq+JwZprz1s7hWdOKZ23EIb4lDfrF7Ce0oeuRIvY7y9r82DzXG5rAbciQZovtsvi7dSw==
+"@dcl/catalyst-api-specs@^3.0.1":
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-api-specs/-/catalyst-api-specs-3.0.1.tgz#186ed77ad61c31a1d77ff68cebdbb47b66aa7d3e"
+  integrity sha512-5qQqwW2Z6+JvFLQK0bHZMAdjLDvM/FLqARkpmHdBVKXxhRUk8LALS83TuO4PgdtsazmcvZCoqNPs13then+PDA==
   dependencies:
     yaml "2.2.1"
 
@@ -391,10 +391,10 @@
     ipfs-unixfs-importer "^7.0.3"
     multiformats "^9.6.3"
 
-"@dcl/schemas@^6.13.4", "@dcl/schemas@^6.15.0", "@dcl/schemas@^6.2.0", "@dcl/schemas@^6.4.2":
-  version "6.15.0"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-6.15.0.tgz#18887aa8ad64b26eec1144cdf44568ebdcc6224c"
-  integrity sha512-JepCFaNcaeTrONVh/TlCsajhogKhSfLjL1pAJfKIbRU/3tcZpfyWP2vka+s53pYVQbufQ1+MJzKIuG4+urC/dA==
+"@dcl/schemas@^6.13.4", "@dcl/schemas@^6.16.0", "@dcl/schemas@^6.2.0", "@dcl/schemas@^6.4.2":
+  version "6.16.0"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-6.16.0.tgz#c3e9d7969df9d35be2a9784ed8863a659eb65432"
+  integrity sha512-hL4+GF8htynrm9VddFd20c2AnTdHkR0UjpOmuB4KO81/yLlb1OAZORtTyPeJS25KUJMM70hC7eIeb/m0YwcHOw==
   dependencies:
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
@@ -2710,9 +2710,9 @@ dcl-catalyst-client@^14.0.9:
     form-data "^4.0.0"
 
 dcl-catalyst-commons@^9.0.6:
-  version "9.0.16"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-9.0.16.tgz#ce63769aedde2abd9ea24288866382c6290996be"
-  integrity sha512-bfHUJCcaS0yX64A6CXF5t6Ld+LrYWMFF/wyM+5lPsbHaTgojo/fpLP0rfFg0GxVzglTo1jYOXhc0KuDcPeiMsg==
+  version "9.0.19"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-9.0.19.tgz#e737ba5a26c5f88e96cdcae8f9dc56d4ff686c63"
+  integrity sha512-PhRBK5YCXVJGHgSxMtaf4TObYpyQZysqbU/ASayniULBkQJb+dmBbTb228V/o6rVTimcZ7NkrEppyjYUlV4AMQ==
   dependencies:
     "@dcl/schemas" "^6.4.2"
     abort-controller "^3.0.0"
