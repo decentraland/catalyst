@@ -23,6 +23,7 @@ crypto --> ethconnect
 snapshotsfetcher --> catalyststorage["@dcl/catalyst-storage"]
 snapshotsfetcher --> hashing
 snapshotsfetcher --> schemas
+catalystcommons --> schemas["@dcl/schemas"]
 
 click catalystapispecs href "https://github.com/decentraland/catalyst-api-specs" _blank
 click catalystclient href "https://github.com/decentraland/catalyst-client" _blank
@@ -37,6 +38,7 @@ click hashing href "https://github.com/decentraland/hashing" _blank
 click schemas href "https://github.com/decentraland/common-schemas" _blank
 click snapshotsfetcher href "https://github.com/decentraland/snapshots-fetcher" _blank
 click urnresolver href "https://github.com/decentraland/urn-resolver" _blank
+click catalystcommons href "https://github.com/decentraland/catalyst-commons" _blank
 ```
 
 # Lambdas Server dependencies
@@ -55,6 +57,7 @@ catalystclient --> catalystcontracts
 catalystcontracts --> ethconnect["eth-connect"]
 crypto --> schemas
 crypto --> ethconnect
+catalystcommons --> schemas["@dcl/schemas"]
 
 click catalystapispecs href "https://github.com/decentraland/catalyst-api-specs" _blank
 click catalystclient href "https://github.com/decentraland/catalyst-client" _blank
@@ -64,4 +67,5 @@ click crypto href "https://github.com/decentraland/decentraland-crypto" _blank
 click ethconnect href "https://github.com/decentraland/eth-connect" _blank
 click schemas href "https://github.com/decentraland/common-schemas" _blank
 click urnresolver href "https://github.com/decentraland/urn-resolver" _blank
+click catalystcommons href "https://github.com/decentraland/catalyst-commons" _blank
 ```
