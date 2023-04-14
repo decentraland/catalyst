@@ -43,7 +43,7 @@ export async function createDenylist(
     for await (const line of lines) {
       try {
         const cid = line.trim()
-        if (!cid.startsWith('#')) {
+        if (!cid.startsWith('#') && cid.length > 0) {
           deniedContentIdentifiers.add((line as string).trim())
         }
       } catch (err: any) {
@@ -66,7 +66,7 @@ export async function createDenylist(
         try {
           const response = await components.fetcher.fetch(url.toString())
           const content = await response.text()
-          const lines = content ? content.split(/[\r\n\s]+/) : []
+          const lines = content ? content.split(/[\r\n]+/) : []
           await processLines(lines)
         } catch (err: any) {
           logger.error(err)
@@ -79,7 +79,11 @@ export async function createDenylist(
   let reloadTimer: NodeJS.Timer | undefined = undefined
   return {
     isDenylisted: (id: string): boolean => {
-      return deniedContentIdentifiers.has(id)
+      const denied = deniedContentIdentifiers.has(id)
+      if (denied) {
+        logger.info(`Processing denyListed entityId ${id}`)
+      }
+      return denied
     },
     async start() {
       await loadDenylists()
