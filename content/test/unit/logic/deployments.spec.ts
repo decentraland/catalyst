@@ -1,6 +1,7 @@
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { isEntityDeployed } from '../../../src/logic/deployments'
 import { metricsDeclaration } from '../../../src/metrics'
+import { DeployedEntitiesBloomFilter } from '../../../src/ports/deployedEntitiesBloomFilter'
 import { createTestDatabaseComponent } from '../../../src/ports/postgres'
 
 const metrics = createTestMetricsComponent(metricsDeclaration)
@@ -8,7 +9,7 @@ const metrics = createTestMetricsComponent(metricsDeclaration)
 describe('isEntityDeployed', () => {
   it('when deployedEntitiesBloomFilter returns true, then it should call the database', async () => {
     const database = createTestDatabaseComponent()
-    database.queryWithValues = jest.fn().mockResolvedValue({rowCount: 1})
+    database.queryWithValues = jest.fn().mockResolvedValue({ rowCount: 1 })
     const deployedEntitiesBloomFilter = deployedEntitiesBloomFilterWithEntity('id')
     const metricsSpy = jest.spyOn(metrics, 'increment')
     const components = {
@@ -23,13 +24,14 @@ describe('isEntityDeployed', () => {
 
   it('when deployedEntitiesBloomFilter returns false, then it should not call the database', async () => {
     const database = createTestDatabaseComponent()
-    database.queryWithValues = jest.fn().mockResolvedValue({rowCount: 1})
+    database.queryWithValues = jest.fn().mockResolvedValue({ rowCount: 1 })
     const components = {
       metrics,
       database,
       deployedEntitiesBloomFilter: {
         add: jest.fn(),
-        check: jest.fn().mockResolvedValue(false)
+        check: jest.fn().mockResolvedValue(false),
+        addAllInTimeRange: jest.fn()
       }
     }
     await isEntityDeployed(components, 'id')
@@ -38,13 +40,14 @@ describe('isEntityDeployed', () => {
 
   it('when deployedEntitiesBloomFilter returns true and the entity exists in db, it should return true', async () => {
     const database = createTestDatabaseComponent()
-    database.queryWithValues = jest.fn().mockResolvedValue({rowCount: 1})
+    database.queryWithValues = jest.fn().mockResolvedValue({ rowCount: 1 })
     const components = {
       metrics,
       database,
       deployedEntitiesBloomFilter: {
         add: jest.fn(),
-        check: jest.fn().mockResolvedValue(true)
+        check: jest.fn().mockResolvedValue(true),
+        addAllInTimeRange: jest.fn()
       }
     }
     const isDeployed = await isEntityDeployed(components, 'id')
@@ -53,13 +56,14 @@ describe('isEntityDeployed', () => {
 
   it('when deployedEntitiesBloomFilter returns true and the entity dont exists in db, it should return false', async () => {
     const database = createTestDatabaseComponent()
-    database.queryWithValues = jest.fn().mockResolvedValue({rowCount: 0})
+    database.queryWithValues = jest.fn().mockResolvedValue({ rowCount: 0 })
     const components = {
       metrics,
       database,
       deployedEntitiesBloomFilter: {
         add: jest.fn(),
-        check: jest.fn().mockResolvedValue(true)
+        check: jest.fn().mockResolvedValue(true),
+        addAllInTimeRange: jest.fn()
       }
     }
     const isDeployed = await isEntityDeployed(components, 'id')
@@ -68,7 +72,7 @@ describe('isEntityDeployed', () => {
 
   it('when deployedEntitiesBloomFilter returns true and db too, then it should register as non false positive', async () => {
     const database = createTestDatabaseComponent()
-    database.queryWithValues = jest.fn().mockResolvedValue({rowCount: 1})
+    database.queryWithValues = jest.fn().mockResolvedValue({ rowCount: 1 })
     const deployedEntitiesBloomFilter = deployedEntitiesBloomFilterWithEntity('id')
     const metricsSpy = jest.spyOn(metrics, 'increment')
     const components = {
@@ -82,7 +86,7 @@ describe('isEntityDeployed', () => {
 
   it('when deployedEntitiesBloomFilter returns false, then it should register as non false positive', async () => {
     const database = createTestDatabaseComponent()
-    database.queryWithValues = jest.fn().mockResolvedValue({rowCount: 1})
+    database.queryWithValues = jest.fn().mockResolvedValue({ rowCount: 1 })
     const deployedEntitiesBloomFilter = deployedEntitiesBloomFilterWithEntity('id')
     const metricsSpy = jest.spyOn(metrics, 'increment')
     const components = {
@@ -96,7 +100,7 @@ describe('isEntityDeployed', () => {
 
   it('when deployedEntitiesBloomFilter returns true and db false, then it should register as false positive', async () => {
     const database = createTestDatabaseComponent()
-    database.queryWithValues = jest.fn().mockResolvedValue({rowCount: 0})
+    database.queryWithValues = jest.fn().mockResolvedValue({ rowCount: 0 })
     const deployedEntitiesBloomFilter = deployedEntitiesBloomFilterWithEntity('id')
     const metricsSpy = jest.spyOn(metrics, 'increment')
     const components = {
@@ -109,9 +113,10 @@ describe('isEntityDeployed', () => {
   })
 })
 
-function deployedEntitiesBloomFilterWithEntity(entityId: string) {
+function deployedEntitiesBloomFilterWithEntity(entityId: string): DeployedEntitiesBloomFilter {
   return {
     add: jest.fn(),
-    check: jest.fn((id) => Promise.resolve(id === entityId))
+    check: jest.fn((id) => Promise.resolve(id === entityId)),
+    addAllInTimeRange: jest.fn()
   }
 }
