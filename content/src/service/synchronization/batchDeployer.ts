@@ -1,9 +1,10 @@
 import { IDeployerComponent } from '@dcl/snapshots-fetcher'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
-import { DeployableEntity } from '@dcl/snapshots-fetcher/dist/types'
+import { DeployableEntity, TimeRange } from '@dcl/snapshots-fetcher/dist/types'
 import { IBaseComponent } from '@well-known-components/interfaces'
 import { DeploymentContext } from '../../deployment-types'
 import { isEntityDeployed } from '../../logic/deployments'
+import { joinOverlappedTimeRanges } from '../../logic/time-range'
 import { FailureReason } from '../../ports/failedDeployments'
 import { AppComponents, CannonicalEntityDeployment } from '../../types'
 import { deployEntityFromRemoteServer } from './deployRemoteEntity'
@@ -204,6 +205,11 @@ export function createBatchDeployerComponent(
     },
     async scheduleEntityDeployment(entity: DeployableEntity, contentServers: string[]): Promise<void> {
       await handleDeploymentFromServers(entity, contentServers)
+    },
+    async prepareForDeploymentsIn(timeRanges: TimeRange[]): Promise<void> {
+      for (const timeRange of joinOverlappedTimeRanges(timeRanges)) {
+        await components.deployedEntitiesBloomFilter.addAllInTimeRange(timeRange)
+      }
     }
   }
 }

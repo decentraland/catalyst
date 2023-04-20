@@ -104,3 +104,34 @@ export function divideTimeInYearsMonthsWeeksAndDays(timeRange: TimeRange): TimeR
     }
   }
 }
+
+export function joinOverlappedTimeRanges(timeRanges: TimeRange[]): TimeRange[] {
+  if (timeRanges.length == 0) {
+    return []
+  }
+  timeRanges.sort((trA, trB) => {
+    if (trA.initTimestamp < trB.initTimestamp) {
+      return -1
+    }
+    if (trA.initTimestamp > trB.initTimestamp) {
+      return 1
+    }
+    return 0
+  })
+  let { initTimestamp, endTimestamp } = timeRanges[0]
+  const result: TimeRange[] = []
+  for (let i = 1; i < timeRanges.length; i++) {
+    const timeRange = timeRanges[i]
+    if (timeRange.initTimestamp > endTimestamp) {
+      result.push({ initTimestamp, endTimestamp })
+      initTimestamp = timeRange.initTimestamp
+      endTimestamp = timeRange.endTimestamp
+    } else {
+      if (timeRange.endTimestamp > endTimestamp) {
+        endTimestamp = timeRange.endTimestamp
+      }
+    }
+  }
+  result.push({ initTimestamp, endTimestamp })
+  return result
+}

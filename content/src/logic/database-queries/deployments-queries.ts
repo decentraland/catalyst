@@ -1,5 +1,6 @@
 import { AuthChain, Authenticator } from '@dcl/crypto'
 import { ContentMapping, Entity, EntityType, SnapshotSyncDeployment } from '@dcl/schemas'
+import { TimeRange } from '@dcl/snapshots-fetcher/dist/types'
 import pg from 'pg'
 import SQL, { SQLStatement } from 'sql-template-strings'
 import { AuditInfo, DeploymentFilters, DeploymentSorting, SortingField, SortingOrder } from '../../deployment-types'
@@ -48,21 +49,25 @@ export async function deploymentExists(
   return result.rowCount > 0
 }
 
-export async function* streamAllEntityIds(
-  components: Pick<AppComponents, 'database'>
-): AsyncIterable<{ entityId: string }> {
+export async function* streamAllEntityIdsInTimeRange(
+  components: Pick<AppComponents, 'database'>,
+  timeRange: TimeRange
+): AsyncIterable<string> {
   const { database } = components
 
   for await (const row of database.streamQuery(
     SQL`
-      SELECT entity_id FROM deployments
+      SELECT
+        entity_id
+      FROM deployments
+      WHERE entity_timestamp
+        BETWEEN to_timestamp(${timeRange.initTimestamp} / 1000.0)
+        AND to_timestamp(${timeRange.endTimestamp} / 1000.0)
     `,
     { batchSize: 10000 },
-    'stream_all_entities'
+    'stream_entity_ids_in_timerange'
   )) {
-    yield {
-      entityId: row.entity_id
-    }
+    yield row.entity_id
   }
 }
 

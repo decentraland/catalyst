@@ -27,7 +27,7 @@
     "@dcl/crypto": "^3.4.0",
     "@dcl/hashing": "^1.1.3",
     "@dcl/schemas": "^6.16.0",
-    "@dcl/snapshots-fetcher": "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-snapshots-fetcher-7.0.2-4755877812.commit-ead4614.tgz",
+    "@dcl/snapshots-fetcher": "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-snapshots-fetcher-7.0.2-4759085652.commit-c76182c.tgz",
     "@dcl/urn-resolver": "^2.0.3",
     "@well-known-components/env-config-provider": "^1.2.0",
     "@well-known-components/http-server": "^1.1.6",

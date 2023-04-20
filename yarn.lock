@@ -400,9 +400,9 @@
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
 
-"@dcl/snapshots-fetcher@https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-snapshots-fetcher-7.0.2-4755877812.commit-ead4614.tgz":
-  version "7.0.2-4755877812.commit-ead4614"
-  resolved "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-snapshots-fetcher-7.0.2-4755877812.commit-ead4614.tgz#300912365342025067c63aff44bb1b65a917b190"
+"@dcl/snapshots-fetcher@https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-snapshots-fetcher-7.0.2-4759085652.commit-c76182c.tgz":
+  version "7.0.2-4759085652.commit-c76182c"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-snapshots-fetcher-7.0.2-4759085652.commit-c76182c.tgz#a0c301eda6000dcb7d3cf150f43396f5cea1b826"
   dependencies:
     "@dcl/catalyst-storage" "^2.0.0"
     "@dcl/hashing" "^1.0.0"
