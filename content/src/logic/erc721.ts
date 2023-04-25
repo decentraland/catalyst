@@ -101,8 +101,8 @@ export function formatERC21Entity(env: Environment, urn: string, entity: Entity,
     name,
     description,
     language: 'en-US',
-    image: imageHash ? baseUrl + `/contents/` + imageHash : undefined,
-    thumbnail: thumbnailHash ? baseUrl + `/contents/` + thumbnailHash : undefined,
+    image: imageHash ? baseUrl + `contents/` + imageHash : undefined,
+    thumbnail: thumbnailHash ? baseUrl + `contents/` + thumbnailHash : undefined,
     attributes: [
       {
         trait_type: 'Rarity',
