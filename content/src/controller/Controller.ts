@@ -6,6 +6,8 @@ import { ILoggerComponent } from '@well-known-components/interfaces'
 import destroy from 'destroy'
 import express from 'express'
 import onFinished from 'on-finished'
+import { findEntityByPointer, findImageHash, findThumbnailHash } from '../logic/entities'
+import { buildUrn, formatERC21Entity, getProtocol } from '../logic/erc721'
 import {
   AuditInfo,
   Deployment,
@@ -28,6 +30,16 @@ import { AppComponents, parseEntityType } from '../types'
 import { ControllerDeploymentFactory } from './ControllerDeploymentFactory'
 import { ControllerEntityFactory } from './ControllerEntityFactory'
 
+function asArray<T>(elements: any | T | T[]): T[] | undefined {
+  if (!elements) {
+    return undefined
+  }
+  if (elements instanceof Array) {
+    return elements
+  }
+  return [elements]
+}
+
 export class Controller {
   private logger: ILoggerComponent.ILogger
 
@@ -48,6 +60,7 @@ export class Controller {
       | 'contentCluster'
       | 'synchronizationState'
       | 'storage'
+      | 'env'
     >,
     private readonly ethNetwork: string
   ) {
@@ -64,8 +77,8 @@ export class Controller {
       // Path: /entities/:type
       // Query String: ?{filter}&fields={fieldList}
       const type: EntityType = parseEntityType(req.params.type)
-      const pointers: string[] = this.asArray<string>(req.query.pointer as string)?.map((p) => p.toLowerCase()) ?? []
-      const ids: string[] = this.asArray<string>(req.query.id as string) ?? []
+      const pointers: string[] = asArray<string>(req.query.pointer as string)?.map((p) => p.toLowerCase()) ?? []
+      const ids: string[] = asArray<string>(req.query.id as string) ?? []
       const fields: string = req.query.fields as string
 
       // Validate type is valid
@@ -131,20 +144,92 @@ export class Controller {
 
       res.send(entities)
     } catch (error) {
-      this.logger.error(`POST /entities/active - Internal server error '${error}'`)
+      this.logger.error(`GET /entities/active/entity/:pointer/image - Internal server error '${error}'`)
       this.logger.error(error)
       res.status(500).end()
     }
   }
 
-  private asArray<T>(elements: any | T | T[]): T[] | undefined {
-    if (!elements) {
-      return undefined
+  async getEntityThumbnail(req: express.Request, res: express.Response): Promise<void> {
+    // Method: GET
+    // Path: /entities/active/entity/{pointer}/thumbnail
+    const pointer: string = req.params.pointer
+    try {
+      const entity = await findEntityByPointer(this.components.activeEntities, pointer)
+      if (!entity) {
+        res.status(404).send()
+        return
+      }
+
+      const hash = findThumbnailHash(entity)
+      if (!hash) {
+        res.status(404).send()
+        return
+      }
+      return this.pipeContent(res, hash)
+    } catch (error) {
+      this.logger.error(`POST /entities/active/entity/:pointer/thumbnail - Internal server error '${error}'`)
+      this.logger.error(error)
+      res.status(500).end()
     }
-    if (elements instanceof Array) {
-      return elements
+  }
+
+  async getEntityImage(req: express.Request, res: express.Response): Promise<void> {
+    // Method: GET
+    // Path: /entities/active/entity/{pointer}/image
+    const pointer: string = req.params.pointer
+    try {
+      const entity = await findEntityByPointer(this.components.activeEntities, pointer)
+      if (!entity) {
+        res.status(404).send()
+        return
+      }
+
+      const hash = findImageHash(entity)
+      if (!hash) {
+        res.status(404).send()
+        return
+      }
+      return this.pipeContent(res, hash)
+    } catch (error) {
+      this.logger.error(`GET /entities/active/:pointer/image - Internal server error '${error}'`)
+      this.logger.error(error)
+      res.status(500).end()
     }
-    return [elements]
+  }
+
+  async getERC721Entity(req: express.Request, res: express.Response): Promise<void> {
+    // Method: GET
+    // Path: /entities/active/erc721/:chainId/:contract/:option/:emission
+    const { chainId, contract, option } = req.params
+    const emission: string | undefined = req.params.emission
+    try {
+      const protocol = getProtocol(parseInt(chainId, 10))
+
+      if (!protocol) {
+        res.status(400).send(`Invalid chainId '${chainId}'`)
+        return
+      }
+
+      const pointer = buildUrn(protocol, contract, option)
+      const entity = await findEntityByPointer(this.components.activeEntities, pointer)
+      if (!entity || !entity.metadata) {
+        res.status(404).send()
+        return
+      }
+
+      if (!entity.metadata.rarity) {
+        throw new Error('Wearable is not standard.')
+      }
+
+      res.send(formatERC21Entity(this.components.env, entity, emission))
+    } catch (error) {
+      this.logger.error(
+        ` GET /entities/active/erc721/:chainId/:contract/:option/:emission - Internal server error '${error}'`
+      )
+      this.logger.error(error)
+      res.status(500).end()
+    }
   }
 
   async filterByUrn(req: express.Request, res: express.Response): Promise<void> {
@@ -266,11 +351,7 @@ export class Controller {
     }
   }
 
-  async getContent(req: express.Request, res: express.Response): Promise<void> {
-    // Method: GET
-    // Path: /contents/:hashId
-    const hashId = req.params.hashId
-
+  async pipeContent(res: express.Response, hashId: string): Promise<void> {
     const contentItem: ContentItem | undefined = await this.components.storage.retrieve(hashId)
 
     if (contentItem) {
@@ -287,11 +368,19 @@ export class Controller {
     }
   }
 
+  async getContent(req: express.Request, res: express.Response): Promise<void> {
+    // Method: GET
+    // Path: /contents/:hashId
+    const hashId = req.params.hashId
+
+    return this.pipeContent(res, hashId)
+  }
+
   async getAvailableContent(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
     // Path: /available-content
     // Query String: ?cid={hashId1}&cid={hashId2}
-    const cids = this.asArray<string>(req.query.cid)
+    const cids = asArray<string>(req.query.cid)
 
     if (!cids) {
       res.status(400).send('Please set at least one cid.')
@@ -345,7 +434,7 @@ export class Controller {
     // Method: GET
     // Path: /pointer-changes
     // Query String: ?from={timestamp}&to={timestamp}&offset={number}&limit={number}&entityType={entityType}&includeAuthChain={boolean}
-    const stringEntityTypes = this.asArray<string>(req.query.entityType)
+    const stringEntityTypes = asArray<string>(req.query.entityType)
     const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes
       ? stringEntityTypes.map((type) => parseEntityType(type))
       : undefined
@@ -462,13 +551,13 @@ export class Controller {
     // Path: /deployments
     // Query String: ?from={timestamp}&toLocalTimestamp={timestamp}&entityType={entityType}&entityId={entityId}&onlyCurrentlyPointed={boolean}
 
-    const stringEntityTypes = this.asArray<string>(req.query.entityType as string | string[])
+    const stringEntityTypes = asArray<string>(req.query.entityType as string | string[])
     const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes
       ? stringEntityTypes.map((type) => parseEntityType(type))
       : undefined
-    const entityIds: string[] | undefined = this.asArray<string>(req.query.entityId)
+    const entityIds: string[] | undefined = asArray<string>(req.query.entityId)
     const onlyCurrentlyPointed: boolean | undefined = this.asBoolean(req.query.onlyCurrentlyPointed)
-    const pointers: string[] | undefined = this.asArray<string>(req.query.pointer)?.map((p) => p.toLowerCase())
+    const pointers: string[] | undefined = asArray<string>(req.query.pointer)?.map((p) => p.toLowerCase())
     const offset: number | undefined = this.asInt(req.query.offset)
     const limit: number | undefined = this.asInt(req.query.limit)
     const fields: string | undefined = req.query.fields as string | undefined
