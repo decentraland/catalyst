@@ -134,7 +134,7 @@ export class Controller {
 
       res.send(entities)
     } catch (error) {
-      this.logger.error(`GET /entities/active/entity/:pointer/image - Internal server error '${error}'`)
+      this.logger.error(`POST /entities/active - Internal server error '${error}'`)
       this.logger.error(error)
       res.status(500).end()
     }
@@ -171,7 +171,7 @@ export class Controller {
         res.send()
       }
     } catch (error) {
-      this.logger.error(`POST /entities/active/entity/:pointer/thumbnail - Internal server error '${error}'`)
+      this.logger.error(`GET /entities/active/entity/:pointer/thumbnail - Internal server error '${error}'`)
       this.logger.error(error)
       res.status(500).end()
     }
