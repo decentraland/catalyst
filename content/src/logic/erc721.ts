@@ -67,7 +67,7 @@ function getBodyShapes(representations: WearableRepresentation[]) {
   return Array.from(bodyShapes)
 }
 
-export function formatERC21Entity(env: Environment, entity: Entity, emission: string | undefined) {
+export function formatERC21Entity(env: Environment, urn: string, entity: Entity, emission: string | undefined) {
   const baseUrl = env.getConfig<string>(EnvironmentConfig.CONTENT_SERVER_ADDRESS)
 
   const itemMetadata: (Wearable | Emote) & StandardProps = entity.metadata
@@ -97,7 +97,7 @@ export function formatERC21Entity(env: Environment, entity: Entity, emission: st
   }, [])
 
   return {
-    id: entity.id,
+    id: urn,
     name,
     description,
     language: 'en-US',

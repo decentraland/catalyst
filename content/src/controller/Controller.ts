@@ -238,7 +238,7 @@ export class Controller {
         throw new Error('Wearable is not standard.')
       }
 
-      res.send(formatERC21Entity(this.components.env, entity, emission))
+      res.send(formatERC21Entity(this.components.env, pointer, entity, emission))
     } catch (error) {
       this.logger.error(
         ` GET /entities/active/erc721/:chainId/:contract/:option/:emission - Internal server error '${error}'`
