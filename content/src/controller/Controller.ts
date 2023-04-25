@@ -30,16 +30,6 @@ import { AppComponents, parseEntityType } from '../types'
 import { ControllerDeploymentFactory } from './ControllerDeploymentFactory'
 import { ControllerEntityFactory } from './ControllerEntityFactory'
 
-function asArray<T>(elements: any | T | T[]): T[] | undefined {
-  if (!elements) {
-    return undefined
-  }
-  if (elements instanceof Array) {
-    return elements
-  }
-  return [elements]
-}
-
 export class Controller {
   private logger: ILoggerComponent.ILogger
 
@@ -151,7 +141,7 @@ export class Controller {
   }
 
   async getEntityThumbnail(req: express.Request, res: express.Response): Promise<void> {
-    // Method: GET
+    // Method: GET or HEAD
     // Path: /entities/active/entity/{pointer}/thumbnail
     const pointer: string = req.params.pointer
     try {
@@ -166,7 +156,20 @@ export class Controller {
         res.status(404).send()
         return
       }
-      return this.pipeContent(res, hash)
+
+      const content: ContentItem | undefined = await this.components.storage.retrieve(hash)
+      if (!content) {
+        res.status(404).send()
+        return
+      }
+
+      await setContentFileHeaders(content, hash, res)
+
+      if (req.method.toUpperCase() === 'GET') {
+        return pipeContent(res, content)
+      } else {
+        res.send()
+      }
     } catch (error) {
       this.logger.error(`POST /entities/active/entity/:pointer/thumbnail - Internal server error '${error}'`)
       this.logger.error(error)
@@ -175,7 +178,7 @@ export class Controller {
   }
 
   async getEntityImage(req: express.Request, res: express.Response): Promise<void> {
-    // Method: GET
+    // Method: GET or HEAD
     // Path: /entities/active/entity/{pointer}/image
     const pointer: string = req.params.pointer
     try {
@@ -190,7 +193,20 @@ export class Controller {
         res.status(404).send()
         return
       }
-      return this.pipeContent(res, hash)
+
+      const content: ContentItem | undefined = await this.components.storage.retrieve(hash)
+      if (!content) {
+        res.status(404).send()
+        return
+      }
+
+      await setContentFileHeaders(content, hash, res)
+
+      if (req.method.toUpperCase() === 'GET') {
+        return pipeContent(res, content)
+      } else {
+        res.send()
+      }
     } catch (error) {
       this.logger.error(`GET /entities/active/:pointer/image - Internal server error '${error}'`)
       this.logger.error(error)
@@ -336,44 +352,24 @@ export class Controller {
     )
   }
 
-  async headContent(req: express.Request, res: express.Response): Promise<void> {
-    // Method: HEAD
-    // Path: /contents/:hashId
-    const hashId = req.params.hashId
-
-    const contentItem: ContentItem | undefined = await this.components.storage.retrieve(hashId)
-
-    if (contentItem) {
-      await setContentFileHeaders(contentItem, hashId, res)
-      res.send()
-    } else {
-      res.status(404).send()
-    }
-  }
-
-  async pipeContent(res: express.Response, hashId: string): Promise<void> {
-    const contentItem: ContentItem | undefined = await this.components.storage.retrieve(hashId)
-
-    if (contentItem) {
-      await setContentFileHeaders(contentItem, hashId, res)
-
-      const rawStream = await contentItem.asRawStream()
-
-      rawStream.pipe(res)
-
-      // Note: for context about why this is necessary, check https://github.com/nodejs/node/issues/1180
-      onFinished(res, () => destroy(rawStream))
-    } else {
-      res.status(404).send()
-    }
-  }
-
   async getContent(req: express.Request, res: express.Response): Promise<void> {
-    // Method: GET
+    // Method: GET or HEAD
     // Path: /contents/:hashId
     const hashId = req.params.hashId
 
-    return this.pipeContent(res, hashId)
+    const content: ContentItem | undefined = await this.components.storage.retrieve(hashId)
+    if (!content) {
+      res.status(404).send()
+      return
+    }
+
+    await setContentFileHeaders(content, hashId, res)
+
+    if (req.method.toUpperCase() === 'GET') {
+      return pipeContent(res, content)
+    } else {
+      res.send()
+    }
   }
 
   async getAvailableContent(req: express.Request, res: express.Response): Promise<void> {
@@ -758,6 +754,25 @@ export class Controller {
     const challengeText = this.components.challengeSupervisor.getChallengeText()
     res.send({ challengeText })
   }
+}
+
+function asArray<T>(elements: any | T | T[]): T[] | undefined {
+  if (!elements) {
+    return undefined
+  }
+  if (elements instanceof Array) {
+    return elements
+  }
+  return [elements]
+}
+
+async function pipeContent(res: express.Response, content: ContentItem): Promise<void> {
+  const rawStream = await content.asRawStream()
+
+  rawStream.pipe(res)
+
+  // Note: for context about why this is necessary, check https://github.com/nodejs/node/issues/1180
+  onFinished(res, () => destroy(rawStream))
 }
 
 async function setContentFileHeaders(content: ContentItem, hashId: string, res: express.Response) {
