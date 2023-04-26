@@ -4,7 +4,7 @@ import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidat
 import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
 
-describe('Integration - Get Active Entity Image and Get Active Entity Thumbnail', () => {
+describe('Integration - Get wearable image and thumbnail', () => {
   const getTestEnv = setupTestEnvironment()
 
   it('when entity does not exist, it should return 404', async () => {
@@ -18,10 +18,10 @@ describe('Integration - Get Active Entity Image and Get Active Entity Thumbnail'
     await server.startProgram()
 
     const responses = await Promise.all([
-      fetch(`${server.getUrl()}/entities/active/entity/wearable/thumbnail`),
-      fetch(`${server.getUrl()}/entities/active/entity/wearable/thumbnail`, { method: 'HEAD' }),
-      fetch(`${server.getUrl()}/entities/active/entity/wearable/image`),
-      fetch(`${server.getUrl()}/entities/active/entity/wearable/image`, { method: 'HEAD' })
+      fetch(`${server.getUrl()}/entities/active/items/wearable/thumbnail`),
+      fetch(`${server.getUrl()}/entities/active/items/wearable/thumbnail`, { method: 'HEAD' }),
+      fetch(`${server.getUrl()}/entities/active/items/wearable/image`),
+      fetch(`${server.getUrl()}/entities/active/items/wearable/image`, { method: 'HEAD' })
     ])
 
     for (const response of responses) {
@@ -47,10 +47,10 @@ describe('Integration - Get Active Entity Image and Get Active Entity Thumbnail'
     await server.deployEntity(deployResult.deployData)
 
     const responses = await Promise.all([
-      fetch(`${server.getUrl()}/entities/active/entity/wearable/thumbnail`),
-      fetch(`${server.getUrl()}/entities/active/entity/wearable/thumbnail`, { method: 'HEAD' }),
-      fetch(`${server.getUrl()}/entities/active/entity/wearable/image`),
-      fetch(`${server.getUrl()}/entities/active/entity/wearable/image`, { method: 'HEAD' })
+      fetch(`${server.getUrl()}/entities/active/items/wearable/thumbnail`),
+      fetch(`${server.getUrl()}/entities/active/items/wearable/thumbnail`, { method: 'HEAD' }),
+      fetch(`${server.getUrl()}/entities/active/items/wearable/image`),
+      fetch(`${server.getUrl()}/entities/active/items/wearable/image`, { method: 'HEAD' })
     ])
 
     for (const response of responses) {
@@ -77,8 +77,8 @@ describe('Integration - Get Active Entity Image and Get Active Entity Thumbnail'
       await server.deployEntity(deployResult.deployData)
 
       const responses = await Promise.all([
-        fetch(`${server.getUrl()}/entities/active/entity/wearable/thumbnail`),
-        fetch(`${server.getUrl()}/entities/active/entity/wearable/thumbnail`, { method: 'HEAD' })
+        fetch(`${server.getUrl()}/entities/active/items/wearable/thumbnail`),
+        fetch(`${server.getUrl()}/entities/active/items/wearable/thumbnail`, { method: 'HEAD' })
       ])
 
       for (const response of responses) {
@@ -104,8 +104,8 @@ describe('Integration - Get Active Entity Image and Get Active Entity Thumbnail'
       await server.deployEntity(deployResult.deployData)
 
       const responses = await Promise.all([
-        fetch(`${server.getUrl()}/entities/active/entity/wearable/thumbnail`),
-        fetch(`${server.getUrl()}/entities/active/entity/wearable/thumbnail`, { method: 'HEAD' })
+        fetch(`${server.getUrl()}/entities/active/items/wearable/thumbnail`),
+        fetch(`${server.getUrl()}/entities/active/items/wearable/thumbnail`, { method: 'HEAD' })
       ])
 
       for (const response of responses) {
@@ -136,8 +136,8 @@ describe('Integration - Get Active Entity Image and Get Active Entity Thumbnail'
       await server.deployEntity(deployResult.deployData)
 
       const responses = await Promise.all([
-        fetch(`${server.getUrl()}/entities/active/entity/wearable/image`),
-        fetch(`${server.getUrl()}/entities/active/entity/wearable/image`, { method: 'HEAD' })
+        fetch(`${server.getUrl()}/entities/active/items/wearable/image`),
+        fetch(`${server.getUrl()}/entities/active/items/wearable/image`, { method: 'HEAD' })
       ])
 
       for (const response of responses) {
@@ -163,8 +163,8 @@ describe('Integration - Get Active Entity Image and Get Active Entity Thumbnail'
       await server.deployEntity(deployResult.deployData)
 
       const responses = await Promise.all([
-        fetch(`${server.getUrl()}/entities/active/entity/wearable/image`),
-        fetch(`${server.getUrl()}/entities/active/entity/wearable/image`, { method: 'HEAD' })
+        fetch(`${server.getUrl()}/entities/active/items/wearable/image`),
+        fetch(`${server.getUrl()}/entities/active/items/wearable/image`, { method: 'HEAD' })
       ])
 
       for (const response of responses) {

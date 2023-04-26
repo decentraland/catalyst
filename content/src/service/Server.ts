@@ -84,21 +84,21 @@ export class Server implements IBaseComponent {
     this.registerRoute('/entities/active/collections/:collectionUrn', controller, controller.filterByUrn)
     this.registerRoute('/entities/active', controller, controller.getActiveEntities, HttpMethod.POST)
     this.registerRoute(
-      '/entities/active/entity/:pointer/thumbnail',
+      '/entities/active/items/:pointer/thumbnail',
       controller,
       controller.getEntityThumbnail,
       HttpMethod.HEAD
     )
     this.registerRoute(
-      '/entities/active/entity/:pointer/thumbnail',
+      '/entities/active/items/:pointer/thumbnail',
       controller,
       controller.getEntityThumbnail,
       HttpMethod.GET
     )
-    this.registerRoute('/entities/active/entity/:pointer/image', controller, controller.getEntityImage, HttpMethod.HEAD)
-    this.registerRoute('/entities/active/entity/:pointer/image', controller, controller.getEntityImage, HttpMethod.GET)
+    this.registerRoute('/entities/active/items/:pointer/image', controller, controller.getEntityImage, HttpMethod.HEAD)
+    this.registerRoute('/entities/active/items/:pointer/image', controller, controller.getEntityImage, HttpMethod.GET)
     this.registerRoute(
-      '/entities/active/erc721/:chainId/:contract/:option/:emission',
+      '/erc721/:chainId/:contract/:option/:emission',
       controller,
       controller.getERC721Entity,
       HttpMethod.GET
