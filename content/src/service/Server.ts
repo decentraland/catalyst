@@ -98,7 +98,7 @@ export class Server implements IBaseComponent {
     this.registerRoute('/entities/active/items/:pointer/image', controller, controller.getEntityImage, HttpMethod.HEAD)
     this.registerRoute('/entities/active/items/:pointer/image', controller, controller.getEntityImage, HttpMethod.GET)
     this.registerRoute(
-      '/erc721/:chainId/:contract/:option/:emission',
+      '/erc721/:chainId/:contract/:option/:emission?',
       controller,
       controller.getERC721Entity,
       HttpMethod.GET
