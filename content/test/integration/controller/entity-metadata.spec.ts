@@ -18,10 +18,10 @@ describe('Integration - Get wearable image and thumbnail', () => {
     await server.startProgram()
 
     const responses = await Promise.all([
-      fetch(`${server.getUrl()}/entities/active/items/wearable/thumbnail`),
-      fetch(`${server.getUrl()}/entities/active/items/wearable/thumbnail`, { method: 'HEAD' }),
-      fetch(`${server.getUrl()}/entities/active/items/wearable/image`),
-      fetch(`${server.getUrl()}/entities/active/items/wearable/image`, { method: 'HEAD' })
+      fetch(`${server.getUrl()}/queries/items/wearable/thumbnail`),
+      fetch(`${server.getUrl()}/queries/items/wearable/thumbnail`, { method: 'HEAD' }),
+      fetch(`${server.getUrl()}/queries/items/wearable/image`),
+      fetch(`${server.getUrl()}/queries/items/wearable/image`, { method: 'HEAD' })
     ])
 
     for (const response of responses) {
@@ -47,10 +47,10 @@ describe('Integration - Get wearable image and thumbnail', () => {
     await server.deployEntity(deployResult.deployData)
 
     const responses = await Promise.all([
-      fetch(`${server.getUrl()}/entities/active/items/wearable/thumbnail`),
-      fetch(`${server.getUrl()}/entities/active/items/wearable/thumbnail`, { method: 'HEAD' }),
-      fetch(`${server.getUrl()}/entities/active/items/wearable/image`),
-      fetch(`${server.getUrl()}/entities/active/items/wearable/image`, { method: 'HEAD' })
+      fetch(`${server.getUrl()}/queries/items/wearable/thumbnail`),
+      fetch(`${server.getUrl()}/queries/items/wearable/thumbnail`, { method: 'HEAD' }),
+      fetch(`${server.getUrl()}/queries/items/wearable/image`),
+      fetch(`${server.getUrl()}/queries/items/wearable/image`, { method: 'HEAD' })
     ])
 
     for (const response of responses) {
@@ -77,8 +77,8 @@ describe('Integration - Get wearable image and thumbnail', () => {
       await server.deployEntity(deployResult.deployData)
 
       const responses = await Promise.all([
-        fetch(`${server.getUrl()}/entities/active/items/wearable/thumbnail`),
-        fetch(`${server.getUrl()}/entities/active/items/wearable/thumbnail`, { method: 'HEAD' })
+        fetch(`${server.getUrl()}/queries/items/wearable/thumbnail`),
+        fetch(`${server.getUrl()}/queries/items/wearable/thumbnail`, { method: 'HEAD' })
       ])
 
       for (const response of responses) {
@@ -104,8 +104,8 @@ describe('Integration - Get wearable image and thumbnail', () => {
       await server.deployEntity(deployResult.deployData)
 
       const responses = await Promise.all([
-        fetch(`${server.getUrl()}/entities/active/items/wearable/thumbnail`),
-        fetch(`${server.getUrl()}/entities/active/items/wearable/thumbnail`, { method: 'HEAD' })
+        fetch(`${server.getUrl()}/queries/items/wearable/thumbnail`),
+        fetch(`${server.getUrl()}/queries/items/wearable/thumbnail`, { method: 'HEAD' })
       ])
 
       for (const response of responses) {
@@ -136,8 +136,8 @@ describe('Integration - Get wearable image and thumbnail', () => {
       await server.deployEntity(deployResult.deployData)
 
       const responses = await Promise.all([
-        fetch(`${server.getUrl()}/entities/active/items/wearable/image`),
-        fetch(`${server.getUrl()}/entities/active/items/wearable/image`, { method: 'HEAD' })
+        fetch(`${server.getUrl()}/queries/items/wearable/image`),
+        fetch(`${server.getUrl()}/queries/items/wearable/image`, { method: 'HEAD' })
       ])
 
       for (const response of responses) {
@@ -163,8 +163,8 @@ describe('Integration - Get wearable image and thumbnail', () => {
       await server.deployEntity(deployResult.deployData)
 
       const responses = await Promise.all([
-        fetch(`${server.getUrl()}/entities/active/items/wearable/image`),
-        fetch(`${server.getUrl()}/entities/active/items/wearable/image`, { method: 'HEAD' })
+        fetch(`${server.getUrl()}/queries/items/wearable/image`),
+        fetch(`${server.getUrl()}/queries/items/wearable/image`, { method: 'HEAD' })
       ])
 
       for (const response of responses) {
