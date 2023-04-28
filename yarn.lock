@@ -391,7 +391,7 @@
     ipfs-unixfs-importer "^7.0.3"
     multiformats "^9.6.3"
 
-"@dcl/schemas@^6.16.0", "@dcl/schemas@^6.2.0", "@dcl/schemas@^6.4.2":
+"@dcl/schemas@^6.16.0", "@dcl/schemas@^6.4.2":
   version "6.16.0"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-6.16.0.tgz#c3e9d7969df9d35be2a9784ed8863a659eb65432"
   integrity sha512-hL4+GF8htynrm9VddFd20c2AnTdHkR0UjpOmuB4KO81/yLlb1OAZORtTyPeJS25KUJMM70hC7eIeb/m0YwcHOw==
@@ -409,20 +409,20 @@
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
 
-"@dcl/snapshots-fetcher@https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-snapshots-fetcher-7.0.2-4759085652.commit-c76182c.tgz":
-  version "7.0.2-4759085652.commit-c76182c"
-  resolved "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-snapshots-fetcher-7.0.2-4759085652.commit-c76182c.tgz#a0c301eda6000dcb7d3cf150f43396f5cea1b826"
+"@dcl/snapshots-fetcher@https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-snapshots-fetcher-7.0.2-4833936124.commit-4257438.tgz":
+  version "7.0.2-4833936124.commit-4257438"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-snapshots-fetcher-7.0.2-4833936124.commit-4257438.tgz#0700909f32dfbfde89b93e52480d810596f6a958"
   dependencies:
     "@dcl/catalyst-storage" "^2.0.0"
     "@dcl/hashing" "^1.0.0"
-    "@dcl/schemas" "^6.2.0"
+    "@dcl/schemas" tag-bloom-filter-opt
     "@well-known-components/interfaces" "^1.1.0"
     "@well-known-components/metrics" "^2.0.0"
     p-queue "^6.6.2"
 
-"@dcl/snapshots-fetcher@https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-snapshots-fetcher-7.0.2-4833936124.commit-4257438.tgz":
-  version "7.0.2-4833936124.commit-4257438"
-  resolved "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-snapshots-fetcher-7.0.2-4833936124.commit-4257438.tgz#0700909f32dfbfde89b93e52480d810596f6a958"
+"@dcl/snapshots-fetcher@https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-snapshots-fetcher-7.0.2-4834225321.commit-22ea725.tgz":
+  version "7.0.2-4834225321.commit-22ea725"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-snapshots-fetcher-7.0.2-4834225321.commit-22ea725.tgz#753dfb304613d8b2d43bb806bfcc53ce8f237f25"
   dependencies:
     "@dcl/catalyst-storage" "^2.0.0"
     "@dcl/hashing" "^1.0.0"

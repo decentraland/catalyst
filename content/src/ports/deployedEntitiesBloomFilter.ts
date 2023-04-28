@@ -74,7 +74,7 @@ export function createDeployedEntitiesBloomFilter(
       if (isTimestampLoaded) {
         return deploymentsBloomFilter.has(entityId)
       }
-      logger.info(`Entity timestamp not loading in bloom filter $${entityTimestamp}`)
+      logger.info(`Entity timestamp not loaded in bloom filter ${entityTimestamp}`)
       return true
     },
     async start() {
