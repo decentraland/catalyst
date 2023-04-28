@@ -10,14 +10,14 @@ describe('isEntityDeployed', () => {
   it('when deployedEntitiesBloomFilter returns true, then it should call the database', async () => {
     const database = createTestDatabaseComponent()
     database.queryWithValues = jest.fn().mockResolvedValue({ rowCount: 1 })
-    const deployedEntitiesBloomFilter = deployedEntitiesBloomFilterWithEntity('id')
+    const deployedEntitiesBloomFilter = deployedEntitiesBloomFilterThatReturnsAlways(true)
     const metricsSpy = jest.spyOn(metrics, 'increment')
     const components = {
       metrics,
       database,
       deployedEntitiesBloomFilter
     }
-    await isEntityDeployed(components, 'id')
+    await isEntityDeployed(components, 'id', 1)
     expect(components.database.queryWithValues).toBeCalled()
     expect(metricsSpy).toBeCalledWith('dcl_deployed_entities_bloom_filter_checks_total', { hit: 'true' })
   })
@@ -25,98 +25,89 @@ describe('isEntityDeployed', () => {
   it('when deployedEntitiesBloomFilter returns false, then it should not call the database', async () => {
     const database = createTestDatabaseComponent()
     database.queryWithValues = jest.fn().mockResolvedValue({ rowCount: 1 })
+    const deployedEntitiesBloomFilter = deployedEntitiesBloomFilterThatReturnsAlways(false)
     const components = {
       metrics,
       database,
-      deployedEntitiesBloomFilter: {
-        add: jest.fn(),
-        check: jest.fn().mockResolvedValue(false),
-        addAllInTimeRange: jest.fn()
-      }
+      deployedEntitiesBloomFilter
     }
-    await isEntityDeployed(components, 'id')
+    await isEntityDeployed(components, 'id', 1)
     expect(components.database.queryWithValues).not.toBeCalled()
   })
 
   it('when deployedEntitiesBloomFilter returns true and the entity exists in db, it should return true', async () => {
     const database = createTestDatabaseComponent()
     database.queryWithValues = jest.fn().mockResolvedValue({ rowCount: 1 })
+    const deployedEntitiesBloomFilter = deployedEntitiesBloomFilterThatReturnsAlways(true)
     const components = {
       metrics,
       database,
-      deployedEntitiesBloomFilter: {
-        add: jest.fn(),
-        check: jest.fn().mockResolvedValue(true),
-        addAllInTimeRange: jest.fn()
-      }
+      deployedEntitiesBloomFilter
     }
-    const isDeployed = await isEntityDeployed(components, 'id')
+    const isDeployed = await isEntityDeployed(components, 'id', 1)
     expect(isDeployed).toBeTruthy()
   })
 
   it('when deployedEntitiesBloomFilter returns true and the entity dont exists in db, it should return false', async () => {
     const database = createTestDatabaseComponent()
     database.queryWithValues = jest.fn().mockResolvedValue({ rowCount: 0 })
+    const deployedEntitiesBloomFilter = deployedEntitiesBloomFilterThatReturnsAlways(true)
     const components = {
       metrics,
       database,
-      deployedEntitiesBloomFilter: {
-        add: jest.fn(),
-        check: jest.fn().mockResolvedValue(true),
-        addAllInTimeRange: jest.fn()
-      }
+      deployedEntitiesBloomFilter
     }
-    const isDeployed = await isEntityDeployed(components, 'id')
+    const isDeployed = await isEntityDeployed(components, 'id', 1)
     expect(isDeployed).toBeFalsy()
   })
 
   it('when deployedEntitiesBloomFilter returns true and db too, then it should register as non false positive', async () => {
     const database = createTestDatabaseComponent()
     database.queryWithValues = jest.fn().mockResolvedValue({ rowCount: 1 })
-    const deployedEntitiesBloomFilter = deployedEntitiesBloomFilterWithEntity('id')
+    const deployedEntitiesBloomFilter = deployedEntitiesBloomFilterThatReturnsAlways(true)
     const metricsSpy = jest.spyOn(metrics, 'increment')
     const components = {
       metrics,
       database,
       deployedEntitiesBloomFilter: deployedEntitiesBloomFilter
     }
-    await isEntityDeployed(components, 'id')
+    await isEntityDeployed(components, 'id', 1)
     expect(metricsSpy).toBeCalledWith('dcl_deployed_entities_bloom_filter_checks_total', { hit: 'true' })
   })
 
   it('when deployedEntitiesBloomFilter returns false, then it should register as non false positive', async () => {
     const database = createTestDatabaseComponent()
     database.queryWithValues = jest.fn().mockResolvedValue({ rowCount: 1 })
-    const deployedEntitiesBloomFilter = deployedEntitiesBloomFilterWithEntity('id')
+    const deployedEntitiesBloomFilter = deployedEntitiesBloomFilterThatReturnsAlways(false)
     const metricsSpy = jest.spyOn(metrics, 'increment')
     const components = {
       metrics,
       database,
       deployedEntitiesBloomFilter
     }
-    await isEntityDeployed(components, 'another-id')
+    await isEntityDeployed(components, 'another-id', 1)
     expect(metricsSpy).toBeCalledWith('dcl_deployed_entities_bloom_filter_checks_total', { hit: 'true' })
   })
 
   it('when deployedEntitiesBloomFilter returns true and db false, then it should register as false positive', async () => {
     const database = createTestDatabaseComponent()
     database.queryWithValues = jest.fn().mockResolvedValue({ rowCount: 0 })
-    const deployedEntitiesBloomFilter = deployedEntitiesBloomFilterWithEntity('id')
+    const deployedEntitiesBloomFilter = deployedEntitiesBloomFilterThatReturnsAlways(true)
     const metricsSpy = jest.spyOn(metrics, 'increment')
     const components = {
       metrics,
       database,
       deployedEntitiesBloomFilter
     }
-    await isEntityDeployed(components, 'id')
+    await isEntityDeployed(components, 'id', 1)
     expect(metricsSpy).toBeCalledWith('dcl_deployed_entities_bloom_filter_checks_total', { hit: 'false' })
   })
 })
 
-function deployedEntitiesBloomFilterWithEntity(entityId: string): DeployedEntitiesBloomFilter {
+function deployedEntitiesBloomFilterThatReturnsAlways(isProbablyDeployed: boolean): DeployedEntitiesBloomFilter {
   return {
     add: jest.fn(),
-    check: jest.fn((id) => Promise.resolve(id === entityId)),
+    isProbablyDeployed: jest.fn().mockResolvedValue(isProbablyDeployed),
     addAllInTimeRange: jest.fn()
   }
 }

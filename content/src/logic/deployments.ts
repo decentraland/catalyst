@@ -28,12 +28,13 @@ import {
 
 export async function isEntityDeployed(
   components: Pick<AppComponents, 'deployedEntitiesBloomFilter' | 'database' | 'metrics'>,
-  entityId: string
+  entityId: string,
+  entityTimestamp: number
 ): Promise<boolean> {
   // this condition should be carefully handled:
   // 1) it first uses the bloom filter to know wheter or not an entity may exist or definitely don't exist (.check)
   // 2) then it checks against the DB (deploymentExists)
-  if (await components.deployedEntitiesBloomFilter.check(entityId)) {
+  if (await components.deployedEntitiesBloomFilter.isProbablyDeployed(entityId, entityTimestamp)) {
     if (await deploymentExists(components, entityId)) {
       components.metrics.increment('dcl_deployed_entities_bloom_filter_checks_total', { hit: 'true' })
       return true

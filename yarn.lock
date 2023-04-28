@@ -400,6 +400,15 @@
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
 
+"@dcl/schemas@tag-bloom-filter-opt":
+  version "6.17.1-20230428182545.commit-81ff481"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-6.17.1-20230428182545.commit-81ff481.tgz#c433dd6d64b756dab68446650cb25c29b1585256"
+  integrity sha512-kgTJFcz2LFDGsPzNZXc2vwVqH/u4BLJdy8eF8K6A3mjYpCLL9IFkBfGeTwbVdR6rdsa9inn6V5OHV+ls5/3PFQ==
+  dependencies:
+    ajv "^8.11.0"
+    ajv-errors "^3.0.0"
+    ajv-keywords "^5.1.0"
+
 "@dcl/snapshots-fetcher@https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-snapshots-fetcher-7.0.2-4759085652.commit-c76182c.tgz":
   version "7.0.2-4759085652.commit-c76182c"
   resolved "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-snapshots-fetcher-7.0.2-4759085652.commit-c76182c.tgz#a0c301eda6000dcb7d3cf150f43396f5cea1b826"
@@ -407,6 +416,17 @@
     "@dcl/catalyst-storage" "^2.0.0"
     "@dcl/hashing" "^1.0.0"
     "@dcl/schemas" "^6.2.0"
+    "@well-known-components/interfaces" "^1.1.0"
+    "@well-known-components/metrics" "^2.0.0"
+    p-queue "^6.6.2"
+
+"@dcl/snapshots-fetcher@https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-snapshots-fetcher-7.0.2-4833936124.commit-4257438.tgz":
+  version "7.0.2-4833936124.commit-4257438"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-snapshots-fetcher-7.0.2-4833936124.commit-4257438.tgz#0700909f32dfbfde89b93e52480d810596f6a958"
+  dependencies:
+    "@dcl/catalyst-storage" "^2.0.0"
+    "@dcl/hashing" "^1.0.0"
+    "@dcl/schemas" tag-bloom-filter-opt
     "@well-known-components/interfaces" "^1.1.0"
     "@well-known-components/metrics" "^2.0.0"
     p-queue "^6.6.2"

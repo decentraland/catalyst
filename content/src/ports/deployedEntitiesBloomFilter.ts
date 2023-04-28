@@ -3,11 +3,12 @@ import { IBaseComponent } from '@well-known-components/interfaces'
 import * as bf from 'bloom-filters'
 import future from 'fp-future'
 import { streamAllEntityIdsInTimeRange } from '../logic/database-queries/deployments-queries'
+import { joinOverlappedTimeRanges } from '../logic/time-range'
 import { AppComponents } from '../types'
 
 export type DeployedEntitiesBloomFilter = {
   add(entityId: string): void
-  check(entityId: string): Promise<boolean>
+  isProbablyDeployed(entityId: string, entityTimestamp: number): Promise<boolean>
   addAllInTimeRange(timeRange: TimeRange): Promise<void>
 }
 
@@ -20,7 +21,27 @@ export function createDeployedEntitiesBloomFilter(
 
   const initialized = future<void>()
 
+  let loadedTimeRanges: TimeRange[] = []
+
+  let startedTimestamp: undefined | number
+
+  function isTimeRangeLoaded(timeRange: TimeRange) {
+    return loadedTimeRanges.some(
+      (loadedTimeRange: TimeRange) =>
+        loadedTimeRange.initTimestamp <= timeRange.initTimestamp &&
+        loadedTimeRange.endTimestamp >= timeRange.endTimestamp
+    )
+  }
+
+  function addTimeRangeLoaded(timeRange: TimeRange) {
+    loadedTimeRanges.push(timeRange)
+    loadedTimeRanges = joinOverlappedTimeRanges(loadedTimeRanges)
+  }
+
   async function addAllInTimeRange(timeRange: TimeRange) {
+    if (isTimeRangeLoaded(timeRange)) {
+      return
+    }
     const start = components.clock.now()
     const interval = `[${new Date(timeRange.initTimestamp).toISOString()}, ${new Date(
       timeRange.endTimestamp
@@ -36,20 +57,31 @@ export function createDeployedEntitiesBloomFilter(
       timeMs: components.clock.now() - start,
       elements
     })
+    addTimeRangeLoaded(timeRange)
   }
 
   return {
     add(entityId: string) {
       deploymentsBloomFilter.add(entityId)
     },
-    async check(entityId: string) {
+    async isProbablyDeployed(entityId: string, entityTimestamp: number) {
       await initialized
-      return deploymentsBloomFilter.has(entityId)
+      const isTimestampLoaded =
+        entityTimestamp > startedTimestamp! ||
+        loadedTimeRanges.some(
+          (timeRange) => timeRange.initTimestamp <= entityTimestamp && timeRange.endTimestamp >= entityTimestamp
+        )
+      if (isTimestampLoaded) {
+        return deploymentsBloomFilter.has(entityId)
+      }
+      logger.info(`Entity timestamp not loading in bloom filter $${entityTimestamp}`)
+      return true
     },
     async start() {
       const twentyMinutesAgo = components.clock.now() - 1000 * 60 * 15
       await addAllInTimeRange({ initTimestamp: twentyMinutesAgo, endTimestamp: components.clock.now() })
       initialized.resolve()
+      startedTimestamp = components.clock.now()
     },
     addAllInTimeRange
   }
