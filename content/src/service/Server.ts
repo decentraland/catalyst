@@ -83,7 +83,7 @@ export class Server implements IBaseComponent {
     this.registerRoute('/entities/:type', controller, controller.getEntities, HttpMethod.GET) // TODO: Deprecate
     this.registerRoute('/entities/active/collections/:collectionUrn', controller, controller.filterByUrn)
     this.registerRoute('/entities/active', controller, controller.getActiveEntities, HttpMethod.POST)
-    this.registerRoute('/contents/:hashId', controller, controller.headContent, HttpMethod.HEAD) // Register before GET
+    this.registerRoute('/contents/:hashId', controller, controller.getContent, HttpMethod.HEAD) // Register before GET
     this.registerRoute('/contents/:hashId', controller, controller.getContent, HttpMethod.GET)
     this.registerRoute('/available-content', controller, controller.getAvailableContent)
     this.registerRoute('/audit/:type/:entityId', controller, controller.getAudit)
@@ -94,6 +94,18 @@ export class Server implements IBaseComponent {
     this.registerRoute('/challenge', controller, controller.getChallenge)
     this.registerRoute('/pointer-changes', controller, controller.getPointerChanges)
     this.registerRoute('/snapshots', controller, controller.getAllNewSnapshots)
+
+    // queries: these endpoints are not part of the content replication protocol
+    this.registerRoute('/queries/items/:pointer/thumbnail', controller, controller.getEntityThumbnail, HttpMethod.HEAD)
+    this.registerRoute('/queries/items/:pointer/thumbnail', controller, controller.getEntityThumbnail, HttpMethod.GET)
+    this.registerRoute('/queries/items/:pointer/image', controller, controller.getEntityImage, HttpMethod.HEAD)
+    this.registerRoute('/queries/items/:pointer/image', controller, controller.getEntityImage, HttpMethod.GET)
+    this.registerRoute(
+      '/queries/erc721/:chainId/:contract/:option/:emission?',
+      controller,
+      controller.getERC721Entity,
+      HttpMethod.GET
+    )
 
     if (env.getConfig(EnvironmentConfig.VALIDATE_API) || process.env.CI === 'true') {
       this.app.use((err, req, res, next) => {

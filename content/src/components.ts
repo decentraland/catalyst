@@ -301,6 +301,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const controller = new Controller(
     {
+      env,
       challengeSupervisor,
       deployer,
       logs,

@@ -15,7 +15,6 @@ describe('Integration - Get Content', () => {
     const content = await fs.promises.readFile(testFilePath)
     const id = 'some-id'
 
-    const headContentSpy = jest.spyOn(Controller.prototype, 'headContent')
     const getContentSpy = jest.spyOn(Controller.prototype, 'getContent')
 
     const server = await getTestEnv()
@@ -34,8 +33,7 @@ describe('Integration - Get Content', () => {
     expect(res.status).toBe(200)
     expect(res.headers.get('content-length')).toBe(content.length.toString())
 
-    expect(headContentSpy).toHaveBeenCalledTimes(1)
-    expect(getContentSpy).toHaveBeenCalledTimes(0)
+    expect(getContentSpy).toHaveBeenCalledTimes(1)
   })
 
   it('returns 404 when the content file does not exist', async () => {
