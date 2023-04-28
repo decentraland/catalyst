@@ -27,7 +27,7 @@
     "@dcl/crypto": "^3.4.0",
     "@dcl/hashing": "^1.1.3",
     "@dcl/schemas": "tag-bloom-filter-opt",
-    "@dcl/snapshots-fetcher": "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-snapshots-fetcher-7.0.2-4834225321.commit-22ea725.tgz",
+    "@dcl/snapshots-fetcher": "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-snapshots-fetcher-7.0.2-4834634182.commit-58ba111.tgz",
     "@dcl/urn-resolver": "^2.0.3",
     "@well-known-components/env-config-provider": "^1.2.0",
     "@well-known-components/http-server": "^1.1.6",
