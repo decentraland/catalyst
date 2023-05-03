@@ -11,8 +11,8 @@ import {
   ILoggerComponent,
   IMetricsComponent
 } from '@well-known-components/interfaces'
+import { FormDataContext } from '@well-known-components/multipart-wrapper'
 import { Fetcher } from 'dcl-catalyst-commons'
-import { FormDataContext } from 'multipart-wrapper'
 import { Environment } from './Environment'
 import { metricsDeclaration } from './metrics'
 import { MigrationManager } from './migrations/MigrationManager'

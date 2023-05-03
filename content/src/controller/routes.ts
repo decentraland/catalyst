@@ -1,4 +1,5 @@
 import { Router } from '@well-known-components/http-server'
+import { multipartParserWrapper } from '@well-known-components/multipart-wrapper'
 import { EnvironmentConfig } from '../Environment'
 import { GlobalContext } from '../types'
 import {
@@ -20,7 +21,6 @@ import {
   getStatus,
   getEntities
 } from './Controller'
-import { multipartParserWrapper } from 'multipart-wrapper'
 
 // We return the entire router because it will be easier to test than a whole server
 export async function setupRouter({ components }: GlobalContext): Promise<Router<GlobalContext>> {

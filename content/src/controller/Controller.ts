@@ -25,7 +25,7 @@ import { PointerChangesFilters } from '../service/pointers/types'
 import { FormHandlerContextWithPath, HandlerContextWithPath, parseEntityType } from '../types'
 import { ControllerDeploymentFactory } from './ControllerDeploymentFactory'
 import { ControllerEntityFactory } from './ControllerEntityFactory'
-import { Field } from 'multipart-wrapper'
+import { Field } from '@well-known-components/multipart-wrapper'
 
 // TODO: move this functions to their own files, I'm keeping all here just to make the initial review easier
 
@@ -290,7 +290,7 @@ function extractAuthChain(fields: Record<string, Field>): AuthChain {
   let biggestIndex = -1
 
   // find the biggest index
-  for (let i in fields) {
+  for (const i in fields) {
     const regexResult = /authChain\[(\d+)\]/.exec(i)
     if (regexResult) {
       biggestIndex = Math.max(biggestIndex, +regexResult[1])
@@ -326,7 +326,7 @@ export async function createEntity(context: FormHandlerContextWithPath<'fs' | 'm
   const ethAddress: EthAddress = authChain[0].payload
   const signature: Signature = context.formData.fields.signature?.value
 
-  let deployFiles: ContentFile[] = []
+  const deployFiles: ContentFile[] = []
   try {
     for (const filename of Object.keys(context.formData.files)) {
       const file = context.formData.files[filename]
