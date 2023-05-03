@@ -46,6 +46,9 @@ export async function createDatabaseComponent(
   components: Pick<AppComponents, 'logs' | 'env' | 'metrics'>,
   options?: PoolConfig
 ): Promise<IDatabaseComponent> {
+  // Compiler doesn't help at all!
+  // When creating this component you have to come read the code to understand what config values are being retrieved!
+  // Imagine if it was in another repo! If not, i'd have to go to the other repo and read the code there!
   const defaultOptions = {
     port: components.env.getConfig<number>(EnvironmentConfig.PSQL_PORT),
     host: components.env.getConfig<string>(EnvironmentConfig.PSQL_HOST),
