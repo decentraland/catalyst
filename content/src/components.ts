@@ -15,8 +15,10 @@ import { FetcherFactory } from './helpers/FetcherFactory'
 import { splitByCommaTrimAndRemoveEmptyElements } from './logic/config-helpers'
 import { metricsDeclaration } from './metrics'
 import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
+import { createMyComponent1, createMyComponent2 } from './ports/aComponent'
 import { createActiveEntitiesComponent } from './ports/activeEntities'
 import { createClock } from './ports/clock'
+import { createConfiguration } from './ports/configuration'
 import { createDenylist } from './ports/denylist'
 import { createDeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
 import { createDeployer } from './ports/deployer'
@@ -49,12 +51,15 @@ import {
 import { AppComponents } from './types'
 
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
+  const configuration = await createConfiguration()
   const clock = createClock()
   const metrics = createTestMetricsComponent(metricsDeclaration)
   const config = createConfigComponent({
     LOG_LEVEL: env.getConfig(EnvironmentConfig.LOG_LEVEL)
   })
   const logs = await createLogComponent({ config })
+  const component1 = createMyComponent1({ logs, configuration })
+  const component2 = createMyComponent2({ logs, configuration })
   const fetcher = createFetchComponent()
   const fs = createFsComponent()
   const denylist = await createDenylist({ env, logs, fs, fetcher })
@@ -365,6 +370,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     processedSnapshotStorage,
     clock,
     snapshotStorage,
-    config
+    config,
+    configuration
   }
 }

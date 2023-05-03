@@ -17,6 +17,7 @@ import { metricsDeclaration } from './metrics'
 import { MigrationManager } from './migrations/MigrationManager'
 import { ActiveEntities } from './ports/activeEntities'
 import { Clock } from './ports/clock'
+import { Configuration } from './ports/configuration'
 import { Denylist } from './ports/denylist'
 import { DeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
 import { Deployer } from './ports/deployer'
@@ -84,6 +85,7 @@ export type AppComponents = {
   processedSnapshotStorage: IProcessedSnapshotStorageComponent
   clock: Clock
   snapshotStorage: ISnapshotStorageComponent
+  configuration: Configuration
 }
 
 export type MaintenanceComponents = {
