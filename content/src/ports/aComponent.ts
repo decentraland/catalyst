@@ -16,7 +16,9 @@ type MyComponentConfig = Pick<Configuration, 'STORAGE_ROOT_FOLDER'>
 // Compiler blames you! Does not compile
 // type MyComponentConfig = Pick<Configuration, 'NON_EXISTEN_KEY'>
 
-export function createMyComponent2(components: Pick<AppComponents, 'logs'> & { configuration: MyComponentConfig }) {
+export function createMyComponent2(
+  components: Pick<AppComponents, 'logs'> & { configuration: Pick<Configuration, 'STORAGE_ROOT_FOLDER'> }
+) {
   // sync operation always defined, compiler helps you see the fields available
   const storageFolder = components.configuration.STORAGE_ROOT_FOLDER
   console.log(storageFolder)
