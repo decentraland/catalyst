@@ -409,9 +409,9 @@
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
 
-"@dcl/snapshots-fetcher@https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-snapshots-fetcher-7.0.2-4834225321.commit-22ea725.tgz":
-  version "7.0.2-4834225321.commit-22ea725"
-  resolved "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-snapshots-fetcher-7.0.2-4834225321.commit-22ea725.tgz#753dfb304613d8b2d43bb806bfcc53ce8f237f25"
+"@dcl/snapshots-fetcher@https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-snapshots-fetcher-7.0.2-4834634182.commit-58ba111.tgz":
+  version "7.0.2-4834634182.commit-58ba111"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-snapshots-fetcher-7.0.2-4834634182.commit-58ba111.tgz#ffa1b74d17a69dbb9a7bf5d10c38e095fd0c7dab"
   dependencies:
     "@dcl/catalyst-storage" "^2.0.0"
     "@dcl/hashing" "^1.0.0"
@@ -420,9 +420,9 @@
     "@well-known-components/metrics" "^2.0.0"
     p-queue "^6.6.2"
 
-"@dcl/snapshots-fetcher@https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-snapshots-fetcher-7.0.2-4834634182.commit-58ba111.tgz":
-  version "7.0.2-4834634182.commit-58ba111"
-  resolved "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-snapshots-fetcher-7.0.2-4834634182.commit-58ba111.tgz#ffa1b74d17a69dbb9a7bf5d10c38e095fd0c7dab"
+"@dcl/snapshots-fetcher@https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-snapshots-fetcher-7.0.2-4834879950.commit-0281d3c.tgz":
+  version "7.0.2-4834879950.commit-0281d3c"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-snapshots-fetcher-7.0.2-4834879950.commit-0281d3c.tgz#0eb632c9a7ad5f6bfbdc86954b04798be0007872"
   dependencies:
     "@dcl/catalyst-storage" "^2.0.0"
     "@dcl/hashing" "^1.0.0"
