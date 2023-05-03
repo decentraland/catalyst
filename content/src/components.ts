@@ -3,14 +3,12 @@ import { ValidateFn } from '@dcl/content-validator'
 import { EntityType } from '@dcl/schemas'
 import { createSynchronizer } from '@dcl/snapshots-fetcher'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
-import { createConfigComponent } from '@well-known-components/env-config-provider'
+import { createServerComponent } from '@well-known-components/http-server'
 import { createLogComponent } from '@well-known-components/logger'
-import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { HTTPProvider } from 'eth-connect'
 import ms from 'ms'
 import path from 'path'
-import { Controller } from './controller/Controller'
-import { Environment, EnvironmentConfig } from './Environment'
+import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, Environment, EnvironmentConfig } from './Environment'
 import { FetcherFactory } from './helpers/FetcherFactory'
 import { splitByCommaTrimAndRemoveEmptyElements } from './logic/config-helpers'
 import { metricsDeclaration } from './metrics'
@@ -33,7 +31,7 @@ import { createSystemProperties } from './ports/system-properties'
 import { ContentAuthenticator } from './service/auth/Authenticator'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { PointerManager } from './service/pointers/PointerManager'
-import { Server } from './service/Server'
+import { createMetricsComponent, instrumentHttpServerWithMetrics } from '@well-known-components/metrics'
 import { createBatchDeployerComponent } from './service/synchronization/batchDeployer'
 import { ChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
 import { DAOClientFactory } from './service/synchronization/clients/DAOClientFactory'
@@ -46,14 +44,40 @@ import {
   createOnChainValidator,
   createSubgraphValidator
 } from './service/validations/validator'
-import { AppComponents } from './types'
+import { AppComponents, GlobalContext } from './types'
+
+// TODO
+// if (env.getConfig(EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE)) {
+//   this.app.use(compression({ filter: (_req, _res) => true }))
+// }
+
+// if (env.getConfig(EnvironmentConfig.VALIDATE_API) || process.env.CI === 'true') {
+//   this.app.use(
+//     OpenApiValidator.middleware({
+//       apiSpec: CONTENT_API,
+//       validateResponses: true,
+//       validateRequests: false,
+//       ignoreUndocumented: true,
+//       ignorePaths: /\/entities/
+//     })
+//   )
+// }
+
+// if (env.getConfig(EnvironmentConfig.VALIDATE_API) || process.env.CI === 'true') {
+//   this.app.use((err, req, res, next) => {
+//     console.error(err)
+//     res.status(err.status || 500).json({
+//       message: err.message,
+//       errors: err.errors
+//     })
+//     next()
+//   })
+// }
 
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
   const clock = createClock()
-  const metrics = createTestMetricsComponent(metricsDeclaration)
-  const config = createConfigComponent({
-    LOG_LEVEL: env.getConfig(EnvironmentConfig.LOG_LEVEL)
-  })
+  const config = env.createConfigComponent()
+  const metrics = await createMetricsComponent(metricsDeclaration, { config })
   const logs = await createLogComponent({ config })
   const fetcher = createFetchComponent()
   const fs = createFsComponent()
@@ -299,33 +323,31 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     clock
   })
 
-  const controller = new Controller(
-    {
-      env,
-      challengeSupervisor,
-      deployer,
-      logs,
-      metrics,
-      database,
-      sequentialExecutor,
-      activeEntities,
-      denylist,
-      fs,
-      snapshotGenerator,
-      failedDeployments,
-      contentCluster,
-      synchronizationState,
-      storage
-    },
-    ethNetwork
-  )
-
   const migrationManager = MigrationManagerFactory.create({ logs, env })
 
   env.logConfigValues(logs.getLogger('Environment'))
 
-  const server = new Server({ controller, metrics, env, logs, fs })
+  const server = await createServerComponent<GlobalContext>(
+    { config, logs },
+    {
+      cors: {
+        origin: true,
+        methods: ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'CONNECT', 'TRACE', 'PATCH'],
+        allowedHeaders: ['Cache-Control', 'Content-Type', 'Origin', 'Accept', 'User-Agent', 'X-Upload-Origin'],
+        credentials: true,
+        maxAge: 86400
+      }
+    }
+  )
 
+  const buildInfo = {
+    version: CURRENT_CATALYST_VERSION,
+    commitHash: CURRENT_COMMIT_HASH,
+    ethNetwork: env.getConfig(EnvironmentConfig.ETH_NETWORK) as string
+  }
+  metrics.observe('dcl_content_server_build_info', buildInfo, 1)
+
+  await instrumentHttpServerWithMetrics({ server, metrics, config })
   return {
     env,
     database,
@@ -337,7 +359,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     batchDeployer,
     downloadQueue,
     deployedEntitiesBloomFilter,
-    controller,
     synchronizer,
     synchronizationState,
     challengeSupervisor,

@@ -1,12 +1,14 @@
 import { EntityType, EthAddress } from '@dcl/schemas'
-import { ILoggerComponent } from '@well-known-components/interfaces'
+import { createConfigComponent } from '@well-known-components/env-config-provider'
+import { IConfigComponent, ILoggerComponent } from '@well-known-components/interfaces'
 import ms from 'ms'
 import { initComponentsWithEnv } from './components'
 import { AppComponents, parseEntityType } from './types'
 
 export const CURRENT_CONTENT_VERSION = 'v3'
 const DEFAULT_STORAGE_ROOT_FOLDER = 'storage'
-const DEFAULT_SERVER_PORT = 6969
+const DEFAULT_HTTP_SERVER_PORT = 6969
+const DEFAULT_HTTP_SERVER_HOST = '0.0.0.0'
 const DEFAULT_DENYLIST_FILE_NAME = 'denylist.txt'
 const DEFAULT_DENYLIST_URLS = 'https://config.decentraland.org/denylist'
 const DECENTRALAND_ADDRESS: EthAddress = '0x1337e0507eb4ab47e08a179573ed4533d9e22a7b'
@@ -69,6 +71,16 @@ export class Environment {
     return this
   }
 
+  createConfigComponent(): IConfigComponent {
+    const data: Record<string, string> = {}
+    for (const [k, v] of this.configs) {
+      if (v !== undefined) {
+        data[EnvironmentConfig[k]] = v.toString()
+      }
+    }
+    return createConfigComponent(data)
+  }
+
   logConfigValues(logger: ILoggerComponent.ILogger): void {
     logger.info('These are the configuration values:')
     const sensitiveEnvs = [EnvironmentConfig.PSQL_PASSWORD, EnvironmentConfig.PSQL_USER]
@@ -95,7 +107,8 @@ export class Environment {
 
 export enum EnvironmentConfig {
   STORAGE_ROOT_FOLDER,
-  SERVER_PORT,
+  HTTP_SERVER_PORT,
+  HTTP_SERVER_HOST,
   LOG_REQUESTS,
   UPDATE_FROM_DAO_INTERVAL,
   DECENTRALAND_ADDRESS,
@@ -195,8 +208,8 @@ export class EnvironmentBuilder {
     )
     this.registerConfigIfNotAlreadySet(
       env,
-      EnvironmentConfig.SERVER_PORT,
-      () => process.env.CONTENT_SERVER_PORT ?? DEFAULT_SERVER_PORT
+      EnvironmentConfig.HTTP_SERVER_PORT,
+      () => process.env.HTTP_SERVER_PORT ?? DEFAULT_HTTP_SERVER_PORT
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_REQUESTS, () => process.env.LOG_REQUESTS !== 'false')
     this.registerConfigIfNotAlreadySet(
@@ -372,7 +385,13 @@ export class EnvironmentBuilder {
       EnvironmentConfig.CONTENT_SERVER_ADDRESS,
       () =>
         process.env.CONTENT_SERVER_ADDRESS ||
-        'http://localhost:' + env.getConfig<number>(EnvironmentConfig.SERVER_PORT).toString()
+        'http://localhost:' + env.getConfig<number>(EnvironmentConfig.HTTP_SERVER_PORT).toString()
+    )
+
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.HTTP_SERVER_HOST,
+      () => process.env.HTTP_SERVER_HOST || DEFAULT_HTTP_SERVER_HOST
     )
 
     this.registerConfigIfNotAlreadySet(

@@ -1,14 +1,16 @@
 import { SimpleContentItem } from '@dcl/catalyst-storage/dist/content-item'
 import { Entity, EntityType, PointerChangesSyncDeployment } from '@dcl/schemas'
+import { IHttpServerComponent } from '@well-known-components/interfaces'
 import { random } from 'faker'
 import fetch from 'node-fetch'
+import { stopAllComponents } from 'src/logic/components-lifecycle'
+import { GlobalContext } from 'src/types'
 import { EnvironmentConfig } from '../../src/Environment'
-import { Server } from '../../src/service/Server'
 import { randomEntity } from '../helpers/service/EntityTestFactory'
 import { E2ETestEnvironment } from './E2ETestEnvironment'
 
 describe('Integration - Server', () => {
-  let server: Server
+  let server: IHttpServerComponent<GlobalContext>
   const content = {
     hash: random.alphaNumeric(10),
     buffer: Buffer.from(random.alphaNumeric(10))
@@ -34,9 +36,10 @@ describe('Integration - Server', () => {
 
     server = components.server
 
-    address = `http://localhost:${components.env.getConfig(EnvironmentConfig.SERVER_PORT)}`
+    address = `http://localhost:${components.env.getConfig(EnvironmentConfig.HTTP_SERVER_PORT)}`
 
-    await server.start()
+    // TODO
+    // await server.start()
 
     jest.spyOn(components.activeEntities, 'withIds').mockResolvedValue([entity1, entity2])
     jest.spyOn(components.activeEntities, 'withPointers').mockResolvedValue([entity1, entity2])
@@ -111,5 +114,5 @@ describe('Integration - Server', () => {
     })
   })
 
-  it('stops the server', async () => await server.stop())
+  it('stops the server', async () => stopAllComponents({ server }))
 })

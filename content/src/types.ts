@@ -7,11 +7,12 @@ import { IProcessedSnapshotStorageComponent, ISnapshotStorageComponent } from '@
 import {
   IConfigComponent,
   IFetchComponent,
+  IHttpServerComponent,
   ILoggerComponent,
   IMetricsComponent
 } from '@well-known-components/interfaces'
 import { Fetcher } from 'dcl-catalyst-commons'
-import { Controller } from './controller/Controller'
+import { FormDataContext } from 'multipart-wrapper'
 import { Environment } from './Environment'
 import { metricsDeclaration } from './metrics'
 import { MigrationManager } from './migrations/MigrationManager'
@@ -30,15 +31,34 @@ import { SystemProperties } from './ports/system-properties'
 import { ContentAuthenticator } from './service/auth/Authenticator'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { PointerManager } from './service/pointers/PointerManager'
-import { Server } from './service/Server'
 import { IChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
 import { DaoComponent } from './service/synchronization/clients/HardcodedDAOClient'
 import { ContentCluster } from './service/synchronization/ContentCluster'
 import { IRetryFailedDeploymentsComponent } from './service/synchronization/retryFailedDeployments'
 import { ServerValidator } from './service/validations/server'
 
+export const UPLOADS_DIRECTORY = 'uploads/'
 // Minimum amount of needed stuff to make the sync work
 
+export type HandlerContextWithPath<
+  ComponentNames extends keyof AppComponents,
+  Path extends string = any
+> = IHttpServerComponent.PathAwareContext<
+  IHttpServerComponent.DefaultContext<{
+    components: Pick<AppComponents, ComponentNames>
+  }>,
+  Path
+>
+
+export type FormHandlerContextWithPath<
+  ComponentNames extends keyof AppComponents,
+  Path extends string = any
+> = IHttpServerComponent.PathAwareContext<
+  FormDataContext<{
+    components: Pick<AppComponents, ComponentNames>
+  }>,
+  Path
+>
 export type AppComponents = {
   env: Environment
   metrics: IMetricsComponent<keyof typeof metricsDeclaration>
@@ -56,7 +76,6 @@ export type AppComponents = {
   synchronizer: SynchronizerComponent
   synchronizationState: SynchronizationState
   deployedEntitiesBloomFilter: DeployedEntitiesBloomFilter
-  controller: Controller
   challengeSupervisor: IChallengeSupervisor
   contentCluster: ContentCluster
   pointerManager: PointerManager
@@ -74,7 +93,7 @@ export type AppComponents = {
   systemProperties: SystemProperties
   catalystFetcher: Fetcher
   daoClient: DaoComponent
-  server: Server
+  server: IHttpServerComponent<GlobalContext>
   retryFailedDeployments: IRetryFailedDeploymentsComponent
   activeEntities: ActiveEntities
   sequentialExecutor: ISequentialTaskExecutorComponent
@@ -84,6 +103,10 @@ export type AppComponents = {
   processedSnapshotStorage: IProcessedSnapshotStorageComponent
   clock: Clock
   snapshotStorage: ISnapshotStorageComponent
+}
+
+export type GlobalContext = {
+  components: AppComponents
 }
 
 export type MaintenanceComponents = {
