@@ -11,7 +11,6 @@ import {
   DeploymentOptions,
   isInvalidDeployment,
   isSuccessfulDeployment,
-  LocalDeploymentAuditInfo,
   SortingField,
   SortingOrder
 } from '../deployment-types'
@@ -37,50 +36,42 @@ import { Field } from '@well-known-components/multipart-wrapper'
 // Query String: ?{filter}&fields={fieldList}
 export async function getEntities(context: HandlerContextWithPath<'activeEntities', '/entities/:type'>) {
   const { activeEntities } = context.components
-  try {
-    const query = context.url.searchParams
-    const type: EntityType = parseEntityType(context.params.type)
-    const pointers: string[] = asArray<string>(query.get('pointer'))?.map((p) => p.toLowerCase()) ?? []
-    const ids: string[] = asArray<string>(query.get('id')) ?? []
-    const fields = query.get('fields')
+  const query = context.url.searchParams
+  const type: EntityType = parseEntityType(context.params.type)
+  const pointers: string[] = asArray<string>(query.get('pointer'))?.map((p) => p.toLowerCase()) ?? []
+  const ids: string[] = asArray<string>(query.get('id')) ?? []
+  const fields = query.get('fields')
 
-    // Validate type is valid
-    if (!type) {
-      return {
-        status: 400,
-        body: { error: `Unrecognized type: ${context.params.type}` }
-      }
-    }
-
-    // Validate pointers or ids are present, but not both
-    if ((ids.length > 0 && pointers.length > 0) || (ids.length == 0 && pointers.length == 0)) {
-      return {
-        status: 400,
-        body: { error: 'ids or pointers must be present, but not both' }
-      }
-    }
-
-    // Validate fields are correct or empty
-    let enumFields: EntityField[] | undefined = undefined
-    if (fields) {
-      enumFields = fields.split(',').map((f) => (<any>EntityField)[f.toUpperCase().trim()])
-    }
-
-    // Calculate and mask entities
-    const entities: Entity[] =
-      ids.length > 0 ? await activeEntities.withIds(ids) : await activeEntities.withPointers(pointers)
-
-    const maskedEntities: Entity[] = entities.map((entity) => ControllerEntityFactory.maskEntity(entity, enumFields))
+  // Validate type is valid
+  if (!type) {
     return {
-      status: 200,
-      body: maskedEntities
+      status: 400,
+      body: { error: `Unrecognized type: ${context.params.type}` }
     }
-  } catch (error) {
-    this.logger.error(`POST /entities/:type - Internal server error '${error}'`)
-    this.logger.error(error)
+  }
+
+  // Validate pointers or ids are present, but not both
+  if ((ids.length > 0 && pointers.length > 0) || (ids.length == 0 && pointers.length == 0)) {
     return {
-      status: 500
+      status: 400,
+      body: { error: 'ids or pointers must be present, but not both' }
     }
+  }
+
+  // Validate fields are correct or empty
+  let enumFields: EntityField[] | undefined = undefined
+  if (fields) {
+    enumFields = fields.split(',').map((f) => (<any>EntityField)[f.toUpperCase().trim()])
+  }
+
+  // Calculate and mask entities
+  const entities: Entity[] =
+    ids.length > 0 ? await activeEntities.withIds(ids) : await activeEntities.withPointers(pointers)
+
+  const maskedEntities: Entity[] = entities.map((entity) => ControllerEntityFactory.maskEntity(entity, enumFields))
+  return {
+    status: 200,
+    body: maskedEntities
   }
 }
 
@@ -130,39 +121,31 @@ export async function getEntityThumbnail(
   context: HandlerContextWithPath<'activeEntities' | 'storage', '/entities/active/entity/:pointer/thumbnail'>
 ) {
   const pointer: string = context.params.pointer
-  try {
-    const entity = await findEntityByPointer(context.components.activeEntities, pointer)
-    if (!entity) {
-      return {
-        status: 404
-      }
-    }
-
-    const hash = findThumbnailHash(entity)
-    if (!hash) {
-      return {
-        status: 404
-      }
-    }
-
-    const content: ContentItem | undefined = await context.components.storage.retrieve(hash)
-    if (!content) {
-      return {
-        status: 404
-      }
-    }
-
+  const entity = await findEntityByPointer(context.components.activeEntities, pointer)
+  if (!entity) {
     return {
-      status: 200,
-      headers: getContentFileHeaders(content, hash),
-      body: context.request.method.toUpperCase() === 'GET' ? await content.asRawStream() : undefined
+      status: 404
     }
-  } catch (error) {
-    this.logger.error(`GET /entities/active/entity/:pointer/thumbnail - Internal server error '${error}'`)
-    this.logger.error(error)
+  }
+
+  const hash = findThumbnailHash(entity)
+  if (!hash) {
     return {
-      status: 500
+      status: 404
     }
+  }
+
+  const content: ContentItem | undefined = await context.components.storage.retrieve(hash)
+  if (!content) {
+    return {
+      status: 404
+    }
+  }
+
+  return {
+    status: 200,
+    headers: getContentFileHeaders(content, hash),
+    body: context.request.method.toUpperCase() === 'GET' ? await content.asRawStream() : undefined
   }
 }
 
@@ -171,39 +154,31 @@ export async function getEntityImage(
   context: HandlerContextWithPath<'activeEntities' | 'storage', '/entities/active/entity/:pointer/image'>
 ) {
   const pointer: string = context.params.pointer
-  try {
-    const entity = await findEntityByPointer(context.components.activeEntities, pointer)
-    if (!entity) {
-      return {
-        status: 404
-      }
-    }
-
-    const hash = findImageHash(entity)
-    if (!hash) {
-      return {
-        status: 404
-      }
-    }
-
-    const content: ContentItem | undefined = await context.components.storage.retrieve(hash)
-    if (!content) {
-      return {
-        status: 404
-      }
-    }
-
+  const entity = await findEntityByPointer(context.components.activeEntities, pointer)
+  if (!entity) {
     return {
-      status: 200,
-      headers: getContentFileHeaders(content, hash),
-      body: context.request.method.toUpperCase() === 'GET' ? await content.asRawStream() : undefined
+      status: 404
     }
-  } catch (error) {
-    this.logger.error(`GET /entities/active/:pointer/image - Internal server error '${error}'`)
-    this.logger.error(error)
+  }
+
+  const hash = findImageHash(entity)
+  if (!hash) {
     return {
-      status: 500
+      status: 404
     }
+  }
+
+  const content: ContentItem | undefined = await context.components.storage.retrieve(hash)
+  if (!content) {
+    return {
+      status: 404
+    }
+  }
+
+  return {
+    status: 200,
+    headers: getContentFileHeaders(content, hash),
+    body: context.request.method.toUpperCase() === 'GET' ? await content.asRawStream() : undefined
   }
 }
 
@@ -216,40 +191,31 @@ export async function getERC721Entity(
 ) {
   const components = context.components
   const { chainId, contract, option, emission } = context.params
-  try {
-    const protocol = getProtocol(parseInt(chainId, 10))
 
-    if (!protocol) {
-      return {
-        status: 400,
-        body: `Invalid chainId '${chainId}'`
-      }
-    }
+  const protocol = getProtocol(parseInt(chainId, 10))
 
-    const pointer = buildUrn(protocol, contract, option)
-    const entity = await findEntityByPointer(components.activeEntities, pointer)
-    if (!entity || !entity.metadata) {
-      return {
-        status: 404
-      }
-    }
-
-    if (!entity.metadata.rarity) {
-      throw new Error('Wearable is not standard.')
-    }
-
+  if (!protocol) {
     return {
-      status: 200,
-      body: formatERC21Entity(components.env, pointer, entity, emission)
+      status: 400,
+      body: `Invalid chainId '${chainId}'`
     }
-  } catch (error) {
-    this.logger.error(
-      ` GET /entities/active/erc721/:chainId/:contract/:option/:emission - Internal server error '${error}'`
-    )
-    this.logger.error(error)
+  }
+
+  const pointer = buildUrn(protocol, contract, option)
+  const entity = await findEntityByPointer(components.activeEntities, pointer)
+  if (!entity || !entity.metadata) {
     return {
-      status: 500
+      status: 404
     }
+  }
+
+  if (!entity.metadata.rarity) {
+    throw new Error('Wearable is not standard.')
+  }
+
+  return {
+    status: 200,
+    body: formatERC21Entity(components.env, pointer, entity, emission)
   }
 }
 
@@ -284,7 +250,11 @@ function requireString(val: string): string {
   return val
 }
 
-function extractAuthChain(fields: Record<string, Field>): AuthChain {
+function extractAuthChain(fields: Record<string, Field>): AuthLink[] | undefined {
+  if (fields[`authChain`]) {
+    return JSON.parse(fields[`authChain`].value)
+  }
+
   const ret: AuthChain = []
 
   let biggestIndex = -1
@@ -297,7 +267,10 @@ function extractAuthChain(fields: Record<string, Field>): AuthChain {
     }
   }
 
-  if (biggestIndex == -1) throw new Error('Missing auth chain')
+  if (biggestIndex === -1) {
+    return undefined
+  }
+
   // fill all the authchain
   for (let i = 0; i <= biggestIndex; i++) {
     ret.push({
@@ -311,20 +284,33 @@ function extractAuthChain(fields: Record<string, Field>): AuthChain {
 }
 
 // Method: POST
-export async function createEntity(context: FormHandlerContextWithPath<'fs' | 'metrics' | 'deployer', '/entities'>) {
-  const { metrics, deployer } = context.components
+export async function createEntity(
+  context: FormHandlerContextWithPath<'logs' | 'fs' | 'metrics' | 'deployer', '/entities'>
+) {
+  const { metrics, deployer, logs } = context.components
+
+  const logger = logs.getLogger('create-entity')
   const entityId: string = context.formData.fields.entityId.value
 
-  // TODO: apparently authChain is optional
-  const authChain: AuthLink[] = extractAuthChain(context.formData.fields)
-  if (!AuthChain.validate(authChain)) {
+  let authChain = extractAuthChain(context.formData.fields)
+  const ethAddress: EthAddress = authChain ? authChain[0].payload : ''
+  const signature: Signature = context.formData.fields.signature?.value
+
+  if (authChain) {
+    if (!AuthChain.validate(authChain)) {
+      return {
+        status: 400,
+        body: 'Invalid auth chain'
+      }
+    }
+  } else if (ethAddress && signature) {
+    authChain = Authenticator.createSimpleAuthChain(entityId, ethAddress, signature)
+  } else {
     return {
       status: 400,
-      body: 'Invalid auth chain'
+      body: 'No auth chain can be derivated'
     }
   }
-  const ethAddress: EthAddress = authChain[0].payload
-  const signature: Signature = context.formData.fields.signature?.value
 
   const deployFiles: ContentFile[] = []
   try {
@@ -333,7 +319,7 @@ export async function createEntity(context: FormHandlerContextWithPath<'fs' | 'm
       deployFiles.push({ path: filename, content: file.value })
     }
 
-    const auditInfo: LocalDeploymentAuditInfo = buildAuditInfo(authChain, ethAddress, signature, entityId)
+    const auditInfo = { authChain, version: CURRENT_CONTENT_VERSION }
 
     const deploymentResult = await deployer.deployEntity(
       deployFiles.map(({ content }) => content),
@@ -350,33 +336,26 @@ export async function createEntity(context: FormHandlerContextWithPath<'fs' | 'm
       }
     } else if (isInvalidDeployment(deploymentResult)) {
       metrics.increment('dcl_deployments_endpoint_counter', { kind: 'validation_error' })
-      this.logger.error(`POST /entities - Deployment failed (${deploymentResult.errors.join(',')})`)
+      logger.error(`POST /entities - Deployment failed (${deploymentResult.errors.join(',')})`)
       return {
         status: 400,
         body: { errors: deploymentResult.errors }
       }
     } else {
-      this.logger.error(`deploymentResult is invalid ${JSON.stringify(deploymentResult)}`)
+      logger.error(`deploymentResult is invalid ${JSON.stringify(deploymentResult)}`)
       throw new Error('deploymentResult is invalid')
     }
   } catch (error) {
     metrics.increment('dcl_deployments_endpoint_counter', { kind: 'error' })
-    this.logger.error(`POST /entities - Internal server error '${error}'`, {
+    logger.error(`POST /entities - Internal server error '${error}'`, {
       entityId,
       authChain: JSON.stringify(authChain),
       ethAddress,
       signature
     })
-    this.logger.error(error)
+    logger.error(error)
     return { status: 500 }
   }
-}
-
-function buildAuditInfo(authChain: AuthLink[], ethAddress: string, signature: string, entityId: string) {
-  if (!authChain && ethAddress && signature) {
-    authChain = Authenticator.createSimpleAuthChain(entityId, ethAddress, signature)
-  }
-  return { authChain, version: CURRENT_CONTENT_VERSION }
 }
 
 // Method: GET or HEAD
