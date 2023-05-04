@@ -14,6 +14,7 @@ import { AppComponents } from '../../src/types'
 import { MockedDAOClient } from '../helpers/service/synchronization/clients/MockedDAOClient'
 import { TestProgram } from './TestProgram'
 import LeakDetector from 'jest-leak-detector'
+import { createTestServerComponent } from '@well-known-components/http-server'
 
 export class E2ETestEnvironment {
   public static TEST_SCHEMA = 'e2etest'
@@ -114,6 +115,7 @@ export class E2ETestEnvironment {
   async buildService(): Promise<AppComponents> {
     const baseEnv = await this.getEnvForNewDatabase()
     const components = await new EnvironmentBuilder(baseEnv).buildConfigAndComponents()
+    components.server = createTestServerComponent()
     return components
   }
 

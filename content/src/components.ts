@@ -327,7 +327,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   env.logConfigValues(logs.getLogger('Environment'))
 
-  const server = await createServerComponent<GlobalContext>(
+  const _server = await createServerComponent<GlobalContext>(
     { config, logs },
     {
       cors: {
@@ -339,6 +339,20 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       }
     }
   )
+
+  let started = false
+  const server = {
+    ..._server,
+    start: async (options) => {
+      started = true
+      return _server.start && _server.start(options)
+    },
+    stop: async () => {
+      if (started) {
+        return _server.stop && _server.stop()
+      }
+    }
+  }
 
   const buildInfo = {
     version: CURRENT_CATALYST_VERSION,

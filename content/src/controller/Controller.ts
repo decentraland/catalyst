@@ -14,7 +14,12 @@ import {
   SortingField,
   SortingOrder
 } from '../deployment-types'
-import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
+import {
+  CURRENT_CATALYST_VERSION,
+  CURRENT_COMMIT_HASH,
+  CURRENT_CONTENT_VERSION,
+  EnvironmentConfig
+} from '../Environment'
 import { getActiveDeploymentsByContentHash } from '../logic/database-queries/deployments-queries'
 import { getDeployments } from '../logic/deployments'
 import { statusResponseFromComponents } from '../logic/status-checks'
@@ -722,9 +727,12 @@ function calculateNextRelativePath(options: DeploymentOptions, lastDeployment: D
   return '?' + nextQueryParams
 }
 
-export async function getStatus(context: HandlerContextWithPath<'contentCluster' | 'synchronizationState', '/status'>) {
-  const { contentCluster, synchronizationState } = context.components
+export async function getStatus(
+  context: HandlerContextWithPath<'contentCluster' | 'synchronizationState' | 'config', '/status'>
+) {
+  const { contentCluster, synchronizationState, config } = context.components
   const serverStatus = await statusResponseFromComponents(context.components)
+  const ethNetwork = config.getString(EnvironmentConfig[EnvironmentConfig.ETH_NETWORK])
 
   return {
     status: serverStatus.successful ? 200 : 503,
@@ -733,7 +741,7 @@ export async function getStatus(context: HandlerContextWithPath<'contentCluster'
       version: CURRENT_CONTENT_VERSION,
       commitHash: CURRENT_COMMIT_HASH,
       catalystVersion: CURRENT_CATALYST_VERSION,
-      ethNetwork: this.ethNetwork,
+      ethNetwork,
       synchronizationStatus: {
         ...contentCluster.getStatus(),
         synchronizationState: synchronizationState.getState()
