@@ -40,6 +40,7 @@ import { Field } from '@well-known-components/multipart-wrapper'
 // Method: GET
 // Query String: ?{filter}&fields={fieldList}
 export async function getEntities(context: HandlerContextWithPath<'activeEntities', '/entities/:type'>) {
+  console.log('GET ENTITIES')
   const { activeEntities } = context.components
   const query = context.url.searchParams
   const type: EntityType = parseEntityType(context.params.type)

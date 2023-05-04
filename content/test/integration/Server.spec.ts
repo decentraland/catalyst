@@ -1,16 +1,11 @@
 import { SimpleContentItem } from '@dcl/catalyst-storage/dist/content-item'
 import { Entity, EntityType, PointerChangesSyncDeployment } from '@dcl/schemas'
-import { IHttpServerComponent } from '@well-known-components/interfaces'
 import { random } from 'faker'
 import fetch from 'node-fetch'
-import { stopAllComponents } from '../../src/logic/components-lifecycle'
-import { GlobalContext } from 'src/types'
-import { EnvironmentConfig } from '../../src/Environment'
 import { randomEntity } from '../helpers/service/EntityTestFactory'
 import { E2ETestEnvironment } from './E2ETestEnvironment'
 
 describe('Integration - Server', () => {
-  let server: IHttpServerComponent<GlobalContext>
   const content = {
     hash: random.alphaNumeric(10),
     buffer: Buffer.from(random.alphaNumeric(10))
@@ -32,18 +27,15 @@ describe('Integration - Server', () => {
   })
 
   it('starts the server', async () => {
-    const components = await testEnv.buildService()
+    testEnv.resetDAOAndServers()
+    const [server] = await testEnv.buildMany(1)
+    await server.startProgram()
 
-    server = components.server
+    address = server.getUrl()
 
-    address = `http://localhost:${components.env.getConfig(EnvironmentConfig.HTTP_SERVER_PORT)}`
-
-    // TODO
-    // await server.start()
-
-    jest.spyOn(components.activeEntities, 'withIds').mockResolvedValue([entity1, entity2])
-    jest.spyOn(components.activeEntities, 'withPointers').mockResolvedValue([entity1, entity2])
-    jest.spyOn(components.storage, 'retrieve').mockResolvedValue(SimpleContentItem.fromBuffer(content.buffer))
+    jest.spyOn(server.components.activeEntities, 'withIds').mockResolvedValue([entity1, entity2])
+    jest.spyOn(server.components.activeEntities, 'withPointers').mockResolvedValue([entity1, entity2])
+    jest.spyOn(server.components.storage, 'retrieve').mockResolvedValue(SimpleContentItem.fromBuffer(content.buffer))
   })
 
   it(`Get all scenes by id`, async () => {
@@ -113,6 +105,4 @@ describe('Integration - Server', () => {
       error: `Offset can't be higher than 5000. Please use the 'next' property for pagination.`
     })
   })
-
-  it('stops the server', async () => stopAllComponents({ server }))
 })
