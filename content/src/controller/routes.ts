@@ -56,5 +56,6 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
   router.head('/queries/items/:pointer/image', getEntityImage)
   router.get('/queries/items/:pointer/image', getEntityImage)
   router.get('/queries/erc721/:chainId/:contract/:option/:emission?', getERC721Entity)
+
   return router
 }

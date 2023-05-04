@@ -115,9 +115,7 @@ export async function getActiveEntities(
   } catch (error) {
     logger.error(`POST /entities/active - Internal server error '${error}'`)
     logger.error(error)
-    return {
-      status: 500
-    }
+    throw error
   }
 }
 
@@ -359,7 +357,7 @@ export async function createEntity(
       signature
     })
     logger.error(error)
-    return { status: 500 }
+    throw error
   }
 }
 

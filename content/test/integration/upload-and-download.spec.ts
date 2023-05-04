@@ -7,6 +7,7 @@ import { setupTestEnvironment } from './E2ETestEnvironment'
 import { buildDeployData } from './E2ETestUtils'
 import { getIntegrationResourcePathFor } from './resources/get-resource-path'
 import { TestProgram } from './TestProgram'
+import fetch from 'node-fetch'
 
 describe('End 2 end deploy test', () => {
   const getTestEnv = setupTestEnvironment()
@@ -60,6 +61,7 @@ describe('End 2 end deploy test', () => {
     // Retrieve the entity by id
     //------------------------------
     const scenesById: Entity[] = await server.getEntitiesByIds(EntityType.SCENE, deployData.entityId)
+
     await validateReceivedData(scenesById, deployData)
 
     //------------------------------
@@ -86,6 +88,9 @@ describe('End 2 end deploy test', () => {
 
     for (const contentElement of scene.content!) {
       const downloadedContent = await server.downloadContent(contentElement.hash)
+      const headResponse = await fetch(`${server.getUrl()}/contents/${contentElement.hash}`, { method: 'HEAD' })
+      expect(headResponse.ok).toBeTruthy()
+
       expect(downloadedContent).toEqual(deployData.files.get(contentElement.hash)!)
     }
   }

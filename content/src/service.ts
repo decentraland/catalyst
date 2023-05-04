@@ -1,10 +1,11 @@
-import { Lifecycle } from '@well-known-components/interfaces'
+import { IHttpServerComponent, Lifecycle } from '@well-known-components/interfaces'
 import { setupRouter } from './controller/routes'
 import { EnvironmentConfig } from './Environment'
 import { startSynchronization } from './logic/synchronization'
 import { migrateContentFolderStructure } from './migrations/ContentFolderMigrationManager'
 import { AppComponents, GlobalContext, UPLOADS_DIRECTORY } from './types'
 import path from 'path'
+import fs from 'fs'
 
 async function purgeUploadsDirectory({ logs, fs }: Pick<AppComponents, 'logs' | 'fs'>): Promise<void> {
   const logger = logs.getLogger('purge-uploads-directory')
@@ -21,6 +22,25 @@ async function purgeUploadsDirectory({ logs, fs }: Pick<AppComponents, 'logs' | 
   }
 }
 
+async function setupApiCoverage(server: IHttpServerComponent<GlobalContext>) {
+  // Write object to disk because Jest runs tests in isolated environments
+  const coverageDir = path.join(__dirname, '../api-coverage')
+  try {
+    await fs.promises.access(coverageDir)
+  } catch (err) {
+    await fs.promises.mkdir(coverageDir)
+  }
+  const coverageFilePath = path.join(coverageDir, `api-coverage-${process.pid}.csv`)
+  server.use(async (context, next) => {
+    const response = await next()
+    const method = context.request.method
+    const status = response.status!
+    const path = context.url.pathname
+    await fs.promises.appendFile(coverageFilePath, `${path},${method},${status}\n`)
+    return response
+  })
+}
+
 // this function wires the business logic (adapters & controllers) with the components (ports)
 export async function main(program: Lifecycle.EntryPointParameters<AppComponents>): Promise<void> {
   const { components, startComponents } = program
@@ -35,6 +55,11 @@ export async function main(program: Lifecycle.EntryPointParameters<AppComponents
   await components.migrationManager.run()
 
   const router = await setupRouter(globalContext)
+
+  // if (process.env.API_COVERAGE === 'true') {
+  await setupApiCoverage(components.server)
+  // }
+
   // register routes middleware
   components.server.use(router.middleware())
   // register not implemented/method not allowed/cors responses middleware
