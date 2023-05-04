@@ -1,5 +1,4 @@
 import { EntityType, EthAddress } from '@dcl/schemas'
-import { createConfigComponent } from '@well-known-components/env-config-provider'
 import { IConfigComponent, ILoggerComponent } from '@well-known-components/interfaces'
 import ms from 'ms'
 import { initComponentsWithEnv } from './components'
@@ -55,7 +54,7 @@ export const DEFAULT_DATABASE_CONFIG = {
 }
 const DEFAULT_SYNC_STREAM_TIMEOUT = '10m'
 
-export class Environment {
+export class Environment implements IConfigComponent {
   private configs: Map<EnvironmentConfig, any>
 
   constructor(otherEnv?: Environment) {
@@ -71,14 +70,28 @@ export class Environment {
     return this
   }
 
-  createConfigComponent(): IConfigComponent {
-    const data: Record<string, string> = {}
-    for (const [k, v] of this.configs) {
-      if (v !== undefined) {
-        data[EnvironmentConfig[k]] = v.toString()
-      }
+  getString(name: string): Promise<string | undefined> {
+    return this.getConfig(EnvironmentConfig[name])
+  }
+
+  getNumber(name: string): Promise<number | undefined> {
+    return this.getConfig(EnvironmentConfig[name])
+  }
+
+  async requireString(name: string): Promise<string> {
+    const value = await this.getString(name)
+    if (value === undefined) {
+      throw new Error('Configuration: string ' + name + ' is required')
     }
-    return createConfigComponent(data)
+    return value
+  }
+
+  async requireNumber(name: string): Promise<number> {
+    const value = await this.getNumber(name)
+    if (value === undefined) {
+      throw new Error('Configuration: string ' + name + ' is required')
+    }
+    return value
   }
 
   logConfigValues(logger: ILoggerComponent.ILogger): void {

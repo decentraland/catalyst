@@ -46,11 +46,6 @@ import {
 } from './service/validations/validator'
 import { AppComponents, GlobalContext } from './types'
 
-// TODO
-// if (env.getConfig(EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE)) {
-//   this.app.use(compression({ filter: (_req, _res) => true }))
-// }
-
 // if (env.getConfig(EnvironmentConfig.VALIDATE_API) || process.env.CI === 'true') {
 //   this.app.use(
 //     OpenApiValidator.middleware({
@@ -76,7 +71,7 @@ import { AppComponents, GlobalContext } from './types'
 
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
   const clock = createClock()
-  const config = env.createConfigComponent()
+  const config = env
   const metrics = await createMetricsComponent(metricsDeclaration, { config })
   const logs = await createLogComponent({ config })
   const fetcher = createFetchComponent()
