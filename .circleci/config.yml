@@ -144,6 +144,7 @@ jobs:
           path: content/test-result
       - store_artifacts:
           path: content/test-result
+      - store_artifacts:
           path: content/api-coverage
       - persist_to_workspace:
           root: *workspace_root
