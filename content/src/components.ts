@@ -46,29 +46,6 @@ import {
 } from './service/validations/validator'
 import { AppComponents, GlobalContext } from './types'
 
-// if (env.getConfig(EnvironmentConfig.VALIDATE_API) || process.env.CI === 'true') {
-//   this.app.use(
-//     OpenApiValidator.middleware({
-//       apiSpec: CONTENT_API,
-//       validateResponses: true,
-//       validateRequests: false,
-//       ignoreUndocumented: true,
-//       ignorePaths: /\/entities/
-//     })
-//   )
-// }
-
-// if (env.getConfig(EnvironmentConfig.VALIDATE_API) || process.env.CI === 'true') {
-//   this.app.use((err, req, res, next) => {
-//     console.error(err)
-//     res.status(err.status || 500).json({
-//       message: err.message,
-//       errors: err.errors
-//     })
-//     next()
-//   })
-// }
-
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
   const clock = createClock()
   const config = env

@@ -41,6 +41,29 @@ async function setupApiCoverage(server: IHttpServerComponent<GlobalContext>) {
   })
 }
 
+// if (env.getConfig(EnvironmentConfig.VALIDATE_API) || process.env.CI === 'true') {
+//   this.app.use(
+//     OpenApiValidator.middleware({
+//       apiSpec: CONTENT_API,
+//       validateResponses: true,
+//       validateRequests: false,
+//       ignoreUndocumented: true,
+//       ignorePaths: /\/entities/
+//     })
+//   )
+// }
+
+// if (env.getConfig(EnvironmentConfig.VALIDATE_API) || process.env.CI === 'true') {
+//   this.app.use((err, req, res, next) => {
+//     console.error(err)
+//     res.status(err.status || 500).json({
+//       message: err.message,
+//       errors: err.errors
+//     })
+//     next()
+//   })
+// }
+
 // this function wires the business logic (adapters & controllers) with the components (ports)
 export async function main(program: Lifecycle.EntryPointParameters<AppComponents>): Promise<void> {
   const { components, startComponents } = program
@@ -56,9 +79,9 @@ export async function main(program: Lifecycle.EntryPointParameters<AppComponents
 
   const router = await setupRouter(globalContext)
 
-  // if (process.env.API_COVERAGE === 'true') {
-  await setupApiCoverage(components.server)
-  // }
+  if (process.env.API_COVERAGE === 'true') {
+    await setupApiCoverage(components.server)
+  }
 
   // register routes middleware
   components.server.use(router.middleware())
