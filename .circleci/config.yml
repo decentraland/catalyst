@@ -135,8 +135,6 @@ jobs:
             TESTFILES=$(circleci tests glob "test/**/*.spec.ts" | circleci tests split --split-by=timings)
             yarn test $TESTFILES --coverageDirectory=reports --reporters=jest-junit --reporters=default
             mv reports/coverage-final.json reports/coverage-${CIRCLE_NODE_INDEX:-0}.json
-            find .
-            yarn report-api-coverage
           environment:
             CI: 'true'
             API_COVERAGE: 'true'
@@ -151,6 +149,11 @@ jobs:
           paths:
             - content/reports
             - content/api-coverage
+      - run:
+          name: report API
+          command: |
+            cd content
+            yarn report-api-coverage
 
   report-content-coverage:
     <<: *base_env
