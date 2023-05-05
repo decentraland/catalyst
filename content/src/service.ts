@@ -30,7 +30,7 @@ async function setupApiCoverage(server: IHttpServerComponent<GlobalContext>) {
   } catch (err) {
     await fs.promises.mkdir(coverageDir)
   }
-  const coverageFilePath = path.join(coverageDir, `api-coverage-${process.pid}.csv`)
+  const coverageFilePath = path.join(coverageDir, `api-coverage.csv`)
   server.use(async (context, next) => {
     const response = await next()
     await fs.promises.appendFile(
