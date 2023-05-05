@@ -56,9 +56,9 @@ export async function main(program: Lifecycle.EntryPointParameters<AppComponents
 
   const router = await setupRouter(globalContext)
 
-  if (process.env.API_COVERAGE === 'true') {
-    await setupApiCoverage(components.server)
-  }
+  // if (process.env.API_COVERAGE === 'true') {
+  await setupApiCoverage(components.server)
+  // }
 
   // register routes middleware
   components.server.use(router.middleware())
