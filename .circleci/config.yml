@@ -175,7 +175,6 @@ jobs:
           name: Report API coverage
           command: |
             cd content
-            find .
             yarn report-api-coverage
   build-lambdas:
     <<: *base_env

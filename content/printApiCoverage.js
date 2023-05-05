@@ -10,7 +10,7 @@ function printApiCoverage() {
 
   // Combine API coverage results files with parallel processing in the CI
   fs.readdirSync(path.join(__dirname, 'api-coverage')).forEach(file => {
-    if (file.startsWith('api-coverage-') && file.endsWith('.csv')) {
+    if (file.startsWith('api-coverage') && file.endsWith('.csv')) {
       const content = fs.readFileSync(path.resolve(__dirname, 'api-coverage', file))
       for (const entry of content.toString().split("\n")) {
         entries.add(entry)
