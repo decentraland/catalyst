@@ -137,6 +137,7 @@ jobs:
             mv reports/coverage-final.json reports/coverage-${CIRCLE_NODE_INDEX:-0}.json
           environment:
             CI: 'true'
+            API_COVERAGE: 'true'
             JEST_JUNIT_OUTPUT_DIR: './test-result'
             JEST_JUNIT_ADD_FILE_ATTRIBUTE: 'true'
       - store_test_results:
