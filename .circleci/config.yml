@@ -150,8 +150,9 @@ jobs:
             - content/reports
             - content/api-coverage
       - run:
-          name: report API
+          name: Report API Coverage
           command: |
+            find .
             cd content
             yarn report-api-coverage
 
