@@ -33,10 +33,10 @@ async function setupApiCoverage(server: IHttpServerComponent<GlobalContext>) {
   const coverageFilePath = path.join(coverageDir, `api-coverage-${process.pid}.csv`)
   server.use(async (context, next) => {
     const response = await next()
-    const method = context.request.method
-    const status = response.status!
-    const path = context.url.pathname
-    await fs.promises.appendFile(coverageFilePath, `${path},${method},${status}\n`)
+    await fs.promises.appendFile(
+      coverageFilePath,
+      `${context.url.pathname},${context.request.method},${response.status}\n`
+    )
     return response
   })
 }
@@ -56,9 +56,9 @@ export async function main(program: Lifecycle.EntryPointParameters<AppComponents
 
   const router = await setupRouter(globalContext)
 
-  // if (process.env.API_COVERAGE === 'true') {
-  await setupApiCoverage(components.server)
-  // }
+  if (process.env.API_COVERAGE === 'true') {
+    await setupApiCoverage(components.server)
+  }
 
   // register routes middleware
   components.server.use(router.middleware())
