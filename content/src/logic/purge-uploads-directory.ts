@@ -1,6 +1,5 @@
 import path from 'path'
-
-import { AppComponents, UPLOADS_DIRECTORY } from 'src/types'
+import { AppComponents, UPLOADS_DIRECTORY } from '../types'
 
 export async function purgeUploadsDirectory({ logs, fs }: Pick<AppComponents, 'logs' | 'fs'>): Promise<void> {
   const logger = logs.getLogger('purge-uploads-directory')
