@@ -358,15 +358,15 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@^4.5.2":
-  version "4.5.2"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.5.2.tgz#355fc2483e293f2139dacfed30f8a40ad9e89892"
-  integrity sha512-ewje2f4lhQct0rd21sD2ZMbDJ6yQakXECgORL82j949ForzU45cO2huMvAFK+1wLzrup6psXupb30n3ooWPdWQ==
+"@dcl/content-validator@^4.5.3":
+  version "4.5.3"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.5.3.tgz#24a718ef31af066d196f5752122fb11001d8bf55"
+  integrity sha512-b+unuViRTagSUUynTXhwjaWO+G80mTRwy6FM0cQ5REZEh7VQktaAwLkF7PnQtT2g60+EbZkyplgYUPuFXMQzIQ==
   dependencies:
     "@dcl/block-indexer" "^1.1.1"
     "@dcl/content-hash-tree" "^1.1.4"
     "@dcl/hashing" "^1.1.3"
-    "@dcl/schemas" "^6.16.0"
+    "@dcl/schemas" "6.18.1"
     "@dcl/urn-resolver" "^2.0.3"
     "@well-known-components/interfaces" "^1.3.0"
     "@well-known-components/thegraph-component" "^1.4.3"
@@ -391,7 +391,7 @@
     ipfs-unixfs-importer "^7.0.3"
     multiformats "^9.6.3"
 
-"@dcl/schemas@^6.16.0", "@dcl/schemas@^6.18.1", "@dcl/schemas@^6.2.0", "@dcl/schemas@^6.4.2":
+"@dcl/schemas@6.18.1", "@dcl/schemas@^6.18.1", "@dcl/schemas@^6.2.0", "@dcl/schemas@^6.4.2":
   version "6.18.1"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-6.18.1.tgz#c912223d529d6327463fe069ff5c4211dd404c9c"
   integrity sha512-Us8E1FoJhG7jRRLjixkt6U79zD7oROdsjydo4t0t381xiNFZNUdclJQY6PGwEKCvPvO30cSR4OZCbqUT4DaFHg==
