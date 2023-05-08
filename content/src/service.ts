@@ -3,24 +3,10 @@ import { setupRouter } from './controller/routes'
 import { EnvironmentConfig } from './Environment'
 import { startSynchronization } from './logic/synchronization'
 import { migrateContentFolderStructure } from './migrations/ContentFolderMigrationManager'
-import { AppComponents, GlobalContext, UPLOADS_DIRECTORY } from './types'
+import { AppComponents, GlobalContext } from './types'
 import path from 'path'
 import fs from 'fs'
-
-async function purgeUploadsDirectory({ logs, fs }: Pick<AppComponents, 'logs' | 'fs'>): Promise<void> {
-  const logger = logs.getLogger('purge-uploads-directory')
-  logger.info("Cleaning up the Server's uploads directory...")
-  try {
-    const directory = UPLOADS_DIRECTORY
-    const files = await fs.readdir(directory)
-    files.forEach(async (file) => {
-      await fs.unlink(path.join(directory, file))
-    })
-    logger.info('Cleaned up!')
-  } catch (e) {
-    logger.error('There was an error while cleaning up the upload directory: ', e)
-  }
-}
+import { purgeUploadsDirectory } from './logic/purge-uploads-directory'
 
 async function setupApiCoverage(server: IHttpServerComponent<GlobalContext>) {
   // Write object to disk because Jest runs tests in isolated environments
