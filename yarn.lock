@@ -391,6 +391,15 @@
     ipfs-unixfs-importer "^7.0.3"
     multiformats "^9.6.3"
 
+"@dcl/hashing@^2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@dcl/hashing/-/hashing-2.0.0.tgz#3b9fdf797d2f3f928b037db404b06be12a2cc562"
+  integrity sha512-Wver/KQScNhoobAOT9u09THMReCIkuK2VQ2GtB891uHKYh31IxCYJW+dcBkynWUZQA4HTRa3DOtEDt/ZyImaHQ==
+  dependencies:
+    ethereum-cryptography "^1.0.3"
+    ipfs-unixfs-importer "^7.0.3"
+    multiformats "^9.6.3"
+
 "@dcl/schemas@6.18.1":
   version "6.18.1"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-6.18.1.tgz#c912223d529d6327463fe069ff5c4211dd404c9c"
