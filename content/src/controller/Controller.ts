@@ -2,8 +2,7 @@ import { ContentItem } from '@dcl/catalyst-storage'
 import { AuthChain, Authenticator, AuthLink, EthAddress, Signature } from '@dcl/crypto'
 import { Entity, EntityType, PointerChangesSyncDeployment } from '@dcl/schemas'
 import { DecentralandAssetIdentifier, parseUrn } from '@dcl/urn-resolver'
-import { findEntityByPointer, findImageHash, findThumbnailHash } from '../logic/entities'
-import { buildUrn, formatERC21Entity, getProtocol } from '../logic/erc721'
+import { Field } from '@well-known-components/multipart-wrapper'
 import {
   AuditInfo,
   Deployment,
@@ -22,6 +21,8 @@ import {
 } from '../Environment'
 import { getActiveDeploymentsByContentHash } from '../logic/database-queries/deployments-queries'
 import { getDeployments } from '../logic/deployments'
+import { findEntityByPointer, findImageHash, findThumbnailHash } from '../logic/entities'
+import { buildUrn, formatERC21Entity, getProtocol } from '../logic/erc721'
 import { statusResponseFromComponents } from '../logic/status-checks'
 import { toQueryParams } from '../logic/toQueryParams'
 import { getPointerChanges } from '../service/pointers/pointers'
@@ -29,7 +30,6 @@ import { PointerChangesFilters } from '../service/pointers/types'
 import { FormHandlerContextWithPath, HandlerContextWithPath, parseEntityType } from '../types'
 import { ControllerDeploymentFactory } from './ControllerDeploymentFactory'
 import { ControllerEntityFactory } from './ControllerEntityFactory'
-import { Field } from '@well-known-components/multipart-wrapper'
 
 // TODO: move this functions to their own files, I'm keeping all here just to make the initial review easier
 
@@ -43,8 +43,8 @@ export async function getEntities(context: HandlerContextWithPath<'activeEntitie
   const { activeEntities } = context.components
   const query = context.url.searchParams
   const type: EntityType = parseEntityType(context.params.type)
-  const pointers: string[] = asArray<string>(query.get('pointer'))?.map((p) => p.toLowerCase()) ?? []
-  const ids: string[] = asArray<string>(query.get('id')) ?? []
+  const pointers: string[] = asArray<string>(query.getAll('pointer'))?.map((p) => p.toLowerCase()) ?? []
+  const ids: string[] = asArray<string>(query.getAll('id')) ?? []
   const fields = query.get('fields')
 
   // Validate type is valid
