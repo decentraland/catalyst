@@ -385,7 +385,7 @@ export async function getAvailableContent(
   context: HandlerContextWithPath<'denylist' | 'storage', '/available-content'>
 ) {
   const { storage, denylist } = context.components
-  const cids = asArray<string>(context.url.searchParams.get('cid'))
+  const cids = asArray<string>(context.url.searchParams.getAll('cid'))
 
   if (!cids) {
     return {
@@ -453,7 +453,7 @@ export async function getPointerChangesHandler(
   context: HandlerContextWithPath<'database' | 'denylist' | 'sequentialExecutor' | 'metrics', '/pointer-changes'>
 ) {
   const query = context.url.searchParams
-  const stringEntityTypes = asArray<string>(query.get('entityType'))
+  const stringEntityTypes = asArray<string>(query.getAll('entityType'))
   const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes
     ? stringEntityTypes.map((type) => parseEntityType(type))
     : undefined
@@ -586,13 +586,13 @@ export async function getDeploymentsHandler(
   context: HandlerContextWithPath<'database' | 'denylist' | 'metrics' | 'sequentialExecutor', '/deployments'>
 ) {
   const query = context.url.searchParams
-  const stringEntityTypes = asArray<string>(query.get('entityType'))
+  const stringEntityTypes = asArray<string>(query.getAll('entityType'))
   const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes
     ? stringEntityTypes.map((type) => parseEntityType(type))
     : undefined
-  const entityIds: string[] | undefined = asArray<string>(query.get('entityId'))
+  const entityIds: string[] | undefined = asArray<string>(query.getAll('entityId'))
   const onlyCurrentlyPointed: boolean | undefined = asBoolean(query.get('onlyCurrentlyPointed'))
-  const pointers: string[] | undefined = asArray<string>(query.get('pointer'))?.map((p) => p.toLowerCase())
+  const pointers: string[] | undefined = asArray<string>(query.getAll('pointer'))?.map((p) => p.toLowerCase())
   const offset: number | undefined = asInt(query.get('offset'))
   const limit: number | undefined = asInt(query.get('limit'))
   const fields: string | null = query.get('fields')
