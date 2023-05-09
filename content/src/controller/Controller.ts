@@ -43,8 +43,8 @@ export async function getEntities(context: HandlerContextWithPath<'activeEntitie
   const { activeEntities } = context.components
   const query = context.url.searchParams
   const type: EntityType = parseEntityType(context.params.type)
-  const pointers: string[] = asArray<string>(query.getAll('pointer'))?.map((p) => p.toLowerCase()) ?? []
-  const ids: string[] = asArray<string>(query.getAll('id')) ?? []
+  const pointers = query.getAll('pointer').map((p) => p.toLowerCase())
+  const ids = query.getAll('id')
   const fields = query.get('fields')
 
   // Validate type is valid
@@ -385,9 +385,9 @@ export async function getAvailableContent(
   context: HandlerContextWithPath<'denylist' | 'storage', '/available-content'>
 ) {
   const { storage, denylist } = context.components
-  const cids = asArray<string>(context.url.searchParams.getAll('cid'))
+  const cids = context.url.searchParams.getAll('cid')
 
-  if (!cids) {
+  if (cids.length === 0) {
     return {
       status: 400,
       body: 'Please set at least one cid.'
@@ -453,10 +453,7 @@ export async function getPointerChangesHandler(
   context: HandlerContextWithPath<'database' | 'denylist' | 'sequentialExecutor' | 'metrics', '/pointer-changes'>
 ) {
   const query = context.url.searchParams
-  const stringEntityTypes = asArray<string>(query.getAll('entityType'))
-  const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes
-    ? stringEntityTypes.map((type) => parseEntityType(type))
-    : undefined
+  const entityTypes: (EntityType | undefined)[] = query.getAll('entityType').map((type) => parseEntityType(type))
   const from: number | undefined = asInt(query.get('from'))
   const to: number | undefined = asInt(query.get('to'))
   const offset: number | undefined = asInt(query.get('offset'))
@@ -586,13 +583,10 @@ export async function getDeploymentsHandler(
   context: HandlerContextWithPath<'database' | 'denylist' | 'metrics' | 'sequentialExecutor', '/deployments'>
 ) {
   const query = context.url.searchParams
-  const stringEntityTypes = asArray<string>(query.getAll('entityType'))
-  const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes
-    ? stringEntityTypes.map((type) => parseEntityType(type))
-    : undefined
-  const entityIds: string[] | undefined = asArray<string>(query.getAll('entityId'))
+  const entityTypes: (EntityType | undefined)[] = query.getAll('entityType').map((type) => parseEntityType(type))
+  const entityIds = query.getAll('entityId')
   const onlyCurrentlyPointed: boolean | undefined = asBoolean(query.get('onlyCurrentlyPointed'))
-  const pointers: string[] | undefined = asArray<string>(query.getAll('pointer'))?.map((p) => p.toLowerCase())
+  const pointers = query.getAll('pointer').map((p) => p.toLowerCase())
   const offset: number | undefined = asInt(query.get('offset'))
   const limit: number | undefined = asInt(query.get('limit'))
   const fields: string | null = query.get('fields')
@@ -782,16 +776,6 @@ export async function getChallenge(context: HandlerContextWithPath<'challengeSup
     status: 200,
     body: { challengeText }
   }
-}
-
-function asArray<T>(elements: any | T | T[]): T[] | undefined {
-  if (!elements) {
-    return undefined
-  }
-  if (elements instanceof Array) {
-    return elements
-  }
-  return [elements]
 }
 
 function getContentFileHeaders(content: ContentItem, hashId: string): Record<string, string> {
