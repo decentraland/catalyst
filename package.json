@@ -54,8 +54,5 @@
   },
   "jest-junit": {
     "addFileAttribute": "true"
-  },
-  "dependencies": {
-    "@dcl/content-validator": "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-content-validator-4.5.4-4930871395.commit-c8342d1.tgz"
   }
 }

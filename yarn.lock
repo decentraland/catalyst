@@ -373,28 +373,14 @@
     ms "^2.1.3"
     sharp "^0.32.0"
 
-"@dcl/content-validator@https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-content-validator-4.5.4-4930871395.commit-c8342d1.tgz":
-  version "4.5.4-4930871395.commit-c8342d1"
-  resolved "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-content-validator-4.5.4-4930871395.commit-c8342d1.tgz#20fa76801c31a61603d5b4cc5d306e21f33c231f"
+"@dcl/content-validator@https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-content-validator-4.6.1-4981580015.commit-84158cb.tgz":
+  version "4.6.1-4981580015.commit-84158cb"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-content-validator-4.6.1-4981580015.commit-84158cb.tgz#08587db2d0687a95e7a041743158d67d6c6f45f3"
   dependencies:
     "@dcl/block-indexer" "^1.1.1"
     "@dcl/content-hash-tree" "^1.1.4"
     "@dcl/hashing" "^1.1.3"
-    "@dcl/schemas" "6.18.1"
-    "@dcl/urn-resolver" "^2.0.3"
-    "@well-known-components/interfaces" "^1.3.0"
-    "@well-known-components/thegraph-component" "^1.4.3"
-    ms "^2.1.3"
-    sharp "^0.32.0"
-
-"@dcl/content-validator@https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-content-validator-4.5.4-4930871395.commit-c8342d1.tgz":
-  version "4.5.4-4930871395.commit-c8342d1"
-  resolved "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-content-validator-4.5.4-4930871395.commit-c8342d1.tgz#20fa76801c31a61603d5b4cc5d306e21f33c231f"
-  dependencies:
-    "@dcl/block-indexer" "^1.1.1"
-    "@dcl/content-hash-tree" "^1.1.4"
-    "@dcl/hashing" "^1.1.3"
-    "@dcl/schemas" "6.18.1"
+    "@dcl/schemas" "6.19.0"
     "@dcl/urn-resolver" "^2.0.3"
     "@well-known-components/interfaces" "^1.3.0"
     "@well-known-components/thegraph-component" "^1.4.3"
@@ -427,15 +413,6 @@
     ethereum-cryptography "^1.0.3"
     ipfs-unixfs-importer "^7.0.3"
     multiformats "^9.6.3"
-
-"@dcl/schemas@6.18.1":
-  version "6.18.1"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-6.18.1.tgz#c912223d529d6327463fe069ff5c4211dd404c9c"
-  integrity sha512-Us8E1FoJhG7jRRLjixkt6U79zD7oROdsjydo4t0t381xiNFZNUdclJQY6PGwEKCvPvO30cSR4OZCbqUT4DaFHg==
-  dependencies:
-    ajv "^8.11.0"
-    ajv-errors "^3.0.0"
-    ajv-keywords "^5.1.0"
 
 "@dcl/schemas@6.19.0", "@dcl/schemas@^6.19.0", "@dcl/schemas@^6.2.0", "@dcl/schemas@^6.4.2":
   version "6.19.0"
