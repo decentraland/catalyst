@@ -119,13 +119,16 @@ export function createDeployer(
 
       // Store the entity's content
       await storeEntityContent(hashes)
+      logger.info('Entity stored')
 
       await components.database.transaction(async (database) => {
         // Calculate overwrites
         const { overwrote, overwrittenBy } = await calculateOverwrites(database, entity)
+        logger.info('calculateOverwrites finished')
 
         // Store the deployment
         const deploymentId = await saveDeploymentAndContentFiles(database, entity, auditInfoComplete, overwrittenBy)
+        logger.info('deployment and content files saved')
         // Modify active pointers
         const pointersFromEntity = await components.pointerManager.referenceEntityFromPointers(
           database,
@@ -136,9 +139,11 @@ export function createDeployer(
 
         // Update pointers and active entities
         await updateActiveEntities(pointersFromEntity, entity)
+        logger.info('pointes and active entities updated')
 
         // Set who overwrote who
         await setEntitiesAsOverwritten(database, overwrote, deploymentId)
+        logger.info('overwrites set')
       })
     } else {
       logger.info(`Entity already deployed`, { entityId })
