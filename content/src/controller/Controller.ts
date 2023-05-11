@@ -1,7 +1,6 @@
 import { ContentItem } from '@dcl/catalyst-storage'
 import { AuthChain, Authenticator, AuthLink, EthAddress, Signature } from '@dcl/crypto'
 import { Entity, EntityType, PointerChangesSyncDeployment } from '@dcl/schemas'
-import { DecentralandAssetIdentifier, parseUrn } from '@dcl/urn-resolver'
 import { Field } from '@well-known-components/multipart-wrapper'
 import {
   AuditInfo,
@@ -25,14 +24,11 @@ import { findEntityByPointer, findImageHash, findThumbnailHash } from '../logic/
 import { buildUrn, formatERC21Entity, getProtocol } from '../logic/erc721'
 import { statusResponseFromComponents } from '../logic/status-checks'
 import { toQueryParams } from '../logic/toQueryParams'
-import { BASE_AVATARS_COLLECTION_ID } from '../ports/activeEntities'
 import { getPointerChanges } from '../service/pointers/pointers'
 import { PointerChangesFilters } from '../service/pointers/types'
 import { FormHandlerContextWithPath, HandlerContextWithPath, parseEntityType } from '../types'
 import { ControllerDeploymentFactory } from './ControllerDeploymentFactory'
 import { ControllerEntityFactory } from './ControllerEntityFactory'
-
-// TODO: move this functions to their own files, I'm keeping all here just to make the initial review easier
 
 /**
  * @deprecated
@@ -220,30 +216,6 @@ export async function getERC721Entity(
   return {
     status: 200,
     body: formatERC21Entity(components.env, pointer, entity, emission)
-  }
-}
-
-// Method: GET
-export async function filterByUrnHandler(
-  context: HandlerContextWithPath<'activeEntities', '/entities/active/collections/:collectionUrn'>
-) {
-  const collectionUrn: string = context.params.collectionUrn
-
-  const parsedUrn = await isUrnPrefixValid(collectionUrn)
-  if (!parsedUrn) {
-    return {
-      status: 400,
-      body: {
-        errors: `Invalid collection urn param, it should be a valid urn prefix of a 3rd party collection, instead: '${collectionUrn}'`
-      }
-    }
-  }
-
-  const entities: Entity[] = await context.components.activeEntities.withPrefix(parsedUrn)
-
-  return {
-    status: 200,
-    body: entities
   }
 }
 
@@ -828,34 +800,6 @@ const DEFAULT_FIELDS_ON_DEPLOYMENTS: DeploymentField[] = [
   DeploymentField.CONTENT,
   DeploymentField.METADATA
 ]
-
-async function isUrnPrefixValid(collectionUrn: string): Promise<string | false> {
-  const regex = /^[a-zA-Z0-9_.:,-]+$/g
-  if (!regex.test(collectionUrn)) return false
-  if (collectionUrn === BASE_AVATARS_COLLECTION_ID) {
-    return collectionUrn
-  }
-
-  try {
-    const parsedUrn: DecentralandAssetIdentifier | null = await parseUrn(collectionUrn)
-
-    if (parsedUrn === null) return false
-
-    // We want to reduce the matches of the query,
-    // so we enforce to write the full name of the third party or collection for the search
-    if (
-      parsedUrn?.type === 'blockchain-collection-third-party-name' ||
-      parsedUrn?.type === 'blockchain-collection-third-party-collection'
-    ) {
-      return `${collectionUrn}:`
-    }
-
-    if (parsedUrn?.type === 'blockchain-collection-third-party') return collectionUrn
-  } catch (error) {
-    console.error(error)
-  }
-  return false
-}
 
 function fromCamelCaseToSnakeCase(phrase: string): string {
   const withoutUpperCase: string = phrase.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
