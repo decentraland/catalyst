@@ -15,7 +15,7 @@ import { getEntityById, setEntitiesAsOverwritten } from '../logic/database-queri
 import { calculateOverwrites, getDeployments, saveDeploymentAndContentFiles } from '../logic/deployments'
 import { calculateDeprecatedHashes, calculateIPFSHashes } from '../logic/hashing'
 import { EntityFactory } from '../service/EntityFactory'
-import { DELTA_POINTER_RESULT, DeploymentResult as DeploymentPointersResult } from '../service/pointers/PointerManager'
+import { DELTA_POINTER_RESULT } from '../service/pointers/PointerManager'
 import { happenedBefore } from '../service/time/TimeSorting'
 import { AppComponents, EntityVersion } from '../types'
 
