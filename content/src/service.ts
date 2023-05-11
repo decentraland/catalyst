@@ -6,7 +6,6 @@ import { migrateContentFolderStructure } from './migrations/ContentFolderMigrati
 import { AppComponents, GlobalContext } from './types'
 import path from 'path'
 import fs from 'fs'
-import { purgeUploadsDirectory } from './logic/purge-uploads-directory'
 
 async function setupApiCoverage(server: IHttpServerComponent<GlobalContext>) {
   // Write object to disk because Jest runs tests in isolated environments
@@ -47,7 +46,6 @@ export async function main(program: Lifecycle.EntryPointParameters<AppComponents
     components
   }
 
-  const { logs, fs } = components
   await migrateContentFolderStructure(components)
 
   // first of all, run the migrations
@@ -65,8 +63,6 @@ export async function main(program: Lifecycle.EntryPointParameters<AppComponents
   components.server.use(router.allowedMethods())
   // set the context to be passed to the handlers
   components.server.setContext(globalContext)
-
-  await purgeUploadsDirectory({ logs, fs })
 
   // start ports: db, listeners, synchronizations, etc
   await startComponents()

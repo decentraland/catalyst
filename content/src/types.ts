@@ -37,7 +37,6 @@ import { ContentCluster } from './service/synchronization/ContentCluster'
 import { IRetryFailedDeploymentsComponent } from './service/synchronization/retryFailedDeployments'
 import { ServerValidator } from './service/validations/server'
 
-export const UPLOADS_DIRECTORY = 'uploads/'
 // Minimum amount of needed stuff to make the sync work
 
 export type HandlerContextWithPath<
