@@ -21,7 +21,8 @@ describe('Integration - Get Active Entities', () => {
 
     const result = await fetch(server.getUrl() + `/entities/active`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
     })
 
     expect(result.status).toBe(400)
@@ -429,7 +430,7 @@ describe('Integration - Get Active Entities', () => {
 
       const response = await fetch(
         server.getUrl() +
-        `/entities/active/collections/urn:decentraland:ethereum:collections-v1:0x32b7495895264ac9d0b12d32afd435453458b1c6`,
+          `/entities/active/collections/urn:decentraland:ethereum:collections-v1:0x32b7495895264ac9d0b12d32afd435453458b1c6`,
         {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' }

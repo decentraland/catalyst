@@ -2,13 +2,10 @@ import { SimpleContentItem } from '@dcl/catalyst-storage/dist/content-item'
 import { Entity, EntityType, PointerChangesSyncDeployment } from '@dcl/schemas'
 import { random } from 'faker'
 import fetch from 'node-fetch'
-import { EnvironmentConfig } from '../../src/Environment'
-import { Server } from '../../src/service/Server'
 import { randomEntity } from '../helpers/service/EntityTestFactory'
 import { E2ETestEnvironment } from './E2ETestEnvironment'
 
 describe('Integration - Server', () => {
-  let server: Server
   const content = {
     hash: random.alphaNumeric(10),
     buffer: Buffer.from(random.alphaNumeric(10))
@@ -30,17 +27,15 @@ describe('Integration - Server', () => {
   })
 
   it('starts the server', async () => {
-    const components = await testEnv.buildService()
+    testEnv.resetDAOAndServers()
+    const [server] = await testEnv.buildMany(1)
+    await server.startProgram()
 
-    server = components.server
+    address = server.getUrl()
 
-    address = `http://localhost:${components.env.getConfig(EnvironmentConfig.SERVER_PORT)}`
-
-    await server.start()
-
-    jest.spyOn(components.activeEntities, 'withIds').mockResolvedValue([entity1, entity2])
-    jest.spyOn(components.activeEntities, 'withPointers').mockResolvedValue([entity1, entity2])
-    jest.spyOn(components.storage, 'retrieve').mockResolvedValue(SimpleContentItem.fromBuffer(content.buffer))
+    jest.spyOn(server.components.activeEntities, 'withIds').mockResolvedValue([entity1, entity2])
+    jest.spyOn(server.components.activeEntities, 'withPointers').mockResolvedValue([entity1, entity2])
+    jest.spyOn(server.components.storage, 'retrieve').mockResolvedValue(SimpleContentItem.fromBuffer(content.buffer))
   })
 
   it(`Get all scenes by id`, async () => {
@@ -110,6 +105,4 @@ describe('Integration - Server', () => {
       error: `Offset can't be higher than 5000. Please use the 'next' property for pagination.`
     })
   })
-
-  it('stops the server', async () => await server.stop())
 })

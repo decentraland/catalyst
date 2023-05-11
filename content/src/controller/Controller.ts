@@ -2,12 +2,7 @@ import { ContentItem } from '@dcl/catalyst-storage'
 import { AuthChain, Authenticator, AuthLink, EthAddress, Signature } from '@dcl/crypto'
 import { Entity, EntityType, PointerChangesSyncDeployment } from '@dcl/schemas'
 import { DecentralandAssetIdentifier, parseUrn } from '@dcl/urn-resolver'
-import { ILoggerComponent } from '@well-known-components/interfaces'
-import destroy from 'destroy'
-import express from 'express'
-import onFinished from 'on-finished'
-import { findEntityByPointer, findImageHash, findThumbnailHash } from '../logic/entities'
-import { buildUrn, formatERC21Entity, getProtocol } from '../logic/erc721'
+import { Field } from '@well-known-components/multipart-wrapper'
 import {
   AuditInfo,
   Deployment,
@@ -15,780 +10,788 @@ import {
   DeploymentOptions,
   isInvalidDeployment,
   isSuccessfulDeployment,
-  LocalDeploymentAuditInfo,
   SortingField,
   SortingOrder
 } from '../deployment-types'
-import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
+import {
+  CURRENT_CATALYST_VERSION,
+  CURRENT_COMMIT_HASH,
+  CURRENT_CONTENT_VERSION,
+  EnvironmentConfig
+} from '../Environment'
 import { getActiveDeploymentsByContentHash } from '../logic/database-queries/deployments-queries'
 import { getDeployments } from '../logic/deployments'
+import { findEntityByPointer, findImageHash, findThumbnailHash } from '../logic/entities'
+import { buildUrn, formatERC21Entity, getProtocol } from '../logic/erc721'
 import { statusResponseFromComponents } from '../logic/status-checks'
 import { toQueryParams } from '../logic/toQueryParams'
 import { BASE_AVATARS_COLLECTION_ID } from '../ports/activeEntities'
 import { getPointerChanges } from '../service/pointers/pointers'
 import { PointerChangesFilters } from '../service/pointers/types'
-import { AppComponents, parseEntityType } from '../types'
+import { FormHandlerContextWithPath, HandlerContextWithPath, parseEntityType } from '../types'
 import { ControllerDeploymentFactory } from './ControllerDeploymentFactory'
 import { ControllerEntityFactory } from './ControllerEntityFactory'
 
-export class Controller {
-  private logger: ILoggerComponent.ILogger
+// TODO: move this functions to their own files, I'm keeping all here just to make the initial review easier
 
-  constructor(
-    private readonly components: Pick<
-      AppComponents,
-      | 'deployer'
-      | 'challengeSupervisor'
-      | 'logs'
-      | 'metrics'
-      | 'database'
-      | 'sequentialExecutor'
-      | 'activeEntities'
-      | 'denylist'
-      | 'fs'
-      | 'snapshotGenerator'
-      | 'failedDeployments'
-      | 'contentCluster'
-      | 'synchronizationState'
-      | 'storage'
-      | 'env'
-    >,
-    private readonly ethNetwork: string
-  ) {
-    this.logger = components.logs.getLogger('Controller')
-  }
+/**
+ * @deprecated
+ * this endpoint will be deprecated in favor of `getActiveEntities`
+ */
+// Method: GET
+// Query String: ?{filter}&fields={fieldList}
+export async function getEntities(context: HandlerContextWithPath<'activeEntities', '/entities/:type'>) {
+  const { activeEntities } = context.components
+  const query = context.url.searchParams
+  const type: EntityType = parseEntityType(context.params.type)
+  const pointers = query.getAll('pointer').map((p) => p.toLowerCase())
+  const ids = query.getAll('id')
+  const fields = query.get('fields')
 
-  /**
-   * @deprecated
-   * this endpoint will be deprecated in favor of `getActiveEntities`
-   */
-  async getEntities(req: express.Request, res: express.Response): Promise<void> {
-    try {
-      // Method: GET
-      // Path: /entities/:type
-      // Query String: ?{filter}&fields={fieldList}
-      const type: EntityType = parseEntityType(req.params.type)
-      const pointers: string[] = asArray<string>(req.query.pointer as string)?.map((p) => p.toLowerCase()) ?? []
-      const ids: string[] = asArray<string>(req.query.id as string) ?? []
-      const fields: string = req.query.fields as string
-
-      // Validate type is valid
-      if (!type) {
-        res.status(400).send({ error: `Unrecognized type: ${req.params.type}` })
-        return
-      }
-
-      // Validate pointers or ids are present, but not both
-      if ((ids.length > 0 && pointers.length > 0) || (ids.length == 0 && pointers.length == 0)) {
-        res.status(400).send({ error: 'ids or pointers must be present, but not both' })
-        return
-      }
-
-      // Validate fields are correct or empty
-      let enumFields: EntityField[] | undefined = undefined
-      if (fields) {
-        enumFields = fields.split(',').map((f) => (<any>EntityField)[f.toUpperCase().trim()])
-      }
-
-      // Calculate and mask entities
-      const entities: Entity[] =
-        ids.length > 0
-          ? await this.components.activeEntities.withIds(ids)
-          : await this.components.activeEntities.withPointers(pointers)
-
-      const maskedEntities: Entity[] = entities.map((entity) => ControllerEntityFactory.maskEntity(entity, enumFields))
-      res.send(maskedEntities)
-    } catch (error) {
-      this.logger.error(`POST /entities/:type - Internal server error '${error}'`)
-      this.logger.error(error)
-      res.status(500).end()
+  // Validate type is valid
+  if (!type) {
+    return {
+      status: 400,
+      body: { error: `Unrecognized type: ${context.params.type}` }
     }
   }
 
-  async getActiveEntities(
-    req: express.Request<unknown, unknown, { ids: string[]; pointers: string[] }>,
-    res: express.Response
-  ): Promise<void> {
-    try {
-      // Method: POST
-      // Path: /entities/active
-      // Body: { ids: string[], pointers: string[]}
-
-      const ids: string[] = req.body.ids
-      const pointers: string[] = req.body.pointers
-
-      const idsPresent = ids?.length > 0
-      const pointersPresent = pointers?.length > 0
-
-      const bothPresent = idsPresent && pointersPresent
-      const nonePresent = !idsPresent && !pointersPresent
-      if (bothPresent || nonePresent) {
-        res.status(400).send({ error: 'ids or pointers must be present, but not both' })
-        return
-      }
-
-      const entities: Entity[] = (
-        ids && ids.length > 0
-          ? await this.components.activeEntities.withIds(ids)
-          : await this.components.activeEntities.withPointers(pointers)
-      ).filter((result) => !this.components.denylist.isDenylisted(result.id))
-
-      res.send(entities)
-    } catch (error) {
-      this.logger.error(`POST /entities/active - Internal server error '${error}'`)
-      this.logger.error(error)
-      res.status(500).end()
+  // Validate pointers or ids are present, but not both
+  if ((ids.length > 0 && pointers.length > 0) || (ids.length == 0 && pointers.length == 0)) {
+    return {
+      status: 400,
+      body: { error: 'ids or pointers must be present, but not both' }
     }
   }
 
-  async getEntityThumbnail(req: express.Request, res: express.Response): Promise<void> {
-    // Method: GET or HEAD
-    // Path: /entities/active/entity/{pointer}/thumbnail
-    const pointer: string = req.params.pointer
-    try {
-      const entity = await findEntityByPointer(this.components.activeEntities, pointer)
-      if (!entity) {
-        res.status(404).send()
-        return
-      }
+  // Validate fields are correct or empty
+  let enumFields: EntityField[] | undefined = undefined
+  if (fields) {
+    enumFields = fields.split(',').map((f) => (<any>EntityField)[f.toUpperCase().trim()])
+  }
 
-      const hash = findThumbnailHash(entity)
-      if (!hash) {
-        res.status(404).send()
-        return
-      }
+  // Calculate and mask entities
+  const entities: Entity[] =
+    ids.length > 0 ? await activeEntities.withIds(ids) : await activeEntities.withPointers(pointers)
 
-      const content: ContentItem | undefined = await this.components.storage.retrieve(hash)
-      if (!content) {
-        res.status(404).send()
-        return
-      }
+  const maskedEntities: Entity[] = entities.map((entity) => ControllerEntityFactory.maskEntity(entity, enumFields))
+  return {
+    status: 200,
+    body: maskedEntities
+  }
+}
 
-      await setContentFileHeaders(content, hash, res)
+// Method: POST
+// Body: { ids: string[], pointers: string[]}
+export async function getActiveEntities(
+  context: HandlerContextWithPath<'logs' | 'activeEntities' | 'denylist', '/entities/active'>
+) {
+  const { activeEntities, denylist, logs } = context.components
+  const logger = logs.getLogger('get-active-entities')
+  try {
+    const body = await context.request.json()
+    const ids: string[] = body.ids
+    const pointers: string[] = body.pointers
 
-      if (req.method.toUpperCase() === 'GET') {
-        return pipeContent(res, content)
-      } else {
-        res.send()
+    const idsPresent = ids?.length > 0
+    const pointersPresent = pointers?.length > 0
+
+    const bothPresent = idsPresent && pointersPresent
+    const nonePresent = !idsPresent && !pointersPresent
+    if (bothPresent || nonePresent) {
+      return {
+        status: 400,
+        body: { error: 'ids or pointers must be present, but not both' }
       }
-    } catch (error) {
-      this.logger.error(`GET /entities/active/entity/:pointer/thumbnail - Internal server error '${error}'`)
-      this.logger.error(error)
-      res.status(500).end()
+    }
+
+    const entities: Entity[] = (
+      ids && ids.length > 0 ? await activeEntities.withIds(ids) : await activeEntities.withPointers(pointers)
+    ).filter((result) => !denylist.isDenylisted(result.id))
+
+    return {
+      status: 200,
+      body: entities
+    }
+  } catch (error) {
+    logger.error(`POST /entities/active - Internal server error '${error}'`)
+    logger.error(error)
+    throw error
+  }
+}
+
+// Method: GET or HEAD
+export async function getEntityThumbnail(
+  context: HandlerContextWithPath<'activeEntities' | 'storage', '/entities/active/entity/:pointer/thumbnail'>
+) {
+  const pointer: string = context.params.pointer
+  const entity = await findEntityByPointer(context.components.activeEntities, pointer)
+  if (!entity) {
+    return {
+      status: 404
     }
   }
 
-  async getEntityImage(req: express.Request, res: express.Response): Promise<void> {
-    // Method: GET or HEAD
-    // Path: /entities/active/entity/{pointer}/image
-    const pointer: string = req.params.pointer
-    try {
-      const entity = await findEntityByPointer(this.components.activeEntities, pointer)
-      if (!entity) {
-        res.status(404).send()
-        return
-      }
-
-      const hash = findImageHash(entity)
-      if (!hash) {
-        res.status(404).send()
-        return
-      }
-
-      const content: ContentItem | undefined = await this.components.storage.retrieve(hash)
-      if (!content) {
-        res.status(404).send()
-        return
-      }
-
-      await setContentFileHeaders(content, hash, res)
-
-      if (req.method.toUpperCase() === 'GET') {
-        return pipeContent(res, content)
-      } else {
-        res.send()
-      }
-    } catch (error) {
-      this.logger.error(`GET /entities/active/:pointer/image - Internal server error '${error}'`)
-      this.logger.error(error)
-      res.status(500).end()
+  const hash = findThumbnailHash(entity)
+  if (!hash) {
+    return {
+      status: 404
     }
   }
 
-  async getERC721Entity(req: express.Request, res: express.Response): Promise<void> {
-    // Method: GET
-    // Path: /entities/active/erc721/:chainId/:contract/:option/:emission
-    const { chainId, contract, option } = req.params
-    const emission: string | undefined = req.params.emission
-    try {
-      const protocol = getProtocol(parseInt(chainId, 10))
-
-      if (!protocol) {
-        res.status(400).send(`Invalid chainId '${chainId}'`)
-        return
-      }
-
-      const pointer = buildUrn(protocol, contract, option)
-      const entity = await findEntityByPointer(this.components.activeEntities, pointer)
-      if (!entity || !entity.metadata) {
-        res.status(404).send()
-        return
-      }
-
-      if (!entity.metadata.rarity) {
-        throw new Error('Wearable is not standard.')
-      }
-
-      res.send(formatERC21Entity(this.components.env, pointer, entity, emission))
-    } catch (error) {
-      this.logger.error(
-        ` GET /entities/active/erc721/:chainId/:contract/:option/:emission - Internal server error '${error}'`
-      )
-      this.logger.error(error)
-      res.status(500).end()
+  const content: ContentItem | undefined = await context.components.storage.retrieve(hash)
+  if (!content) {
+    return {
+      status: 404
     }
   }
 
-  async filterByUrn(req: express.Request, res: express.Response): Promise<void> {
-    // Method: GET
-    // Path: /entities/active/collections/{collectionUrn}
-    const collectionUrn: string = req.params.collectionUrn
+  return {
+    status: 200,
+    headers: getContentFileHeaders(content, hash),
+    body: context.request.method.toUpperCase() === 'GET' ? await content.asRawStream() : undefined
+  }
+}
 
-    const parsedUrn = await isUrnPrefixValid(collectionUrn)
-    if (!parsedUrn) {
-      res
-        .status(400)
-        .send({
-          errors: `Invalid collection urn param, it should be a valid urn prefix of a 3rd party collection, instead: '${collectionUrn}'`
-        })
-        .end()
-      return
+// Method: GET or HEAD
+export async function getEntityImage(
+  context: HandlerContextWithPath<'activeEntities' | 'storage', '/entities/active/entity/:pointer/image'>
+) {
+  const pointer: string = context.params.pointer
+  const entity = await findEntityByPointer(context.components.activeEntities, pointer)
+  if (!entity) {
+    return {
+      status: 404
     }
-
-    const entities: Entity[] = await this.components.activeEntities.withPrefix(parsedUrn)
-
-    res.send(entities)
   }
 
-  async createEntity(req: express.Request, res: express.Response): Promise<void> {
-    // Method: POST
-    // Path: /entities
-    // Body: JSON with entityId,ethAddress,signature; and a set of files
-    const entityId: string = req.body.entityId
-    const authChain: AuthLink[] = req.body.authChain
-    const ethAddress: EthAddress = req.body.ethAddress
-    const signature: Signature = req.body.signature
-    const files = req.files
+  const hash = findImageHash(entity)
+  if (!hash) {
+    return {
+      status: 404
+    }
+  }
 
-    let deployFiles: ContentFile[] = []
-    try {
-      deployFiles = files ? await this.readFiles(files) : []
-      const auditInfo: LocalDeploymentAuditInfo = this.buildAuditInfo(authChain, ethAddress, signature, entityId)
+  const content: ContentItem | undefined = await context.components.storage.retrieve(hash)
+  if (!content) {
+    return {
+      status: 404
+    }
+  }
 
-      const deploymentResult = await this.components.deployer.deployEntity(
-        deployFiles.map(({ content }) => content),
-        entityId,
-        auditInfo,
-        DeploymentContext.LOCAL
-      )
+  return {
+    status: 200,
+    headers: getContentFileHeaders(content, hash),
+    body: context.request.method.toUpperCase() === 'GET' ? await content.asRawStream() : undefined
+  }
+}
 
-      if (isSuccessfulDeployment(deploymentResult)) {
-        this.components.metrics.increment('dcl_deployments_endpoint_counter', { kind: 'success' })
-        res.send({ creationTimestamp: deploymentResult })
-      } else if (isInvalidDeployment(deploymentResult)) {
-        this.components.metrics.increment('dcl_deployments_endpoint_counter', { kind: 'validation_error' })
-        this.logger.error(`POST /entities - Deployment failed (${deploymentResult.errors.join(',')})`)
-        res.status(400).send({ errors: deploymentResult.errors }).end()
-      } else {
-        this.logger.error(`deploymentResult is invalid ${JSON.stringify(deploymentResult)}`)
-        throw new Error('deploymentResult is invalid')
+// Method: GET
+export async function getERC721Entity(
+  context: HandlerContextWithPath<
+    'env' | 'activeEntities',
+    '/entities/active/erc721/:chainId/:contract/:option/:emission?'
+  >
+) {
+  const components = context.components
+  const { chainId, contract, option, emission } = context.params
+
+  const protocol = getProtocol(parseInt(chainId, 10))
+
+  if (!protocol) {
+    return {
+      status: 400,
+      body: `Invalid chainId '${chainId}'`
+    }
+  }
+
+  const pointer = buildUrn(protocol, contract, option)
+  const entity = await findEntityByPointer(components.activeEntities, pointer)
+  if (!entity || !entity.metadata) {
+    return {
+      status: 404
+    }
+  }
+
+  if (!entity.metadata.rarity) {
+    throw new Error('Wearable is not standard.')
+  }
+
+  return {
+    status: 200,
+    body: formatERC21Entity(components.env, pointer, entity, emission)
+  }
+}
+
+// Method: GET
+export async function filterByUrnHandler(
+  context: HandlerContextWithPath<'activeEntities', '/entities/active/collections/:collectionUrn'>
+) {
+  const collectionUrn: string = context.params.collectionUrn
+
+  const parsedUrn = await isUrnPrefixValid(collectionUrn)
+  if (!parsedUrn) {
+    return {
+      status: 400,
+      body: {
+        errors: `Invalid collection urn param, it should be a valid urn prefix of a 3rd party collection, instead: '${collectionUrn}'`
       }
-    } catch (error) {
-      this.components.metrics.increment('dcl_deployments_endpoint_counter', { kind: 'error' })
-      this.logger.error(`POST /entities - Internal server error '${error}'`, {
-        entityId,
-        authChain: JSON.stringify(authChain),
-        ethAddress,
-        signature
+    }
+  }
+
+  const entities: Entity[] = await context.components.activeEntities.withPrefix(parsedUrn)
+
+  return {
+    status: 200,
+    body: entities
+  }
+}
+
+function requireString(val: string): string {
+  if (typeof val !== 'string') throw new Error('A string was expected')
+  return val
+}
+
+function extractAuthChain(fields: Record<string, Field>): AuthLink[] | undefined {
+  if (fields[`authChain`]) {
+    return JSON.parse(fields[`authChain`].value)
+  }
+
+  const ret: AuthChain = []
+
+  let biggestIndex = -1
+
+  // find the biggest index
+  for (const i in fields) {
+    const regexResult = /authChain\[(\d+)\]/.exec(i)
+    if (regexResult) {
+      biggestIndex = Math.max(biggestIndex, +regexResult[1])
+    }
+  }
+
+  if (biggestIndex === -1) {
+    return undefined
+  }
+
+  // fill all the authchain
+  for (let i = 0; i <= biggestIndex; i++) {
+    ret.push({
+      payload: requireString(fields[`authChain[${i}][payload]`].value),
+      signature: requireString(fields[`authChain[${i}][signature]`].value),
+      type: requireString(fields[`authChain[${i}][type]`].value) as any
+    })
+  }
+
+  return ret
+}
+
+// Method: POST
+export async function createEntity(
+  context: FormHandlerContextWithPath<'logs' | 'fs' | 'metrics' | 'deployer', '/entities'>
+) {
+  const { metrics, deployer, logs } = context.components
+
+  const logger = logs.getLogger('create-entity')
+  const entityId: string = context.formData.fields.entityId.value
+
+  let authChain = extractAuthChain(context.formData.fields)
+  const ethAddress: EthAddress = authChain ? authChain[0].payload : ''
+  const signature: Signature = context.formData.fields.signature?.value
+
+  if (authChain) {
+    if (!AuthChain.validate(authChain)) {
+      return {
+        status: 400,
+        body: 'Invalid auth chain'
+      }
+    }
+  } else if (ethAddress && signature) {
+    authChain = Authenticator.createSimpleAuthChain(entityId, ethAddress, signature)
+  } else {
+    return {
+      status: 400,
+      body: 'No auth chain can be derivated'
+    }
+  }
+
+  const deployFiles: ContentFile[] = []
+  try {
+    for (const filename of Object.keys(context.formData.files)) {
+      const file = context.formData.files[filename]
+      deployFiles.push({ path: filename, content: file.value })
+    }
+
+    const auditInfo = { authChain, version: CURRENT_CONTENT_VERSION }
+
+    const deploymentResult = await deployer.deployEntity(
+      deployFiles.map(({ content }) => content),
+      entityId,
+      auditInfo,
+      DeploymentContext.LOCAL
+    )
+
+    if (isSuccessfulDeployment(deploymentResult)) {
+      metrics.increment('dcl_deployments_endpoint_counter', { kind: 'success' })
+      return {
+        status: 200,
+        body: { creationTimestamp: deploymentResult }
+      }
+    } else if (isInvalidDeployment(deploymentResult)) {
+      metrics.increment('dcl_deployments_endpoint_counter', { kind: 'validation_error' })
+      logger.error(`POST /entities - Deployment failed (${deploymentResult.errors.join(',')})`)
+      return {
+        status: 400,
+        body: { errors: deploymentResult.errors }
+      }
+    } else {
+      logger.error(`deploymentResult is invalid ${JSON.stringify(deploymentResult)}`)
+      throw new Error('deploymentResult is invalid')
+    }
+  } catch (error) {
+    metrics.increment('dcl_deployments_endpoint_counter', { kind: 'error' })
+    logger.error(`POST /entities - Internal server error '${error}'`, {
+      entityId,
+      authChain: JSON.stringify(authChain),
+      ethAddress,
+      signature
+    })
+    logger.error(error)
+    throw error
+  }
+}
+
+// Method: GET or HEAD
+export async function getContent(context: HandlerContextWithPath<'storage', '/contents/:hashId'>) {
+  const hash = context.params.hashId
+
+  const content: ContentItem | undefined = await context.components.storage.retrieve(hash)
+  if (!content) {
+    return {
+      status: 404
+    }
+  }
+
+  return {
+    status: 200,
+    headers: getContentFileHeaders(content, hash),
+    body: context.request.method.toUpperCase() === 'GET' ? await content.asRawStream() : undefined
+  }
+}
+
+// Method: GET
+// Query String: ?cid={hashId1}&cid={hashId2}
+export async function getAvailableContent(
+  context: HandlerContextWithPath<'denylist' | 'storage', '/available-content'>
+) {
+  const { storage, denylist } = context.components
+  const cids = context.url.searchParams.getAll('cid')
+
+  if (cids.length === 0) {
+    return {
+      status: 400,
+      body: 'Please set at least one cid.'
+    }
+  }
+  const availableCids = cids.filter((cid) => !denylist.isDenylisted(cid))
+  const availableContent = await storage.existMultiple(availableCids)
+
+  return {
+    status: 200,
+    body: Array.from(availableContent.entries()).map(([fileHash, isAvailable]) => ({
+      cid: fileHash,
+      available: isAvailable
+    }))
+  }
+}
+
+// Method: GET
+export async function getAudit(
+  context: HandlerContextWithPath<'database' | 'denylist' | 'metrics', '/audit/:type/:entityId'>
+) {
+  const type = parseEntityType(context.params.type)
+  const entityId = context.params.entityId
+
+  // Validate type is valid
+  if (!type) {
+    return {
+      status: 400,
+      body: { error: `Unrecognized type: ${context.params.type}` }
+    }
+  }
+
+  const { deployments } = await getDeployments(context.components, {
+    fields: [DeploymentField.AUDIT_INFO],
+    filters: { entityIds: [entityId], entityTypes: [type] },
+    includeDenylisted: true
+  })
+
+  if (deployments.length === 0) {
+    return {
+      status: 404
+    }
+  }
+
+  const { auditInfo } = deployments[0]
+  const body: AuditInfo = {
+    version: auditInfo.version,
+    localTimestamp: auditInfo.localTimestamp,
+    authChain: auditInfo.authChain,
+    overwrittenBy: auditInfo.overwrittenBy,
+    isDenylisted: auditInfo.isDenylisted,
+    denylistedContent: auditInfo.denylistedContent
+  }
+  return {
+    status: 200,
+    body
+  }
+}
+
+// Method: GET
+// Query String: ?from={timestamp}&to={timestamp}&offset={number}&limit={number}&entityType={entityType}&includeAuthChain={boolean}
+export async function getPointerChangesHandler(
+  context: HandlerContextWithPath<'database' | 'denylist' | 'sequentialExecutor' | 'metrics', '/pointer-changes'>
+) {
+  const query = context.url.searchParams
+  const entityTypes: (EntityType | undefined)[] = query.getAll('entityType').map((type) => parseEntityType(type))
+  const from: number | undefined = asInt(query.get('from'))
+  const to: number | undefined = asInt(query.get('to'))
+  const offset: number | undefined = asInt(query.get('offset'))
+  const limit: number | undefined = asInt(query.get('limit'))
+  const lastId: string | undefined = query.get('lastId')?.toLowerCase()
+  const includeAuthChain = asBoolean(query.get('includeAuthChain')) ?? false
+
+  const sortingFieldParam: string | null = query.get('sortingField')
+  const snake_case_sortingField = sortingFieldParam ? fromCamelCaseToSnakeCase(sortingFieldParam) : undefined
+  const sortingField: SortingField | undefined | 'unknown' = asEnumValue(SortingField, snake_case_sortingField)
+  const sortingOrder: SortingOrder | undefined | 'unknown' = asEnumValue(
+    SortingOrder,
+    query.get('sortingOrder') || undefined
+  )
+
+  // Validate type is valid
+  if (entityTypes && entityTypes.some((type) => !type)) {
+    return {
+      status: 400,
+      body: { error: `Found an unrecognized entity type` }
+    }
+  }
+
+  if (offset && offset > 5000) {
+    return {
+      status: 400,
+      body: { error: `Offset can't be higher than 5000. Please use the 'next' property for pagination.` }
+    }
+  }
+
+  // Validate sorting fields and create sortBy
+  const sortBy: { field?: SortingField; order?: SortingOrder } = {}
+  if (sortingField) {
+    if (sortingField == 'unknown') {
+      return {
+        status: 400,
+        body: { error: `Found an unrecognized sort field param` }
+      }
+    } else {
+      sortBy.field = sortingField
+    }
+  }
+  if (sortingOrder) {
+    if (sortingOrder == 'unknown') {
+      return {
+        status: 400,
+        body: { error: `Found an unrecognized sort order param` }
+      }
+    } else {
+      sortBy.order = sortingOrder
+    }
+  }
+
+  const requestFilters = {
+    entityTypes: entityTypes as EntityType[] | undefined,
+    from,
+    to,
+    includeAuthChain
+  }
+
+  const { pointerChanges, filters, pagination } = await context.components.sequentialExecutor.run(
+    'GetPointerChangesEndpoint',
+    () =>
+      getPointerChanges(context.components, {
+        filters: requestFilters,
+        offset,
+        limit,
+        lastId,
+        sortBy
       })
-      this.logger.error(error)
-      res.status(500).end()
-    } finally {
-      await this.deleteUploadedFiles(deployFiles)
+  )
+
+  if (pointerChanges.length > 0 && pagination.moreData) {
+    const lastPointerChange = pointerChanges[pointerChanges.length - 1]
+    pagination.next = calculateNextRelativePathForPointer(lastPointerChange, pagination.limit, filters)
+  }
+
+  return {
+    status: 200,
+    body: { deltas: pointerChanges, filters, pagination }
+  }
+}
+
+function calculateNextRelativePathForPointer(
+  lastPointerChange: PointerChangesSyncDeployment,
+  limit: number,
+  filters?: PointerChangesFilters
+): string | undefined {
+  const nextFilters = Object.assign({}, filters)
+  // It will always use toLocalTimestamp as this endpoint is always sorted with the default config: localTimestamp and DESC
+  nextFilters.to = lastPointerChange.localTimestamp
+
+  const nextQueryParams = toQueryParams({
+    ...nextFilters,
+    limit: limit,
+    lastId: lastPointerChange.entityId
+  })
+
+  return '?' + nextQueryParams
+}
+
+// Method: GET
+export async function getActiveDeploymentsByContentHashHandler(
+  context: HandlerContextWithPath<'database' | 'denylist', '/contents/:hashId/active-entities'>
+) {
+  const hashId = context.params.hashId
+
+  let result = await getActiveDeploymentsByContentHash(context.components, hashId)
+  result = result.filter((entityId) => !context.components.denylist.isDenylisted(entityId))
+
+  if (result.length === 0) {
+    return {
+      status: 404,
+      body: { error: 'The entity was not found' }
     }
   }
 
-  private buildAuditInfo(authChain: AuthLink[], ethAddress: string, signature: string, entityId: string) {
-    if (!authChain && ethAddress && signature) {
-      authChain = Authenticator.createSimpleAuthChain(entityId, ethAddress, signature)
-    }
-    return { authChain, version: CURRENT_CONTENT_VERSION }
+  return {
+    status: 200,
+    body: result
   }
+}
 
-  private async readFiles(files: { [fieldname: string]: Express.Multer.File[] } | Express.Multer.File[]) {
-    if (files instanceof Array) {
-      return await Promise.all(files.map((f) => this.readFile(f.path)))
-    } else {
-      return []
-    }
-  }
+// Method: GET
+// Query String: ?from={timestamp}&toLocalTimestamp={timestamp}&entityType={entityType}&entityId={entityId}&onlyCurrentlyPointed={boolean}
+export async function getDeploymentsHandler(
+  context: HandlerContextWithPath<'database' | 'denylist' | 'metrics' | 'sequentialExecutor', '/deployments'>
+) {
+  const query = context.url.searchParams
+  const entityTypes: (EntityType | undefined)[] = query.getAll('entityType').map((type) => parseEntityType(type))
+  const entityIds = query.getAll('entityId')
+  const onlyCurrentlyPointed: boolean | undefined = asBoolean(query.get('onlyCurrentlyPointed'))
+  const pointers = query.getAll('pointer').map((p) => p.toLowerCase())
+  const offset: number | undefined = asInt(query.get('offset'))
+  const limit: number | undefined = asInt(query.get('limit'))
+  const fields: string | null = query.get('fields')
+  const sortingFieldParam: string | null = query.get('sortingField')
+  const snake_case_sortingField = sortingFieldParam ? fromCamelCaseToSnakeCase(sortingFieldParam) : undefined
+  const sortingField: SortingField | undefined | 'unknown' = asEnumValue(SortingField, snake_case_sortingField)
+  const sortingOrder: SortingOrder | undefined | 'unknown' = asEnumValue(
+    SortingOrder,
+    query.get('sortingOrder') || undefined
+  )
+  const lastId: string | undefined = query.get('lastId')?.toLowerCase()
+  const from: number | undefined = asInt(query.get('from'))
+  const to: number | undefined = asInt(query.get('to'))
 
-  private async readFile(path: string): Promise<ContentFile> {
-    return { path, content: await this.components.fs.readFile(path) }
-  }
-
-  private async deleteUploadedFiles(deployFiles: ContentFile[]): Promise<void> {
-    await Promise.all(
-      deployFiles.map(async (deployFile) => {
-        if (deployFile.path) {
-          try {
-            return await this.components.fs.unlink(deployFile.path)
-          } catch (error) {
-            // log and ignore errors
-            console.error(error)
-          }
-        }
-        return Promise.resolve()
-      })
-    )
-  }
-
-  async getContent(req: express.Request, res: express.Response): Promise<void> {
-    // Method: GET or HEAD
-    // Path: /contents/:hashId
-    const hashId = req.params.hashId
-
-    const content: ContentItem | undefined = await this.components.storage.retrieve(hashId)
-    if (!content) {
-      res.status(404).send()
-      return
-    }
-
-    await setContentFileHeaders(content, hashId, res)
-
-    if (req.method.toUpperCase() === 'GET') {
-      return pipeContent(res, content)
-    } else {
-      res.send()
+  if (entityTypes && entityTypes.some((type) => !type)) {
+    return {
+      status: 400,
+      body: { error: `Found an unrecognized entity type` }
     }
   }
 
-  async getAvailableContent(req: express.Request, res: express.Response): Promise<void> {
-    // Method: GET
-    // Path: /available-content
-    // Query String: ?cid={hashId1}&cid={hashId2}
-    const cids = asArray<string>(req.query.cid)
-
-    if (!cids) {
-      res.status(400).send('Please set at least one cid.')
-    } else {
-      const availableCids = cids.filter((cid) => !this.components.denylist.isDenylisted(cid))
-      const availableContent = await this.components.storage.existMultiple(availableCids)
-      res.send(
-        Array.from(availableContent.entries()).map(([fileHash, isAvailable]) => ({
-          cid: fileHash,
-          available: isAvailable
-        }))
-      )
+  if (offset && offset > 5000) {
+    return {
+      status: 400,
+      body: { error: `Offset can't be higher than 5000. Please use the 'next' property for pagination.` }
     }
   }
 
-  async getAudit(req: express.Request, res: express.Response): Promise<void> {
-    // Method: GET
-    // Path: /audit/:type/:entityId
-    const type = parseEntityType(req.params.type)
-    const entityId = req.params.entityId
-
-    // Validate type is valid
-    if (!type) {
-      res.status(400).send({ error: `Unrecognized type: ${req.params.type}` })
-      return
-    }
-
-    const { deployments } = await getDeployments(this.components, {
-      fields: [DeploymentField.AUDIT_INFO],
-      filters: { entityIds: [entityId], entityTypes: [type] },
-      includeDenylisted: true
-    })
-
-    if (deployments.length > 0) {
-      const { auditInfo } = deployments[0]
-      const response: AuditInfo = {
-        version: auditInfo.version,
-        localTimestamp: auditInfo.localTimestamp,
-        authChain: auditInfo.authChain,
-        overwrittenBy: auditInfo.overwrittenBy,
-        isDenylisted: auditInfo.isDenylisted,
-        denylistedContent: auditInfo.denylistedContent
-      }
-      res.send(response)
-    } else {
-      res.status(404).send()
-    }
+  // Validate fields are correct or empty
+  let enumFields: DeploymentField[] = DEFAULT_FIELDS_ON_DEPLOYMENTS
+  if (fields && fields.trim().length > 0) {
+    const acceptedValues = Object.values(DeploymentField).map((e) => e.toString())
+    enumFields = fields
+      .split(',')
+      .filter((f) => acceptedValues.includes(f))
+      .map((f) => f as DeploymentField)
   }
 
-  async getPointerChanges(req: express.Request, res: express.Response): Promise<void> {
-    // Method: GET
-    // Path: /pointer-changes
-    // Query String: ?from={timestamp}&to={timestamp}&offset={number}&limit={number}&entityType={entityType}&includeAuthChain={boolean}
-    const stringEntityTypes = asArray<string>(req.query.entityType)
-    const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes
-      ? stringEntityTypes.map((type) => parseEntityType(type))
-      : undefined
-    const from: number | undefined = this.asInt(req.query.from)
-    const to: number | undefined = this.asInt(req.query.to)
-    const offset: number | undefined = this.asInt(req.query.offset)
-    const limit: number | undefined = this.asInt(req.query.limit)
-    const lastId: string | undefined = (req.query.lastId as string)?.toLowerCase()
-    const includeAuthChain = this.asBoolean(req.query.includeAuthChain) ?? false
-
-    const sortingFieldParam: string | undefined = req.query.sortingField as string
-    const snake_case_sortingField = sortingFieldParam ? this.fromCamelCaseToSnakeCase(sortingFieldParam) : undefined
-    const sortingField: SortingField | undefined | 'unknown' = this.asEnumValue(SortingField, snake_case_sortingField)
-    const sortingOrder: SortingOrder | undefined | 'unknown' = this.asEnumValue(
-      SortingOrder,
-      req.query.sortingOrder as string
-    )
-
-    // Validate type is valid
-    if (entityTypes && entityTypes.some((type) => !type)) {
-      res.status(400).send({ error: `Found an unrecognized entity type` })
-      return
-    }
-
-    if (offset && offset > 5000) {
-      res
-        .status(400)
-        .send({ error: `Offset can't be higher than 5000. Please use the 'next' property for pagination.` })
-      return
-    }
-
-    // Validate sorting fields and create sortBy
-    const sortBy: { field?: SortingField; order?: SortingOrder } = {}
-    if (sortingField) {
-      if (sortingField == 'unknown') {
-        res.status(400).send({ error: `Found an unrecognized sort field param` })
-        return
-      } else {
-        sortBy.field = sortingField
-      }
-    }
-    if (sortingOrder) {
-      if (sortingOrder == 'unknown') {
-        res.status(400).send({ error: `Found an unrecognized sort order param` })
-        return
-      } else {
-        sortBy.order = sortingOrder
-      }
-    }
-
-    const requestFilters = {
-      entityTypes: entityTypes as EntityType[] | undefined,
-      from,
-      to,
-      includeAuthChain
-    }
-
-    const { pointerChanges, filters, pagination } = await this.components.sequentialExecutor.run(
-      'GetPointerChangesEndpoint',
-      () =>
-        getPointerChanges(this.components, {
-          filters: requestFilters,
-          offset,
-          limit,
-          lastId,
-          sortBy
-        })
-    )
-
-    if (pointerChanges.length > 0 && pagination.moreData) {
-      const lastPointerChange = pointerChanges[pointerChanges.length - 1]
-      pagination.next = this.calculateNextRelativePathForPointer(lastPointerChange, pagination.limit, filters)
-    }
-
-    res.send({ deltas: pointerChanges, filters, pagination })
-  }
-
-  private calculateNextRelativePathForPointer(
-    lastPointerChange: PointerChangesSyncDeployment,
-    limit: number,
-    filters?: PointerChangesFilters
-  ): string | undefined {
-    const nextFilters = Object.assign({}, filters)
-    // It will always use toLocalTimestamp as this endpoint is always sorted with the default config: localTimestamp and DESC
-    nextFilters.to = lastPointerChange.localTimestamp
-
-    const nextQueryParams = toQueryParams({
-      ...nextFilters,
-      limit: limit,
-      lastId: lastPointerChange.entityId
-    })
-
-    return '?' + nextQueryParams
-  }
-
-  async getActiveDeploymentsByContentHash(req: express.Request, res: express.Response): Promise<void> {
-    // Method: GET
-    // Path: /contents/:hashId/active-entities
-    const hashId = req.params.hashId
-
-    let result = await getActiveDeploymentsByContentHash(this.components, hashId)
-    result = result.filter((entityId) => !this.components.denylist.isDenylisted(entityId))
-
-    if (result.length === 0) {
-      res.status(404).send({ error: 'The entity was not found' })
-      return
-    }
-
-    res.json(result)
-  }
-
-  async getDeployments(req: express.Request, res: express.Response): Promise<void> {
-    // Method: GET
-    // Path: /deployments
-    // Query String: ?from={timestamp}&toLocalTimestamp={timestamp}&entityType={entityType}&entityId={entityId}&onlyCurrentlyPointed={boolean}
-
-    const stringEntityTypes = asArray<string>(req.query.entityType as string | string[])
-    const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes
-      ? stringEntityTypes.map((type) => parseEntityType(type))
-      : undefined
-    const entityIds: string[] | undefined = asArray<string>(req.query.entityId)
-    const onlyCurrentlyPointed: boolean | undefined = this.asBoolean(req.query.onlyCurrentlyPointed)
-    const pointers: string[] | undefined = asArray<string>(req.query.pointer)?.map((p) => p.toLowerCase())
-    const offset: number | undefined = this.asInt(req.query.offset)
-    const limit: number | undefined = this.asInt(req.query.limit)
-    const fields: string | undefined = req.query.fields as string | undefined
-    const sortingFieldParam: string | undefined = req.query.sortingField as string
-    const snake_case_sortingField = sortingFieldParam ? this.fromCamelCaseToSnakeCase(sortingFieldParam) : undefined
-    const sortingField: SortingField | undefined | 'unknown' = this.asEnumValue(SortingField, snake_case_sortingField)
-    const sortingOrder: SortingOrder | undefined | 'unknown' = this.asEnumValue(
-      SortingOrder,
-      req.query.sortingOrder as string
-    )
-    const lastId: string | undefined = (req.query.lastId as string)?.toLowerCase()
-    const from: number | undefined = this.asInt(req.query.from)
-    const to: number | undefined = this.asInt(req.query.to)
-
-    // Validate type is valid
-    if (entityTypes && entityTypes.some((type) => !type)) {
-      res.status(400).send({ error: `Found an unrecognized entity type` })
-      return
-    }
-
-    if (offset && offset > 5000) {
-      res
-        .status(400)
-        .send({ error: `Offset can't be higher than 5000. Please use the 'next' property for pagination.` })
-      return
-    }
-
-    // Validate fields are correct or empty
-    let enumFields: DeploymentField[] = DEFAULT_FIELDS_ON_DEPLOYMENTS
-    if (fields && fields.trim().length > 0) {
-      const acceptedValues = Object.values(DeploymentField).map((e) => e.toString())
-      enumFields = fields
-        .split(',')
-        .filter((f) => acceptedValues.includes(f))
-        .map((f) => f as DeploymentField)
-    }
-
-    // Validate sorting fields and create sortBy
-    const sortBy: { field?: SortingField; order?: SortingOrder } = {}
-    if (sortingField) {
-      if (sortingField == 'unknown') {
-        res.status(400).send({ error: `Found an unrecognized sort field param` })
-        return
-      } else {
-        sortBy.field = sortingField
-      }
-    }
-    if (sortingOrder) {
-      if (sortingOrder == 'unknown') {
-        res.status(400).send({ error: `Found an unrecognized sort order param` })
-        return
-      } else {
-        sortBy.order = sortingOrder
-      }
-    }
-
-    const requestFilters = {
-      pointers,
-      entityTypes: entityTypes as EntityType[],
-      entityIds,
-      onlyCurrentlyPointed,
-      from,
-      to
-    }
-
-    const deploymentOptions = {
-      fields: enumFields,
-      filters: requestFilters,
-      sortBy: sortBy,
-      offset: offset,
-      limit: limit,
-      lastId: lastId
-    }
-
-    const { deployments, filters, pagination } = await this.components.sequentialExecutor.run(
-      'GetDeploymentsEndpoint',
-      () => getDeployments(this.components, deploymentOptions)
-    )
-    const controllerDeployments = deployments.map((deployment) =>
-      ControllerDeploymentFactory.deployment2ControllerEntity(deployment, enumFields)
-    )
-
-    if (deployments.length > 0 && pagination.moreData) {
-      const lastDeployment = deployments[deployments.length - 1]
-      pagination.next = this.calculateNextRelativePath(deploymentOptions, lastDeployment)
-    }
-
-    res.send({ deployments: controllerDeployments, filters, pagination })
-  }
-
-  private calculateNextRelativePath(options: DeploymentOptions, lastDeployment: Deployment): string {
-    const nextFilters = Object.assign({}, options?.filters)
-
-    const field = options?.sortBy?.field ?? SortingField.LOCAL_TIMESTAMP
-    const order = options?.sortBy?.order ?? SortingOrder.DESCENDING
-
-    if (field == SortingField.LOCAL_TIMESTAMP) {
-      if (order == SortingOrder.ASCENDING) {
-        nextFilters.from = lastDeployment.auditInfo.localTimestamp
-      } else {
-        nextFilters.to = lastDeployment.auditInfo.localTimestamp
+  // Validate sorting fields and create sortBy
+  const sortBy: { field?: SortingField; order?: SortingOrder } = {}
+  if (sortingField) {
+    if (sortingField == 'unknown') {
+      return {
+        status: 400,
+        body: { error: `Found an unrecognized sort field param` }
       }
     } else {
-      if (order == SortingOrder.ASCENDING) {
-        nextFilters.from = lastDeployment.entityTimestamp
-      } else {
-        nextFilters.to = lastDeployment.entityTimestamp
+      sortBy.field = sortingField
+    }
+  }
+  if (sortingOrder) {
+    if (sortingOrder == 'unknown') {
+      return {
+        status: 400,
+        body: { error: `Found an unrecognized sort order param` }
       }
-    }
-
-    const fields = !options.fields || options.fields === DEFAULT_FIELDS_ON_DEPLOYMENTS ? '' : options.fields.join(',')
-
-    const nextQueryParams = toQueryParams({
-      ...nextFilters,
-      fields,
-      sortingField: field,
-      sortingOrder: order,
-      lastId: lastDeployment.entityId,
-      limit: options?.limit
-    })
-
-    return '?' + nextQueryParams
-  }
-
-  private fromCamelCaseToSnakeCase(phrase: string): string {
-    const withoutUpperCase: string = phrase.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
-    if (withoutUpperCase[0] === '_') {
-      return withoutUpperCase.substring(1)
-    }
-    return withoutUpperCase
-  }
-
-  private asEnumValue<T extends { [key: number]: string }>(
-    enumType: T,
-    stringToMap?: string
-  ): T[keyof T] | undefined | 'unknown' {
-    if (stringToMap) {
-      const validEnumValues: Set<string> = new Set(Object.values(enumType))
-      const match = validEnumValues.has(stringToMap)
-      return match ? (stringToMap as T[keyof T]) : 'unknown'
+    } else {
+      sortBy.order = sortingOrder
     }
   }
 
-  private asInt(value: any): number | undefined {
-    return value ? parseInt(value) : undefined
+  const requestFilters = {
+    pointers,
+    entityTypes: entityTypes as EntityType[],
+    entityIds,
+    onlyCurrentlyPointed,
+    from,
+    to
   }
 
-  private asBoolean(value: any): boolean | undefined {
-    return value ? value === 'true' : undefined
+  const deploymentOptions = {
+    fields: enumFields,
+    filters: requestFilters,
+    sortBy: sortBy,
+    offset: offset,
+    limit: limit,
+    lastId: lastId
   }
 
-  async getStatus(req: express.Request, res: express.Response): Promise<void> {
-    // Method: GET
-    // Path: /status
+  const { deployments, filters, pagination } = await context.components.sequentialExecutor.run(
+    'GetDeploymentsEndpoint',
+    () => getDeployments(context.components, deploymentOptions)
+  )
+  const controllerDeployments = deployments.map((deployment) =>
+    ControllerDeploymentFactory.deployment2ControllerEntity(deployment, enumFields)
+  )
 
-    const serverStatus = await statusResponseFromComponents(this.components)
+  if (deployments.length > 0 && pagination.moreData) {
+    const lastDeployment = deployments[deployments.length - 1]
+    pagination.next = calculateNextRelativePath(deploymentOptions, lastDeployment)
+  }
 
-    res.status(serverStatus.successful ? 200 : 503)
+  return {
+    status: 200,
+    body: { deployments: controllerDeployments, filters, pagination }
+  }
+}
 
-    res.send({
+function calculateNextRelativePath(options: DeploymentOptions, lastDeployment: Deployment): string {
+  const nextFilters = Object.assign({}, options?.filters)
+
+  const field = options?.sortBy?.field ?? SortingField.LOCAL_TIMESTAMP
+  const order = options?.sortBy?.order ?? SortingOrder.DESCENDING
+
+  if (field == SortingField.LOCAL_TIMESTAMP) {
+    if (order == SortingOrder.ASCENDING) {
+      nextFilters.from = lastDeployment.auditInfo.localTimestamp
+    } else {
+      nextFilters.to = lastDeployment.auditInfo.localTimestamp
+    }
+  } else {
+    if (order == SortingOrder.ASCENDING) {
+      nextFilters.from = lastDeployment.entityTimestamp
+    } else {
+      nextFilters.to = lastDeployment.entityTimestamp
+    }
+  }
+
+  const fields = !options.fields || options.fields === DEFAULT_FIELDS_ON_DEPLOYMENTS ? '' : options.fields.join(',')
+
+  const nextQueryParams = toQueryParams({
+    ...nextFilters,
+    fields,
+    sortingField: field,
+    sortingOrder: order,
+    lastId: lastDeployment.entityId,
+    limit: options?.limit
+  })
+
+  return '?' + nextQueryParams
+}
+
+export async function getStatus(
+  context: HandlerContextWithPath<'contentCluster' | 'synchronizationState' | 'config', '/status'>
+) {
+  const { contentCluster, synchronizationState, config } = context.components
+  const serverStatus = await statusResponseFromComponents(context.components)
+  const ethNetwork = config.getString(EnvironmentConfig[EnvironmentConfig.ETH_NETWORK])
+
+  return {
+    status: serverStatus.successful ? 200 : 503,
+    body: {
       ...serverStatus.details,
       version: CURRENT_CONTENT_VERSION,
       commitHash: CURRENT_COMMIT_HASH,
       catalystVersion: CURRENT_CATALYST_VERSION,
-      ethNetwork: this.ethNetwork,
+      ethNetwork,
       synchronizationStatus: {
-        ...this.components.contentCluster.getStatus(),
-        synchronizationState: this.components.synchronizationState.getState()
+        ...contentCluster.getStatus(),
+        synchronizationState: synchronizationState.getState()
       }
-    })
+    }
   }
+}
 
-  async getAllNewSnapshots(req: express.Request, res: express.Response): Promise<void> {
-    // Method: GET
-    // Path: /snapshots
-
-    const metadata = this.components.snapshotGenerator.getCurrentSnapshots()
-
-    if (!metadata) {
-      res.status(503).send({ error: 'New Snapshots not yet created' })
-    } else {
-      res.send(metadata)
+// Method: GET
+export async function getAllNewSnapshots(context: HandlerContextWithPath<'snapshotGenerator', '/snapshots'>) {
+  const metadata = context.components.snapshotGenerator.getCurrentSnapshots()
+  if (!metadata) {
+    return {
+      status: 503,
+      body: { error: 'New Snapshots not yet created' }
     }
   }
 
-  async getFailedDeployments(req: express.Request, res: express.Response): Promise<void> {
-    // Method: GET
-    // Path: /failed-deployments
-
-    const failedDeployments = await this.components.failedDeployments.getAllFailedDeployments()
-    res.send(failedDeployments)
-  }
-
-  async getChallenge(req: express.Request, res: express.Response): Promise<void> {
-    // Method: GET
-    // Path: /challenge
-
-    const challengeText = this.components.challengeSupervisor.getChallengeText()
-    res.send({ challengeText })
+  return {
+    status: 200,
+    body: metadata
   }
 }
 
-function asArray<T>(elements: any | T | T[]): T[] | undefined {
-  if (!elements) {
-    return undefined
+// Method: GET
+export async function getFailedDeployments(
+  context: HandlerContextWithPath<'failedDeployments', '/failed-deployments'>
+) {
+  const failedDeployments = await context.components.failedDeployments.getAllFailedDeployments()
+  return {
+    status: 200,
+    body: failedDeployments
   }
-  if (elements instanceof Array) {
-    return elements
-  }
-  return [elements]
 }
 
-async function pipeContent(res: express.Response, content: ContentItem): Promise<void> {
-  const rawStream = await content.asRawStream()
-
-  rawStream.pipe(res)
-
-  // Note: for context about why this is necessary, check https://github.com/nodejs/node/issues/1180
-  onFinished(res, () => destroy(rawStream))
+// Method: GET
+export async function getChallenge(context: HandlerContextWithPath<'challengeSupervisor', '/challenge'>) {
+  const challengeText = context.components.challengeSupervisor.getChallengeText()
+  return {
+    status: 200,
+    body: { challengeText }
+  }
 }
 
-async function setContentFileHeaders(content: ContentItem, hashId: string, res: express.Response) {
-  res.contentType('application/octet-stream')
-  res.setHeader('ETag', JSON.stringify(hashId)) // by spec, the ETag must be a double-quoted string
-  res.setHeader('Access-Control-Expose-Headers', 'ETag')
-  res.setHeader('Cache-Control', 'public,max-age=31536000,s-maxage=31536000,immutable')
-
+function getContentFileHeaders(content: ContentItem, hashId: string): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/octet-stream',
+    ETag: JSON.stringify(hashId), // by spec, the ETag must be a double-quoted string
+    'Access-Control-Expose-Headers': 'ETag',
+    'Cache-Control': 'public,max-age=31536000,s-maxage=31536000,immutable'
+  }
   if (content.encoding) {
-    res.setHeader('Content-Encoding', content.encoding)
+    headers['Content-Encoding'] = content.encoding
+  }
+  if (content.size) {
+    headers['Content-Length'] = content.size.toString()
   }
 
-  if (content.size) {
-    res.setHeader('Content-Length', content.size.toString())
-  }
+  return headers
 }
 
 export enum EntityField {
@@ -852,4 +855,31 @@ async function isUrnPrefixValid(collectionUrn: string): Promise<string | false> 
     console.error(error)
   }
   return false
+}
+
+function fromCamelCaseToSnakeCase(phrase: string): string {
+  const withoutUpperCase: string = phrase.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
+  if (withoutUpperCase[0] === '_') {
+    return withoutUpperCase.substring(1)
+  }
+  return withoutUpperCase
+}
+
+function asEnumValue<T extends { [key: number]: string }>(
+  enumType: T,
+  stringToMap?: string
+): T[keyof T] | undefined | 'unknown' {
+  if (stringToMap) {
+    const validEnumValues: Set<string> = new Set(Object.values(enumType))
+    const match = validEnumValues.has(stringToMap)
+    return match ? (stringToMap as T[keyof T]) : 'unknown'
+  }
+}
+
+function asInt(value: any): number | undefined {
+  return value ? parseInt(value) : undefined
+}
+
+function asBoolean(value: any): boolean | undefined {
+  return value ? value === 'true' : undefined
 }
