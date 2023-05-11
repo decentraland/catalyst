@@ -38,6 +38,8 @@ export async function updateActiveDeployments(
   value_list.forEach((v) => query.append(v))
   query.append(SQL` ON CONFLICT(pointer) DO UPDATE SET entity_id = ${entityId};`)
 
+  console.log(query.text, JSON.stringify(value_list))
+
   await components.database.queryWithValues(query)
 }
 
