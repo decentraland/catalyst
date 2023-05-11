@@ -139,7 +139,28 @@ export function createDeployer(
         logger.info('got pointers from entity')
 
         // Update pointers and active entities
-        await updateActiveEntities(pointersFromEntity, entity)
+        const { clearedPointers, setPointers } = Array.from(pointersFromEntity).reduce(
+          (acc, current) => {
+            if (current[1].after === DELTA_POINTER_RESULT.CLEARED) acc.clearedPointers.push(current[0])
+            if (current[1].after === DELTA_POINTER_RESULT.SET) acc.setPointers.push(current[0])
+            return acc
+          },
+          { clearedPointers: [] as string[], setPointers: [] as string[] }
+        )
+        // invalidate pointers (points to an entity that is no longer active)
+        // this case happen when the entity is overwritten
+        if (clearedPointers.length > 0) {
+          logger.info('clearning pointers')
+          await components.activeEntities.clear(clearedPointers)
+          logger.info('pointers cleaned')
+        }
+
+        // update pointer (points to the new entity that is active)
+        if (setPointers.length > 0) {
+          logger.info('updating pointers')
+          await components.activeEntities.update(setPointers, entity)
+          logger.info('pointers updated')
+        }
         logger.info('pointes and active entities updated')
 
         // Set who overwrote who
@@ -155,23 +176,6 @@ export function createDeployer(
     await components.failedDeployments.removeFailedDeployment(entity.id)
 
     return { auditInfoComplete, wasEntityDeployed: !isEntityAlreadyDeployed }
-  }
-
-  async function updateActiveEntities(pointersFromEntity: DeploymentPointersResult, entity: Entity) {
-    const { clearedPointers, setPointers } = Array.from(pointersFromEntity).reduce(
-      (acc, current) => {
-        if (current[1].after === DELTA_POINTER_RESULT.CLEARED) acc.clearedPointers.push(current[0])
-        if (current[1].after === DELTA_POINTER_RESULT.SET) acc.setPointers.push(current[0])
-        return acc
-      },
-      { clearedPointers: [] as string[], setPointers: [] as string[] }
-    )
-    // invalidate pointers (points to an entity that is no longer active)
-    // this case happen when the entity is overwritten
-    if (clearedPointers.length > 0) await components.activeEntities.clear(clearedPointers)
-
-    // update pointer (points to the new entity that is active)
-    if (setPointers.length > 0) await components.activeEntities.update(setPointers, entity)
   }
 
   // todo: review if we can use entities cache to determine if there is a newer deployment
