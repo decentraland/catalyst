@@ -129,11 +129,15 @@ export const createActiveEntitiesComponent = (
     if (isEntityPresent(entity)) {
       cache.set(entity.id, entity)
       components.metrics.increment('dcl_entities_cache_storage_size', { entity_type: entity.type })
+      logger.info('updating active deploymnets')
       // Store in the db the new entity pointed by pointers
       await updateActiveDeployments({ database: components.database }, pointers, entity.id)
+      logger.info('active deploymnets updated')
     } else {
+      logger.info('removing active deploymnets')
       // Remove the row from active_pointers table
       await removeActiveDeployments({ database: components.database }, pointers)
+      logger.info('active deploymnets removed')
     }
   }
 
