@@ -12,9 +12,9 @@ async function setupApiCoverage(server: IHttpServerComponent<GlobalContext>) {
   // Write object to disk because Jest runs tests in isolated environments
   const coverageDir = path.join(__dirname, '../api-coverage')
   try {
-    await fs.promises.access(coverageDir)
-  } catch (err) {
     await fs.promises.mkdir(coverageDir)
+  } catch (err) {
+    console.error(err)
   }
   const coverageFilePath = path.join(coverageDir, `api-coverage.csv`)
   server.use(async (context, next) => {
