@@ -295,6 +295,7 @@ describe('activeEntities', () => {
 async function buildComponents() {
   const database = createTestDatabaseComponent()
   database.queryWithValues = () => Promise.resolve({ rows: [], rowCount: 0 })
+  database.query = () => Promise.resolve({ rows: [], rowCount: 0 })
   database.transaction = () => Promise.resolve()
   const env = new Environment()
   env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, 'inexistent')
