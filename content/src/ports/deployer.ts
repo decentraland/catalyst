@@ -136,6 +136,7 @@ export function createDeployer(
           overwrote,
           overwrittenBy !== null
         )
+        logger.info('got pointers from entity')
 
         // Update pointers and active entities
         await updateActiveEntities(pointersFromEntity, entity)
