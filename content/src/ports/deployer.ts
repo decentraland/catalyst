@@ -158,7 +158,7 @@ export function createDeployer(
         // update pointer (points to the new entity that is active)
         if (setPointers.length > 0) {
           logger.info(`updating pointers ${setPointers.join(', ')}`)
-          await components.activeEntities.update(setPointers, entity)
+          await components.activeEntities.update(setPointers, entity, database)
           logger.info(`pointers updated ${setPointers.join(',')}`)
         }
         logger.info('pointes and active entities updated')

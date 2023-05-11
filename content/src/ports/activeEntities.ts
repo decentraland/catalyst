@@ -35,7 +35,7 @@ export type ActiveEntities = {
    * Save entityId for given pointer and store the entity in the cache,
    * useful to retrieve entities by pointers
    */
-  update(pointers: string[], entity: Entity | NotActiveEntity): Promise<void>
+  update(pointers: string[], entity: Entity | NotActiveEntity, database?: AppComponents['database']): Promise<void>
   /**
    * Set pointers and entity as NOT_ACTIVE
    */
@@ -121,7 +121,11 @@ export const createActiveEntitiesComponent = (
    * Save entityId for given pointer and store the entity in the cache,
    * useful to retrieve entities by pointers
    */
-  const update = async (pointers: string[], entity: Entity | NotActiveEntity): Promise<void> => {
+  const update = async (
+    pointers: string[],
+    entity: Entity | NotActiveEntity,
+    databaseClient?: AppComponents['database']
+  ): Promise<void> => {
     for (const pointer of pointers) {
       setPreviousEntityAsNone(pointer)
       entityIdByPointers.set(pointer, isEntityPresent(entity) ? entity.id : entity)
@@ -131,12 +135,12 @@ export const createActiveEntitiesComponent = (
       components.metrics.increment('dcl_entities_cache_storage_size', { entity_type: entity.type })
       logger.info(`updating active deploymnets ${entity.id}`)
       // Store in the db the new entity pointed by pointers
-      await updateActiveDeployments({ database: components.database }, pointers, entity.id)
+      await updateActiveDeployments({ database: databaseClient ?? components.database }, pointers, entity.id)
       logger.info('active deploymnets updated')
     } else {
       logger.info('removing active deploymnets')
       // Remove the row from active_pointers table
-      await removeActiveDeployments({ database: components.database }, pointers)
+      await removeActiveDeployments({ database: databaseClient ?? components.database }, pointers)
       logger.info('active deploymnets removed')
     }
   }
