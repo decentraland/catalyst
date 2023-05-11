@@ -7,7 +7,7 @@ export async function gerUrnsThatMatchCollectionUrnPrefix(
 ): Promise<string[]> {
   // sql-template-strings doesn't allow ' in the query string
   const matchingString = `${collectionUrn}%`
-  const query = SQL`SELECT pointer FROM active_pointers as p WHERE p.pointer LIKE ${matchingString};`
+  const query = SQL`SELECT pointer FROM active_pointers as p WHERE p.pointer LIKE ${matchingString} ORDER BY pointer DESC;`
 
   const queryResult = (await components.database.queryWithValues<{ pointer: string }>(query, 'filter_by_urn_prefix'))
     .rows

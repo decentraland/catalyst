@@ -20,11 +20,13 @@ import {
   getStatus,
   getEntities
 } from './Controller'
+import { errorHandler } from './error-handler'
 import { filterByUrnHandler } from './filter-by-urn-handler'
 
 // We return the entire router because it will be easier to test than a whole server
 export async function setupRouter({ components }: GlobalContext): Promise<Router<GlobalContext>> {
   const router = new Router<GlobalContext>()
+  router.use(errorHandler)
 
   const env = components.env
   const logger = components.logs.getLogger('router')

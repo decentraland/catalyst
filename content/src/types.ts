@@ -151,3 +151,17 @@ export function parseEntityType(strType: string): EntityType {
 }
 
 export type DeploymentId = number
+
+export type Pagination = {
+  offset: number
+  limit: number
+  pageSize: number
+  pageNum: number
+}
+
+export class InvalidRequestError extends Error {
+  constructor(message: string) {
+    super(message)
+    Error.captureStackTrace(this, this.constructor)
+  }
+}

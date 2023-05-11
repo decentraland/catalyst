@@ -1,7 +1,7 @@
 import { HandlerContextWithPath } from '../types'
 import { DecentralandAssetIdentifier, parseUrn } from '@dcl/urn-resolver'
 import { BASE_AVATARS_COLLECTION_ID } from '../ports/activeEntities'
-import { Entity } from '@dcl/schemas'
+import { paginationObject } from './utils'
 
 async function isUrnPrefixValid(collectionUrn: string): Promise<string | false> {
   const regex = /^[a-zA-Z0-9_.:,-]+$/g
@@ -47,10 +47,19 @@ export async function filterByUrnHandler(
     }
   }
 
-  const entities: Entity[] = await context.components.activeEntities.withPrefix(parsedUrn)
+  const pagination = paginationObject(context.url)
+
+  const { total, entities } = await context.components.activeEntities.withPrefix(
+    parsedUrn,
+    pagination.offset,
+    pagination.limit
+  )
 
   return {
     status: 200,
-    body: entities
+    body: {
+      total,
+      entities
+    }
   }
 }

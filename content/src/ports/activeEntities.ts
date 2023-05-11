@@ -27,7 +27,7 @@ export type ActiveEntities = {
   /**
    * Retrieve active entities which their pointers match the given urn prefix
    */
-  withPrefix(collectionUrn: string): Promise<Entity[]>
+  withPrefix(collectionUrn: string, offset: number, limit: number): Promise<{ total: number; entities: Entity[] }>
   /**
    * Retrieve active entities by their ids
    * Note: result is cached, even if the id has no active entity
@@ -263,12 +263,21 @@ export function createActiveEntitiesComponent(
   /**
    * Retrieve active entities that are pointed by pointers that match the urn prefix
    */
-  async function withPrefix(collectionUrn: string): Promise<Entity[]> {
+  async function withPrefix(
+    collectionUrn: string,
+    offset: number,
+    limit: number
+  ): Promise<{ total: number; entities: Entity[] }> {
     const urns = await collectionUrnsByPrefixCache.fetch(collectionUrn)
-    if (urns) {
-      return withPointers(urns)
+    if (!urns) {
+      throw new Error(`error fetching urns for collection: ${collectionUrn}`)
     }
-    throw new Error(`error fetching urns for collection: ${collectionUrn}`)
+    const total = urns.length
+    const entities = await withPointers(urns.slice(offset, offset + limit))
+    return {
+      total,
+      entities
+    }
   }
 
   return {
