@@ -140,7 +140,7 @@ export async function generateSnapshotsInMultipleTimeRanges(
         logger.info(`Snapshots to delete: ${JSON.stringify(Array.from(snapshotHashesToDeleteInStorage))}`)
         await components.storage.delete(snapshotHashesToDeleteInStorage)
         snapshotMetadatas.push(newSnapshot)
-      })
+      }, 'tx_snapshot')
       logger.info(
         `Snapshot generated for interval: [${new Date(timeRange.initTimestamp).toISOString()}, ${new Date(
           timeRange.endTimestamp

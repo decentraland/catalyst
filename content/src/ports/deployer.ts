@@ -166,7 +166,7 @@ export function createDeployer(
         // Set who overwrote who
         await setEntitiesAsOverwritten(database, overwrote, deploymentId)
         logger.info('overwrites set')
-      })
+      }, 'tx_deploy_entity')
     } else {
       logger.info(`Entity already deployed`, { entityId })
       auditInfoComplete.localTimestamp = deployedEntity.localTimestamp
