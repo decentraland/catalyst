@@ -50,7 +50,7 @@ export async function createFailedDeployments(
 
   return {
     async start() {
-      const failedDeployments = await getSnapshotFailedDeployments(components)
+      const failedDeployments = await getSnapshotFailedDeployments(components.database)
       for (const failedDeployment of failedDeployments) {
         failedDeploymentsByEntityIdCache.set(failedDeployment.entityId, failedDeployment)
       }
@@ -65,7 +65,7 @@ export async function createFailedDeployments(
     async removeFailedDeployment(entityId: string) {
       const failedDeployment = failedDeploymentsByEntityIdCache.get(entityId)
       if (failedDeployment) {
-        await deleteFailedDeployment(components, entityId)
+        await deleteFailedDeployment(components.database, entityId)
         failedDeploymentsByEntityIdCache.delete(entityId)
         components.metrics.observe('dcl_content_server_failed_deployments', {}, failedDeploymentsByEntityIdCache.size)
       }
@@ -76,11 +76,11 @@ export async function createFailedDeployments(
         // only failed deployments from snapshots are persisted
         if (reportedFailedDeployment) {
           await components.database.transaction(async (txDatabase) => {
-            await deleteFailedDeployment({ database: txDatabase }, failedDeployment.entityId)
-            await saveSnapshotFailedDeployment({ database: txDatabase }, failedDeployment)
+            await deleteFailedDeployment(txDatabase, failedDeployment.entityId)
+            await saveSnapshotFailedDeployment(txDatabase, failedDeployment)
           }, 'tx_failed_deployments')
         } else {
-          await saveSnapshotFailedDeployment(components, failedDeployment)
+          await saveSnapshotFailedDeployment(components.database, failedDeployment)
         }
       }
       failedDeploymentsByEntityIdCache.set(failedDeployment.entityId, failedDeployment)

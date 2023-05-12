@@ -23,7 +23,7 @@ export function createDeployedEntitiesBloomFilter(
     const start = components.clock.now()
     logger.info(`Creating bloom filter`, {})
     let elements = 0
-    for await (const row of streamAllEntityIds(components)) {
+    for await (const row of streamAllEntityIds(components.database)) {
       elements++
       deploymentsBloomFilter.add(row.entityId)
     }

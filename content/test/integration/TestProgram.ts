@@ -98,7 +98,7 @@ export class TestProgram {
 
   async getDeployments(options?: DeploymentOptions): Promise<Deployment[]> {
     const filters = Object.assign({ from: 1 }, options?.filters)
-    const deployments = await getDeployments(this.components, { ...options, filters })
+    const deployments = await getDeployments(this.components, this.components.database, { ...options, filters })
     return deployments.deployments
   }
 

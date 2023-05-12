@@ -2,6 +2,7 @@ import { AuthChain, Authenticator } from '@dcl/crypto'
 import { ContentMapping, Entity, EntityType, SnapshotSyncDeployment } from '@dcl/schemas'
 import pg from 'pg'
 import SQL, { SQLStatement } from 'sql-template-strings'
+import { DatabaseClient, DatabaseTransactionalClient } from 'src/ports/postgres'
 import { AuditInfo, DeploymentFilters, DeploymentSorting, SortingField, SortingOrder } from '../../deployment-types'
 import { AppComponents, DeploymentId } from '../../types'
 
@@ -30,12 +31,7 @@ export interface HistoricalDeploymentsRow {
   overwritten_by?: string
 }
 
-export async function deploymentExists(
-  components: Pick<AppComponents, 'database'>,
-  entityId: string
-): Promise<boolean> {
-  const { database } = components
-
+export async function deploymentExists(database: DatabaseClient, entityId: string): Promise<boolean> {
   const result = await database.queryWithValues(
     SQL`
     SELECT 1
@@ -48,11 +44,7 @@ export async function deploymentExists(
   return result.rowCount > 0
 }
 
-export async function* streamAllEntityIds(
-  components: Pick<AppComponents, 'database'>
-): AsyncIterable<{ entityId: string }> {
-  const { database } = components
-
+export async function* streamAllEntityIds(database: DatabaseClient): AsyncIterable<{ entityId: string }> {
   for await (const row of database.streamQuery(
     SQL`
       SELECT entity_id FROM deployments
@@ -185,7 +177,7 @@ function configureSortWhereClause(
 }
 
 export async function getHistoricalDeployments(
-  components: Pick<AppComponents, 'database' | 'metrics'>,
+  database: DatabaseClient,
   offset: number,
   limit: number,
   filters?: DeploymentFilters,
@@ -194,7 +186,7 @@ export async function getHistoricalDeployments(
 ): Promise<HistoricalDeployment[]> {
   const query = getHistoricalDeploymentsQuery(offset, limit, filters, sortBy, lastId)
 
-  const historicalDeploymentsResponse = await components.database.queryWithValues(query, 'get_historical_deployments')
+  const historicalDeploymentsResponse = await database.queryWithValues(query, 'get_historical_deployments')
 
   const historicalDeployments: HistoricalDeployment[] = historicalDeploymentsResponse.rows.map(
     (row: HistoricalDeploymentsRow): HistoricalDeployment => ({
@@ -250,10 +242,10 @@ export async function getActiveDeploymentsByContentHash(
 }
 
 export async function getEntityById(
-  components: Pick<AppComponents, 'database'>,
+  database: DatabaseClient,
   entityId: string
 ): Promise<{ entityId: string; localTimestamp: number } | undefined> {
-  const queryResult = await components.database.queryWithValues<{ entityId: string; localTimestamp: number }>(
+  const queryResult = await database.queryWithValues<{ entityId: string; localTimestamp: number }>(
     SQL`
     SELECT
       entity_id AS "entityId",
@@ -271,7 +263,7 @@ export async function getEntityById(
 }
 
 export async function saveDeployment(
-  database: AppComponents['database'],
+  database: DatabaseClient,
   entity: Entity,
   auditInfo: AuditInfo,
   overwrittenBy: DeploymentId | null
@@ -292,10 +284,11 @@ export async function saveDeployment(
 }
 
 export async function saveContentFiles(
-  database: AppComponents['database'],
+  database: DatabaseTransactionalClient,
   deploymentId: DeploymentId,
   content: ContentMapping[]
 ): Promise<void> {
+  // TODO why not a big query?
   const queries = content.map(
     (item) =>
       SQL`INSERT INTO content_files (deployment, key, content_hash) VALUES (${deploymentId}, ${item.file}, ${item.hash})`
@@ -306,7 +299,7 @@ export async function saveContentFiles(
 }
 
 export async function getDeployments(
-  database: AppComponents['database'],
+  database: DatabaseClient,
   deploymentIds: Set<number>
 ): Promise<{ id: number; pointers: string[] }[]> {
   if (deploymentIds.size === 0) return []
@@ -319,19 +312,20 @@ export async function getDeployments(
 }
 
 export async function setEntitiesAsOverwritten(
-  database: AppComponents['database'],
+  database: DatabaseTransactionalClient,
   allOverwritten: Set<DeploymentId>,
   overwrittenBy: DeploymentId
 ): Promise<void> {
   const queries = Array.from(allOverwritten.values()).map(
     (overwritten) => SQL`UPDATE deployments SET deleter_deployment = ${overwrittenBy} WHERE id = ${overwritten}`
   )
+  // TODO why not a big query?
   for (const query of queries) {
     await database.queryWithValues(query)
   }
 }
 
-export async function calculateOverwrote(database: AppComponents['database'], entity: Entity): Promise<DeploymentId[]> {
+export async function calculateOverwrote(database: DatabaseClient, entity: Entity): Promise<DeploymentId[]> {
   return (
     await database.queryWithValues<{ id: number }>(
       SQL`
@@ -348,7 +342,7 @@ export async function calculateOverwrote(database: AppComponents['database'], en
 }
 
 export async function calculateOverwrittenByManyFast(
-  database: AppComponents['database'],
+  database: DatabaseClient,
   entity: Entity
 ): Promise<{ id: number }[]> {
   const q = SQL`
@@ -368,10 +362,7 @@ export async function calculateOverwrittenByManyFast(
   return (await database.queryWithValues<{ id: number }>(q)).rows
 }
 
-export async function calculateOverwrittenBySlow(
-  database: AppComponents['database'],
-  entity: Entity
-): Promise<{ id: number }[]> {
+export async function calculateOverwrittenBySlow(database: DatabaseClient, entity: Entity): Promise<{ id: number }[]> {
   return (
     await database.queryWithValues<{ id: number }>(
       SQL`

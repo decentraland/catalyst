@@ -39,16 +39,14 @@ describe('Integration - Concurrent deployments', () => {
       await Promise.all(entities.map((entityCombo) => deployEntity(deployer, entityCombo, components)))
 
       // Assert that only one is active
-      const { deployments } = await getDeployments(components, { filters: { pointers: [P1], onlyCurrentlyPointed: true } })
+      const { deployments } = await getDeployments(components, components.database, {
+        filters: { pointers: [P1], onlyCurrentlyPointed: true }
+      })
       expect(deployments.length).toEqual(1)
     }
   )
 
-  async function deployEntity(
-    deployer: Deployer,
-    entity: EntityCombo,
-    components: Pick<AppComponents, 'logs'>
-  ) {
+  async function deployEntity(deployer: Deployer, entity: EntityCombo, components: Pick<AppComponents, 'logs'>) {
     const logger = components.logs.getLogger('ConcurrentCheckTest/DeployEntity')
     try {
       logger.info('deploying', entity as any)

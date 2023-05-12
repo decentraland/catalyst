@@ -64,13 +64,15 @@ describe('failed deployments', () => {
 
     const failed = await failedDeployments.getAllFailedDeployments()
     expect(failed).toEqual(expect.arrayContaining([aFailedDeployment, newFailedDeployment]))
-    expect(saveSpy).toHaveBeenCalledWith(components, newFailedDeployment)
+    expect(saveSpy).toHaveBeenCalledWith(database, newFailedDeployment)
   })
 
   it('should report failed deployment and delete the previous one if there was one with the same entity id', async () => {
     const saveSpy = jest.spyOn(failedDeploymentQueries, 'saveSnapshotFailedDeployment').mockImplementation()
     const deleteSpy = jest.spyOn(failedDeploymentQueries, 'deleteFailedDeployment').mockImplementation()
-    const txSpy = jest.spyOn(database, 'transaction').mockImplementation(async (fnToRun) => await fnToRun(database))
+    const txSpy = jest
+      .spyOn(database, 'transaction')
+      .mockImplementation(async (fnToRun) => await fnToRun({ insideTx: true, ...database }))
     const components = { metrics, database }
     const failedDeployments = await createAndStartFailedDeploymentsWith(components, [aFailedDeployment])
     const newFailedDeploymentWithSameId = {
@@ -84,8 +86,8 @@ describe('failed deployments', () => {
     expect(failed).toHaveLength(1)
     expect(failed[0]).toEqual(newFailedDeploymentWithSameId)
     expect(failed[0].failureTimestamp).toEqual(aFailedDeployment.failureTimestamp + 10)
-    expect(saveSpy).toHaveBeenCalledWith({ database }, newFailedDeploymentWithSameId)
-    expect(deleteSpy).toHaveBeenCalledWith({ database }, aFailedDeployment.entityId)
+    expect(saveSpy).toHaveBeenCalledWith(database, newFailedDeploymentWithSameId)
+    expect(deleteSpy).toHaveBeenCalledWith(database, aFailedDeployment.entityId)
     expect(txSpy).toHaveBeenCalled()
   })
 })

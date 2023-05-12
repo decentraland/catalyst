@@ -1,6 +1,9 @@
 import { EntityType } from '@dcl/schemas'
 import {
-  AuditInfo, DeploymentContext, DeploymentFilters, DeploymentResult,
+  AuditInfo,
+  DeploymentContext,
+  DeploymentFilters,
+  DeploymentResult,
   isInvalidDeployment,
   isSuccessfulDeployment
 } from '../../../../src/deployment-types'
@@ -125,7 +128,7 @@ describe('Integration - Deployment Filters', () => {
     filter: DeploymentFilters,
     ...expectedEntities: EntityCombo[]
   ) {
-    const actualDeployments = await getDeployments(components, { filters: filter })
+    const actualDeployments = await getDeployments(components, components.database, { filters: filter })
     const expectedEntityIds = expectedEntities.map((entityCombo) => entityCombo.entity.id).sort()
     const actualEntityIds = actualDeployments.deployments.map(({ entityId }) => entityId).sort()
     expect({ filter, deployedEntityIds: actualEntityIds }).toEqual({ filter, deployedEntityIds: expectedEntityIds })

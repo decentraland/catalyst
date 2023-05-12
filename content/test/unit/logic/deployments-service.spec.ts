@@ -91,7 +91,7 @@ describe('deployments service', () => {
       })
 
       it('should return the deployments result of passing the correct filters to get the historical deployments', async () => {
-        result = await getDeployments(components, options)
+        result = await getDeployments(components, components.database, options)
 
         expect(result).toEqual(
           expect.objectContaining({
@@ -121,7 +121,7 @@ describe('deployments service', () => {
 
       it("should not return a deployment if it's denylisted", async () => {
         jest.spyOn(components.denylist, 'isDenylisted').mockReturnValueOnce(true).mockReturnValueOnce(false)
-        result = await getDeployments(components, options)
+        result = await getDeployments(components, components.database, options)
 
         expect(result).toEqual(
           expect.objectContaining({
@@ -150,7 +150,7 @@ describe('deployments service', () => {
 
       it("should not return a deployment if it's denylisted", async () => {
         jest.spyOn(components.denylist, 'isDenylisted').mockReturnValueOnce(true).mockReturnValueOnce(false)
-        result = await getDeployments(components, { ...options, includeDenylisted: true })
+        result = await getDeployments(components, components.database, { ...options, includeDenylisted: true })
 
         expect(result).toEqual(
           expect.objectContaining({

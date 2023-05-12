@@ -1,6 +1,6 @@
 import { Entity } from '@dcl/schemas'
 import { getDeployments } from '../../logic/database-queries/deployments-queries'
-import { IDatabaseComponent } from '../../ports/postgres'
+import { DatabaseClient } from '../../ports/postgres'
 import { DeploymentId } from '../../types'
 
 /**
@@ -17,7 +17,7 @@ export class PointerManager {
    * @returns {DeploymentResult} A map where the keys are pointers and the values are a map with before and after value. Before value is the id of the entity deployed before (or undefined) and after is either 'set' or 'cleared'. For e.g. Map(1) { '0x1728f191d246b5a50af7a9494793af74f449a514' => { before: 5199630, after: 'set' }
    */
   async referenceEntityFromPointers(
-    database: IDatabaseComponent,
+    database: DatabaseClient,
     entity: Entity,
     overwrittenDeploymentIds: Set<number>,
     isEntityOverwrittenByAnExistingDeployment: boolean

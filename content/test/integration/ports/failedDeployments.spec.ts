@@ -97,9 +97,11 @@ async function startComponentsWithBaseFailedDeployments(
 ) {
   await startComponent(components.metrics, startOptions)
   await startComponent(components.database, startOptions)
-  for (const failedDeployment of baseFailedDeployments) {
-    await saveSnapshotFailedDeployment(components, failedDeployment)
-  }
+  await components.database.transaction(async (db) => {
+    for (const failedDeployment of baseFailedDeployments) {
+      await saveSnapshotFailedDeployment(db, failedDeployment)
+    }
+  })
   await startComponent(components.failedDeployments, startOptions)
 }
 

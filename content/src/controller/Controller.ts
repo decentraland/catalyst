@@ -398,7 +398,7 @@ export async function getAudit(
     }
   }
 
-  const { deployments } = await getDeployments(context.components, {
+  const { deployments } = await getDeployments(context.components, context.components.database, {
     fields: [DeploymentField.AUDIT_INFO],
     filters: { entityIds: [entityId], entityTypes: [type] },
     includeDenylisted: true
@@ -495,7 +495,7 @@ export async function getPointerChangesHandler(
   const { pointerChanges, filters, pagination } = await context.components.sequentialExecutor.run(
     'GetPointerChangesEndpoint',
     () =>
-      getPointerChanges(context.components, {
+      getPointerChanges(context.components, context.components.database, {
         filters: requestFilters,
         offset,
         limit,
@@ -646,7 +646,7 @@ export async function getDeploymentsHandler(
 
   const { deployments, filters, pagination } = await context.components.sequentialExecutor.run(
     'GetDeploymentsEndpoint',
-    () => getDeployments(context.components, deploymentOptions)
+    () => getDeployments(context.components, context.components.database, deploymentOptions)
   )
   const controllerDeployments = deployments.map((deployment) =>
     ControllerDeploymentFactory.deployment2ControllerEntity(deployment, enumFields)
