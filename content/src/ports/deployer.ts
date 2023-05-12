@@ -15,7 +15,7 @@ import { getEntityById, setEntitiesAsOverwritten } from '../logic/database-queri
 import { calculateOverwrites, getDeployments, saveDeploymentAndContentFiles } from '../logic/deployments'
 import { calculateDeprecatedHashes, calculateIPFSHashes } from '../logic/hashing'
 import { EntityFactory } from '../service/EntityFactory'
-import { DELTA_POINTER_RESULT, DeploymentResult as DeploymentPointersResult } from '../service/pointers/PointerManager'
+import { DELTA_POINTER_RESULT } from '../service/pointers/PointerManager'
 import { happenedBefore } from '../service/time/TimeSorting'
 import { AppComponents, EntityVersion } from '../types'
 
@@ -135,11 +135,28 @@ export function createDeployer(
         )
 
         // Update pointers and active entities
-        await updateActiveEntities(pointersFromEntity, entity)
+        const { clearedPointers, setPointers } = Array.from(pointersFromEntity).reduce(
+          (acc, current) => {
+            if (current[1].after === DELTA_POINTER_RESULT.CLEARED) acc.clearedPointers.push(current[0])
+            if (current[1].after === DELTA_POINTER_RESULT.SET) acc.setPointers.push(current[0])
+            return acc
+          },
+          { clearedPointers: [] as string[], setPointers: [] as string[] }
+        )
+        // invalidate pointers (points to an entity that is no longer active)
+        // this case happen when the entity is overwritten
+        if (clearedPointers.length > 0) {
+          await components.activeEntities.clear(database, clearedPointers)
+        }
+
+        // update pointer (points to the new entity that is active)
+        if (setPointers.length > 0) {
+          await components.activeEntities.update(database, setPointers, entity)
+        }
 
         // Set who overwrote who
         await setEntitiesAsOverwritten(database, overwrote, deploymentId)
-      })
+      }, 'tx_deploy_entity')
     } else {
       logger.info(`Entity already deployed`, { entityId })
       auditInfoComplete.localTimestamp = deployedEntity.localTimestamp
@@ -149,23 +166,6 @@ export function createDeployer(
     await components.failedDeployments.removeFailedDeployment(entity.id)
 
     return { auditInfoComplete, wasEntityDeployed: !isEntityAlreadyDeployed }
-  }
-
-  async function updateActiveEntities(pointersFromEntity: DeploymentPointersResult, entity: Entity) {
-    const { clearedPointers, setPointers } = Array.from(pointersFromEntity).reduce(
-      (acc, current) => {
-        if (current[1].after === DELTA_POINTER_RESULT.CLEARED) acc.clearedPointers.push(current[0])
-        if (current[1].after === DELTA_POINTER_RESULT.SET) acc.setPointers.push(current[0])
-        return acc
-      },
-      { clearedPointers: [] as string[], setPointers: [] as string[] }
-    )
-    // invalidate pointers (points to an entity that is no longer active)
-    // this case happen when the entity is overwritten
-    if (clearedPointers.length > 0) await components.activeEntities.clear(clearedPointers)
-
-    // update pointer (points to the new entity that is active)
-    if (setPointers.length > 0) await components.activeEntities.update(setPointers, entity)
   }
 
   // todo: review if we can use entities cache to determine if there is a newer deployment

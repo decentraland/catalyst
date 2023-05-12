@@ -33,7 +33,7 @@ async function isUrnPrefixValid(collectionUrn: string): Promise<string | false> 
 
 // Method: GET
 export async function filterByUrnHandler(
-  context: HandlerContextWithPath<'activeEntities', '/entities/active/collections/:collectionUrn'>
+  context: HandlerContextWithPath<'database' | 'activeEntities', '/entities/active/collections/:collectionUrn'>
 ) {
   const collectionUrn: string = context.params.collectionUrn
 
@@ -47,6 +47,7 @@ export async function filterByUrnHandler(
   const pagination = paginationObject(context.url)
 
   const { total, entities } = await context.components.activeEntities.withPrefix(
+    context.components.database,
     parsedUrn,
     pagination.offset,
     pagination.limit

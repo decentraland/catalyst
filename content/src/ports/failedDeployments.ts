@@ -78,7 +78,7 @@ export async function createFailedDeployments(
           await components.database.transaction(async (txDatabase) => {
             await deleteFailedDeployment({ database: txDatabase }, failedDeployment.entityId)
             await saveSnapshotFailedDeployment({ database: txDatabase }, failedDeployment)
-          })
+          }, 'tx_failed_deployments')
         } else {
           await saveSnapshotFailedDeployment(components, failedDeployment)
         }
