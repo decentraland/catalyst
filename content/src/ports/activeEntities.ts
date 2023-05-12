@@ -169,6 +169,7 @@ export function createActiveEntitiesComponent(
 
       for (const pointer of pointersWithoutActiveEntity) {
         entityIdByPointers.set(pointer, 'NOT_ACTIVE_ENTITY')
+        logger.debug('pointer has no active entity', { pointer })
       }
     } else if (entityIds) {
       const entityIdsWithoutActiveEntity = entityIds.filter(
@@ -177,6 +178,7 @@ export function createActiveEntitiesComponent(
 
       for (const entityId of entityIdsWithoutActiveEntity) {
         cache.set(entityId, 'NOT_ACTIVE_ENTITY')
+        logger.debug('entityId has no active entity', { entityId })
       }
     }
   }
