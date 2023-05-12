@@ -119,16 +119,13 @@ export function createDeployer(
 
       // Store the entity's content
       await storeEntityContent(hashes)
-      logger.info('Entity stored')
 
       await components.database.transaction(async (database) => {
         // Calculate overwrites
         const { overwrote, overwrittenBy } = await calculateOverwrites(database, entity)
-        logger.info('calculateOverwrites finished')
 
         // Store the deployment
         const deploymentId = await saveDeploymentAndContentFiles(database, entity, auditInfoComplete, overwrittenBy)
-        logger.info('deployment and content files saved')
         // Modify active pointers
         const pointersFromEntity = await components.pointerManager.referenceEntityFromPointers(
           database,
@@ -136,7 +133,6 @@ export function createDeployer(
           overwrote,
           overwrittenBy !== null
         )
-        logger.info('got pointers from entity')
 
         // Update pointers and active entities
         const { clearedPointers, setPointers } = Array.from(pointersFromEntity).reduce(
@@ -150,22 +146,16 @@ export function createDeployer(
         // invalidate pointers (points to an entity that is no longer active)
         // this case happen when the entity is overwritten
         if (clearedPointers.length > 0) {
-          logger.info('clearning pointers')
           await components.activeEntities.clear(clearedPointers)
-          logger.info('pointers cleaned')
         }
 
         // update pointer (points to the new entity that is active)
         if (setPointers.length > 0) {
-          logger.info(`updating pointers ${setPointers.join(', ')}`)
           await components.activeEntities.update(setPointers, entity, database)
-          logger.info(`pointers updated ${setPointers.join(',')}`)
         }
-        logger.info('pointes and active entities updated')
 
         // Set who overwrote who
         await setEntitiesAsOverwritten(database, overwrote, deploymentId)
-        logger.info('overwrites set')
       }, 'tx_deploy_entity')
     } else {
       logger.info(`Entity already deployed`, { entityId })

@@ -142,15 +142,11 @@ export function createActiveEntitiesComponent(
     if (isEntityPresent(entity)) {
       cache.set(entity.id, entity)
       components.metrics.increment('dcl_entities_cache_storage_size', { entity_type: entity.type })
-      logger.info(`updating active deploymnets ${entity.id}`)
       // Store in the db the new entity pointed by pointers
       await updateActiveDeployments({ database: databaseClient ?? components.database }, pointers, entity.id)
-      logger.info('active deploymnets updated')
     } else {
-      logger.info('removing active deploymnets')
       // Remove the row from active_pointers table
       await removeActiveDeployments({ database: databaseClient ?? components.database }, pointers)
-      logger.info('active deploymnets removed')
     }
   }
 
@@ -173,7 +169,6 @@ export function createActiveEntitiesComponent(
 
       for (const pointer of pointersWithoutActiveEntity) {
         entityIdByPointers.set(pointer, 'NOT_ACTIVE_ENTITY')
-        logger.debug('pointer has no active entity', { pointer })
       }
     } else if (entityIds) {
       const entityIdsWithoutActiveEntity = entityIds.filter(
@@ -182,7 +177,6 @@ export function createActiveEntitiesComponent(
 
       for (const entityId of entityIdsWithoutActiveEntity) {
         cache.set(entityId, 'NOT_ACTIVE_ENTITY')
-        logger.debug('entityId has no active entity', { entityId })
       }
     }
   }

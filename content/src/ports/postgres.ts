@@ -185,21 +185,17 @@ export async function createDatabase(
          */
         const client: PoolClient = await pool.connect()
         components.metrics.increment('dcl_db_tx_acquired_clients_total')
-        const randomString = Math.random().toString(36).substring(7)
         try {
-          console.log(`Starting tx type ${durationQueryNameLabel} ${randomString}`)
           await client.query('BEGIN')
           const databaseWithNewClient = await createDatabaseClient(client)
           await functionToRunWithinTransaction(databaseWithNewClient)
           await client.query('COMMIT')
           endTimer({ status: 'success' })
-          console.log(`Sucess tx type ${durationQueryNameLabel} ${randomString}`)
         } catch (error) {
           await client.query('ROLLBACK')
           endTimer({ status: 'error' })
           logger.error(`Error running ${durationQueryNameLabel ?? ''} transaction:`)
           logger.error(error)
-          console.log(`Error tx type ${durationQueryNameLabel} ${randomString}`)
           throw error
         } finally {
           client.release()
