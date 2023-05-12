@@ -63,12 +63,18 @@ describe('activeEntities', () => {
       const components = await buildComponents()
       sut.mockImplementation(() => Promise.resolve([{ ...fakeDeployment, pointers: pointersToUseByCases.lowercase }]))
 
-      const firstResult = await components.activeEntities.withPointers(pointersToUseByCases.lowercase)
+      const firstResult = await components.activeEntities.withPointers(
+        components.database,
+        pointersToUseByCases.lowercase
+      )
       expect(sut).toHaveBeenCalledWith(expect.anything(), undefined, pointersToUseByCases.lowercase)
 
       sut.mockClear()
 
-      const secondResult = await components.activeEntities.withPointers(pointersToUseByCases.lowercase)
+      const secondResult = await components.activeEntities.withPointers(
+        components.database,
+        pointersToUseByCases.lowercase
+      )
       expect(sut).not.toHaveBeenCalled()
 
       expect(firstResult).toMatchObject(secondResult)
@@ -78,12 +84,18 @@ describe('activeEntities', () => {
       const components = await buildComponents()
       sut.mockImplementation(() => Promise.resolve([{ ...fakeDeployment, pointers: pointersToUseByCases.uppercase }]))
 
-      const firstResult = await components.activeEntities.withPointers(pointersToUseByCases.lowercase)
+      const firstResult = await components.activeEntities.withPointers(
+        components.database,
+        pointersToUseByCases.lowercase
+      )
       expect(sut).toHaveBeenCalledWith(expect.anything(), undefined, pointersToUseByCases.lowercase)
 
       sut.mockClear()
 
-      const secondResult = await components.activeEntities.withPointers(pointersToUseByCases.uppercase)
+      const secondResult = await components.activeEntities.withPointers(
+        components.database,
+        pointersToUseByCases.uppercase
+      )
       expect(sut).not.toHaveBeenCalled()
 
       expect(firstResult).toMatchObject(secondResult)
@@ -93,12 +105,18 @@ describe('activeEntities', () => {
       const components = await buildComponents()
       sut.mockImplementation(() => Promise.resolve([{ ...fakeDeployment, pointers: pointersToUseByCases.lowercase }]))
 
-      const firstResult = await components.activeEntities.withPointers(pointersToUseByCases.lowercase)
+      const firstResult = await components.activeEntities.withPointers(
+        components.database,
+        pointersToUseByCases.lowercase
+      )
       expect(sut).toHaveBeenCalledWith(expect.anything(), undefined, pointersToUseByCases.lowercase)
 
       sut.mockClear()
 
-      const secondResult = await components.activeEntities.withPointers(pointersToUseByCases.uppercase)
+      const secondResult = await components.activeEntities.withPointers(
+        components.database,
+        pointersToUseByCases.uppercase
+      )
       expect(sut).not.toHaveBeenCalled()
 
       expect(firstResult).toMatchObject(secondResult)
@@ -108,12 +126,18 @@ describe('activeEntities', () => {
       const components = await buildComponents()
       sut.mockImplementation(() => Promise.resolve([{ ...fakeDeployment, pointers: pointersToUseByCases.lowercase }]))
 
-      const firstResult = await components.activeEntities.withPointers(pointersToUseByCases.uppercase)
+      const firstResult = await components.activeEntities.withPointers(
+        components.database,
+        pointersToUseByCases.uppercase
+      )
       expect(sut).toHaveBeenCalledWith(expect.anything(), undefined, pointersToUseByCases.uppercase)
 
       sut.mockClear()
 
-      const secondResult = await components.activeEntities.withPointers(pointersToUseByCases.lowercase)
+      const secondResult = await components.activeEntities.withPointers(
+        components.database,
+        pointersToUseByCases.lowercase
+      )
       expect(sut).not.toHaveBeenCalled()
 
       expect(firstResult).toMatchObject(secondResult)
@@ -123,15 +147,24 @@ describe('activeEntities', () => {
       const components = await buildComponents()
       sut.mockImplementation(() => Promise.resolve([{ ...fakeDeployment, pointers: pointersToUseByCases.lowercase }]))
 
-      const firstResult = await components.activeEntities.withPointers(pointersToUseByCases.lowercase)
+      const firstResult = await components.activeEntities.withPointers(
+        components.database,
+        pointersToUseByCases.lowercase
+      )
       expect(sut).toHaveBeenCalledWith(expect.anything(), undefined, pointersToUseByCases.lowercase)
 
       sut.mockClear()
 
-      const secondResult = await components.activeEntities.withPointers(pointersToUseByCases.uppercase)
+      const secondResult = await components.activeEntities.withPointers(
+        components.database,
+        pointersToUseByCases.uppercase
+      )
       expect(sut).not.toHaveBeenCalled()
 
-      const thirdResult = await components.activeEntities.withPointers(pointersToUseByCases.uppercase)
+      const thirdResult = await components.activeEntities.withPointers(
+        components.database,
+        pointersToUseByCases.uppercase
+      )
       expect(sut).not.toHaveBeenCalled()
 
       expect(firstResult).toMatchObject(secondResult)
@@ -142,15 +175,24 @@ describe('activeEntities', () => {
       const components = await buildComponents()
       sut.mockImplementation(() => Promise.resolve([{ ...fakeDeployment, pointers: pointersToUseByCases.lowercase }]))
 
-      const firstResult = await components.activeEntities.withPointers(pointersToUseByCases.uppercase)
+      const firstResult = await components.activeEntities.withPointers(
+        components.database,
+        pointersToUseByCases.uppercase
+      )
       expect(sut).toHaveBeenCalledWith(expect.anything(), undefined, pointersToUseByCases.uppercase)
 
       sut.mockClear()
 
-      const secondResult = await components.activeEntities.withPointers(pointersToUseByCases.lowercase)
+      const secondResult = await components.activeEntities.withPointers(
+        components.database,
+        pointersToUseByCases.lowercase
+      )
       expect(sut).not.toHaveBeenCalled()
 
-      const thirdResult = await components.activeEntities.withPointers(pointersToUseByCases.lowercase)
+      const thirdResult = await components.activeEntities.withPointers(
+        components.database,
+        pointersToUseByCases.lowercase
+      )
       expect(sut).not.toHaveBeenCalled()
 
       expect(firstResult).toMatchObject(secondResult)
@@ -162,19 +204,19 @@ describe('activeEntities', () => {
       sut.mockImplementation(() => Promise.resolve([{ ...fakeDeployment, pointers: pointersToUseByCases.lowercase }]))
 
       // Call the first time
-      await components.activeEntities.withPointers(pointersToUseByCases.lowercase)
+      await components.activeEntities.withPointers(components.database, pointersToUseByCases.lowercase)
       // When a pointer is asked the first time, then the database is reached
       expect(sut).toHaveBeenCalledWith(expect.anything(), undefined, pointersToUseByCases.lowercase)
 
       // Reset spy and call again
       sut.mockClear()
-      await components.activeEntities.withPointers(pointersToUseByCases.uppercase)
+      await components.activeEntities.withPointers(components.database, pointersToUseByCases.uppercase)
       expect(sut).not.toHaveBeenCalled()
 
-      await components.activeEntities.withPointers(pointersToUseByCases.uppercase)
+      await components.activeEntities.withPointers(components.database, pointersToUseByCases.uppercase)
       expect(sut).not.toHaveBeenCalled()
 
-      await components.activeEntities.withPointers(pointersToUseByCases.lowercase)
+      await components.activeEntities.withPointers(components.database, pointersToUseByCases.lowercase)
       expect(sut).not.toHaveBeenCalled()
     })
   })
@@ -193,12 +235,12 @@ describe('activeEntities', () => {
       const components = await buildComponents()
       sut.mockImplementation(() => Promise.resolve([{ ...fakeDeployment, entityId: idsToUseByCases.lowercase[0] }]))
 
-      const firstResult = await components.activeEntities.withIds(idsToUseByCases.lowercase)
+      const firstResult = await components.activeEntities.withIds(components.database, idsToUseByCases.lowercase)
       expect(sut).toHaveBeenCalledWith(expect.anything(), idsToUseByCases.lowercase, undefined)
 
       sut.mockClear()
 
-      const secondResult = await components.activeEntities.withIds(idsToUseByCases.lowercase)
+      const secondResult = await components.activeEntities.withIds(components.database, idsToUseByCases.lowercase)
       expect(sut).not.toHaveBeenCalled()
 
       expect(firstResult).toMatchObject(secondResult)
@@ -208,7 +250,7 @@ describe('activeEntities', () => {
       const components = await buildComponents()
       sut.mockImplementationOnce(() => Promise.resolve([{ ...fakeDeployment, entityId: idsToUseByCases.lowercase[0] }]))
 
-      const firstResult = await components.activeEntities.withIds(idsToUseByCases.lowercase)
+      const firstResult = await components.activeEntities.withIds(components.database, idsToUseByCases.lowercase)
       expect(sut).toHaveBeenCalledWith(expect.anything(), idsToUseByCases.lowercase, undefined)
 
       sut.mockClear()
@@ -218,14 +260,14 @@ describe('activeEntities', () => {
         ])
       )
 
-      const secondResult = await components.activeEntities.withIds(idsToUseByCases.uppercase)
+      const secondResult = await components.activeEntities.withIds(components.database, idsToUseByCases.uppercase)
       expect(sut).toHaveBeenCalledWith(expect.anything(), idsToUseByCases.uppercase, undefined)
       expect(secondResult).not.toMatchObject(firstResult)
       expect(secondResult[0].id).toEqual(idsToUseByCases.uppercase[0])
 
       sut.mockClear()
 
-      const thirdResult = await components.activeEntities.withIds(idsToUseByCases.lowercase)
+      const thirdResult = await components.activeEntities.withIds(components.database, idsToUseByCases.lowercase)
       expect(sut).not.toHaveBeenCalled()
       expect(firstResult).toMatchObject(thirdResult)
     })
@@ -234,7 +276,7 @@ describe('activeEntities', () => {
       const components = await buildComponents()
       sut.mockImplementationOnce(() => Promise.resolve([{ ...fakeDeployment, entityId: idsToUseByCases.lowercase[0] }]))
 
-      const firstResult = await components.activeEntities.withIds(idsToUseByCases.lowercase)
+      const firstResult = await components.activeEntities.withIds(components.database, idsToUseByCases.lowercase)
       expect(sut).toHaveBeenCalledWith(expect.anything(), idsToUseByCases.lowercase, undefined)
 
       sut.mockClear()
@@ -244,18 +286,18 @@ describe('activeEntities', () => {
         ])
       )
 
-      const secondResult = await components.activeEntities.withIds(idsToUseByCases.uppercase)
+      const secondResult = await components.activeEntities.withIds(components.database, idsToUseByCases.uppercase)
       expect(sut).toHaveBeenCalledWith(expect.anything(), idsToUseByCases.uppercase, undefined)
       expect(secondResult).not.toMatchObject(firstResult)
       expect(secondResult[0].id).toEqual(idsToUseByCases.uppercase[0])
 
       sut.mockClear()
 
-      const thirdResult = await components.activeEntities.withIds(idsToUseByCases.lowercase)
+      const thirdResult = await components.activeEntities.withIds(components.database, idsToUseByCases.lowercase)
       expect(sut).not.toHaveBeenCalled()
       expect(firstResult).toMatchObject(thirdResult)
 
-      const fourthResult = await components.activeEntities.withIds(idsToUseByCases.uppercase)
+      const fourthResult = await components.activeEntities.withIds(components.database, idsToUseByCases.uppercase)
       expect(sut).not.toHaveBeenCalled()
       expect(secondResult).toMatchObject(fourthResult)
     })
@@ -264,7 +306,7 @@ describe('activeEntities', () => {
       const components = await buildComponents()
       sut.mockImplementationOnce(() => Promise.resolve([{ ...fakeDeployment, entityId: idsToUseByCases.lowercase[0] }]))
 
-      const firstResult = await components.activeEntities.withIds(idsToUseByCases.lowercase)
+      const firstResult = await components.activeEntities.withIds(components.database, idsToUseByCases.lowercase)
       expect(sut).toHaveBeenCalledWith(expect.anything(), idsToUseByCases.lowercase, undefined)
 
       sut.mockClear()
@@ -274,18 +316,18 @@ describe('activeEntities', () => {
         ])
       )
 
-      const secondResult = await components.activeEntities.withIds(idsToUseByCases.uppercase)
+      const secondResult = await components.activeEntities.withIds(components.database, idsToUseByCases.uppercase)
       expect(sut).toHaveBeenCalledWith(expect.anything(), idsToUseByCases.uppercase, undefined)
       expect(secondResult).not.toMatchObject(firstResult)
       expect(secondResult[0].id).toEqual(idsToUseByCases.uppercase[0])
 
       sut.mockClear()
 
-      const thirdResult = await components.activeEntities.withIds(idsToUseByCases.lowercase)
+      const thirdResult = await components.activeEntities.withIds(components.database, idsToUseByCases.lowercase)
       expect(sut).not.toHaveBeenCalled()
       expect(firstResult).toMatchObject(thirdResult)
 
-      const fourthResult = await components.activeEntities.withIds(idsToUseByCases.lowercase)
+      const fourthResult = await components.activeEntities.withIds(components.database, idsToUseByCases.lowercase)
       expect(sut).not.toHaveBeenCalled()
       expect(firstResult).toMatchObject(fourthResult)
     })

@@ -146,12 +146,12 @@ export function createDeployer(
         // invalidate pointers (points to an entity that is no longer active)
         // this case happen when the entity is overwritten
         if (clearedPointers.length > 0) {
-          await components.activeEntities.clear(clearedPointers)
+          await components.activeEntities.clear(database, clearedPointers)
         }
 
         // update pointer (points to the new entity that is active)
         if (setPointers.length > 0) {
-          await components.activeEntities.update(setPointers, entity, database)
+          await components.activeEntities.update(database, setPointers, entity)
         }
 
         // Set who overwrote who

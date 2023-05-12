@@ -1,11 +1,13 @@
 import { Entity } from '@dcl/schemas'
+import { IDatabaseComponent } from 'src/ports/postgres'
 import { ActiveEntities } from '../ports/activeEntities'
 
 export async function findEntityByPointer(
+  database: IDatabaseComponent,
   activeEntities: ActiveEntities,
   pointer: string
 ): Promise<Entity | undefined> {
-  const entities: Entity[] = await activeEntities.withPointers([pointer])
+  const entities: Entity[] = await activeEntities.withPointers(database, [pointer])
   return entities.length > 0 ? entities[0] : undefined
 }
 

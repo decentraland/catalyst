@@ -36,8 +36,8 @@ import { ControllerEntityFactory } from './ControllerEntityFactory'
  */
 // Method: GET
 // Query String: ?{filter}&fields={fieldList}
-export async function getEntities(context: HandlerContextWithPath<'activeEntities', '/entities/:type'>) {
-  const { activeEntities } = context.components
+export async function getEntities(context: HandlerContextWithPath<'activeEntities' | 'database', '/entities/:type'>) {
+  const { database, activeEntities } = context.components
   const query = context.url.searchParams
   const type: EntityType = parseEntityType(context.params.type)
   const pointers = query.getAll('pointer').map((p) => p.toLowerCase())
@@ -68,7 +68,7 @@ export async function getEntities(context: HandlerContextWithPath<'activeEntitie
 
   // Calculate and mask entities
   const entities: Entity[] =
-    ids.length > 0 ? await activeEntities.withIds(ids) : await activeEntities.withPointers(pointers)
+    ids.length > 0 ? await activeEntities.withIds(database, ids) : await activeEntities.withPointers(database, pointers)
 
   const maskedEntities: Entity[] = entities.map((entity) => ControllerEntityFactory.maskEntity(entity, enumFields))
   return {
@@ -80,9 +80,9 @@ export async function getEntities(context: HandlerContextWithPath<'activeEntitie
 // Method: POST
 // Body: { ids: string[], pointers: string[]}
 export async function getActiveEntities(
-  context: HandlerContextWithPath<'logs' | 'activeEntities' | 'denylist', '/entities/active'>
+  context: HandlerContextWithPath<'database' | 'logs' | 'activeEntities' | 'denylist', '/entities/active'>
 ) {
-  const { activeEntities, denylist, logs } = context.components
+  const { database, activeEntities, denylist, logs } = context.components
   const logger = logs.getLogger('get-active-entities')
   try {
     const body = await context.request.json()
@@ -102,7 +102,9 @@ export async function getActiveEntities(
     }
 
     const entities: Entity[] = (
-      ids && ids.length > 0 ? await activeEntities.withIds(ids) : await activeEntities.withPointers(pointers)
+      ids && ids.length > 0
+        ? await activeEntities.withIds(database, ids)
+        : await activeEntities.withPointers(database, pointers)
     ).filter((result) => !denylist.isDenylisted(result.id))
 
     return {
@@ -118,10 +120,14 @@ export async function getActiveEntities(
 
 // Method: GET or HEAD
 export async function getEntityThumbnail(
-  context: HandlerContextWithPath<'activeEntities' | 'storage', '/entities/active/entity/:pointer/thumbnail'>
+  context: HandlerContextWithPath<
+    'database' | 'activeEntities' | 'storage',
+    '/entities/active/entity/:pointer/thumbnail'
+  >
 ) {
+  const { activeEntities, database } = context.components
   const pointer: string = context.params.pointer
-  const entity = await findEntityByPointer(context.components.activeEntities, pointer)
+  const entity = await findEntityByPointer(database, activeEntities, pointer)
   if (!entity) {
     return {
       status: 404
@@ -151,10 +157,11 @@ export async function getEntityThumbnail(
 
 // Method: GET or HEAD
 export async function getEntityImage(
-  context: HandlerContextWithPath<'activeEntities' | 'storage', '/entities/active/entity/:pointer/image'>
+  context: HandlerContextWithPath<'activeEntities' | 'database' | 'storage', '/entities/active/entity/:pointer/image'>
 ) {
+  const { activeEntities, database } = context.components
   const pointer: string = context.params.pointer
-  const entity = await findEntityByPointer(context.components.activeEntities, pointer)
+  const entity = await findEntityByPointer(database, activeEntities, pointer)
   if (!entity) {
     return {
       status: 404
@@ -185,11 +192,11 @@ export async function getEntityImage(
 // Method: GET
 export async function getERC721Entity(
   context: HandlerContextWithPath<
-    'env' | 'activeEntities',
+    'env' | 'activeEntities' | 'database',
     '/entities/active/erc721/:chainId/:contract/:option/:emission?'
   >
 ) {
-  const components = context.components
+  const { database, activeEntities, env } = context.components
   const { chainId, contract, option, emission } = context.params
 
   const protocol = getProtocol(parseInt(chainId, 10))
@@ -202,7 +209,7 @@ export async function getERC721Entity(
   }
 
   const pointer = buildUrn(protocol, contract, option)
-  const entity = await findEntityByPointer(components.activeEntities, pointer)
+  const entity = await findEntityByPointer(database, activeEntities, pointer)
   if (!entity || !entity.metadata) {
     return {
       status: 404
@@ -215,7 +222,7 @@ export async function getERC721Entity(
 
   return {
     status: 200,
-    body: formatERC21Entity(components.env, pointer, entity, emission)
+    body: formatERC21Entity(env, pointer, entity, emission)
   }
 }
 

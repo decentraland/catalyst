@@ -140,13 +140,13 @@ describe('Deployer', function () {
       .mockImplementation(() => Promise.resolve([fakeDeployment()]))
 
     // Call the first time
-    await service.components.activeEntities.withPointers(POINTERS)
+    await service.components.activeEntities.withPointers(service.components.database, POINTERS)
 
     expect(serviceSpy).toHaveBeenCalledWith(expect.anything(), undefined, POINTERS)
 
     // Reset spy and call again
     serviceSpy.mockClear()
-    await service.components.activeEntities.withPointers(POINTERS)
+    await service.components.activeEntities.withPointers(service.components.database, POINTERS)
     expect(serviceSpy).not.toHaveBeenCalled()
   })
 
@@ -169,7 +169,7 @@ describe('Deployer', function () {
     jest.spyOn(deploymentQueries, 'setEntitiesAsOverwritten').mockImplementation(() => Promise.resolve())
 
     // Call the first time
-    await service.components.activeEntities.withPointers(POINTERS)
+    await service.components.activeEntities.withPointers(service.components.database, POINTERS)
     expect(serviceSpy).toHaveBeenCalledWith(expect.anything(), undefined, POINTERS)
 
     // Make deployment that should update the cache
@@ -181,7 +181,7 @@ describe('Deployer', function () {
     serviceSpy = jest
       .spyOn(deployments, 'getDeploymentsForActiveEntities')
       .mockImplementation(() => Promise.resolve([fakeDeployment('QmSQc2mGpzanz1DDtTf2ZCFnwTpJvAbcwzsS4An5PXaTqg')]))
-    await service.components.activeEntities.withPointers(POINTERS)
+    await service.components.activeEntities.withPointers(service.components.database, POINTERS)
 
     // expect(serviceSpy).toHaveBeenCalledWith(expect.anything(), ['QmSQc2mGpzanz1DDtTf2ZCFnwTpJvAbcwzsS4An5PXaTqg'], undefined)
   })
