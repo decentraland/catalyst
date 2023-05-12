@@ -1,4 +1,4 @@
-import { HandlerContextWithPath } from '../types'
+import { HandlerContextWithPath, InvalidRequestError } from '../types'
 import { DecentralandAssetIdentifier, parseUrn } from '@dcl/urn-resolver'
 import { BASE_AVATARS_COLLECTION_ID } from '../ports/activeEntities'
 import { paginationObject } from './utils'
@@ -39,12 +39,9 @@ export async function filterByUrnHandler(
 
   const parsedUrn = await isUrnPrefixValid(collectionUrn)
   if (!parsedUrn) {
-    return {
-      status: 400,
-      body: {
-        errors: `Invalid collection urn param, it should be a valid urn prefix of a 3rd party collection, instead: '${collectionUrn}'`
-      }
-    }
+    throw new InvalidRequestError(
+      `Invalid collection urn param, it should be a valid urn prefix of a 3rd party collection or base wearables, instead: '${collectionUrn}'`
+    )
   }
 
   const pagination = paginationObject(context.url)
