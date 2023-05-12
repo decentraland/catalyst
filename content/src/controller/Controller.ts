@@ -1,9 +1,7 @@
 import { ContentItem } from '@dcl/catalyst-storage'
 import { AuthChain, Authenticator, AuthLink, EthAddress, Signature } from '@dcl/crypto'
 import { Entity, EntityType, PointerChangesSyncDeployment } from '@dcl/schemas'
-import { DecentralandAssetIdentifier, parseUrn } from '@dcl/urn-resolver'
-import { findEntityByPointer, findImageHash, findThumbnailHash } from '../logic/entities'
-import { buildUrn, formatERC21Entity, getProtocol } from '../logic/erc721'
+import { Field } from '@well-known-components/multipart-wrapper'
 import {
   AuditInfo,
   Deployment,
@@ -22,6 +20,8 @@ import {
 } from '../Environment'
 import { getActiveDeploymentsByContentHash } from '../logic/database-queries/deployments-queries'
 import { getDeployments } from '../logic/deployments'
+import { findEntityByPointer, findImageHash, findThumbnailHash } from '../logic/entities'
+import { buildUrn, formatERC21Entity, getProtocol } from '../logic/erc721'
 import { statusResponseFromComponents } from '../logic/status-checks'
 import { toQueryParams } from '../logic/toQueryParams'
 import { getPointerChanges } from '../service/pointers/pointers'
@@ -29,9 +29,6 @@ import { PointerChangesFilters } from '../service/pointers/types'
 import { FormHandlerContextWithPath, HandlerContextWithPath, parseEntityType } from '../types'
 import { ControllerDeploymentFactory } from './ControllerDeploymentFactory'
 import { ControllerEntityFactory } from './ControllerEntityFactory'
-import { Field } from '@well-known-components/multipart-wrapper'
-
-// TODO: move this functions to their own files, I'm keeping all here just to make the initial review easier
 
 /**
  * @deprecated
@@ -43,8 +40,8 @@ export async function getEntities(context: HandlerContextWithPath<'activeEntitie
   const { activeEntities } = context.components
   const query = context.url.searchParams
   const type: EntityType = parseEntityType(context.params.type)
-  const pointers: string[] = asArray<string>(query.get('pointer'))?.map((p) => p.toLowerCase()) ?? []
-  const ids: string[] = asArray<string>(query.get('id')) ?? []
+  const pointers = query.getAll('pointer').map((p) => p.toLowerCase())
+  const ids = query.getAll('id')
   const fields = query.get('fields')
 
   // Validate type is valid
@@ -222,32 +219,6 @@ export async function getERC721Entity(
   }
 }
 
-// Method: GET
-export async function filterByUrnHandler(
-  context: HandlerContextWithPath<'activeEntities', '/entities/active/collections/:collectionUrn'>
-) {
-  const collectionUrn: string = context.params.collectionUrn
-
-  const parsedUrn = await isUrnPrefixValid(collectionUrn)
-  if (!parsedUrn) {
-    return {
-      status: 400,
-      body: {
-        errors: `Invalid collection urn param, it should be a valid urn prefix of a 3rd party collection, instead: '${collectionUrn}'`
-      }
-    }
-  }
-
-  const entities: { pointer: string; entityId: string }[] = await context.components.activeEntities.withPrefix(
-    parsedUrn
-  )
-
-  return {
-    status: 200,
-    body: entities
-  }
-}
-
 function requireString(val: string): string {
   if (typeof val !== 'string') throw new Error('A string was expected')
   return val
@@ -385,9 +356,9 @@ export async function getAvailableContent(
   context: HandlerContextWithPath<'denylist' | 'storage', '/available-content'>
 ) {
   const { storage, denylist } = context.components
-  const cids = asArray<string>(context.url.searchParams.get('cid'))
+  const cids = context.url.searchParams.getAll('cid')
 
-  if (!cids) {
+  if (cids.length === 0) {
     return {
       status: 400,
       body: 'Please set at least one cid.'
@@ -453,10 +424,7 @@ export async function getPointerChangesHandler(
   context: HandlerContextWithPath<'database' | 'denylist' | 'sequentialExecutor' | 'metrics', '/pointer-changes'>
 ) {
   const query = context.url.searchParams
-  const stringEntityTypes = asArray<string>(query.get('entityType'))
-  const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes
-    ? stringEntityTypes.map((type) => parseEntityType(type))
-    : undefined
+  const entityTypes: (EntityType | undefined)[] = query.getAll('entityType').map((type) => parseEntityType(type))
   const from: number | undefined = asInt(query.get('from'))
   const to: number | undefined = asInt(query.get('to'))
   const offset: number | undefined = asInt(query.get('offset'))
@@ -586,13 +554,10 @@ export async function getDeploymentsHandler(
   context: HandlerContextWithPath<'database' | 'denylist' | 'metrics' | 'sequentialExecutor', '/deployments'>
 ) {
   const query = context.url.searchParams
-  const stringEntityTypes = asArray<string>(query.get('entityType'))
-  const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes
-    ? stringEntityTypes.map((type) => parseEntityType(type))
-    : undefined
-  const entityIds: string[] | undefined = asArray<string>(query.get('entityId'))
+  const entityTypes: (EntityType | undefined)[] = query.getAll('entityType').map((type) => parseEntityType(type))
+  const entityIds = query.getAll('entityId')
   const onlyCurrentlyPointed: boolean | undefined = asBoolean(query.get('onlyCurrentlyPointed'))
-  const pointers: string[] | undefined = asArray<string>(query.get('pointer'))?.map((p) => p.toLowerCase())
+  const pointers = query.getAll('pointer').map((p) => p.toLowerCase())
   const offset: number | undefined = asInt(query.get('offset'))
   const limit: number | undefined = asInt(query.get('limit'))
   const fields: string | null = query.get('fields')
@@ -784,16 +749,6 @@ export async function getChallenge(context: HandlerContextWithPath<'challengeSup
   }
 }
 
-function asArray<T>(elements: any | T | T[]): T[] | undefined {
-  if (!elements) {
-    return undefined
-  }
-  if (elements instanceof Array) {
-    return elements
-  }
-  return [elements]
-}
-
 function getContentFileHeaders(content: ContentItem, hashId: string): Record<string, string> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/octet-stream',
@@ -845,31 +800,6 @@ const DEFAULT_FIELDS_ON_DEPLOYMENTS: DeploymentField[] = [
   DeploymentField.CONTENT,
   DeploymentField.METADATA
 ]
-
-async function isUrnPrefixValid(collectionUrn: string): Promise<string | false> {
-  const regex = /^[a-zA-Z0-9_.:,-]+$/g
-  if (!regex.test(collectionUrn)) return false
-
-  try {
-    const parsedUrn: DecentralandAssetIdentifier | null = await parseUrn(collectionUrn)
-
-    if (parsedUrn === null) return false
-
-    // We want to reduce the matches of the query,
-    // so we enforce to write the full name of the third party or collection for the search
-    if (
-      parsedUrn?.type === 'blockchain-collection-third-party-name' ||
-      parsedUrn?.type === 'blockchain-collection-third-party-collection'
-    ) {
-      return `${collectionUrn}:`
-    }
-
-    if (parsedUrn?.type === 'blockchain-collection-third-party') return collectionUrn
-  } catch (error) {
-    console.error(error)
-  }
-  return false
-}
 
 function fromCamelCaseToSnakeCase(phrase: string): string {
   const withoutUpperCase: string = phrase.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
