@@ -5,6 +5,7 @@ import * as deployments from '../../../src/logic/deployments'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
+import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
 import { TestProgram } from '../TestProgram'
 
 describe('Integration - Get Active Entities', () => {
@@ -39,7 +40,7 @@ describe('Integration - Get Active Entities', () => {
 
     const deployResult = await buildDeployData(['0,0', '0,1'], {
       metadata: { a: 'this is just some metadata' },
-      contentPaths: ['test/integration/resources/some-binary-file.png']
+      contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
     })
 
     // Deploy entity
@@ -62,7 +63,7 @@ describe('Integration - Get Active Entities', () => {
 
     const deployResult = await buildDeployData(['0,0', '0,1'], {
       metadata: { a: 'this is just some metadata' },
-      contentPaths: ['test/integration/resources/some-binary-file.png']
+      contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
     })
 
     // Deploy entity
@@ -87,7 +88,7 @@ describe('Integration - Get Active Entities', () => {
 
     const deployResult = await buildDeployData(['0,0', '0,1'], {
       metadata: { a: 'this is just some metadata' },
-      contentPaths: ['test/integration/resources/some-binary-file.png']
+      contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
     })
 
     // Deploy entity
@@ -97,7 +98,7 @@ describe('Integration - Get Active Entities', () => {
       metadata: {
         a: 'this is just some metadata 2'
       },
-      contentPaths: ['test/integration/resources/some-binary-file.png']
+      contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
     })
 
     // Deploy newer entity
@@ -120,7 +121,7 @@ describe('Integration - Get Active Entities', () => {
 
     const deployResult = await buildDeployData(['0,0', '0,1'], {
       metadata: { a: 'this is just some metadata' },
-      contentPaths: ['test/integration/resources/some-binary-file.png']
+      contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
     })
 
     // Deploy entity
@@ -128,7 +129,7 @@ describe('Integration - Get Active Entities', () => {
 
     const deployResult2 = await buildDeployData(['2,0', '2,1'], {
       metadata: { a: 'this is just some metadata' },
-      contentPaths: ['test/integration/resources/some-binary-file.png']
+      contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
     })
 
     // Deploy other entity
@@ -152,7 +153,7 @@ describe('Integration - Get Active Entities', () => {
 
     const deployResult = await buildDeployData(['0,0', '0,1'], {
       metadata: { a: 'this is just some metadata' },
-      contentPaths: ['test/integration/resources/some-binary-file.png']
+      contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
     })
 
     // Deploy entity
@@ -176,7 +177,7 @@ describe('Integration - Get Active Entities', () => {
     const pointers = ['0,0', '0,1']
     const deployResult = await buildDeployData(pointers, {
       metadata: { a: 'this is just some metadata' },
-      contentPaths: ['test/integration/resources/some-binary-file.png']
+      contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
     })
 
     // Deploy entity
@@ -198,7 +199,7 @@ describe('Integration - Get Active Entities', () => {
       const pointers = ['0,0', '0,1']
       const deployResult = await buildDeployData(pointers, {
         metadata: { a: 'this is just some metadata' },
-        contentPaths: ['test/integration/resources/some-binary-file.png']
+        contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
       })
 
       // Deploy entity
@@ -256,7 +257,7 @@ describe('Integration - Get Active Entities', () => {
       const pointers = ['0,0', '0,1']
       const { deployData } = await buildDeployData(pointers, {
         metadata: { a: 'this is just some metadata' },
-        contentPaths: ['test/integration/resources/some-binary-file.png']
+        contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
       })
 
       // Deploy entity with pointers ['0,0', '0,1']
@@ -264,7 +265,7 @@ describe('Integration - Get Active Entities', () => {
 
       const { deployData: secondDeployData } = await buildDeployData(['0,1'], {
         metadata: { a: 'this is just some metadata' },
-        contentPaths: ['test/integration/resources/some-binary-file.png']
+        contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
       })
       // Deploy entity with pointer ['0,1']
       await server.deployEntity(secondDeployData) // Override entity and invalidate pointer ['0,0']
@@ -287,7 +288,7 @@ describe('Integration - Get Active Entities', () => {
       const pointers = ['0,0', '0,1']
       const { deployData } = await buildDeployData(pointers, {
         metadata: { a: 'this is just some metadata' },
-        contentPaths: ['test/integration/resources/some-binary-file.png']
+        contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
       })
 
       // Deploy entity with pointers ['0,0', '0,1']
@@ -306,7 +307,7 @@ describe('Integration - Get Active Entities', () => {
         metadata: {
           a: 'this is just some metadata'
         },
-        contentPaths: ['test/integration/resources/some-binary-file.png']
+        contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
       })
       // Deploy new entity with pointers ['0,0', '0,1']
       await server.deployEntity(secondDeployData)
@@ -332,13 +333,13 @@ describe('Integration - Get Active Entities', () => {
       const firstPointers = ['0,0', '0,1']
       const { deployData } = await buildDeployData(firstPointers, {
         metadata: { a: 'this is just some metadata' },
-        contentPaths: ['test/integration/resources/some-binary-file.png']
+        contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
       })
 
       const secondPointers = ['0,2', '0,3']
       const { deployData: secondDeployData } = await buildDeployData(secondPointers, {
         metadata: { a: 'this is just some metadata' },
-        contentPaths: ['test/integration/resources/some-binary-file.png']
+        contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
       })
 
       await server.deployEntity(deployData)
@@ -381,7 +382,7 @@ describe('Integration - Get Active Entities', () => {
       const pointers = ['0,0', '0,1']
       const { deployData } = await buildDeployData(pointers, {
         metadata: { a: 'this is just some metadata' },
-        contentPaths: ['test/integration/resources/some-binary-file.png']
+        contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
       })
 
       // Deploy entity with pointers ['0,0', '0,1']
@@ -389,7 +390,7 @@ describe('Integration - Get Active Entities', () => {
 
       const { deployData: secondDeployData } = await buildDeployData(['0,1'], {
         metadata: { a: 'this is just some metadata' },
-        contentPaths: ['test/integration/resources/some-binary-file.png']
+        contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
       })
       // Deploy entity with pointer ['0,1']
       await server.deployEntity(secondDeployData) // Override entity and invalidate pointer ['0,0']
@@ -445,11 +446,10 @@ describe('Integration - Get Active Entities', () => {
       makeNoopValidator(server.components)
       await server.startProgram()
       const pointer = ['urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1']
-      const deployResult = await buildDeployData(pointer, {
-        metadata: {
-          a: 'this is just some metadata'
-        }
-      })
+      const metadata = {
+        a: 'this is just some metadata'
+      }
+      const deployResult = await buildDeployData(pointer, { metadata })
 
       // Deploy entity
       await server.deployEntity(deployResult.deployData)
@@ -459,9 +459,12 @@ describe('Integration - Get Active Entities', () => {
       )
 
       expect(response).toBeDefined()
-      expect(response.length).toBe(1)
-      expect(response[0].entityId).toBe(deployResult.controllerEntity.id)
-      expect(response[0].pointer).toBe('urn:decentraland:mumbai:collections-thirdparty:athirdparty:wintercollection:1')
+      expect(response.total).toBe(1)
+
+      const entity = response.entities[0]
+      expect(entity.pointers).toEqual(pointer.map((p) => p.toLocaleLowerCase()))
+      expect(entity.id).toEqual(deployResult.controllerEntity.id)
+      expect(entity.metadata).toEqual(metadata)
     })
     it('when fetching entities by collection name, then matching entity is retrieved', async () => {
       const server = await getTestEnv()
@@ -471,11 +474,10 @@ describe('Integration - Get Active Entities', () => {
       makeNoopValidator(server.components)
       await server.startProgram()
       const pointer = ['urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1']
-      const deployResult = await buildDeployData(pointer, {
-        metadata: {
-          a: 'this is just some metadata'
-        }
-      })
+      const metadata = {
+        a: 'this is just some metadata'
+      }
+      const deployResult = await buildDeployData(pointer, { metadata })
 
       // Deploy entity
       await server.deployEntity(deployResult.deployData)
@@ -485,9 +487,39 @@ describe('Integration - Get Active Entities', () => {
       )
 
       expect(response).toBeDefined()
-      expect(response.length).toBe(1)
-      expect(response[0].entityId).toBe(deployResult.controllerEntity.id)
-      expect(response[0].pointer).toBe('urn:decentraland:mumbai:collections-thirdparty:athirdparty:wintercollection:1')
+      expect(response.total).toBe(1)
+      expect(response.entities).toHaveLength(1)
+      const entity = response.entities[0]
+      expect(entity.pointers).toEqual(pointer.map((p) => p.toLocaleLowerCase()))
+      expect(entity.id).toEqual(deployResult.controllerEntity.id)
+      expect(entity.metadata).toEqual(metadata)
+    })
+    it('when fetching entities by collection name, then paginated matching entities are retrieved', async () => {
+      const server = await getTestEnv()
+        .configServer()
+        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+        .andBuild()
+      makeNoopValidator(server.components)
+      await server.startProgram()
+      const metadata = {
+        a: 'this is just some metadata'
+      }
+      for (let i = 0; i < 10; i++) {
+        const pointer = [`urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:${i}`]
+        const deployResult = await buildDeployData(pointer, { metadata })
+        // Deploy entity
+        await server.deployEntity(deployResult.deployData)
+      }
+
+      const response = await fetchActiveEntityByUrnPrefix(
+        server,
+        'urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection',
+        3
+      )
+
+      expect(response).toBeDefined()
+      expect(response.total).toBe(10)
+      expect(response.entities).toHaveLength(3)
     })
     it('when fetching entities by third party name, then matching entity is retrieved', async () => {
       const server = await getTestEnv()
@@ -497,11 +529,10 @@ describe('Integration - Get Active Entities', () => {
       makeNoopValidator(server.components)
       await server.startProgram()
       const pointer = ['urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1']
-      const deployResult = await buildDeployData(pointer, {
-        metadata: {
-          a: 'this is just some metadata'
-        }
-      })
+      const metadata = {
+        a: 'this is just some metadata'
+      }
+      const deployResult = await buildDeployData(pointer, { metadata })
 
       // Deploy entity
       await server.deployEntity(deployResult.deployData)
@@ -511,9 +542,12 @@ describe('Integration - Get Active Entities', () => {
       )
 
       expect(response).toBeDefined()
-      expect(response.length).toBe(1)
-      expect(response[0].entityId).toBe(deployResult.controllerEntity.id)
-      expect(response[0].pointer).toBe('urn:decentraland:mumbai:collections-thirdparty:athirdparty:wintercollection:1')
+      expect(response.total).toBe(1)
+
+      const entity = response.entities[0]
+      expect(entity.pointers).toEqual(pointer.map((p) => p.toLocaleLowerCase()))
+      expect(entity.id).toEqual(deployResult.controllerEntity.id)
+      expect(entity.metadata).toEqual(metadata)
     })
     it('when fetching entities by not matching urn prefix, then none is retrieved', async () => {
       const server = await getTestEnv()
@@ -525,7 +559,7 @@ describe('Integration - Get Active Entities', () => {
       const pointer = ['urn:dcl:collection:itemId']
       const deployResult = await buildDeployData(pointer, {
         metadata: { a: 'this is just some metadata' },
-        contentPaths: ['test/integration/resources/some-binary-file.png']
+        contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
       })
 
       // Deploy entity
@@ -536,7 +570,7 @@ describe('Integration - Get Active Entities', () => {
       )
 
       expect(response).toBeDefined()
-      expect(response.length).toBe(0)
+      expect(response.total).toBe(0)
     })
 
     it('when pointer is updated and getting by prefix, the new one is retrieved', async () => {
@@ -549,11 +583,12 @@ describe('Integration - Get Active Entities', () => {
       const pointer = ['urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1']
       const firstDeploy = await buildDeployData(pointer, {
         metadata: { a: 'this is just some metadata' },
-        contentPaths: ['test/integration/resources/some-binary-file.png']
+        contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
       })
+      const metadata = { a: 'this is just some metadata' }
       const secondDeploy = await buildDeployData(pointer, {
-        metadata: { a: 'this is just some metadata' },
-        contentPaths: ['test/integration/resources/some-binary-file.png']
+        metadata,
+        contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
       })
 
       // Deploy entity
@@ -565,9 +600,12 @@ describe('Integration - Get Active Entities', () => {
       )
 
       expect(response).toBeDefined()
-      expect(response.length).toBe(1)
-      expect(response[0].entityId).toBe(secondDeploy.controllerEntity.id)
-      expect(response[0].pointer).toBe('urn:decentraland:mumbai:collections-thirdparty:athirdparty:wintercollection:1')
+      expect(response.total).toBe(1)
+
+      const entity = response.entities[0]
+      expect(entity.pointers).toEqual(pointer.map((p) => p.toLocaleLowerCase()))
+      expect(entity.id).toEqual(secondDeploy.controllerEntity.id)
+      expect(entity.metadata).toEqual(metadata)
     })
   })
 
@@ -593,13 +631,18 @@ describe('Integration - Get Active Entities', () => {
 
   async function fetchActiveEntityByUrnPrefix(
     server: TestProgram,
-    collectionUrn: string
-  ): Promise<{ pointer: string; entityId: string }[]> {
+    collectionUrn: string,
+    pageSize: number = 100,
+    pageNum: number = 1
+  ): Promise<{ total: number; entities: Entity[] }> {
     return (
-      await fetch(`${server.getUrl()}/entities/active/collections/${collectionUrn}`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
-      })
+      await fetch(
+        `${server.getUrl()}/entities/active/collections/${collectionUrn}?pageSize=${pageSize}&pageNum=${pageNum}`,
+        {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+        }
+      )
     ).json()
   }
 })
