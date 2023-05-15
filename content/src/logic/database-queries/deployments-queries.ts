@@ -284,18 +284,24 @@ export async function saveDeployment(
 }
 
 export async function saveContentFiles(
-  database: DatabaseTransactionalClient,
+  database: DatabaseClient,
   deploymentId: DeploymentId,
   content: ContentMapping[]
 ): Promise<void> {
-  // TODO why not a big query?
-  const queries = content.map(
-    (item) =>
-      SQL`INSERT INTO content_files (deployment, key, content_hash) VALUES (${deploymentId}, ${item.file}, ${item.hash})`
-  )
-  for (const query of queries) {
-    await database.queryWithValues(query)
+  if (content.length === 0) {
+    return
   }
+
+  const query = SQL`INSERT INTO content_files (deployment, key, content_hash) VALUES `
+  for (let i = 0; i < content.length; ++i) {
+    const item = content[i]
+    query.append(SQL` (${deploymentId}, ${item.file}, ${item.hash})`)
+    if (i < content.length - 1) {
+      query.append(SQL`, `)
+    }
+  }
+
+  await database.queryWithValues(query)
 }
 
 export async function getDeployments(
@@ -319,7 +325,6 @@ export async function setEntitiesAsOverwritten(
   const queries = Array.from(allOverwritten.values()).map(
     (overwritten) => SQL`UPDATE deployments SET deleter_deployment = ${overwrittenBy} WHERE id = ${overwritten}`
   )
-  // TODO why not a big query?
   for (const query of queries) {
     await database.queryWithValues(query)
   }
