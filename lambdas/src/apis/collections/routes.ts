@@ -1,6 +1,6 @@
+import { createFetchComponent } from '@well-known-components/fetch-component'
 import { Request, Response, Router } from 'express'
-import { createFetchComponent } from '../../ports/fetcher'
-import { createThirdPartyAssetFetcher, ThirdPartyAssetFetcher } from '../../ports/third-party/third-party-fetcher'
+import { ThirdPartyAssetFetcher, createThirdPartyAssetFetcher } from '../../ports/third-party/third-party-fetcher'
 import { SmartContentClient } from '../../utils/SmartContentClient'
 import { TheGraphClient } from '../../utils/TheGraphClient'
 import { contentsImage, contentsThumbnail, getCollectionsHandler, getStandardErc721 } from './controllers/collections'

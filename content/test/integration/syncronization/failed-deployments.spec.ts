@@ -1,13 +1,13 @@
 import { Entity } from '@dcl/schemas'
-import { DeploymentData } from 'dcl-catalyst-client'
+import { DeploymentData } from 'dcl-catalyst-client/dist/client/utils/DeploymentBuilder'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { retryFailedDeploymentExecution } from '../../../src/logic/deployments'
 import { FailedDeployment, FailureReason } from '../../../src/ports/failedDeployments'
 import { assertDeploymentFailed, assertDeploymentFailsWith, assertEntitiesAreActiveOnServer } from '../E2EAssertions'
 import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { awaitUntil, buildDeployData, buildDeployDataAfterEntity, createIdentity } from '../E2ETestUtils'
+import { TestProgram, startProgramAndWaitUntilBootstrapFinishes } from '../TestProgram'
 import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
-import { startProgramAndWaitUntilBootstrapFinishes, TestProgram } from '../TestProgram'
 
 describe('Errors during sync', () => {
   const getTestEnv = setupTestEnvironment()
