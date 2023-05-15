@@ -358,10 +358,9 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@^4.5.3":
-  version "4.5.3"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.5.3.tgz#24a718ef31af066d196f5752122fb11001d8bf55"
-  integrity sha512-b+unuViRTagSUUynTXhwjaWO+G80mTRwy6FM0cQ5REZEh7VQktaAwLkF7PnQtT2g60+EbZkyplgYUPuFXMQzIQ==
+"@dcl/content-validator@https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-content-validator-4.5.4-4930871395.commit-c8342d1.tgz":
+  version "4.5.4-4930871395.commit-c8342d1"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-content-validator-4.5.4-4930871395.commit-c8342d1.tgz#20fa76801c31a61603d5b4cc5d306e21f33c231f"
   dependencies:
     "@dcl/block-indexer" "^1.1.1"
     "@dcl/content-hash-tree" "^1.1.4"
@@ -373,9 +372,9 @@
     ms "^2.1.3"
     sharp "^0.32.0"
 
-"@dcl/content-validator@https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-content-validator-4.5.4-4930871395.commit-c8342d1.tgz":
-  version "4.5.4-4930871395.commit-c8342d1"
-  resolved "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-content-validator-4.5.4-4930871395.commit-c8342d1.tgz#20fa76801c31a61603d5b4cc5d306e21f33c231f"
+"@dcl/content-validator@https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-content-validator-4.5.4-4962682389.commit-386a225.tgz":
+  version "4.5.4-4962682389.commit-386a225"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-content-validator-4.5.4-4962682389.commit-386a225.tgz#74597aba14a636e6ea9d384362d0ba3562048cdf"
   dependencies:
     "@dcl/block-indexer" "^1.1.1"
     "@dcl/content-hash-tree" "^1.1.4"
