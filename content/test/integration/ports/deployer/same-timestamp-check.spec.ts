@@ -61,8 +61,11 @@ describe('Integration - Same Timestamp Check', () => {
     }
   )
 
-  async function assertIsActive(components: Pick<AppComponents, 'database' | 'denylist' | 'metrics'>, entityCombo: EntityCombo) {
-    const { deployments } = await getDeployments(components, {
+  async function assertIsActive(
+    components: Pick<AppComponents, 'database' | 'denylist' | 'metrics'>,
+    entityCombo: EntityCombo
+  ) {
+    const { deployments } = await getDeployments(components, components.database, {
       filters: { entityIds: [entityCombo.controllerEntity.id], onlyCurrentlyPointed: true }
     })
     expect(deployments.length).toEqual(1)

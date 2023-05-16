@@ -14,7 +14,7 @@ export function createProcessedSnapshotStorage(
       if (snapshotsInCache.length == snapshotHashes.length) {
         return new Set(snapshotHashes)
       }
-      const processedSnapshots = await getProcessedSnapshots(components, snapshotHashes)
+      const processedSnapshots = await getProcessedSnapshots(components.database, snapshotHashes)
       for (const processedSnapshot of processedSnapshots) {
         processedSnapshotsCache.add(processedSnapshot)
       }

@@ -1,9 +1,9 @@
 import SQL from 'sql-template-strings'
+import { DatabaseClient } from 'src/ports/postgres'
 import { SnapshotFailedDeployment } from '../../ports/failedDeployments'
-import { AppComponents } from '../../types'
 
 export async function saveSnapshotFailedDeployment(
-  components: Pick<AppComponents, 'database'>,
+  database: DatabaseClient,
   failedDeployment: SnapshotFailedDeployment
 ): Promise<void> {
   const { entityId, entityType, failureTimestamp, reason, authChain, errorDescription } = failedDeployment
@@ -16,22 +16,17 @@ export async function saveSnapshotFailedDeployment(
   )}, ${errorDescription}, ${failedDeployment.snapshotHash})
   RETURNING entity_id
   `
-  await components.database.queryWithValues(query, 'save_failed_deployment')
+  await database.queryWithValues(query, 'save_failed_deployment')
 }
 
-export async function deleteFailedDeployment(
-  components: Pick<AppComponents, 'database'>,
-  entityId: string
-): Promise<void> {
-  await components.database.queryWithValues<{ count: string }>(
+export async function deleteFailedDeployment(database: DatabaseClient, entityId: string): Promise<void> {
+  await database.queryWithValues<{ count: string }>(
     SQL`DELETE FROM failed_deployments WHERE entity_id = ${entityId}`,
     'delete_failed_deployment'
   )
 }
 
-export async function getSnapshotFailedDeployments(
-  components: Pick<AppComponents, 'database'>
-): Promise<SnapshotFailedDeployment[]> {
+export async function getSnapshotFailedDeployments(database: DatabaseClient): Promise<SnapshotFailedDeployment[]> {
   const query = SQL`
   SELECT
       entity_id AS "entityId",
@@ -42,9 +37,6 @@ export async function getSnapshotFailedDeployments(
       error_description AS "errorDescription",
       snapshot_hash AS "snapshotHash"
   FROM failed_deployments`
-  const queryResult = await components.database.queryWithValues<SnapshotFailedDeployment>(
-    query,
-    'get_failed_deployments'
-  )
+  const queryResult = await database.queryWithValues<SnapshotFailedDeployment>(query, 'get_failed_deployments')
   return queryResult.rows
 }

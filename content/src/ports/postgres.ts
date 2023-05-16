@@ -6,7 +6,13 @@ import { SQLStatement } from 'sql-template-strings'
 import { EnvironmentConfig } from '../Environment'
 import { AppComponents } from '../types'
 
-export interface DatabaseClient extends IDatabase {
+export type DatabaseClient = Omit<IDatabaseComponent, 'transaction'>
+
+export type DatabaseTransactionalClient = DatabaseClient & {
+  insideTx: true
+}
+
+export interface IDatabaseComponent extends IDatabase, IBaseComponent {
   queryWithValues<T>(sql: SQLStatement, durationQueryNameLabel?: string): Promise<IDatabase.IQueryResult<T>>
   streamQuery<T = any>(
     sql: SQLStatement,
@@ -14,12 +20,9 @@ export interface DatabaseClient extends IDatabase {
     durationQueryNameLabel?: string
   ): AsyncGenerator<T>
   transaction(
-    functionToRunWithinTransaction: (client: DatabaseClient) => Promise<void>,
+    functionToRunWithinTransaction: (client: DatabaseTransactionalClient) => Promise<void>,
     durationQueryNameLabel?: string
   ): Promise<void>
-}
-
-export interface IDatabaseComponent extends DatabaseClient, IBaseComponent {
   start?(): Promise<void>
 }
 
@@ -156,7 +159,7 @@ export async function createDatabase(
       },
 
       async transaction(
-        functionToRunWithinTransaction: (databaseClient: DatabaseClient) => Promise<void>,
+        functionToRunWithinTransaction: (databaseClient: DatabaseTransactionalClient) => Promise<void>,
         durationQueryNameLabel?: string
       ): Promise<void> {
         /**
@@ -170,7 +173,8 @@ export async function createDatabase(
         if (initializedClient) {
           const endInnerTimer = startTimer(durationQueryNameLabel)
           try {
-            const res = await functionToRunWithinTransaction(await createDatabaseClient(initializedClient))
+            const txDb = await createDatabaseClient(initializedClient)
+            const res = await functionToRunWithinTransaction({ insideTx: true, ...txDb })
             endInnerTimer({ status: 'success' })
             return res
           } catch (error) {
@@ -188,7 +192,7 @@ export async function createDatabase(
         try {
           await client.query('BEGIN')
           const databaseWithNewClient = await createDatabaseClient(client)
-          await functionToRunWithinTransaction(databaseWithNewClient)
+          await functionToRunWithinTransaction({ insideTx: true, ...databaseWithNewClient })
           await client.query('COMMIT')
           endTimer({ status: 'success' })
         } catch (error) {

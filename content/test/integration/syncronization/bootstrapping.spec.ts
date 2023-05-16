@@ -62,7 +62,10 @@ describe('Bootstrapping synchronization tests', function () {
       ).rows.map((s) => s.hash)
     )
 
-    const server2ProcessedSnapshots = await getProcessedSnapshots(server2.components, Array.from(server1Snapshots))
+    const server2ProcessedSnapshots = await getProcessedSnapshots(
+      server2.components.database,
+      Array.from(server1Snapshots)
+    )
     expect(server1Snapshots.size > 0).toBeTruthy()
     expect(server2ProcessedSnapshots).toEqual(server1Snapshots)
   })
@@ -134,7 +137,7 @@ describe('Bootstrapping synchronization tests', function () {
     )
     jest.spyOn(server2.components.snapshotStorage, 'has').mockResolvedValue(false)
     await startProgramAndWaitUntilBootstrapFinishes(server2)
-    const sevenDaysSnapshots = await findSnapshotsStrictlyContainedInTimeRange(server1.components, {
+    const sevenDaysSnapshots = await findSnapshotsStrictlyContainedInTimeRange(server1.components.database, {
       initTimestamp: initialTimestamp,
       endTimestamp: fakeNow()
     })
@@ -172,7 +175,7 @@ describe('Bootstrapping synchronization tests', function () {
     ).onSyncFinished()
     await server2.components.downloadQueue.onIdle()
     await server2.components.batchDeployer.onIdle()
-    const eightDaysSnapshots = await findSnapshotsStrictlyContainedInTimeRange(server1.components, {
+    const eightDaysSnapshots = await findSnapshotsStrictlyContainedInTimeRange(server1.components.database, {
       initTimestamp: initialTimestamp,
       endTimestamp: fakeNow()
     })
@@ -235,7 +238,7 @@ describe('Bootstrapping synchronization tests', function () {
     )
 
     // assert that the entity was not deployed on server 2
-    const { deployments } = await getDeployments(server2.components)
+    const { deployments } = await getDeployments(server2.components, server2.components.database)
     expect(deployments).toHaveLength(0)
   })
 

@@ -18,6 +18,7 @@ import { EntityFactory } from '../service/EntityFactory'
 import { DELTA_POINTER_RESULT } from '../service/pointers/PointerManager'
 import { happenedBefore } from '../service/time/TimeSorting'
 import { AppComponents, EntityVersion } from '../types'
+import { DatabaseClient } from './postgres'
 
 export function isIPFSHash(hash: string): boolean {
   return IPFSv2.validate(hash)
@@ -87,13 +88,14 @@ export function createDeployer(
   }
 
   async function storeDeploymentInDatabase(
+    database: DatabaseClient,
     entityId: string,
     entity: Entity,
     auditInfo: LocalDeploymentAuditInfo,
     hashes: Map<string, Uint8Array>,
     context: DeploymentContext
   ): Promise<InvalidResult | { auditInfoComplete: AuditInfo; wasEntityDeployed: boolean }> {
-    const deployedEntity = await getEntityById(components, entityId)
+    const deployedEntity = await getEntityById(database, entityId)
     const isEntityAlreadyDeployed = !!deployedEntity
 
     const validationResult = await validateDeployment(entity, context, isEntityAlreadyDeployed, auditInfo, hashes)
@@ -172,7 +174,7 @@ export function createDeployer(
   /** Check if there are newer entities on the given entity's pointers */
   async function areThereNewerEntitiesOnPointers(entity: Entity): Promise<boolean> {
     // Validate that pointers aren't referring to an entity with a higher timestamp
-    const { deployments: lastDeployments } = await getDeployments(components, {
+    const { deployments: lastDeployments } = await getDeployments(components, components.database, {
       filters: { entityTypes: [entity.type], pointers: entity.pointers }
     })
     for (const lastDeployment of lastDeployments) {
@@ -236,7 +238,7 @@ export function createDeployer(
       auditInfo: LocalDeploymentAuditInfo,
       context: DeploymentContext
     ): Promise<DeploymentResult> {
-      const deployedEntity = await getEntityById(components, entityId)
+      const deployedEntity = await getEntityById(components.database, entityId)
       // entity deployments are idempotent operations
       if (deployedEntity) {
         logger.debug(`Entity was already deployed`, {
@@ -296,7 +298,14 @@ export function createDeployer(
           pointers: entity.pointers.join(' ')
         })
 
-        const storeResult = await storeDeploymentInDatabase(entityId, entity, auditInfo, hashes, contextToDeploy)
+        const storeResult = await storeDeploymentInDatabase(
+          components.database,
+          entityId,
+          entity,
+          auditInfo,
+          hashes,
+          contextToDeploy
+        )
 
         if (!storeResult) {
           logger.error(`Error calling storeDeploymentInDatabase, returned void`, {

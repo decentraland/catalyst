@@ -20,7 +20,8 @@ export async function assertEntitiesAreDeployedButNotActive(server: TestProgram,
     assert.equal(
       unexpectedEntities.length,
       0,
-      `Expected not to find entity with id ${entity.id} when checking for pointer ${entity.pointers
+      `Expected not to find entity with id ${entity.id} when checking for pointer ${
+        entity.pointers
       } on server '${server.getUrl()}.'`
     )
     await assertEntityIsOnServer(server, entity)
@@ -79,15 +80,13 @@ export async function assertDeploymentsCount(server: TestProgram, count: number)
   )
 }
 
-export async function assertDeploymentsAreReported(
-  server: TestProgram,
-  ...expectedDeployments: Deployment[]
-) {
-  const { deployments } = await getDeployments(server.components)
+export async function assertDeploymentsAreReported(server: TestProgram, ...expectedDeployments: Deployment[]) {
+  const { deployments } = await getDeployments(server.components, server.components.database)
   assert.equal(
     deployments.length,
     expectedDeployments.length,
-    `Expected to find ${expectedDeployments.length} deployments on server ${server.getUrl()}. Instead, found ${deployments.length
+    `Expected to find ${expectedDeployments.length} deployments on server ${server.getUrl()}. Instead, found ${
+      deployments.length
     }.`
   )
 
@@ -161,11 +160,7 @@ export async function assertFileIsNotOnServer(server: TestProgram, hash: string)
   await assertPromiseIsRejected(() => server.downloadContent(hash))
 }
 
-export async function assertEntityIsOverwrittenBy(
-  server: TestProgram,
-  entity: Entity,
-  overwrittenBy: Entity
-) {
+export async function assertEntityIsOverwrittenBy(server: TestProgram, entity: Entity, overwrittenBy: Entity) {
   // Legacy check
   const auditInfo = await server.getAuditInfo(entity)
   assert.equal(auditInfo.overwrittenBy, overwrittenBy.id)
@@ -205,11 +200,7 @@ export async function assertEntityIsDenylisted(server: TestProgram, entity: Enti
   assert.ok(deployment.auditInfo.isDenylisted)
 }
 
-export async function assertContentNotIsDenylisted(
-  server: TestProgram,
-  entity: Entity,
-  contentHash: string
-) {
+export async function assertContentNotIsDenylisted(server: TestProgram, entity: Entity, contentHash: string) {
   // Legacy check
   const auditInfo = await server.getAuditInfo(entity)
   assert.ok(!auditInfo.denylistedContent || !auditInfo.denylistedContent.includes(contentHash))
@@ -219,11 +210,7 @@ export async function assertContentNotIsDenylisted(
   assert.ok(!deployment.auditInfo.denylistedContent || !deployment.auditInfo.denylistedContent.includes(contentHash))
 }
 
-export async function assertContentIsDenylisted(
-  server: TestProgram,
-  entity: Entity,
-  contentHash: string
-) {
+export async function assertContentIsDenylisted(server: TestProgram, entity: Entity, contentHash: string) {
   // Legacy check
   const auditInfo = await server.getAuditInfo(entity)
   assert.ok(auditInfo.denylistedContent!.includes(contentHash))
@@ -233,11 +220,7 @@ export async function assertContentIsDenylisted(
   assert.ok(deployment.auditInfo.denylistedContent!.includes(contentHash))
 }
 
-export function buildDeployment(
-  deployData: DeploymentData,
-  entity: Entity,
-  deploymentTimestamp: number
-): Deployment {
+export function buildDeployment(deployData: DeploymentData, entity: Entity, deploymentTimestamp: number): Deployment {
   return {
     ...entity,
     entityVersion: EntityVersion.V3,

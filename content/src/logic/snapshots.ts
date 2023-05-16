@@ -1,4 +1,5 @@
 import { SnapshotMetadata, TimeRange } from '@dcl/snapshots-fetcher/dist/types'
+import { DatabaseClient } from 'src/ports/postgres'
 import { createFileWriter, IFile } from '../ports/fileWriter'
 import { AppComponents } from '../types'
 import {
@@ -18,7 +19,8 @@ import {
 } from './time-range'
 
 export async function generateAndStoreSnapshot(
-  components: Pick<AppComponents, 'database' | 'fs' | 'metrics' | 'storage' | 'logs' | 'denylist' | 'staticConfigs'>,
+  components: Pick<AppComponents, 'fs' | 'metrics' | 'storage' | 'logs' | 'denylist' | 'staticConfigs'>,
+  database: DatabaseClient,
   timeRange: TimeRange,
   reason?: string
 ): Promise<{
@@ -35,7 +37,7 @@ export async function generateAndStoreSnapshot(
     fileWriter = await createFileWriter(components, 'tmp-all-entities-snapshot')
     // this header is necessary to later differentiate between binary formats and non-binary formats
     await fileWriter.appendDebounced('### Decentraland json snapshot\n')
-    for await (const snapshotElem of streamActiveDeploymentsInTimeRange(components, timeRange)) {
+    for await (const snapshotElem of streamActiveDeploymentsInTimeRange(database, timeRange)) {
       const stringifiedElement = JSON.stringify(snapshotElem) + '\n'
       await fileWriter.appendDebounced(stringifiedElement)
       numberOfEntities++
@@ -65,7 +67,7 @@ export async function generateSnapshotsInMultipleTimeRanges(
   const snapshotMetadatas: SnapshotMetadata[] = []
   const timeRangeDivision = divideTimeInYearsMonthsWeeksAndDays(timeRangeToDivide)
   for (const timeRange of timeRangeDivision.intervals) {
-    const savedSnapshots = await findSnapshotsStrictlyContainedInTimeRange(components, timeRange)
+    const savedSnapshots = await findSnapshotsStrictlyContainedInTimeRange(components.database, timeRange)
 
     const isTimeRangeCoveredByOtherSnapshots = isTimeRangeCoveredBy(
       timeRange,
@@ -78,10 +80,10 @@ export async function generateSnapshotsInMultipleTimeRanges(
       savedSnapshots.length == 1 &&
       // If snapshot is 1 month old, we recompile it if there are inactive entities
       savedSnapshots[0].generationTimestamp < Date.now() - MS_PER_MONTH &&
-      (await getNumberOfActiveEntitiesInTimeRange(components, savedSnapshots[0].timeRange)) <
+      (await getNumberOfActiveEntitiesInTimeRange(components.database, savedSnapshots[0].timeRange)) <
         savedSnapshots[0].numberOfEntities
 
-    const isOutdated = savedSnapshots.length == 1 && (await snapshotIsOutdated(components, savedSnapshots[0]))
+    const isOutdated = savedSnapshots.length == 1 && (await snapshotIsOutdated(components.database, savedSnapshots[0]))
 
     const shouldGenerateNewSnapshot =
       !isTimeRangeCoveredByOtherSnapshots ||
@@ -106,6 +108,7 @@ export async function generateSnapshotsInMultipleTimeRanges(
 
       const { hash, numberOfEntities } = await generateAndStoreSnapshot(
         components,
+        components.database,
         timeRange,
         getReasonForMetric({
           isTimeRangeCoveredByOtherSnapshots,

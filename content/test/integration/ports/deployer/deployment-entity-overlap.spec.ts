@@ -145,7 +145,9 @@ describe('Integration - Deployment with Entity Overlaps', () => {
     components: Pick<AppComponents, 'database' | 'denylist' | 'metrics'>,
     ...expectedEntities: EntityCombo[]
   ) {
-    const actualDeployments = await getDeployments(components, { filters: { onlyCurrentlyPointed: true } })
+    const actualDeployments = await getDeployments(components, components.database, {
+      filters: { onlyCurrentlyPointed: true }
+    })
     const expectedEntityIds = expectedEntities.map((entityCombo) => entityCombo.entity.id).sort()
     const actualEntityIds = actualDeployments.deployments.map(({ entityId }) => entityId).sort()
     expect({ deployedEntityIds: actualEntityIds }).toEqual({ deployedEntityIds: expectedEntityIds })

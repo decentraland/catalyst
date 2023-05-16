@@ -12,7 +12,6 @@ const metrics = createTestMetricsComponent(metricsDeclaration)
 const env = new Environment()
 
 describe('start', () => {
-
   let logs: ILoggerComponent
 
   beforeAll(async () => {
@@ -32,7 +31,6 @@ describe('start', () => {
 })
 
 describe('stop', () => {
-
   let logs: ILoggerComponent
 
   beforeAll(async () => {
@@ -52,7 +50,6 @@ describe('stop', () => {
 })
 
 describe('DatabaseClient', () => {
-
   let logs: ILoggerComponent
 
   beforeAll(async () => {
@@ -79,7 +76,6 @@ describe('DatabaseClient', () => {
   })
 
   describe('transaction', () => {
-
     it('should create a new client for inner queries', async () => {
       const pool = new Pool()
       const poolClient = {
@@ -88,7 +84,7 @@ describe('DatabaseClient', () => {
       }
       jest.spyOn(pool, 'connect').mockImplementation(() => poolClient)
       const database = await createDatabase({ logs, env, metrics }, pool, {})
-      await database.transaction(async () => { })
+      await database.transaction(async () => {})
       expect(pool.connect).toBeCalled()
     })
 
@@ -100,7 +96,7 @@ describe('DatabaseClient', () => {
       }
       jest.spyOn(pool, 'connect').mockImplementation(() => poolClient)
       const database = await createDatabase({ logs, env, metrics }, pool, {})
-      await database.transaction(async () => { })
+      await database.transaction(async () => {})
       expect(pool.connect).toBeCalled()
       expect(poolClient.query).toBeCalledWith('BEGIN')
     })
@@ -108,7 +104,7 @@ describe('DatabaseClient', () => {
     it('should run all inner queries with the provided client', async () => {
       const pool = new Pool()
       const poolClient = {
-        query: jest.fn().mockResolvedValue(({ rows: [], rowCount: 0 })),
+        query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }),
         release: jest.fn()
       }
       jest.spyOn(pool, 'connect').mockImplementation(() => poolClient)
@@ -123,24 +119,10 @@ describe('DatabaseClient', () => {
       expect(poolClient.query).toBeCalledWith(otherQuery)
     })
 
-    it('should not create a new client when running within another transaction (using the provided client)', async () => {
-      const pool = new Pool()
-      const poolClient = {
-        query: jest.fn(),
-        release: jest.fn()
-      }
-      jest.spyOn(pool, 'connect').mockImplementation(() => poolClient)
-      const database = await createDatabase({ logs, env, metrics }, pool, {})
-      await database.transaction(async (databaseClient) => {
-        await databaseClient.transaction(async () => { })
-      })
-      expect(pool.connect).toBeCalledTimes(1)
-    })
-
     it('should use the provided client when running within another transaction', async () => {
       const pool = new Pool()
       const poolClient = {
-        query: jest.fn().mockResolvedValue(({ rows: [], rowCount: 0 })),
+        query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }),
         release: jest.fn()
       }
       jest.spyOn(pool, 'connect').mockImplementation(() => poolClient)
@@ -163,7 +145,7 @@ describe('DatabaseClient', () => {
       }
       jest.spyOn(pool, 'connect').mockImplementation(() => poolClient)
       const database = await createDatabase({ logs, env, metrics }, pool, {})
-      await database.transaction(async () => { })
+      await database.transaction(async () => {})
       expect(pool.connect).toBeCalled()
       expect(poolClient.query).toBeCalledWith('COMMIT')
     })
@@ -176,9 +158,11 @@ describe('DatabaseClient', () => {
       }
       jest.spyOn(pool, 'connect').mockImplementation(() => poolClient)
       const database = await createDatabase({ logs, env, metrics }, pool, {})
-      await expect(database.transaction(async () => {
-        throw new Error('error during transaction')
-      })).rejects.toThrowError('error during transaction')
+      await expect(
+        database.transaction(async () => {
+          throw new Error('error during transaction')
+        })
+      ).rejects.toThrowError('error during transaction')
       expect(poolClient.query).toBeCalledWith('ROLLBACK')
     })
 
@@ -190,7 +174,7 @@ describe('DatabaseClient', () => {
       }
       jest.spyOn(pool, 'connect').mockImplementation(() => poolClient)
       const database = await createDatabase({ logs, env, metrics }, pool, {})
-      await database.transaction(async () => { })
+      await database.transaction(async () => {})
       expect(poolClient.release).toBeCalledTimes(1)
     })
 
@@ -202,46 +186,12 @@ describe('DatabaseClient', () => {
       }
       jest.spyOn(pool, 'connect').mockImplementation(() => poolClient)
       const database = await createDatabase({ logs, env, metrics }, pool, {})
-      await expect(database.transaction(async () => {
-        throw new Error('error during transaction')
-      })).rejects.toThrowError('error during transaction')
+      await expect(
+        database.transaction(async () => {
+          throw new Error('error during transaction')
+        })
+      ).rejects.toThrowError('error during transaction')
       expect(poolClient.release).toBeCalledTimes(1)
-    })
-
-    it('should call release only if it is the outer transaction', async () => {
-      const pool = new Pool()
-      const poolClient = {
-        query: jest.fn(),
-        release: jest.fn()
-      }
-      jest.spyOn(pool, 'connect').mockImplementation(() => poolClient)
-      const database = await createDatabase({ logs, env, metrics }, pool, {})
-      await database.transaction(async (databaseClient) => {
-        await databaseClient.transaction(async () => { })
-        // Inner transaction is finished, but not the outer one.
-        expect(poolClient.release).not.toBeCalled()
-      })
-      expect(poolClient.release).toBeCalledTimes(1)
-    })
-
-    it('should call BEGIN and COMMIT only if it is the outer transaction', async () => {
-      const pool = new Pool()
-      const poolClient = {
-        query: jest.fn(),
-        release: jest.fn()
-      }
-      jest.spyOn(pool, 'connect').mockImplementation(() => poolClient)
-      const database = await createDatabase({ logs, env, metrics }, pool, {})
-      await database.transaction(async (databaseClient) => {
-        // Only the outer transaction calls BEGIN
-        expect(poolClient.query).toBeCalledWith('BEGIN')
-        await databaseClient.transaction(async () => { })
-        // Only the outer transaction calls COMMIT
-        expect(poolClient.query).not.toBeCalledWith('COMMIT')
-      })
-      expect(poolClient.query).toBeCalledWith('BEGIN')
-      expect(poolClient.query).toBeCalledWith('COMMIT')
-      expect(poolClient.query).toBeCalledTimes(2)
     })
 
     it('should use the pool to make queries when not using the provided database client', async () => {
@@ -269,7 +219,7 @@ it('should use the pool to make external queries even if there is a transaction 
   const pool = new Pool()
   jest.spyOn(pool, 'query').mockImplementation(() => ({ rows: [], rowCount: 0 }))
   const poolClient = {
-    query: jest.fn().mockResolvedValue(({ rows: [], rowCount: 0 })),
+    query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }),
     release: jest.fn()
   }
   jest.spyOn(pool, 'connect').mockImplementation(() => poolClient)

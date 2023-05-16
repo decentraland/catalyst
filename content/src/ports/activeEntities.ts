@@ -8,7 +8,7 @@ import {
 } from '../logic/database-queries/pointers-queries'
 import { getDeploymentsForActiveEntities, mapDeploymentsToEntities } from '../logic/deployments'
 import { AppComponents } from '../types'
-import { IDatabaseComponent } from './postgres'
+import { DatabaseClient } from './postgres'
 
 export const BASE_AVATARS_COLLECTION_ID = 'urn:decentraland:off-chain:base-avatars'
 
@@ -24,12 +24,12 @@ export type ActiveEntities = {
    * Retrieve active entities that are pointed by the given pointers
    * Note: result is cached, even if the pointer has no active entity
    */
-  withPointers(database: IDatabaseComponent, pointers: string[]): Promise<Entity[]>
+  withPointers(database: DatabaseClient, pointers: string[]): Promise<Entity[]>
   /**
    * Retrieve active entities which their pointers match the given urn prefix
    */
   withPrefix(
-    database: IDatabaseComponent,
+    database: DatabaseClient,
     collectionUrn: string,
     offset: number,
     limit: number
@@ -38,16 +38,16 @@ export type ActiveEntities = {
    * Retrieve active entities by their ids
    * Note: result is cached, even if the id has no active entity
    */
-  withIds(database: IDatabaseComponent, entityIds: string[]): Promise<Entity[]>
+  withIds(database: DatabaseClient, entityIds: string[]): Promise<Entity[]>
   /**
    * Save entityId for given pointer and store the entity in the cache,
    * useful to retrieve entities by pointers
    */
-  update(database: IDatabaseComponent, pointers: string[], entity: Entity | NotActiveEntity): Promise<void>
+  update(database: DatabaseClient, pointers: string[], entity: Entity | NotActiveEntity): Promise<void>
   /**
    * Set pointers and entity as NOT_ACTIVE
    */
-  clear(database: IDatabaseComponent, pointers: string[]): Promise<void>
+  clear(database: DatabaseClient, pointers: string[]): Promise<void>
   /**
    * Returns the cached result:
    *  - entity id if there is an active entity
@@ -75,7 +75,7 @@ export function createActiveEntitiesComponent(
   const collectionUrnsByPrefixCache = new LRU<string, string[]>({
     ttl: 1000 * 60 * 60 * 24, // 24 hours
     fetchMethod: async (collectionUrn: string) =>
-      gerUrnsThatMatchCollectionUrnPrefix({ database: components.database }, collectionUrn.toLowerCase())
+      gerUrnsThatMatchCollectionUrnPrefix(components.database, collectionUrn.toLowerCase())
   })
 
   const normalizePointerCacheKey = (pointer: string) => pointer.toLowerCase()
@@ -127,7 +127,7 @@ export function createActiveEntitiesComponent(
     }
   }
 
-  function clear(database: IDatabaseComponent, pointers: string[]) {
+  function clear(database: DatabaseClient, pointers: string[]) {
     return update(database, pointers, 'NOT_ACTIVE_ENTITY')
   }
 
@@ -135,11 +135,7 @@ export function createActiveEntitiesComponent(
    * Save entityId for given pointer and store the entity in the cache,
    * useful to retrieve entities by pointers
    */
-  async function update(
-    database: IDatabaseComponent,
-    pointers: string[],
-    entity: Entity | NotActiveEntity
-  ): Promise<void> {
+  async function update(database: DatabaseClient, pointers: string[], entity: Entity | NotActiveEntity): Promise<void> {
     for (const pointer of pointers) {
       setPreviousEntityAsNone(pointer)
       entityIdByPointers.set(pointer, isEntityPresent(entity) ? entity.id : entity)
@@ -148,15 +144,15 @@ export function createActiveEntitiesComponent(
       cache.set(entity.id, entity)
       components.metrics.increment('dcl_entities_cache_storage_size', { entity_type: entity.type })
       // Store in the db the new entity pointed by pointers
-      await updateActiveDeployments({ database }, pointers, entity.id)
+      await updateActiveDeployments(database, pointers, entity.id)
     } else {
       // Remove the row from active_pointers table
-      await removeActiveDeployments({ database }, pointers)
+      await removeActiveDeployments(database, pointers)
     }
   }
 
   async function updateCache(
-    database: IDatabaseComponent,
+    database: DatabaseClient,
     entities: Entity[],
     { pointers, entityIds }: { pointers?: string[]; entityIds?: string[] }
   ): Promise<void> {
@@ -194,7 +190,7 @@ export function createActiveEntitiesComponent(
    * It also updates the cache and reports miss access
    */
   async function findEntities(
-    database: IDatabaseComponent,
+    database: DatabaseClient,
     {
       entityIds,
       pointers
@@ -203,7 +199,7 @@ export function createActiveEntitiesComponent(
       pointers?: string[]
     }
   ): Promise<Entity[]> {
-    const deployments = await getDeploymentsForActiveEntities(components, entityIds, pointers)
+    const deployments = await getDeploymentsForActiveEntities(database, entityIds, pointers)
     for (const deployment of deployments) {
       reportCacheAccess(deployment.entityType, 'miss')
     }
@@ -217,7 +213,7 @@ export function createActiveEntitiesComponent(
   /**
    * Retrieve active entities by their ids
    */
-  async function withIds(database: IDatabaseComponent, entityIds: string[]): Promise<Entity[]> {
+  async function withIds(database: DatabaseClient, entityIds: string[]): Promise<Entity[]> {
     // check what is on the cache
     const uniqueEntityIds = new Set(entityIds)
     const onCache: (Entity | NotActiveEntity)[] = []
@@ -245,7 +241,7 @@ export function createActiveEntitiesComponent(
   /**
    * Retrieve active entities that are pointed by the given pointers
    */
-  async function withPointers(database: IDatabaseComponent, pointers: string[]) {
+  async function withPointers(database: DatabaseClient, pointers: string[]) {
     const uniquePointers = new Set(pointers)
     const uniqueEntityIds = new Set<string>() // entityIds that are associated to the given pointers
     const remaining: string[] = [] // pointers that are not associated to any entity
@@ -279,7 +275,7 @@ export function createActiveEntitiesComponent(
    * Retrieve active entities that are pointed by pointers that match the urn prefix
    */
   async function withPrefix(
-    database: IDatabaseComponent,
+    database: DatabaseClient,
     collectionUrn: string,
     offset: number,
     limit: number

@@ -1,13 +1,10 @@
-import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { ContentFilesRow, getContentFiles } from '../../../src/logic/database-queries/content-files-queries'
-import { metricsDeclaration } from '../../../src/metrics'
 import { AppComponents } from '../../../src/types'
 
 describe('content files queries', () => {
   describe('getContentFiles', () => {
-    const components: Pick<AppComponents, 'database' | 'metrics'> = {
-      database: { queryWithValues: () => {} },
-      metrics: createTestMetricsComponent(metricsDeclaration)
+    const components: Pick<AppComponents, 'database'> = {
+      database: { queryWithValues: () => {} }
     } as any
 
     const deploymentIds = [127, 255]
@@ -38,7 +35,7 @@ describe('content files queries', () => {
     })
 
     it('should return a map from deployment id to an array of content', async () => {
-      const result = await getContentFiles(components, deploymentIds)
+      const result = await getContentFiles(components.database, deploymentIds)
       expect(result).toMatchObject(
         new Map([
           [

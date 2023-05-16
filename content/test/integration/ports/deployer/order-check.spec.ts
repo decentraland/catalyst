@@ -50,7 +50,7 @@ describe('Integration - Order Check', () => {
   }
 
   async function getActiveDeployments(components: Pick<AppComponents, 'database' | 'denylist' | 'metrics'>) {
-    const { deployments } = await getDeployments(components, {
+    const { deployments } = await getDeployments(components, components.database, {
       filters: {
         onlyCurrentlyPointed: true
       }

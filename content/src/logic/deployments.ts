@@ -9,7 +9,7 @@ import {
   PartialDeploymentHistory
 } from '../deployment-types'
 import { FailedDeployment } from '../ports/failedDeployments'
-import { IDatabaseComponent } from '../ports/postgres'
+import { DatabaseClient, DatabaseTransactionalClient } from '../ports/postgres'
 import { deployEntityFromRemoteServer } from '../service/synchronization/deployRemoteEntity'
 import { IGNORING_FIX_ERROR } from '../service/validations/server'
 import { AppComponents, DeploymentId, EntityVersion } from '../types'
@@ -27,14 +27,15 @@ import {
 } from './database-queries/deployments-queries'
 
 export async function isEntityDeployed(
-  components: Pick<AppComponents, 'deployedEntitiesBloomFilter' | 'database' | 'metrics'>,
+  database: DatabaseClient,
+  components: Pick<AppComponents, 'deployedEntitiesBloomFilter' | 'metrics'>,
   entityId: string
 ): Promise<boolean> {
   // this condition should be carefully handled:
   // 1) it first uses the bloom filter to know wheter or not an entity may exist or definitely don't exist (.check)
   // 2) then it checks against the DB (deploymentExists)
   if (await components.deployedEntitiesBloomFilter.check(entityId)) {
-    if (await deploymentExists(components, entityId)) {
+    if (await deploymentExists(database, entityId)) {
       components.metrics.increment('dcl_deployed_entities_bloom_filter_checks_total', { hit: 'true' })
       return true
     } else {
@@ -114,7 +115,7 @@ export function mapDeploymentsToEntities(deployments: Deployment[]): Entity[] {
 }
 
 export async function saveDeploymentAndContentFiles(
-  database: IDatabaseComponent,
+  database: DatabaseTransactionalClient,
   entity: Entity,
   auditInfo: AuditInfo,
   overwrittenBy: DeploymentId | null
@@ -127,7 +128,7 @@ export async function saveDeploymentAndContentFiles(
 }
 
 export async function calculateOverwrites(
-  database: IDatabaseComponent,
+  database: DatabaseClient,
   entity: Entity
 ): Promise<{ overwrote: Set<DeploymentId>; overwrittenBy: DeploymentId | null }> {
   const overwrote = await calculateOverwrote(database, entity)
@@ -159,14 +160,15 @@ export function getCuratedLimit(options?: DeploymentOptions): number {
 }
 
 export async function getDeployments(
-  components: Pick<AppComponents, 'database' | 'denylist' | 'metrics'>,
+  components: Pick<AppComponents, 'denylist' | 'metrics'>,
+  database: DatabaseClient,
   options?: DeploymentOptions
 ): Promise<PartialDeploymentHistory<Deployment>> {
   const curatedOffset = getCuratedOffset(options)
   const curatedLimit = getCuratedLimit(options)
 
   const deploymentsWithExtra = await getHistoricalDeployments(
-    components,
+    database,
     curatedOffset,
     curatedLimit + 1,
     options?.filters,
@@ -180,7 +182,7 @@ export async function getDeployments(
 
   const deploymentIds = deploymentsResult.map(({ deploymentId }) => deploymentId)
 
-  const content = await getContentFiles(components, deploymentIds)
+  const content = await getContentFiles(database, deploymentIds)
 
   if (!options?.includeDenylisted) {
     deploymentsResult = deploymentsResult.filter((result) => !components.denylist.isDenylisted(result.entityId))
@@ -218,7 +220,7 @@ export async function getDeployments(
 }
 
 export async function getDeploymentsForActiveEntities(
-  components: Pick<AppComponents, 'database' | 'denylist' | 'metrics'>,
+  database: DatabaseClient,
   entityIds?: string[],
   pointers?: string[]
 ): Promise<Deployment[]> {
@@ -249,7 +251,7 @@ export async function getDeploymentsForActiveEntities(
       : SQL`dep1.entity_pointers && ${pointers!.map((p) => p.toLowerCase())}`
   )
 
-  const historicalDeploymentsResponse = await components.database.queryWithValues(query, 'get_active_entities')
+  const historicalDeploymentsResponse = await database.queryWithValues(query, 'get_active_entities')
 
   const deploymentsResult: HistoricalDeployment[] = historicalDeploymentsResponse.rows.map(
     (row: HistoricalDeploymentsRow): HistoricalDeployment => ({
@@ -269,7 +271,7 @@ export async function getDeploymentsForActiveEntities(
 
   const deploymentIds = deploymentsResult.map(({ deploymentId }) => deploymentId)
 
-  const content = await getContentFiles(components, deploymentIds)
+  const content = await getContentFiles(database, deploymentIds)
 
   return deploymentsResult.map((result) => ({
     entityVersion: result.version as EntityVersion,
