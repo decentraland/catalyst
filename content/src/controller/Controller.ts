@@ -79,47 +79,6 @@ export async function getEntities(context: HandlerContextWithPath<'activeEntitie
   }
 }
 
-// Method: POST
-// Body: { ids: string[], pointers: string[]}
-export async function getActiveEntities(
-  context: HandlerContextWithPath<'database' | 'logs' | 'activeEntities' | 'denylist', '/entities/active'>
-) {
-  const { database, activeEntities, denylist, logs } = context.components
-  const logger = logs.getLogger('get-active-entities')
-  try {
-    const body = await context.request.json()
-    const ids: string[] = body.ids
-    const pointers: string[] = body.pointers
-
-    const idsPresent = ids?.length > 0
-    const pointersPresent = pointers?.length > 0
-
-    const bothPresent = idsPresent && pointersPresent
-    const nonePresent = !idsPresent && !pointersPresent
-    if (bothPresent || nonePresent) {
-      return {
-        status: 400,
-        body: { error: 'ids or pointers must be present, but not both' }
-      }
-    }
-
-    const entities: Entity[] = (
-      ids && ids.length > 0
-        ? await activeEntities.withIds(database, ids)
-        : await activeEntities.withPointers(database, pointers)
-    ).filter((result) => !denylist.isDenylisted(result.id))
-
-    return {
-      status: 200,
-      body: entities
-    }
-  } catch (error) {
-    logger.error(`POST /entities/active - Internal server error '${error}'`)
-    logger.error(error)
-    throw error
-  }
-}
-
 // Method: GET or HEAD
 export async function getEntityThumbnail(
   context: HandlerContextWithPath<

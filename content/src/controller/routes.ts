@@ -2,10 +2,10 @@ import { Router } from '@well-known-components/http-server'
 import { multipartParserWrapper } from '@well-known-components/multipart-wrapper'
 import { EnvironmentConfig } from '../Environment'
 import { GlobalContext } from '../types'
+import { getActiveEntities } from './active-entities-handler'
 import {
   createEntity,
   getActiveDeploymentsByContentHashHandler,
-  getActiveEntities,
   getAllNewSnapshots,
   getAudit,
   getAvailableContent,

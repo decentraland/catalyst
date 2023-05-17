@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@dcl/block-indexer": "^1.1.2",
-    "@dcl/catalyst-api-specs": "^3.1.2",
+    "@dcl/catalyst-api-specs": "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-catalyst-api-specs-3.1.3-5007018024.commit-4880b1e.tgz",
     "@dcl/catalyst-contracts": "^3.1.4",
     "@dcl/catalyst-storage": "^2.0.3",
     "@dcl/content-validator": "^4.7.1",
