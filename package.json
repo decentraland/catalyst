@@ -54,5 +54,6 @@
   },
   "jest-junit": {
     "addFileAttribute": "true"
-  }
+  },
+  "dependencies": {}
 }

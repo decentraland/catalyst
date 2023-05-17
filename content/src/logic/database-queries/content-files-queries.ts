@@ -1,6 +1,7 @@
 import SQL from 'sql-template-strings'
+import { DatabaseClient } from 'src/ports/postgres'
 import { DeploymentContent } from '../../deployment-types'
-import { AppComponents, DeploymentId } from '../../types'
+import { DeploymentId } from '../../types'
 
 export interface ContentFilesRow {
   deployment: number
@@ -9,7 +10,7 @@ export interface ContentFilesRow {
 }
 
 export async function getContentFiles(
-  components: Pick<AppComponents, 'database' | 'metrics'>,
+  database: DatabaseClient,
   deploymentIds: DeploymentId[]
 ): Promise<Map<DeploymentId, DeploymentContent[]>> {
   if (deploymentIds.length === 0) {
@@ -17,7 +18,7 @@ export async function getContentFiles(
   }
 
   const queryResult = (
-    await components.database.queryWithValues(
+    await database.queryWithValues(
       SQL`SELECT deployment, key, content_hash FROM content_files WHERE deployment = ANY (${deploymentIds})`,
       'get_content_files'
     )
@@ -35,11 +36,11 @@ export async function getContentFiles(
 }
 
 export async function findContentHashesNotBeingUsedAnymore(
-  components: Pick<AppComponents, 'database'>,
+  database: DatabaseClient,
   lastGarbageCollectionTimestamp: number
 ): Promise<string[]> {
   return (
-    await components.database.queryWithValues<{ content_hash: string }>(
+    await database.queryWithValues<{ content_hash: string }>(
       SQL`
     SELECT content_files.content_hash
     FROM content_files

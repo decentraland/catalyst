@@ -4,7 +4,7 @@ import { ContentClient, DeploymentData } from 'dcl-catalyst-client'
 import fetch from 'node-fetch'
 import { AuditInfo, Deployment, DeploymentOptions, isInvalidDeployment } from '../../src/deployment-types'
 import { EnvironmentConfig } from '../../src/Environment'
-import { getDeployments } from "../../src/logic/deployments"
+import { getDeployments } from '../../src/logic/deployments'
 import * as synchronization from '../../src/logic/synchronization'
 import { FailedDeployment } from '../../src/ports/failedDeployments'
 import { main } from '../../src/service'
@@ -46,7 +46,7 @@ export class TestProgram {
   }
 
   getUrl(): string {
-    const port = this.components.env.getConfig(EnvironmentConfig.SERVER_PORT)
+    const port = this.components.env.getConfig(EnvironmentConfig.HTTP_SERVER_PORT)
     return `http://localhost:${port}`
   }
 
@@ -98,7 +98,7 @@ export class TestProgram {
 
   async getDeployments(options?: DeploymentOptions): Promise<Deployment[]> {
     const filters = Object.assign({ from: 1 }, options?.filters)
-    const deployments = await getDeployments(this.components, { ...options, filters })
+    const deployments = await getDeployments(this.components, this.components.database, { ...options, filters })
     return deployments.deployments
   }
 

@@ -15,9 +15,10 @@ import { getEntityById, setEntitiesAsOverwritten } from '../logic/database-queri
 import { calculateOverwrites, getDeployments, saveDeploymentAndContentFiles } from '../logic/deployments'
 import { calculateDeprecatedHashes, calculateIPFSHashes } from '../logic/hashing'
 import { EntityFactory } from '../service/EntityFactory'
-import { DELTA_POINTER_RESULT, DeploymentResult as DeploymentPointersResult } from '../service/pointers/PointerManager'
+import { DELTA_POINTER_RESULT } from '../service/pointers/PointerManager'
 import { happenedBefore } from '../service/time/TimeSorting'
 import { AppComponents, EntityVersion } from '../types'
+import { DatabaseClient } from './postgres'
 
 export function isIPFSHash(hash: string): boolean {
   return IPFSv2.validate(hash)
@@ -87,13 +88,14 @@ export function createDeployer(
   }
 
   async function storeDeploymentInDatabase(
+    database: DatabaseClient,
     entityId: string,
     entity: Entity,
     auditInfo: LocalDeploymentAuditInfo,
     hashes: Map<string, Uint8Array>,
     context: DeploymentContext
   ): Promise<InvalidResult | { auditInfoComplete: AuditInfo; wasEntityDeployed: boolean }> {
-    const deployedEntity = await getEntityById(components, entityId)
+    const deployedEntity = await getEntityById(database, entityId)
     const isEntityAlreadyDeployed = !!deployedEntity
 
     const validationResult = await validateDeployment(entity, context, isEntityAlreadyDeployed, auditInfo, hashes)
@@ -135,11 +137,28 @@ export function createDeployer(
         )
 
         // Update pointers and active entities
-        await updateActiveEntities(pointersFromEntity, entity)
+        const { clearedPointers, setPointers } = Array.from(pointersFromEntity).reduce(
+          (acc, current) => {
+            if (current[1].after === DELTA_POINTER_RESULT.CLEARED) acc.clearedPointers.push(current[0])
+            if (current[1].after === DELTA_POINTER_RESULT.SET) acc.setPointers.push(current[0])
+            return acc
+          },
+          { clearedPointers: [] as string[], setPointers: [] as string[] }
+        )
+        // invalidate pointers (points to an entity that is no longer active)
+        // this case happen when the entity is overwritten
+        if (clearedPointers.length > 0) {
+          await components.activeEntities.clear(database, clearedPointers)
+        }
+
+        // update pointer (points to the new entity that is active)
+        if (setPointers.length > 0) {
+          await components.activeEntities.update(database, setPointers, entity)
+        }
 
         // Set who overwrote who
         await setEntitiesAsOverwritten(database, overwrote, deploymentId)
-      })
+      }, 'tx_deploy_entity')
     } else {
       logger.info(`Entity already deployed`, { entityId })
       auditInfoComplete.localTimestamp = deployedEntity.localTimestamp
@@ -151,28 +170,11 @@ export function createDeployer(
     return { auditInfoComplete, wasEntityDeployed: !isEntityAlreadyDeployed }
   }
 
-  async function updateActiveEntities(pointersFromEntity: DeploymentPointersResult, entity: Entity) {
-    const { clearedPointers, setPointers } = Array.from(pointersFromEntity).reduce(
-      (acc, current) => {
-        if (current[1].after === DELTA_POINTER_RESULT.CLEARED) acc.clearedPointers.push(current[0])
-        if (current[1].after === DELTA_POINTER_RESULT.SET) acc.setPointers.push(current[0])
-        return acc
-      },
-      { clearedPointers: [] as string[], setPointers: [] as string[] }
-    )
-    // invalidate pointers (points to an entity that is no longer active)
-    // this case happen when the entity is overwritten
-    if (clearedPointers.length > 0) await components.activeEntities.clear(clearedPointers)
-
-    // update pointer (points to the new entity that is active)
-    if (setPointers.length > 0) await components.activeEntities.update(setPointers, entity)
-  }
-
   // todo: review if we can use entities cache to determine if there is a newer deployment
   /** Check if there are newer entities on the given entity's pointers */
   async function areThereNewerEntitiesOnPointers(entity: Entity): Promise<boolean> {
     // Validate that pointers aren't referring to an entity with a higher timestamp
-    const { deployments: lastDeployments } = await getDeployments(components, {
+    const { deployments: lastDeployments } = await getDeployments(components, components.database, {
       filters: { entityTypes: [entity.type], pointers: entity.pointers }
     })
     for (const lastDeployment of lastDeployments) {
@@ -236,7 +238,7 @@ export function createDeployer(
       auditInfo: LocalDeploymentAuditInfo,
       context: DeploymentContext
     ): Promise<DeploymentResult> {
-      const deployedEntity = await getEntityById(components, entityId)
+      const deployedEntity = await getEntityById(components.database, entityId)
       // entity deployments are idempotent operations
       if (deployedEntity) {
         logger.debug(`Entity was already deployed`, {
@@ -296,7 +298,14 @@ export function createDeployer(
           pointers: entity.pointers.join(' ')
         })
 
-        const storeResult = await storeDeploymentInDatabase(entityId, entity, auditInfo, hashes, contextToDeploy)
+        const storeResult = await storeDeploymentInDatabase(
+          components.database,
+          entityId,
+          entity,
+          auditInfo,
+          hashes,
+          contextToDeploy
+        )
 
         if (!storeResult) {
           logger.error(`Error calling storeDeploymentInDatabase, returned void`, {

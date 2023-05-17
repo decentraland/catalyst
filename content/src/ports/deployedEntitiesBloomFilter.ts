@@ -48,7 +48,7 @@ export function createDeployedEntitiesBloomFilter(
     ).toISOString()}]`
     logger.info(`Loading bloom filter.`, { interval })
     let elements = 0
-    for await (const entityId of streamAllEntityIdsInTimeRange(components, timeRange)) {
+    for await (const entityId of streamAllEntityIdsInTimeRange(components.database, timeRange)) {
       elements++
       deploymentsBloomFilter.add(entityId)
     }

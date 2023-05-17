@@ -176,7 +176,7 @@ export class ServerBuilder {
       const domain = `http://localhost:${port}`
       this.testEnvCalls.addToDAO(domain)
       const components = await this.builder
-        .withConfig(EnvironmentConfig.SERVER_PORT, port)
+        .withConfig(EnvironmentConfig.HTTP_SERVER_PORT, port)
         .withConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, `${this.storageBaseFolder}/${port}`)
         .withConfig(EnvironmentConfig.PSQL_DATABASE, databaseNames[i])
         .buildConfigAndComponents()

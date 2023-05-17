@@ -100,7 +100,9 @@ async function fixMissingProfilesContentFiles({ database, env, fetcher, logs, st
           await ensureFileExistsInStorage(env, logger, storage, fetcher, file.hash)
         }
 
-        await saveContentFiles(database, deployment.id, contentFiles)
+        await database.transaction(async (databaseClient) => {
+          await saveContentFiles(databaseClient, deployment.id, contentFiles)
+        }, 'save_content_files')
       } catch (e) {
         logger.warn(
           `Error processing deployment id ${deployment.id} for entity id ${

@@ -1,28 +1,21 @@
 import SQL from 'sql-template-strings'
-import { AppComponents } from '../../types'
+import { DatabaseClient } from '../../ports/postgres'
 
-export async function getActiveDeploymentsByUrnPrefix(
-  components: Pick<AppComponents, 'database'>,
+export async function gerUrnsThatMatchCollectionUrnPrefix(
+  database: DatabaseClient,
   collectionUrn: string
-): Promise<{ pointer: string; entityId: string }[]> {
+): Promise<string[]> {
   // sql-template-strings doesn't allow ' in the query string
   const matchingString = `${collectionUrn}%`
-  const query = SQL`SELECT * FROM active_pointers as p WHERE p.pointer LIKE ${matchingString};`
+  const query = SQL`SELECT pointer FROM active_pointers as p WHERE p.pointer LIKE ${matchingString} ORDER BY pointer DESC;`
 
-  const queryResult = (await components.database.queryWithValues(query, 'filter_by_urn_prefix')).rows
+  const queryResult = (await database.queryWithValues<{ pointer: string }>(query, 'filter_by_urn_prefix')).rows
 
-  const entities = queryResult.map((deployment: { entity_id: string; pointer: string }) => {
-    return {
-      entityId: deployment.entity_id,
-      pointer: deployment.pointer
-    }
-  })
-
-  return entities
+  return queryResult.map((row) => row.pointer)
 }
 
 export async function updateActiveDeployments(
-  components: Pick<AppComponents, 'database'>,
+  database: DatabaseClient,
   pointers: string[],
   entityId: string
 ): Promise<void> {
@@ -38,13 +31,10 @@ export async function updateActiveDeployments(
   value_list.forEach((v) => query.append(v))
   query.append(SQL` ON CONFLICT(pointer) DO UPDATE SET entity_id = ${entityId};`)
 
-  await components.database.queryWithValues(query)
+  await database.queryWithValues(query)
 }
 
-export async function removeActiveDeployments(
-  components: Pick<AppComponents, 'database'>,
-  pointers: string[]
-): Promise<void> {
+export async function removeActiveDeployments(database: DatabaseClient, pointers: string[]): Promise<void> {
   const value_list = pointers.map((p, i) => {
     if (i < pointers.length - 1) {
       return SQL`${p},`
@@ -56,5 +46,5 @@ export async function removeActiveDeployments(
   value_list.forEach((v) => query.append(v))
   query.append(`);`)
 
-  await components.database.queryWithValues(query)
+  await database.queryWithValues(query)
 }

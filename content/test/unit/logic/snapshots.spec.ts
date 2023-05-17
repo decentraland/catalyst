@@ -44,7 +44,7 @@ describe('generate snapshot', () => {
 
   beforeEach(() => {
     jest.spyOn(database, 'transaction').mockImplementation(async (f) => {
-      await f(database)
+      await f({ insideTx: true, ...database })
     })
   })
 
@@ -58,14 +58,14 @@ describe('generate snapshot', () => {
     mockCreateFileWriterMockWith('filePath', 'hash')
     const expectedTimeRange = { initTimestamp: 1, endTimestamp: 2 }
 
-    await generateAndStoreSnapshot({ database, fs, metrics, logs, staticConfigs, storage, denylist }, expectedTimeRange)
+    await generateAndStoreSnapshot({ fs, metrics, logs, staticConfigs, storage, denylist }, database, expectedTimeRange)
     expect(streamSpy).toBeCalledWith(expect.anything(), expectedTimeRange)
   })
 
   it('should append snapshot header to tmp file', async () => {
     mockStreamedActiveEntitiesWith([])
     const fileWriterMock = mockCreateFileWriterMockWith('filePath', 'hash')
-    await generateAndStoreSnapshot({ database, fs, metrics, logs, staticConfigs, storage, denylist }, aTimeRange)
+    await generateAndStoreSnapshot({ fs, metrics, logs, staticConfigs, storage, denylist }, database, aTimeRange)
     expect(fileWriterMock.appendDebounced).toBeCalledWith('### Decentraland json snapshot\n')
     expect(fileWriterMock.appendDebounced).toBeCalledTimes(1)
   })
@@ -73,7 +73,7 @@ describe('generate snapshot', () => {
   it('should close tmp file after streaming all active entities', async () => {
     mockStreamedActiveEntitiesWith([])
     const fileWriterMock = mockCreateFileWriterMockWith('filePath', 'hash')
-    await generateAndStoreSnapshot({ database, fs, metrics, logs, staticConfigs, storage, denylist }, aTimeRange)
+    await generateAndStoreSnapshot({ fs, metrics, logs, staticConfigs, storage, denylist }, database, aTimeRange)
     expect(fileWriterMock.close).toBeCalledTimes(1)
   })
 
@@ -86,7 +86,8 @@ describe('generate snapshot', () => {
     const expectedSnapshotHash = 'aHash'
     mockCreateFileWriterMockWith('filePath', expectedSnapshotHash)
     const { hash, numberOfEntities } = await generateAndStoreSnapshot(
-      { database, fs, metrics, logs, staticConfigs, storage, denylist },
+      { fs, metrics, logs, staticConfigs, storage, denylist },
+      database,
       aTimeRange
     )
     expect(hash).toEqual(expectedSnapshotHash)
@@ -129,7 +130,7 @@ describe('generate snapshot in multiple', () => {
 
   beforeEach(() => {
     jest.spyOn(database, 'transaction').mockImplementation(async (f) => {
-      await f(database)
+      await f({ insideTx: true, ...database })
     })
     saveSpy = jest.spyOn(snapshotQueries, 'saveSnapshot').mockImplementation()
     deleteSpy = jest.spyOn(snapshotQueries, 'deleteSnapshotsInTimeRange').mockImplementation()

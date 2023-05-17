@@ -64,7 +64,7 @@ export function createBatchDeployerComponent(
     if (successfulDeployments.has(entity.entityId)) return true
 
     // ignore entities that are already deployed locally
-    if (await isEntityDeployed(components, entity.entityId, entity.entityTimestamp)) {
+    if (await isEntityDeployed(components.database, components, entity.entityId, entity.entityTimestamp)) {
       successfulDeployments.add(entity.entityId)
       return true
     }
@@ -128,7 +128,7 @@ export function createBatchDeployerComponent(
              *  3. The entity failed to be deployed but was successfully persisted as failed deployment
              */
             // 1. The entity is already deployed, early return.
-            if (await isEntityDeployed(components, entity.entityId, entity.entityTimestamp)) {
+            if (await isEntityDeployed(components.database, components, entity.entityId, entity.entityTimestamp)) {
               const markAsDeployedFns = deploymentsMap.get(entity.entityId)?.markAsDeployedFns ?? []
               for (const markAsDeployed of markAsDeployedFns) {
                 await markAsDeployed()

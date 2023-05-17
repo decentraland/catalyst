@@ -49,7 +49,7 @@ export class GarbageCollectionManager {
     this.sweeping = true
     const { end: endTimer } = this.components.metrics.startTimer('dcl_content_garbage_collection_time')
     try {
-      const hashes = await findContentHashesNotBeingUsedAnymore(this.components, this.lastTimeOfCollection)
+      const hashes = await findContentHashesNotBeingUsedAnymore(this.components.database, this.lastTimeOfCollection)
 
       this.components.metrics.increment('dcl_content_garbage_collection_items_total', {}, hashes.length)
 

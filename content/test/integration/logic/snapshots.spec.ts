@@ -340,7 +340,7 @@ describe('snapshot generator - ', () => {
       await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(15))
       // expect first week snapshot to be present
       const snapshots = await snapshotQueries.findSnapshotsStrictlyContainedInTimeRange(
-        components,
+        components.database,
         timeRangeOfDaysFromInitialTimestamp(15)
       )
       expect(snapshots[0].timeRange).toEqual(timeRangeOfDaysFromInitialTimestamp(7))

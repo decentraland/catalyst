@@ -1,15 +1,15 @@
 import { SnapshotSyncDeployment } from '@dcl/schemas'
 import { SnapshotMetadata, TimeRange } from '@dcl/snapshots-fetcher/dist/types'
 import SQL from 'sql-template-strings'
-import { AppComponents } from '../../types'
+import { DatabaseClient } from 'src/ports/postgres'
 
 export async function* streamActiveDeploymentsInTimeRange(
-  components: Pick<AppComponents, 'database'>,
+  database: DatabaseClient,
   timeRange: TimeRange
 ): AsyncIterable<SnapshotSyncDeployment> {
   // IT IS IMPORTANT THAT THIS QUERY NEVER CHANGES
   // It ensures the snapshots immutability and convergency (the order and the select of static fields)
-  for await (const row of components.database.streamQuery<SnapshotSyncDeployment>(
+  for await (const row of database.streamQuery<SnapshotSyncDeployment>(
     SQL`
     SELECT
       entity_id AS "entityId",
@@ -30,7 +30,7 @@ export async function* streamActiveDeploymentsInTimeRange(
 }
 
 export async function findSnapshotsStrictlyContainedInTimeRange(
-  components: Pick<AppComponents, 'database'>,
+  database: DatabaseClient,
   timerange: TimeRange
 ): Promise<SnapshotMetadata[]> {
   const query = SQL`
@@ -46,7 +46,7 @@ export async function findSnapshotsStrictlyContainedInTimeRange(
   AND end_timestamp <= to_timestamp(${timerange.endTimestamp} / 1000.0)
   `
   return (
-    await components.database.queryWithValues<{
+    await database.queryWithValues<{
       hash: string
       initTimestamp: number
       endTimestamp: number
@@ -68,10 +68,7 @@ export async function findSnapshotsStrictlyContainedInTimeRange(
   })
 }
 
-export async function saveSnapshot(
-  database: AppComponents['database'],
-  snapshotMetadata: SnapshotMetadata
-): Promise<void> {
+export async function saveSnapshot(database: DatabaseClient, snapshotMetadata: SnapshotMetadata): Promise<void> {
   const query = SQL`
   INSERT INTO snapshots
   (hash, init_timestamp, end_timestamp, replaced_hashes, number_of_entities, generation_time)
@@ -89,11 +86,8 @@ export async function saveSnapshot(
   await database.queryWithValues(query, 'save_snapshot')
 }
 
-export async function isOwnSnapshot(
-  components: Pick<AppComponents, 'database'>,
-  snapshotHash: string
-): Promise<boolean> {
-  const queryResult = await components.database.queryWithValues<{ hash: string }>(
+export async function isOwnSnapshot(database: DatabaseClient, snapshotHash: string): Promise<boolean> {
+  const queryResult = await database.queryWithValues<{ hash: string }>(
     SQL`SELECT hash from snapshots WHERE hash = ${snapshotHash}`,
     'has_snapshot'
   )
@@ -101,7 +95,7 @@ export async function isOwnSnapshot(
 }
 
 export async function getSnapshotHashesNotInTimeRange(
-  database: AppComponents['database'],
+  database: DatabaseClient,
   snapshotHashes: string[],
   timeRange: TimeRange
 ): Promise<Set<string>> {
@@ -124,7 +118,7 @@ export async function getSnapshotHashesNotInTimeRange(
 }
 
 export async function deleteSnapshotsInTimeRange(
-  database: AppComponents['database'],
+  database: DatabaseClient,
   snapshotHashesToDelete: string[],
   timeRange: TimeRange
 ): Promise<void> {
@@ -147,11 +141,8 @@ export async function deleteSnapshotsInTimeRange(
  * they were not included because they were deployed after the generation timestamp of the snapshot.
  * In this case, the snapshot should be recreated in order to include these entities.
  */
-export async function snapshotIsOutdated(
-  components: Pick<AppComponents, 'database'>,
-  snapshot: SnapshotMetadata
-): Promise<boolean> {
-  const result = await components.database.queryWithValues<{ numberOfEntities: number }>(
+export async function snapshotIsOutdated(database: DatabaseClient, snapshot: SnapshotMetadata): Promise<boolean> {
+  const result = await database.queryWithValues<{ numberOfEntities: number }>(
     SQL`
   SELECT 1 FROM deployments
   WHERE deleter_deployment IS null
@@ -165,10 +156,10 @@ export async function snapshotIsOutdated(
 }
 
 export async function getNumberOfActiveEntitiesInTimeRange(
-  components: Pick<AppComponents, 'database'>,
+  database: DatabaseClient,
   timeRange: TimeRange
 ): Promise<number> {
-  const result = await components.database.queryWithValues<{ numberOfEntities: number }>(
+  const result = await database.queryWithValues<{ numberOfEntities: number }>(
     SQL`
   SELECT
     COUNT(*) AS "numberOfEntities"
@@ -182,7 +173,7 @@ export async function getNumberOfActiveEntitiesInTimeRange(
 }
 
 export async function saveProcessedSnapshot(
-  database: AppComponents['database'],
+  database: DatabaseClient,
   processedSnapshotHash: string,
   processTimestampSecs: number
 ): Promise<void> {
@@ -197,7 +188,7 @@ export async function saveProcessedSnapshot(
 }
 
 export async function getProcessedSnapshots(
-  components: Pick<AppComponents, 'database'>,
+  database: DatabaseClient,
   processedSnapshotHashes: string[]
 ): Promise<Set<string>> {
   const query = SQL`
@@ -210,6 +201,6 @@ export async function getProcessedSnapshots(
   hashes.forEach((hash) => query.append(hash))
   query.append(`);`)
 
-  const result = await components.database.queryWithValues<{ hash: string }>(query, 'get_processed_snapshots')
+  const result = await database.queryWithValues<{ hash: string }>(query, 'get_processed_snapshots')
   return new Set(result.rows.map((row) => row.hash))
 }
