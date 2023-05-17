@@ -5,8 +5,8 @@ export function qsParser(rawQueryParams: URLSearchParams): QueryParams {
   return qs.parse(rawQueryParams.toString(), { parseArrays: true })
 }
 
-export function qsGetArray(queryParams: QueryParams, paramName: string) {
-  return (queryParams[paramName] as string[]) || []
+export function qsGetArray(queryParams: QueryParams, paramName: string): string[] {
+  return [...((queryParams[paramName] as string[]) || [])]
 }
 
 export function toQueryParams(filters: Record<string, any>): string {
