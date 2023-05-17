@@ -2808,10 +2808,24 @@ dcl-catalyst-client@^14.0.9:
     dcl-catalyst-commons "^9.0.6"
     form-data "^4.0.0"
 
-dcl-catalyst-client@^18.0.0:
-  version "18.0.0"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-18.0.0.tgz#1db221731055f246cbf2febb27acbee3405b04c5"
-  integrity sha512-1H5ZEQjbphJUCGbbOX7zwwNcB0kgiidXXoBe8xYeCGVWwZ/eAgChacFc0LHP69u26OotH7CMiMj2okArM1mcKA==
+"dcl-catalyst-client@https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-catalyst-client-18.0.1-5007541057.commit-43cc598.tgz":
+  version "18.0.1-5007541057.commit-43cc598"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-catalyst-client-18.0.1-5007541057.commit-43cc598.tgz#a00b4df0ea2e00f58d34b3cc3b9d5f7cecddecb5"
+  dependencies:
+    "@dcl/crypto" "^3.4.0"
+    "@dcl/hashing" "^1.1.0"
+    "@dcl/protocol" "^1.0.0-4747376947.commit-d770e0d"
+    "@dcl/schemas" "^7.1.0"
+    "@well-known-components/fetch-component" "^1.0.0"
+    cookie "^0.5.0"
+    cross-fetch "^3.1.5"
+    form-data "^4.0.0"
+  optionalDependencies:
+    ethers "6.2.3"
+
+"dcl-catalyst-client@https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-catalyst-client-18.0.1-5007643336.commit-9c2e0e9.tgz":
+  version "18.0.1-5007643336.commit-9c2e0e9"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-catalyst-client-18.0.1-5007643336.commit-9c2e0e9.tgz#202ddfa23e799de8a715418736b8d8146afe1647"
   dependencies:
     "@dcl/crypto" "^3.4.0"
     "@dcl/hashing" "^1.1.0"

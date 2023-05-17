@@ -1,6 +1,6 @@
 import { Entity, EntityType } from '@dcl/schemas'
 import { ILoggerComponent, Lifecycle } from '@well-known-components/interfaces'
-import { ContentClient, DeploymentData } from 'dcl-catalyst-client'
+import { ContentClient, createContentClient, DeploymentData } from 'dcl-catalyst-client'
 import fetch from 'node-fetch'
 import { AuditInfo, Deployment, DeploymentOptions, isInvalidDeployment } from '../../src/deployment-types'
 import { EnvironmentConfig } from '../../src/Environment'
@@ -23,9 +23,9 @@ export class TestProgram {
   logger: ILoggerComponent.ILogger
 
   constructor(public components: AppComponents) {
-    this.client = new ContentClient({
-      contentUrl: this.getUrl(),
-      fetcher: components.catalystFetcher
+    this.client = createContentClient({
+      url: this.getUrl(),
+      fetcher: components.fetcher
     })
     this.logger = components.logs.getLogger('TestProgram')
   }
