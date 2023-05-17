@@ -61,14 +61,13 @@ export class TestProgram {
     }
   }
 
-  async deployEntity(deployData: DeploymentData, fix: boolean = false): Promise<number> {
+  async deployEntity(deployData: DeploymentData, fix: boolean = false) {
     this.logger.info('Deploying entity ' + deployData.entityId)
-    const returnValue = await this.client.deployEntity(deployData, fix)
+    const returnValue = await this.client.deploy(deployData)
     if (isInvalidDeployment(returnValue)) {
       throw new Error(returnValue.errors.join(','))
     }
-    this.logger.info('Deployed entity ' + deployData.entityId, { returnValue })
-    return returnValue
+    this.logger.info('Deployed entity ' + deployData.entityId)
   }
 
   getFailedDeployments(): Promise<FailedDeployment[]> {
