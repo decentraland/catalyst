@@ -1,13 +1,13 @@
 import { EntityType } from '@dcl/schemas'
 import { fetchJson } from 'dcl-catalyst-commons'
+import { EnvironmentConfig } from '../../../src/Environment'
 import { DeploymentField } from '../../../src/controller/Controller'
 import { DeploymentOptions, SortingField, SortingOrder } from '../../../src/deployment-types'
-import { EnvironmentConfig } from '../../../src/Environment'
-import { toQueryParams } from '../../../src/logic/toQueryParams'
+import { toQueryParams } from '../../../src/logic/query-params'
 import { PointerChangesFilters } from '../../../src/service/pointers/types'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { setupTestEnvironment } from '../E2ETestEnvironment'
-import { buildDeployData, EntityCombo } from '../E2ETestUtils'
+import { EntityCombo, buildDeployData } from '../E2ETestUtils'
 import { TestProgram } from '../TestProgram'
 
 describe('Integration - Deployment Pagination', () => {

@@ -2,6 +2,7 @@ import { ContentItem } from '@dcl/catalyst-storage'
 import { AuthChain, Authenticator, AuthLink, EthAddress, Signature } from '@dcl/crypto'
 import { Entity, EntityType, PointerChangesSyncDeployment } from '@dcl/schemas'
 import { Field } from '@well-known-components/multipart-wrapper'
+import qs from 'qs'
 import {
   AuditInfo,
   Deployment,
@@ -22,8 +23,8 @@ import { getActiveDeploymentsByContentHash } from '../logic/database-queries/dep
 import { getDeployments } from '../logic/deployments'
 import { findEntityByPointer, findImageHash, findThumbnailHash } from '../logic/entities'
 import { buildUrn, formatERC21Entity, getProtocol } from '../logic/erc721'
+import { fromQueryParamsAsArray, toQueryParams } from '../logic/query-params'
 import { statusResponseFromComponents } from '../logic/status-checks'
-import { toQueryParams } from '../logic/toQueryParams'
 import { getPointerChanges } from '../service/pointers/pointers'
 import { PointerChangesFilters } from '../service/pointers/types'
 import { FormHandlerContextWithPath, HandlerContextWithPath, parseEntityType } from '../types'
@@ -38,11 +39,14 @@ import { ControllerEntityFactory } from './ControllerEntityFactory'
 // Query String: ?{filter}&fields={fieldList}
 export async function getEntities(context: HandlerContextWithPath<'activeEntities' | 'database', '/entities/:type'>) {
   const { database, activeEntities } = context.components
-  const query = context.url.searchParams
   const type: EntityType = parseEntityType(context.params.type)
-  const pointers = query.getAll('pointer').map((p) => p.toLowerCase())
-  const ids = query.getAll('id')
-  const fields = query.get('fields')
+  const queryParams = qs.parse(context.url.searchParams.toString(), { parseArrays: true })
+
+  const pointers: string[] = fromQueryParamsAsArray(queryParams, 'pointer').map((pointer) =>
+    pointer.toLocaleLowerCase()
+  )
+  const ids: string[] = fromQueryParamsAsArray(queryParams, 'id')
+  const fields: string = queryParams.fields as string
 
   // Validate type is valid
   if (!type) {
@@ -67,8 +71,9 @@ export async function getEntities(context: HandlerContextWithPath<'activeEntitie
   }
 
   // Calculate and mask entities
-  const entities: Entity[] =
-    ids.length > 0 ? await activeEntities.withIds(database, ids) : await activeEntities.withPointers(database, pointers)
+  const entities: Entity[] = !!ids.length
+    ? await activeEntities.withIds(database, ids)
+    : await activeEntities.withPointers(database, pointers)
 
   const maskedEntities: Entity[] = entities.map((entity) => ControllerEntityFactory.maskEntity(entity, enumFields))
   return {
@@ -363,7 +368,8 @@ export async function getAvailableContent(
   context: HandlerContextWithPath<'denylist' | 'storage', '/available-content'>
 ) {
   const { storage, denylist } = context.components
-  const cids = context.url.searchParams.getAll('cid')
+  const queryParams = qs.parse(context.url.searchParams.toString(), { parseArrays: true })
+  const cids: string[] = fromQueryParamsAsArray(queryParams, 'cid')
 
   if (cids.length === 0) {
     return {
@@ -430,21 +436,24 @@ export async function getAudit(
 export async function getPointerChangesHandler(
   context: HandlerContextWithPath<'database' | 'denylist' | 'sequentialExecutor' | 'metrics', '/pointer-changes'>
 ) {
-  const query = context.url.searchParams
-  const entityTypes: (EntityType | undefined)[] = query.getAll('entityType').map((type) => parseEntityType(type))
-  const from: number | undefined = asInt(query.get('from'))
-  const to: number | undefined = asInt(query.get('to'))
-  const offset: number | undefined = asInt(query.get('offset'))
-  const limit: number | undefined = asInt(query.get('limit'))
-  const lastId: string | undefined = query.get('lastId')?.toLowerCase()
-  const includeAuthChain = asBoolean(query.get('includeAuthChain')) ?? false
+  const queryParams = qs.parse(context.url.searchParams.toString())
 
-  const sortingFieldParam: string | null = query.get('sortingField')
+  const entityTypes: (EntityType | undefined)[] = fromQueryParamsAsArray(queryParams, 'entityType').map((type) =>
+    parseEntityType(type)
+  )
+  const from: number | undefined = asInt(queryParams.from)
+  const to: number | undefined = asInt(queryParams.to)
+  const offset: number | undefined = asInt(queryParams.offset)
+  const limit: number | undefined = asInt(queryParams.limit)
+  const lastId: string | undefined = (queryParams.lastId as string)?.toLowerCase()
+  const includeAuthChain = asBoolean(queryParams.includeAuthChain) ?? false
+
+  const sortingFieldParam: string | undefined = queryParams.sortingField as string
   const snake_case_sortingField = sortingFieldParam ? fromCamelCaseToSnakeCase(sortingFieldParam) : undefined
   const sortingField: SortingField | undefined | 'unknown' = asEnumValue(SortingField, snake_case_sortingField)
   const sortingOrder: SortingOrder | undefined | 'unknown' = asEnumValue(
     SortingOrder,
-    query.get('sortingOrder') || undefined
+    (queryParams.sortingOrder as string) || undefined
   )
 
   // Validate type is valid
@@ -560,24 +569,26 @@ export async function getActiveDeploymentsByContentHashHandler(
 export async function getDeploymentsHandler(
   context: HandlerContextWithPath<'database' | 'denylist' | 'metrics' | 'sequentialExecutor', '/deployments'>
 ) {
-  const query = context.url.searchParams
-  const entityTypes: (EntityType | undefined)[] = query.getAll('entityType').map((type) => parseEntityType(type))
-  const entityIds = query.getAll('entityId')
-  const onlyCurrentlyPointed: boolean | undefined = asBoolean(query.get('onlyCurrentlyPointed'))
-  const pointers = query.getAll('pointer').map((p) => p.toLowerCase())
-  const offset: number | undefined = asInt(query.get('offset'))
-  const limit: number | undefined = asInt(query.get('limit'))
-  const fields: string | null = query.get('fields')
-  const sortingFieldParam: string | null = query.get('sortingField')
+  const queryParams = qs.parse(context.url.searchParams.toString())
+  const entityTypes: (EntityType | undefined)[] = fromQueryParamsAsArray(queryParams, 'entityType').map((type) =>
+    parseEntityType(type)
+  )
+  const entityIds = fromQueryParamsAsArray(queryParams, 'entityId')
+  const onlyCurrentlyPointed: boolean | undefined = asBoolean(queryParams.onlyCurrentlyPointed)
+  const pointers = fromQueryParamsAsArray(queryParams, 'pointer').map((pointer) => pointer.toLowerCase())
+  const offset: number | undefined = asInt(queryParams.offset)
+  const limit: number | undefined = asInt(queryParams.limit)
+  const fields: string | null = queryParams.fields as string
+  const sortingFieldParam: string | null = queryParams.sortingField as string
   const snake_case_sortingField = sortingFieldParam ? fromCamelCaseToSnakeCase(sortingFieldParam) : undefined
   const sortingField: SortingField | undefined | 'unknown' = asEnumValue(SortingField, snake_case_sortingField)
   const sortingOrder: SortingOrder | undefined | 'unknown' = asEnumValue(
     SortingOrder,
-    query.get('sortingOrder') || undefined
+    (queryParams.sortingOrder as string) || undefined
   )
-  const lastId: string | undefined = query.get('lastId')?.toLowerCase()
-  const from: number | undefined = asInt(query.get('from'))
-  const to: number | undefined = asInt(query.get('to'))
+  const lastId: string | undefined = (queryParams.lastId as string)?.toLowerCase()
+  const from: number | undefined = asInt(queryParams.from)
+  const to: number | undefined = asInt(queryParams.to)
 
   if (entityTypes && entityTypes.some((type) => !type)) {
     return {

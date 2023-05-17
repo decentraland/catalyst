@@ -1,5 +1,11 @@
 import qs from 'qs'
 
+export function fromQueryParamsAsArray(queryParams: qs.ParsedQs, paramName: string): string[] {
+  const receivedParameter: string[] = (queryParams[paramName] as string[]) || []
+
+  return receivedParameter
+}
+
 export function toQueryParams(filters: Record<string, any>): string {
   const entries = convertFiltersToQueryParams(filters)
   return qs.stringify(Object.fromEntries(entries), { arrayFormat: 'repeat' })
