@@ -22,7 +22,7 @@ import { getActiveDeploymentsByContentHash } from '../logic/database-queries/dep
 import { getDeployments } from '../logic/deployments'
 import { findEntityByPointer, findImageHash, findThumbnailHash } from '../logic/entities'
 import { buildUrn, formatERC21Entity, getProtocol } from '../logic/erc721'
-import { qsGetArray, qsParser, toQueryParams } from '../logic/query-params'
+import { qsGetArray, qsGetBoolean, qsGetNumber, qsParser, toQueryParams } from '../logic/query-params'
 import { statusResponseFromComponents } from '../logic/status-checks'
 import { getPointerChanges } from '../service/pointers/pointers'
 import { PointerChangesFilters } from '../service/pointers/types'
@@ -438,12 +438,13 @@ export async function getPointerChangesHandler(
   const entityTypes: (EntityType | undefined)[] = qsGetArray(queryParams, 'entityType').map((type) =>
     parseEntityType(type)
   )
-  const from: number | undefined = asInt(queryParams.from)
-  const to: number | undefined = asInt(queryParams.to)
-  const offset: number | undefined = asInt(queryParams.offset)
-  const limit: number | undefined = asInt(queryParams.limit)
+
+  const from: number | undefined = qsGetNumber(queryParams, 'from')
+  const to: number | undefined = qsGetNumber(queryParams, 'to')
+  const offset: number | undefined = qsGetNumber(queryParams, 'offset')
+  const limit: number | undefined = qsGetNumber(queryParams, 'limit')
   const lastId: string | undefined = (queryParams.lastId as string)?.toLowerCase()
-  const includeAuthChain = asBoolean(queryParams.includeAuthChain) ?? false
+  const includeAuthChain = qsGetBoolean(queryParams, 'includeAuthChain') ?? false
 
   const sortingFieldParam: string | undefined = queryParams.sortingField as string
   const snake_case_sortingField = sortingFieldParam ? fromCamelCaseToSnakeCase(sortingFieldParam) : undefined
@@ -571,10 +572,10 @@ export async function getDeploymentsHandler(
     parseEntityType(type)
   )
   const entityIds = qsGetArray(queryParams, 'entityId')
-  const onlyCurrentlyPointed: boolean | undefined = asBoolean(queryParams.onlyCurrentlyPointed)
+  const onlyCurrentlyPointed: boolean | undefined = qsGetBoolean(queryParams, 'onlyCurrentlyPointed')
   const pointers = qsGetArray(queryParams, 'pointer').map((pointer) => pointer.toLowerCase())
-  const offset: number | undefined = asInt(queryParams.offset)
-  const limit: number | undefined = asInt(queryParams.limit)
+  const offset: number | undefined = qsGetNumber(queryParams, 'offset')
+  const limit: number | undefined = qsGetNumber(queryParams, 'limit')
   const fields: string | null = queryParams.fields as string
   const sortingFieldParam: string | null = queryParams.sortingField as string
   const snake_case_sortingField = sortingFieldParam ? fromCamelCaseToSnakeCase(sortingFieldParam) : undefined
@@ -584,8 +585,8 @@ export async function getDeploymentsHandler(
     (queryParams.sortingOrder as string) || undefined
   )
   const lastId: string | undefined = (queryParams.lastId as string)?.toLowerCase()
-  const from: number | undefined = asInt(queryParams.from)
-  const to: number | undefined = asInt(queryParams.to)
+  const from: number | undefined = qsGetNumber(queryParams, 'from')
+  const to: number | undefined = qsGetNumber(queryParams, 'to')
 
   if (entityTypes && entityTypes.some((type) => !type)) {
     return {
@@ -833,12 +834,4 @@ function asEnumValue<T extends { [key: number]: string }>(
     const match = validEnumValues.has(stringToMap)
     return match ? (stringToMap as T[keyof T]) : 'unknown'
   }
-}
-
-function asInt(value: any): number | undefined {
-  return value ? parseInt(value) : undefined
-}
-
-function asBoolean(value: any): boolean | undefined {
-  return value ? value === 'true' : undefined
 }
