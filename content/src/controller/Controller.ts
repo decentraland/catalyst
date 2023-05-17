@@ -2,7 +2,6 @@ import { ContentItem } from '@dcl/catalyst-storage'
 import { AuthChain, Authenticator, AuthLink, EthAddress, Signature } from '@dcl/crypto'
 import { Entity, EntityType, PointerChangesSyncDeployment } from '@dcl/schemas'
 import { Field } from '@well-known-components/multipart-wrapper'
-import qs from 'qs'
 import {
   AuditInfo,
   Deployment,
@@ -23,7 +22,7 @@ import { getActiveDeploymentsByContentHash } from '../logic/database-queries/dep
 import { getDeployments } from '../logic/deployments'
 import { findEntityByPointer, findImageHash, findThumbnailHash } from '../logic/entities'
 import { buildUrn, formatERC21Entity, getProtocol } from '../logic/erc721'
-import { fromQueryParamsAsArray, toQueryParams } from '../logic/query-params'
+import { qsGetArray, qsParser, toQueryParams } from '../logic/query-params'
 import { statusResponseFromComponents } from '../logic/status-checks'
 import { getPointerChanges } from '../service/pointers/pointers'
 import { PointerChangesFilters } from '../service/pointers/types'
@@ -40,12 +39,10 @@ import { ControllerEntityFactory } from './ControllerEntityFactory'
 export async function getEntities(context: HandlerContextWithPath<'activeEntities' | 'database', '/entities/:type'>) {
   const { database, activeEntities } = context.components
   const type: EntityType = parseEntityType(context.params.type)
-  const queryParams = qs.parse(context.url.searchParams.toString(), { parseArrays: true })
+  const queryParams = qsParser(context.url.searchParams)
 
-  const pointers: string[] = fromQueryParamsAsArray(queryParams, 'pointer').map((pointer) =>
-    pointer.toLocaleLowerCase()
-  )
-  const ids: string[] = fromQueryParamsAsArray(queryParams, 'id')
+  const pointers: string[] = qsGetArray(queryParams, 'pointer').map((pointer) => pointer.toLocaleLowerCase())
+  const ids: string[] = qsGetArray(queryParams, 'id')
   const fields: string = queryParams.fields as string
 
   // Validate type is valid
@@ -368,8 +365,8 @@ export async function getAvailableContent(
   context: HandlerContextWithPath<'denylist' | 'storage', '/available-content'>
 ) {
   const { storage, denylist } = context.components
-  const queryParams = qs.parse(context.url.searchParams.toString(), { parseArrays: true })
-  const cids: string[] = fromQueryParamsAsArray(queryParams, 'cid')
+  const queryParams = qsParser(context.url.searchParams)
+  const cids: string[] = qsGetArray(queryParams, 'cid')
 
   if (cids.length === 0) {
     return {
@@ -436,9 +433,9 @@ export async function getAudit(
 export async function getPointerChangesHandler(
   context: HandlerContextWithPath<'database' | 'denylist' | 'sequentialExecutor' | 'metrics', '/pointer-changes'>
 ) {
-  const queryParams = qs.parse(context.url.searchParams.toString())
+  const queryParams = qsParser(context.url.searchParams)
 
-  const entityTypes: (EntityType | undefined)[] = fromQueryParamsAsArray(queryParams, 'entityType').map((type) =>
+  const entityTypes: (EntityType | undefined)[] = qsGetArray(queryParams, 'entityType').map((type) =>
     parseEntityType(type)
   )
   const from: number | undefined = asInt(queryParams.from)
@@ -569,13 +566,13 @@ export async function getActiveDeploymentsByContentHashHandler(
 export async function getDeploymentsHandler(
   context: HandlerContextWithPath<'database' | 'denylist' | 'metrics' | 'sequentialExecutor', '/deployments'>
 ) {
-  const queryParams = qs.parse(context.url.searchParams.toString())
-  const entityTypes: (EntityType | undefined)[] = fromQueryParamsAsArray(queryParams, 'entityType').map((type) =>
+  const queryParams = qsParser(context.url.searchParams)
+  const entityTypes: (EntityType | undefined)[] = qsGetArray(queryParams, 'entityType').map((type) =>
     parseEntityType(type)
   )
-  const entityIds = fromQueryParamsAsArray(queryParams, 'entityId')
+  const entityIds = qsGetArray(queryParams, 'entityId')
   const onlyCurrentlyPointed: boolean | undefined = asBoolean(queryParams.onlyCurrentlyPointed)
-  const pointers = fromQueryParamsAsArray(queryParams, 'pointer').map((pointer) => pointer.toLowerCase())
+  const pointers = qsGetArray(queryParams, 'pointer').map((pointer) => pointer.toLowerCase())
   const offset: number | undefined = asInt(queryParams.offset)
   const limit: number | undefined = asInt(queryParams.limit)
   const fields: string | null = queryParams.fields as string

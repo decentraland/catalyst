@@ -1,9 +1,12 @@
 import qs from 'qs'
+import { QueryParams } from '../types'
 
-export function fromQueryParamsAsArray(queryParams: qs.ParsedQs, paramName: string): string[] {
-  const receivedParameter: string[] = (queryParams[paramName] as string[]) || []
+export function qsParser(rawQueryParams: URLSearchParams): QueryParams {
+  return qs.parse(rawQueryParams.toString(), { parseArrays: true })
+}
 
-  return receivedParameter
+export function qsGetArray(queryParams: QueryParams, paramName: string) {
+  return (queryParams[paramName] as string[]) || []
 }
 
 export function toQueryParams(filters: Record<string, any>): string {
