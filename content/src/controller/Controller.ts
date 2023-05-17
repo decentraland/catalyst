@@ -365,8 +365,9 @@ export async function getAvailableContent(
   context: HandlerContextWithPath<'denylist' | 'storage', '/available-content'>
 ) {
   const { storage, denylist } = context.components
-  const queryParams = qsParser(context.url.searchParams)
-  const cids: string[] = qsGetArray(queryParams, 'cid')
+  // const queryParams = qsParser(context.url.searchParams)
+  // const cids: string[] = qsGetArray(queryParams, 'cid')
+  const cids = context.url.searchParams.getAll('cid')
 
   if (cids.length === 0) {
     return {
