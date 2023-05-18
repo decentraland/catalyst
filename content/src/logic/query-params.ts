@@ -1,4 +1,3 @@
-import { isArray } from 'eth-connect'
 import qs from 'qs'
 import { QueryParams } from '../types'
 
@@ -8,7 +7,7 @@ export function qsParser(rawQueryParams: URLSearchParams): QueryParams {
 
 export function qsGetArray(queryParams: QueryParams, paramName: string): string[] {
   const parsedParam = (queryParams[paramName] as string[]) || []
-  return isArray(parsedParam) ? parsedParam : [parsedParam]
+  return Array.isArray(parsedParam) ? parsedParam : [parsedParam]
 }
 
 export function qsGetNumber(queryParams: QueryParams, paramName: string): number | undefined {
