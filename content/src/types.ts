@@ -13,15 +13,16 @@ import {
 } from '@well-known-components/interfaces'
 import { FormDataContext } from '@well-known-components/multipart-wrapper'
 import { Fetcher } from 'dcl-catalyst-commons'
+import qs from 'qs'
 import { Environment } from './Environment'
 import { metricsDeclaration } from './metrics'
 import { MigrationManager } from './migrations/MigrationManager'
 import { ActiveEntities } from './ports/activeEntities'
 import { Clock } from './ports/clock'
 import { Denylist } from './ports/denylist'
+import { IDeployRateLimiterComponent } from './ports/deployRateLimiterComponent'
 import { DeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
 import { Deployer } from './ports/deployer'
-import { IDeployRateLimiterComponent } from './ports/deployRateLimiterComponent'
 import { IFailedDeploymentsComponent } from './ports/failedDeployments'
 import { IDatabaseComponent } from './ports/postgres'
 import { ISequentialTaskExecutorComponent } from './ports/sequecuentialTaskExecutor'
@@ -32,8 +33,8 @@ import { ContentAuthenticator } from './service/auth/Authenticator'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { PointerManager } from './service/pointers/PointerManager'
 import { IChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
-import { DaoComponent } from './service/synchronization/clients/HardcodedDAOClient'
 import { ContentCluster } from './service/synchronization/ContentCluster'
+import { DaoComponent } from './service/synchronization/clients/HardcodedDAOClient'
 import { IRetryFailedDeploymentsComponent } from './service/synchronization/retryFailedDeployments'
 import { ServerValidator } from './service/validations/server'
 
@@ -164,3 +165,5 @@ export class InvalidRequestError extends Error {
     Error.captureStackTrace(this, this.constructor)
   }
 }
+
+export type QueryParams = qs.ParsedQs
