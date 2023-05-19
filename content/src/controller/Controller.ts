@@ -1,21 +1,13 @@
-import { GetEntityInformation200 } from '@dcl/catalyst-api-specs/lib/client/client.schemas'
 import { ContentItem } from '@dcl/catalyst-storage'
 import { AuthChain } from '@dcl/crypto'
 import { Entity, EntityType } from '@dcl/schemas'
 import { asEnumValue, fromCamelCaseToSnakeCase } from './utils'
-import { AuditInfo, Deployment, DeploymentOptions, SortingField, SortingOrder } from '../deployment-types'
-import {
-  CURRENT_CATALYST_VERSION,
-  CURRENT_COMMIT_HASH,
-  CURRENT_CONTENT_VERSION,
-  EnvironmentConfig
-} from '../Environment'
+import { Deployment, DeploymentOptions, SortingField, SortingOrder } from '../deployment-types'
 import { getActiveDeploymentsByContentHash } from '../logic/database-queries/deployments-queries'
 import { getDeployments } from '../logic/deployments'
 import { findEntityByPointer, findImageHash, findThumbnailHash } from '../logic/entities'
 import { buildUrn, formatERC21Entity, getProtocol } from '../logic/erc721'
 import { qsGetArray, qsGetBoolean, qsGetNumber, qsParser, toQueryParams } from '../logic/query-params'
-import { statusResponseFromComponents } from '../logic/status-checks'
 import { HandlerContextWithPath, InvalidRequestError, NotFoundError, parseEntityType } from '../types'
 import { ControllerDeploymentFactory } from './ControllerDeploymentFactory'
 import { ControllerEntityFactory } from './ControllerEntityFactory'
@@ -184,70 +176,6 @@ export async function getContent(context: HandlerContextWithPath<'storage', '/co
 }
 
 // Method: GET
-// Query String: ?cid={hashId1}&cid={hashId2}
-export async function getAvailableContent(
-  context: HandlerContextWithPath<'denylist' | 'storage', '/available-content'>
-) {
-  const { storage, denylist } = context.components
-  const queryParams = qsParser(context.url.searchParams)
-  const cids: string[] = qsGetArray(queryParams, 'cid')
-
-  if (cids.length === 0) {
-    return {
-      status: 400,
-      body: 'Please set at least one cid.'
-    }
-  }
-  const availableCids = cids.filter((cid) => !denylist.isDenylisted(cid))
-  const availableContent = await storage.existMultiple(availableCids)
-
-  return {
-    status: 200,
-    body: Array.from(availableContent.entries()).map(([fileHash, isAvailable]) => ({
-      cid: fileHash,
-      available: isAvailable
-    }))
-  }
-}
-
-// Method: GET
-export async function getAudit(
-  context: HandlerContextWithPath<'database' | 'denylist' | 'metrics', '/audit/:type/:entityId'>
-): Promise<{ status: 200; body: GetEntityInformation200 }> {
-  const type = parseEntityType(context.params.type)
-  const entityId = context.params.entityId
-
-  // Validate type is valid
-  if (!type) {
-    throw new InvalidRequestError(`Unrecognized type: ${context.params.type}`)
-  }
-
-  const { deployments } = await getDeployments(context.components, context.components.database, {
-    fields: [DeploymentField.AUDIT_INFO],
-    filters: { entityIds: [entityId], entityTypes: [type] },
-    includeDenylisted: true
-  })
-
-  if (deployments.length === 0) {
-    throw new NotFoundError('No deployment found')
-  }
-
-  const { auditInfo } = deployments[0]
-  const body: AuditInfo = {
-    version: auditInfo.version,
-    localTimestamp: auditInfo.localTimestamp,
-    authChain: auditInfo.authChain,
-    overwrittenBy: auditInfo.overwrittenBy,
-    isDenylisted: auditInfo.isDenylisted,
-    denylistedContent: auditInfo.denylistedContent
-  }
-  return {
-    status: 200,
-    body
-  }
-}
-
-// Method: GET
 export async function getActiveDeploymentsByContentHashHandler(
   context: HandlerContextWithPath<'database' | 'denylist', '/contents/:hashId/active-entities'>
 ) {
@@ -402,29 +330,6 @@ function calculateNextRelativePath(options: DeploymentOptions, lastDeployment: D
   })
 
   return '?' + nextQueryParams
-}
-
-export async function getStatus(
-  context: HandlerContextWithPath<'contentCluster' | 'synchronizationState' | 'config', '/status'>
-) {
-  const { contentCluster, synchronizationState, config } = context.components
-  const serverStatus = await statusResponseFromComponents(context.components)
-  const ethNetwork = config.getString(EnvironmentConfig[EnvironmentConfig.ETH_NETWORK])
-
-  return {
-    status: serverStatus.successful ? 200 : 503,
-    body: {
-      ...serverStatus.details,
-      version: CURRENT_CONTENT_VERSION,
-      commitHash: CURRENT_COMMIT_HASH,
-      catalystVersion: CURRENT_CATALYST_VERSION,
-      ethNetwork,
-      synchronizationStatus: {
-        ...contentCluster.getStatus(),
-        synchronizationState: synchronizationState.getState()
-      }
-    }
-  }
 }
 
 // Method: GET

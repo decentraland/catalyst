@@ -6,8 +6,6 @@ import { getActiveEntities } from './active-entities-handler'
 import {
   getActiveDeploymentsByContentHashHandler,
   getAllNewSnapshots,
-  getAudit,
-  getAvailableContent,
   getChallenge,
   getContent,
   getDeploymentsHandler,
@@ -15,13 +13,15 @@ import {
   getEntityThumbnail,
   getERC721Entity,
   getFailedDeployments,
-  getStatus,
   getEntities
 } from './Controller'
 import { createEntity } from './create-entity-handler'
 import { errorHandler } from './error-handler'
 import { filterByUrnHandler } from './filter-by-urn-handler'
+import { getEntityAuditInformation } from './get-audit-handler'
+import { getAvailableContent } from './get-available-content-handler'
 import { getPointerChangesHandler } from './pointer-changes-handler'
+import { getStatus } from './status-handler'
 
 // We return the entire router because it will be easier to test than a whole server
 export async function setupRouter({ components }: GlobalContext): Promise<Router<GlobalContext>> {
@@ -43,7 +43,7 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
   router.head('/contents/:hashId', getContent)
   router.get('/contents/:hashId', getContent)
   router.get('/available-content', getAvailableContent)
-  router.get('/audit/:type/:entityId', getAudit)
+  router.get('/audit/:type/:entityId', getEntityAuditInformation)
   router.get('/deployments', getDeploymentsHandler)
   router.get('/contents/:hashId/active-entities', getActiveDeploymentsByContentHashHandler)
   router.get('/status', getStatus)
