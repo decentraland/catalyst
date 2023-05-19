@@ -1,16 +1,14 @@
 import { ContentItem } from '@dcl/catalyst-storage'
 import { AuthChain } from '@dcl/crypto'
 import { Entity, EntityType } from '@dcl/schemas'
-import { asEnumValue, fromCamelCaseToSnakeCase } from './utils'
-import { Deployment, DeploymentOptions, SortingField, SortingOrder } from '../deployment-types'
+import { asEnumValue, fromCamelCaseToSnakeCase, maskEntity } from './utils'
+import { Deployment, DeploymentBase, DeploymentOptions, SortingField, SortingOrder } from '../deployment-types'
 import { getActiveDeploymentsByContentHash } from '../logic/database-queries/deployments-queries'
 import { getDeployments } from '../logic/deployments'
 import { findEntityByPointer, findImageHash, findThumbnailHash } from '../logic/entities'
 import { buildUrn, formatERC21Entity, getProtocol } from '../logic/erc721'
 import { qsGetArray, qsGetBoolean, qsGetNumber, qsParser, toQueryParams } from '../logic/query-params'
 import { HandlerContextWithPath, InvalidRequestError, NotFoundError, parseEntityType } from '../types'
-import { ControllerDeploymentFactory } from './ControllerDeploymentFactory'
-import { ControllerEntityFactory } from './ControllerEntityFactory'
 
 /**
  * @deprecated
@@ -54,7 +52,7 @@ export async function getEntities(context: HandlerContextWithPath<'activeEntitie
     ? await activeEntities.withIds(database, ids)
     : await activeEntities.withPointers(database, pointers)
 
-  const maskedEntities: Entity[] = entities.map((entity) => ControllerEntityFactory.maskEntity(entity, enumFields))
+  const maskedEntities: Entity[] = entities.map((entity) => maskEntity(entity, enumFields))
   return {
     status: 200,
     body: maskedEntities
@@ -283,9 +281,7 @@ export async function getDeploymentsHandler(
     'GetDeploymentsEndpoint',
     () => getDeployments(context.components, context.components.database, deploymentOptions)
   )
-  const controllerDeployments = deployments.map((deployment) =>
-    ControllerDeploymentFactory.deployment2ControllerEntity(deployment, enumFields)
-  )
+  const controllerDeployments = deployments.map((deployment) => deployment2ControllerEntity(deployment, enumFields))
 
   if (deployments.length > 0 && pagination.moreData) {
     const lastDeployment = deployments[deployments.length - 1]
@@ -349,17 +345,6 @@ export async function getAllNewSnapshots(context: HandlerContextWithPath<'snapsh
 }
 
 // Method: GET
-export async function getFailedDeployments(
-  context: HandlerContextWithPath<'failedDeployments', '/failed-deployments'>
-) {
-  const failedDeployments = await context.components.failedDeployments.getAllFailedDeployments()
-  return {
-    status: 200,
-    body: failedDeployments
-  }
-}
-
-// Method: GET
 export async function getChallenge(context: HandlerContextWithPath<'challengeSupervisor', '/challenge'>) {
   const challengeText = context.components.challengeSupervisor.getChallengeText()
   return {
@@ -414,3 +399,22 @@ const DEFAULT_FIELDS_ON_DEPLOYMENTS: DeploymentField[] = [
   DeploymentField.CONTENT,
   DeploymentField.METADATA
 ]
+
+function deployment2ControllerEntity<T extends DeploymentBase>(deployment: Deployment, fields: DeploymentField[]): T {
+  const { pointers, auditInfo, content, metadata, ...other } = deployment
+  const result: any = { ...other }
+  if (fields.includes(DeploymentField.POINTERS)) {
+    result.pointers = pointers
+  }
+  if (content && fields.includes(DeploymentField.CONTENT)) {
+    result.content = content
+  }
+  if (metadata && fields.includes(DeploymentField.METADATA)) {
+    result.metadata = metadata
+  }
+  if (fields.includes(DeploymentField.AUDIT_INFO)) {
+    result.auditInfo = auditInfo
+  }
+  result.localTimestamp = auditInfo.localTimestamp
+  return result
+}

@@ -12,11 +12,11 @@ import {
   getEntityImage,
   getEntityThumbnail,
   getERC721Entity,
-  getFailedDeployments,
   getEntities
 } from './Controller'
 import { createEntity } from './create-entity-handler'
 import { errorHandler } from './error-handler'
+import { getFailedDeployments } from './failed-deployments-handler'
 import { filterByUrnHandler } from './filter-by-urn-handler'
 import { getEntityAuditInformation } from './get-audit-handler'
 import { getAvailableContent } from './get-available-content-handler'
