@@ -1,17 +1,19 @@
 import { EntityType } from '@dcl/schemas'
-import { fetchJson } from 'dcl-catalyst-commons'
-import { EnvironmentConfig } from '../../../src/Environment'
+import { createFetchComponent } from '@well-known-components/fetch-component'
 import { DeploymentField } from '../../../src/controller/Controller'
 import { DeploymentOptions, SortingField, SortingOrder } from '../../../src/deployment-types'
+import { EnvironmentConfig } from '../../../src/Environment'
 import { toQueryParams } from '../../../src/logic/query-params'
 import { PointerChangesFilters } from '../../../src/service/pointers/types'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { setupTestEnvironment } from '../E2ETestEnvironment'
-import { EntityCombo, buildDeployData } from '../E2ETestUtils'
+import { buildDeployData, EntityCombo } from '../E2ETestUtils'
 import { TestProgram } from '../TestProgram'
 
 describe('Integration - Deployment Pagination', () => {
   const getTestEnv = setupTestEnvironment()
+
+  const fetcher = createFetchComponent()
 
   let E1: EntityCombo, E2: EntityCombo, E3: EntityCombo
 
@@ -230,6 +232,10 @@ describe('Integration - Deployment Pagination', () => {
       timestamps.push(deploymentResult)
     }
     return timestamps
+  }
+
+  async function fetchJson(url: string) {
+    return (await fetcher.fetch(url)).json()
   }
 
   async function fetchDeployments(options: DeploymentOptions) {

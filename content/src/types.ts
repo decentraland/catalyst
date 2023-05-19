@@ -19,9 +19,9 @@ import { MigrationManager } from './migrations/MigrationManager'
 import { ActiveEntities } from './ports/activeEntities'
 import { Clock } from './ports/clock'
 import { Denylist } from './ports/denylist'
-import { IDeployRateLimiterComponent } from './ports/deployRateLimiterComponent'
 import { DeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
 import { Deployer } from './ports/deployer'
+import { IDeployRateLimiterComponent } from './ports/deployRateLimiterComponent'
 import { IFailedDeploymentsComponent } from './ports/failedDeployments'
 import { IDatabaseComponent } from './ports/postgres'
 import { ISequentialTaskExecutorComponent } from './ports/sequecuentialTaskExecutor'
@@ -32,8 +32,8 @@ import { ContentAuthenticator } from './service/auth/Authenticator'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { PointerManager } from './service/pointers/PointerManager'
 import { IChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
-import { ContentCluster } from './service/synchronization/ContentCluster'
 import { DaoComponent } from './service/synchronization/clients/HardcodedDAOClient'
+import { ContentCluster } from './service/synchronization/ContentCluster'
 import { IRetryFailedDeploymentsComponent } from './service/synchronization/retryFailedDeployments'
 import { ServerValidator } from './service/validations/server'
 
@@ -139,7 +139,6 @@ export type IStatusCapableComponent = {
   getComponentStatus(): Promise<StatusProbeResult>
 }
 
-// TODO: Move this to catalyst-commons and remove the check for trailing s?
 export function parseEntityType(strType: string): EntityType {
   if (strType.endsWith('s')) {
     strType = strType.slice(0, -1)

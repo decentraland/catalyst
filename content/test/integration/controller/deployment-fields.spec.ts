@@ -1,4 +1,4 @@
-import { Fetcher } from 'dcl-catalyst-commons'
+import { createFetchComponent } from '@well-known-components/fetch-component'
 import { DeploymentField } from '../../../src/controller/Controller'
 import { Deployment } from '../../../src/deployment-types'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
@@ -10,7 +10,13 @@ describe('Integration - Deployment Fields', () => {
   const getTestEnv = setupTestEnvironment()
 
   let server: TestProgram
-  const fetcher = new Fetcher()
+  const fetcher = createFetchComponent()
+  const jsonFetcher = {
+    ...fetcher,
+    async fetchJson(url: string) {
+      return (await fetcher.fetch(url)).json()
+    }
+  }
 
   beforeEach(async () => {
     server = await getTestEnv().configServer().andBuild()
@@ -70,7 +76,7 @@ describe('Integration - Deployment Fields', () => {
 
   async function fetchDeployment(...fields: DeploymentField[]): Promise<Partial<Deployment>> {
     const url = server.getUrl() + `/deployments?fields=` + fields.join(',')
-    const { deployments } = (await fetcher.fetchJson(url)) as { deployments: any }
+    const { deployments } = (await jsonFetcher.fetchJson(url)) as { deployments: any }
     return deployments[0]
   }
 })
