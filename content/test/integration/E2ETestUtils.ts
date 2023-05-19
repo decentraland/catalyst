@@ -1,7 +1,7 @@
 import { Authenticator, EthAddress, IdentityType } from '@dcl/crypto'
 import { createUnsafeIdentity } from '@dcl/crypto/dist/crypto'
 import { Entity, EntityType } from '@dcl/schemas'
-import { DeploymentData, buildEntity } from 'dcl-catalyst-client/dist/client/utils/DeploymentBuilder'
+import { buildEntity } from 'dcl-catalyst-client/dist/client/utils/DeploymentBuilder'
 import fs from 'fs'
 import path from 'path'
 import { ControllerEntityFactory } from '../../src/controller/ControllerEntityFactory'
@@ -9,6 +9,7 @@ import { DeploymentContext, DeploymentResult, isInvalidDeployment } from '../../
 import { retry } from '../../src/helpers/RetryHelper'
 import { Deployer } from '../../src/ports/deployer'
 import { EntityFactory } from '../../src/service/EntityFactory'
+import { DeploymentData } from './syncronization/types-aux'
 
 export async function buildDeployDataAfterEntity(
   afterEntity: { timestamp: number } | { entity: { timestamp: number } },

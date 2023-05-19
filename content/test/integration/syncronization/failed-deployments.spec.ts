@@ -1,13 +1,13 @@
 import { Entity } from '@dcl/schemas'
-import { DeploymentData } from 'dcl-catalyst-client/dist/client/utils/DeploymentBuilder'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { retryFailedDeploymentExecution } from '../../../src/logic/deployments'
 import { FailedDeployment, FailureReason } from '../../../src/ports/failedDeployments'
 import { assertDeploymentFailed, assertDeploymentFailsWith, assertEntitiesAreActiveOnServer } from '../E2EAssertions'
 import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { awaitUntil, buildDeployData, buildDeployDataAfterEntity, createIdentity } from '../E2ETestUtils'
-import { TestProgram, startProgramAndWaitUntilBootstrapFinishes } from '../TestProgram'
 import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
+import { startProgramAndWaitUntilBootstrapFinishes, TestProgram } from '../TestProgram'
+import { DeploymentData } from './types-aux'
 
 describe('Errors during sync', () => {
   const getTestEnv = setupTestEnvironment()
@@ -21,10 +21,10 @@ describe('Errors during sync', () => {
   describe('Deploy an entity on server 1', function () {
     beforeEach(async function () {
       const identity = createIdentity()
-      ;[server1, server2] = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
-        .andBuildMany(2)
+        ;[server1, server2] = await getTestEnv()
+          .configServer()
+          .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
+          .andBuildMany(2)
       // Start server1
       await server1.startProgram()
 

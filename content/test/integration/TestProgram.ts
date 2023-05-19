@@ -1,16 +1,16 @@
 import { Entity, EntityType } from '@dcl/schemas'
 import { ILoggerComponent, Lifecycle } from '@well-known-components/interfaces'
 import { ContentClient, createContentClient } from 'dcl-catalyst-client/dist/client/ContentClient'
-import { DeploymentData } from 'dcl-catalyst-client/dist/client/utils/DeploymentBuilder'
 import fetch from 'node-fetch'
-import { EnvironmentConfig } from '../../src/Environment'
 import { AuditInfo, Deployment, DeploymentOptions, isInvalidDeployment } from '../../src/deployment-types'
+import { EnvironmentConfig } from '../../src/Environment'
 import { getDeployments } from '../../src/logic/deployments'
 import * as synchronization from '../../src/logic/synchronization'
 import { FailedDeployment } from '../../src/ports/failedDeployments'
 import { main } from '../../src/service'
 import { AppComponents } from '../../src/types'
 import { deleteFolderRecursive } from './E2ETestUtils'
+import { DeploymentData } from './syncronization/types-aux'
 
 process.env.RUNNING_TESTS = 'true'
 

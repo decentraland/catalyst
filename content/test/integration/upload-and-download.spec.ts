@@ -1,13 +1,13 @@
 import { Entity, EntityType } from '@dcl/schemas'
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
-import { DeploymentData } from 'dcl-catalyst-client/dist/client/utils/DeploymentBuilder'
 import fetch from 'node-fetch'
 import { makeNoopValidator } from '../helpers/service/validations/NoOpValidator'
 import { assertDeploymentsAreReported, buildDeployment } from './E2EAssertions'
 import { setupTestEnvironment } from './E2ETestEnvironment'
 import { buildDeployData } from './E2ETestUtils'
-import { TestProgram } from './TestProgram'
 import { getIntegrationResourcePathFor } from './resources/get-resource-path'
+import { DeploymentData } from './syncronization/types-aux'
+import { TestProgram } from './TestProgram'
 
 describe('End 2 end deploy test', () => {
   const getTestEnv = setupTestEnvironment()

@@ -31,10 +31,11 @@ import { createFailedDeployments } from '../../../src/ports/failedDeployments'
 import { createTestDatabaseComponent } from '../../../src/ports/postgres'
 import { createSequentialTaskExecutor } from '../../../src/ports/sequecuentialTaskExecutor'
 import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
+import { EntityFactory } from '../../../src/service/EntityFactory'
 import { DELTA_POINTER_RESULT } from '../../../src/service/pointers/PointerManager'
 import { EntityVersion } from '../../../src/types'
-import { buildEntityAndFile } from '../../helpers/service/EntityTestFactory'
 import { NoOpServerValidator, NoOpValidator } from '../../helpers/service/validations/NoOpValidator'
+import { buildEntityAndFile } from '../../integration/syncronization/types-aux'
 import { NoOpPointerManager } from '../service/pointers/NoOpPointerManager'
 
 export const DECENTRALAND_ADDRESS: EthAddress = '0x1337e0507eb4ab47e08a179573ed4533d9e22a7b'
@@ -53,13 +54,14 @@ describe('Deployer', function () {
   // starts the variables
   beforeAll(async () => {
     randomFileHash = await hashV1(randomFile)
-    ;[entity, entityFile] = await buildEntityAndFile(
-      EntityType.SCENE,
-      POINTERS,
-      Date.now(),
-      new Map([['file', randomFileHash]]),
-      { metadata: 'metadata' }
-    )
+    let { entity, entityFile } = await buildEntityAndFile({
+      type: EntityType.SCENE,
+      pointers: POINTERS,
+      timestamp: Date.now(),
+      content: [{ file: 'file', hash: randomFileHash }],
+      metadata: 'metadata'
+    })
+      ;[entity, entityFile] = [EntityFactory.fromJsonObject(entity), entityFile]
 
     jest.spyOn(pointers, 'updateActiveDeployments').mockImplementation(() => Promise.resolve())
   })
@@ -100,8 +102,8 @@ describe('Deployer', function () {
     if (isInvalidDeployment(deploymentResult)) {
       assert.fail(
         'The deployment result: ' +
-          JSON.stringify(deploymentResult) +
-          ' was expected to be successful, it was invalid instead.'
+        JSON.stringify(deploymentResult) +
+        ' was expected to be successful, it was invalid instead.'
       )
     } else {
       const deltaMilliseconds = Date.now() - deploymentResult

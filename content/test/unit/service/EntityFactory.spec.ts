@@ -1,19 +1,20 @@
 import { Entity, EntityType } from '@dcl/schemas'
 import { EntityFactory } from '../../../src/service/EntityFactory'
-import { buildEntityAndFile, entityToFile } from '../../helpers/service/EntityTestFactory'
+import { buildEntityAndFile } from '../../integration/syncronization/types-aux'
 
 describe('Service', () => {
   let entity: Entity
   let entityFile: Uint8Array
 
   beforeAll(async () => {
-    ;[entity, entityFile] = await buildEntityAndFile(
-      EntityType.SCENE,
-      ['X1,Y1'],
-      123456,
-      new Map([['name', 'bafkreico6luxnkk5vxuxvmpsg7hva4upamyz3br2b6ucc7rf3hdlcaehha']]),
-      { 'metadata': 'metadata' }
-    )
+    let { entity, entityFile } = await buildEntityAndFile({
+      type: EntityType.SCENE,
+      pointers: ['X1,Y1'],
+      timestamp: Date.now(),
+      content: [{ file: 'name', hash: 'bafkreico6luxnkk5vxuxvmpsg7hva4upamyz3br2b6ucc7rf3hdlcaehha' }],
+      metadata: 'metadata'
+    })
+      ;[entity, entityFile] = [EntityFactory.fromJsonObject(entity), entityFile]
   })
 
   it(`When a valid entity file is used, then it is parsed correctly`, () => {

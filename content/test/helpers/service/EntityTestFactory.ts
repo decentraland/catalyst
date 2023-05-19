@@ -1,27 +1,6 @@
 import { Entity, EntityType } from '@dcl/schemas'
-import * as deploymentBuilder from 'dcl-catalyst-client/dist/client/utils/DeploymentBuilder'
+// import * as deploymentBuilder from 'dcl-catalyst-client/dist/client/utils/DeploymentBuilder'
 import { random } from 'faker'
-import { EntityFactory } from '../../../src/service/EntityFactory'
-
-/** Builds an entity with the given params, and also the file what represents it */
-export async function buildEntityAndFile(
-  type: EntityType,
-  pointers: string[],
-  timestamp: number,
-  content?: Map<string, string>,
-  metadata?: any
-): Promise<[Entity, Uint8Array]> {
-  const newContent = Array.from((content ?? new Map()).entries()).map(([file, hash]) => ({ file, hash }))
-  const { entity, entityFile } = await deploymentBuilder.buildEntityAndFile({
-    type,
-    pointers,
-    timestamp,
-    content: newContent,
-    metadata
-  })
-  return [EntityFactory.fromJsonObject(entity), entityFile]
-}
-
 /** Build a file with the given entity as the content */
 export function entityToFile(entity: Entity): Buffer {
   const copy: any = Object.assign({}, entity)
