@@ -1,4 +1,4 @@
-import { Fetcher } from 'dcl-catalyst-commons'
+import { createFetchComponent } from '@well-known-components/fetch-component'
 import { DeploymentField } from '../../../src/controller/Controller'
 import { Deployment } from '../../../src/deployment-types'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
@@ -10,7 +10,7 @@ describe('Integration - Deployment Fields', () => {
   const getTestEnv = setupTestEnvironment()
 
   let server: TestProgram
-  const fetcher = new Fetcher()
+  const fetcher = createFetchComponent()
 
   beforeEach(async () => {
     server = await getTestEnv().configServer().andBuild()
