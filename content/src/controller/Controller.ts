@@ -26,7 +26,7 @@ import { qsGetArray, qsGetBoolean, qsGetNumber, qsParser, toQueryParams } from '
 import { statusResponseFromComponents } from '../logic/status-checks'
 import { getPointerChanges } from '../service/pointers/pointers'
 import { PointerChangesFilters } from '../service/pointers/types'
-import { FormHandlerContextWithPath, HandlerContextWithPath, parseEntityType } from '../types'
+import { FormHandlerContextWithPath, HandlerContextWithPath, NotFoundError, parseEntityType } from '../types'
 import { ControllerDeploymentFactory } from './ControllerDeploymentFactory'
 import { ControllerEntityFactory } from './ControllerEntityFactory'
 
@@ -90,23 +90,17 @@ export async function getEntityThumbnail(
   const pointer: string = context.params.pointer
   const entity = await findEntityByPointer(database, activeEntities, pointer)
   if (!entity) {
-    return {
-      status: 404
-    }
+    throw new NotFoundError('Entity not found.')
   }
 
   const hash = findThumbnailHash(entity)
   if (!hash) {
-    return {
-      status: 404
-    }
+    throw new NotFoundError('Entity has no thumbnail.')
   }
 
   const content: ContentItem | undefined = await context.components.storage.retrieve(hash)
   if (!content) {
-    return {
-      status: 404
-    }
+    throw new NotFoundError('Entity has no thumbnail.')
   }
 
   return {
@@ -124,23 +118,17 @@ export async function getEntityImage(
   const pointer: string = context.params.pointer
   const entity = await findEntityByPointer(database, activeEntities, pointer)
   if (!entity) {
-    return {
-      status: 404
-    }
+    throw new NotFoundError('Entity not found.')
   }
 
   const hash = findImageHash(entity)
   if (!hash) {
-    return {
-      status: 404
-    }
+    throw new NotFoundError('Entity has no image.')
   }
 
   const content: ContentItem | undefined = await context.components.storage.retrieve(hash)
   if (!content) {
-    return {
-      status: 404
-    }
+    throw new NotFoundError('Entity has no image.')
   }
 
   return {

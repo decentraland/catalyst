@@ -1,5 +1,5 @@
 import { IHttpServerComponent } from '@well-known-components/interfaces'
-import { InvalidRequestError } from '../types'
+import { InvalidRequestError, NotFoundError } from '../types'
 
 export async function errorHandler(
   _ctx: IHttpServerComponent.DefaultContext<object>,
@@ -11,6 +11,14 @@ export async function errorHandler(
     if (error instanceof InvalidRequestError) {
       return Promise.resolve({
         status: 400,
+        body: {
+          error: error.message
+        }
+      })
+    }
+    if (error instanceof NotFoundError) {
+      return Promise.resolve({
+        status: 404,
         body: {
           error: error.message
         }
