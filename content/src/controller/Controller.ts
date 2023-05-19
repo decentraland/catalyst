@@ -26,7 +26,13 @@ import { qsGetArray, qsGetBoolean, qsGetNumber, qsParser, toQueryParams } from '
 import { statusResponseFromComponents } from '../logic/status-checks'
 import { getPointerChanges } from '../service/pointers/pointers'
 import { PointerChangesFilters } from '../service/pointers/types'
-import { FormHandlerContextWithPath, HandlerContextWithPath, NotFoundError, parseEntityType } from '../types'
+import {
+  FormHandlerContextWithPath,
+  HandlerContextWithPath,
+  InvalidRequestError,
+  NotFoundError,
+  parseEntityType
+} from '../types'
 import { ControllerDeploymentFactory } from './ControllerDeploymentFactory'
 import { ControllerEntityFactory } from './ControllerEntityFactory'
 
@@ -342,10 +348,7 @@ export async function getAudit(
 
   // Validate type is valid
   if (!type) {
-    return {
-      status: 400,
-      body: { error: `Unrecognized type: ${context.params.type}` }
-    }
+    throw new InvalidRequestError(`Unrecognized type: ${context.params.type}`)
   }
 
   const { deployments } = await getDeployments(context.components, context.components.database, {
@@ -355,9 +358,7 @@ export async function getAudit(
   })
 
   if (deployments.length === 0) {
-    return {
-      status: 404
-    }
+    throw new NotFoundError('No deployment found')
   }
 
   const { auditInfo } = deployments[0]
@@ -403,37 +404,25 @@ export async function getPointerChangesHandler(
 
   // Validate type is valid
   if (entityTypes && entityTypes.some((type) => !type)) {
-    return {
-      status: 400,
-      body: { error: `Found an unrecognized entity type` }
-    }
+    throw new InvalidRequestError(`Found an unrecognized entity type`)
   }
 
   if (offset && offset > 5000) {
-    return {
-      status: 400,
-      body: { error: `Offset can't be higher than 5000. Please use the 'next' property for pagination.` }
-    }
+    throw new InvalidRequestError(`Offset can't be higher than 5000. Please use the 'next' property for pagination.`)
   }
 
   // Validate sorting fields and create sortBy
   const sortBy: { field?: SortingField; order?: SortingOrder } = {}
   if (sortingField) {
     if (sortingField == 'unknown') {
-      return {
-        status: 400,
-        body: { error: `Found an unrecognized sort field param` }
-      }
+      throw new InvalidRequestError(`Found an unrecognized sort field param`)
     } else {
       sortBy.field = sortingField
     }
   }
   if (sortingOrder) {
     if (sortingOrder == 'unknown') {
-      return {
-        status: 400,
-        body: { error: `Found an unrecognized sort order param` }
-      }
+      throw new InvalidRequestError(`Found an unrecognized sort order param`)
     } else {
       sortBy.order = sortingOrder
     }
@@ -497,10 +486,7 @@ export async function getActiveDeploymentsByContentHashHandler(
   result = result.filter((entityId) => !context.components.denylist.isDenylisted(entityId))
 
   if (result.length === 0) {
-    return {
-      status: 404,
-      body: { error: 'The entity was not found' }
-    }
+    throw new NotFoundError('The entity was not found')
   }
 
   return {
