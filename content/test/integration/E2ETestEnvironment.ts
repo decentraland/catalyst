@@ -117,6 +117,14 @@ export class E2ETestEnvironment {
     return components
   }
 
+  removeFromDAO(domain: string) {
+    this.dao.remove(domain)
+  }
+
+  buildMany(amount: number): Promise<TestProgram[]> {
+    return this.configServer().andBuildMany(amount)
+  }
+
   private async createDatabases(amount: number) {
     await this.database.query(`
       CREATE SCHEMA IF NOT EXISTS ${E2ETestEnvironment.TEST_SCHEMA}
