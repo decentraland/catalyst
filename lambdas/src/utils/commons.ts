@@ -1,4 +1,4 @@
-import { fetchJson } from 'dcl-catalyst-commons'
+import { createFetchComponent } from '@well-known-components/fetch-component'
 import { Logger } from 'log4js'
 
 export async function getCommsServerUrl(
@@ -7,9 +7,10 @@ export async function getCommsServerUrl(
   externalCommsServerUrl?: string
 ): Promise<string> {
   try {
-    await fetchJson(`${internalCommsServerUrl}/status`, {
+    const fetcher = createFetchComponent()
+    await fetcher.fetch(`${internalCommsServerUrl}/status`, {
       attempts: 6,
-      waitTime: '10s'
+      retryDelay: 10000
     })
     return internalCommsServerUrl
   } catch {

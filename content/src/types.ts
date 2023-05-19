@@ -12,7 +12,6 @@ import {
   IMetricsComponent
 } from '@well-known-components/interfaces'
 import { FormDataContext } from '@well-known-components/multipart-wrapper'
-import { Fetcher } from 'dcl-catalyst-commons'
 import qs from 'qs'
 import { Environment } from './Environment'
 import { metricsDeclaration } from './metrics'
@@ -91,7 +90,7 @@ export type AppComponents = {
   }
   garbageCollectionManager: GarbageCollectionManager
   systemProperties: SystemProperties
-  catalystFetcher: Fetcher
+  catalystFetcher: IFetchComponent
   daoClient: DaoComponent
   server: IHttpServerComponent<GlobalContext>
   retryFailedDeployments: IRetryFailedDeploymentsComponent

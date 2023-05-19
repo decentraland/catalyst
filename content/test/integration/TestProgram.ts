@@ -1,9 +1,10 @@
 import { Entity, EntityType } from '@dcl/schemas'
 import { ILoggerComponent, Lifecycle } from '@well-known-components/interfaces'
-import { ContentClient, DeploymentData } from 'dcl-catalyst-client'
+import { ContentClient, createContentClient } from 'dcl-catalyst-client/dist/client/ContentClient'
+import { DeploymentData } from 'dcl-catalyst-client/dist/client/utils/DeploymentBuilder'
 import fetch from 'node-fetch'
-import { AuditInfo, Deployment, DeploymentOptions, isInvalidDeployment } from '../../src/deployment-types'
 import { EnvironmentConfig } from '../../src/Environment'
+import { AuditInfo, Deployment, DeploymentOptions, isInvalidDeployment } from '../../src/deployment-types'
 import { getDeployments } from '../../src/logic/deployments'
 import * as synchronization from '../../src/logic/synchronization'
 import { FailedDeployment } from '../../src/ports/failedDeployments'
@@ -23,10 +24,7 @@ export class TestProgram {
   logger: ILoggerComponent.ILogger
 
   constructor(public components: AppComponents) {
-    this.client = new ContentClient({
-      contentUrl: this.getUrl(),
-      fetcher: components.catalystFetcher
-    })
+    this.client = createContentClient({ fetcher: components.catalystFetcher, url: this.getUrl() })
     this.logger = components.logs.getLogger('TestProgram')
   }
 
@@ -63,12 +61,13 @@ export class TestProgram {
 
   async deployEntity(deployData: DeploymentData, fix: boolean = false): Promise<number> {
     this.logger.info('Deploying entity ' + deployData.entityId)
-    const returnValue = await this.client.deployEntity(deployData, fix)
+    const returnValue = await ((await this.client.deploy(deployData)) as any).json()
+
     if (isInvalidDeployment(returnValue)) {
       throw new Error(returnValue.errors.join(','))
     }
-    this.logger.info('Deployed entity ' + deployData.entityId, { returnValue })
-    return returnValue
+    this.logger.info('Deployed entity ' + deployData.entityId, { creationTimestamp: returnValue.creationTimestamp })
+    return returnValue.creationTimestamp as number
   }
 
   getFailedDeployments(): Promise<FailedDeployment[]> {

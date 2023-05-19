@@ -8,7 +8,7 @@ describe('precessed snapshot storage', () => {
   describe('processedFrom', () => {
     testCaseWithComponents(
       getTestEnv,
-      'should return the result from they query when the hashes are not in cache',
+      'should return the result from the query when the hashes are not in cache',
       async (components) => {
         const processedSnapshot = 'someHash'
         await saveProcessedSnapshot(components.database, processedSnapshot, Date.now())

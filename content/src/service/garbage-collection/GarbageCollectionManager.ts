@@ -1,5 +1,4 @@
 import { ILoggerComponent } from '@well-known-components/interfaces'
-import { delay } from 'dcl-catalyst-commons'
 import { findContentHashesNotBeingUsedAnymore } from '../../logic/database-queries/content-files-queries'
 import { SYSTEM_PROPERTIES } from '../../ports/system-properties'
 import { AppComponents } from '../../types'
@@ -75,10 +74,18 @@ export class GarbageCollectionManager {
     return this.hashesDeletedInLastSweep
   }
 
+  private wait(ms: number): Promise<void> {
+    return new Promise<void>((resolve) => {
+      setTimeout(() => {
+        resolve()
+      }, ms)
+    })
+  }
+
   private waitUntilSyncFinishes(): Promise<void> {
     return new Promise(async (resolve) => {
       while (this.sweeping === true) {
-        await delay('1s')
+        await this.wait(1000)
       }
       resolve()
     })
