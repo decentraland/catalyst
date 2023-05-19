@@ -333,15 +333,15 @@
   dependencies:
     yaml "2.2.2"
 
-"@dcl/catalyst-api-specs@https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-catalyst-api-specs-3.1.3-5007018024.commit-4880b1e.tgz":
-  version "3.1.3-5007018024.commit-4880b1e"
-  resolved "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-catalyst-api-specs-3.1.3-5007018024.commit-4880b1e.tgz#66bdbfec6dc38d6fc3f91f440623484f8ce4b29c"
-  dependencies:
-    yaml "2.2.2"
-
 "@dcl/catalyst-api-specs@https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-catalyst-api-specs-3.1.3-5025283495.commit-fae6472.tgz":
   version "3.1.3-5025283495.commit-fae6472"
   resolved "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-catalyst-api-specs-3.1.3-5025283495.commit-fae6472.tgz#c055f49d948aea3b2ffe2785088824d6d12b50db"
+  dependencies:
+    yaml "2.2.2"
+
+"@dcl/catalyst-api-specs@https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-catalyst-api-specs-3.1.3-5025562749.commit-c70dd04.tgz":
+  version "3.1.3-5025562749.commit-c70dd04"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-catalyst-api-specs-3.1.3-5025562749.commit-c70dd04.tgz#d056e11b2900e1e9eb208bbec1fb0b71b013cb0b"
   dependencies:
     yaml "2.2.2"
 

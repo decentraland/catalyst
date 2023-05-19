@@ -4,7 +4,6 @@ import { EnvironmentConfig } from '../Environment'
 import { GlobalContext } from '../types'
 import { getActiveEntities } from './active-entities-handler'
 import {
-  createEntity,
   getActiveDeploymentsByContentHashHandler,
   getAllNewSnapshots,
   getAudit,
@@ -19,6 +18,7 @@ import {
   getStatus,
   getEntities
 } from './Controller'
+import { createEntity } from './create-entity-handler'
 import { errorHandler } from './error-handler'
 import { filterByUrnHandler } from './filter-by-urn-handler'
 import { getPointerChangesHandler } from './pointer-changes-handler'

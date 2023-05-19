@@ -1,19 +1,9 @@
 import { GetEntityInformation200 } from '@dcl/catalyst-api-specs/lib/client/client.schemas'
 import { ContentItem } from '@dcl/catalyst-storage'
-import { AuthChain, Authenticator, AuthLink, EthAddress, Signature } from '@dcl/crypto'
+import { AuthChain } from '@dcl/crypto'
 import { Entity, EntityType } from '@dcl/schemas'
-import { Field } from '@well-known-components/multipart-wrapper'
 import { asEnumValue, fromCamelCaseToSnakeCase } from './utils'
-import {
-  AuditInfo,
-  Deployment,
-  DeploymentContext,
-  DeploymentOptions,
-  isInvalidDeployment,
-  isSuccessfulDeployment,
-  SortingField,
-  SortingOrder
-} from '../deployment-types'
+import { AuditInfo, Deployment, DeploymentOptions, SortingField, SortingOrder } from '../deployment-types'
 import {
   CURRENT_CATALYST_VERSION,
   CURRENT_COMMIT_HASH,
@@ -26,13 +16,7 @@ import { findEntityByPointer, findImageHash, findThumbnailHash } from '../logic/
 import { buildUrn, formatERC21Entity, getProtocol } from '../logic/erc721'
 import { qsGetArray, qsGetBoolean, qsGetNumber, qsParser, toQueryParams } from '../logic/query-params'
 import { statusResponseFromComponents } from '../logic/status-checks'
-import {
-  FormHandlerContextWithPath,
-  HandlerContextWithPath,
-  InvalidRequestError,
-  NotFoundError,
-  parseEntityType
-} from '../types'
+import { HandlerContextWithPath, InvalidRequestError, NotFoundError, parseEntityType } from '../types'
 import { ControllerDeploymentFactory } from './ControllerDeploymentFactory'
 import { ControllerEntityFactory } from './ControllerEntityFactory'
 
@@ -181,119 +165,6 @@ export async function getERC721Entity(
   }
 }
 
-function requireString(val: string): string {
-  if (typeof val !== 'string') throw new Error('A string was expected')
-  return val
-}
-
-function extractAuthChain(fields: Record<string, Field>): AuthLink[] | undefined {
-  if (fields[`authChain`]) {
-    return JSON.parse(fields[`authChain`].value)
-  }
-
-  const ret: AuthChain = []
-
-  let biggestIndex = -1
-
-  // find the biggest index
-  for (const i in fields) {
-    const regexResult = /authChain\[(\d+)\]/.exec(i)
-    if (regexResult) {
-      biggestIndex = Math.max(biggestIndex, +regexResult[1])
-    }
-  }
-
-  if (biggestIndex === -1) {
-    return undefined
-  }
-
-  // fill all the authchain
-  for (let i = 0; i <= biggestIndex; i++) {
-    ret.push({
-      payload: requireString(fields[`authChain[${i}][payload]`].value),
-      signature: requireString(fields[`authChain[${i}][signature]`].value),
-      type: requireString(fields[`authChain[${i}][type]`].value) as any
-    })
-  }
-
-  return ret
-}
-
-// Method: POST
-export async function createEntity(
-  context: FormHandlerContextWithPath<'logs' | 'fs' | 'metrics' | 'deployer', '/entities'>
-) {
-  const { metrics, deployer, logs } = context.components
-
-  const logger = logs.getLogger('create-entity')
-  const entityId: string = context.formData.fields.entityId.value
-
-  let authChain = extractAuthChain(context.formData.fields)
-  const ethAddress: EthAddress = authChain ? authChain[0].payload : ''
-  const signature: Signature = context.formData.fields.signature?.value
-
-  if (authChain) {
-    if (!AuthChain.validate(authChain)) {
-      return {
-        status: 400,
-        body: 'Invalid auth chain'
-      }
-    }
-  } else if (ethAddress && signature) {
-    authChain = Authenticator.createSimpleAuthChain(entityId, ethAddress, signature)
-  } else {
-    return {
-      status: 400,
-      body: 'No auth chain can be derivated'
-    }
-  }
-
-  const deployFiles: ContentFile[] = []
-  try {
-    for (const filename of Object.keys(context.formData.files)) {
-      const file = context.formData.files[filename]
-      deployFiles.push({ path: filename, content: file.value })
-    }
-
-    const auditInfo = { authChain, version: CURRENT_CONTENT_VERSION }
-
-    const deploymentResult = await deployer.deployEntity(
-      deployFiles.map(({ content }) => content),
-      entityId,
-      auditInfo,
-      DeploymentContext.LOCAL
-    )
-
-    if (isSuccessfulDeployment(deploymentResult)) {
-      metrics.increment('dcl_deployments_endpoint_counter', { kind: 'success' })
-      return {
-        status: 200,
-        body: { creationTimestamp: deploymentResult }
-      }
-    } else if (isInvalidDeployment(deploymentResult)) {
-      metrics.increment('dcl_deployments_endpoint_counter', { kind: 'validation_error' })
-      logger.error(`POST /entities - Deployment failed (${deploymentResult.errors.join(',')})`)
-      return {
-        status: 400,
-        body: { errors: deploymentResult.errors }
-      }
-    } else {
-      logger.error(`deploymentResult is invalid ${JSON.stringify(deploymentResult)}`)
-      throw new Error('deploymentResult is invalid')
-    }
-  } catch (error) {
-    metrics.increment('dcl_deployments_endpoint_counter', { kind: 'error' })
-    logger.error(`POST /entities - Internal server error '${error}'`, {
-      entityId,
-      authChain: JSON.stringify(authChain),
-      ethAddress,
-      signature
-    })
-    logger.error(error)
-    throw error
-  }
-}
-
 // Method: GET or HEAD
 export async function getContent(context: HandlerContextWithPath<'storage', '/contents/:hashId'>) {
   const hash = context.params.hashId
@@ -418,8 +289,8 @@ export async function getDeploymentsHandler(
     (queryParams.sortingOrder as string) || undefined
   )
   const lastId: string | undefined = (queryParams.lastId as string)?.toLowerCase()
-  const from: number | undefined = qsGetNumber(queryParams, 'from')
-  const to: number | undefined = qsGetNumber(queryParams, 'to')
+  const from = qsGetNumber(queryParams, 'from')
+  const to = qsGetNumber(queryParams, 'to')
 
   if (entityTypes && entityTypes.some((type) => !type)) {
     return {
@@ -449,20 +320,14 @@ export async function getDeploymentsHandler(
   const sortBy: { field?: SortingField; order?: SortingOrder } = {}
   if (sortingField) {
     if (sortingField == 'unknown') {
-      return {
-        status: 400,
-        body: { error: `Found an unrecognized sort field param` }
-      }
+      throw new InvalidRequestError(`Found an unrecognized sort field param`)
     } else {
       sortBy.field = sortingField
     }
   }
   if (sortingOrder) {
     if (sortingOrder == 'unknown') {
-      return {
-        status: 400,
-        body: { error: `Found an unrecognized sort order param` }
-      }
+      throw new InvalidRequestError(`Found an unrecognized sort order param`)
     } else {
       sortBy.order = sortingOrder
     }
@@ -637,11 +502,6 @@ export type ControllerDenylistData = {
     timestamp: number
     authChain: AuthChain
   }
-}
-
-type ContentFile = {
-  path?: string
-  content: Buffer
 }
 
 const DEFAULT_FIELDS_ON_DEPLOYMENTS: DeploymentField[] = [
