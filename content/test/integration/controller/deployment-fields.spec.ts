@@ -11,6 +11,12 @@ describe('Integration - Deployment Fields', () => {
 
   let server: TestProgram
   const fetcher = createFetchComponent()
+  const jsonFetcher = {
+    ...fetcher,
+    async fetchJson(url: string) {
+      return (await fetcher.fetch(url)).json()
+    }
+  }
 
   beforeEach(async () => {
     server = await getTestEnv().configServer().andBuild()
@@ -70,7 +76,7 @@ describe('Integration - Deployment Fields', () => {
 
   async function fetchDeployment(...fields: DeploymentField[]): Promise<Partial<Deployment>> {
     const url = server.getUrl() + `/deployments?fields=` + fields.join(',')
-    const { deployments } = (await fetcher.fetchJson(url)) as { deployments: any }
+    const { deployments } = (await jsonFetcher.fetchJson(url)) as { deployments: any }
     return deployments[0]
   }
 })

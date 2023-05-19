@@ -1,4 +1,5 @@
 import { EntityType } from '@dcl/schemas'
+import { createFetchComponent } from '@well-known-components/fetch-component'
 import { DeploymentField } from '../../../src/controller/Controller'
 import { DeploymentOptions, SortingField, SortingOrder } from '../../../src/deployment-types'
 import { EnvironmentConfig } from '../../../src/Environment'
@@ -11,6 +12,8 @@ import { TestProgram } from '../TestProgram'
 
 describe('Integration - Deployment Pagination', () => {
   const getTestEnv = setupTestEnvironment()
+
+  const fetcher = createFetchComponent()
 
   let E1: EntityCombo, E2: EntityCombo, E3: EntityCombo
 
@@ -232,7 +235,7 @@ describe('Integration - Deployment Pagination', () => {
   }
 
   async function fetchJson(url: string) {
-    return (await this.fetcher.fetch(url).json())
+    return (await fetcher.fetch(url)).json()
   }
 
   async function fetchDeployments(options: DeploymentOptions) {
