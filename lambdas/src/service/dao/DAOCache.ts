@@ -4,7 +4,7 @@ import {
   nameDenylistForProvider,
   poiListForProvider
 } from '@dcl/catalyst-contracts'
-import { ServerMetadata } from 'dcl-catalyst-client'
+import { ServerMetadata } from 'dcl-catalyst-client/dist/client/types'
 import { bytesToHex, HTTPProvider } from 'eth-connect'
 import { TimeRefreshedDataHolder } from '../../utils/TimeRefreshedDataHolder'
 

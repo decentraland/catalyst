@@ -1,15 +1,11 @@
 import { Authenticator, EthAddress, IdentityType } from '@dcl/crypto'
 import { createUnsafeIdentity } from '@dcl/crypto/dist/crypto'
 import { Entity, EntityType } from '@dcl/schemas'
-import { DeploymentBuilder, DeploymentData } from 'dcl-catalyst-client'
+import { DeploymentData, buildEntity } from 'dcl-catalyst-client/dist/client/utils/DeploymentBuilder'
 import fs from 'fs'
 import path from 'path'
 import { ControllerEntityFactory } from '../../src/controller/ControllerEntityFactory'
-import {
-  DeploymentContext,
-  DeploymentResult,
-  isInvalidDeployment
-} from '../../src/deployment-types'
+import { DeploymentContext, DeploymentResult, isInvalidDeployment } from '../../src/deployment-types'
 import { retry } from '../../src/helpers/RetryHelper'
 import { Deployer } from '../../src/ports/deployer'
 import { EntityFactory } from '../../src/service/EntityFactory'
@@ -42,7 +38,7 @@ export async function buildDeployData(pointers: string[], options?: DeploymentOp
       ? new Map(opts.contentPaths.map((filePath) => [path.basename(filePath), fs.readFileSync(filePath)]))
       : undefined
 
-  const deploymentPreparationData = await DeploymentBuilder.buildEntity({
+  const deploymentPreparationData = await buildEntity({
     ...opts,
     pointers,
     files: buffers
