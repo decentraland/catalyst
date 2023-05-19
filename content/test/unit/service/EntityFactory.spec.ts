@@ -1,5 +1,6 @@
 import { Entity, EntityType } from '@dcl/schemas'
 import { EntityFactory } from '../../../src/service/EntityFactory'
+import { entityToFile } from '../../helpers/service/EntityTestFactory'
 import { buildEntityAndFile } from '../../integration/syncronization/types-aux'
 
 describe('Service', () => {
@@ -7,14 +8,15 @@ describe('Service', () => {
   let entityFile: Uint8Array
 
   beforeAll(async () => {
-    let { entity, entityFile } = await buildEntityAndFile({
+    const entityEnFile = await buildEntityAndFile({
       type: EntityType.SCENE,
       pointers: ['X1,Y1'],
       timestamp: Date.now(),
       content: [{ file: 'name', hash: 'bafkreico6luxnkk5vxuxvmpsg7hva4upamyz3br2b6ucc7rf3hdlcaehha' }],
-      metadata: 'metadata'
+      metadata: { metadata: 'metadata' }
     })
-      ;[entity, entityFile] = [EntityFactory.fromJsonObject(entity), entityFile]
+    entity = EntityFactory.fromJsonObject(entityEnFile.entity)
+    entityFile = entityEnFile.entityFile
   })
 
   it(`When a valid entity file is used, then it is parsed correctly`, () => {

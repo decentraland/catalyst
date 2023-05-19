@@ -31,7 +31,6 @@ import { createFailedDeployments } from '../../../src/ports/failedDeployments'
 import { createTestDatabaseComponent } from '../../../src/ports/postgres'
 import { createSequentialTaskExecutor } from '../../../src/ports/sequecuentialTaskExecutor'
 import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
-import { EntityFactory } from '../../../src/service/EntityFactory'
 import { DELTA_POINTER_RESULT } from '../../../src/service/pointers/PointerManager'
 import { EntityVersion } from '../../../src/types'
 import { NoOpServerValidator, NoOpValidator } from '../../helpers/service/validations/NoOpValidator'
@@ -54,14 +53,15 @@ describe('Deployer', function () {
   // starts the variables
   beforeAll(async () => {
     randomFileHash = await hashV1(randomFile)
-    let { entity, entityFile } = await buildEntityAndFile({
+    const entityEnFile = await buildEntityAndFile({
       type: EntityType.SCENE,
       pointers: POINTERS,
       timestamp: Date.now(),
       content: [{ file: 'file', hash: randomFileHash }],
-      metadata: 'metadata'
+      metadata: { metadata: 'metadata' }
     })
-      ;[entity, entityFile] = [EntityFactory.fromJsonObject(entity), entityFile]
+    entity = entityEnFile.entity
+    entityFile = entityEnFile.entityFile
 
     jest.spyOn(pointers, 'updateActiveDeployments').mockImplementation(() => Promise.resolve())
   })
