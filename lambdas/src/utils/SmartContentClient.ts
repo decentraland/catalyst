@@ -8,10 +8,23 @@ import {
   DeploymentData,
   DeploymentPreparationData
 } from 'dcl-catalyst-client/dist/client/types'
-import { ServerStatus } from 'dcl-catalyst-commons'
 import FormData from 'form-data'
 import future, { IFuture } from 'fp-future'
 import log4js from 'log4js'
+
+declare enum EntityVersion {
+  V2 = 'v2',
+  V3 = 'v3',
+  V4 = 'v4'
+}
+
+type ServerStatus = {
+  name: string
+  version: EntityVersion
+  currentTime: number
+  lastImmutableTime: number
+  historySize: number
+}
 
 /**
 /**
