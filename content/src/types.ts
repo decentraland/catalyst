@@ -157,6 +157,8 @@ export type Pagination = {
   pageNum: number
 }
 
+export type QueryParams = qs.ParsedQs
+
 export class InvalidRequestError extends Error {
   constructor(message: string) {
     super(message)
@@ -164,4 +166,9 @@ export class InvalidRequestError extends Error {
   }
 }
 
-export type QueryParams = qs.ParsedQs
+export class NotFoundError extends Error {
+  constructor(message: string) {
+    super(message)
+    Error.captureStackTrace(this, this.constructor)
+  }
+}

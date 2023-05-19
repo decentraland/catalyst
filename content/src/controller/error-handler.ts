@@ -1,8 +1,8 @@
 import { IHttpServerComponent } from '@well-known-components/interfaces'
-import { InvalidRequestError } from '../types'
+import { InvalidRequestError, NotFoundError } from '../types'
 
 export async function errorHandler(
-  ctx: IHttpServerComponent.DefaultContext<object>,
+  _ctx: IHttpServerComponent.DefaultContext<object>,
   next: () => Promise<IHttpServerComponent.IResponse>
 ): Promise<IHttpServerComponent.IResponse> {
   try {
@@ -12,13 +12,19 @@ export async function errorHandler(
       return Promise.resolve({
         status: 400,
         body: {
-          error: 'Bad request',
-          message: error.message
+          error: error.message
+        }
+      })
+    }
+    if (error instanceof NotFoundError) {
+      return Promise.resolve({
+        status: 404,
+        body: {
+          error: error.message
         }
       })
     }
 
-    console.log(`Error handling ${ctx.url.toString()}: ${error.message}`, error)
     throw error
   }
 }
