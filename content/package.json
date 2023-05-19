@@ -38,6 +38,7 @@
     "@well-known-components/thegraph-component": "^1.4.3",
     "bloom-filters": "^3.0.0",
     "dcl-catalyst-client": "^18.1.0",
+    "dcl-catalyst-commons": "^9.0.21",
     "eth-connect": "^6.1.1-20230207141318.commit-a23c356",
     "form-data": "^4.0.0",
     "fp-future": "^1.0.1",
