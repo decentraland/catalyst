@@ -55,5 +55,7 @@
   "jest-junit": {
     "addFileAttribute": "true"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@dcl/catalyst-api-specs": "^3.1.3"
+  }
 }

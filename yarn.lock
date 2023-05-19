@@ -338,6 +338,13 @@
   dependencies:
     yaml "2.2.2"
 
+"@dcl/catalyst-api-specs@^3.1.3":
+  version "3.1.3"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-api-specs/-/catalyst-api-specs-3.1.3.tgz#e251b674ac836f0f7459b17265edc6c7ed7a9a1a"
+  integrity sha512-gYxTnQs1qouRwXSgkDmWFOMmHIAZVZkYmOVSqPgdLkF+PX+i2HmIHIgJCPOuwSInL8dK72VKzkcl5tRBEbUPUA==
+  dependencies:
+    yaml "2.2.2"
+
 "@dcl/catalyst-contracts@^3.1.4":
   version "3.1.4"
   resolved "https://registry.yarnpkg.com/@dcl/catalyst-contracts/-/catalyst-contracts-3.1.4.tgz#4387dd2c17df60076048e8aaeaeebda47f3dabe8"
