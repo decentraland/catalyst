@@ -74,10 +74,18 @@ export class GarbageCollectionManager {
     return this.hashesDeletedInLastSweep
   }
 
+  private wait(ms: number): Promise<void> {
+    return new Promise<void>((resolve) => {
+      setTimeout(() => {
+        resolve()
+      }, ms)
+    })
+  }
+
   private waitUntilSyncFinishes(): Promise<void> {
     return new Promise(async (resolve) => {
       while (this.sweeping === true) {
-        await setTimeout(() => {}, 1000)
+        await this.wait(1000)
       }
       resolve()
     })
