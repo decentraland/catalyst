@@ -1,4 +1,4 @@
-import { Entity, EntityType } from '@dcl/schemas'
+import { Entity } from '@dcl/schemas'
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { DeploymentData } from 'dcl-catalyst-client/dist/client/utils/DeploymentBuilder'
 import fetch from 'node-fetch'
@@ -6,8 +6,8 @@ import { makeNoopValidator } from '../helpers/service/validations/NoOpValidator'
 import { assertDeploymentsAreReported, buildDeployment } from './E2EAssertions'
 import { setupTestEnvironment } from './E2ETestEnvironment'
 import { buildDeployData } from './E2ETestUtils'
-import { TestProgram } from './TestProgram'
 import { getIntegrationResourcePathFor } from './resources/get-resource-path'
+import { TestProgram } from './TestProgram'
 
 describe('End 2 end deploy test', () => {
   const getTestEnv = setupTestEnvironment()
@@ -60,14 +60,14 @@ describe('End 2 end deploy test', () => {
     //------------------------------
     // Retrieve the entity by id
     //------------------------------
-    const scenesById: Entity[] = await server.getEntitiesByIds(EntityType.SCENE, deployData.entityId)
+    const scenesById: Entity[] = await server.getEntitiesByIds(deployData.entityId)
 
     await validateReceivedData(scenesById, deployData)
 
     //------------------------------
     // Retrieve the entity by pointer
     //------------------------------
-    const scenesByPointer: Entity[] = await server.getEntitiesByPointers(EntityType.SCENE, [POINTER0])
+    const scenesByPointer: Entity[] = await server.getEntitiesByPointers([POINTER0])
     await validateReceivedData(scenesByPointer, deployData)
 
     await assertDeploymentsAreReported(server, deployment)
