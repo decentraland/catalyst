@@ -1,5 +1,4 @@
 import { Entity, EntityType } from '@dcl/schemas'
-// import * as deploymentBuilder from 'dcl-catalyst-client/dist/client/utils/DeploymentBuilder'
 import { random } from 'faker'
 /** Build a file with the given entity as the content */
 export function entityToFile(entity: Entity): Buffer {

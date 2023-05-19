@@ -1,4 +1,4 @@
-import { Entity, EntityType } from '@dcl/schemas'
+import { Entity } from '@dcl/schemas'
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import fetch from 'node-fetch'
 import { makeNoopValidator } from '../helpers/service/validations/NoOpValidator'
@@ -60,14 +60,14 @@ describe('End 2 end deploy test', () => {
     //------------------------------
     // Retrieve the entity by id
     //------------------------------
-    const scenesById: Entity[] = await server.getEntitiesByIds(EntityType.SCENE, deployData.entityId)
+    const scenesById: Entity[] = await server.getEntitiesByIds(deployData.entityId)
 
     await validateReceivedData(scenesById, deployData)
 
     //------------------------------
     // Retrieve the entity by pointer
     //------------------------------
-    const scenesByPointer: Entity[] = await server.getEntitiesByPointers(EntityType.SCENE, [POINTER0])
+    const scenesByPointer: Entity[] = await server.getEntitiesByPointers([POINTER0])
     await validateReceivedData(scenesByPointer, deployData)
 
     await assertDeploymentsAreReported(server, deployment)

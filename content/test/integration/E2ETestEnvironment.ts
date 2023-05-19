@@ -3,6 +3,7 @@ import { ILoggerComponent } from '@well-known-components/interfaces'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { random } from 'faker'
+import LeakDetector from 'jest-leak-detector'
 import ms from 'ms'
 import { DEFAULT_DATABASE_CONFIG, Environment, EnvironmentBuilder, EnvironmentConfig } from '../../src/Environment'
 import { stopAllComponents } from '../../src/logic/components-lifecycle'
@@ -13,7 +14,6 @@ import { DaoComponent } from '../../src/service/synchronization/clients/Hardcode
 import { AppComponents } from '../../src/types'
 import { MockedDAOClient } from '../helpers/service/synchronization/clients/MockedDAOClient'
 import { TestProgram } from './TestProgram'
-import LeakDetector from 'jest-leak-detector'
 
 export class E2ETestEnvironment {
   public static TEST_SCHEMA = 'e2etest'
@@ -115,14 +115,6 @@ export class E2ETestEnvironment {
     const baseEnv = await this.getEnvForNewDatabase()
     const components = await new EnvironmentBuilder(baseEnv).buildConfigAndComponents()
     return components
-  }
-
-  removeFromDAO(domain: string) {
-    this.dao.remove(domain)
-  }
-
-  buildMany(amount: number): Promise<TestProgram[]> {
-    return this.configServer().andBuildMany(amount)
   }
 
   private async createDatabases(amount: number) {

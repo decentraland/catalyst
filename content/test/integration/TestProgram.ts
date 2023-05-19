@@ -1,4 +1,4 @@
-import { Entity, EntityType } from '@dcl/schemas'
+import { Entity } from '@dcl/schemas'
 import { ILoggerComponent, Lifecycle } from '@well-known-components/interfaces'
 import { ContentClient, createContentClient } from 'dcl-catalyst-client/dist/client/ContentClient'
 import fetch from 'node-fetch'
@@ -74,15 +74,15 @@ export class TestProgram {
     return this.makeRequest(`${this.getUrl()}/failed-deployments`)
   }
 
-  getEntitiesByPointers(type: EntityType, pointers: string[]): Promise<Entity[]> {
+  getEntitiesByPointers(pointers: string[]): Promise<Entity[]> {
     return this.client.fetchEntitiesByPointers(pointers)
   }
 
-  getEntitiesByIds(type: EntityType, ...ids: string[]): Promise<Entity[]> {
+  getEntitiesByIds(...ids: string[]): Promise<Entity[]> {
     return this.client.fetchEntitiesByIds(ids)
   }
 
-  getEntityById(type: EntityType, id: string): Promise<Entity> {
+  getEntityById(id: string): Promise<Entity> {
     return this.client.fetchEntityById(id)
   }
 
