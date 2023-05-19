@@ -16,3 +16,22 @@ export function paginationObject(url: URL, maxPageSize: number = 1000): Paginati
   const limit = pageSize
   return { pageSize, pageNum, offset, limit }
 }
+
+export function fromCamelCaseToSnakeCase(phrase: string): string {
+  const withoutUpperCase: string = phrase.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
+  if (withoutUpperCase[0] === '_') {
+    return withoutUpperCase.substring(1)
+  }
+  return withoutUpperCase
+}
+
+export function asEnumValue<T extends { [key: number]: string }>(
+  enumType: T,
+  stringToMap?: string
+): T[keyof T] | undefined | 'unknown' {
+  if (stringToMap) {
+    const validEnumValues: Set<string> = new Set(Object.values(enumType))
+    const match = validEnumValues.has(stringToMap)
+    return match ? (stringToMap as T[keyof T]) : 'unknown'
+  }
+}

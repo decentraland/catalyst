@@ -1,7 +1,9 @@
+import { GetEntityInformation200 } from '@dcl/catalyst-api-specs/lib/client/client.schemas'
 import { ContentItem } from '@dcl/catalyst-storage'
 import { AuthChain, Authenticator, AuthLink, EthAddress, Signature } from '@dcl/crypto'
-import { Entity, EntityType, PointerChangesSyncDeployment } from '@dcl/schemas'
+import { Entity, EntityType } from '@dcl/schemas'
 import { Field } from '@well-known-components/multipart-wrapper'
+import { asEnumValue, fromCamelCaseToSnakeCase } from './utils'
 import {
   AuditInfo,
   Deployment,
@@ -24,8 +26,6 @@ import { findEntityByPointer, findImageHash, findThumbnailHash } from '../logic/
 import { buildUrn, formatERC21Entity, getProtocol } from '../logic/erc721'
 import { qsGetArray, qsGetBoolean, qsGetNumber, qsParser, toQueryParams } from '../logic/query-params'
 import { statusResponseFromComponents } from '../logic/status-checks'
-import { getPointerChanges } from '../service/pointers/pointers'
-import { PointerChangesFilters } from '../service/pointers/types'
 import {
   FormHandlerContextWithPath,
   HandlerContextWithPath,
@@ -342,7 +342,7 @@ export async function getAvailableContent(
 // Method: GET
 export async function getAudit(
   context: HandlerContextWithPath<'database' | 'denylist' | 'metrics', '/audit/:type/:entityId'>
-) {
+): Promise<{ status: 200; body: GetEntityInformation200 }> {
   const type = parseEntityType(context.params.type)
   const entityId = context.params.entityId
 
@@ -374,106 +374,6 @@ export async function getAudit(
     status: 200,
     body
   }
-}
-
-// Method: GET
-// Query String: ?from={timestamp}&to={timestamp}&offset={number}&limit={number}&entityType={entityType}&includeAuthChain={boolean}
-export async function getPointerChangesHandler(
-  context: HandlerContextWithPath<'database' | 'denylist' | 'sequentialExecutor' | 'metrics', '/pointer-changes'>
-) {
-  const queryParams = qsParser(context.url.searchParams)
-
-  const entityTypes: (EntityType | undefined)[] = qsGetArray(queryParams, 'entityType').map((type) =>
-    parseEntityType(type)
-  )
-
-  const from: number | undefined = qsGetNumber(queryParams, 'from')
-  const to: number | undefined = qsGetNumber(queryParams, 'to')
-  const offset: number | undefined = qsGetNumber(queryParams, 'offset')
-  const limit: number | undefined = qsGetNumber(queryParams, 'limit')
-  const lastId: string | undefined = (queryParams.lastId as string)?.toLowerCase()
-  const includeAuthChain = qsGetBoolean(queryParams, 'includeAuthChain') ?? false
-
-  const sortingFieldParam: string | undefined = queryParams.sortingField as string
-  const snake_case_sortingField = sortingFieldParam ? fromCamelCaseToSnakeCase(sortingFieldParam) : undefined
-  const sortingField: SortingField | undefined | 'unknown' = asEnumValue(SortingField, snake_case_sortingField)
-  const sortingOrder: SortingOrder | undefined | 'unknown' = asEnumValue(
-    SortingOrder,
-    (queryParams.sortingOrder as string) || undefined
-  )
-
-  // Validate type is valid
-  if (entityTypes && entityTypes.some((type) => !type)) {
-    throw new InvalidRequestError(`Found an unrecognized entity type`)
-  }
-
-  if (offset && offset > 5000) {
-    throw new InvalidRequestError(`Offset can't be higher than 5000. Please use the 'next' property for pagination.`)
-  }
-
-  // Validate sorting fields and create sortBy
-  const sortBy: { field?: SortingField; order?: SortingOrder } = {}
-  if (sortingField) {
-    if (sortingField == 'unknown') {
-      throw new InvalidRequestError(`Found an unrecognized sort field param`)
-    } else {
-      sortBy.field = sortingField
-    }
-  }
-  if (sortingOrder) {
-    if (sortingOrder == 'unknown') {
-      throw new InvalidRequestError(`Found an unrecognized sort order param`)
-    } else {
-      sortBy.order = sortingOrder
-    }
-  }
-
-  const requestFilters = {
-    entityTypes: entityTypes as EntityType[] | undefined,
-    from,
-    to,
-    includeAuthChain
-  }
-
-  const { pointerChanges, filters, pagination } = await context.components.sequentialExecutor.run(
-    'GetPointerChangesEndpoint',
-    () =>
-      getPointerChanges(context.components, context.components.database, {
-        filters: requestFilters,
-        offset,
-        limit,
-        lastId,
-        sortBy
-      })
-  )
-
-  if (pointerChanges.length > 0 && pagination.moreData) {
-    const lastPointerChange = pointerChanges[pointerChanges.length - 1]
-    pagination.next = calculateNextRelativePathForPointer(lastPointerChange, pagination.limit, filters)
-  }
-
-  return {
-    status: 200,
-    body: { deltas: pointerChanges, filters, pagination }
-  }
-}
-
-function calculateNextRelativePathForPointer(
-  lastPointerChange: PointerChangesSyncDeployment,
-  limit: number,
-  filters?: PointerChangesFilters
-): string | undefined {
-  const nextFilters = Object.assign({}, filters)
-  // It will always use toLocalTimestamp as this endpoint is always sorted with the default config: localTimestamp and DESC
-  nextFilters.to = lastPointerChange.localTimestamp
-
-  const nextQueryParams = toQueryParams({
-    ...nextFilters,
-    limit: limit,
-    lastId: lastPointerChange.entityId
-  })
-
-  return '?' + nextQueryParams
 }
 
 // Method: GET
@@ -749,22 +649,3 @@ const DEFAULT_FIELDS_ON_DEPLOYMENTS: DeploymentField[] = [
   DeploymentField.CONTENT,
   DeploymentField.METADATA
 ]
-
-function fromCamelCaseToSnakeCase(phrase: string): string {
-  const withoutUpperCase: string = phrase.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
-  if (withoutUpperCase[0] === '_') {
-    return withoutUpperCase.substring(1)
-  }
-  return withoutUpperCase
-}
-
-function asEnumValue<T extends { [key: number]: string }>(
-  enumType: T,
-  stringToMap?: string
-): T[keyof T] | undefined | 'unknown' {
-  if (stringToMap) {
-    const validEnumValues: Set<string> = new Set(Object.values(enumType))
-    const match = validEnumValues.has(stringToMap)
-    return match ? (stringToMap as T[keyof T]) : 'unknown'
-  }
-}
