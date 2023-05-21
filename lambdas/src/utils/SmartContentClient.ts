@@ -177,6 +177,8 @@ export class SmartContentClient implements ContentClient {
       this.contentClient.resolve(createContentClient({ url: contentClientUrl, fetcher }))
     }
 
-    return { ...this.contentClient, getContentUrl: () => contentClientUrl } as any
+    return { ...(await this.contentClient), getContentUrl: () => contentClientUrl } as ContentClient & {
+      getContentUrl: () => string
+    }
   }
 }
