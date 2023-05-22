@@ -14,7 +14,7 @@ import { TestProgram } from './TestProgram'
 export async function assertEntitiesAreDeployedButNotActive(server: TestProgram, ...entities: Entity[]) {
   // Legacy check
   for (const entity of entities) {
-    const entities: Entity[] = await server.getEntitiesByPointers(entity.type, entity.pointers)
+    const entities: Entity[] = await server.getEntitiesByPointers(entity.pointers)
     const unexpectedEntities = entities.filter(({ id }) => id === entity.id)
     assert.equal(
       unexpectedEntities.length,
@@ -41,7 +41,7 @@ export async function assertEntityWasNotDeployed(server: TestProgram, entity: En
   // Legacy check
   const content: ContentMapping[] = entity.content ?? []
   await Promise.all(content.map(({ hash }) => assertFileIsNotOnServer(server, hash)))
-  const entities = await server.getEntitiesByIds(entity.type, entity.id)
+  const entities = await server.getEntitiesByIds(entity.id)
   assert.equal(entities.length, 0)
 
   // Deployments check
@@ -52,7 +52,7 @@ export async function assertEntityWasNotDeployed(server: TestProgram, entity: En
 export async function assertEntitiesAreActiveOnServer(server: TestProgram, ...entities: Entity[]) {
   // Entities check
   for (const entity of entities) {
-    const entitiesByPointer = await server.getEntitiesByPointers(entity.type, entity.pointers)
+    const entitiesByPointer = await server.getEntitiesByPointers(entity.pointers)
     assert.deepStrictEqual(entitiesByPointer, [entity])
     await assertEntityIsOnServer(server, entity)
   }
@@ -142,7 +142,7 @@ function assertEqualsDeployment(actualDeployment: Deployment, expectedDeployment
 }
 
 async function assertEntityIsOnServer(server: TestProgram, entity: Entity) {
-  const fetchedEntity: Entity = await server.getEntityById(entity.type, entity.id)
+  const fetchedEntity: Entity = await server.getEntityById(entity.id)
   assert.deepStrictEqual(fetchedEntity, entity)
   return assertFileIsOnServer(server, entity.id)
 }
@@ -260,7 +260,7 @@ function assertEntityIsTheSameAsDeployment(entity: Entity, deployment: Deploymen
 }
 
 async function getEntitiesDeployment(server: TestProgram, entity: Entity): Promise<Deployment> {
-  const deployments = await server.getEntitiesByIds(entity.type, entity.id)
+  const deployments = await server.getEntitiesByIds(entity.id)
   assert.equal(deployments.length, 1)
   const auditInfo = await server.getAuditInfo(deployments[0])
   const content =
