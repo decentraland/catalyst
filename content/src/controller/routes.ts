@@ -3,15 +3,7 @@ import { multipartParserWrapper } from '@well-known-components/multipart-wrapper
 import { EnvironmentConfig } from '../Environment'
 import { GlobalContext } from '../types'
 import { getActiveEntities } from './handlers/active-entities-handler'
-import {
-  getActiveDeploymentsByContentHashHandler,
-  getChallenge,
-  getContent,
-  getDeploymentsHandler,
-  getEntityImage,
-  getEntityThumbnail,
-  getERC721Entity
-} from './Controller'
+import { getActiveDeploymentsByContentHashHandler, getChallenge, getDeploymentsHandler } from './Controller'
 import { createEntity } from './handlers/create-entity-handler'
 import { errorHandler } from './handlers/error-handler'
 import { getFailedDeployments } from './handlers/failed-deployments-handler'
@@ -22,6 +14,10 @@ import { getPointerChangesHandler } from './handlers/pointer-changes-handler'
 import { getStatus } from './handlers/status-handler'
 import { getSnapshots } from './handlers/get-snapshots-handler'
 import { getEntities } from './handlers/get-entities-handler'
+import { getContent } from './handlers/get-content-handler'
+import { getEntityThumbnail } from './handlers/get-entity-thumbnail-handler'
+import { getEntityImage } from './handlers/get-entity-image-handler'
+import { getERC721Entity } from './handlers/get-erc721-entity-handler'
 
 // We return the entire router because it will be easier to test than a whole server
 export async function setupRouter({ components }: GlobalContext): Promise<Router<GlobalContext>> {

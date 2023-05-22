@@ -1,127 +1,10 @@
-import { ContentItem } from '@dcl/catalyst-storage'
 import { EntityType } from '@dcl/schemas'
 import { asEnumValue, fromCamelCaseToSnakeCase } from './utils'
 import { Deployment, DeploymentBase, DeploymentOptions, SortingField, SortingOrder } from '../deployment-types'
 import { getActiveDeploymentsByContentHash } from '../logic/database-queries/deployments-queries'
 import { getDeployments } from '../logic/deployments'
-import { findEntityByPointer, findImageHash, findThumbnailHash } from '../logic/entities'
-import { buildUrn, formatERC21Entity, getProtocol } from '../logic/erc721'
 import { qsGetArray, qsGetBoolean, qsGetNumber, qsParser, toQueryParams } from '../logic/query-params'
 import { DeploymentField, HandlerContextWithPath, InvalidRequestError, NotFoundError, parseEntityType } from '../types'
-
-// Method: GET or HEAD
-export async function getEntityThumbnail(
-  context: HandlerContextWithPath<
-    'database' | 'activeEntities' | 'storage',
-    '/entities/active/entity/:pointer/thumbnail'
-  >
-) {
-  const { activeEntities, database } = context.components
-  const pointer: string = context.params.pointer
-  const entity = await findEntityByPointer(database, activeEntities, pointer)
-  if (!entity) {
-    throw new NotFoundError('Entity not found.')
-  }
-
-  const hash = findThumbnailHash(entity)
-  if (!hash) {
-    throw new NotFoundError('Entity has no thumbnail.')
-  }
-
-  const content: ContentItem | undefined = await context.components.storage.retrieve(hash)
-  if (!content) {
-    throw new NotFoundError('Entity has no thumbnail.')
-  }
-
-  return {
-    status: 200,
-    headers: getContentFileHeaders(content, hash),
-    body: context.request.method.toUpperCase() === 'GET' ? await content.asRawStream() : undefined
-  }
-}
-
-// Method: GET or HEAD
-export async function getEntityImage(
-  context: HandlerContextWithPath<'activeEntities' | 'database' | 'storage', '/entities/active/entity/:pointer/image'>
-) {
-  const { activeEntities, database } = context.components
-  const pointer: string = context.params.pointer
-  const entity = await findEntityByPointer(database, activeEntities, pointer)
-  if (!entity) {
-    throw new NotFoundError('Entity not found.')
-  }
-
-  const hash = findImageHash(entity)
-  if (!hash) {
-    throw new NotFoundError('Entity has no image.')
-  }
-
-  const content: ContentItem | undefined = await context.components.storage.retrieve(hash)
-  if (!content) {
-    throw new NotFoundError('Entity has no image.')
-  }
-
-  return {
-    status: 200,
-    headers: getContentFileHeaders(content, hash),
-    body: context.request.method.toUpperCase() === 'GET' ? await content.asRawStream() : undefined
-  }
-}
-
-// Method: GET
-export async function getERC721Entity(
-  context: HandlerContextWithPath<
-    'env' | 'activeEntities' | 'database',
-    '/entities/active/erc721/:chainId/:contract/:option/:emission?'
-  >
-) {
-  const { database, activeEntities, env } = context.components
-  const { chainId, contract, option, emission } = context.params
-
-  const protocol = getProtocol(parseInt(chainId, 10))
-
-  if (!protocol) {
-    return {
-      status: 400,
-      body: `Invalid chainId '${chainId}'`
-    }
-  }
-
-  const pointer = buildUrn(protocol, contract, option)
-  const entity = await findEntityByPointer(database, activeEntities, pointer)
-  if (!entity || !entity.metadata) {
-    return {
-      status: 404
-    }
-  }
-
-  if (!entity.metadata.rarity) {
-    throw new Error('Wearable is not standard.')
-  }
-
-  return {
-    status: 200,
-    body: formatERC21Entity(env, pointer, entity, emission)
-  }
-}
-
-// Method: GET or HEAD
-export async function getContent(context: HandlerContextWithPath<'storage', '/contents/:hashId'>) {
-  const hash = context.params.hashId
-
-  const content: ContentItem | undefined = await context.components.storage.retrieve(hash)
-  if (!content) {
-    return {
-      status: 404
-    }
-  }
-
-  return {
-    status: 200,
-    headers: getContentFileHeaders(content, hash),
-    body: context.request.method.toUpperCase() === 'GET' ? await content.asRawStream() : undefined
-  }
-}
 
 // Method: GET
 export async function getActiveDeploymentsByContentHashHandler(
@@ -285,23 +168,6 @@ export async function getChallenge(context: HandlerContextWithPath<'challengeSup
     status: 200,
     body: { challengeText }
   }
-}
-
-function getContentFileHeaders(content: ContentItem, hashId: string): Record<string, string> {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/octet-stream',
-    ETag: JSON.stringify(hashId), // by spec, the ETag must be a double-quoted string
-    'Access-Control-Expose-Headers': 'ETag',
-    'Cache-Control': 'public,max-age=31536000,s-maxage=31536000,immutable'
-  }
-  if (content.encoding) {
-    headers['Content-Encoding'] = content.encoding
-  }
-  if (content.size) {
-    headers['Content-Length'] = content.size.toString()
-  }
-
-  return headers
 }
 
 const DEFAULT_FIELDS_ON_DEPLOYMENTS: DeploymentField[] = [
