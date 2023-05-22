@@ -5,7 +5,7 @@ import {
   parseEntityType,
   DeploymentField
 } from '../../types'
-import { GetEntityAuditInformation200 } from '@dcl/catalyst-api-specs/lib/client/client.schemas'
+import { GetEntityAuditInformation200 } from '@dcl/catalyst-api-specs/lib/client'
 import { getDeployments } from '../../logic/deployments'
 import { AuditInfo } from '../../deployment-types'
 

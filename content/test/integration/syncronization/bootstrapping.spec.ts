@@ -247,7 +247,7 @@ describe('Bootstrapping synchronization tests', function () {
   }
 
   async function deployEntityAtTimestamp(server: TestProgram, pointer: string, timestamp: number): Promise<Deployment> {
-    const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData([pointer], {
+    const { deployData, entity: entityBeingDeployed } = await buildDeployData([pointer], {
       metadata: { a: 'metadata' },
       timestamp
     })

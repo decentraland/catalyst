@@ -1,4 +1,4 @@
-import { GetContentStatus200 } from '@dcl/catalyst-api-specs/lib/client/client.schemas'
+import { GetContentStatus200 } from '@dcl/catalyst-api-specs/lib/client'
 import { HandlerContextWithPath } from '../../types'
 import {
   CURRENT_CATALYST_VERSION,

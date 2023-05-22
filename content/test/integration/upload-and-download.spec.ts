@@ -43,7 +43,7 @@ describe('End 2 end deploy test', () => {
     //------------------------------
     // Deploy the content
     //------------------------------
-    const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData([POINTER0, POINTER1], {
+    const { deployData, entity: entityBeingDeployed } = await buildDeployData([POINTER0, POINTER1], {
       metadata: { a: 'this is just some metadata' },
       contentPaths: [
         getIntegrationResourcePathFor('some-binary-file.png'),

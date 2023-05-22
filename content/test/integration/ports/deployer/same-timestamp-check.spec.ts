@@ -66,7 +66,7 @@ describe('Integration - Same Timestamp Check', () => {
     entityCombo: EntityCombo
   ) {
     const { deployments } = await getDeployments(components, components.database, {
-      filters: { entityIds: [entityCombo.controllerEntity.id], onlyCurrentlyPointed: true }
+      filters: { entityIds: [entityCombo.entity.id], onlyCurrentlyPointed: true }
     })
     expect(deployments.length).toEqual(1)
     const [activeEntity] = deployments

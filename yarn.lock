@@ -331,10 +331,10 @@
     "@well-known-components/metrics" "^2.0.1"
     lru-cache "^7.14.0"
 
-"@dcl/catalyst-api-specs@^3.1.3":
-  version "3.1.3"
-  resolved "https://registry.yarnpkg.com/@dcl/catalyst-api-specs/-/catalyst-api-specs-3.1.3.tgz#e251b674ac836f0f7459b17265edc6c7ed7a9a1a"
-  integrity sha512-gYxTnQs1qouRwXSgkDmWFOMmHIAZVZkYmOVSqPgdLkF+PX+i2HmIHIgJCPOuwSInL8dK72VKzkcl5tRBEbUPUA==
+"@dcl/catalyst-api-specs@^3.1.4":
+  version "3.1.4"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-api-specs/-/catalyst-api-specs-3.1.4.tgz#0db66b19622073d2d4f50bcfea1fc55b4124f0fa"
+  integrity sha512-yeqfxybyZ1kZ4PE+bvM9dPM5UOde5cYnva0rKcpZnhTl7kw874QjVT8qsEywwKlDzJwAXIslHm9nvcF5mLP6Bw==
   dependencies:
     yaml "2.2.2"
 

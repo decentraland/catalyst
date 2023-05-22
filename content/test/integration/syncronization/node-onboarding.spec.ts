@@ -30,16 +30,14 @@ describe('End 2 end - Node onboarding', function () {
     await Promise.all([server1.startProgram(), server2.startProgram()])
 
     // Prepare data to be deployed
-    const { deployData: deployData1, controllerEntity: entity1 } = await buildDeployData(['X1,Y1', 'X2,Y2'], {
+    const { deployData: deployData1, entity: entity1 } = await buildDeployData(['X1,Y1', 'X2,Y2'], {
       metadata: { a: 'metadata' },
       contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
     })
     const entity1ContentHash = entity1.content![0].hash
-    const { deployData: deployData2, controllerEntity: entity2 } = await buildDeployDataAfterEntity(
-      entity1,
-      ['X2,Y2'],
-      { metadata: { a: 'metadata2' } }
-    )
+    const { deployData: deployData2, entity: entity2 } = await buildDeployDataAfterEntity(entity1, ['X2,Y2'], {
+      metadata: { a: 'metadata2' }
+    })
 
     // Deploy entity1 on server 1
     const deploymentTimestamp1 = await server1.deployEntity(deployData1)
@@ -71,7 +69,7 @@ describe('End 2 end - Node onboarding', function () {
     await Promise.all([server1.startProgram(), server2.startProgram()])
 
     // Prepare data to be deployed
-    const { deployData, controllerEntity: entity } = await buildDeployData(['X1,Y1', 'X2,Y2'], {
+    const { deployData, entity } = await buildDeployData(['X1,Y1', 'X2,Y2'], {
       metadata: { a: 'metadata' },
       contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
     })

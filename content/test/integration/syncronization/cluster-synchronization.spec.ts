@@ -42,7 +42,7 @@ describe('End 2 end synchronization tests', function () {
     await Promise.all([server1.startProgram(), server2.startProgram()])
 
     // Prepare data to be deployed
-    const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(['X1,Y1'], {
+    const { deployData, entity: entityBeingDeployed } = await buildDeployData(['X1,Y1'], {
       metadata: { a: 'metadata' }
     })
 
@@ -73,11 +73,11 @@ describe('End 2 end synchronization tests', function () {
     await Promise.all([server1.startProgram(), server2.startProgram()])
 
     // Prepare data to be deployed
-    const { deployData: deployData1, controllerEntity: entityBeingDeployed1 } = await buildDeployData(['X1,Y1'], {
+    const { deployData: deployData1, entity: entityBeingDeployed1 } = await buildDeployData(['X1,Y1'], {
       metadata: { a: 'metadata' },
       contentPaths: ['test/integration/resources/some-binary-file.png']
     })
-    const { deployData: deployData2, controllerEntity: entityBeingDeployed2 } = await buildDeployDataAfterEntity(
+    const { deployData: deployData2, entity: entityBeingDeployed2 } = await buildDeployDataAfterEntity(
       entityBeingDeployed1,
       ['X2,Y2'],
       {
@@ -123,19 +123,15 @@ describe('End 2 end synchronization tests', function () {
     await Promise.all([server2.startProgram()])
 
     // Prepare data to be deployed
-    const { deployData: deployData1, controllerEntity: entity1 } = await buildDeployData(['X1,Y1', 'X2,Y2'], {
+    const { deployData: deployData1, entity: entity1 } = await buildDeployData(['X1,Y1', 'X2,Y2'], {
       metadata: { a: 'metadata' }
     })
-    const { deployData: deployData2, controllerEntity: entity2 } = await buildDeployDataAfterEntity(
-      entity1,
-      ['X2,Y2', 'X3,Y3'],
-      { metadata: { a: 'metadata2' } }
-    )
-    const { deployData: deployData3, controllerEntity: entity3 } = await buildDeployDataAfterEntity(
-      entity2,
-      ['X3,Y3', 'X4,Y4'],
-      { metadata: { a: 'metadata3' } }
-    )
+    const { deployData: deployData2, entity: entity2 } = await buildDeployDataAfterEntity(entity1, ['X2,Y2', 'X3,Y3'], {
+      metadata: { a: 'metadata2' }
+    })
+    const { deployData: deployData3, entity: entity3 } = await buildDeployDataAfterEntity(entity2, ['X3,Y3', 'X4,Y4'], {
+      metadata: { a: 'metadata3' }
+    })
 
     // Deploy entity 2
     const deploymentTimestamp2 = await server2.deployEntity(deployData2)

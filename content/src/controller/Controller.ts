@@ -1,7 +1,6 @@
 import { ContentItem } from '@dcl/catalyst-storage'
-import { AuthChain } from '@dcl/crypto'
-import { Entity, EntityType } from '@dcl/schemas'
-import { asEnumValue, fromCamelCaseToSnakeCase, maskEntity } from './utils'
+import { EntityType } from '@dcl/schemas'
+import { asEnumValue, fromCamelCaseToSnakeCase } from './utils'
 import { Deployment, DeploymentBase, DeploymentOptions, SortingField, SortingOrder } from '../deployment-types'
 import { getActiveDeploymentsByContentHash } from '../logic/database-queries/deployments-queries'
 import { getDeployments } from '../logic/deployments'
@@ -9,55 +8,6 @@ import { findEntityByPointer, findImageHash, findThumbnailHash } from '../logic/
 import { buildUrn, formatERC21Entity, getProtocol } from '../logic/erc721'
 import { qsGetArray, qsGetBoolean, qsGetNumber, qsParser, toQueryParams } from '../logic/query-params'
 import { DeploymentField, HandlerContextWithPath, InvalidRequestError, NotFoundError, parseEntityType } from '../types'
-
-/**
- * @deprecated
- * this endpoint will be deprecated in favor of `getActiveEntities`
- */
-// Method: GET
-// Query String: ?{filter}&fields={fieldList}
-export async function getEntities(context: HandlerContextWithPath<'activeEntities' | 'database', '/entities/:type'>) {
-  const { database, activeEntities } = context.components
-  const type: EntityType = parseEntityType(context.params.type)
-  const queryParams = qsParser(context.url.searchParams)
-
-  const pointers: string[] = qsGetArray(queryParams, 'pointer').map((pointer) => pointer.toLocaleLowerCase())
-  const ids: string[] = qsGetArray(queryParams, 'id')
-  const fields: string = queryParams.fields as string
-
-  // Validate type is valid
-  if (!type) {
-    return {
-      status: 400,
-      body: { error: `Unrecognized type: ${context.params.type}` }
-    }
-  }
-
-  // Validate pointers or ids are present, but not both
-  if ((ids.length > 0 && pointers.length > 0) || (ids.length == 0 && pointers.length == 0)) {
-    return {
-      status: 400,
-      body: { error: 'ids or pointers must be present, but not both' }
-    }
-  }
-
-  // Validate fields are correct or empty
-  let enumFields: EntityField[] | undefined = undefined
-  if (fields) {
-    enumFields = fields.split(',').map((f) => (<any>EntityField)[f.toUpperCase().trim()])
-  }
-
-  // Calculate and mask entities
-  const entities: Entity[] = !!ids.length
-    ? await activeEntities.withIds(database, ids)
-    : await activeEntities.withPointers(database, pointers)
-
-  const maskedEntities: Entity[] = entities.map((entity) => maskEntity(entity, enumFields))
-  return {
-    status: 200,
-    body: maskedEntities
-  }
-}
 
 // Method: GET or HEAD
 export async function getEntityThumbnail(
@@ -329,22 +279,6 @@ function calculateNextRelativePath(options: DeploymentOptions, lastDeployment: D
 }
 
 // Method: GET
-export async function getAllNewSnapshots(context: HandlerContextWithPath<'snapshotGenerator', '/snapshots'>) {
-  const metadata = context.components.snapshotGenerator.getCurrentSnapshots()
-  if (!metadata) {
-    return {
-      status: 503,
-      body: { error: 'New Snapshots not yet created' }
-    }
-  }
-
-  return {
-    status: 200,
-    body: metadata
-  }
-}
-
-// Method: GET
 export async function getChallenge(context: HandlerContextWithPath<'challengeSupervisor', '/challenge'>) {
   const challengeText = context.components.challengeSupervisor.getChallengeText()
   return {
@@ -368,23 +302,6 @@ function getContentFileHeaders(content: ContentItem, hashId: string): Record<str
   }
 
   return headers
-}
-
-export enum EntityField {
-  CONTENT = 'content',
-  POINTERS = 'pointers',
-  METADATA = 'metadata'
-}
-
-export type ControllerDenylistData = {
-  target: {
-    type: string
-    id: string
-  }
-  metadata: {
-    timestamp: number
-    authChain: AuthChain
-  }
 }
 
 const DEFAULT_FIELDS_ON_DEPLOYMENTS: DeploymentField[] = [

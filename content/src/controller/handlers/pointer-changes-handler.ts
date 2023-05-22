@@ -1,4 +1,4 @@
-import { GetPointerChanges200 } from '@dcl/catalyst-api-specs/lib/client/client.schemas'
+import { GetPointerChanges200 } from '@dcl/catalyst-api-specs/lib/client'
 import { EntityType, PointerChangesSyncDeployment } from '@dcl/schemas'
 import { asEnumValue, fromCamelCaseToSnakeCase } from '../utils'
 import { qsGetArray, qsGetBoolean, qsGetNumber, qsParser, toQueryParams } from '../../logic/query-params'

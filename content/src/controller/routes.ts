@@ -5,23 +5,23 @@ import { GlobalContext } from '../types'
 import { getActiveEntities } from './handlers/active-entities-handler'
 import {
   getActiveDeploymentsByContentHashHandler,
-  getAllNewSnapshots,
   getChallenge,
   getContent,
   getDeploymentsHandler,
   getEntityImage,
   getEntityThumbnail,
-  getERC721Entity,
-  getEntities
+  getERC721Entity
 } from './Controller'
 import { createEntity } from './handlers/create-entity-handler'
 import { errorHandler } from './handlers/error-handler'
 import { getFailedDeployments } from './handlers/failed-deployments-handler'
-import { filterByUrnHandler } from './handlers/filter-by-urn-handler'
+import { getEntitiesByPointerPrefix } from './handlers/filter-by-urn-handler'
 import { getEntityAuditInformation } from './handlers/get-audit-handler'
 import { getAvailableContent } from './handlers/get-available-content-handler'
 import { getPointerChangesHandler } from './handlers/pointer-changes-handler'
 import { getStatus } from './handlers/status-handler'
+import { getSnapshots } from './handlers/get-snapshots-handler'
+import { getEntities } from './handlers/get-entities-handler'
 
 // We return the entire router because it will be easier to test than a whole server
 export async function setupRouter({ components }: GlobalContext): Promise<Router<GlobalContext>> {
@@ -38,7 +38,7 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
   }
 
   router.get('/entities/:type', getEntities) // TODO: Deprecate
-  router.get('/entities/active/collections/:collectionUrn', filterByUrnHandler)
+  router.get('/entities/active/collections/:collectionUrn', getEntitiesByPointerPrefix)
   router.post('/entities/active', getActiveEntities)
   router.head('/contents/:hashId', getContent)
   router.get('/contents/:hashId', getContent)
@@ -50,7 +50,7 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
   router.get('/failed-deployments', getFailedDeployments)
   router.get('/challenge', getChallenge)
   router.get('/pointer-changes', getPointerChangesHandler)
-  router.get('/snapshots', getAllNewSnapshots)
+  router.get('/snapshots', getSnapshots)
 
   // queries: these endpoints are not part of the content replication protocol
   router.head('/queries/items/:pointer/thumbnail', getEntityThumbnail)

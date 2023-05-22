@@ -1,4 +1,4 @@
-import { GetFailedDeployments200Item } from '@dcl/catalyst-api-specs/lib/client/client.schemas'
+import { GetFailedDeployments200Item } from '@dcl/catalyst-api-specs/lib/client'
 import { HandlerContextWithPath } from '../../types'
 
 // Method: GET

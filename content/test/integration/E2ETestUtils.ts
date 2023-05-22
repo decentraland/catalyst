@@ -4,7 +4,6 @@ import { Entity, EntityType } from '@dcl/schemas'
 import { DeploymentData, buildEntity } from 'dcl-catalyst-client/dist/client/utils/DeploymentBuilder'
 import fs from 'fs'
 import path from 'path'
-import { maskEntity } from '../../src/controller/utils'
 import { DeploymentContext, DeploymentResult, isInvalidDeployment } from '../../src/deployment-types'
 import { retry } from '../../src/helpers/RetryHelper'
 import { Deployer } from '../../src/ports/deployer'
@@ -61,9 +60,7 @@ export async function buildDeployData(pointers: string[], options?: DeploymentOp
     files: deploymentPreparationData.files
   }
 
-  const controllerEntity = maskEntity(entity)
-
-  return { deployData, entity, controllerEntity }
+  return { deployData, entity }
 }
 
 export function hashAndSignMessage(message: string, identity: IdentityType = createUnsafeIdentity()) {
@@ -140,7 +137,6 @@ type DeploymentOptions = {
 
 export type EntityCombo = {
   deployData: DeploymentData
-  controllerEntity: Entity
   entity: Entity
 }
 
