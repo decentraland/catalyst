@@ -4,7 +4,7 @@ import { Entity, EntityType } from '@dcl/schemas'
 import { DeploymentData, buildEntity } from 'dcl-catalyst-client/dist/client/utils/DeploymentBuilder'
 import fs from 'fs'
 import path from 'path'
-import { ControllerEntityFactory } from '../../src/controller/ControllerEntityFactory'
+import { maskEntity } from '../../src/controller/utils'
 import { DeploymentContext, DeploymentResult, isInvalidDeployment } from '../../src/deployment-types'
 import { retry } from '../../src/helpers/RetryHelper'
 import { Deployer } from '../../src/ports/deployer'
@@ -61,7 +61,7 @@ export async function buildDeployData(pointers: string[], options?: DeploymentOp
     files: deploymentPreparationData.files
   }
 
-  const controllerEntity = ControllerEntityFactory.maskEntity(entity)
+  const controllerEntity = maskEntity(entity)
 
   return { deployData, entity, controllerEntity }
 }

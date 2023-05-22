@@ -1,7 +1,7 @@
-import { HandlerContextWithPath, InvalidRequestError } from '../types'
 import { DecentralandAssetIdentifier, parseUrn } from '@dcl/urn-resolver'
-import { BASE_AVATARS_COLLECTION_ID } from '../ports/activeEntities'
-import { paginationObject } from './utils'
+import { paginationObject } from '../utils'
+import { HandlerContextWithPath, InvalidRequestError } from '../../types'
+import { BASE_AVATARS_COLLECTION_ID } from '../../ports/activeEntities'
 
 async function isUrnPrefixValid(collectionUrn: string): Promise<string | false> {
   const regex = /^[a-zA-Z0-9_.:,-]+$/g

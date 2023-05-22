@@ -2,26 +2,26 @@ import { Router } from '@well-known-components/http-server'
 import { multipartParserWrapper } from '@well-known-components/multipart-wrapper'
 import { EnvironmentConfig } from '../Environment'
 import { GlobalContext } from '../types'
+import { getActiveEntities } from './handlers/active-entities-handler'
 import {
-  createEntity,
   getActiveDeploymentsByContentHashHandler,
-  getActiveEntities,
   getAllNewSnapshots,
-  getAudit,
-  getAvailableContent,
   getChallenge,
   getContent,
   getDeploymentsHandler,
   getEntityImage,
   getEntityThumbnail,
   getERC721Entity,
-  getFailedDeployments,
-  getPointerChangesHandler,
-  getStatus,
   getEntities
 } from './Controller'
-import { errorHandler } from './error-handler'
-import { filterByUrnHandler } from './filter-by-urn-handler'
+import { createEntity } from './handlers/create-entity-handler'
+import { errorHandler } from './handlers/error-handler'
+import { getFailedDeployments } from './handlers/failed-deployments-handler'
+import { filterByUrnHandler } from './handlers/filter-by-urn-handler'
+import { getEntityAuditInformation } from './handlers/get-audit-handler'
+import { getAvailableContent } from './handlers/get-available-content-handler'
+import { getPointerChangesHandler } from './handlers/pointer-changes-handler'
+import { getStatus } from './handlers/status-handler'
 
 // We return the entire router because it will be easier to test than a whole server
 export async function setupRouter({ components }: GlobalContext): Promise<Router<GlobalContext>> {
@@ -43,7 +43,7 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
   router.head('/contents/:hashId', getContent)
   router.get('/contents/:hashId', getContent)
   router.get('/available-content', getAvailableContent)
-  router.get('/audit/:type/:entityId', getAudit)
+  router.get('/audit/:type/:entityId', getEntityAuditInformation)
   router.get('/deployments', getDeploymentsHandler)
   router.get('/contents/:hashId/active-entities', getActiveDeploymentsByContentHashHandler)
   router.get('/status', getStatus)
