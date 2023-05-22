@@ -58,7 +58,7 @@ export async function getEntities(context: HandlerContextWithPath<'activeEntitie
   }
 }
 
-export function maskEntity(fullEntity: Entity, fields?: EntityField[]): Entity {
+function maskEntity(fullEntity: Entity, fields?: EntityField[]): Entity {
   const { id, type, timestamp, version } = fullEntity
   let content: EntityContentItemReference[] = []
   let metadata: any
