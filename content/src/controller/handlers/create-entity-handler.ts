@@ -1,9 +1,9 @@
 import { PostEntity200, PostEntity400 } from '@dcl/catalyst-api-specs/lib/client/client.schemas'
 import { Field } from '@well-known-components/multipart-wrapper'
 import { AuthChain, Authenticator, AuthLink, EthAddress, Signature } from '@dcl/crypto'
-import { DeploymentContext, isInvalidDeployment, isSuccessfulDeployment } from '../deployment-types'
-import { CURRENT_CONTENT_VERSION } from '../Environment'
-import { FormHandlerContextWithPath, InvalidRequestError } from '../types'
+import { DeploymentContext, isInvalidDeployment, isSuccessfulDeployment } from '../../deployment-types'
+import { CURRENT_CONTENT_VERSION } from '../../Environment'
+import { FormHandlerContextWithPath, InvalidRequestError } from '../../types'
 
 type ContentFile = {
   path?: string

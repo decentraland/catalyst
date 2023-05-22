@@ -1,6 +1,6 @@
-import { HandlerContextWithPath, InvalidRequestError } from '../types'
-import { qsGetArray, qsParser } from '../logic/query-params'
 import { GetAvailableContent200Item } from '@dcl/catalyst-api-specs/lib/client/client.schemas'
+import { HandlerContextWithPath, InvalidRequestError } from '../../types'
+import { qsGetArray, qsParser } from '../../logic/query-params'
 
 // Method: GET
 // Query String: ?cid={hashId1}&cid={hashId2}

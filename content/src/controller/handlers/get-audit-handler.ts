@@ -1,8 +1,13 @@
-import { HandlerContextWithPath, InvalidRequestError, NotFoundError, parseEntityType } from '../types'
+import {
+  HandlerContextWithPath,
+  InvalidRequestError,
+  NotFoundError,
+  parseEntityType,
+  DeploymentField
+} from '../../types'
 import { GetEntityAuditInformation200 } from '@dcl/catalyst-api-specs/lib/client/client.schemas'
-import { getDeployments } from '../logic/deployments'
-import { DeploymentField } from './Controller'
-import { AuditInfo } from 'src/deployment-types'
+import { getDeployments } from '../../logic/deployments'
+import { AuditInfo } from '../../deployment-types'
 
 // Method: GET
 export async function getEntityAuditInformation(

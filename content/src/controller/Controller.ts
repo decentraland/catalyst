@@ -8,7 +8,7 @@ import { getDeployments } from '../logic/deployments'
 import { findEntityByPointer, findImageHash, findThumbnailHash } from '../logic/entities'
 import { buildUrn, formatERC21Entity, getProtocol } from '../logic/erc721'
 import { qsGetArray, qsGetBoolean, qsGetNumber, qsParser, toQueryParams } from '../logic/query-params'
-import { HandlerContextWithPath, InvalidRequestError, NotFoundError, parseEntityType } from '../types'
+import { DeploymentField, HandlerContextWithPath, InvalidRequestError, NotFoundError, parseEntityType } from '../types'
 
 /**
  * @deprecated
@@ -374,13 +374,6 @@ export enum EntityField {
   CONTENT = 'content',
   POINTERS = 'pointers',
   METADATA = 'metadata'
-}
-
-export enum DeploymentField {
-  CONTENT = 'content',
-  POINTERS = 'pointers',
-  METADATA = 'metadata',
-  AUDIT_INFO = 'auditInfo'
 }
 
 export type ControllerDenylistData = {
