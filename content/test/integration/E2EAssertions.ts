@@ -1,9 +1,8 @@
 import { Authenticator } from '@dcl/crypto'
 import { hashV0, hashV1 } from '@dcl/hashing'
-import { Entity } from '@dcl/schemas'
+import { ContentMapping, Entity } from '@dcl/schemas'
 import assert from 'assert'
-import { DeploymentData } from 'dcl-catalyst-client'
-import { EntityContentItemReference } from 'dcl-catalyst-commons'
+import { DeploymentData } from 'dcl-catalyst-client/dist/client/utils/DeploymentBuilder'
 import { Response } from 'node-fetch'
 import { Deployment } from '../../src/deployment-types'
 import { getDeployments } from '../../src/logic/deployments'
@@ -20,8 +19,7 @@ export async function assertEntitiesAreDeployedButNotActive(server: TestProgram,
     assert.equal(
       unexpectedEntities.length,
       0,
-      `Expected not to find entity with id ${entity.id} when checking for pointer ${
-        entity.pointers
+      `Expected not to find entity with id ${entity.id} when checking for pointer ${entity.pointers
       } on server '${server.getUrl()}.'`
     )
     await assertEntityIsOnServer(server, entity)
@@ -41,7 +39,7 @@ export async function assertEntityWasNotDeployed(server: TestProgram, entity: En
   await assertFileIsNotOnServer(server, entity.id)
 
   // Legacy check
-  const content: EntityContentItemReference[] = entity.content ?? []
+  const content: ContentMapping[] = entity.content ?? []
   await Promise.all(content.map(({ hash }) => assertFileIsNotOnServer(server, hash)))
   const entities = await server.getEntitiesByIds(entity.type, entity.id)
   assert.equal(entities.length, 0)
@@ -85,8 +83,7 @@ export async function assertDeploymentsAreReported(server: TestProgram, ...expec
   assert.equal(
     deployments.length,
     expectedDeployments.length,
-    `Expected to find ${expectedDeployments.length} deployments on server ${server.getUrl()}. Instead, found ${
-      deployments.length
+    `Expected to find ${expectedDeployments.length} deployments on server ${server.getUrl()}. Instead, found ${deployments.length
     }.`
   )
 

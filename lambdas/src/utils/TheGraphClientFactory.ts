@@ -1,10 +1,10 @@
-import { Environment, EnvironmentConfig } from '../Environment'
-import { TheGraphClient } from './TheGraphClient'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
-import { metricsComponent } from '../metrics'
-import { createSubgraphComponent } from '@well-known-components/thegraph-component'
+import { createFetchComponent } from '@well-known-components/fetch-component'
 import { createLogComponent } from '@well-known-components/logger'
-import { createFetchComponent } from '../ports/fetcher'
+import { createSubgraphComponent } from '@well-known-components/thegraph-component'
+import { Environment, EnvironmentConfig } from '../Environment'
+import { metricsComponent } from '../metrics'
+import { TheGraphClient } from './TheGraphClient'
 
 export class TheGraphClientFactory {
   static async create(env: Environment): Promise<TheGraphClient> {

@@ -1,4 +1,22 @@
 import qs from 'qs'
+import { QueryParams } from '../types'
+
+export function qsParser(rawQueryParams: URLSearchParams): QueryParams {
+  return qs.parse(rawQueryParams.toString(), { parseArrays: true })
+}
+
+export function qsGetArray(queryParams: QueryParams, paramName: string): string[] {
+  const parsedParam = (queryParams[paramName] as string[]) || []
+  return Array.isArray(parsedParam) ? parsedParam : [parsedParam]
+}
+
+export function qsGetNumber(queryParams: QueryParams, paramName: string): number | undefined {
+  return queryParams[paramName] ? parseInt(queryParams[paramName] as string) : undefined
+}
+
+export function qsGetBoolean(queryParams: QueryParams, paramName: string): boolean | undefined {
+  return queryParams[paramName] ? queryParams[paramName] === 'true' : undefined
+}
 
 export function toQueryParams(filters: Record<string, any>): string {
   const entries = convertFiltersToQueryParams(filters)

@@ -1,33 +1,33 @@
-import { streamToBuffer } from '@dcl/catalyst-storage/dist/content-item'
-import { createSubgraphComponent } from '@well-known-components/thegraph-component'
-import { EnvironmentConfig } from '../../Environment'
-import { AppComponents } from '../../types'
-import {
-  createValidator,
-  DeploymentToValidate,
-  OK,
-  ExternalCalls,
-  ValidateFn,
-  TokenAddresses
-} from '@dcl/content-validator'
-import { createAccessValidateFn } from '@dcl/content-validator/dist/validations/access'
-import { createOnChainAccessCheckValidateFns } from '@dcl/content-validator/dist/validations/access/on-chain'
-import { createSubgraphAccessCheckValidateFns } from '@dcl/content-validator/dist/validations/access/subgraph'
-import { createOnChainClient } from '@dcl/content-validator/dist/validations/access/on-chain/client'
-import { Authenticator } from '@dcl/crypto'
 import {
   AvlTree,
   BlockInfo,
+  EthereumProvider,
   createAvlBlockSearch,
   createBlockRepository,
   createCachingEthereumProvider,
-  EthereumProvider,
   loadTree
 } from '@dcl/block-indexer'
-import RequestManager, { HTTPProvider } from 'eth-connect'
-import { createL1Checker, createL2Checker } from '../../logic/checker'
-import { createTheGraphClient } from '@dcl/content-validator/dist/validations/access/subgraph/the-graph-client'
 import { landContracts } from '@dcl/catalyst-contracts'
+import { streamToBuffer } from '@dcl/catalyst-storage/dist/content-item'
+import {
+  DeploymentToValidate,
+  ExternalCalls,
+  OK,
+  TokenAddresses,
+  ValidateFn,
+  createValidator
+} from '@dcl/content-validator'
+import { createAccessValidateFn } from '@dcl/content-validator/dist/validations/access'
+import { createOnChainAccessCheckValidateFns } from '@dcl/content-validator/dist/validations/access/on-chain'
+import { createOnChainClient } from '@dcl/content-validator/dist/validations/access/on-chain/client'
+import { createSubgraphAccessCheckValidateFns } from '@dcl/content-validator/dist/validations/access/subgraph'
+import { createTheGraphClient } from '@dcl/content-validator/dist/validations/access/subgraph/the-graph-client'
+import { Authenticator } from '@dcl/crypto'
+import { createSubgraphComponent } from '@well-known-components/thegraph-component'
+import RequestManager, { HTTPProvider } from 'eth-connect'
+import { EnvironmentConfig } from '../../Environment'
+import { createL1Checker, createL2Checker } from '../../logic/checker'
+import { AppComponents } from '../../types'
 
 const createEthereumProvider = (httpProvider: HTTPProvider): EthereumProvider => {
   const reqMan = new RequestManager(httpProvider)

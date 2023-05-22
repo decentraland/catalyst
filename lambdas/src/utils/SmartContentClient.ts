@@ -1,26 +1,53 @@
 import { Entity, EntityType } from '@dcl/schemas'
+import { createFetchComponent } from '@well-known-components/fetch-component'
+import { RequestOptions } from '@well-known-components/interfaces'
+import { AvailableContentResult, ContentClient, createContentClient } from 'dcl-catalyst-client'
 import {
   BuildEntityOptions,
   BuildEntityWithoutFilesOptions,
-  ContentAPI,
-  ContentClient,
   DeploymentData,
   DeploymentPreparationData
-} from 'dcl-catalyst-client'
-import { CompleteRequestOptions, Fetcher, RequestOptions, ServerStatus } from 'dcl-catalyst-commons'
+} from 'dcl-catalyst-client/dist/client/types'
+import FormData from 'form-data'
 import future, { IFuture } from 'fp-future'
 import log4js from 'log4js'
+
+declare enum EntityVersion {
+  V2 = 'v2',
+  V3 = 'v3',
+  V4 = 'v4'
+}
+
+type ServerStatus = {
+  name: string
+  version: EntityVersion
+  currentTime: number
+  lastImmutableTime: number
+  historySize: number
+}
+
+/**
 /**
  * This content client  tries to use the internal docker network to connect lambdas with the content server.
  * If it can't, then it will try to contact it externally
  */
-export class SmartContentClient implements ContentAPI {
+export class SmartContentClient implements ContentClient {
   private static INTERNAL_CONTENT_SERVER_URL: string = `http://content-server:6969`
   private static LOGGER = log4js.getLogger('SmartContentClient')
 
-  private contentClient: IFuture<ContentAPI> | undefined
+  private contentClient: IFuture<ContentClient> | undefined
 
   constructor(private readonly externalContentServerUrl: string) {}
+
+  async isContentAvailable(cids: string[], options?: RequestOptions | undefined): Promise<AvailableContentResult> {
+    const client = await this.getClient()
+    return client.isContentAvailable(cids, options)
+  }
+
+  async buildEntityFormDataForDeployment(deployData: DeploymentData, options?: RequestOptions): Promise<FormData> {
+    const client = await this.getClient()
+    return client.buildEntityFormDataForDeployment(deployData, options)
+  }
 
   async fetchEntitiesByPointers(pointers: string[], options?: RequestOptions): Promise<Entity[]> {
     const client = await this.getClient()
@@ -39,14 +66,14 @@ export class SmartContentClient implements ContentAPI {
 
   async fetchAuditInfo(type: EntityType, id: string, options?: RequestOptions) {
     const contentUrl = (await this.getClient()).getContentUrl()
-    const fetcher = new Fetcher()
+    const fetcher = createFetchComponent()
 
     return (await fetcher.fetch(`${contentUrl}/audit/${type}/${id}`, options)).json()
   }
 
   async fetchContentStatus(options?: RequestOptions): Promise<ServerStatus> {
     const contentUrl = (await this.getClient()).getContentUrl()
-    const fetcher = new Fetcher()
+    const fetcher = createFetchComponent()
 
     return (await fetcher.fetch(`${contentUrl}/status`, options)).json()
   }
@@ -81,14 +108,18 @@ export class SmartContentClient implements ContentAPI {
     return headers
   }
 
-  async pipeContent(
-    contentHash: string,
-    responseTo: any,
-    options?: Partial<CompleteRequestOptions>
-  ): Promise<Map<string, string>> {
+  async pipeContent(contentHash: string, responseTo: any, options?: RequestOptions): Promise<Map<string, string>> {
     const contentUrl = (await this.getClient()).getContentUrl()
-    const fetcher = new Fetcher()
-    return this.onlyKnownHeaders(await fetcher.fetchPipe(`${contentUrl}/contents/${contentHash}`, responseTo, options))
+    const fetcher = createFetchComponent()
+    const response = await fetcher.fetch(`${contentUrl}/contents/${contentHash}`, { ...options, timeout: 60000 })
+
+    if (!response.body || !('pipe' in response.body)) {
+      throw new Error('The function fetchPipe only works in Node.js compatible enviroments')
+    }
+
+    ;(response.body as any).pipe(responseTo)
+
+    return this.onlyKnownHeaders(response.headers as any)
   }
 
   deployEntity(deployData: DeploymentData, fix?: boolean, options?: RequestOptions): Promise<number> {
@@ -124,27 +155,30 @@ export class SmartContentClient implements ContentAPI {
    * When creating the client, we will first try to contact the content server using the internal docker network. If that fails, we will use
    * the external content url
    */
-  private async getClient(): Promise<ContentAPI> {
+  private async getClient(): Promise<ContentClient & { getContentUrl: () => string }> {
+    let contentClientUrl: string
     if (!this.contentClient) {
       this.contentClient = future()
-      let contentClientUrl = this.externalContentServerUrl
+      contentClientUrl = this.externalContentServerUrl
+      const fetcher = createFetchComponent()
       try {
-        const fetcher = new Fetcher()
-        await fetcher.fetchJson(`${SmartContentClient.INTERNAL_CONTENT_SERVER_URL}/status`, {
-          attempts: 6,
-          waitTime: '10s'
-        })
+        await (
+          await fetcher.fetch(`${SmartContentClient.INTERNAL_CONTENT_SERVER_URL}/status`, {
+            attempts: 6,
+            retryDelay: 10000
+          })
+        ).json()
         SmartContentClient.LOGGER.info('Will use the internal content server url')
         contentClientUrl = SmartContentClient.INTERNAL_CONTENT_SERVER_URL
       } catch {
         SmartContentClient.LOGGER.info('Defaulting to external content server url: ', contentClientUrl)
       }
-      this.contentClient.resolve(
-        new ContentClient({
-          contentUrl: contentClientUrl
-        })
-      )
+
+      this.contentClient.resolve(createContentClient({ url: contentClientUrl, fetcher }))
     }
-    return this.contentClient
+
+    return { ...(await this.contentClient), getContentUrl: () => contentClientUrl } as ContentClient & {
+      getContentUrl: () => string
+    }
   }
 }

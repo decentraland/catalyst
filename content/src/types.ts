@@ -12,7 +12,7 @@ import {
   IMetricsComponent
 } from '@well-known-components/interfaces'
 import { FormDataContext } from '@well-known-components/multipart-wrapper'
-import { Fetcher } from 'dcl-catalyst-commons'
+import qs from 'qs'
 import { Environment } from './Environment'
 import { metricsDeclaration } from './metrics'
 import { MigrationManager } from './migrations/MigrationManager'
@@ -90,7 +90,7 @@ export type AppComponents = {
   }
   garbageCollectionManager: GarbageCollectionManager
   systemProperties: SystemProperties
-  catalystFetcher: Fetcher
+  catalystFetcher: IFetchComponent
   daoClient: DaoComponent
   server: IHttpServerComponent<GlobalContext>
   retryFailedDeployments: IRetryFailedDeploymentsComponent
@@ -139,7 +139,6 @@ export type IStatusCapableComponent = {
   getComponentStatus(): Promise<StatusProbeResult>
 }
 
-// TODO: Move this to catalyst-commons and remove the check for trailing s?
 export function parseEntityType(strType: string): EntityType {
   if (strType.endsWith('s')) {
     strType = strType.slice(0, -1)
@@ -158,9 +157,25 @@ export type Pagination = {
   pageNum: number
 }
 
+export type QueryParams = qs.ParsedQs
+
 export class InvalidRequestError extends Error {
   constructor(message: string) {
     super(message)
     Error.captureStackTrace(this, this.constructor)
   }
+}
+
+export class NotFoundError extends Error {
+  constructor(message: string) {
+    super(message)
+    Error.captureStackTrace(this, this.constructor)
+  }
+}
+
+export enum DeploymentField {
+  CONTENT = 'content',
+  POINTERS = 'pointers',
+  METADATA = 'metadata',
+  AUDIT_INFO = 'auditInfo'
 }
