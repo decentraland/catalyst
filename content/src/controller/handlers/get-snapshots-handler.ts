@@ -1,10 +1,10 @@
-import { GetSnapshots200Item } from '@dcl/catalyst-api-specs/lib/client/client.schemas'
+import { GetSnapshots200Item, ContentErrorResponse } from '@dcl/catalyst-api-specs/lib/client'
 import { HandlerContextWithPath } from '../../types'
 
-type Response = { status: 200; body: GetSnapshots200Item[] }
+type Response = { status: 200; body: GetSnapshots200Item[] } | { status: 503; body: ContentErrorResponse }
 
 // Method: GET
-export async function getAllNewSnapshots(
+export async function getSnapshots(
   context: HandlerContextWithPath<'snapshotGenerator', '/snapshots'>
 ): Promise<Response> {
   const metadata = context.components.snapshotGenerator.getCurrentSnapshots()

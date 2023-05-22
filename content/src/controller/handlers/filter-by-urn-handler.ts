@@ -2,6 +2,7 @@ import { DecentralandAssetIdentifier, parseUrn } from '@dcl/urn-resolver'
 import { paginationObject } from '../utils'
 import { HandlerContextWithPath, InvalidRequestError } from '../../types'
 import { BASE_AVATARS_COLLECTION_ID } from '../../ports/activeEntities'
+import { GetEntitiesByPointerPrefix200 } from '@dcl/catalyst-api-specs/lib/client'
 
 async function isUrnPrefixValid(collectionUrn: string): Promise<string | false> {
   const regex = /^[a-zA-Z0-9_.:,-]+$/g
@@ -32,9 +33,9 @@ async function isUrnPrefixValid(collectionUrn: string): Promise<string | false> 
 }
 
 // Method: GET
-export async function filterByUrnHandler(
+export async function getEntitiesByPointerPrefix(
   context: HandlerContextWithPath<'database' | 'activeEntities', '/entities/active/collections/:collectionUrn'>
-) {
+): Promise<{ status: 200; body: GetEntitiesByPointerPrefix200 }> {
   const collectionUrn: string = context.params.collectionUrn
 
   const parsedUrn = await isUrnPrefixValid(collectionUrn)

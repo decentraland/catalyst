@@ -1,5 +1,5 @@
 import { Entity } from '@dcl/schemas'
-import { GetActiveEntities200Item } from '@dcl/catalyst-api-specs/lib/client/client.schemas'
+import { GetActiveEntities200Item } from '@dcl/catalyst-api-specs/lib/client'
 import { HandlerContextWithPath, InvalidRequestError } from '../../types'
 
 // Method: POST
