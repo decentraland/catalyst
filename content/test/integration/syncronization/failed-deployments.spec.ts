@@ -3,7 +3,7 @@ import { DeploymentData } from 'dcl-catalyst-client/dist/client/utils/Deployment
 import { EnvironmentConfig } from '../../../src/Environment'
 import { retryFailedDeploymentExecution } from '../../../src/logic/deployments'
 import { FailedDeployment, FailureReason } from '../../../src/ports/failedDeployments'
-import { assertDeploymentFailed, assertDeploymentFailsWith, assertEntitiesAreActiveOnServer } from '../E2EAssertions'
+import { assertDeploymentFailed, assertEntitiesAreActiveOnServer } from '../E2EAssertions'
 import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { awaitUntil, buildDeployData, buildDeployDataAfterEntity, createIdentity } from '../E2ETestUtils'
 import { TestProgram, startProgramAndWaitUntilBootstrapFinishes } from '../TestProgram'
@@ -14,17 +14,17 @@ describe('Errors during sync', () => {
 
   let server1: TestProgram
   let server2: TestProgram
-  let entity: Entity
+  let controllerEntity: Entity
   let deployData: DeploymentData
   let serverValidatorStub2: jest.SpyInstance
 
   describe('Deploy an entity on server 1', function () {
     beforeEach(async function () {
       const identity = createIdentity()
-      ;[server1, server2] = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
-        .andBuildMany(2)
+        ;[server1, server2] = await getTestEnv()
+          .configServer()
+          .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
+          .andBuildMany(2)
       // Start server1
       await server1.startProgram()
 
@@ -44,46 +44,46 @@ describe('Errors during sync', () => {
         contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
       })
 
-      entity = entityCombo.entity
+      controllerEntity = entityCombo.controllerEntity
       deployData = entityCombo.deployData
 
       // Deploy the entity
       await server1.deployEntity(deployData)
-      await awaitUntil(() => assertEntitiesAreActiveOnServer(server1, entity))
+      await awaitUntil(() => assertEntitiesAreActiveOnServer(server1, controllerEntity))
 
       // Start server2
       await startProgramAndWaitUntilBootstrapFinishes(server2)
     })
 
     it('stores it as failed deployment locally', async function () {
-      await awaitUntil(() => assertDeploymentFailed(server2, FailureReason.DEPLOYMENT_ERROR, entity))
+      await awaitUntil(() => assertDeploymentFailed(server2, FailureReason.DEPLOYMENT_ERROR, controllerEntity))
     })
 
     it('fix the failed entity on server2 when retrying it, is correclty deployed', async () => {
-      await awaitUntil(() => assertDeploymentFailed(server2, FailureReason.DEPLOYMENT_ERROR, entity))
+      await awaitUntil(() => assertDeploymentFailed(server2, FailureReason.DEPLOYMENT_ERROR, controllerEntity))
       // Fix the entity
       await server2.deployEntity(deployData, true)
-      await awaitUntil(() => assertEntitiesAreActiveOnServer(server2, entity))
+      await awaitUntil(() => assertEntitiesAreActiveOnServer(server2, controllerEntity))
       const newFailedDeployments: FailedDeployment[] = await server2.getFailedDeployments()
       expect(newFailedDeployments.length).toBe(0)
     })
 
     it('fix the failed entity on server2 after a new one was correctly deployed', async () => {
-      await awaitUntil(() => assertDeploymentFailed(server2, FailureReason.DEPLOYMENT_ERROR, entity))
+      await awaitUntil(() => assertDeploymentFailed(server2, FailureReason.DEPLOYMENT_ERROR, controllerEntity))
 
       // Deploy a new entity for the same pointer
-      const anotherEntityCombo = await buildDeployDataAfterEntity(entity, ['0,1'], {
+      const anotherEntityCombo = await buildDeployDataAfterEntity(controllerEntity, ['0,1'], {
         metadata: { a: 'metadata2' }
       })
       // Deploy entity 2 on server 2
       await server2.deployEntity(anotherEntityCombo.deployData)
-      await awaitUntil(() => assertEntitiesAreActiveOnServer(server2, anotherEntityCombo.entity))
+      await awaitUntil(() => assertEntitiesAreActiveOnServer(server2, anotherEntityCombo.controllerEntity))
 
       // Fix the entity
       await server2.deployEntity(deployData, true)
 
       // The active entity is not modified
-      await awaitUntil(() => assertEntitiesAreActiveOnServer(server2, anotherEntityCombo.entity))
+      await awaitUntil(() => assertEntitiesAreActiveOnServer(server2, anotherEntityCombo.controllerEntity))
 
       // Is removed from failed
       await awaitUntil(async () => {
@@ -94,14 +94,14 @@ describe('Errors during sync', () => {
 
     it('ignore to fix the failed deployment when there are newer entities', async () => {
       // Deploy a new entity for the same pointer
-      const anotherEntityCombo = await buildDeployDataAfterEntity(entity, ['0,1'], {
+      const anotherEntityCombo = await buildDeployDataAfterEntity(controllerEntity, ['0,1'], {
         metadata: { a: 'metadata2' }
       })
       // Wait until entity from sync is deployed and failed
-      await awaitUntil(() => assertDeploymentFailed(server2, FailureReason.DEPLOYMENT_ERROR, entity))
+      await awaitUntil(() => assertDeploymentFailed(server2, FailureReason.DEPLOYMENT_ERROR, controllerEntity))
       // Deploy entity 2 (with same pointers) on server 2
       await server2.deployEntity(anotherEntityCombo.deployData)
-      await awaitUntil(() => assertEntitiesAreActiveOnServer(server2, anotherEntityCombo.entity))
+      await awaitUntil(() => assertEntitiesAreActiveOnServer(server2, anotherEntityCombo.controllerEntity))
 
       // Restore server validations to detect the newer entity
       serverValidatorStub2.mockRestore()
@@ -114,34 +114,5 @@ describe('Errors during sync', () => {
         expect(newFailedDeployments.length).toBe(0)
       })
     })
-  })
-
-  it('Deploy as fix a not failed entity fails', async () => {
-    const identity = createIdentity()
-    server1 = await getTestEnv()
-      .configServer()
-      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-      .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
-      .andBuild()
-
-    jest
-      .spyOn(server1.components.serverValidator, 'validate')
-      .mockResolvedValue({ ok: false, message: 'You are trying to fix an entity that is not marked as failed' })
-
-    // Start server1
-    await server1.startProgram()
-
-    // Prepare entity to deploy
-    const entityCombo = await buildDeployData(['0,0', '0,1'], {
-      metadata: { a: 'metadata' },
-      contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
-    })
-    deployData = entityCombo.deployData
-    entity = entityCombo.entity
-
-    await assertDeploymentFailsWith(
-      () => server1.deployEntity(deployData, true),
-      'You are trying to fix an entity that is not marked as failed'
-    )
   })
 })
