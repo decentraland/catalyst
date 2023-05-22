@@ -1,5 +1,5 @@
 import { IHttpServerComponent } from '@well-known-components/interfaces'
-import { InvalidRequestError, NotFoundError } from '../types'
+import { InvalidRequestError, NotFoundError } from '../../types'
 
 export async function errorHandler(
   _ctx: IHttpServerComponent.DefaultContext<object>,

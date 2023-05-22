@@ -172,3 +172,10 @@ export class NotFoundError extends Error {
     Error.captureStackTrace(this, this.constructor)
   }
 }
+
+export enum DeploymentField {
+  CONTENT = 'content',
+  POINTERS = 'pointers',
+  METADATA = 'metadata',
+  AUDIT_INFO = 'auditInfo'
+}

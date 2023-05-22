@@ -1,5 +1,5 @@
 import { createFetchComponent } from '@well-known-components/fetch-component'
-import { DeploymentField } from '../../../src/controller/Controller'
+import { DeploymentField } from '../../../src/types'
 import { Deployment } from '../../../src/deployment-types'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { setupTestEnvironment } from '../E2ETestEnvironment'

@@ -1,12 +1,12 @@
-import { HandlerContextWithPath } from '../types'
+import { GetContentStatus200 } from '@dcl/catalyst-api-specs/lib/client/client.schemas'
+import { HandlerContextWithPath } from '../../types'
 import {
   CURRENT_CATALYST_VERSION,
   CURRENT_COMMIT_HASH,
   CURRENT_CONTENT_VERSION,
   EnvironmentConfig
-} from '../Environment'
-import { statusResponseFromComponents } from '../logic/status-checks'
-import { GetContentStatus200 } from '@dcl/catalyst-api-specs/lib/client/client.schemas'
+} from '../../Environment'
+import { statusResponseFromComponents } from '../../logic/status-checks'
 
 export async function getStatus(
   context: HandlerContextWithPath<'contentCluster' | 'synchronizationState' | 'config', '/status'>

@@ -1,6 +1,6 @@
 import { Entity } from '@dcl/schemas'
 import { GetActiveEntities200Item } from '@dcl/catalyst-api-specs/lib/client/client.schemas'
-import { HandlerContextWithPath, InvalidRequestError } from '../types'
+import { HandlerContextWithPath, InvalidRequestError } from '../../types'
 
 // Method: POST
 // Body: { ids: string[], pointers: string[]}

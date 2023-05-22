@@ -2,7 +2,7 @@ import { Router } from '@well-known-components/http-server'
 import { multipartParserWrapper } from '@well-known-components/multipart-wrapper'
 import { EnvironmentConfig } from '../Environment'
 import { GlobalContext } from '../types'
-import { getActiveEntities } from './active-entities-handler'
+import { getActiveEntities } from './handlers/active-entities-handler'
 import {
   getActiveDeploymentsByContentHashHandler,
   getAllNewSnapshots,
@@ -14,14 +14,14 @@ import {
   getERC721Entity,
   getEntities
 } from './Controller'
-import { createEntity } from './create-entity-handler'
-import { errorHandler } from './error-handler'
-import { getFailedDeployments } from './failed-deployments-handler'
-import { filterByUrnHandler } from './filter-by-urn-handler'
-import { getEntityAuditInformation } from './get-audit-handler'
-import { getAvailableContent } from './get-available-content-handler'
-import { getPointerChangesHandler } from './pointer-changes-handler'
-import { getStatus } from './status-handler'
+import { createEntity } from './handlers/create-entity-handler'
+import { errorHandler } from './handlers/error-handler'
+import { getFailedDeployments } from './handlers/failed-deployments-handler'
+import { filterByUrnHandler } from './handlers/filter-by-urn-handler'
+import { getEntityAuditInformation } from './handlers/get-audit-handler'
+import { getAvailableContent } from './handlers/get-available-content-handler'
+import { getPointerChangesHandler } from './handlers/pointer-changes-handler'
+import { getStatus } from './handlers/status-handler'
 
 // We return the entire router because it will be easier to test than a whole server
 export async function setupRouter({ components }: GlobalContext): Promise<Router<GlobalContext>> {
