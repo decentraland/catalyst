@@ -3,7 +3,6 @@ import { multipartParserWrapper } from '@well-known-components/multipart-wrapper
 import { EnvironmentConfig } from '../Environment'
 import { GlobalContext } from '../types'
 import { getActiveEntities } from './handlers/active-entities-handler'
-import { getActiveDeploymentsByContentHashHandler, getChallenge, getDeploymentsHandler } from './Controller'
 import { createEntity } from './handlers/create-entity-handler'
 import { errorHandler } from './handlers/error-handler'
 import { getFailedDeployments } from './handlers/failed-deployments-handler'
@@ -18,6 +17,9 @@ import { getContent } from './handlers/get-content-handler'
 import { getEntityThumbnail } from './handlers/get-entity-thumbnail-handler'
 import { getEntityImage } from './handlers/get-entity-image-handler'
 import { getERC721Entity } from './handlers/get-erc721-entity-handler'
+import { getDeploymentsHandler } from './handlers/get-deployments-handler'
+import { getChallenge } from './handlers/get-challenge-handler'
+import { getActiveEntityIdsByDeploymentHashHandler } from './handlers/get-active-entities-by-deployment-hash-handler'
 
 // We return the entire router because it will be easier to test than a whole server
 export async function setupRouter({ components }: GlobalContext): Promise<Router<GlobalContext>> {
@@ -41,7 +43,7 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
   router.get('/available-content', getAvailableContent)
   router.get('/audit/:type/:entityId', getEntityAuditInformation)
   router.get('/deployments', getDeploymentsHandler)
-  router.get('/contents/:hashId/active-entities', getActiveDeploymentsByContentHashHandler)
+  router.get('/contents/:hashId/active-entities', getActiveEntityIdsByDeploymentHashHandler)
   router.get('/status', getStatus)
   router.get('/failed-deployments', getFailedDeployments)
   router.get('/challenge', getChallenge)

@@ -1,30 +1,15 @@
 import { EntityType } from '@dcl/schemas'
-import { asEnumValue, fromCamelCaseToSnakeCase } from './utils'
-import { Deployment, DeploymentBase, DeploymentOptions, SortingField, SortingOrder } from '../deployment-types'
-import { getActiveDeploymentsByContentHash } from '../logic/database-queries/deployments-queries'
-import { getDeployments } from '../logic/deployments'
-import { qsGetArray, qsGetBoolean, qsGetNumber, qsParser, toQueryParams } from '../logic/query-params'
-import { DeploymentField, HandlerContextWithPath, InvalidRequestError, NotFoundError, parseEntityType } from '../types'
+import { asEnumValue, fromCamelCaseToSnakeCase } from '../utils'
+import { qsGetArray, qsGetBoolean, qsGetNumber, qsParser, toQueryParams } from '../../logic/query-params'
+import { Deployment, DeploymentBase, DeploymentOptions, SortingField, SortingOrder } from '../../deployment-types'
+import { DeploymentField, HandlerContextWithPath, InvalidRequestError, parseEntityType } from '../../types'
+import { getDeployments } from 'src/logic/deployments'
 
-// Method: GET
-export async function getActiveDeploymentsByContentHashHandler(
-  context: HandlerContextWithPath<'database' | 'denylist', '/contents/:hashId/active-entities'>
-) {
-  const hashId = context.params.hashId
-
-  let result = await getActiveDeploymentsByContentHash(context.components, hashId)
-  result = result.filter((entityId) => !context.components.denylist.isDenylisted(entityId))
-
-  if (result.length === 0) {
-    throw new NotFoundError('The entity was not found')
-  }
-
-  return {
-    status: 200,
-    body: result
-  }
-}
-
+export const DEFAULT_FIELDS_ON_DEPLOYMENTS: DeploymentField[] = [
+  DeploymentField.POINTERS,
+  DeploymentField.CONTENT,
+  DeploymentField.METADATA
+]
 // Method: GET
 // Query String: ?from={timestamp}&toLocalTimestamp={timestamp}&entityType={entityType}&entityId={entityId}&onlyCurrentlyPointed={boolean}
 export async function getDeploymentsHandler(
@@ -127,6 +112,25 @@ export async function getDeploymentsHandler(
   }
 }
 
+function deployment2ControllerEntity<T extends DeploymentBase>(deployment: Deployment, fields: DeploymentField[]): T {
+  const { pointers, auditInfo, content, metadata, ...other } = deployment
+  const result: any = { ...other }
+  if (fields.includes(DeploymentField.POINTERS)) {
+    result.pointers = pointers
+  }
+  if (content && fields.includes(DeploymentField.CONTENT)) {
+    result.content = content
+  }
+  if (metadata && fields.includes(DeploymentField.METADATA)) {
+    result.metadata = metadata
+  }
+  if (fields.includes(DeploymentField.AUDIT_INFO)) {
+    result.auditInfo = auditInfo
+  }
+  result.localTimestamp = auditInfo.localTimestamp
+  return result
+}
+
 function calculateNextRelativePath(options: DeploymentOptions, lastDeployment: Deployment): string {
   const nextFilters = Object.assign({}, options?.filters)
 
@@ -159,38 +163,4 @@ function calculateNextRelativePath(options: DeploymentOptions, lastDeployment: D
   })
 
   return '?' + nextQueryParams
-}
-
-// Method: GET
-export async function getChallenge(context: HandlerContextWithPath<'challengeSupervisor', '/challenge'>) {
-  const challengeText = context.components.challengeSupervisor.getChallengeText()
-  return {
-    status: 200,
-    body: { challengeText }
-  }
-}
-
-const DEFAULT_FIELDS_ON_DEPLOYMENTS: DeploymentField[] = [
-  DeploymentField.POINTERS,
-  DeploymentField.CONTENT,
-  DeploymentField.METADATA
-]
-
-function deployment2ControllerEntity<T extends DeploymentBase>(deployment: Deployment, fields: DeploymentField[]): T {
-  const { pointers, auditInfo, content, metadata, ...other } = deployment
-  const result: any = { ...other }
-  if (fields.includes(DeploymentField.POINTERS)) {
-    result.pointers = pointers
-  }
-  if (content && fields.includes(DeploymentField.CONTENT)) {
-    result.content = content
-  }
-  if (metadata && fields.includes(DeploymentField.METADATA)) {
-    result.metadata = metadata
-  }
-  if (fields.includes(DeploymentField.AUDIT_INFO)) {
-    result.auditInfo = auditInfo
-  }
-  result.localTimestamp = auditInfo.localTimestamp
-  return result
 }

@@ -338,6 +338,12 @@
   dependencies:
     yaml "2.2.2"
 
+"@dcl/catalyst-api-specs@https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-catalyst-api-specs-3.1.5-5049811190.commit-ac2ef81.tgz":
+  version "3.1.5-5049811190.commit-ac2ef81"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-catalyst-api-specs-3.1.5-5049811190.commit-ac2ef81.tgz#f663e021d6cf8495acdf469dbf80eeef9b0da5a7"
+  dependencies:
+    yaml "2.2.2"
+
 "@dcl/catalyst-contracts@^3.1.4":
   version "3.1.4"
   resolved "https://registry.yarnpkg.com/@dcl/catalyst-contracts/-/catalyst-contracts-3.1.4.tgz#4387dd2c17df60076048e8aaeaeebda47f3dabe8"
