@@ -211,7 +211,7 @@ describe('Integration - Get Active Entities', () => {
       expect(zeroZeroActiveEntityId).toBeDefined()
       expect(zeroOneActiveEntityId).toBeDefined()
       expect(zeroOneActiveEntityId).toBe(zeroZeroActiveEntityId)
-      expect(zeroZeroActiveEntityId).toBe(deployResult.controllerEntity.id)
+      expect(zeroZeroActiveEntityId).toBe(deployResult.entity.id)
     })
 
     it('when fetching active entities by pointer but there is no one, then entity is cached as NOT_ACTIVE', async () => {
@@ -463,7 +463,7 @@ describe('Integration - Get Active Entities', () => {
 
       const entity = response.entities[0]
       expect(entity.pointers).toEqual(pointer.map((p) => p.toLocaleLowerCase()))
-      expect(entity.id).toEqual(deployResult.controllerEntity.id)
+      expect(entity.id).toEqual(deployResult.entity.id)
       expect(entity.metadata).toEqual(metadata)
     })
     it('when fetching entities by collection name, then matching entity is retrieved', async () => {
@@ -491,7 +491,7 @@ describe('Integration - Get Active Entities', () => {
       expect(response.entities).toHaveLength(1)
       const entity = response.entities[0]
       expect(entity.pointers).toEqual(pointer.map((p) => p.toLocaleLowerCase()))
-      expect(entity.id).toEqual(deployResult.controllerEntity.id)
+      expect(entity.id).toEqual(deployResult.entity.id)
       expect(entity.metadata).toEqual(metadata)
     })
     it('when fetching entities by collection name, then paginated matching entities are retrieved', async () => {
@@ -546,7 +546,7 @@ describe('Integration - Get Active Entities', () => {
 
       const entity = response.entities[0]
       expect(entity.pointers).toEqual(pointer.map((p) => p.toLocaleLowerCase()))
-      expect(entity.id).toEqual(deployResult.controllerEntity.id)
+      expect(entity.id).toEqual(deployResult.entity.id)
       expect(entity.metadata).toEqual(metadata)
     })
     it('when fetching entities by not matching urn prefix, then none is retrieved', async () => {
@@ -604,7 +604,7 @@ describe('Integration - Get Active Entities', () => {
 
       const entity = response.entities[0]
       expect(entity.pointers).toEqual(pointer.map((p) => p.toLocaleLowerCase()))
-      expect(entity.id).toEqual(secondDeploy.controllerEntity.id)
+      expect(entity.id).toEqual(secondDeploy.entity.id)
       expect(entity.metadata).toEqual(metadata)
     })
   })

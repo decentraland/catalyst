@@ -55,7 +55,7 @@ describe('End 2 end - Error handling', () => {
     await Promise.all([server1.startProgram(), server2.startProgram()])
 
     // Prepare entity to deploy
-    const { deployData: deployData1, controllerEntity: entityBeingDeployed1 } = await buildDeployData(['0,0', '0,1'], {
+    const { deployData: deployData1, entity: entityBeingDeployed1 } = await buildDeployData(['0,0', '0,1'], {
       metadata: { a: 'metadata' },
       contentPaths: ['test/integration/resources/some-binary-file.png']
     })
@@ -70,7 +70,7 @@ describe('End 2 end - Error handling', () => {
     await awaitUntil(() => assertThereIsAFailedDeployment(server2))
 
     // Prepare entity to deploy
-    const { deployData: deployData2, controllerEntity: entityBeingDeployed2 } = await buildDeployDataAfterEntity(
+    const { deployData: deployData2, entity: entityBeingDeployed2 } = await buildDeployDataAfterEntity(
       entityBeingDeployed1,
       ['0,1'],
       { metadata: { a: 'metadata2' } }
@@ -98,13 +98,13 @@ describe('End 2 end - Error handling', () => {
     await server1.startProgram()
 
     // Prepare entity to deploy
-    const { deployData, controllerEntity } = await buildDeployData(['0,0', '0,1'], { metadata: { a: 'metadata' } })
+    const { deployData, entity } = await buildDeployData(['0,0', '0,1'], { metadata: { a: 'metadata' } })
 
     // Try to deploy the entity, and fail
     await server1.deployEntity(deployData, true)
 
     // asser that the entity got deployed
-    await assertEntitiesAreActiveOnServer(server1, controllerEntity)
+    await assertEntitiesAreActiveOnServer(server1, entity)
   })
 
   it(`When a user tries to fix an entity that hadn't fail, then it is an idempotent operation`, async () => {
@@ -133,7 +133,7 @@ describe('End 2 end - Error handling', () => {
     await server1.startProgram()
 
     // Prepare entity to deploy
-    const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(['0,0', '0,1'], {
+    const { deployData, entity: entityBeingDeployed } = await buildDeployData(['0,0', '0,1'], {
       metadata: { a: 'metadata' },
       contentPaths: ['test/integration/resources/some-binary-file.png']
     })

@@ -68,7 +68,6 @@ describe('Integration - Deployment synced old entity', () => {
             }
           ]
         },
-        controllerEntity: entity,
         entity: entity
       }
 
