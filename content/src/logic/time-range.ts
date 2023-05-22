@@ -105,6 +105,54 @@ export function divideTimeInYearsMonthsWeeksAndDays(timeRange: TimeRange): TimeR
   }
 }
 
+/**
+ * @param timeRanges intervals to be joined
+ * @returns a list of intervals that cover the same time ranges as the input but have no overlapped intervals
+ * EXAMPLE 1
+ *  Input:
+ *    A:        [   ]
+ *    B:              [   ]
+ *  Result:     [   ] [   ]
+ *
+ * EXAMPLE 2
+ *  Input:
+ *    A:              [   ]
+ *    B:        [   ]
+ *  Result:     [   ] [   ]
+ *
+ * EXAMPLE 3
+ *  Input:
+ *    A:        [      ]
+ *    B:            [     ]
+ *  Result:     [         ]
+ *
+ * EXAMPLE 4
+ *  Input:
+ *    A:        [      ]
+ *    B:               [     ]
+ *  Result:     [            ]
+ *
+ * EXAMPLE 5
+ *  Input:
+ *    A:        [   ]
+ *    B:         [ ]
+ *  Result:     [   ]
+ *
+ * EXAMPLE 6
+ *  Input:
+ *    A:        [      ]
+ *    B:            [     ]
+ *    C:              [  ]
+ *  Result:     [         ]
+ *
+ * EXAMPLE 7
+ *  Input:
+ *    A:        [      ]
+ *    B:            [     ]
+ *    C:              [  ]
+ *    D:                    [ ]
+ *  Result:     [         ] [ ]
+ */
 export function joinOverlappedTimeRanges(timeRanges: TimeRange[]): TimeRange[] {
   if (timeRanges.length == 0) {
     return []
