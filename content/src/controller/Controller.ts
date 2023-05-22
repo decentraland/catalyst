@@ -1,5 +1,4 @@
 import { ContentItem } from '@dcl/catalyst-storage'
-import { AuthChain } from '@dcl/crypto'
 import { Entity, EntityType } from '@dcl/schemas'
 import { asEnumValue, fromCamelCaseToSnakeCase, maskEntity } from './utils'
 import { Deployment, DeploymentBase, DeploymentOptions, SortingField, SortingOrder } from '../deployment-types'
@@ -329,22 +328,6 @@ function calculateNextRelativePath(options: DeploymentOptions, lastDeployment: D
 }
 
 // Method: GET
-export async function getAllNewSnapshots(context: HandlerContextWithPath<'snapshotGenerator', '/snapshots'>) {
-  const metadata = context.components.snapshotGenerator.getCurrentSnapshots()
-  if (!metadata) {
-    return {
-      status: 503,
-      body: { error: 'New Snapshots not yet created' }
-    }
-  }
-
-  return {
-    status: 200,
-    body: metadata
-  }
-}
-
-// Method: GET
 export async function getChallenge(context: HandlerContextWithPath<'challengeSupervisor', '/challenge'>) {
   const challengeText = context.components.challengeSupervisor.getChallengeText()
   return {
@@ -374,17 +357,6 @@ export enum EntityField {
   CONTENT = 'content',
   POINTERS = 'pointers',
   METADATA = 'metadata'
-}
-
-export type ControllerDenylistData = {
-  target: {
-    type: string
-    id: string
-  }
-  metadata: {
-    timestamp: number
-    authChain: AuthChain
-  }
 }
 
 const DEFAULT_FIELDS_ON_DEPLOYMENTS: DeploymentField[] = [
