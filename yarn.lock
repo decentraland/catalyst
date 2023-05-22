@@ -363,19 +363,20 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@^4.7.1":
-  version "4.7.1"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.7.1.tgz#d14d1a5c87b5167e219da5c50a9c7dc4f3330f94"
-  integrity sha512-fIa1ey9IotB/8TLHq1jUc+AerS1YXljMNVUw5v16j0LzhvqKOLKbQmlDMPUIv6ssQW0BTT0xPxffHJbjJBcyuw==
+"@dcl/content-validator@^4.7.2":
+  version "4.7.2"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.7.2.tgz#b73d78a21720209bf9c209259b5ddc3d0c198411"
+  integrity sha512-63c4CHMJMGSclmV1EWgwbeVOHPk8USn1N3NCakWLfamXfNil7M1BlJcxYYeTKmDfFfCaKtEuaDo2S3GJGJqIIA==
   dependencies:
     "@dcl/block-indexer" "^1.1.1"
     "@dcl/content-hash-tree" "^1.1.4"
     "@dcl/hashing" "^2.0.0"
-    "@dcl/schemas" "6.19.0"
+    "@dcl/schemas" "^7.0.0"
     "@dcl/urn-resolver" "^2.0.3"
     "@well-known-components/interfaces" "^1.3.0"
     "@well-known-components/thegraph-component" "^1.4.3"
     ms "^2.1.3"
+    p-queue "^6.6.2"
     sharp "^0.32.0"
 
 "@dcl/crypto@^3.4.0", "@dcl/crypto@^3.4.1":
@@ -412,7 +413,7 @@
   dependencies:
     "@dcl/ts-proto" "^1.146.2"
 
-"@dcl/schemas@6.19.0", "@dcl/schemas@^6.19.0", "@dcl/schemas@^6.2.0", "@dcl/schemas@^6.4.2":
+"@dcl/schemas@^6.4.2":
   version "6.19.0"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-6.19.0.tgz#42cfe23226782a736e3956ebcbd39ef21e63aeb1"
   integrity sha512-S8lrq8L1vriVXkBzeycxppjbfgJ5XofA9pbCKdteJR+79r6Dn5oLo3t5g7RcMQDihdjWdDLbbwxlEAkPgmvc8w==
@@ -421,14 +422,23 @@
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
 
-"@dcl/snapshots-fetcher@^7.0.1":
-  version "7.0.1"
-  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-7.0.1.tgz#140f99edc1ceaad20a04be74911a4dc66b4f8aee"
-  integrity sha512-74diGFWvkkUiZDCV9fbewtFraEwZyhzCSOxQCZKud3H3jjd88jyjWxCvGsR+r+e+CCmwnRzf9NRfLsfFQyM+dA==
+"@dcl/schemas@^7.0.0", "@dcl/schemas@^7.1.0":
+  version "7.1.0"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-7.1.0.tgz#9db8513011d642cd0be995336862e6497dd701f1"
+  integrity sha512-wc/r/h32VV9RElrAN+E0t1bfc4qOhXGElzyKkPW5MLKqcv37ECcDD2HeaHovIv8ZtPqTTZBkuMEGa2bMryVA+g==
+  dependencies:
+    ajv "^8.11.0"
+    ajv-errors "^3.0.0"
+    ajv-keywords "^5.1.0"
+
+"@dcl/snapshots-fetcher@^8.0.1":
+  version "8.0.1"
+  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-8.0.1.tgz#87bb10a00ffb9e0dc4e8d5a30baac3e422953018"
+  integrity sha512-wnSRSu3OqUD/dv6eYEbqcQAQtXkzuR4tQnCxq0tOFnNIbAeZnS4bp79VoWnjDlLxP6WnYbZMLVqXwa8ah6f2Cw==
   dependencies:
     "@dcl/catalyst-storage" "^2.0.0"
     "@dcl/hashing" "^1.0.0"
-    "@dcl/schemas" "^6.2.0"
+    "@dcl/schemas" "^7.1.0"
     "@well-known-components/interfaces" "^1.1.0"
     "@well-known-components/metrics" "^2.0.0"
     p-queue "^6.6.2"
@@ -1463,25 +1473,20 @@
     "@types/node" "*"
     form-data "^3.0.0"
 
-"@types/node@*":
-  version "20.1.7"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.1.7.tgz#ce10c802f7731909d0a44ac9888e8b3a9125eb62"
-  integrity sha512-WCuw/o4GSwDGMoonES8rcvwsig77dGCMbZDrZr2x4ZZiNW4P/gcoZXe/0twgtobcTkmg9TuKflxYL/DuwDyJzg==
+"@types/node@*", "@types/node@>=13.7.0":
+  version "20.2.3"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.2.3.tgz#b31eb300610c3835ac008d690de6f87e28f9b878"
+  integrity sha512-pg9d0yC4rVNWQzX8U7xb4olIOFuuVL9za3bzMT2pu2SU0SNEi66i2qrvhE2qt0HvkhuCaWJu7pLNOt/Pj8BIrw==
 
 "@types/node@17.0.45":
   version "17.0.45"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-17.0.45.tgz#2c0fafd78705e7a18b7906b5201a522719dc5190"
   integrity sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw==
 
-"@types/node@>=13.7.0":
-  version "20.1.5"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.1.5.tgz#e94b604c67fc408f215fcbf3bd84d4743bf7f710"
-  integrity sha512-IvGD1CD/nego63ySR7vrAKEX3AJTcmrAN2kn+/sDNLi1Ff5kBzDeEdqWDplK+0HAEoLYej137Sk0cUU8OLOlMg==
-
 "@types/node@^16.11.19":
-  version "16.18.31"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-16.18.31.tgz#7de39c2b9363f0d95b129cc969fcbf98e870251c"
-  integrity sha512-KPXltf4z4g517OlVJO9XQ2357CYw7fvuJ3ZuBynjXC5Jos9i+K7LvFb7bUIwtJXSZj0vTp9Q6NJBSQpkwwO8Zw==
+  version "16.18.32"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-16.18.32.tgz#5b5becc5da76fc055b2a601c8a3adbf13891227e"
+  integrity sha512-zpnXe4dEz6PrWz9u7dqyRoq9VxwCvoXRPy/ewhmMa1CgEyVmtL1NJPQ2MX+4pf97vetquVKkpiMx0MwI8pjNOw==
 
 "@types/node@^18.6.3":
   version "18.11.17"
@@ -2722,15 +2727,15 @@ date-format@^4.0.10, date-format@^4.0.13:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-4.0.13.tgz#87c3aab3a4f6f37582c5f5f63692d2956fa67890"
   integrity sha512-bnYCwf8Emc3pTD8pXnre+wfnjGtfi5ncMDKy7+cWZXbmRAsdWkOQHrfC1yz/KiwP5thDp2kCHWYWKBX4HP1hoQ==
 
-dcl-catalyst-client@^17.1.0:
-  version "17.1.0"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-17.1.0.tgz#99aa0df04bdfb9c6cf1e52ad71d8fecad1f2ed1e"
-  integrity sha512-uadgsX7KoVDflpw3TX8CfbbvwNyQOFIt8pm12Myol/W9eNdGhhv7OmmsjD48rR1g3bictp2CfFrjzOhmjx3mKQ==
+dcl-catalyst-client@^18.1.0:
+  version "18.1.0"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-18.1.0.tgz#9431532b761d74a5e9d3d1456e4bce3240b8e1d5"
+  integrity sha512-zVzbmS8ebDOBxK8ZbuRjFbplRJuvxcfgA6Nm/lIiPjVMtFMXNEWx5mH5LzUBKN234EPltoO5CCnAXtKl97ZZkg==
   dependencies:
     "@dcl/crypto" "^3.4.0"
     "@dcl/hashing" "^1.1.0"
     "@dcl/protocol" "^1.0.0-4747376947.commit-d770e0d"
-    "@dcl/schemas" "^6.4.2"
+    "@dcl/schemas" "^7.1.0"
     "@well-known-components/fetch-component" "^1.0.0"
     cookie "^0.5.0"
     cross-fetch "^3.1.5"
