@@ -1,4 +1,4 @@
-import { GetAvailableContent200Item } from '@dcl/catalyst-api-specs/lib/client/client.schemas'
+import { GetAvailableContent200Item } from '@dcl/catalyst-api-specs/lib/client'
 import { HandlerContextWithPath, InvalidRequestError } from '../../types'
 import { qsGetArray, qsParser } from '../../logic/query-params'
 
