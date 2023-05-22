@@ -1,10 +1,10 @@
-import { Entity, EntityType } from '@dcl/schemas'
+import { Entity } from '@dcl/schemas'
 import { ILoggerComponent, Lifecycle } from '@well-known-components/interfaces'
 import { ContentClient, createContentClient } from 'dcl-catalyst-client/dist/client/ContentClient'
 import { DeploymentData } from 'dcl-catalyst-client/dist/client/utils/DeploymentBuilder'
 import fetch from 'node-fetch'
-import { EnvironmentConfig } from '../../src/Environment'
 import { AuditInfo, Deployment, DeploymentOptions, isInvalidDeployment } from '../../src/deployment-types'
+import { EnvironmentConfig } from '../../src/Environment'
 import { getDeployments } from '../../src/logic/deployments'
 import * as synchronization from '../../src/logic/synchronization'
 import { FailedDeployment } from '../../src/ports/failedDeployments'
@@ -77,15 +77,15 @@ export class TestProgram {
     return this.makeRequest(`${this.getUrl()}/failed-deployments`)
   }
 
-  getEntitiesByPointers(type: EntityType, pointers: string[]): Promise<Entity[]> {
+  getEntitiesByPointers(pointers: string[]): Promise<Entity[]> {
     return this.client.fetchEntitiesByPointers(pointers)
   }
 
-  getEntitiesByIds(type: EntityType, ...ids: string[]): Promise<Entity[]> {
+  getEntitiesByIds(...ids: string[]): Promise<Entity[]> {
     return this.client.fetchEntitiesByIds(ids)
   }
 
-  getEntityById(type: EntityType, id: string): Promise<Entity> {
+  getEntityById(id: string): Promise<Entity> {
     return this.client.fetchEntityById(id)
   }
 
