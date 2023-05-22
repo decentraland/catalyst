@@ -1703,6 +1703,14 @@
     "@well-known-components/interfaces" "^1.4.0"
     cross-fetch "^3.1.5"
 
+"@well-known-components/fetch-component@^2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@well-known-components/fetch-component/-/fetch-component-2.0.0.tgz#5047da44ac19eef22dcaa06f4d8ff615c1001001"
+  integrity sha512-hCoW2CClLnT3uUN5vmXc92q9RmRRQCEVEyN1XtyYfZ27oJI7YmQnFSVkgW+37gtVWoptFF2vheuTASFaNrzkrg==
+  dependencies:
+    "@well-known-components/interfaces" "^1.4.1"
+    cross-fetch "^3.1.5"
+
 "@well-known-components/http-server@^2.0.0-20230501134558.commit-be9a25d":
   version "2.0.0-20230501134558.commit-be9a25d"
   resolved "https://registry.yarnpkg.com/@well-known-components/http-server/-/http-server-2.0.0-20230501134558.commit-be9a25d.tgz#3097c4009796737fd4d0d2e4cfc59c5f94d81287"
@@ -1721,6 +1729,15 @@
   version "1.4.0"
   resolved "https://registry.yarnpkg.com/@well-known-components/interfaces/-/interfaces-1.4.0.tgz#5621e1b687788274f54a6cf781b2a7f4bf6c8d0a"
   integrity sha512-9MQ7ajKWTs7HWmXaE5sn4sM0HOuRDkVuBrCixTPlAFrrr61Ge5SOZZ5OsOacKoq8RZ80C9bpPjieKcmHQuGWug==
+  dependencies:
+    "@types/node" "^16.11.19"
+    "@types/node-fetch" "^2.5.12"
+    typed-url-params "^1.0.1"
+
+"@well-known-components/interfaces@^1.4.1":
+  version "1.4.1"
+  resolved "https://registry.yarnpkg.com/@well-known-components/interfaces/-/interfaces-1.4.1.tgz#310119cd5d9f7f67c7914c49b4d43a105acacec5"
+  integrity sha512-eu4ndE32jF+qKAX/rQ8SFBWh7PCXsOPdArgPweOjK4pdLOyzJaAJaY67/LEerrIp/LNgKDGy0fYbbdZ76BQt1A==
   dependencies:
     "@types/node" "^16.11.19"
     "@types/node-fetch" "^2.5.12"
