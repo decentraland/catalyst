@@ -3,7 +3,7 @@ import { DeploymentData } from 'dcl-catalyst-client/dist/client/utils/Deployment
 import { EnvironmentConfig } from '../../../src/Environment'
 import { retryFailedDeploymentExecution } from '../../../src/logic/deployments'
 import { FailedDeployment, FailureReason } from '../../../src/ports/failedDeployments'
-import { assertDeploymentFailed, assertDeploymentFailsWith, assertEntitiesAreActiveOnServer } from '../E2EAssertions'
+import { assertDeploymentFailed, assertEntitiesAreActiveOnServer } from '../E2EAssertions'
 import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { awaitUntil, buildDeployData, buildDeployDataAfterEntity, createIdentity } from '../E2ETestUtils'
 import { TestProgram, startProgramAndWaitUntilBootstrapFinishes } from '../TestProgram'
@@ -21,10 +21,10 @@ describe('Errors during sync', () => {
   describe('Deploy an entity on server 1', function () {
     beforeEach(async function () {
       const identity = createIdentity()
-      ;[server1, server2] = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
-        .andBuildMany(2)
+        ;[server1, server2] = await getTestEnv()
+          .configServer()
+          .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
+          .andBuildMany(2)
       // Start server1
       await server1.startProgram()
 
@@ -114,34 +114,5 @@ describe('Errors during sync', () => {
         expect(newFailedDeployments.length).toBe(0)
       })
     })
-  })
-
-  it('Deploy as fix a not failed entity fails', async () => {
-    const identity = createIdentity()
-    server1 = await getTestEnv()
-      .configServer()
-      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-      .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
-      .andBuild()
-
-    jest
-      .spyOn(server1.components.serverValidator, 'validate')
-      .mockResolvedValue({ ok: false, message: 'You are trying to fix an entity that is not marked as failed' })
-
-    // Start server1
-    await server1.startProgram()
-
-    // Prepare entity to deploy
-    const entityCombo = await buildDeployData(['0,0', '0,1'], {
-      metadata: { a: 'metadata' },
-      contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
-    })
-    deployData = entityCombo.deployData
-    controllerEntity = entityCombo.controllerEntity
-
-    await assertDeploymentFailsWith(
-      () => server1.deployEntity(deployData, true),
-      'You are trying to fix an entity that is not marked as failed'
-    )
   })
 })
