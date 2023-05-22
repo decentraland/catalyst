@@ -174,7 +174,12 @@ export class SmartContentClient implements ContentClient {
         SmartContentClient.LOGGER.info('Defaulting to external content server url: ', contentClientUrl)
       }
 
-      this.contentClient.resolve(createContentClient({ url: contentClientUrl, fetcher }))
+      this.contentClient.resolve({
+        ...createContentClient({ url: contentClientUrl, fetcher }),
+        getContentUrl: () => contentClientUrl
+      } as ContentClient & {
+        getContentUrl: () => string
+      })
     }
 
     return { ...(await this.contentClient), getContentUrl: () => contentClientUrl } as ContentClient & {
