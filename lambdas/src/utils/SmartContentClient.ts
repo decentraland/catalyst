@@ -36,6 +36,7 @@ export class SmartContentClient implements ContentClient {
   private static LOGGER = log4js.getLogger('SmartContentClient')
 
   private contentClient: IFuture<ContentClient> | undefined
+  private contentServerUrlInUse: string
 
   constructor(private readonly externalContentServerUrl: string) {}
 
@@ -156,10 +157,9 @@ export class SmartContentClient implements ContentClient {
    * the external content url
    */
   private async getClient(): Promise<ContentClient & { getContentUrl: () => string }> {
-    let contentClientUrl: string
     if (!this.contentClient) {
       this.contentClient = future()
-      contentClientUrl = this.externalContentServerUrl
+      this.contentServerUrlInUse = this.externalContentServerUrl
       const fetcher = createFetchComponent()
       try {
         await (
@@ -169,20 +169,20 @@ export class SmartContentClient implements ContentClient {
           })
         ).json()
         SmartContentClient.LOGGER.info('Will use the internal content server url')
-        contentClientUrl = SmartContentClient.INTERNAL_CONTENT_SERVER_URL
+        this.contentServerUrlInUse = SmartContentClient.INTERNAL_CONTENT_SERVER_URL
       } catch {
-        SmartContentClient.LOGGER.info('Defaulting to external content server url: ', contentClientUrl)
+        SmartContentClient.LOGGER.info('Defaulting to external content server url: ', this.contentServerUrlInUse)
       }
 
       this.contentClient.resolve({
-        ...createContentClient({ url: contentClientUrl, fetcher }),
-        getContentUrl: () => contentClientUrl
+        ...createContentClient({ url: this.contentServerUrlInUse, fetcher }),
+        getContentUrl: () => this.contentServerUrlInUse
       } as ContentClient & {
         getContentUrl: () => string
       })
     }
 
-    return { ...(await this.contentClient), getContentUrl: () => contentClientUrl } as ContentClient & {
+    return { ...(await this.contentClient), getContentUrl: () => this.contentServerUrlInUse } as ContentClient & {
       getContentUrl: () => string
     }
   }
