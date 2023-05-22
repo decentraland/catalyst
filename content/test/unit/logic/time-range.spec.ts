@@ -1,5 +1,5 @@
 import { TimeRange } from '@dcl/snapshots-fetcher/dist/types'
-import { divideTimeInYearsMonthsWeeksAndDays, intervalSizeLabel, isTimeRangeCoveredBy, MS_PER_DAY, MS_PER_MONTH, MS_PER_WEEK, MS_PER_YEAR, timeRangeSizeInMS } from '../../../src/logic/time-range'
+import { divideTimeInYearsMonthsWeeksAndDays, intervalSizeLabel, isTimeRangeCoveredBy, joinOverlappedTimeRanges, MS_PER_DAY, MS_PER_MONTH, MS_PER_WEEK, MS_PER_YEAR, timeRangeSizeInMS } from '../../../src/logic/time-range'
 
 it('should return correct interval size labels', () => {
   expect(intervalSizeLabel({ initTimestamp: 0, endTimestamp: MS_PER_DAY })).toEqual('day')
@@ -153,5 +153,108 @@ function timeRangeOfDays(timestampSecsStartingAt: number, numberOfDays: number):
   return {
     initTimestamp: timestampSecsStartingAt,
     endTimestamp: timestampSecsStartingAt + MS_PER_DAY * numberOfDays
+  }
+}
+
+describe('join timeranges', () => {
+  it('empty returns empty', () => {
+    const result = joinOverlappedTimeRanges([])
+    expect(result).toEqual([])
+  })
+  /*
+  * A:        [   ]
+  * B:              [   ]
+  * Result:   [   ] [   ]
+  */
+  it('non-overlapped timeranges are not joined', () => {
+    const trA = newTimeRange(0, 1)
+    const trB = newTimeRange(2, 3)
+    const result = joinOverlappedTimeRanges([trA, trB])
+    expect(result).toEqual([trA, trB])
+  })
+
+  /*
+  * A:              [   ]
+  * B:        [   ]
+  * Result:   [   ] [   ]
+  */
+  it('unsorted non-overlapped timeranges are not joined', () => {
+    const trA = newTimeRange(2, 3)
+    const trB = newTimeRange(0, 1)
+    const result = joinOverlappedTimeRanges([trA, trB])
+    expect(result).toEqual([trB, trA])
+  })
+
+  /*
+  * A:        [      ]
+  * B:            [     ]
+  * Result:   [         ]
+  */
+  it('overlapped intervals are joined', () => {
+    const trA = newTimeRange(0, 2)
+    const trB = newTimeRange(1, 3)
+    const result = joinOverlappedTimeRanges([trA, trB])
+    expect(result).toEqual([newTimeRange(0, 3)])
+  })
+
+  /*
+  * A:        [      ]
+  * B:               [     ]
+  * Result:   [            ]
+  */
+  it('overlapped intervals are joined', () => {
+    const trA = newTimeRange(0, 2)
+    const trB = newTimeRange(2, 3)
+    const result = joinOverlappedTimeRanges([trA, trB])
+    expect(result).toEqual([newTimeRange(0, 3)])
+  })
+
+  /*
+  * A:        [   ]
+  * B:         [ ]
+  * Result:   [   ]
+  */
+  it('included intervals are joined', () => {
+    const trA = newTimeRange(0, 3)
+    const trB = newTimeRange(1, 2)
+    const result = joinOverlappedTimeRanges([trA, trB])
+    expect(result).toEqual([newTimeRange(0, 3)])
+  })
+
+  /*
+  * A:        [      ]
+  * B:            [     ]
+  * C:              [  ]
+  * Result:   [         ]
+  */
+  it('overlapped and included intervals are joined', () => {
+    const trA = newTimeRange(0, 2)
+    const trB = newTimeRange(1, 4)
+    const trC = newTimeRange(2, 3)
+    const result = joinOverlappedTimeRanges([trA, trB, trC])
+    expect(result).toEqual([newTimeRange(0, 4)])
+  })
+
+  /*
+  * A:        [      ]
+  * B:            [     ]
+  * C:              [  ]
+  * D:                    [ ]
+  * Result:   [         ] [ ]
+  */
+  it('overlapped, included and non-overlapped intervals are joined', () => {
+    const trA = newTimeRange(0, 2)
+    const trB = newTimeRange(1, 4)
+    const trC = newTimeRange(2, 3)
+    const trD = newTimeRange(5, 6)
+    const result = joinOverlappedTimeRanges([trA, trB, trC, trD])
+    expect(result).toEqual([newTimeRange(0, 4), trD])
+  })
+})
+
+function newTimeRange(initTimestamp: number, endTimestamp: number): TimeRange {
+  return {
+    initTimestamp,
+    endTimestamp
   }
 }

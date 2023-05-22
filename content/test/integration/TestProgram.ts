@@ -24,7 +24,10 @@ export class TestProgram {
   logger: ILoggerComponent.ILogger
 
   constructor(public components: AppComponents) {
-    this.client = createContentClient({ fetcher: components.catalystFetcher, url: this.getUrl() })
+    this.client = createContentClient({
+      url: this.getUrl(),
+      fetcher: components.fetcher
+    })
     this.logger = components.logs.getLogger('TestProgram')
   }
 
@@ -59,7 +62,7 @@ export class TestProgram {
     }
   }
 
-  async deployEntity(deployData: DeploymentData, fix: boolean = false): Promise<number> {
+  async deployEntity(deployData: DeploymentData, fix: boolean = false) {
     this.logger.info('Deploying entity ' + deployData.entityId)
     const returnValue = await ((await this.client.deploy(deployData)) as any).json()
 

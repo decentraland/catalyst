@@ -1,9 +1,10 @@
 import { IDeployerComponent } from '@dcl/snapshots-fetcher'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
-import { DeployableEntity } from '@dcl/snapshots-fetcher/dist/types'
+import { DeployableEntity, TimeRange } from '@dcl/snapshots-fetcher/dist/types'
 import { IBaseComponent } from '@well-known-components/interfaces'
 import { DeploymentContext } from '../../deployment-types'
 import { isEntityDeployed } from '../../logic/deployments'
+import { joinOverlappedTimeRanges } from '../../logic/time-range'
 import { FailureReason } from '../../ports/failedDeployments'
 import { AppComponents, CannonicalEntityDeployment } from '../../types'
 import { deployEntityFromRemoteServer } from './deployRemoteEntity'
@@ -63,7 +64,7 @@ export function createBatchDeployerComponent(
     if (successfulDeployments.has(entity.entityId)) return true
 
     // ignore entities that are already deployed locally
-    if (await isEntityDeployed(components.database, components, entity.entityId)) {
+    if (await isEntityDeployed(components.database, components, entity.entityId, entity.entityTimestamp)) {
       successfulDeployments.add(entity.entityId)
       return true
     }
@@ -127,7 +128,7 @@ export function createBatchDeployerComponent(
              *  3. The entity failed to be deployed but was successfully persisted as failed deployment
              */
             // 1. The entity is already deployed, early return.
-            if (await isEntityDeployed(components.database, components, entity.entityId)) {
+            if (await isEntityDeployed(components.database, components, entity.entityId, entity.entityTimestamp)) {
               const markAsDeployedFns = deploymentsMap.get(entity.entityId)?.markAsDeployedFns ?? []
               for (const markAsDeployed of markAsDeployedFns) {
                 await markAsDeployed()
@@ -204,6 +205,11 @@ export function createBatchDeployerComponent(
     },
     async scheduleEntityDeployment(entity: DeployableEntity, contentServers: string[]): Promise<void> {
       await handleDeploymentFromServers(entity, contentServers)
+    },
+    async prepareForDeploymentsIn(timeRanges: TimeRange[]): Promise<void> {
+      for (const timeRange of joinOverlappedTimeRanges(timeRanges)) {
+        await components.deployedEntitiesBloomFilter.addAllInTimeRange(timeRange)
+      }
     }
   }
 }
