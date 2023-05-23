@@ -1,3 +1,4 @@
+import { ContentItem } from '@dcl/catalyst-storage'
 import { InvalidRequestError, Pagination } from '../types'
 
 export function paginationObject(url: URL, maxPageSize: number = 1000): Pagination {
@@ -34,4 +35,21 @@ export function asEnumValue<T extends { [key: number]: string }>(
     const match = validEnumValues.has(stringToMap)
     return match ? (stringToMap as T[keyof T]) : 'unknown'
   }
+}
+
+export function createContentFileHeaders(content: ContentItem, hashId: string): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/octet-stream',
+    ETag: JSON.stringify(hashId), // by spec, the ETag must be a double-quoted string
+    'Access-Control-Expose-Headers': 'ETag',
+    'Cache-Control': 'public,max-age=31536000,s-maxage=31536000,immutable'
+  }
+  if (content.encoding) {
+    headers['Content-Encoding'] = content.encoding
+  }
+  if (content.size) {
+    headers['Content-Length'] = content.size.toString()
+  }
+
+  return headers
 }

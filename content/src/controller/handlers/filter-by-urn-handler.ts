@@ -33,7 +33,7 @@ async function isUrnPrefixValid(collectionUrn: string): Promise<string | false> 
 }
 
 // Method: GET
-export async function getEntitiesByPointerPrefix(
+export async function getEntitiesByPointerPrefixHandler(
   context: HandlerContextWithPath<'database' | 'activeEntities', '/entities/active/collections/:collectionUrn'>
 ): Promise<{ status: 200; body: GetEntitiesByPointerPrefix200 }> {
   const collectionUrn: string = context.params.collectionUrn

@@ -4,7 +4,7 @@ import { HandlerContextWithPath } from '../../types'
 type Response = { status: 200; body: GetSnapshots200Item[] } | { status: 503; body: ContentErrorResponse }
 
 // Method: GET
-export async function getSnapshots(
+export async function getSnapshotsHandler(
   context: HandlerContextWithPath<'snapshotGenerator', '/snapshots'>
 ): Promise<Response> {
   const metadata = context.components.snapshotGenerator.getCurrentSnapshots()

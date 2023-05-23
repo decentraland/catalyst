@@ -10,7 +10,7 @@ import { getDeployments } from '../../logic/deployments'
 import { AuditInfo } from '../../deployment-types'
 
 // Method: GET
-export async function getEntityAuditInformation(
+export async function getEntityAuditInformationHandler(
   context: HandlerContextWithPath<'database' | 'denylist' | 'metrics', '/audit/:type/:entityId'>
 ): Promise<{ status: 200; body: GetEntityAuditInformation200 }> {
   const type = parseEntityType(context.params.type)

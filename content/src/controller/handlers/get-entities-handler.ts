@@ -15,7 +15,9 @@ export enum EntityField {
  */
 // Method: GET
 // Query String: ?{filter}&fields={fieldList}
-export async function getEntities(context: HandlerContextWithPath<'activeEntities' | 'database', '/entities/:type'>) {
+export async function getEntitiesHandler(
+  context: HandlerContextWithPath<'activeEntities' | 'database', '/entities/:type'>
+) {
   const { database, activeEntities } = context.components
   const type: EntityType = parseEntityType(context.params.type)
   const queryParams = qsParser(context.url.searchParams)

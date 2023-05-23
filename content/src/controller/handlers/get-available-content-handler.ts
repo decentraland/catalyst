@@ -4,7 +4,7 @@ import { qsGetArray, qsParser } from '../../logic/query-params'
 
 // Method: GET
 // Query String: ?cid={hashId1}&cid={hashId2}
-export async function getAvailableContent(
+export async function getAvailableContentHandler(
   context: HandlerContextWithPath<'denylist' | 'storage', '/available-content'>
 ): Promise<{ status: 200; body: GetAvailableContent200Item[] }> {
   const { storage, denylist } = context.components
