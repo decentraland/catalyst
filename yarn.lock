@@ -331,16 +331,10 @@
     "@well-known-components/metrics" "^2.0.1"
     lru-cache "^7.14.0"
 
-"@dcl/catalyst-api-specs@^3.1.4":
-  version "3.1.4"
-  resolved "https://registry.yarnpkg.com/@dcl/catalyst-api-specs/-/catalyst-api-specs-3.1.4.tgz#0db66b19622073d2d4f50bcfea1fc55b4124f0fa"
-  integrity sha512-yeqfxybyZ1kZ4PE+bvM9dPM5UOde5cYnva0rKcpZnhTl7kw874QjVT8qsEywwKlDzJwAXIslHm9nvcF5mLP6Bw==
-  dependencies:
-    yaml "2.2.2"
-
-"@dcl/catalyst-api-specs@https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-catalyst-api-specs-3.1.5-5049811190.commit-ac2ef81.tgz":
-  version "3.1.5-5049811190.commit-ac2ef81"
-  resolved "https://sdk-team-cdn.decentraland.org/@dcl//branch//dcl-catalyst-api-specs-3.1.5-5049811190.commit-ac2ef81.tgz#f663e021d6cf8495acdf469dbf80eeef9b0da5a7"
+"@dcl/catalyst-api-specs@^3.1.5":
+  version "3.1.5"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-api-specs/-/catalyst-api-specs-3.1.5.tgz#2796d78fa498a56362db2a20094598fe679e63be"
+  integrity sha512-1SdpH+Mub4Oa4faVDaGLK3g1gEb2uSQfCRH/NTTNKXUD+5Rw2N3GykO56JVesSmHkmsXFVJgay4ErJmXwsLu4g==
   dependencies:
     yaml "2.2.2"
 
