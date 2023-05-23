@@ -8,7 +8,7 @@ import {
 } from '../../Environment'
 import { statusResponseFromComponents } from '../../logic/status-checks'
 
-export async function getStatus(
+export async function getStatusHandler(
   context: HandlerContextWithPath<'contentCluster' | 'synchronizationState' | 'config', '/status'>
 ): Promise<{ status: number; body: GetContentStatus200 }> {
   const { contentCluster, synchronizationState, config } = context.components

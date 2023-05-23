@@ -2,23 +2,23 @@ import { Router } from '@well-known-components/http-server'
 import { multipartParserWrapper } from '@well-known-components/multipart-wrapper'
 import { EnvironmentConfig } from '../Environment'
 import { GlobalContext } from '../types'
-import { getActiveEntities } from './handlers/active-entities-handler'
+import { getActiveEntitiesHandler } from './handlers/active-entities-handler'
 import { createEntity } from './handlers/create-entity-handler'
 import { errorHandler } from './handlers/error-handler'
-import { getFailedDeployments } from './handlers/failed-deployments-handler'
-import { getEntitiesByPointerPrefix } from './handlers/filter-by-urn-handler'
-import { getEntityAuditInformation } from './handlers/get-audit-handler'
-import { getAvailableContent } from './handlers/get-available-content-handler'
+import { getFailedDeploymentsHandler } from './handlers/failed-deployments-handler'
+import { getEntitiesByPointerPrefixHandler } from './handlers/filter-by-urn-handler'
+import { getEntityAuditInformationHandler } from './handlers/get-audit-handler'
+import { getAvailableContentHandler } from './handlers/get-available-content-handler'
 import { getPointerChangesHandler } from './handlers/pointer-changes-handler'
-import { getStatus } from './handlers/status-handler'
-import { getSnapshots } from './handlers/get-snapshots-handler'
-import { getEntities } from './handlers/get-entities-handler'
-import { getContent } from './handlers/get-content-handler'
-import { getEntityThumbnail } from './handlers/get-entity-thumbnail-handler'
-import { getEntityImage } from './handlers/get-entity-image-handler'
-import { getERC721Entity } from './handlers/get-erc721-entity-handler'
+import { getStatusHandler } from './handlers/status-handler'
+import { getSnapshotsHandler } from './handlers/get-snapshots-handler'
+import { getEntitiesHandler } from './handlers/get-entities-handler'
+import { getContentHandler } from './handlers/get-content-handler'
+import { getEntityThumbnailHandler } from './handlers/get-entity-thumbnail-handler'
+import { getEntityImageHandler } from './handlers/get-entity-image-handler'
+import { getERC721EntityHandler } from './handlers/get-erc721-entity-handler'
 import { getDeploymentsHandler } from './handlers/get-deployments-handler'
-import { getChallenge } from './handlers/get-challenge-handler'
+import { getChallengeHandler } from './handlers/get-challenge-handler'
 import { getActiveEntityIdsByDeploymentHashHandler } from './handlers/get-active-entities-by-deployment-hash-handler'
 
 // We return the entire router because it will be easier to test than a whole server
@@ -35,27 +35,27 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
     router.post('/entities', multipartParserWrapper(createEntity))
   }
 
-  router.get('/entities/:type', getEntities) // TODO: Deprecate
-  router.get('/entities/active/collections/:collectionUrn', getEntitiesByPointerPrefix)
-  router.post('/entities/active', getActiveEntities)
-  router.head('/contents/:hashId', getContent)
-  router.get('/contents/:hashId', getContent)
-  router.get('/available-content', getAvailableContent)
-  router.get('/audit/:type/:entityId', getEntityAuditInformation)
+  router.get('/entities/:type', getEntitiesHandler) // TODO: Deprecate
+  router.get('/entities/active/collections/:collectionUrn', getEntitiesByPointerPrefixHandler)
+  router.post('/entities/active', getActiveEntitiesHandler)
+  router.head('/contents/:hashId', getContentHandler)
+  router.get('/contents/:hashId', getContentHandler)
+  router.get('/available-content', getAvailableContentHandler)
+  router.get('/audit/:type/:entityId', getEntityAuditInformationHandler)
   router.get('/deployments', getDeploymentsHandler)
   router.get('/contents/:hashId/active-entities', getActiveEntityIdsByDeploymentHashHandler)
-  router.get('/status', getStatus)
-  router.get('/failed-deployments', getFailedDeployments)
-  router.get('/challenge', getChallenge)
+  router.get('/status', getStatusHandler)
+  router.get('/failed-deployments', getFailedDeploymentsHandler)
+  router.get('/challenge', getChallengeHandler)
   router.get('/pointer-changes', getPointerChangesHandler)
-  router.get('/snapshots', getSnapshots)
+  router.get('/snapshots', getSnapshotsHandler)
 
   // queries: these endpoints are not part of the content replication protocol
-  router.head('/queries/items/:pointer/thumbnail', getEntityThumbnail)
-  router.get('/queries/items/:pointer/thumbnail', getEntityThumbnail)
-  router.head('/queries/items/:pointer/image', getEntityImage)
-  router.get('/queries/items/:pointer/image', getEntityImage)
-  router.get('/queries/erc721/:chainId/:contract/:option/:emission?', getERC721Entity)
+  router.head('/queries/items/:pointer/thumbnail', getEntityThumbnailHandler)
+  router.get('/queries/items/:pointer/thumbnail', getEntityThumbnailHandler)
+  router.head('/queries/items/:pointer/image', getEntityImageHandler)
+  router.get('/queries/items/:pointer/image', getEntityImageHandler)
+  router.get('/queries/erc721/:chainId/:contract/:option/:emission?', getERC721EntityHandler)
 
   return router
 }

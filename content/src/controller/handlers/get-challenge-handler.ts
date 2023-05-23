@@ -1,7 +1,7 @@
 import { GetChallenge200 } from '@dcl/catalyst-api-specs/lib/client'
 import { HandlerContextWithPath } from '../../types'
 
-export async function getChallenge(
+export async function getChallengeHandler(
   context: HandlerContextWithPath<'challengeSupervisor', '/challenge'>
 ): Promise<{ status: 200; body: GetChallenge200 }> {
   const challengeText = context.components.challengeSupervisor.getChallengeText()

@@ -4,7 +4,7 @@ import { findEntityByPointer, findThumbnailHash } from '../../logic/entities'
 import { createContentFileHeaders } from '../utils'
 
 // Method: GET or HEAD
-export async function getEntityThumbnail(
+export async function getEntityThumbnailHandler(
   context: HandlerContextWithPath<
     'database' | 'activeEntities' | 'storage',
     '/entities/active/entity/:pointer/thumbnail'

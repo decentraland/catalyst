@@ -4,7 +4,7 @@ import { HandlerContextWithPath, InvalidRequestError } from '../../types'
 
 // Method: POST
 // Body: { ids: string[], pointers: string[]}
-export async function getActiveEntities(
+export async function getActiveEntitiesHandler(
   context: HandlerContextWithPath<'database' | 'activeEntities' | 'denylist', '/entities/active'>
 ): Promise<{ status: 200; body: GetActiveEntities200Item[] }> {
   const { database, activeEntities, denylist } = context.components

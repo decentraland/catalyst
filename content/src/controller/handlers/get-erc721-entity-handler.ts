@@ -4,7 +4,7 @@ import { buildUrn, formatERC21Entity, getProtocol } from '../../logic/erc721'
 import { findEntityByPointer } from '../../logic/entities'
 
 // Method: GET
-export async function getERC721Entity(
+export async function getERC721EntityHandler(
   context: HandlerContextWithPath<
     'env' | 'activeEntities' | 'database',
     '/entities/active/erc721/:chainId/:contract/:option/:emission?'

@@ -4,7 +4,7 @@ import { findEntityByPointer, findImageHash } from '../../logic/entities'
 import { createContentFileHeaders } from '../utils'
 
 // Method: GET or HEAD
-export async function getEntityImage(
+export async function getEntityImageHandler(
   context: HandlerContextWithPath<'activeEntities' | 'database' | 'storage', '/entities/active/entity/:pointer/image'>
 ) {
   const { activeEntities, database } = context.components

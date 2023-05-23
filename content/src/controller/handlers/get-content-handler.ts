@@ -3,7 +3,7 @@ import { HandlerContextWithPath, NotFoundError } from '../../types'
 import { createContentFileHeaders } from '../utils'
 
 // Method: GET or HEAD
-export async function getContent(context: HandlerContextWithPath<'storage', '/contents/:hashId'>) {
+export async function getContentHandler(context: HandlerContextWithPath<'storage', '/contents/:hashId'>) {
   const hash = context.params.hashId
 
   const content: ContentItem | undefined = await context.components.storage.retrieve(hash)
