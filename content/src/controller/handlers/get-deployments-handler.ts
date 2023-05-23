@@ -3,7 +3,7 @@ import { asEnumValue, fromCamelCaseToSnakeCase } from '../utils'
 import { qsGetArray, qsGetBoolean, qsGetNumber, qsParser, toQueryParams } from '../../logic/query-params'
 import { Deployment, DeploymentBase, DeploymentOptions, SortingField, SortingOrder } from '../../deployment-types'
 import { DeploymentField, HandlerContextWithPath, InvalidRequestError, parseEntityType } from '../../types'
-import { getDeployments } from 'src/logic/deployments'
+import { getDeployments } from '../../logic/deployments'
 
 export const DEFAULT_FIELDS_ON_DEPLOYMENTS: DeploymentField[] = [
   DeploymentField.POINTERS,
