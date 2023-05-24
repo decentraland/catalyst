@@ -3,11 +3,34 @@ import { Entity, EntityType } from '@dcl/schemas'
 import * as deploymentBuilder from 'dcl-catalyst-client/dist/client/utils/DeploymentBuilder'
 import { random } from 'faker'
 
+function isString(value: any): boolean {
+  return typeof value === 'string' || value instanceof String
+}
+
+function isPointerArray<T>(array: T[]): boolean {
+  return array.every(isString)
+}
+
+function parseContent(contents: any[]): EntityContentItemReference[] | undefined {
+  if (contents.length === 0) return
+  return contents.map(({ file, hash }) => {
+    if (!file || !hash) {
+      throw new Error('Content must contain a file name and a file hash')
+    }
+
+    if (!isString(file) || !isString(hash)) {
+      throw new Error('Please make sure that all file names and a file hashes are valid strings')
+    }
+
+    return { file, hash }
+  })
+}
+
 function fromObject(object: any, id: string): Entity {
   if (!object.type || !Object.values(EntityType).includes(object.type)) {
     throw new Error(`Please set a valid type. It must be one of ${Object.values(EntityType)}. We got '${object.type}'`)
   }
-  if (!object.pointers || !Array.isArray(object.pointers) || !this.isPointerArray(object.pointers)) {
+  if (!object.pointers || !Array.isArray(object.pointers) || !isPointerArray(object.pointers)) {
     throw new Error(`Please set valid pointers`)
   }
   if (!object.timestamp || typeof object.timestamp != 'number') {
@@ -19,7 +42,7 @@ function fromObject(object: any, id: string): Entity {
     if (!Array.isArray(object.content)) {
       throw new Error(`Expected an array as content`)
     }
-    content = this.parseContent(object.content) || []
+    content = parseContent(object.content) || []
   }
 
   const type: EntityType = EntityType[object.type.toUpperCase().trim()]
