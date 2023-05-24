@@ -25,6 +25,7 @@ export type LambdasEmoteRepresentation = Omit<EmoteRepresentationADR74, 'content
   contents: { key: string; url: string }[]
 }
 
+// TODO-ALE: replace with import { WearableId } from '@dcl/schemas'
 export type WearableId = string // These ids are used as pointers on the content server
 export type EmoteId = string // These ids are used as pointers on the content server
 

@@ -22,10 +22,10 @@ import { initializeIndividualProfileRoutes, initializeProfilesRoutes } from './a
 import statusRouter from './apis/status/routes'
 import { initializeThirdPartyIntegrationsRoutes } from './apis/third-party/routes'
 import { metricsComponent } from './metrics'
+import { TheGraphClient } from './ports/the-graph/types'
 import { ThirdPartyAssetFetcher, createThirdPartyAssetFetcher } from './ports/third-party/third-party-fetcher'
 import { SmartContentClient } from './utils/SmartContentClient'
 import { SmartContentServerFetcher } from './utils/SmartContentServerFetcher'
-import { TheGraphClient } from './utils/TheGraphClient'
 
 export class Server {
   private port: number
