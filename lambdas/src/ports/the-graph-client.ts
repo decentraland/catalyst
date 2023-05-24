@@ -38,7 +38,7 @@ export async function createTheGraphClient(components: {
         `Failed to execute the following query to the subgraph ${subgraphs[query.subgraph]} ${query.description}'.`,
         error
       )
-      // TODO-ALE: Throw meaningful error
+      // TODO: Throw meaningful error
       throw new Error('Internal server error')
     }
   }

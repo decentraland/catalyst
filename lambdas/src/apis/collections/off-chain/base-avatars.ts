@@ -1,4 +1,4 @@
-import { WearableId } from '../types'
+import { WearableId } from '@dcl/schemas'
 
 const list: WearableId[] = [
   'urn:decentraland:off-chain:base-avatars:BaseFemale',

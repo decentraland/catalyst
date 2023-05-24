@@ -1,5 +1,5 @@
 import { EthAddress } from '@dcl/crypto'
-import { Emote, EmoteRepresentationADR74, Wearable, WearableRepresentation } from '@dcl/schemas'
+import { Emote, EmoteRepresentationADR74, Wearable, WearableId, WearableRepresentation } from '@dcl/schemas'
 
 export type Collection = {
   id: string
@@ -25,8 +25,6 @@ export type LambdasEmoteRepresentation = Omit<EmoteRepresentationADR74, 'content
   contents: { key: string; url: string }[]
 }
 
-// TODO-ALE: replace with import { WearableId } from '@dcl/schemas'
-export type WearableId = string // These ids are used as pointers on the content server
 export type EmoteId = string // These ids are used as pointers on the content server
 
 export type ItemFilters = {
