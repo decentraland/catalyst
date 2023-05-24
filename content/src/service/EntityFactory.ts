@@ -7,13 +7,6 @@ export class EntityFactory {
     return EntityFactory.fromObject(object, id)
   }
 
-  static fromJsonObject(object: any): Entity {
-    if (!object.id) {
-      throw new Error(`Expected to find a defined id`)
-    }
-    return EntityFactory.fromObject(object, object.id)
-  }
-
   private static parseJsonIntoObject(buffer: Uint8Array): any {
     try {
       return JSON.parse(new TextDecoder().decode(buffer))
