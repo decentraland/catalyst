@@ -1,7 +1,45 @@
+import { EntityContentItemReference } from '@dcl/hashing'
 import { Entity, EntityType } from '@dcl/schemas'
 import * as deploymentBuilder from 'dcl-catalyst-client/dist/client/utils/DeploymentBuilder'
 import { random } from 'faker'
-import { EntityFactory } from '../../../src/service/EntityFactory'
+
+function fromObject(object: any, id: string): Entity {
+  if (!object.type || !Object.values(EntityType).includes(object.type)) {
+    throw new Error(`Please set a valid type. It must be one of ${Object.values(EntityType)}. We got '${object.type}'`)
+  }
+  if (!object.pointers || !Array.isArray(object.pointers) || !this.isPointerArray(object.pointers)) {
+    throw new Error(`Please set valid pointers`)
+  }
+  if (!object.timestamp || typeof object.timestamp != 'number') {
+    throw new Error(`Please set a valid timestamp. We got ${object.timestamp}`)
+  }
+
+  let content: EntityContentItemReference[] = []
+  if (object.content) {
+    if (!Array.isArray(object.content)) {
+      throw new Error(`Expected an array as content`)
+    }
+    content = this.parseContent(object.content) || []
+  }
+
+  const type: EntityType = EntityType[object.type.toUpperCase().trim()]
+  return {
+    id,
+    type,
+    pointers: object.pointers.map((pointer: string) => pointer.toLowerCase()),
+    timestamp: object.timestamp,
+    version: object.version ?? 'v3',
+    content,
+    metadata: object.metadata
+  }
+}
+
+function fromJsonObject(object: any): Entity {
+  if (!object.id) {
+    throw new Error(`Expected to find a defined id`)
+  }
+  return fromObject(object, object.id)
+}
 
 /** Builds an entity with the given params, and also the file what represents it */
 export async function buildEntityAndFile(
@@ -19,7 +57,7 @@ export async function buildEntityAndFile(
     content: newContent,
     metadata
   })
-  return [EntityFactory.fromJsonObject(entity), entityFile]
+  return [fromJsonObject(entity), entityFile]
 }
 
 /** Build a file with the given entity as the content */
