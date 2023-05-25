@@ -158,6 +158,8 @@ export type Pagination = {
 
 export type QueryParams = qs.ParsedQs
 
+export type AnyObject = Record<string, unknown>
+
 export class InvalidRequestError extends Error {
   constructor(message: string) {
     super(message)

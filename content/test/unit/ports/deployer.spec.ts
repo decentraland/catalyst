@@ -33,7 +33,7 @@ import { createSequentialTaskExecutor } from '../../../src/ports/sequecuentialTa
 import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
 import { DELTA_POINTER_RESULT } from '../../../src/service/pointers/PointerManager'
 import { EntityVersion } from '../../../src/types'
-import { buildEntityAndFile } from '../../helpers/service/EntityTestFactory'
+import { buildEntityAndFile } from '../../helpers/entity-tests-helper'
 import { NoOpServerValidator, NoOpValidator } from '../../helpers/service/validations/NoOpValidator'
 import { NoOpPointerManager } from '../service/pointers/NoOpPointerManager'
 
