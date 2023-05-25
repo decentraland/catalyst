@@ -42,7 +42,7 @@ const createEthereumProvider = (httpProvider: HTTPProvider): EthereumProvider =>
 }
 
 export async function createExternalCalls(
-  components: Pick<AppComponents, 'storage' | 'catalystFetcher' | 'authenticator' | 'env' | 'logs'>
+  components: Pick<AppComponents, 'storage' | 'authenticator' | 'env' | 'logs'>
 ): Promise<ExternalCalls> {
   return {
     isContentStoredAlready: (hashes) => components.storage.existMultiple(hashes),

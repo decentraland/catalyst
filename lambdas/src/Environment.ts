@@ -6,11 +6,12 @@ import { OffChainWearablesManagerFactory } from './apis/collections/off-chain/Of
 import { EmotesOwnershipFactory } from './apis/profiles/EmotesOwnershipFactory'
 import { EnsOwnershipFactory } from './apis/profiles/EnsOwnershipFactory'
 import { WearablesOwnershipFactory } from './apis/profiles/WearablesOwnershipFactory'
+import { createTheGraphClient } from './ports/the-graph-client'
+import { createTheGraphDependencies } from './ports/the-graph/dependencies'
 import { DAOCache } from './service/dao/DAOCache'
-import { getCommsServerUrl } from './utils/commons'
 import { SmartContentClientFactory } from './utils/SmartContentClientFactory'
 import { SmartContentServerFetcherFactory } from './utils/SmartContentServerFetcherFactory'
-import { TheGraphClientFactory } from './utils/TheGraphClientFactory'
+import { getCommsServerUrl } from './utils/commons'
 
 const DEFAULT_SERVER_PORT = 7070
 export const DEFAULT_ETH_NETWORK = 'goerli'
@@ -256,7 +257,8 @@ export class EnvironmentBuilder {
     )
     this.registerBeanIfNotAlreadySet(env, Bean.SMART_CONTENT_SERVER_CLIENT, () => SmartContentClientFactory.create(env))
 
-    const theGraphClient = await TheGraphClientFactory.create(env)
+    const dependencies = await createTheGraphDependencies(env)
+    const theGraphClient = await createTheGraphClient(dependencies)
     this.registerBeanIfNotAlreadySet(env, Bean.THE_GRAPH_CLIENT, () => theGraphClient)
     this.registerBeanIfNotAlreadySet(env, Bean.OFF_CHAIN_MANAGER, () => OffChainWearablesManagerFactory.create(env))
 

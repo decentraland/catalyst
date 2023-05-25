@@ -7,13 +7,6 @@ export class EntityFactory {
     return EntityFactory.fromObject(object, id)
   }
 
-  static fromJsonObject(object: any): Entity {
-    if (!object.id) {
-      throw new Error(`Expected to find a defined id`)
-    }
-    return EntityFactory.fromObject(object, object.id)
-  }
-
   private static parseJsonIntoObject(buffer: Uint8Array): any {
     try {
       return JSON.parse(new TextDecoder().decode(buffer))
@@ -28,7 +21,7 @@ export class EntityFactory {
         `Please set a valid type. It must be one of ${Object.values(EntityType)}. We got '${object.type}'`
       )
     }
-    if (!object.pointers || !Array.isArray(object.pointers) || !this.isPointerArray(object.pointers)) {
+    if (!object.pointers || !Array.isArray(object.pointers) || !EntityFactory.isPointerArray(object.pointers)) {
       throw new Error(`Please set valid pointers`)
     }
     if (!object.timestamp || typeof object.timestamp != 'number') {
@@ -40,7 +33,7 @@ export class EntityFactory {
       if (!Array.isArray(object.content)) {
         throw new Error(`Expected an array as content`)
       }
-      content = this.parseContent(object.content) || []
+      content = EntityFactory.parseContent(object.content) || []
     }
 
     const type: EntityType = EntityType[object.type.toUpperCase().trim()]
@@ -62,7 +55,7 @@ export class EntityFactory {
         throw new Error('Content must contain a file name and a file hash')
       }
 
-      if (!this.isString(file) || !this.isString(hash)) {
+      if (!EntityFactory.isString(file) || !EntityFactory.isString(hash)) {
         throw new Error('Please make sure that all file names and a file hashes are valid strings')
       }
 
@@ -71,7 +64,7 @@ export class EntityFactory {
   }
 
   private static isPointerArray<T>(array: T[]): boolean {
-    return array.every(this.isString)
+    return array.every(EntityFactory.isString)
   }
 
   private static isString(value: any): boolean {

@@ -2,12 +2,12 @@ import { Request, Response } from 'express'
 import log4js from 'log4js'
 import { findThirdPartyItemUrns } from '../../../logic/third-party-urn-finder'
 import { toQueryParams } from '../../../logic/toQueryParams'
+import { TheGraphClient } from '../../../ports/the-graph/types'
 import { ThirdPartyAssetFetcher } from '../../../ports/third-party/third-party-fetcher'
 import { asArray, asInt } from '../../../utils/ControllerUtils'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
-import { TheGraphClient } from '../../../utils/TheGraphClient'
-import { ItemFilters, ItemPagination, LambdasEmote } from '../types'
 import { translateEntityIntoEmote } from '../Utils'
+import { ItemFilters, ItemPagination, LambdasEmote } from '../types'
 
 const LOGGER = log4js.getLogger('EmotesHandler')
 

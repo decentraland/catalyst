@@ -1,11 +1,11 @@
 import { NextFunction, Request, RequestHandler, Response, Router } from 'express'
+import { TheGraphClient } from '../../ports/the-graph/types'
 import { ThirdPartyAssetFetcher } from '../../ports/third-party/third-party-fetcher'
 import { SmartContentClient } from '../../utils/SmartContentClient'
-import { TheGraphClient } from '../../utils/TheGraphClient'
-import { getIndividualProfileById, getProfilesById, getProfilesByIdPost } from './controllers/profiles'
 import { EmotesOwnership } from './EmotesOwnership'
 import { EnsOwnership } from './EnsOwnership'
 import { WearablesOwnership } from './WearablesOwnership'
+import { getIndividualProfileById, getProfilesById, getProfilesByIdPost } from './controllers/profiles'
 
 function asyncHandler(handler: (req: Request, res: Response, next: NextFunction) => Promise<void>): RequestHandler {
   return (req, res, next) => {

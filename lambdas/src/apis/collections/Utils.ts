@@ -1,7 +1,7 @@
-import { Emote, EmoteCategory, Entity, I18N, Wearable } from '@dcl/schemas'
+import { Emote, EmoteCategory, Entity, I18N, Wearable, WearableId } from '@dcl/schemas'
 import { parseUrn } from '@dcl/urn-resolver'
 import { SmartContentClient } from '../../../src/utils/SmartContentClient'
-import { LambdasEmote, LambdasWearable, WearableId } from './types'
+import { LambdasEmote, LambdasWearable } from './types'
 
 /**
  * We are translating from the old id format into the new one.

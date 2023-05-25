@@ -2,13 +2,13 @@ import { Request, Response } from 'express'
 import log4js from 'log4js'
 import { findThirdPartyItemUrns } from '../../../logic/third-party-urn-finder'
 import { toQueryParams } from '../../../logic/toQueryParams'
+import { TheGraphClient } from '../../../ports/the-graph/types'
 import { ThirdPartyAssetFetcher } from '../../../ports/third-party/third-party-fetcher'
 import { asArray, asInt } from '../../../utils/ControllerUtils'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
-import { TheGraphClient } from '../../../utils/TheGraphClient'
+import { isBaseAvatar, translateEntityIntoWearable } from '../Utils'
 import { BASE_AVATARS_COLLECTION_ID, OffChainWearablesManager } from '../off-chain/OffChainWearablesManager'
 import { ItemFilters, ItemPagination, LambdasWearable } from '../types'
-import { isBaseAvatar, translateEntityIntoWearable } from '../Utils'
 
 const LOGGER = log4js.getLogger('WearablesHandler')
 

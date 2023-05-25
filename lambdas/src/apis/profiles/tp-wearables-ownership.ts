@@ -1,9 +1,9 @@
 import { EthAddress } from '@dcl/crypto'
+import { WearableId } from '@dcl/schemas'
 import { DecentralandAssetIdentifier, parseUrn } from '@dcl/urn-resolver'
-import { WearableId } from '../../apis/collections/types'
 import { findThirdPartyItemUrns } from '../../logic/third-party-urn-finder'
+import { TheGraphClient } from '../../ports/the-graph/types'
 import { ThirdPartyAssetFetcher } from '../../ports/third-party/third-party-fetcher'
-import { TheGraphClient } from '../../utils/TheGraphClient'
 
 export async function checkForThirdPartyWearablesOwnership(
   theGraphClient: TheGraphClient,

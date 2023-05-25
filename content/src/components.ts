@@ -11,7 +11,6 @@ import { HTTPProvider } from 'eth-connect'
 import ms from 'ms'
 import path from 'path'
 import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, Environment, EnvironmentConfig } from './Environment'
-import { FetcherFactory } from './helpers/FetcherFactory'
 import { splitByCommaTrimAndRemoveEmptyElements } from './logic/config-helpers'
 import { metricsDeclaration } from './metrics'
 import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
@@ -51,7 +50,15 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const config = env
   const metrics = await createMetricsComponent(metricsDeclaration, { config })
   const logs = await createLogComponent({ config })
-  const fetcher = createFetchComponent()
+
+  const fetcher = createFetchComponent({
+    defaultHeaders: {
+      'User-Agent': `content-server/${CURRENT_COMMIT_HASH} (+https://github.com/decentraland/catalyst)`,
+      Origin: env.getConfig<string>(EnvironmentConfig.CONTENT_SERVER_ADDRESS)
+    },
+    defaultFetcherOptions: { timeout: ms(env.getConfig<string>(EnvironmentConfig.FETCH_REQUEST_TIMEOUT)) }
+  })
+
   const fs = createFsComponent()
   const denylist = await createDenylist({ env, logs, fs, fetcher })
   const contentStorageFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
@@ -91,7 +98,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const challengeSupervisor = new ChallengeSupervisor()
 
-  const catalystFetcher = FetcherFactory.create({ env })
   const contentFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
   const storage = await createFolderBasedFileSystemContentStorage({ fs }, contentFolder)
 
@@ -130,7 +136,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const externalCalls = await createExternalCalls({
     storage,
     authenticator,
-    catalystFetcher,
     env,
     logs
   })
@@ -334,6 +339,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   metrics.observe('dcl_content_server_build_info', buildInfo, 1)
 
   await instrumentHttpServerWithMetrics({ server, metrics, config })
+
   return {
     env,
     database,
@@ -360,7 +366,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     serverValidator,
     garbageCollectionManager,
     systemProperties,
-    catalystFetcher,
     daoClient,
     server,
     retryFailedDeployments,

@@ -1,7 +1,8 @@
+import { WearableId } from '@dcl/schemas'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TimeRefreshedDataHolder } from '../../../utils/TimeRefreshedDataHolder'
-import { ItemFilters, LambdasWearable, WearableId } from '../types'
 import { preferEnglish, translateEntityIntoWearable } from '../Utils'
+import { ItemFilters, LambdasWearable } from '../types'
 import baseAvatars from './base-avatars'
 
 /**

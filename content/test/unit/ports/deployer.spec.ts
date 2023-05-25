@@ -8,14 +8,14 @@ import { createTestMetricsComponent } from '@well-known-components/metrics'
 import assert from 'assert'
 import { HTTPProvider } from 'eth-connect'
 import ms from 'ms'
+import { DEFAULT_ENTITIES_CACHE_SIZE, Environment, EnvironmentConfig } from '../../../src/Environment'
 import {
   Deployment,
   DeploymentContext,
   DeploymentResult,
-  isInvalidDeployment,
-  LocalDeploymentAuditInfo
+  LocalDeploymentAuditInfo,
+  isInvalidDeployment
 } from '../../../src/deployment-types'
-import { DEFAULT_ENTITIES_CACHE_SIZE, Environment, EnvironmentConfig } from '../../../src/Environment'
 import * as deploymentQueries from '../../../src/logic/database-queries/deployments-queries'
 import * as failedDeploymentQueries from '../../../src/logic/database-queries/failed-deployments-queries'
 import * as pointers from '../../../src/logic/database-queries/pointers-queries'
@@ -24,9 +24,9 @@ import * as deployments from '../../../src/logic/deployments'
 import { metricsDeclaration } from '../../../src/metrics'
 import { createActiveEntitiesComponent } from '../../../src/ports/activeEntities'
 import { Denylist } from '../../../src/ports/denylist'
+import { createDeployRateLimiter } from '../../../src/ports/deployRateLimiterComponent'
 import { createDeployedEntitiesBloomFilter } from '../../../src/ports/deployedEntitiesBloomFilter'
 import { createDeployer } from '../../../src/ports/deployer'
-import { createDeployRateLimiter } from '../../../src/ports/deployRateLimiterComponent'
 import { createFailedDeployments } from '../../../src/ports/failedDeployments'
 import { createTestDatabaseComponent } from '../../../src/ports/postgres'
 import { createSequentialTaskExecutor } from '../../../src/ports/sequecuentialTaskExecutor'

@@ -6,9 +6,9 @@ import {
   getWearablesByOwnerFromUrns
 } from '../../../../../src/apis/collections/controllers/wearables'
 import * as tpUrnFinder from '../../../../../src/logic/third-party-urn-finder'
+import { createTheGraphClient } from '../../../../../src/ports/the-graph-client'
 import { ThirdPartyAssetFetcher } from '../../../../../src/ports/third-party/third-party-fetcher'
 import { SmartContentClient } from '../../../../../src/utils/SmartContentClient'
-import { TheGraphClient } from '../../../../../src/utils/TheGraphClient'
 
 const SOME_ADDRESS = '0x079bed9c31cb772c4c156f86e1cff15bf751add0'
 const WEARABLE_ID_1 = 'someCollection-someWearable'
@@ -96,7 +96,9 @@ describe('getWearablesByOwner', () => {
   beforeEach(() => jest.resetAllMocks())
   it('When collectionId is defined, then assets are fetched from the third party', async () => {
     const contentClientMock = mock(SmartContentClient)
-    const mockedGraphClient = mock(TheGraphClient)
+    const mockedGraphClient = {
+      findWearableUrnsByOwner: jest.fn()
+    }
 
     const tpFetcher: ThirdPartyAssetFetcher = {
       fetchAssets: () =>
@@ -113,7 +115,7 @@ describe('getWearablesByOwner', () => {
     const wearables = await getWearablesByOwner(
       false,
       instance(contentClientMock),
-      instance(mockedGraphClient),
+      mockedGraphClient as any,
       tpFetcher,
       'some-collection',
       SOME_ADDRESS
@@ -123,14 +125,15 @@ describe('getWearablesByOwner', () => {
     expect(wearables[0].amount).toEqual(1)
     expect(wearables[0].urn).toEqual(TPW_WEARABLE_ID)
     expect(wearables[0].definition).toBeUndefined()
+    expect(mockedGraphClient.findWearableUrnsByOwner).not.toHaveBeenCalled()
     verify(contentClientMock.fetchEntitiesByPointers(anything(), anything())).never()
-    verify(mockedGraphClient.findWearableUrnsByOwner(anything())).never()
   })
 
   it('When collectionId is undefined, then assets are fetched from the graph client', async () => {
     const contentClientMock = mock(SmartContentClient)
-    const mockedGraphClient = mock(TheGraphClient)
-    when(mockedGraphClient.findWearableUrnsByOwner(SOME_ADDRESS)).thenResolve([WEARABLE_ID_1])
+    const mockedGraphClient = {
+      findWearableUrnsByOwner: jest.fn().mockResolvedValue([WEARABLE_ID_1])
+    }
 
     const tpFetcher = { fetchAssets: jest.fn() }
     const tpUrnFinderSpy = jest.spyOn(tpUrnFinder, 'findThirdPartyItemUrns').mockResolvedValue([])
@@ -138,7 +141,7 @@ describe('getWearablesByOwner', () => {
     const wearables = await getWearablesByOwner(
       false,
       instance(contentClientMock),
-      instance(mockedGraphClient),
+      mockedGraphClient as any,
       tpFetcher,
       undefined,
       SOME_ADDRESS
@@ -148,8 +151,9 @@ describe('getWearablesByOwner', () => {
     expect(wearables[0].amount).toEqual(1)
     expect(wearables[0].urn).toEqual(WEARABLE_ID_1)
     expect(wearables[0].definition).toBeUndefined()
+    expect(mockedGraphClient.findWearableUrnsByOwner).toHaveBeenCalledWith(SOME_ADDRESS)
+    expect(mockedGraphClient.findWearableUrnsByOwner).toHaveBeenCalledTimes(1)
     verify(contentClientMock.fetchEntitiesByPointers(anything(), anything())).never()
-    verify(mockedGraphClient.findWearableUrnsByOwner(SOME_ADDRESS)).once()
     expect(tpUrnFinderSpy).not.toBeCalled()
   })
 
@@ -200,7 +204,18 @@ query itemsByOwner($owner: String, $item_types:[String], $first: Int, $start: St
         }
       ]
     })
-    const graphClient = new TheGraphClient(subGraphs)
+    const graphClient = await createTheGraphClient({
+      subgraphs: subGraphs,
+      log: {
+        getLogger: () => ({
+          debug: jest.fn(),
+          error: jest.fn(),
+          info: jest.fn(),
+          log: jest.fn(),
+          warn: jest.fn()
+        })
+      }
+    })
 
     const tpFetcher = { fetchAssets: jest.fn() }
     const tpUrnFinderSpy = jest.spyOn(tpUrnFinder, 'findThirdPartyItemUrns').mockResolvedValue([])
@@ -208,7 +223,7 @@ query itemsByOwner($owner: String, $item_types:[String], $first: Int, $start: St
     const wearables = await getWearablesByOwner(
       false,
       instance(contentClientMock),
-      graphClient,
+      graphClient as any,
       tpFetcher,
       undefined,
       SOME_ADDRESS

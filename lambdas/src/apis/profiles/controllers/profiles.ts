@@ -1,18 +1,17 @@
 import { EthAddress } from '@dcl/crypto'
-import { Entity, Profile } from '@dcl/schemas'
+import { Entity, Profile, WearableId } from '@dcl/schemas'
 import { NextFunction, Request, RequestHandler, Response } from 'express'
 import log4js from 'log4js'
+import { TheGraphClient } from '../../../ports/the-graph/types'
 import { ThirdPartyAssetFetcher } from '../../../ports/third-party/third-party-fetcher'
 import { asArray } from '../../../utils/ControllerUtils'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
-import { TheGraphClient } from '../../../utils/TheGraphClient'
-import { WearableId } from '../../collections/types'
 import { isBaseAvatar, isOldEmote, translateWearablesIdFormat } from '../../collections/Utils'
 import { EmotesOwnership } from '../EmotesOwnership'
 import { EnsOwnership } from '../EnsOwnership'
+import { WearablesOwnership } from '../WearablesOwnership'
 import { emotesSavedAsWearables } from '../old-emotes'
 import { checkForThirdPartyEmotesOwnership, checkForThirdPartyWearablesOwnership } from '../tp-wearables-ownership'
-import { WearablesOwnership } from '../WearablesOwnership'
 
 const LOGGER = log4js.getLogger('profiles')
 

@@ -1,6 +1,6 @@
 import { EthAddress } from '@dcl/crypto'
+import { TheGraphClient } from '../ports/the-graph/types'
 import { ThirdPartyAssetFetcher } from '../ports/third-party/third-party-fetcher'
-import { TheGraphClient } from '../utils/TheGraphClient'
 
 export async function findThirdPartyItemUrns(
   theGraphClient: TheGraphClient,

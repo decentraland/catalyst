@@ -1,16 +1,15 @@
 import { EthAddress } from '@dcl/crypto'
-import { Entity, EntityType } from '@dcl/schemas'
+import { Entity, EntityType, WearableId } from '@dcl/schemas'
 import { anything, instance, mock, when } from 'ts-mockito'
-import { WearableId } from '../../../../src/apis/collections/types'
-import * as pfs from '../../../../src/apis/profiles/controllers/profiles'
 import { EmotesOwnership } from '../../../../src/apis/profiles/EmotesOwnership'
 import { EnsOwnership } from '../../../../src/apis/profiles/EnsOwnership'
 import { NFTOwnership } from '../../../../src/apis/profiles/NFTOwnership'
-import * as tpOwnership from '../../../../src/apis/profiles/tp-wearables-ownership'
 import { WearablesOwnership } from '../../../../src/apis/profiles/WearablesOwnership'
+import * as pfs from '../../../../src/apis/profiles/controllers/profiles'
+import * as tpOwnership from '../../../../src/apis/profiles/tp-wearables-ownership'
 import * as tpUrnFinder from '../../../../src/logic/third-party-urn-finder'
+import { TheGraphClient } from '../../../../src/ports/the-graph/types'
 import { SmartContentClient } from '../../../../src/utils/SmartContentClient'
-import { TheGraphClient } from '../../../../src/utils/TheGraphClient'
 
 const EXTERNAL_URL = 'https://content-url.com'
 
@@ -310,8 +309,18 @@ function contentServerThatReturns(profile?: Entity): SmartContentClient {
 }
 
 function theGraph(): TheGraphClient {
-  const mockedTheGraph = mock(TheGraphClient)
-  return instance(mockedTheGraph)
+  return {
+    checkForEmotesOwnership: jest.fn(),
+    checkForNamesOwnership: jest.fn(),
+    checkForWearablesOwnership: jest.fn(),
+    findEmoteUrnsByFilters: jest.fn(),
+    findEmoteUrnsByOwner: jest.fn(),
+    findThirdPartyResolver: jest.fn(),
+    findWearableUrnsByFilters: jest.fn(),
+    findWearableUrnsByOwner: jest.fn(),
+    getAllCollections: jest.fn(),
+    getThirdPartyIntegrations: jest.fn()
+  }
 }
 
 function noNFTs<T extends NFTOwnership>(clazz: new (...args: any[]) => T): T {

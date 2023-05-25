@@ -1,10 +1,10 @@
 import { BodyShape, ChainId, Emote, Entity, StandardProps, Wearable, WearableRepresentation } from '@dcl/schemas'
 import { Request, Response } from 'express'
+import { TheGraphClient } from '../../../ports/the-graph/types'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
-import { TheGraphClient } from '../../../utils/TheGraphClient'
+import { createExternalContentUrl, findHashForFile, preferEnglish } from '../Utils'
 import { BASE_AVATARS_COLLECTION_ID } from '../off-chain/OffChainWearablesManager'
 import { Collection, ERC721StandardTrait } from '../types'
-import { createExternalContentUrl, findHashForFile, preferEnglish } from '../Utils'
 
 type StandardWearable = Wearable & StandardProps
 type StandardEmote = Emote & StandardProps
