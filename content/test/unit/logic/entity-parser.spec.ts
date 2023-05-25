@@ -1,6 +1,6 @@
 import { Entity, EntityType } from '@dcl/schemas'
-import { EntityFactory } from '../../../src/service/EntityFactory'
-import { buildEntityAndFile, entityToFile } from '../../helpers/service/EntityTestFactory'
+import { getEntityFromBuffer } from '../../../src/logic/entity-parser'
+import { buildEntityAndFile, entityToFile } from '../../helpers/entity-tests-helper'
 
 describe('Service', () => {
   let entity: Entity
@@ -12,12 +12,12 @@ describe('Service', () => {
       ['X1,Y1'],
       123456,
       new Map([['name', 'bafkreico6luxnkk5vxuxvmpsg7hva4upamyz3br2b6ucc7rf3hdlcaehha']]),
-      { 'metadata': 'metadata' }
+      { metadata: 'metadata' }
     )
   })
 
   it(`When a valid entity file is used, then it is parsed correctly`, () => {
-    expect(EntityFactory.fromBufferWithId(entityFile, entity.id)).toEqual(entity)
+    expect(getEntityFromBuffer(entityFile, entity.id)).toEqual(entity)
   })
 
   it(`When the entity file can't be parsed into an entity, then an exception is thrown`, () => {
@@ -102,7 +102,7 @@ describe('Service', () => {
 
   function assertInvalidFile(file: Buffer, entityId: string, errorMessage: string) {
     expect(() => {
-      EntityFactory.fromBufferWithId(file, entityId)
+      getEntityFromBuffer(file, entityId)
     }).toThrowError(errorMessage)
   }
 })

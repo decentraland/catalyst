@@ -1,20 +1,20 @@
 import { bufferToStream } from '@dcl/catalyst-storage/dist/content-item'
 import { AuthChain, Authenticator } from '@dcl/crypto'
 import { Entity, EntityType, IPFSv2 } from '@dcl/schemas'
+import { EnvironmentConfig } from '../Environment'
 import {
   AuditInfo,
   DeploymentContext,
   DeploymentFiles,
   DeploymentResult,
   InvalidResult,
-  isInvalidDeployment,
-  LocalDeploymentAuditInfo
+  LocalDeploymentAuditInfo,
+  isInvalidDeployment
 } from '../deployment-types'
-import { EnvironmentConfig } from '../Environment'
 import { getEntityById, setEntitiesAsOverwritten } from '../logic/database-queries/deployments-queries'
 import { calculateOverwrites, getDeployments, saveDeploymentAndContentFiles } from '../logic/deployments'
+import { getEntityFromBuffer } from '../logic/entity-parser'
 import { calculateDeprecatedHashes, calculateIPFSHashes } from '../logic/hashing'
-import { EntityFactory } from '../service/EntityFactory'
 import { DELTA_POINTER_RESULT } from '../service/pointers/PointerManager'
 import { happenedBefore } from '../service/time/TimeSorting'
 import { AppComponents, EntityVersion } from '../types'
@@ -261,7 +261,7 @@ export function createDeployer(
       // Parse entity file into an Entity
       let entity: Entity
       try {
-        entity = EntityFactory.fromBufferWithId(entityFile, entityId)
+        entity = getEntityFromBuffer(entityFile, entityId)
         if (!entity) {
           return InvalidResult({ errors: ['There was a problem parsing the entity, it was null'] })
         }

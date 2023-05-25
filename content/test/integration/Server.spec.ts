@@ -2,7 +2,7 @@ import { SimpleContentItem } from '@dcl/catalyst-storage/dist/content-item'
 import { Entity, EntityType, PointerChangesSyncDeployment } from '@dcl/schemas'
 import { random } from 'faker'
 import fetch from 'node-fetch'
-import { randomEntity } from '../helpers/service/EntityTestFactory'
+import { randomEntity } from '../helpers/entity-tests-helper'
 import { E2ETestEnvironment } from './E2ETestEnvironment'
 
 describe('Integration - Server', () => {
