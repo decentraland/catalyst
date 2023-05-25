@@ -161,15 +161,15 @@ describe('getWearablesByOwner', () => {
     const contentClientMock = mock(SmartContentClient)
 
     const query = `
-    query itemsByOwner($owner: String, $item_types:[String], $first: Int, $start: String) {
-      nfts(where: {owner: $owner, searchItemType_in: $item_types, id_gt: $start}, first: $first) {
-        id
-        urn
-        collection {
-          isApproved
-        }
-      }
-    }`
+query itemsByOwner($owner: String, $item_types:[String], $first: Int, $start: String) {
+  nfts(where: {owner: $owner, searchItemType_in: $item_types, id_gt: $start}, first: $first) {
+    id
+    urn
+    collection {
+      isApproved
+    }
+  }
+}`
     const expectedVariables = {
       owner: SOME_ADDRESS,
       item_types: ['wearable_v1', 'wearable_v2', 'smart_wearable_v1'],

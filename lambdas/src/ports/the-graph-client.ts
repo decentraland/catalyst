@@ -3,7 +3,7 @@ import { WearableId } from '@dcl/schemas'
 import { parseUrn } from '@dcl/urn-resolver'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { EmoteId, ItemFilters, ThirdPartyIntegration } from '../apis/collections/types'
-import { QUERIES } from './the-graph/queries'
+import { COLLECTIONS, ITEMS_BY_OWNER, THIRD_PARTIES, THIRD_PARTY_RESOLVER } from './the-graph/queries'
 import { BlockchainItemType, Query, SubGraphs, TheGraphClient } from './the-graph/types'
 
 /**
@@ -173,7 +173,7 @@ export async function createTheGraphClient(components: {
       const query: Query<{ collections: { name: string; urn: string }[] }, { name: string; urn: string }[]> = {
         description: 'fetch collections',
         subgraph: subgraph,
-        query: QUERIES.COLLECTIONS,
+        query: COLLECTIONS,
         mapper: (response) => response.collections
       }
       return runQuery(query, {})
@@ -200,7 +200,7 @@ export async function createTheGraphClient(components: {
     > = {
       description: 'fetch third parties',
       subgraph: 'thirdPartyRegistrySubgraph',
-      query: QUERIES.THIRD_PARTIES,
+      query: THIRD_PARTIES,
       mapper: (response) => response.thirdParties.map((tp) => ({ urn: tp.id, ...tp.metadata.thirdParty }))
     }
     return runQuery(query, { thirdPartyType: 'third_party_v1' })
@@ -214,7 +214,7 @@ export async function createTheGraphClient(components: {
     const query: Query<{ thirdParties: [{ resolver: string }] }, string | undefined> = {
       description: 'fetch third party resolver',
       subgraph: subgraph,
-      query: QUERIES.THIRD_PARTY_RESOLVER,
+      query: THIRD_PARTY_RESOLVER,
       mapper: (response) => response.thirdParties[0]?.resolver
     }
     return await runQuery(query, { id })
@@ -248,7 +248,7 @@ export async function createTheGraphClient(components: {
     > = {
       description: `fetch items (${itemTypes}) by owner`,
       subgraph: subgraph,
-      query: QUERIES.ITEMS_BY_OWNER,
+      query: ITEMS_BY_OWNER,
       mapper: (response) =>
         response.nfts.map(({ id, urn, collection }) => ({ id: id, urn: urn, isApproved: collection.isApproved }))
     }
