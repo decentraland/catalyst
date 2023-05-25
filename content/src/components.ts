@@ -16,6 +16,7 @@ import { metricsDeclaration } from './metrics'
 import { createMigrationExecutor } from './migrations/migration-executor'
 import { createActiveEntitiesComponent } from './ports/activeEntities'
 import { createClock } from './ports/clock'
+import { createDAOComponent } from './ports/dao-servers-getter'
 import { createDenylist } from './ports/denylist'
 import { createDeployRateLimiter } from './ports/deployRateLimiterComponent'
 import { createDeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
@@ -34,7 +35,6 @@ import { PointerManager } from './service/pointers/PointerManager'
 import { ChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
 import { ContentCluster } from './service/synchronization/ContentCluster'
 import { createBatchDeployerComponent } from './service/synchronization/batchDeployer'
-import { DAOClientFactory } from './service/synchronization/clients/DAOClientFactory'
 import { createRetryFailedDeployments } from './service/synchronization/retryFailedDeployments'
 import { createServerValidator } from './service/validations/server'
 import {
@@ -101,7 +101,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const contentFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
   const storage = await createFolderBasedFileSystemContentStorage({ fs }, contentFolder)
 
-  const daoClient = await DAOClientFactory.create(env, l1Provider)
+  const daoClient = await createDAOComponent({ env, l1Provider })
   const authenticator = new ContentAuthenticator(l1Provider, env.getConfig(EnvironmentConfig.DECENTRALAND_ADDRESS))
 
   const contentCluster = new ContentCluster(
@@ -377,6 +377,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     processedSnapshotStorage,
     clock,
     snapshotStorage,
-    config
+    config,
+    l1Provider
   }
 }
