@@ -1,4 +1,4 @@
-import { GetContentStatus200 } from '@dcl/catalyst-api-specs/lib/client'
+import { StatusContent } from '@dcl/catalyst-api-specs/lib/client'
 import { HandlerContextWithPath } from '../../types'
 import {
   CURRENT_CATALYST_VERSION,
@@ -10,7 +10,7 @@ import { statusResponseFromComponents } from '../../logic/status-checks'
 
 export async function getStatusHandler(
   context: HandlerContextWithPath<'contentCluster' | 'synchronizationState' | 'config', '/status'>
-): Promise<{ status: number; body: GetContentStatus200 }> {
+): Promise<{ status: number; body: StatusContent }> {
   const { contentCluster, synchronizationState, config } = context.components
   const serverStatus = await statusResponseFromComponents(context.components)
   const ethNetwork = await config.requireString(EnvironmentConfig[EnvironmentConfig.ETH_NETWORK])

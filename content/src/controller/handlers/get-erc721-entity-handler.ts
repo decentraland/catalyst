@@ -1,4 +1,4 @@
-import { GetStandardErc721200 } from '@dcl/catalyst-api-specs/lib/client'
+import { Erc721 } from '@dcl/catalyst-api-specs/lib/client'
 import { HandlerContextWithPath, InvalidRequestError, NotFoundError } from '../../types'
 import { buildUrn, formatERC21Entity, getProtocol } from '../../logic/erc721'
 import { findEntityByPointer } from '../../logic/entities'
@@ -9,7 +9,7 @@ export async function getERC721EntityHandler(
     'env' | 'activeEntities' | 'database',
     '/entities/active/erc721/:chainId/:contract/:option/:emission?'
   >
-): Promise<{ status: 200; body: GetStandardErc721200 }> {
+): Promise<{ status: 200; body: Erc721 }> {
   const { database, activeEntities, env } = context.components
   const { chainId, contract, option, emission } = context.params
 
