@@ -407,9 +407,9 @@
     multiformats "^9.6.3"
 
 "@dcl/protocol@^1.0.0-4747376947.commit-d770e0d":
-  version "1.0.0-4984397350.commit-6fe3e1b"
-  resolved "https://registry.yarnpkg.com/@dcl/protocol/-/protocol-1.0.0-4984397350.commit-6fe3e1b.tgz#73a259e2df5db35e05b8fb05d69c195fcb411eb6"
-  integrity sha512-wuLhU6hd0DDO7qinDtZD+vgHVmiFXBqmhkxm6QKAwKEzebcXd8P5PjZUmISQ6eKt6pzK/iqO7eiZ6V4OqaNQog==
+  version "1.0.0-5048370069.commit-00abb1b"
+  resolved "https://registry.yarnpkg.com/@dcl/protocol/-/protocol-1.0.0-5048370069.commit-00abb1b.tgz#f5519a8fc05fa4a971b16db9ebdd6b2c33db81bf"
+  integrity sha512-GMLcidu7pRcBSszBIxIjWmw+b5tYYH8ME7xfLIPnikuNXa8k5KquOwo7HxH927pXtaCi6MqGmxW3TbpzI/DCag==
   dependencies:
     "@dcl/ts-proto" "^1.146.2"
 
