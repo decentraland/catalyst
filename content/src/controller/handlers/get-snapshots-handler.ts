@@ -1,7 +1,7 @@
-import { GetSnapshots200Item, ContentErrorResponse } from '@dcl/catalyst-api-specs/lib/client'
+import { Snapshots, Error } from '@dcl/catalyst-api-specs/lib/client'
 import { HandlerContextWithPath } from '../../types'
 
-type Response = { status: 200; body: GetSnapshots200Item[] } | { status: 503; body: ContentErrorResponse }
+type Response = { status: 200; body: Snapshots } | { status: 503; body: Error }
 
 // Method: GET
 export async function getSnapshotsHandler(

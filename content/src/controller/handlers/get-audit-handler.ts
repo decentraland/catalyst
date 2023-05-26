@@ -5,14 +5,14 @@ import {
   parseEntityType,
   DeploymentField
 } from '../../types'
-import { GetEntityAuditInformation200 } from '@dcl/catalyst-api-specs/lib/client'
+import { AuditResponse } from '@dcl/catalyst-api-specs/lib/client'
 import { getDeployments } from '../../logic/deployments'
 import { AuditInfo } from '../../deployment-types'
 
 // Method: GET
 export async function getEntityAuditInformationHandler(
   context: HandlerContextWithPath<'database' | 'denylist' | 'metrics', '/audit/:type/:entityId'>
-): Promise<{ status: 200; body: GetEntityAuditInformation200 }> {
+): Promise<{ status: 200; body: AuditResponse }> {
   const type = parseEntityType(context.params.type)
   const entityId = context.params.entityId
 

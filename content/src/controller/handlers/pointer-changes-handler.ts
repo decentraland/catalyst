@@ -1,4 +1,4 @@
-import { GetPointerChanges200 } from '@dcl/catalyst-api-specs/lib/client'
+import { PointerChanges } from '@dcl/catalyst-api-specs/lib/client'
 import { EntityType, PointerChangesSyncDeployment } from '@dcl/schemas'
 import { asEnumValue, fromCamelCaseToSnakeCase } from '../utils'
 import { qsGetArray, qsGetBoolean, qsGetNumber, qsParser, toQueryParams } from '../../logic/query-params'
@@ -11,7 +11,7 @@ import { getPointerChanges } from '../../service/pointers/pointers'
 // Query String: ?from={timestamp}&to={timestamp}&offset={number}&limit={number}&entityType={entityType}&includeAuthChain={boolean}
 export async function getPointerChangesHandler(
   context: HandlerContextWithPath<'database' | 'denylist' | 'sequentialExecutor' | 'metrics', '/pointer-changes'>
-): Promise<{ status: 200; body: Required<GetPointerChanges200> }> {
+): Promise<{ status: 200; body: Required<PointerChanges> }> {
   const queryParams = qsParser(context.url.searchParams)
 
   const entityTypes: (EntityType | undefined)[] = qsGetArray(queryParams, 'entityType').map((type) =>

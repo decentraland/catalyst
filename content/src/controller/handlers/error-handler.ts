@@ -1,8 +1,8 @@
-import { ContentErrorResponse } from '@dcl/catalyst-api-specs/lib/client'
+import { Error } from '@dcl/catalyst-api-specs/lib/client'
 import { IHttpServerComponent } from '@well-known-components/interfaces'
 import { InvalidRequestError, NotFoundError } from '../../types'
 
-function handleError(error: any): { status: number; body: ContentErrorResponse } {
+function handleError(error: any): { status: number; body: Error } {
   if (error instanceof InvalidRequestError) {
     return {
       status: 400,

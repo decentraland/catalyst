@@ -1,12 +1,11 @@
-import { Entity } from '@dcl/schemas'
-import { GetActiveEntities200Item } from '@dcl/catalyst-api-specs/lib/client'
+import { Entity } from '@dcl/catalyst-api-specs/lib/client'
 import { HandlerContextWithPath, InvalidRequestError } from '../../types'
 
 // Method: POST
 // Body: { ids: string[], pointers: string[]}
 export async function getActiveEntitiesHandler(
   context: HandlerContextWithPath<'database' | 'activeEntities' | 'denylist', '/entities/active'>
-): Promise<{ status: 200; body: GetActiveEntities200Item[] }> {
+): Promise<{ status: 200; body: Entity[] }> {
   const { database, activeEntities, denylist } = context.components
   const body = await context.request.json()
   const ids: string[] = body.ids
