@@ -16,7 +16,7 @@ import { metricsDeclaration } from './metrics'
 import { createMigrationExecutor } from './migrations/migration-executor'
 import { createActiveEntitiesComponent } from './ports/activeEntities'
 import { createClock } from './ports/clock'
-import { createDAOComponent } from './ports/dao-servers-getter'
+import { DAOComponent, createCustomDAOComponent, createDAOComponent } from './ports/dao-servers-getter'
 import { createDenylist } from './ports/denylist'
 import { createDeployRateLimiter } from './ports/deployRateLimiterComponent'
 import { createDeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
@@ -101,7 +101,11 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const contentFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
   const storage = await createFolderBasedFileSystemContentStorage({ fs }, contentFolder)
 
-  const daoClient = await createDAOComponent({ env, l1Provider })
+  const customDAO: string = env.getConfig(EnvironmentConfig.CUSTOM_DAO) ?? ''
+  let daoClient: DAOComponent
+  if (!!customDAO && !!customDAO.trim().length) daoClient = createDAOComponent({ l1Provider })
+  else daoClient = createCustomDAOComponent(customDAO)
+
   const authenticator = new ContentAuthenticator(l1Provider, env.getConfig(EnvironmentConfig.DECENTRALAND_ADDRESS))
 
   const contentCluster = new ContentCluster(
