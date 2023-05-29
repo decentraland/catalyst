@@ -1,8 +1,8 @@
-import { CatalystByIdResult } from '@dcl/catalyst-contracts';
-import { EthAddress } from '@dcl/crypto';
-import { DaoComponent } from '../../../../../src/service/synchronization/clients/HardcodedDAOClient';
+import { CatalystByIdResult } from '@dcl/catalyst-contracts'
+import { EthAddress } from '@dcl/crypto'
+import { DAOComponent } from '../../../../../src/ports/dao-servers-getter'
 
-export class MockedDAOClient implements DaoComponent {
+export class MockedDAOClient implements DAOComponent {
   private readonly serversByAddress: Map<string, CatalystByIdResult>
 
   private constructor(servers: { domain: string; owner: EthAddress }[]) {

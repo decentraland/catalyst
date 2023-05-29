@@ -12,12 +12,14 @@ import {
   IMetricsComponent
 } from '@well-known-components/interfaces'
 import { FormDataContext } from '@well-known-components/multipart-wrapper'
+import { HTTPProvider } from 'eth-connect'
 import qs from 'qs'
 import { Environment } from './Environment'
 import { metricsDeclaration } from './metrics'
 import { MigrationExecutor } from './migrations/migration-executor'
 import { ActiveEntities } from './ports/activeEntities'
 import { Clock } from './ports/clock'
+import { DAOComponent } from './ports/dao-servers-getter'
 import { Denylist } from './ports/denylist'
 import { IDeployRateLimiterComponent } from './ports/deployRateLimiterComponent'
 import { DeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
@@ -33,7 +35,6 @@ import { GarbageCollectionManager } from './service/garbage-collection/GarbageCo
 import { PointerManager } from './service/pointers/PointerManager'
 import { IChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
 import { ContentCluster } from './service/synchronization/ContentCluster'
-import { DaoComponent } from './service/synchronization/clients/HardcodedDAOClient'
 import { IRetryFailedDeploymentsComponent } from './service/synchronization/retryFailedDeployments'
 import { ServerValidator } from './service/validations/server'
 
@@ -90,7 +91,7 @@ export type AppComponents = {
   }
   garbageCollectionManager: GarbageCollectionManager
   systemProperties: SystemProperties
-  daoClient: DaoComponent
+  daoClient: DAOComponent
   server: IHttpServerComponent<GlobalContext>
   retryFailedDeployments: IRetryFailedDeploymentsComponent
   activeEntities: ActiveEntities
@@ -101,6 +102,7 @@ export type AppComponents = {
   processedSnapshotStorage: IProcessedSnapshotStorageComponent
   clock: Clock
   snapshotStorage: ISnapshotStorageComponent
+  l1Provider: HTTPProvider
 }
 
 export type GlobalContext = {

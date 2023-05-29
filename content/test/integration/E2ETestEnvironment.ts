@@ -9,8 +9,8 @@ import { DEFAULT_DATABASE_CONFIG, Environment, EnvironmentBuilder, EnvironmentCo
 import { stopAllComponents } from '../../src/logic/components-lifecycle'
 import { metricsDeclaration } from '../../src/metrics'
 import { createMigrationExecutor } from '../../src/migrations/migration-executor'
+import { DAOComponent } from '../../src/ports/dao-servers-getter'
 import { IDatabaseComponent, createDatabaseComponent } from '../../src/ports/postgres'
-import { DaoComponent } from '../../src/service/synchronization/clients/HardcodedDAOClient'
 import { AppComponents } from '../../src/types'
 import { MockedDAOClient } from '../helpers/service/synchronization/clients/MockedDAOClient'
 import { TestProgram } from './TestProgram'
@@ -147,7 +147,7 @@ export class ServerBuilder {
   private readonly builder: EnvironmentBuilder
   private readonly storageBaseFolder: string
 
-  constructor(private readonly testEnvCalls: TestEnvCalls, env: Environment, public dao: DaoComponent) {
+  constructor(private readonly testEnvCalls: TestEnvCalls, env: Environment, public dao: DAOComponent) {
     this.builder = new EnvironmentBuilder(env)
     this.storageBaseFolder = env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER) ?? 'storage'
   }
