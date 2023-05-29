@@ -15,7 +15,7 @@ import { FormDataContext } from '@well-known-components/multipart-wrapper'
 import qs from 'qs'
 import { Environment } from './Environment'
 import { metricsDeclaration } from './metrics'
-import { MigrationManager } from './migrations/MigrationManager'
+import { MigrationExecutor } from './migrations/migration-executor'
 import { ActiveEntities } from './ports/activeEntities'
 import { Clock } from './ports/clock'
 import { Denylist } from './ports/denylist'
@@ -82,7 +82,7 @@ export type AppComponents = {
   deployRateLimiter: IDeployRateLimiterComponent
   storage: IContentStorageComponent
   authenticator: ContentAuthenticator
-  migrationManager: MigrationManager
+  migrationManager: MigrationExecutor
   serverValidator: ServerValidator
   externalCalls: ExternalCalls
   validator: {
@@ -114,7 +114,7 @@ export type MaintenanceComponents = {
   database: IDatabaseComponent
   storage: IContentStorageComponent
   fs: IFileSystemComponent
-  migrationManager: MigrationManager
+  migrationManager: MigrationExecutor
 }
 
 export type Timestamp = number

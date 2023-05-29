@@ -3,17 +3,17 @@ import { ILoggerComponent } from '@well-known-components/interfaces'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { random } from 'faker'
+import LeakDetector from 'jest-leak-detector'
 import ms from 'ms'
 import { DEFAULT_DATABASE_CONFIG, Environment, EnvironmentBuilder, EnvironmentConfig } from '../../src/Environment'
 import { stopAllComponents } from '../../src/logic/components-lifecycle'
 import { metricsDeclaration } from '../../src/metrics'
-import { MigrationManagerFactory } from '../../src/migrations/MigrationManagerFactory'
-import { createDatabaseComponent, IDatabaseComponent } from '../../src/ports/postgres'
+import { createMigrationExecutor } from '../../src/migrations/migration-executor'
+import { IDatabaseComponent, createDatabaseComponent } from '../../src/ports/postgres'
 import { DaoComponent } from '../../src/service/synchronization/clients/HardcodedDAOClient'
 import { AppComponents } from '../../src/types'
 import { MockedDAOClient } from '../helpers/service/synchronization/clients/MockedDAOClient'
 import { TestProgram } from './TestProgram'
-import LeakDetector from 'jest-leak-detector'
 
 export class E2ETestEnvironment {
   public static TEST_SCHEMA = 'e2etest'
@@ -104,7 +104,7 @@ export class E2ETestEnvironment {
   async getEnvForNewDatabase(): Promise<Environment> {
     const [dbName] = await this.createDatabases(1)
     const env = new Environment(this.sharedEnv).setConfig(EnvironmentConfig.PSQL_DATABASE, dbName)
-    const migrationManager = MigrationManagerFactory.create({ logs: this.logs, env })
+    const migrationManager = createMigrationExecutor({ logs: this.logs, env })
     await migrationManager.run()
     await stopAllComponents({ migrationManager })
     return env

@@ -13,7 +13,7 @@ import path from 'path'
 import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, Environment, EnvironmentConfig } from './Environment'
 import { splitByCommaTrimAndRemoveEmptyElements } from './logic/config-helpers'
 import { metricsDeclaration } from './metrics'
-import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
+import { createMigrationExecutor } from './migrations/migration-executor'
 import { createActiveEntitiesComponent } from './ports/activeEntities'
 import { createClock } from './ports/clock'
 import { createDenylist } from './ports/denylist'
@@ -300,7 +300,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     clock
   })
 
-  const migrationManager = MigrationManagerFactory.create({ logs, env })
+  const migrationManager = createMigrationExecutor({ logs, env })
 
   env.logConfigValues(logs.getLogger('Environment'))
 
