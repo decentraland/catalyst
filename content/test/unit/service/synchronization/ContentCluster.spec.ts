@@ -48,7 +48,7 @@ describe('ContentCluster', function () {
     // Check that no identity was detected
     expect(await contentCluster.getIdentity()).toEqual({
       address: address1,
-      id: new Uint8Array(),
+      id: '0',
       owner: '0x0000000000000000000000000000000000000000'
     })
   })
