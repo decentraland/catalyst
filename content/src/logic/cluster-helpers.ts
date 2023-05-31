@@ -1,4 +1,4 @@
-import { CatalystByIdResult } from '@dcl/catalyst-contracts'
+import { CatalystServerInfo } from '@dcl/catalyst-contracts'
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { EnvironmentConfig } from '../Environment'
 import { AppComponents } from '../types'
@@ -25,7 +25,7 @@ export async function determineCatalystIdentity(
   components: Pick<AppComponents, 'logs' | 'daoClient' | 'challengeSupervisor' | 'env' | 'fetcher'>,
   maxAttemps: number = 10,
   attempIntervalMs: number = process.env.CI ? 1_000 /* 1sec */ : 5_000 /* 5sec */
-): Promise<CatalystByIdResult | undefined> {
+): Promise<CatalystServerInfo | undefined> {
   const logger = components.logs.getLogger('CatalystIdentityProvider')
   const normalizedContentServerAddress = normalizeContentBaseUrl(
     components.env.getConfig<string>(EnvironmentConfig.CONTENT_SERVER_ADDRESS)
@@ -43,16 +43,16 @@ export async function determineCatalystIdentity(
         const daoServers = await components.daoClient.getAllContentServers()
 
         for (const server of daoServers) {
-          if (normalizeContentBaseUrl(server.domain) == normalizedContentServerAddress) {
+          if (normalizeContentBaseUrl(server.address) == normalizedContentServerAddress) {
             logger.info(`Calculated my identity in the DAO.`, server as any)
             return server
           }
         }
 
         // if there are servers in the DAO and this catalyst is not part of those. We still have an identity
-        const myIdentity: CatalystByIdResult = {
-          id: new Uint8Array(),
-          domain: normalizedContentServerAddress,
+        const myIdentity: CatalystServerInfo = {
+          id: '0',
+          address: normalizedContentServerAddress,
           owner: '0x0000000000000000000000000000000000000000'
         }
         logger.info(`Calculated my identity, not part of the DAO.`, myIdentity as any)

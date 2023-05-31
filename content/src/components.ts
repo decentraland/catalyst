@@ -10,13 +10,14 @@ import { createMetricsComponent, instrumentHttpServerWithMetrics } from '@well-k
 import { HTTPProvider } from 'eth-connect'
 import ms from 'ms'
 import path from 'path'
+import { L1Network } from '@dcl/catalyst-contracts'
 import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, Environment, EnvironmentConfig } from './Environment'
 import { splitByCommaTrimAndRemoveEmptyElements } from './logic/config-helpers'
 import { metricsDeclaration } from './metrics'
 import { createMigrationExecutor } from './migrations/migration-executor'
 import { createActiveEntitiesComponent } from './ports/activeEntities'
 import { createClock } from './ports/clock'
-import { DAOComponent, createCustomDAOComponent, createDAOComponent } from './ports/dao-servers-getter'
+import { createCustomDAOComponent, createDAOComponent } from './ports/dao-servers-getter'
 import { createDenylist } from './ports/denylist'
 import { createDeployRateLimiter } from './ports/deployRateLimiterComponent'
 import { createDeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
@@ -102,9 +103,10 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const storage = await createFolderBasedFileSystemContentStorage({ fs }, contentFolder)
 
   const customDAO: string = env.getConfig(EnvironmentConfig.CUSTOM_DAO) ?? ''
-  let daoClient: DAOComponent
-  if (!!customDAO && !!customDAO.trim().length) daoClient = createDAOComponent({ l1Provider })
-  else daoClient = createCustomDAOComponent(customDAO)
+  const daoClient =
+    !!customDAO && !!customDAO.trim().length
+      ? await createDAOComponent({ l1Provider }, ethNetwork as L1Network)
+      : createCustomDAOComponent(customDAO)
 
   const authenticator = new ContentAuthenticator(l1Provider, env.getConfig(EnvironmentConfig.DECENTRALAND_ADDRESS))
 

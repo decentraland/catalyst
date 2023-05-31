@@ -2,10 +2,9 @@
 # yarn lockfile v1
 
 
-"@adraffy/ens-normalize@git+https://github.com/ricmoo/ens-normalize.js.git":
+"@adraffy/ens-normalize@https://github.com/ricmoo/ens-normalize.js":
   version "1.9.0"
-  uid "2d040533e57e4f25f9a7cc4715e219658ad454b5"
-  resolved "git+https://github.com/ricmoo/ens-normalize.js.git#2d040533e57e4f25f9a7cc4715e219658ad454b5"
+  resolved "https://github.com/ricmoo/ens-normalize.js#2d040533e57e4f25f9a7cc4715e219658ad454b5"
 
 "@ampproject/remapping@^2.1.0":
   version "2.2.0"
@@ -344,6 +343,11 @@
   integrity sha512-zOSuHV95vMQNKI/9o0lMUBoOI2RgVFxIFMBJq3bp2JDrWljnBotNwYCKHbEQ0e/kGrdAPKWB9iwdEzHrt+yong==
   dependencies:
     eth-connect "^6.1.0"
+
+"@dcl/catalyst-contracts@^4.0.0":
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-contracts/-/catalyst-contracts-4.0.0.tgz#5291944cedfe29f9cb04fef9c63950b3dc6c2f3e"
+  integrity sha512-4CwT1fOMlKCaFiUhZoQq64NR+B72Tx5Fdf6/tSLaO0gLe7Vyuuo3EcuHQ4c+fEfJvPk2tQatIKvstUiLhlvWQw==
 
 "@dcl/catalyst-storage@^2.0.0", "@dcl/catalyst-storage@^2.0.3":
   version "2.0.3"
@@ -3247,7 +3251,7 @@ ethers@^6.4.0:
   resolved "https://registry.yarnpkg.com/ethers/-/ethers-6.4.0.tgz#82c230a3a018a2627593d24ec4b9c20e9681c341"
   integrity sha512-nksaMCwX+BOdV2NQ1/57OehSD2JtujbhrdC2+Fb9VpvBO0WO6h+WWwu3oMMw7aUiTa5lvQcWX1vl4aOy7Q3CTg==
   dependencies:
-    "@adraffy/ens-normalize" "git+https://github.com/ricmoo/ens-normalize.js.git"
+    "@adraffy/ens-normalize" "https://github.com/ricmoo/ens-normalize.js"
     "@noble/hashes" "1.1.2"
     "@noble/secp256k1" "1.7.1"
     "@types/node" "18.15.13"

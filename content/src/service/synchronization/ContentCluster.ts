@@ -1,4 +1,4 @@
-import { CatalystByIdResult } from '@dcl/catalyst-contracts'
+import { CatalystServerInfo } from '@dcl/catalyst-contracts'
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import future from 'fp-future'
@@ -10,7 +10,7 @@ export interface IdentityProvider {
   /**
    * Returns undefined when this servers configured CONTENT_SERVER_URL is unreachable or missconfigured
    */
-  getIdentity(): Promise<CatalystByIdResult | undefined>
+  getIdentity(): Promise<CatalystServerInfo | undefined>
 }
 
 function shuffleArray<T>(arr: T[]): T[] {
@@ -31,7 +31,7 @@ export class ContentCluster implements IdentityProvider {
 
   private syncFinishedEventCallbacks: Array<(serverClients: Set<string>) => void> = []
 
-  private identityFuture: Promise<CatalystByIdResult | undefined> | undefined
+  private identityFuture: Promise<CatalystServerInfo | undefined> | undefined
 
   // this future is a signal to stop the synchronization
   private stoppedFuture = future<void>()
@@ -78,7 +78,7 @@ export class ContentCluster implements IdentityProvider {
     return Array.from(this.serverClients)
   }
 
-  async getIdentity(): Promise<CatalystByIdResult | undefined> {
+  async getIdentity(): Promise<CatalystServerInfo | undefined> {
     if (!this.identityFuture) {
       this.identityFuture = determineCatalystIdentity(this.components)
     }
@@ -138,15 +138,15 @@ export class ContentCluster implements IdentityProvider {
   }
 
   /** Returns all the addresses on the DAO, except for the current server's */
-  private getAllOtherAddressesOnDAO(allServers: Array<CatalystByIdResult>): string[] {
+  private getAllOtherAddressesOnDAO(allServers: Array<CatalystServerInfo>): string[] {
     const normalizedContentServerAddress = normalizeContentBaseUrl(
       this.components.env.getConfig<string>(EnvironmentConfig.CONTENT_SERVER_ADDRESS)
     )
 
     // Filter myself out
     const serverUrls = allServers
-      .map(({ domain }) => domain)
-      .filter((domain) => normalizeContentBaseUrl(domain) != normalizedContentServerAddress)
+      .map(({ address }) => address)
+      .filter((address) => normalizeContentBaseUrl(address) != normalizedContentServerAddress)
 
     // We are sorting the array, so when we query the servers, we will choose a different one each time
     return shuffleArray(serverUrls)

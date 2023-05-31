@@ -1,20 +1,35 @@
-import { CatalystByIdResult, getAllCatalystFromProvider } from '@dcl/catalyst-contracts'
-import { hexToBytes } from 'eth-connect'
+import {
+  catalystAbi,
+  CatalystContract,
+  CatalystServerInfo,
+  getCatalystServersFromDAO,
+  l1Contracts,
+  L1Network
+} from '@dcl/catalyst-contracts'
+import RequestManager, { ContractFactory } from 'eth-connect'
 import { AppComponents } from '../types'
 
 export interface DAOComponent {
-  getAllContentServers(): Promise<Array<CatalystByIdResult>>
-  getAllServers(): Promise<Array<CatalystByIdResult>>
+  getAllContentServers(): Promise<CatalystServerInfo[]>
+  getAllServers(): Promise<CatalystServerInfo[]>
 }
 
-export function createDAOComponent(components: Pick<AppComponents, 'l1Provider'>): DAOComponent {
-  async function getAllContentServers(): Promise<Array<CatalystByIdResult>> {
+export async function createDAOComponent(
+  components: Pick<AppComponents, 'l1Provider'>,
+  network: L1Network
+): Promise<DAOComponent> {
+  const requestManager = new RequestManager(components.l1Provider)
+  const catalystContract: CatalystContract = (await new ContractFactory(requestManager, catalystAbi).at(
+    l1Contracts[network].catalyst
+  )) as any
+
+  async function getAllContentServers(): Promise<CatalystServerInfo[]> {
     const servers = await getAllServers()
-    return servers.map((server) => ({ ...server, domain: server.domain + '/content' }))
+    return servers.map((server) => ({ ...server, address: server.address + '/content' }))
   }
 
-  async function getAllServers(): Promise<Array<CatalystByIdResult>> {
-    return await getAllCatalystFromProvider(components.l1Provider)
+  async function getAllServers(): Promise<CatalystServerInfo[]> {
+    return getCatalystServersFromDAO(catalystContract)
   }
 
   return {
@@ -26,16 +41,16 @@ export function createDAOComponent(components: Pick<AppComponents, 'l1Provider'>
 export function createCustomDAOComponent(customDAOServers: string): DAOComponent {
   const servers = customDAOServers.split(',')
 
-  async function getAllContentServers(): Promise<Array<CatalystByIdResult>> {
+  async function getAllContentServers(): Promise<CatalystServerInfo[]> {
     const servers = await getAllServers()
-    return servers.map((server) => ({ ...server, domain: server.domain + '/content' }))
+    return servers.map((server) => ({ ...server, address: server.address + '/content' }))
   }
 
-  async function getAllServers(): Promise<Array<CatalystByIdResult>> {
+  async function getAllServers(): Promise<CatalystServerInfo[]> {
     return servers.map((server, index) => ({
-      domain: server,
+      address: server,
       owner: '0x0000000000000000000000000000000000000000',
-      id: hexToBytes(`${index.toString(16)}`)
+      id: `${index.toString(16)}`
     }))
   }
 
