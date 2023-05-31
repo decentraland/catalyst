@@ -7,7 +7,7 @@ import {
   createCachingEthereumProvider,
   loadTree
 } from '@dcl/block-indexer'
-import { landContracts } from '@dcl/catalyst-contracts'
+import { l1Contracts } from '@dcl/catalyst-contracts'
 import { streamToBuffer } from '@dcl/catalyst-storage/dist/content-item'
 import {
   DeploymentToValidate,
@@ -199,10 +199,10 @@ export async function createSubgraphValidator(
   }
 
   const network: 'mainnet' | 'goerli' = components.env.getConfig(EnvironmentConfig.ETH_NETWORK)
-  const contracts = landContracts[network]
+  const contracts = l1Contracts[network]
   const tokenAddresses: TokenAddresses = {
-    land: contracts.landContractAddress,
-    estate: contracts.stateContractAddress
+    land: contracts.land,
+    estate: contracts.state
   }
 
   const validateFns = createSubgraphAccessCheckValidateFns({

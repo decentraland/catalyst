@@ -39,7 +39,7 @@ describe('ContentCluster', function () {
 
     // Check that identity was detected
     const identity = await contentCluster.getIdentity()
-    expect(identity?.domain).toEqual(address1)
+    expect(identity?.address).toEqual(address1)
   })
 
   it(`When I'm not on the DAO, then blank identity is assigned`, async () => {
@@ -47,8 +47,8 @@ describe('ContentCluster', function () {
 
     // Check that no identity was detected
     expect(await contentCluster.getIdentity()).toEqual({
-      domain: address1,
-      id: new Uint8Array(),
+      address: address1,
+      id: '0',
       owner: '0x0000000000000000000000000000000000000000'
     })
   })
@@ -70,10 +70,10 @@ class ContentClusterBuilder {
   readonly fetcher = createFetchComponent()
   localChallenge: string | undefined
 
-  addLocalChallenge(domain: string, challengeText: string): ContentClusterBuilder {
+  addLocalChallenge(address: string, challengeText: string): ContentClusterBuilder {
     const original = this.fetcher.fetch
     jest.spyOn(this.fetcher, 'fetch').mockImplementation(async (url) => {
-      if (url === `${domain}/challenge`) {
+      if (url === `${address}/challenge`) {
         return new Response(JSON.stringify({ challengeText }))
       }
       {
@@ -84,23 +84,23 @@ class ContentClusterBuilder {
     return this
   }
 
-  addAddressWithEndpoints(domain: string, challengeText: string): ContentClusterBuilder {
+  addAddressWithEndpoints(address: string, challengeText: string): ContentClusterBuilder {
     const original = this.fetcher.fetch
     jest.spyOn(this.fetcher, 'fetch').mockImplementation(async (url) => {
-      if (url === `${domain}/challenge`) {
+      if (url === `${address}/challenge`) {
         return new Response(JSON.stringify({ challengeText }))
       }
       {
         return original(url)
       }
     })
-    this.servers.add(domain)
+    this.servers.add(address)
     return this
   }
 
-  addAddressWithLocalChallenge(domain: string, challengeText: string): ContentClusterBuilder {
+  addAddressWithLocalChallenge(address: string, challengeText: string): ContentClusterBuilder {
     this.localChallenge = challengeText
-    return this.addAddressWithEndpoints(domain, challengeText)
+    return this.addAddressWithEndpoints(address, challengeText)
   }
 
   async build(localAddress: string): Promise<ContentCluster> {
