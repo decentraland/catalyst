@@ -1,5 +1,6 @@
 import {
   catalystAbi,
+  CatalystByIdResult,
   CatalystContract,
   CatalystServerInfo,
   getCatalystServersFromDAO,
@@ -19,9 +20,20 @@ export async function createDAOComponent(
   network: L1Network
 ): Promise<DAOComponent> {
   const requestManager = new RequestManager(components.l1Provider)
-  const catalystContract: CatalystContract = (await new ContractFactory(requestManager, catalystAbi).at(
-    l1Contracts[network].catalyst
-  )) as any
+  const contract = (await new ContractFactory(requestManager, catalystAbi).at(l1Contracts[network].catalyst)) as any
+
+  const catalystContract: CatalystContract = {
+    async catalystCount(): Promise<number> {
+      return contract.catalystCount()
+    },
+    async catalystIds(i: number): Promise<string> {
+      return contract.catalystIds(i)
+    },
+    async catalystById(catalystId: string): Promise<CatalystByIdResult> {
+      const { id, owner, address } = await contract.catalystById(catalystId)
+      return { id, owner, domain: address }
+    }
+  }
 
   async function getAllContentServers(): Promise<CatalystServerInfo[]> {
     const servers = await getAllServers()

@@ -104,7 +104,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const customDAO: string = env.getConfig(EnvironmentConfig.CUSTOM_DAO) ?? ''
   const daoClient =
-    !!customDAO && !!customDAO.trim().length
+    customDAO.trim().length === 0
       ? await createDAOComponent({ l1Provider }, ethNetwork as L1Network)
       : createCustomDAOComponent(customDAO)
 
