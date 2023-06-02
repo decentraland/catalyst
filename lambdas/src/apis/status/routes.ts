@@ -21,7 +21,7 @@ export default (environment: Environment): Router => {
       currentTime: Date.now(),
       contentServerUrl: environment.getConfig(EnvironmentConfig.CONTENT_SERVER_ADDRESS),
       commitHash: environment.getConfig(EnvironmentConfig.COMMIT_HASH),
-      catalystVersion: environment.getConfig(EnvironmentConfig.CATALYST_VERSION)
+      catalystVersion: environment.getConfig(EnvironmentConfig.CURRENT_VERSION)
     })
   })
 
