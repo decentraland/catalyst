@@ -4,7 +4,6 @@ import ms from 'ms'
 import { initComponentsWithEnv } from './components'
 import { AppComponents, parseEntityType } from './types'
 
-export const CURRENT_CONTENT_VERSION = 'v3'
 const DEFAULT_STORAGE_ROOT_FOLDER = 'storage'
 const DEFAULT_HTTP_SERVER_PORT = 6969
 const DEFAULT_HTTP_SERVER_HOST = '0.0.0.0'
