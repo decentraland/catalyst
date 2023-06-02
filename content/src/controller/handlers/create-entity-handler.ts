@@ -42,7 +42,7 @@ export async function createEntity(
       deployFiles.push({ path: filename, content: file.value })
     }
 
-    const auditInfo = { authChain, version: CURRENT_CONTENT_VERSION }
+    const auditInfo = { authChain, version: 'v3' }
 
     const deploymentResult = await deployer.deployEntity(
       deployFiles.map(({ content }) => content),

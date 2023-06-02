@@ -1,6 +1,6 @@
 import { StatusContent } from '@dcl/catalyst-api-specs/lib/client'
 import { HandlerContextWithPath } from '../../types'
-import { CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION, EnvironmentConfig } from '../../Environment'
+import { CURRENT_COMMIT_HASH, CURRENT_VERSION, EnvironmentConfig } from '../../Environment'
 import { statusResponseFromComponents } from '../../logic/status-checks'
 
 export async function getStatusHandler(
@@ -14,7 +14,7 @@ export async function getStatusHandler(
     status: serverStatus.successful ? 200 : 503,
     body: {
       ...serverStatus.details,
-      version: CURRENT_CONTENT_VERSION,
+      version: CURRENT_VERSION,
       commitHash: CURRENT_COMMIT_HASH,
       ethNetwork,
       synchronizationStatus: {
