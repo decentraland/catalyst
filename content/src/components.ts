@@ -11,7 +11,7 @@ import { HTTPProvider } from 'eth-connect'
 import ms from 'ms'
 import path from 'path'
 import { L1Network } from '@dcl/catalyst-contracts'
-import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, Environment, EnvironmentConfig } from './Environment'
+import { CURRENT_VERSION, CURRENT_COMMIT_HASH, Environment, EnvironmentConfig } from './Environment'
 import { splitByCommaTrimAndRemoveEmptyElements } from './logic/config-helpers'
 import { metricsDeclaration } from './metrics'
 import { createMigrationExecutor } from './migrations/migration-executor'
@@ -338,7 +338,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   }
 
   const buildInfo = {
-    version: CURRENT_CATALYST_VERSION,
+    version: CURRENT_VERSION,
     commitHash: CURRENT_COMMIT_HASH,
     ethNetwork: env.getConfig(EnvironmentConfig.ETH_NETWORK) as string
   }

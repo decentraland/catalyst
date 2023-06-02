@@ -93,7 +93,7 @@ export const enum EnvironmentConfig {
   COLLECTIONS_L2_SUBGRAPH_URL,
   THIRD_PARTY_REGISTRY_L2_SUBGRAPH_URL,
   COMMIT_HASH,
-  CATALYST_VERSION,
+  CURRENT_VERSION,
   USE_COMPRESSION_MIDDLEWARE,
   LOG_LEVEL,
   ETH_NETWORK,
@@ -193,8 +193,8 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.COMMIT_HASH, () => process.env.COMMIT_HASH ?? 'Unknown')
     this.registerConfigIfNotAlreadySet(
       env,
-      EnvironmentConfig.CATALYST_VERSION,
-      () => process.env.CATALYST_VERSION ?? 'Unknown'
+      EnvironmentConfig.CURRENT_VERSION,
+      () => process.env.CURRENT_VERSION ?? 'Unknown'
     )
     this.registerConfigIfNotAlreadySet(
       env,
