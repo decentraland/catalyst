@@ -164,6 +164,8 @@ export enum EnvironmentConfig {
   DENYLIST_FILE_NAME,
   DENYLIST_URLS,
   READ_ONLY,
+  SUBGRAPH_COMPONENT_RETRIES,
+  SUBGRAPH_COMPONENT_QUERY_TIMEOUT,
 
   // List of entity types ignored during the synchronization
   SYNC_IGNORED_ENTITY_TYPES,
@@ -469,6 +471,18 @@ export class EnvironmentBuilder {
       env,
       EnvironmentConfig.L2_HTTP_PROVIDER_URL,
       () => process.env.L2_HTTP_PROVIDER_URL ?? ''
+    )
+
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.SUBGRAPH_COMPONENT_RETRIES,
+      () => process.env.SUBGRAPH_COMPONENT_RETRIES ?? '1'
+    )
+
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.SUBGRAPH_COMPONENT_QUERY_TIMEOUT,
+      () => process.env.SUBGRAPH_COMPONENT_QUERY_TIMEOUT ?? ms('1m')
     )
 
     return env
