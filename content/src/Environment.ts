@@ -476,7 +476,7 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.SUBGRAPH_COMPONENT_RETRIES,
-      () => process.env.SUBGRAPH_COMPONENT_RETRIES ?? '1'
+      () => process.env.SUBGRAPH_COMPONENT_RETRIES ?? '0'
     )
 
     this.registerConfigIfNotAlreadySet(
