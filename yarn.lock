@@ -333,14 +333,7 @@
   dependencies:
     yaml "^2.3.1"
 
-"@dcl/catalyst-contracts@^3.1.4":
-  version "3.1.4"
-  resolved "https://registry.yarnpkg.com/@dcl/catalyst-contracts/-/catalyst-contracts-3.1.4.tgz#4387dd2c17df60076048e8aaeaeebda47f3dabe8"
-  integrity sha512-zOSuHV95vMQNKI/9o0lMUBoOI2RgVFxIFMBJq3bp2JDrWljnBotNwYCKHbEQ0e/kGrdAPKWB9iwdEzHrt+yong==
-  dependencies:
-    eth-connect "^6.1.0"
-
-"@dcl/catalyst-contracts@^4.0.0", "@dcl/catalyst-contracts@^4.0.2":
+"@dcl/catalyst-contracts@^4.0.2":
   version "4.0.2"
   resolved "https://registry.yarnpkg.com/@dcl/catalyst-contracts/-/catalyst-contracts-4.0.2.tgz#9f77e1b4c857eff2ac6c550b8681ff6744680709"
   integrity sha512-lfLtj4e646xCl/09seLq8zVnbuQ2w1O0c678TRB+1dttGYPpD13osX3J1P7ikC2SoR4NEBgDlFYXGbppmf0NKQ==
@@ -3161,7 +3154,7 @@ etag@~1.8.1:
   resolved "https://registry.yarnpkg.com/etag/-/etag-1.8.1.tgz#41ae2eeb65efa62268aebfea83ac7d79299b0887"
   integrity sha512-aIL5Fx7mawVa300al2BnEE4iNvo1qETxLrPI/o05L7z6go7fCw1J6EQmbK4FmJ2AS7kgVF/KEZWufBfdClMcPg==
 
-eth-connect@^6.0.3, eth-connect@^6.1.0:
+eth-connect@^6.0.3:
   version "6.1.0"
   resolved "https://registry.yarnpkg.com/eth-connect/-/eth-connect-6.1.0.tgz#94df7e019592825f0d2ee2429d19baf9fa3c5136"
   integrity sha512-p5FN4GieTxwfJvgmGCPgXqL6w8/2cbLiTmNxpgQg881gSI0RdOShTHHu8amgxlj3VM4crovBx7UEKS2RGOhBLQ==
