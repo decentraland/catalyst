@@ -447,6 +447,14 @@
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
 
+"@dcl/schemas@https://sdk-team-cdn.decentraland.org/@dcl/schemas/branch/fix/platform-schemas/dcl-schemas-7.3.2-5248809503.commit-1afd2b0.tgz":
+  version "7.3.2-5248809503.commit-1afd2b0"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl/schemas/branch/fix/platform-schemas/dcl-schemas-7.3.2-5248809503.commit-1afd2b0.tgz#5701ed924c02abb7880c0aa59752b8a52882aea9"
+  dependencies:
+    ajv "8.11.0"
+    ajv-errors "^3.0.0"
+    ajv-keywords "^5.1.0"
+
 "@dcl/snapshots-fetcher@^9.0.0":
   version "9.0.0"
   resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-9.0.0.tgz#ca229e01e55f2651c3c04c98cd87d790c9cfe8aa"
