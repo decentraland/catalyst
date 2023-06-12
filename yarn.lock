@@ -379,6 +379,21 @@
     p-queue "^6.6.2"
     sharp "^0.32.0"
 
+"@dcl/content-validator@https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/bump-schemas/dcl-content-validator-4.7.6-5247968343.commit-1597871.tgz":
+  version "4.7.6-5247968343.commit-1597871"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/bump-schemas/dcl-content-validator-4.7.6-5247968343.commit-1597871.tgz#37086a07cffa4b4c11f88bb5445459c5d5bba9fd"
+  dependencies:
+    "@dcl/block-indexer" "^1.1.1"
+    "@dcl/content-hash-tree" "^1.1.4"
+    "@dcl/hashing" "^2.0.0"
+    "@dcl/schemas" "https://sdk-team-cdn.decentraland.org/@dcl/schemas/branch/fix/platform-schemas/dcl-schemas-7.3.2-5247225782.commit-c070b4c.tgz"
+    "@dcl/urn-resolver" "^2.0.3"
+    "@well-known-components/interfaces" "^1.3.0"
+    "@well-known-components/thegraph-component" "^1.5.0"
+    ms "^2.1.3"
+    p-queue "^6.6.2"
+    sharp "^0.32.0"
+
 "@dcl/crypto@^3.4.0", "@dcl/crypto@^3.4.1":
   version "3.4.1"
   resolved "https://registry.yarnpkg.com/@dcl/crypto/-/crypto-3.4.1.tgz#2ab9b9b5b18efbe5d65eee3936c0f73c20480858"
@@ -415,7 +430,7 @@
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
 
-"@dcl/schemas@^7.0.0", "@dcl/schemas@^7.1.0", "@dcl/schemas@^7.3.1":
+"@dcl/schemas@^7.0.0", "@dcl/schemas@^7.1.0":
   version "7.3.1"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-7.3.1.tgz#cf13b9db58c3ecdc466c3ea44d9e969d66a504b0"
   integrity sha512-UVXQ3N+jlYSJohiIPg49ERIRjS7yoTAtynA16zhWKukB/W2cMv3mn3U5s4iQiE6znDFctveNtrxGNIXI+7hhTg==
