@@ -11,9 +11,7 @@ import { initializeMetricsServer } from './MetricsServer'
 import { OffChainWearablesManager } from './apis/collections/off-chain/OffChainWearablesManager'
 import { initializeCollectionsRoutes } from './apis/collections/routes'
 import { initializeContentV2Routes } from './apis/content-v2/routes'
-import { initializeContractRoutes } from './apis/contracts/routes'
 import { initializeCryptoRoutes } from './apis/crypto/routes'
-import { initializeExploreRoutes } from './apis/explore/routes'
 import { initializeImagesRoutes } from './apis/images/routes'
 import { EmotesOwnership } from './apis/profiles/EmotesOwnership'
 import { EnsOwnership } from './apis/profiles/EnsOwnership'
@@ -121,17 +119,11 @@ export class Server {
       initializeImagesRoutes(express.Router(), fetcher, env.getConfig(EnvironmentConfig.LAMBDAS_STORAGE_LOCATION))
     )
 
-    // DAO cached access API
-    this.app.use('/contracts', initializeContractRoutes(express.Router(), env.getBean(Bean.DAO)))
-
     // DAO Collections access API
     this.app.use(
       '/collections',
       initializeCollectionsRoutes(express.Router(), contentClient, theGraphClient, offChainManager)
     )
-
-    // Functionality for Explore use case
-    this.app.use('/explore', initializeExploreRoutes(express.Router(), env.getBean(Bean.DAO), contentClient))
 
     this.app.use('/third-party-integrations', initializeThirdPartyIntegrationsRoutes(theGraphClient, express.Router()))
   }

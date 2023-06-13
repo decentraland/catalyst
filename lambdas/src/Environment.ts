@@ -8,7 +8,6 @@ import { EnsOwnershipFactory } from './apis/profiles/EnsOwnershipFactory'
 import { WearablesOwnershipFactory } from './apis/profiles/WearablesOwnershipFactory'
 import { createTheGraphClient } from './ports/the-graph-client'
 import { createTheGraphDependencies } from './ports/the-graph/dependencies'
-import { DAOCache } from './service/dao/DAOCache'
 import { SmartContentClientFactory } from './utils/SmartContentClientFactory'
 import { SmartContentServerFetcherFactory } from './utils/SmartContentServerFetcherFactory'
 import { getCommsServerUrl } from './utils/commons'
@@ -267,27 +266,12 @@ export class EnvironmentBuilder {
       `https://rpc.decentraland.org/${encodeURIComponent(ethNetwork)}?project=catalyst-lambdas`,
       { fetch }
     )
-    const poisProvider = this.newPoisProvider(ethNetwork)
-
     this.registerBeanIfNotAlreadySet(env, Bean.ETHEREUM_PROVIDER, () => ethereumProvider)
-    this.registerBeanIfNotAlreadySet(env, Bean.DAO, () => new DAOCache(ethereumProvider, poisProvider))
     this.registerBeanIfNotAlreadySet(env, Bean.ENS_OWNERSHIP, () => EnsOwnershipFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.WEARABLES_OWNERSHIP, () => WearablesOwnershipFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.EMOTES_OWNERSHIP, () => EmotesOwnershipFactory.create(env))
 
     return env
-  }
-
-  private newPoisProvider(ethNetwork: string) {
-    if (ethNetwork === 'mainnet') {
-      return new HTTPProvider(
-        `https://rpc.decentraland.org/${encodeURIComponent('polygon')}?project=catalyst-lambdas`,
-        { fetch }
-      )
-    }
-    return new HTTPProvider(`https://rpc.decentraland.org/${encodeURIComponent('mumbai')}?project=catalyst-lambdas`, {
-      fetch
-    })
   }
 
   private registerConfigIfNotAlreadySet(env: Environment, key: EnvironmentConfig, valueProvider: () => any): void {
