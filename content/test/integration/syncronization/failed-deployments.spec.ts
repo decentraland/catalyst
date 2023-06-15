@@ -8,6 +8,7 @@ import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { awaitUntil, buildDeployData, buildDeployDataAfterEntity, createIdentity } from '../E2ETestUtils'
 import { TestProgram, startProgramAndWaitUntilBootstrapFinishes } from '../TestProgram'
 import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
+import { makeNoopDeploymentValidator } from '../../helpers/service/validations/NoOpValidator'
 
 describe('Errors during sync', () => {
   const getTestEnv = setupTestEnvironment()
@@ -30,6 +31,9 @@ describe('Errors during sync', () => {
 
       jest.spyOn(server1.components.validator, 'validate').mockResolvedValue({ ok: true })
       jest.spyOn(server2.components.validator, 'validate').mockResolvedValue({ ok: true })
+
+      makeNoopDeploymentValidator(server1.components)
+      makeNoopDeploymentValidator(server2.components)
 
       serverValidatorStub2 = jest
         .spyOn(server2.components.serverValidator, 'validate')

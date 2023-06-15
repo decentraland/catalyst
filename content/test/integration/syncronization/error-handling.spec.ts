@@ -2,7 +2,11 @@ import { Entity } from '@dcl/schemas'
 import ms from 'ms'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { FailedDeployment, FailureReason } from '../../../src/ports/failedDeployments'
-import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
+import {
+  makeNoopDeploymentValidator,
+  makeNoopServerValidator,
+  makeNoopValidator
+} from '../../helpers/service/validations/NoOpValidator'
 import {
   assertDeploymentFailed,
   assertDeploymentsAreReported,
@@ -30,8 +34,10 @@ describe('End 2 end - Error handling', () => {
 
     makeNoopValidator(server1.components)
     makeNoopServerValidator(server1.components)
+    makeNoopDeploymentValidator(server1.components)
     makeNoopValidator(server2.components)
     makeNoopServerValidator(server2.components)
+    makeNoopDeploymentValidator(server2.components)
   })
 
   //TODO: [new-sync] Check that this is being tested somewhere else
