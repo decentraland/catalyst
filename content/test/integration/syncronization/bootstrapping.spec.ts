@@ -11,6 +11,7 @@ import { assertDeploymentsAreReported, buildDeployment } from '../E2EAssertions'
 import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
 import { startProgramAndWaitUntilBootstrapFinishes, TestProgram } from '../TestProgram'
+import { State } from '../../../src/ports/synchronizationState'
 
 describe('Bootstrapping synchronization tests', function () {
   const getTestEnv = setupTestEnvironment()
@@ -44,6 +45,8 @@ describe('Bootstrapping synchronization tests', function () {
     jest.spyOn(server2.components.clock, 'now').mockImplementation(fakeNow)
     jest.spyOn(server1.components.validator, 'validate').mockResolvedValue({ ok: true })
     jest.spyOn(server2.components.validator, 'validate').mockResolvedValue({ ok: true })
+    jest.spyOn(server1.components.synchronizationState, 'getState').mockReturnValue(State.SYNCING)
+    jest.spyOn(server2.components.synchronizationState, 'getState').mockReturnValue(State.SYNCING)
     loggerIndex = 1
   })
 

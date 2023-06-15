@@ -1,5 +1,5 @@
 import * as loggerComponent from '@well-known-components/logger'
-import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
+import { makeNoopDeploymentValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import {
   assertDeploymentsAreReported,
   assertEntitiesAreActiveOnServer,
@@ -38,6 +38,8 @@ describe('End 2 end synchronization tests', function () {
     ;[server1, server2] = await getTestEnv().configServer().andBuildMany(2)
     makeNoopValidator(server1.components)
     makeNoopValidator(server2.components)
+    makeNoopDeploymentValidator(server1.components)
+    makeNoopDeploymentValidator(server2.components)
     // Start server 1 and 2
     await Promise.all([server1.startProgram(), server2.startProgram()])
 
@@ -69,6 +71,9 @@ describe('End 2 end synchronization tests', function () {
     makeNoopValidator(server1.components)
     makeNoopValidator(server2.components)
     makeNoopValidator(server3.components)
+    makeNoopDeploymentValidator(server1.components)
+    makeNoopDeploymentValidator(server2.components)
+    makeNoopDeploymentValidator(server3.components)
     // Start server 1 and 2
     await Promise.all([server1.startProgram(), server2.startProgram()])
 
@@ -119,6 +124,9 @@ describe('End 2 end synchronization tests', function () {
     makeNoopValidator(server1.components)
     makeNoopValidator(server2.components)
     makeNoopValidator(server3.components)
+    makeNoopDeploymentValidator(server1.components)
+    makeNoopDeploymentValidator(server2.components)
+    makeNoopDeploymentValidator(server3.components)
     // Start server 2
     await Promise.all([server2.startProgram()])
 

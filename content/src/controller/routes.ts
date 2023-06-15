@@ -4,7 +4,7 @@ import { EnvironmentConfig } from '../Environment'
 import { GlobalContext } from '../types'
 import { getActiveEntitiesHandler } from './handlers/active-entities-handler'
 import { createEntity } from './handlers/create-entity-handler'
-import { errorHandler } from './handlers/error-handler'
+import { errorHandler, preventExecutionIfBoostrapping } from './middlewares'
 import { getFailedDeploymentsHandler } from './handlers/failed-deployments-handler'
 import { getEntitiesByPointerPrefixHandler } from './handlers/filter-by-urn-handler'
 import { getEntityAuditInformationHandler } from './handlers/get-audit-handler'
@@ -32,7 +32,11 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
   if (env.getConfig(EnvironmentConfig.READ_ONLY)) {
     logger.info(`Content Server running on read-only mode. POST /entities endpoint will not be exposed`)
   } else {
-    router.post('/entities', multipartParserWrapper(createEntity))
+    router.post(
+      '/entities',
+      preventExecutionIfBoostrapping({ synchronizationState: components.synchronizationState }),
+      multipartParserWrapper(createEntity)
+    )
   }
 
   router.get('/entities/:type', getEntitiesHandler) // TODO: Deprecate
