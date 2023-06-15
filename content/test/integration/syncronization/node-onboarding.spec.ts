@@ -1,4 +1,4 @@
-import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
+import { makeNoopDeploymentValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import {
   assertDeploymentsAreReported,
   assertEntitiesAreActiveOnServer,
@@ -22,6 +22,9 @@ describe('End 2 end - Node onboarding', function () {
     makeNoopValidator(server1.components)
     makeNoopValidator(server2.components)
     makeNoopValidator(server3.components)
+    makeNoopDeploymentValidator(server1.components)
+    makeNoopDeploymentValidator(server2.components)
+    makeNoopDeploymentValidator(server3.components)
   })
 
   // TODO: [new-sync] don't know why this keeps failing :(

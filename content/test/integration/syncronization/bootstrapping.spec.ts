@@ -11,6 +11,7 @@ import { assertDeploymentsAreReported, buildDeployment } from '../E2EAssertions'
 import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
 import { startProgramAndWaitUntilBootstrapFinishes, TestProgram } from '../TestProgram'
+import { State } from '../../../src/ports/synchronizationState'
 
 describe('Bootstrapping synchronization tests', function () {
   const getTestEnv = setupTestEnvironment()
@@ -44,6 +45,8 @@ describe('Bootstrapping synchronization tests', function () {
     jest.spyOn(server2.components.clock, 'now').mockImplementation(fakeNow)
     jest.spyOn(server1.components.validator, 'validate').mockResolvedValue({ ok: true })
     jest.spyOn(server2.components.validator, 'validate').mockResolvedValue({ ok: true })
+    jest.spyOn(server1.components.synchronizationState, 'getState').mockReturnValue(State.SYNCING)
+    jest.spyOn(server2.components.synchronizationState, 'getState').mockReturnValue(State.SYNCING)
     loggerIndex = 1
   })
 
@@ -240,6 +243,24 @@ describe('Bootstrapping synchronization tests', function () {
     // assert that the entity was not deployed on server 2
     const { deployments } = await getDeployments(server2.components, server2.components.database)
     expect(deployments).toHaveLength(0)
+  })
+
+  it('when a server is boostrapping, it should not accept new deployments', async () => {
+    jest.spyOn(server1.components.synchronizationState, 'getState').mockReturnValue(State.BOOTSTRAPPING)
+    await server1.startProgram()
+
+    await expect(deployEntityAtTimestamp(server1, 'p1', fakeNow() + 1)).rejects.toThrow(
+      '{"error":"Deployments are not allowed while the Catalyst is boostrapping"}'
+    )
+  })
+
+  it('when a server is syncing, it should accept new deployments', async () => {
+    jest.spyOn(server1.components.synchronizationState, 'getState').mockReturnValue(State.SYNCING)
+    await server1.startProgram()
+
+    const deployment = await deployEntityAtTimestamp(server1, 'p1', fakeNow() + 1)
+
+    await assertDeploymentsAreReported(server1, deployment)
   })
 
   function advanceTime(msToAdvance: number) {
