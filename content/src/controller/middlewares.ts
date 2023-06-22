@@ -45,16 +45,30 @@ function handleError(error: any): { status: number; body: Error } {
     }
   }
 
-  throw error
+  // Prevent potential sensitive information leaks
+  // by avoiding the return of error.message
+  return {
+    status: 500,
+    body: {
+      error: 'Internal Server Error'
+    }
+  }
 }
 
-export async function errorHandler(
-  _ctx: IHttpServerComponent.DefaultContext<object>,
-  next: () => Promise<IHttpServerComponent.IResponse>
-): Promise<IHttpServerComponent.IResponse> {
-  try {
-    return await next()
-  } catch (error: any) {
-    return handleError(error)
+export function createErrorHandler({
+  logs
+}: Pick<AppComponents, 'logs'>): Middleware<IHttpServerComponent.DefaultContext<object>> {
+  const logger = logs.getLogger('error-handler')
+
+  return async function errorHandler(
+    _ctx: IHttpServerComponent.DefaultContext<object>,
+    next: () => Promise<IHttpServerComponent.IResponse>
+  ): Promise<IHttpServerComponent.IResponse> {
+    try {
+      return await next()
+    } catch (error: any) {
+      logger.error(error)
+      return handleError(error)
+    }
   }
 }
