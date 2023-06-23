@@ -315,7 +315,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     {
       cors: {
         origin: true,
-        methods: ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'CONNECT', 'TRACE', 'PATCH'],
+        methods: ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'CONNECT', 'TRACE', 'PATCH', 'OPTION'],
         allowedHeaders: ['Cache-Control', 'Content-Type', 'Origin', 'Accept', 'User-Agent', 'X-Upload-Origin'],
         credentials: true,
         maxAge: 86400

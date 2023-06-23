@@ -4,7 +4,7 @@ import { EnvironmentConfig } from '../Environment'
 import { GlobalContext } from '../types'
 import { getActiveEntitiesHandler } from './handlers/active-entities-handler'
 import { createEntity } from './handlers/create-entity-handler'
-import { errorHandler, preventExecutionIfBoostrapping } from './middlewares'
+import { createErrorHandler, preventExecutionIfBoostrapping } from './middlewares'
 import { getFailedDeploymentsHandler } from './handlers/failed-deployments-handler'
 import { getEntitiesByPointerPrefixHandler } from './handlers/filter-by-urn-handler'
 import { getEntityAuditInformationHandler } from './handlers/get-audit-handler'
@@ -24,7 +24,7 @@ import { getActiveEntityIdsByDeploymentHashHandler } from './handlers/get-active
 // We return the entire router because it will be easier to test than a whole server
 export async function setupRouter({ components }: GlobalContext): Promise<Router<GlobalContext>> {
   const router = new Router<GlobalContext>()
-  router.use(errorHandler)
+  router.use(createErrorHandler({ logs: components.logs }))
 
   const env = components.env
   const logger = components.logs.getLogger('router')
