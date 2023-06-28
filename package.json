@@ -55,7 +55,5 @@
   "jest-junit": {
     "addFileAttribute": "true"
   },
-  "dependencies": {
-    "@dcl/content-validator": "https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/fix/legacy-entities-being-rejected/dcl-content-validator-4.7.10-5403429963.commit-643c78d.tgz"
-  }
+  "dependencies": {}
 }
