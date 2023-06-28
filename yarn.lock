@@ -372,6 +372,21 @@
     p-queue "^6.6.2"
     sharp "^0.32.0"
 
+"@dcl/content-validator@https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/fix/legacy-entities-being-rejected/dcl-content-validator-4.7.10-5403429963.commit-643c78d.tgz":
+  version "4.7.10-5403429963.commit-643c78d"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/fix/legacy-entities-being-rejected/dcl-content-validator-4.7.10-5403429963.commit-643c78d.tgz#2a5c2cadd224ba96e394445c29838619227c5d3d"
+  dependencies:
+    "@dcl/block-indexer" "^1.1.1"
+    "@dcl/content-hash-tree" "^1.1.4"
+    "@dcl/hashing" "^2.0.0"
+    "@dcl/schemas" "^7.0.0"
+    "@dcl/urn-resolver" "^2.0.3"
+    "@well-known-components/interfaces" "^1.3.0"
+    "@well-known-components/thegraph-component" "^1.5.0"
+    ms "^2.1.3"
+    p-queue "^6.6.2"
+    sharp "^0.32.0"
+
 "@dcl/crypto@^3.4.0", "@dcl/crypto@^3.4.2":
   version "3.4.2"
   resolved "https://registry.yarnpkg.com/@dcl/crypto/-/crypto-3.4.2.tgz#025d0bd2a996fba6cbae80025544a8d04c50efc4"
