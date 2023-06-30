@@ -356,26 +356,10 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@^4.7.10":
-  version "4.7.10"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.7.10.tgz#278e4efa7e4ef100a64073808f0bdc42723f17df"
-  integrity sha512-haudaWz3v7OCOC45roz4aEhLkUyti89I8PwS1KM4YpbpgxkffdQeSeGyy/qPVgaiNTMQ/92pjf6hhJcfxR5ZUA==
-  dependencies:
-    "@dcl/block-indexer" "^1.1.1"
-    "@dcl/content-hash-tree" "^1.1.4"
-    "@dcl/hashing" "^2.0.0"
-    "@dcl/schemas" "^7.0.0"
-    "@dcl/urn-resolver" "^2.0.3"
-    "@well-known-components/interfaces" "^1.3.0"
-    "@well-known-components/thegraph-component" "^1.5.0"
-    ms "^2.1.3"
-    p-queue "^6.6.2"
-    sharp "^0.32.0"
-
-"@dcl/content-validator@^4.7.9":
-  version "4.7.9"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.7.9.tgz#267fc9e633340e85a9ed9a2511595cc7ae0e4123"
-  integrity sha512-3VzVm/0nrrZwVTmbE64/5Z8J8Rp1OHfKUCFKW5ULMbaF6KXYFs0wP7/7dVN+6ubk7VukXQLUZ+j6c/133vwlug==
+"@dcl/content-validator@^4.7.11":
+  version "4.7.11"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.7.11.tgz#49d6e6da952e8cdc7cb67a045dc4a60cdb93432e"
+  integrity sha512-pIhMGryr1Xb8Ovjlc+UMGoxVWg9Q7RL06KgBLNQIGxwS5+lh6ZzMj5v75gwzSmrJ50CtVMhcgpAOsNxqUAMj6g==
   dependencies:
     "@dcl/block-indexer" "^1.1.1"
     "@dcl/content-hash-tree" "^1.1.4"
