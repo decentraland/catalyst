@@ -32,23 +32,28 @@ export class TestProgram {
   }
 
   async startProgram() {
-    const initComponents = async () => {
-      return this.components
-    }
+    try {
+      const initComponents = async () => {
+        return this.components
+      }
 
-    if (this.program) {
-      throw new Error('TestProgram is already running')
-    }
+      if (this.program) {
+        throw new Error('TestProgram is already running')
+      }
 
-    this.program = await Lifecycle.run<AppComponents>({
-      main,
-      initComponents
-    })
+      this.program = await Lifecycle.run<AppComponents>({
+        main,
+        initComponents
+      })
+    } catch (error) {
+      console.log('Fail while bootstrapping new test environment')
+      throw error
+    }
   }
 
   getUrl(): string {
     const port = this.components.env.getConfig(EnvironmentConfig.HTTP_SERVER_PORT)
-    return `http://localhost:${port}`
+    return `http://127.0.0.1:${port}`
   }
 
   async stopProgram(): Promise<void> {

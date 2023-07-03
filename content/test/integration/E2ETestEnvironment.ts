@@ -218,7 +218,7 @@ export function setupTestEnvironment(overrideConfigs?: Record<number, any>) {
     jest.restoreAllMocks()
     const detector = new LeakDetector(testEnv)
     await testEnv.stop()
-    testEnv = null as any
+    testEnv = undefined as any
     expect(await detector.isLeaking()).toBe(false)
   })
 

@@ -3,10 +3,11 @@ import fetch from 'node-fetch'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { stopAllComponents } from '../../../src/logic/components-lifecycle'
 import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
-import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
 import { TestProgram } from '../TestProgram'
 import FormData = require('form-data')
+import { createTestEnvironment } from '../IsolatedEnvironment'
+import LeakDetector from 'jest-leak-detector'
 
 interface ActivePointersRow {
   entity_id: string
@@ -21,20 +22,25 @@ interface DeploymentsRow {
 const fs = createFsComponent()
 
 describe('Integration - Create entities', () => {
-  const getTestEnv = setupTestEnvironment()
-
+  let testEnvironment
   let server: TestProgram
 
-  beforeEach(async () => {
-    // Initialize server
-    server = await getTestEnv().configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+  beforeAll(async () => {
+    testEnvironment = await createTestEnvironment()
+    server = await testEnvironment.spawnServer([{ key: EnvironmentConfig.DISABLE_SYNCHRONIZATION, value: true }])
     makeNoopValidator(server.components)
     makeNoopServerValidator(server.components)
     await server.startProgram()
   })
 
-  afterEach(async () => {
+  afterAll(async () => {
+    jest.restoreAllMocks()
     await server.stopProgram()
+    server = undefined as any
+    await testEnvironment.clean()
+    const detector = new LeakDetector(testEnvironment)
+    testEnvironment = undefined as any
+    expect(await detector.isLeaking()).toBe(false)
   })
 
   afterAll(() => stopAllComponents({ fs }))
@@ -111,29 +117,7 @@ describe('Integration - Create entities', () => {
     await assertQueryResultEntityIds('0,1', [originalSceneEntityId])
   })
 
-  it('when overwriting a scene, unused pointers should be deleted from active-pointers table', async () => {
-    // Create scene
-    let form = createForm(originalSceneEntityId, 'scene_original.json')
-    await callCreateEntityEndpoint(server, form)
-
-    // Overwrite scene
-    form = createForm(overwriteSceneEntityId, 'scene_overwrite.json')
-    await callCreateEntityEndpoint(server, form)
-
-    // Check that scene pointers match only with the entity_id
-    await assertQueryResultEntityIds('0,0', [overwriteSceneEntityId])
-    await assertQueryResultEntityIds('1,0', [overwriteSceneEntityId])
-
-    // Check that old pointers were deleted
-    await assertQueryResultPointers(originalSceneEntityId, [])
-    await assertQueryResultEntityIds('0,1', [])
-
-    // Check that entity_id matches scene pointers
-    await assertQueryResultPointers(overwriteSceneEntityId, ['0,0', '1,0'])
-  })
-
   it('when overwriting multiple scenes, unused pointers should be deleted from active-pointers table', async () => {
-    // Create scene
     let form = createForm(originalSceneEntityId, 'scene_original.json')
     await callCreateEntityEndpoint(server, form)
 
@@ -187,6 +171,27 @@ describe('Integration - Create entities', () => {
     // Check that old pointers were never added
     await assertQueryResultPointers(originalSceneEntityId, [])
     await assertQueryResultEntityIds('0,1', [])
+  })
+
+  it('when overwriting a scene, unused pointers should be deleted from active-pointers table', async () => {
+    // Create scene
+    let form = createForm(originalSceneEntityId, 'scene_original.json')
+    await callCreateEntityEndpoint(server, form)
+
+    // Overwrite scene
+    form = createForm(overwriteSceneEntityId, 'scene_overwrite.json')
+    await callCreateEntityEndpoint(server, form)
+
+    // Check that scene pointers match only with the entity_id
+    await assertQueryResultEntityIds('0,0', [overwriteSceneEntityId])
+    await assertQueryResultEntityIds('1,0', [overwriteSceneEntityId])
+
+    // Check that old pointers were deleted
+    await assertQueryResultPointers(originalSceneEntityId, [])
+    await assertQueryResultEntityIds('0,1', [])
+
+    // Check that entity_id matches scene pointers
+    await assertQueryResultPointers(overwriteSceneEntityId, ['0,0', '1,0'])
   })
 
   async function assertQueryResultPointers(entityId: string, pointers: string[]) {
@@ -253,5 +258,7 @@ function createForm(entityId: string, filename: string) {
 async function callCreateEntityEndpoint(server: TestProgram, form: FormData) {
   const response = await fetch(`${server.getUrl()}/entities`, { method: 'POST', body: form })
   expect(response.status).toBe(200)
-  expect(await response.json()).toHaveProperty('creationTimestamp')
+  const body = await response.json()
+  console.log({ body })
+  expect(body).toHaveProperty('creationTimestamp')
 }

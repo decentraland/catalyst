@@ -3,21 +3,34 @@ import fetch from 'node-fetch'
 import { EnvironmentConfig } from '../../../src/Environment'
 import * as deployments from '../../../src/logic/deployments'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
-import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
 import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
 import { TestProgram } from '../TestProgram'
+import { createTestEnvironment } from '../IsolatedEnvironment'
+import LeakDetector from 'jest-leak-detector'
 
 describe('Integration - Get Active Entities', () => {
-  const getTestEnv = setupTestEnvironment()
+  let testEnvironment
+  let server: TestProgram
+
+  beforeAll(async () => {
+    testEnvironment = await createTestEnvironment()
+    server = await testEnvironment.spawnServer([{ key: EnvironmentConfig.DISABLE_SYNCHRONIZATION, value: true }])
+    await server.startProgram()
+  })
+
+  afterAll(async () => {
+    jest.restoreAllMocks()
+    await server.stopProgram()
+    server = undefined as any
+    await testEnvironment.clean()
+    const detector = new LeakDetector(testEnvironment)
+    testEnvironment = undefined as any
+    expect(await detector.isLeaking()).toBe(false)
+  })
 
   it('when asking without params, it returns client error', async () => {
-    const server = await getTestEnv()
-      .configServer()
-      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-      .andBuild()
     makeNoopValidator(server.components)
-    await server.startProgram()
 
     const result = await fetch(server.getUrl() + `/entities/active`, {
       method: 'POST',
@@ -29,14 +42,7 @@ describe('Integration - Get Active Entities', () => {
   })
 
   it('when asking by ID, it returns active entities with given ID', async () => {
-    const server = await getTestEnv()
-      .configServer()
-      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-      .andBuild()
-
     makeNoopValidator(server.components)
-
-    await server.startProgram()
 
     const deployResult = await buildDeployData(['0,0', '0,1'], {
       metadata: { a: 'this is just some metadata' },
@@ -52,14 +58,7 @@ describe('Integration - Get Active Entities', () => {
   })
 
   it('when asking by Pointer, it returns active entities with given pointer', async () => {
-    const server = await getTestEnv()
-      .configServer()
-      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-      .andBuild()
-
     makeNoopValidator(server.components)
-
-    await server.startProgram()
 
     const deployResult = await buildDeployData(['0,0', '0,1'], {
       metadata: { a: 'this is just some metadata' },
@@ -77,14 +76,7 @@ describe('Integration - Get Active Entities', () => {
   })
 
   it('when asking for active entities, only active entities are returned', async () => {
-    const server = await getTestEnv()
-      .configServer()
-      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-      .andBuild()
-
     makeNoopValidator(server.components)
-
-    await server.startProgram()
 
     const deployResult = await buildDeployData(['0,0', '0,1'], {
       metadata: { a: 'this is just some metadata' },
@@ -110,14 +102,7 @@ describe('Integration - Get Active Entities', () => {
   })
 
   it('when there are multiple active entities, they are returned', async () => {
-    const server = await getTestEnv()
-      .configServer()
-      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-      .andBuild()
-
     makeNoopValidator(server.components)
-
-    await server.startProgram()
 
     const deployResult = await buildDeployData(['0,0', '0,1'], {
       metadata: { a: 'this is just some metadata' },
@@ -142,14 +127,7 @@ describe('Integration - Get Active Entities', () => {
   })
 
   it('when asking with duplicated IDs, entity is returned once', async () => {
-    const server = await getTestEnv()
-      .configServer()
-      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-      .andBuild()
-
     makeNoopValidator(server.components)
-
-    await server.startProgram()
 
     const deployResult = await buildDeployData(['0,0', '0,1'], {
       metadata: { a: 'this is just some metadata' },
@@ -165,14 +143,7 @@ describe('Integration - Get Active Entities', () => {
   })
 
   it('when asking with ID and pointer of same entity, result should be the same', async () => {
-    const server = await getTestEnv()
-      .configServer()
-      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-      .andBuild()
-
     makeNoopValidator(server.components)
-
-    await server.startProgram()
 
     const pointers = ['0,0', '0,1']
     const deployResult = await buildDeployData(pointers, {
@@ -190,12 +161,8 @@ describe('Integration - Get Active Entities', () => {
 
   describe('Active Entities cache', () => {
     it('when fetching active entity by ids, then entity is cached', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
       makeNoopValidator(server.components)
-      await server.startProgram()
+
       const pointers = ['0,0', '0,1']
       const deployResult = await buildDeployData(pointers, {
         metadata: { a: 'this is just some metadata' },
@@ -215,14 +182,9 @@ describe('Integration - Get Active Entities', () => {
     })
 
     it('when fetching active entities by pointer but there is no one, then entity is cached as NOT_ACTIVE', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
       makeNoopValidator(server.components)
-      await server.startProgram()
 
-      const somePointer = '0,0'
+      const somePointer = '99,99'
       const result = await fetchActiveEntityByPointers(server, somePointer)
       expect(result).toHaveLength(0)
 
@@ -231,12 +193,7 @@ describe('Integration - Get Active Entities', () => {
     })
 
     it('when fetching active entities by id but there is no one, then is cached as NOT_ACTIVE', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
       makeNoopValidator(server.components)
-      await server.startProgram()
 
       const someId = 'someId'
       const result = await fetchActiveEntityByIds(server, someId)
@@ -248,12 +205,8 @@ describe('Integration - Get Active Entities', () => {
     })
 
     it('when overriding an entity, then cache is updated', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
       makeNoopValidator(server.components)
-      await server.startProgram()
+
       const pointers = ['0,0', '0,1']
       const { deployData } = await buildDeployData(pointers, {
         metadata: { a: 'this is just some metadata' },
@@ -278,12 +231,8 @@ describe('Integration - Get Active Entities', () => {
     })
 
     it('when deploying a new entity with same pointer, then cache is updated', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
       makeNoopValidator(server.components)
-      await server.startProgram()
+
       const activeEntities = server.components.activeEntities
       const pointers = ['0,0', '0,1']
       const { deployData } = await buildDeployData(pointers, {
@@ -324,12 +273,8 @@ describe('Integration - Get Active Entities', () => {
     })
 
     it('when fetching multiple active entities, all are cached', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
       makeNoopValidator(server.components)
-      await server.startProgram()
+
       const firstPointers = ['0,0', '0,1']
       const { deployData } = await buildDeployData(firstPointers, {
         metadata: { a: 'this is just some metadata' },
@@ -358,12 +303,7 @@ describe('Integration - Get Active Entities', () => {
     })
 
     it('when fetching a non active entity, result is cached', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
       makeNoopValidator(server.components)
-      await server.startProgram()
 
       const result = await fetchActiveEntityByIds(server, 'someId')
       expect(result).toHaveLength(0)
@@ -373,12 +313,8 @@ describe('Integration - Get Active Entities', () => {
     })
 
     it('when results are cached, getDeployments is not called', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
       makeNoopValidator(server.components)
-      await server.startProgram()
+
       const pointers = ['0,0', '0,1']
       const { deployData } = await buildDeployData(pointers, {
         metadata: { a: 'this is just some metadata' },
@@ -405,12 +341,7 @@ describe('Integration - Get Active Entities', () => {
 
   describe('Urn Prefix', () => {
     it('when fetching entities with invalid chars urn prefix, then a client error is returned', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
       makeNoopValidator(server.components)
-      await server.startProgram()
 
       const response = await fetch(server.getUrl() + `/entities/active/collections/in!valid`, {
         method: 'GET',
@@ -419,13 +350,9 @@ describe('Integration - Get Active Entities', () => {
 
       expect(response.status).toBe(400)
     })
+
     it('when fetching entities with invalid urn prefix, then a client error is returned', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
       makeNoopValidator(server.components)
-      await server.startProgram()
 
       const response = await fetch(
         server.getUrl() +
@@ -438,13 +365,10 @@ describe('Integration - Get Active Entities', () => {
 
       expect(response.status).toBe(400)
     })
+
     it('when fetching entities by item, then matching entity is retrieved', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
       makeNoopValidator(server.components)
-      await server.startProgram()
+
       const pointer = ['urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1']
       const metadata = {
         a: 'this is just some metadata'
@@ -466,13 +390,10 @@ describe('Integration - Get Active Entities', () => {
       expect(entity.id).toEqual(deployResult.entity.id)
       expect(entity.metadata).toEqual(metadata)
     })
+
     it('when fetching entities by collection name, then matching entity is retrieved', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
       makeNoopValidator(server.components)
-      await server.startProgram()
+
       const pointer = ['urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1']
       const metadata = {
         a: 'this is just some metadata'
@@ -494,18 +415,15 @@ describe('Integration - Get Active Entities', () => {
       expect(entity.id).toEqual(deployResult.entity.id)
       expect(entity.metadata).toEqual(metadata)
     })
+
     it('when fetching entities by collection name, then paginated matching entities are retrieved', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
       makeNoopValidator(server.components)
-      await server.startProgram()
+
       const metadata = {
         a: 'this is just some metadata'
       }
       for (let i = 0; i < 10; i++) {
-        const pointer = [`urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:${i}`]
+        const pointer = [`urn:decentraland:mumbai:collections-thirdparty:aThirdParty:summerCollection:${i}`]
         const deployResult = await buildDeployData(pointer, { metadata })
         // Deploy entity
         await server.deployEntity(deployResult.deployData)
@@ -513,7 +431,7 @@ describe('Integration - Get Active Entities', () => {
 
       const response = await fetchActiveEntityByUrnPrefix(
         server,
-        'urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection',
+        'urn:decentraland:mumbai:collections-thirdparty:aThirdParty:summerCollection',
         3
       )
 
@@ -521,14 +439,11 @@ describe('Integration - Get Active Entities', () => {
       expect(response.total).toBe(10)
       expect(response.entities).toHaveLength(3)
     })
+
     it('when fetching entities by third party name, then matching entity is retrieved', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
       makeNoopValidator(server.components)
-      await server.startProgram()
-      const pointer = ['urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1']
+
+      const pointer = ['urn:decentraland:mumbai:collections-thirdparty:anotherThirdParty:winterCollection:1']
       const metadata = {
         a: 'this is just some metadata'
       }
@@ -538,7 +453,7 @@ describe('Integration - Get Active Entities', () => {
       await server.deployEntity(deployResult.deployData)
       const response = await fetchActiveEntityByUrnPrefix(
         server,
-        'urn:decentraland:mumbai:collections-thirdparty:aThirdParty'
+        'urn:decentraland:mumbai:collections-thirdparty:anotherThirdParty'
       )
 
       expect(response).toBeDefined()
@@ -549,13 +464,10 @@ describe('Integration - Get Active Entities', () => {
       expect(entity.id).toEqual(deployResult.entity.id)
       expect(entity.metadata).toEqual(metadata)
     })
+
     it('when fetching entities by not matching urn prefix, then none is retrieved', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
       makeNoopValidator(server.components)
-      await server.startProgram()
+
       const pointer = ['urn:dcl:collection:itemId']
       const deployResult = await buildDeployData(pointer, {
         metadata: { a: 'this is just some metadata' },
@@ -566,7 +478,7 @@ describe('Integration - Get Active Entities', () => {
       await server.deployEntity(deployResult.deployData)
       const response = await fetchActiveEntityByUrnPrefix(
         server,
-        'urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection'
+        'urn:decentraland:mumbai:collections-thirdparty:aThirdParty:none'
       )
 
       expect(response).toBeDefined()
@@ -574,12 +486,8 @@ describe('Integration - Get Active Entities', () => {
     })
 
     it('when pointer is updated and getting by prefix, the new one is retrieved', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
       makeNoopValidator(server.components)
-      await server.startProgram()
+
       const pointer = ['urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1']
       const firstDeploy = await buildDeployData(pointer, {
         metadata: { a: 'this is just some metadata' },
