@@ -1351,10 +1351,10 @@
   dependencies:
     "@types/node" "*"
 
-"@types/http-errors@^1.8.1":
-  version "1.8.2"
-  resolved "https://registry.yarnpkg.com/@types/http-errors/-/http-errors-1.8.2.tgz#7315b4c4c54f82d13fa61c228ec5c2ea5cc9e0e1"
-  integrity sha512-EqX+YQxINb+MeXaIqYDASb6U6FCHbWjkj4a1CKDBks3d/QiB2+PqBLyO72vLDgAO1wUI4O+9gweRcQK11bTL/w==
+"@types/http-errors@^2.0.1":
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/@types/http-errors/-/http-errors-2.0.1.tgz#20172f9578b225f6c7da63446f56d4ce108d5a65"
+  integrity sha512-/K3ds8TRAfBvi5vfjuz8y6+GiAYBZ0x4tXv1Av6CWBWn0IlADc+ZX9pMq7oU0fNQPnBwIZl3rmeLp6SBApbxSQ==
 
 "@types/istanbul-lib-coverage@*", "@types/istanbul-lib-coverage@^2.0.0", "@types/istanbul-lib-coverage@^2.0.1":
   version "2.0.4"
@@ -1635,15 +1635,15 @@
     "@well-known-components/interfaces" "^1.4.1"
     cross-fetch "^3.1.5"
 
-"@well-known-components/http-server@^2.0.0-20230501134558.commit-be9a25d":
-  version "2.0.0-20230501134558.commit-be9a25d"
-  resolved "https://registry.yarnpkg.com/@well-known-components/http-server/-/http-server-2.0.0-20230501134558.commit-be9a25d.tgz#3097c4009796737fd4d0d2e4cfc59c5f94d81287"
-  integrity sha512-EHnkQQNTBmyrc5TixTUpJfmhIKHanr6sYIwUgpdp2NV3XhQRQSCPHaiMKnZgE0pQMvKD8k6LnDyGjqsIm5jH8w==
+"@well-known-components/http-server@^2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@well-known-components/http-server/-/http-server-2.0.0.tgz#85ec93080ae64f962782699db3eeecd597f59405"
+  integrity sha512-baDP0+MpgqTnKLFFXS41WBbg9QIGCXTEA7BHf6JqW1evrTW10MKEx+rgEvQQlhCA5oXxUdKOD+xNnR3GqzGw9w==
   dependencies:
-    "@types/http-errors" "^1.8.1"
+    "@types/http-errors" "^2.0.1"
     destroy "^1.2.0"
     fp-future "^1.0.1"
-    http-errors "^1.8.1"
+    http-errors "^2.0.0"
     mitt "^3.0.0"
     node-fetch "^2.6.9"
     on-finished "^2.4.1"
@@ -2746,11 +2746,6 @@ depd@2.0.0, depd@~2.0.0:
   resolved "https://registry.yarnpkg.com/depd/-/depd-2.0.0.tgz#b696163cc757560d09cf22cc8fad1571b79e76df"
   integrity sha512-g7nH6P6dyDioJogAAGprGpCtVImJhpPk/roCzdb3fIh61/s/nPsfR6onyMwkCAR/OlC3yBC0lESvUoQEAssIrw==
 
-depd@~1.1.2:
-  version "1.1.2"
-  resolved "https://registry.yarnpkg.com/depd/-/depd-1.1.2.tgz#9bcd52e14c097763e749b274c4346ed2e560b5a9"
-  integrity sha512-7emPTl6Dpo6JRXOXjLRxck+FlLRX5847cLKEn00PLAgc3g2hTZZgr+e4c2v6QpSmLeFP3n5yUo7ft6avBK/5jQ==
-
 destroy@1.2.0, destroy@^1.2.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/destroy/-/destroy-1.2.0.tgz#4803735509ad8be552934c67df614f94e66fa015"
@@ -3753,7 +3748,7 @@ html-escaper@^2.0.0:
   resolved "https://registry.yarnpkg.com/html-escaper/-/html-escaper-2.0.2.tgz#dfd60027da36a36dfcbe236262c00a5822681453"
   integrity sha512-H2iMtd0I4Mt5eYiapRdIDjp+XzelXQ0tFE4JS7YFwFevXXMmOp9myNrUvCg0D6ws8iqkRPBfKHgbwig1SmlLfg==
 
-http-errors@2.0.0:
+http-errors@2.0.0, http-errors@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/http-errors/-/http-errors-2.0.0.tgz#b7774a1486ef73cf7667ac9ae0858c012c57b9d3"
   integrity sha512-FtwrG/euBzaEjYeRqOgly7G0qviiXoJWnvEH2Z1plBdXgbyjv34pHTSb9zoeHMyDy33+DWy5Wt9Wo+TURtOYSQ==
@@ -3762,17 +3757,6 @@ http-errors@2.0.0:
     inherits "2.0.4"
     setprototypeof "1.2.0"
     statuses "2.0.1"
-    toidentifier "1.0.1"
-
-http-errors@^1.8.1:
-  version "1.8.1"
-  resolved "https://registry.yarnpkg.com/http-errors/-/http-errors-1.8.1.tgz#7c3f28577cbc8a207388455dbd62295ed07bd68c"
-  integrity sha512-Kpk9Sm7NmI+RHhnj6OIWDI1d6fIoFAtFt9RLaTMRlg/8w49juAStsrBgp0Dp4OdxdVbRIeKhtCUvoi/RuAhO4g==
-  dependencies:
-    depd "~1.1.2"
-    inherits "2.0.4"
-    setprototypeof "1.2.0"
-    statuses ">= 1.5.0 < 2"
     toidentifier "1.0.1"
 
 http-proxy-agent@^4.0.1:
@@ -6441,11 +6425,6 @@ statuses@2.0.1:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/statuses/-/statuses-2.0.1.tgz#55cb000ccf1d48728bd23c685a063998cf1a1b63"
   integrity sha512-RwNA9Z/7PrK06rYLIzFMlaF+l73iwpzsqRIFgbMLbTcLD6cOao82TaWefPXQvB2fOC4AjuYSEndS7N/mTCbkdQ==
-
-"statuses@>= 1.5.0 < 2":
-  version "1.5.0"
-  resolved "https://registry.yarnpkg.com/statuses/-/statuses-1.5.0.tgz#161c7dac177659fd9811f43771fa99381478628c"
-  integrity sha512-OpZ3zP+jT1PI7I8nemJX4AKmAX070ZkYPVWV/AaKTJl+tXCTGyVdC1a4SL8RUQYEwk/f34ZX8UTykN68FwrqAA==
 
 streamroller@^3.0.9:
   version "3.1.2"
