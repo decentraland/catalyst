@@ -406,10 +406,10 @@
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
 
-"@dcl/schemas@^8.1.0":
-  version "8.1.0"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-8.1.0.tgz#4824a919db1ec194fceb1996f64f1f4cb260c895"
-  integrity sha512-1A7st/fESASmss+T1Vxc9lo3LHqSvgfDTLtLD2uhdgtOS0RombNES3KG/2zDfBpg9v3DCEchN6i7mWiCEw7/6g==
+"@dcl/schemas@^8.2.0":
+  version "8.2.0"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-8.2.0.tgz#68f4acfa51da69846fd71e44f40e6743cee070af"
+  integrity sha512-Rk1FN8Z+VZ9Imh4HAYK+fQCGZFQjDVFRfGkbiHB57KJJRpjQQ/7CiI1m7nHuqglakrU0FoF1s8LfSavhfFJLnw==
   dependencies:
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
