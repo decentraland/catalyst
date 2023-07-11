@@ -2653,10 +2653,10 @@ date-format@^4.0.10, date-format@^4.0.13:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-4.0.13.tgz#87c3aab3a4f6f37582c5f5f63692d2956fa67890"
   integrity sha512-bnYCwf8Emc3pTD8pXnre+wfnjGtfi5ncMDKy7+cWZXbmRAsdWkOQHrfC1yz/KiwP5thDp2kCHWYWKBX4HP1hoQ==
 
-dcl-catalyst-client@^21.3.0:
-  version "21.3.0"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-21.3.0.tgz#38df8e66c4ad5aeae0776ebb0e09394dc7f13dd1"
-  integrity sha512-TrxG8Uzi1jskSMWNgRhP/hg8xh2EOf3rRX9MT0JZt2/TQNtOfJVR8se2Qw5mO8WHGuJHGuewYLuSt82UNLOjeg==
+dcl-catalyst-client@^21.4.0:
+  version "21.4.0"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-21.4.0.tgz#741604195c0a5caccf418241a97db114c9378683"
+  integrity sha512-uH76qJReeJVd5O9QMMardGbBB4Lo1P0bnR2gGFGd0MwUIYfiaXYG4ZY+fOTQCUzba1YJrH401sKtwQ9/g2YmmA==
   dependencies:
     "@dcl/catalyst-contracts" "^4.0.2"
     "@dcl/crypto" "^3.4.0"
