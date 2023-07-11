@@ -42,7 +42,7 @@ void Lifecycle.run({
     const fs = createFsComponent()
     const database = await createDatabaseComponent({ logs, env, metrics })
     const contentStorageFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
-    const storage = await createFolderBasedFileSystemContentStorage({ fs }, contentStorageFolder)
+    const storage = await createFolderBasedFileSystemContentStorage({ fs, logs }, contentStorageFolder)
     env.logConfigValues(logs.getLogger('Environment'))
     return { logs, env, fetcher, database, fs, storage }
   }

@@ -39,7 +39,7 @@ void Lifecycle.run({
     const fs = createFsComponent()
     const contentStorageFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
     // This must run with a FolderBasedFileSystem implementation of IContentStorageComponent
-    const storage = await createFolderBasedFileSystemContentStorage({ fs }, contentStorageFolder)
+    const storage = await createFolderBasedFileSystemContentStorage({ fs, logs }, contentStorageFolder)
     const migrationManager = createMigrationExecutor({ logs, env })
     env.logConfigValues(logs.getLogger('Environment'))
     return { logs, metrics, env, database, migrationManager, fs, storage }
