@@ -21,7 +21,7 @@
   "dependencies": {
     "@dcl/block-indexer": "^1.1.2",
     "@dcl/catalyst-api-specs": "^3.2.2",
-    "@dcl/catalyst-contracts": "^4.0.4",
+    "@dcl/catalyst-contracts": "^4.0.6",
     "@dcl/catalyst-storage": "^2.0.4",
     "@dcl/content-validator": "^4.7.12",
     "@dcl/crypto": "^3.4.2",
