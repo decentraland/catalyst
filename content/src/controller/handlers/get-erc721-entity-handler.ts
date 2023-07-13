@@ -1,7 +1,8 @@
 import { Erc721 } from '@dcl/catalyst-api-specs/lib/client'
 import { HandlerContextWithPath, InvalidRequestError, NotFoundError } from '../../types'
-import { buildUrn, formatERC21Entity, getProtocol } from '../../logic/erc721'
+import { buildUrn, formatERC21Entity } from '../../logic/erc721'
 import { findEntityByPointer } from '../../logic/entities'
+import { getURNProtocol } from '@dcl/schemas'
 
 // Method: GET
 export async function getERC721EntityHandler(
@@ -13,7 +14,7 @@ export async function getERC721EntityHandler(
   const { database, activeEntities, env } = context.components
   const { chainId, contract, option, emission } = context.params
 
-  const protocol = getProtocol(parseInt(chainId, 10))
+  const protocol = getURNProtocol(parseInt(chainId, 10))
 
   if (!protocol) {
     throw new InvalidRequestError(`Invalid chainId '${chainId}'`)
