@@ -1053,10 +1053,10 @@
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
 
-"@dcl/schemas@^8.1.0", "@dcl/schemas@^8.2.0":
-  version "8.2.0"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-8.2.0.tgz#68f4acfa51da69846fd71e44f40e6743cee070af"
-  integrity sha512-Rk1FN8Z+VZ9Imh4HAYK+fQCGZFQjDVFRfGkbiHB57KJJRpjQQ/7CiI1m7nHuqglakrU0FoF1s8LfSavhfFJLnw==
+"@dcl/schemas@^8.1.0", "@dcl/schemas@^8.2.1":
+  version "8.2.1"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-8.2.1.tgz#b43e6d2745fffaafb2ae317e1a7c32afdcafb6da"
+  integrity sha512-hJl+qq7WtCydl7VECvYGk6NcWK/eCBgUI88ngnOUSsFWe2QvnHPgS/PM69Kv0wd7KmO4394HhHPhMcDimMJ9UQ==
   dependencies:
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
