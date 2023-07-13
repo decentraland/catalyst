@@ -1,4 +1,4 @@
-import { I18N, BodyShape, ChainId, Emote, StandardProps, Wearable, WearableRepresentation, Entity } from '@dcl/schemas'
+import { I18N, BodyShape, Emote, StandardProps, Wearable, WearableRepresentation, Entity } from '@dcl/schemas'
 import { Environment, EnvironmentConfig } from '../Environment'
 import { findImageHash, findThumbnailHash } from './entities'
 
@@ -23,23 +23,6 @@ const RARITIES_EMISSIONS = {
   legendary: 100,
   mythic: 10,
   unique: 1
-}
-
-export function getProtocol(chainId: number): string | undefined {
-  switch (chainId) {
-    case ChainId.ETHEREUM_MAINNET:
-      return 'ethereum'
-    case ChainId.ETHEREUM_RINKEBY:
-      return 'rinkeby'
-    case ChainId.ETHEREUM_GOERLI:
-      return 'goerli'
-    case ChainId.ETHEREUM_KOVAN:
-      return 'kovan'
-    case ChainId.MATIC_MAINNET:
-      return 'matic'
-    case ChainId.MATIC_MUMBAI:
-      return 'mumbai'
-  }
 }
 
 export function buildUrn(protocol: string, contract: string, option: string): string {
