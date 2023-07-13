@@ -15,7 +15,7 @@
     "@dcl/content-validator": "^4.7.12",
     "@dcl/crypto": "^3.4.2",
     "@dcl/schemas": "^8.2.1",
-    "@dcl/urn-resolver": "^2.0.3",
+    "@dcl/urn-resolver": "^2.2.0",
     "@well-known-components/env-config-provider": "^1.2.0",
     "@well-known-components/fetch-component": "^2.0.1",
     "@well-known-components/http-server": "^2.0.0",
