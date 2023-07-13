@@ -992,15 +992,15 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@^4.7.12":
-  version "4.7.12"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.7.12.tgz#910e690e0cee519a37346c97fbe7395a9b449008"
-  integrity sha512-bNHtZ21ALavC5MfeTvFycGnfVo90stCAGEp8sm6Mvm5z/DToGsQ/avcJbjbMpqk8dACdfOMbn7NQDhAXFULuTg==
+"@dcl/content-validator@^4.7.13":
+  version "4.7.13"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.7.13.tgz#1f9bbd265634653aa86a44c141355877592e9b01"
+  integrity sha512-ZCKULYPfkQgnGi4eK2AAxXMgJxFe0cCrunqRscbSPRREWqKJ5MzpVzpKhwwAzdchXyb9mJHmAnKVt/2QrMqcyw==
   dependencies:
     "@dcl/block-indexer" "^1.1.1"
     "@dcl/content-hash-tree" "^1.1.4"
     "@dcl/hashing" "^2.0.0"
-    "@dcl/schemas" "^7.0.0"
+    "@dcl/schemas" "^8.1.0"
     "@dcl/urn-resolver" "^2.0.3"
     "@well-known-components/interfaces" "^1.3.0"
     "@well-known-components/thegraph-component" "^1.5.0"
@@ -1025,15 +1025,6 @@
     ethereum-cryptography "^1.0.3"
     ipfs-unixfs-importer "^7.0.3"
     multiformats "^9.6.3"
-
-"@dcl/schemas@^7.0.0":
-  version "7.6.0"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-7.6.0.tgz#8a244e97d6478c6d30db6376177aae611db46786"
-  integrity sha512-TDIk7tDc4VB9ky0EgVUjFB/EBKkgjadcQ/ia4b9kU5vYlx7XUSB2kao/EDNRFfR17W1pssmZlUDtjmzFWTYSgQ==
-  dependencies:
-    ajv "^8.11.0"
-    ajv-errors "^3.0.0"
-    ajv-keywords "^5.1.0"
 
 "@dcl/schemas@^8.1.0", "@dcl/schemas@^8.2.0", "@dcl/schemas@^8.2.1":
   version "8.2.1"
