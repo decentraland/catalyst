@@ -1,4 +1,4 @@
-import { IHttpServerComponent } from '@well-known-components/interfaces'
+import { IHttpServerComponent, ILoggerComponent } from '@well-known-components/interfaces'
 import { AppComponents } from '../types'
 import { State } from '../ports/synchronizationState'
 import { Error } from '@dcl/catalyst-api-specs/lib/client'
@@ -26,7 +26,7 @@ export function preventExecutionIfBoostrapping({
   }
 }
 
-function handleError(error: any): { status: number; body: Error } {
+function handleError(logger: ILoggerComponent.ILogger, error: any): { status: number; body: Error } {
   if (error instanceof InvalidRequestError) {
     return {
       status: 400,
@@ -44,6 +44,8 @@ function handleError(error: any): { status: number; body: Error } {
       }
     }
   }
+
+  logger.error(error)
 
   // Prevent potential sensitive information leaks
   // by avoiding the return of error.message
@@ -67,8 +69,7 @@ export function createErrorHandler({
     try {
       return await next()
     } catch (error: any) {
-      logger.error(error)
-      return handleError(error)
+      return handleError(logger, error)
     }
   }
 }
