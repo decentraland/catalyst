@@ -93,6 +93,7 @@ export async function generateSnapshotsInMultipleTimeRanges(
       isOutdated
 
     if (shouldGenerateNewSnapshot) {
+      console.log('Generating new snapshot')
       logger.info(
         JSON.stringify({
           generatingInterval: `[${new Date(timeRange.initTimestamp).toISOString()}, ${new Date(

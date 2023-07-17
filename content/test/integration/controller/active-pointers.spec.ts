@@ -259,6 +259,5 @@ async function callCreateEntityEndpoint(server: TestProgram, form: FormData) {
   const response = await fetch(`${server.getUrl()}/entities`, { method: 'POST', body: form })
   expect(response.status).toBe(200)
   const body = await response.json()
-  console.log({ body })
   expect(body).toHaveProperty('creationTimestamp')
 }

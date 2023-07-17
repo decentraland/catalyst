@@ -6,21 +6,21 @@ import { EnvironmentConfig } from '../../../src/Environment'
 import { toQueryParams } from '../../../src/logic/query-params'
 import { PointerChangesFilters } from '../../../src/service/pointers/types'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
-import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData, EntityCombo } from '../E2ETestUtils'
 import { TestProgram } from '../TestProgram'
+import { createTestEnvironment } from '../IsolatedEnvironment'
+import LeakDetector from 'jest-leak-detector'
 
 describe('Integration - Deployment Pagination', () => {
-  const getTestEnv = setupTestEnvironment()
-
   const fetcher = createFetchComponent()
 
   let E1: EntityCombo, E2: EntityCombo, E3: EntityCombo
 
+  let testEnvironment
   let server: TestProgram
 
   beforeEach(async () => {
-    server = await getTestEnv().configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+    server = await testEnvironment.spawnServer([{ key: EnvironmentConfig.DISABLE_SYNCHRONIZATION, value: true }])
     makeNoopValidator(server.components)
     await server.startProgram()
   })
@@ -42,6 +42,21 @@ describe('Integration - Deployment Pagination', () => {
       E2 = a
     }
     E3 = await buildDeployData([P3], { type, timestamp: timestamp + 1, metadata: { a: 'metadata3' } })
+
+    testEnvironment = await createTestEnvironment()
+  })
+
+  afterAll(async () => {
+    jest.restoreAllMocks()
+    const detector = new LeakDetector(testEnvironment)
+    await testEnvironment.clean()
+    testEnvironment = undefined as any
+    expect(await detector.isLeaking()).toBe(false)
+  })
+
+  afterEach(async () => {
+    await server?.stopProgram()
+    server = undefined as any
   })
 
   it('given local timestamp and asc when getting two elements the next link page is correct', async () => {

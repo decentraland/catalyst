@@ -2,14 +2,33 @@ import { createFetchComponent } from '@well-known-components/fetch-component'
 import { DeploymentField } from '../../../src/types'
 import { Deployment } from '../../../src/deployment-types'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
-import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
 import { TestProgram } from '../TestProgram'
+import { EnvironmentConfig } from '../../../src/Environment'
+import { createTestEnvironment } from '../IsolatedEnvironment'
+import LeakDetector from 'jest-leak-detector'
 
 describe('Integration - Deployment Fields', () => {
-  const getTestEnv = setupTestEnvironment()
-
+  let testEnvironment
   let server: TestProgram
+
+  beforeAll(async () => {
+    testEnvironment = await createTestEnvironment()
+    server = await testEnvironment.spawnServer([{ key: EnvironmentConfig.DISABLE_SYNCHRONIZATION, value: true }])
+    makeNoopValidator(server.components)
+    await server.startProgram()
+  })
+
+  afterAll(async () => {
+    jest.restoreAllMocks()
+    await server.stopProgram()
+    server = undefined as any
+    await testEnvironment.clean()
+    const detector = new LeakDetector(testEnvironment)
+    testEnvironment = undefined as any
+    expect(await detector.isLeaking()).toBe(false)
+  })
+
   const fetcher = createFetchComponent()
   const jsonFetcher = {
     ...fetcher,
@@ -17,12 +36,6 @@ describe('Integration - Deployment Fields', () => {
       return (await fetcher.fetch(url)).json()
     }
   }
-
-  beforeEach(async () => {
-    server = await getTestEnv().configServer().andBuild()
-    makeNoopValidator(server.components)
-    await server.startProgram()
-  })
 
   it('When deployments fields filter is used, then the result is the expected', async () => {
     const { deployData } = await buildDeployData(['0,0', '0,1'], {

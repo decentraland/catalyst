@@ -25,6 +25,7 @@ export function createSnapshotGenerator(
   async function runGenerationAndScheduleNext() {
     isRunningGeneration = true
     try {
+      console.log('Generating snapshots')
       currentSnapshots = await generateSnapshotsInMultipleTimeRanges(components, {
         // IT IS IMPORTANT THIS TIMESTAMP NEVER CHANGES; IF IT DOES, THE WHOLE SNAPSHOTS SET WILL BE REGENERATED.
         initTimestamp: 1577836800000,

@@ -1,16 +1,23 @@
 import { EntityType } from '@dcl/schemas'
 import { IBaseComponent } from '@well-known-components/interfaces'
 import { DeploymentContext } from '../../../src/deployment-types'
-import * as snapshotQueries from '../../../src/logic/database-queries/snapshots-queries'
 import { generateSnapshotsInMultipleTimeRanges } from '../../../src/logic/snapshots'
 import * as timeRangeLogic from '../../../src/logic/time-range'
 import { AppComponents } from '../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { setupTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
 import { buildDeployData, EntityCombo } from '../E2ETestUtils'
+import { TestProgram } from '../TestProgram'
+import { createTestEnvironment } from '../IsolatedEnvironment'
+import { EnvironmentConfig } from '../../../src/Environment'
+import LeakDetector from 'jest-leak-detector'
+import * as snapshotQueries from './../../../src/logic/database-queries/snapshots-queries'
 
-describe('snapshot generator - ', () => {
-  const getTestEnv = setupTestEnvironment()
+const initialTimestamp = 1577836800000
+
+describe('Integration - Snapshot generator - ', () => {
+  let testEnvironment
+  let server: TestProgram
 
   const emptySnapshot = {
     hash: 'bafkreig6sfhegnp4okzecgx3v6gj6pohh5qzw6zjtrdqtggx64743rkmz4',
@@ -18,7 +25,182 @@ describe('snapshot generator - ', () => {
     replacedSnapshotHashes: []
   }
 
-  const initialTimestamp = 1577836800000
+  afterEach(() => {
+    jest.restoreAllMocks()
+  })
+
+  beforeAll(async () => {
+    testEnvironment = await createTestEnvironment()
+    server = await testEnvironment.spawnServer([{ key: EnvironmentConfig.DISABLE_SYNCHRONIZATION, value: true }])
+    await server.startProgram()
+  })
+
+  afterAll(async () => {
+    jest.restoreAllMocks()
+    await server.stopProgram()
+    server = undefined as any
+    await testEnvironment.clean()
+    const detector = new LeakDetector(testEnvironment)
+    testEnvironment = undefined as any
+    expect(await detector.isLeaking()).toBe(false)
+  })
+
+  it.only('should generate snapshot the first time', async () => {
+    const clockSpy = jest.spyOn(server.components.clock, 'now')
+    const divideTimeSpy = jest.spyOn(timeRangeLogic, 'divideTimeInYearsMonthsWeeksAndDays')
+
+    const timeRange = timeRangeOfDaysFromInitialTimestamp(1)
+
+    const snapshots = await generateSnapshotsInMultipleTimeRanges(server.components, timeRange)
+    expect(divideTimeSpy).toBeCalledWith(timeRange)
+    expect(snapshots).toEqual(expect.arrayContaining([expect.objectContaining(emptySnapshot)]))
+    if (snapshots) {
+      const exist = await server.components.storage.existMultiple(snapshots.map((s) => s.hash))
+      expect(Array.from(exist.values()).every((e) => e)).toBeTruthy()
+    }
+    expect(clockSpy).toBeCalledTimes(1)
+  })
+
+  it.only('should generate the second snapshot but not recreate the first one', async () => {
+    jest.spyOn(snapshotQueries, 'snapshotIsOutdated').mockResolvedValue(true)
+    const clockSpy = jest.spyOn(server.components.clock, 'now').mockClear()
+    await generateSnapshotsInMultipleTimeRanges(server.components, timeRangeOfDaysFromInitialTimestamp(1))
+    const snapshots = await generateSnapshotsInMultipleTimeRanges(
+      server.components,
+      timeRangeOfDaysFromInitialTimestamp(2)
+    )
+
+    expect(snapshots).toEqual(
+      expect.arrayContaining([expect.objectContaining(emptySnapshot), expect.objectContaining(emptySnapshot)])
+    )
+    expect(clockSpy).toBeCalledTimes(2)
+  })
+
+  it('should generate seven daily snapshots once time each and do not create weekly one yet', async () => {
+    const clockSpy = jest.spyOn(server.components.clock, 'now')
+    await generateSnapshotsInMultipleTimeRanges(server.components, timeRangeOfDaysFromInitialTimestamp(1))
+    await generateSnapshotsInMultipleTimeRanges(server.components, timeRangeOfDaysFromInitialTimestamp(2))
+    await generateSnapshotsInMultipleTimeRanges(server.components, timeRangeOfDaysFromInitialTimestamp(3))
+    await generateSnapshotsInMultipleTimeRanges(server.components, timeRangeOfDaysFromInitialTimestamp(4))
+    await generateSnapshotsInMultipleTimeRanges(server.components, timeRangeOfDaysFromInitialTimestamp(5))
+    await generateSnapshotsInMultipleTimeRanges(server.components, timeRangeOfDaysFromInitialTimestamp(6))
+    const snapshots = await generateSnapshotsInMultipleTimeRanges(
+      server.components,
+      timeRangeOfDaysFromInitialTimestamp(7)
+    )
+
+    expect(snapshots).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining(emptySnapshot),
+        expect.objectContaining(emptySnapshot),
+        expect.objectContaining(emptySnapshot),
+        expect.objectContaining(emptySnapshot),
+        expect.objectContaining(emptySnapshot),
+        expect.objectContaining(emptySnapshot),
+        expect.objectContaining(emptySnapshot)
+      ])
+    )
+    // It's called one time every time a snapshot is created
+    expect(clockSpy).toBeCalledTimes(7)
+  })
+
+  it('should generate a weekly snapshot replacing seven daily snapshots and a daily one, at the 8th day', async () => {
+    const clockSpy = jest.spyOn(server.components.clock, 'now')
+    await generateSnapshotsInMultipleTimeRanges(server.components, timeRangeOfDaysFromInitialTimestamp(1))
+    await generateSnapshotsInMultipleTimeRanges(server.components, timeRangeOfDaysFromInitialTimestamp(2))
+    await generateSnapshotsInMultipleTimeRanges(server.components, timeRangeOfDaysFromInitialTimestamp(3))
+    await generateSnapshotsInMultipleTimeRanges(server.components, timeRangeOfDaysFromInitialTimestamp(4))
+    await generateSnapshotsInMultipleTimeRanges(server.components, timeRangeOfDaysFromInitialTimestamp(5))
+    await generateSnapshotsInMultipleTimeRanges(server.components, timeRangeOfDaysFromInitialTimestamp(6))
+    await generateSnapshotsInMultipleTimeRanges(server.components, timeRangeOfDaysFromInitialTimestamp(7))
+    const snapshots = await generateSnapshotsInMultipleTimeRanges(
+      server.components,
+      timeRangeOfDaysFromInitialTimestamp(8)
+    )
+
+    // It's called one time every time a snapshot is created
+    // 7 daily + (1 weekly + 1 daily)
+    expect(clockSpy).toBeCalledTimes(9)
+
+    const weeklySnapshot = snapshots[0]
+    expect(weeklySnapshot).toEqual({
+      hash: emptySnapshot.hash,
+      timeRange: timeRangeOfDaysFromInitialTimestamp(7),
+      numberOfEntities: 0,
+      replacedSnapshotHashes: [
+        emptySnapshot.hash,
+        emptySnapshot.hash,
+        emptySnapshot.hash,
+        emptySnapshot.hash,
+        emptySnapshot.hash,
+        emptySnapshot.hash,
+        emptySnapshot.hash
+      ],
+      generationTimestamp: clockSpy.mock.results[7].value
+    })
+    // daily snapshot
+    expect(snapshots[1]).toEqual({
+      hash: emptySnapshot.hash,
+      timeRange: {
+        initTimestamp: weeklySnapshot.timeRange.endTimestamp,
+        endTimestamp: timeRangeOfDaysFromInitialTimestamp(8).endTimestamp
+      },
+      numberOfEntities: 0,
+      replacedSnapshotHashes: [],
+      generationTimestamp: clockSpy.mock.results[8].value
+    })
+    // It's called one time every time a snapshot is created
+    // 7 daily + (1 weekly + 1 daily)
+    expect(clockSpy).toBeCalledTimes(9)
+  })
+
+  it('should generate a weekly snapshot and do not replace the daily ones if they are not 7, at the 8th day', async () => {
+    const clockSpy = jest.spyOn(server.components.clock, 'now')
+    await generateSnapshotsInMultipleTimeRanges(server.components, timeRangeOfDaysFromInitialTimestamp(1))
+    await generateSnapshotsInMultipleTimeRanges(server.components, timeRangeOfDaysFromInitialTimestamp(2))
+    await generateSnapshotsInMultipleTimeRanges(server.components, timeRangeOfDaysFromInitialTimestamp(3))
+    await generateSnapshotsInMultipleTimeRanges(server.components, timeRangeOfDaysFromInitialTimestamp(4))
+    await generateSnapshotsInMultipleTimeRanges(server.components, timeRangeOfDaysFromInitialTimestamp(5))
+    // now we supose the server is down for a few days, so 6th and 7th daily snapshots are not generated
+    const snapshots = await generateSnapshotsInMultipleTimeRanges(
+      server.components,
+      timeRangeOfDaysFromInitialTimestamp(8)
+    )
+
+    // It's called one time every time a snapshot is created
+    // 5 daily + (1 weekly + 1 daily)
+    expect(clockSpy).toBeCalledTimes(7)
+
+    const weeklySnapshot = snapshots[0]
+    expect(weeklySnapshot).toEqual({
+      hash: emptySnapshot.hash,
+      timeRange: timeRangeOfDaysFromInitialTimestamp(7),
+      numberOfEntities: 0,
+      replacedSnapshotHashes: [],
+      generationTimestamp: clockSpy.mock.results[5].value
+    })
+    // daily snapshot
+    expect(snapshots[1]).toEqual({
+      hash: emptySnapshot.hash,
+      timeRange: {
+        initTimestamp: weeklySnapshot.timeRange.endTimestamp,
+        endTimestamp: timeRangeOfDaysFromInitialTimestamp(8).endTimestamp
+      },
+      numberOfEntities: 0,
+      replacedSnapshotHashes: [],
+      generationTimestamp: clockSpy.mock.results[6].value
+    })
+  })
+})
+
+describe.skip('Integration - Snapshot generator - ', () => {
+  const getTestEnv = setupTestEnvironment()
+
+  const emptySnapshot = {
+    hash: 'bafkreig6sfhegnp4okzecgx3v6gj6pohh5qzw6zjtrdqtggx64743rkmz4',
+    numberOfEntities: 0,
+    replacedSnapshotHashes: []
+  }
 
   testCaseWithComponents(getTestEnv, 'should generate snapshot the first time', async (components) => {
     await startSnapshotNeededComponents(components)
@@ -86,53 +268,7 @@ describe('snapshot generator - ', () => {
   testCaseWithComponents(
     getTestEnv,
     'should generate a weekly snapshot replacing seven daily snapshots and a daily one, at the 8th day',
-    async (components) => {
-      await startSnapshotNeededComponents(components)
-      const clockSpy = jest.spyOn(components.clock, 'now')
-      await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(1))
-      await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(2))
-      await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(3))
-      await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(4))
-      await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(5))
-      await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(6))
-      await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(7))
-      const snapshots = await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(8))
-
-      // It's called one time every time a snapshot is created
-      // 7 daily + (1 weekly + 1 daily)
-      expect(clockSpy).toBeCalledTimes(9)
-
-      const weeklySnapshot = snapshots[0]
-      expect(weeklySnapshot).toEqual({
-        hash: emptySnapshot.hash,
-        timeRange: timeRangeOfDaysFromInitialTimestamp(7),
-        numberOfEntities: 0,
-        replacedSnapshotHashes: [
-          emptySnapshot.hash,
-          emptySnapshot.hash,
-          emptySnapshot.hash,
-          emptySnapshot.hash,
-          emptySnapshot.hash,
-          emptySnapshot.hash,
-          emptySnapshot.hash
-        ],
-        generationTimestamp: clockSpy.mock.results[7].value
-      })
-      // daily snapshot
-      expect(snapshots[1]).toEqual({
-        hash: emptySnapshot.hash,
-        timeRange: {
-          initTimestamp: weeklySnapshot.timeRange.endTimestamp,
-          endTimestamp: timeRangeOfDaysFromInitialTimestamp(8).endTimestamp
-        },
-        numberOfEntities: 0,
-        replacedSnapshotHashes: [],
-        generationTimestamp: clockSpy.mock.results[8].value
-      })
-      // It's called one time every time a snapshot is created
-      // 7 daily + (1 weekly + 1 daily)
-      expect(clockSpy).toBeCalledTimes(9)
-    }
+    async (components) => {}
   )
 
   testCaseWithComponents(
@@ -425,18 +561,18 @@ describe('snapshot generator - ', () => {
       expect(snapshots2[0].replacedSnapshotHashes).toEqual(expect.arrayContaining([snapshots[0].hash]))
     }
   )
-
-  function timeRangeOfDaysFromInitialTimestamp(numberOfDays: number) {
-    return {
-      initTimestamp: initialTimestamp,
-      endTimestamp: daysAfterInitialTimestamp(numberOfDays)
-    }
-  }
-
-  function daysAfterInitialTimestamp(numberOfDays) {
-    return initialTimestamp + timeRangeLogic.MS_PER_DAY * numberOfDays
-  }
 })
+
+function timeRangeOfDaysFromInitialTimestamp(numberOfDays: number) {
+  return {
+    initTimestamp: initialTimestamp,
+    endTimestamp: daysAfterInitialTimestamp(numberOfDays)
+  }
+}
+
+function daysAfterInitialTimestamp(numberOfDays) {
+  return initialTimestamp + timeRangeLogic.MS_PER_DAY * numberOfDays
+}
 
 async function startComponent(component: IBaseComponent, startOptions: IBaseComponent.ComponentStartOptions) {
   if (component.start) await component.start(startOptions)

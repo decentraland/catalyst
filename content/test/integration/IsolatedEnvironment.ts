@@ -46,20 +46,10 @@ export async function createTestEnvironment() {
 
   return {
     async spawnServer(overridenConfig: { key: EnvironmentConfig; value: any }[] = []): Promise<TestProgram> {
-      let portAllocated = false
-      let calculatedUniquePort = spawnedEnvironments.length * 1010 + 6060
-      let serverDatabaseName = 'db_' + calculatedUniquePort
+      const calculatedUniquePort = spawnedEnvironments.length * 1010 + 6060
+      const serverDatabaseName = 'db_' + calculatedUniquePort
 
-      do {
-        try {
-          await components.database!.query(`CREATE DATABASE ${serverDatabaseName}`)
-          portAllocated = true
-        } catch (error) {
-          console.log(`Port ${calculatedUniquePort} is already in use`)
-          ++calculatedUniquePort
-          serverDatabaseName = 'db_' + calculatedUniquePort
-        }
-      } while (!portAllocated)
+      await components.database!.query(`CREATE DATABASE ${serverDatabaseName}`)
 
       environmentBuilder
         .withConfig(EnvironmentConfig.HTTP_SERVER_PORT, calculatedUniquePort)
@@ -81,11 +71,15 @@ export async function createTestEnvironment() {
       ])
 
       const server = new TestProgram(serverComponents)
-      spawnedEnvironments.push({
+      const index = spawnedEnvironments.push({
         server,
         url: `http://127.0.0.1:${calculatedUniquePort}`,
         port: calculatedUniquePort,
         databaseName: serverDatabaseName
+      })
+
+      Object.defineProperty(server, 'id', {
+        value: index
       })
 
       return server

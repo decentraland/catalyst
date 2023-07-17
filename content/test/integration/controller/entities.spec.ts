@@ -1,21 +1,34 @@
 import fetch from 'node-fetch'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
-import { setupTestEnvironment } from '../E2ETestEnvironment'
+import { TestProgram } from '../TestProgram'
+import { createTestEnvironment } from '../IsolatedEnvironment'
+import LeakDetector from 'jest-leak-detector'
 
 describe('Integration - Entities', () => {
-  const getTestEnv = setupTestEnvironment()
+  let testEnvironment
+  let server: TestProgram
+
+  beforeAll(async () => {
+    testEnvironment = await createTestEnvironment()
+    server = await testEnvironment.spawnServer([{ key: EnvironmentConfig.DISABLE_SYNCHRONIZATION, value: true }])
+    await server.startProgram()
+  })
+
+  afterAll(async () => {
+    jest.restoreAllMocks()
+    await server.stopProgram()
+    server = undefined as any
+    await testEnvironment.clean()
+    const detector = new LeakDetector(testEnvironment)
+    testEnvironment = undefined as any
+    expect(await detector.isLeaking()).toBe(false)
+  })
 
   it('returns 500 when there is an exception while deploying the entity', async () => {
-    const server = await getTestEnv()
-      .configServer()
-      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-      .andBuild()
     jest.spyOn(server.components.deployer, 'deployEntity').mockRejectedValue({ error: 'error' })
 
     makeNoopValidator(server.components)
-
-    await server.startProgram()
 
     const url = server.getUrl() + `/entities`
     const res = await fetch(url, { method: 'POST' })
