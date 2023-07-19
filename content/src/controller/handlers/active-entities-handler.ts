@@ -20,7 +20,9 @@ export async function getActiveEntitiesHandler(
   const { error, value: body } = schema.validate(await context.request.json())
 
   if (error) {
-    throw new InvalidRequestError('ids or pointers must be present, but not both')
+    throw new InvalidRequestError(
+      'ids or pointers must be present, but not both. They must be arrays and contain at least one element. None of the elements can be empty.'
+    )
   }
 
   const entities: Entity[] = (
