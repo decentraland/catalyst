@@ -27,7 +27,7 @@ describe('Integration - Get Active Entities', () => {
 
     expect(result.status).toBe(400)
     expect(result.statusText).toBe('Bad Request')
-    expect(await result.json()).toEqual({ message: 'ids or pointers must be present, but not both. They must be arrays and contain at least one element. None of the elements can be empty.' })
+    expect(await result.json()).toEqual({ error: 'ids or pointers must be present, but not both. They must be arrays and contain at least one element. None of the elements can be empty.' })
   })
 
   it('when asking by ID, it returns active entities with given ID', async () => {
