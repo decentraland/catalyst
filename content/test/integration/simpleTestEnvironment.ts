@@ -81,15 +81,6 @@ export async function createSimpleTestEnvironment(): Promise<SimpleTestEnvironme
 
   async function start(): Promise<TestProgram> {
     dao.add(domain)
-
-    // if (this.dao) {
-    //   // mock DAO client
-    //   jest
-    //     .spyOn(components.daoClient, 'getAllContentServers')
-    //     .mockImplementation(() => this.dao.getAllContentServers())
-    //   jest.spyOn(components.daoClient, 'getAllServers').mockImplementation(() => this.dao.getAllServers())
-    // }
-
     server = new TestProgram(components)
     await server.startProgram()
     return server
