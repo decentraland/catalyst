@@ -1,21 +1,21 @@
 import fetch from 'node-fetch'
-import { EnvironmentConfig } from '../../../src/Environment'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
-import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
 import { TestProgram } from '../TestProgram'
 
 describe('Integration - Get Active Entities By Content Hash', () => {
-  const getTestEnv = setupTestEnvironment()
+  let server: TestProgram
+
+  beforeAll(async () => {
+    server = globalThis.defaultServer
+    makeNoopValidator(server.components)
+  })
+
+  afterAll(async () => {
+    jest.restoreAllMocks()
+  })
 
   it("When the deployment doesn't exist returns 404", async () => {
-    const server = await getTestEnv()
-      .configServer()
-      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-      .andBuild()
-
-    await server.startProgram()
-
     const response = await fetch(server.getUrl() + `/contents/fail/active-entities`)
 
     expect(response.status).toEqual(404)
@@ -26,15 +26,6 @@ describe('Integration - Get Active Entities By Content Hash', () => {
   })
 
   it('When the deployment exists returns the entity id', async () => {
-    const server = await getTestEnv()
-      .configServer()
-      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-      .andBuild()
-
-    makeNoopValidator(server.components)
-
-    await server.startProgram()
-
     const deployResult = await buildDeployData(['0,0', '0,1'], {
       metadata: { a: 'this is just some metadata' },
       contentPaths: ['test/integration/resources/some-binary-file.png']

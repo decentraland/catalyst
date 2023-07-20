@@ -1,24 +1,24 @@
 import { Entity } from '@dcl/schemas'
 import fetch from 'node-fetch'
-import { EnvironmentConfig } from '../../../src/Environment'
 import * as deployments from '../../../src/logic/deployments'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
-import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
 import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
 import { TestProgram } from '../TestProgram'
 
 describe('Integration - Get Active Entities', () => {
-  const getTestEnv = setupTestEnvironment()
+  let server: TestProgram
+
+  beforeAll(async () => {
+    server = global.defaultServer
+    makeNoopValidator(server.components)
+  })
+
+  afterAll(async () => {
+    jest.restoreAllMocks()
+  })
 
   it('when asking without params, it returns client error', async () => {
-    const server = await getTestEnv()
-      .configServer()
-      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-      .andBuild()
-    makeNoopValidator(server.components)
-    await server.startProgram()
-
     const result = await fetch(server.getUrl() + `/entities/active`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -29,15 +29,6 @@ describe('Integration - Get Active Entities', () => {
   })
 
   it('when asking by ID, it returns active entities with given ID', async () => {
-    const server = await getTestEnv()
-      .configServer()
-      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-      .andBuild()
-
-    makeNoopValidator(server.components)
-
-    await server.startProgram()
-
     const deployResult = await buildDeployData(['0,0', '0,1'], {
       metadata: { a: 'this is just some metadata' },
       contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
@@ -52,15 +43,6 @@ describe('Integration - Get Active Entities', () => {
   })
 
   it('when asking by Pointer, it returns active entities with given pointer', async () => {
-    const server = await getTestEnv()
-      .configServer()
-      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-      .andBuild()
-
-    makeNoopValidator(server.components)
-
-    await server.startProgram()
-
     const deployResult = await buildDeployData(['0,0', '0,1'], {
       metadata: { a: 'this is just some metadata' },
       contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
@@ -77,15 +59,6 @@ describe('Integration - Get Active Entities', () => {
   })
 
   it('when asking for active entities, only active entities are returned', async () => {
-    const server = await getTestEnv()
-      .configServer()
-      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-      .andBuild()
-
-    makeNoopValidator(server.components)
-
-    await server.startProgram()
-
     const deployResult = await buildDeployData(['0,0', '0,1'], {
       metadata: { a: 'this is just some metadata' },
       contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
@@ -110,15 +83,6 @@ describe('Integration - Get Active Entities', () => {
   })
 
   it('when there are multiple active entities, they are returned', async () => {
-    const server = await getTestEnv()
-      .configServer()
-      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-      .andBuild()
-
-    makeNoopValidator(server.components)
-
-    await server.startProgram()
-
     const deployResult = await buildDeployData(['0,0', '0,1'], {
       metadata: { a: 'this is just some metadata' },
       contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
@@ -142,15 +106,6 @@ describe('Integration - Get Active Entities', () => {
   })
 
   it('when asking with duplicated IDs, entity is returned once', async () => {
-    const server = await getTestEnv()
-      .configServer()
-      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-      .andBuild()
-
-    makeNoopValidator(server.components)
-
-    await server.startProgram()
-
     const deployResult = await buildDeployData(['0,0', '0,1'], {
       metadata: { a: 'this is just some metadata' },
       contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
@@ -165,15 +120,6 @@ describe('Integration - Get Active Entities', () => {
   })
 
   it('when asking with ID and pointer of same entity, result should be the same', async () => {
-    const server = await getTestEnv()
-      .configServer()
-      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-      .andBuild()
-
-    makeNoopValidator(server.components)
-
-    await server.startProgram()
-
     const pointers = ['0,0', '0,1']
     const deployResult = await buildDeployData(pointers, {
       metadata: { a: 'this is just some metadata' },
@@ -190,12 +136,6 @@ describe('Integration - Get Active Entities', () => {
 
   describe('Active Entities cache', () => {
     it('when fetching active entity by ids, then entity is cached', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
-      makeNoopValidator(server.components)
-      await server.startProgram()
       const pointers = ['0,0', '0,1']
       const deployResult = await buildDeployData(pointers, {
         metadata: { a: 'this is just some metadata' },
@@ -215,14 +155,7 @@ describe('Integration - Get Active Entities', () => {
     })
 
     it('when fetching active entities by pointer but there is no one, then entity is cached as NOT_ACTIVE', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
-      makeNoopValidator(server.components)
-      await server.startProgram()
-
-      const somePointer = '0,0'
+      const somePointer = '30,0'
       const result = await fetchActiveEntityByPointers(server, somePointer)
       expect(result).toHaveLength(0)
 
@@ -231,13 +164,6 @@ describe('Integration - Get Active Entities', () => {
     })
 
     it('when fetching active entities by id but there is no one, then is cached as NOT_ACTIVE', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
-      makeNoopValidator(server.components)
-      await server.startProgram()
-
       const someId = 'someId'
       const result = await fetchActiveEntityByIds(server, someId)
       expect(result).toHaveLength(0)
@@ -248,12 +174,6 @@ describe('Integration - Get Active Entities', () => {
     })
 
     it('when overriding an entity, then cache is updated', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
-      makeNoopValidator(server.components)
-      await server.startProgram()
       const pointers = ['0,0', '0,1']
       const { deployData } = await buildDeployData(pointers, {
         metadata: { a: 'this is just some metadata' },
@@ -278,12 +198,6 @@ describe('Integration - Get Active Entities', () => {
     })
 
     it('when deploying a new entity with same pointer, then cache is updated', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
-      makeNoopValidator(server.components)
-      await server.startProgram()
       const activeEntities = server.components.activeEntities
       const pointers = ['0,0', '0,1']
       const { deployData } = await buildDeployData(pointers, {
@@ -324,12 +238,6 @@ describe('Integration - Get Active Entities', () => {
     })
 
     it('when fetching multiple active entities, all are cached', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
-      makeNoopValidator(server.components)
-      await server.startProgram()
       const firstPointers = ['0,0', '0,1']
       const { deployData } = await buildDeployData(firstPointers, {
         metadata: { a: 'this is just some metadata' },
@@ -358,13 +266,6 @@ describe('Integration - Get Active Entities', () => {
     })
 
     it('when fetching a non active entity, result is cached', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
-      makeNoopValidator(server.components)
-      await server.startProgram()
-
       const result = await fetchActiveEntityByIds(server, 'someId')
       expect(result).toHaveLength(0)
 
@@ -373,12 +274,6 @@ describe('Integration - Get Active Entities', () => {
     })
 
     it('when results are cached, getDeployments is not called', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
-      makeNoopValidator(server.components)
-      await server.startProgram()
       const pointers = ['0,0', '0,1']
       const { deployData } = await buildDeployData(pointers, {
         metadata: { a: 'this is just some metadata' },
@@ -405,13 +300,6 @@ describe('Integration - Get Active Entities', () => {
 
   describe('Urn Prefix', () => {
     it('when fetching entities with invalid chars urn prefix, then a client error is returned', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
-      makeNoopValidator(server.components)
-      await server.startProgram()
-
       const response = await fetch(server.getUrl() + `/entities/active/collections/in!valid`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
@@ -420,13 +308,6 @@ describe('Integration - Get Active Entities', () => {
       expect(response.status).toBe(400)
     })
     it('when fetching entities with invalid urn prefix, then a client error is returned', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
-      makeNoopValidator(server.components)
-      await server.startProgram()
-
       const response = await fetch(
         server.getUrl() +
           `/entities/active/collections/urn:decentraland:ethereum:collections-v1:0x32b7495895264ac9d0b12d32afd435453458b1c6`,
@@ -439,12 +320,6 @@ describe('Integration - Get Active Entities', () => {
       expect(response.status).toBe(400)
     })
     it('when fetching entities by item, then matching entity is retrieved', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
-      makeNoopValidator(server.components)
-      await server.startProgram()
       const pointer = ['urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1']
       const metadata = {
         a: 'this is just some metadata'
@@ -467,12 +342,6 @@ describe('Integration - Get Active Entities', () => {
       expect(entity.metadata).toEqual(metadata)
     })
     it('when fetching entities by collection name, then matching entity is retrieved', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
-      makeNoopValidator(server.components)
-      await server.startProgram()
       const pointer = ['urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1']
       const metadata = {
         a: 'this is just some metadata'
@@ -495,12 +364,6 @@ describe('Integration - Get Active Entities', () => {
       expect(entity.metadata).toEqual(metadata)
     })
     it('when fetching entities by collection name, then paginated matching entities are retrieved', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
-      makeNoopValidator(server.components)
-      await server.startProgram()
       const metadata = {
         a: 'this is just some metadata'
       }
@@ -522,12 +385,6 @@ describe('Integration - Get Active Entities', () => {
       expect(response.entities).toHaveLength(3)
     })
     it('when fetching entities by third party name, then matching entity is retrieved', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
-      makeNoopValidator(server.components)
-      await server.startProgram()
       const pointer = ['urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1']
       const metadata = {
         a: 'this is just some metadata'
@@ -550,12 +407,6 @@ describe('Integration - Get Active Entities', () => {
       expect(entity.metadata).toEqual(metadata)
     })
     it('when fetching entities by not matching urn prefix, then none is retrieved', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
-      makeNoopValidator(server.components)
-      await server.startProgram()
       const pointer = ['urn:dcl:collection:itemId']
       const deployResult = await buildDeployData(pointer, {
         metadata: { a: 'this is just some metadata' },
@@ -574,12 +425,6 @@ describe('Integration - Get Active Entities', () => {
     })
 
     it('when pointer is updated and getting by prefix, the new one is retrieved', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
-      makeNoopValidator(server.components)
-      await server.startProgram()
       const pointer = ['urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1']
       const firstDeploy = await buildDeployData(pointer, {
         metadata: { a: 'this is just some metadata' },
