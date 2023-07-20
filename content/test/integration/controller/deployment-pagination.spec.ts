@@ -2,30 +2,27 @@ import { EntityType } from '@dcl/schemas'
 import { createFetchComponent } from '@well-known-components/fetch-component'
 import { DeploymentField } from '../../../src/types'
 import { DeploymentOptions, SortingField, SortingOrder } from '../../../src/deployment-types'
-import { EnvironmentConfig } from '../../../src/Environment'
 import { toQueryParams } from '../../../src/logic/query-params'
 import { PointerChangesFilters } from '../../../src/service/pointers/types'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
-import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData, EntityCombo } from '../E2ETestUtils'
+import { SimpleTestEnvironment, createSimpleTestEnvironment } from '../simpleTestEnvironment'
 import { TestProgram } from '../TestProgram'
+import LeakDetector from 'jest-leak-detector'
 
 describe('Integration - Deployment Pagination', () => {
-  const getTestEnv = setupTestEnvironment()
-
   const fetcher = createFetchComponent()
 
   let E1: EntityCombo, E2: EntityCombo, E3: EntityCombo
 
   let server: TestProgram
-
-  beforeEach(async () => {
-    server = await getTestEnv().configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
-    makeNoopValidator(server.components)
-    await server.startProgram()
-  })
+  let env: SimpleTestEnvironment
 
   beforeAll(async () => {
+    env = await createSimpleTestEnvironment()
+    server = await env.start()
+    makeNoopValidator(server.components)
+
     const P1 = 'X1,Y1'
     const P2 = 'X2,Y2'
     const P3 = 'X3,Y3'
@@ -42,6 +39,19 @@ describe('Integration - Deployment Pagination', () => {
       E2 = a
     }
     E3 = await buildDeployData([P3], { type, timestamp: timestamp + 1, metadata: { a: 'metadata3' } })
+  })
+
+  beforeEach(async () => {
+    server.components.activeEntities.reset()
+    await env.clearDatabase()
+  })
+
+  afterAll(async () => {
+    jest.restoreAllMocks()
+    const detector = new LeakDetector(env)
+    await env.stop()
+    env = null as any
+    expect(await detector.isLeaking()).toBe(false)
   })
 
   it('given local timestamp and asc when getting two elements the next link page is correct', async () => {

@@ -1,22 +1,34 @@
 import fetch from 'node-fetch'
-import { EnvironmentConfig } from '../../../src/Environment'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
-import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
+import { SimpleTestEnvironment, createSimpleTestEnvironment } from '../simpleTestEnvironment'
+import { TestProgram } from '../TestProgram'
+import LeakDetector from 'jest-leak-detector'
 
 describe('Integration - Get wearable image and thumbnail', () => {
-  const getTestEnv = setupTestEnvironment()
+  let server: TestProgram
+  let env: SimpleTestEnvironment
+
+  beforeAll(async () => {
+    env = await createSimpleTestEnvironment()
+    server = await env.start()
+    makeNoopValidator(server.components)
+  })
+
+  beforeEach(async () => {
+    server.components.activeEntities.reset()
+    await env.clearDatabase()
+  })
+
+  afterAll(async () => {
+    jest.restoreAllMocks()
+    const detector = new LeakDetector(env)
+    await env.stop()
+    env = null as any
+    expect(await detector.isLeaking()).toBe(false)
+  })
 
   it('when entity does not exist, it should return 404', async () => {
-    const server = await getTestEnv()
-      .configServer()
-      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-      .andBuild()
-
-    makeNoopValidator(server.components)
-
-    await server.startProgram()
-
     const responses = await Promise.all([
       fetch(`${server.getUrl()}/queries/items/wearable/thumbnail`),
       fetch(`${server.getUrl()}/queries/items/wearable/thumbnail`, { method: 'HEAD' }),
@@ -30,15 +42,6 @@ describe('Integration - Get wearable image and thumbnail', () => {
   })
 
   it('when entity has not metadata, it should return 404', async () => {
-    const server = await getTestEnv()
-      .configServer()
-      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-      .andBuild()
-
-    makeNoopValidator(server.components)
-
-    await server.startProgram()
-
     const deployResult = await buildDeployData(['wearable'], {
       metadata: {},
       contentPaths: []
@@ -60,15 +63,6 @@ describe('Integration - Get wearable image and thumbnail', () => {
 
   describe('thumbnail', () => {
     it('when entity has not thumbnail, it should return 404', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
-
-      makeNoopValidator(server.components)
-
-      await server.startProgram()
-
       const deployResult = await buildDeployData(['wearable'], {
         metadata: { image: 'some-binary-file.png' },
         contentPaths: ['test/integration/resources/some-binary-file.png']
@@ -87,15 +81,6 @@ describe('Integration - Get wearable image and thumbnail', () => {
     })
 
     it('when entity has thumbnail, it should return the content and set the headers', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
-
-      makeNoopValidator(server.components)
-
-      await server.startProgram()
-
       const deployResult = await buildDeployData(['wearable'], {
         metadata: { thumbnail: 'some-binary-file.png' },
         contentPaths: ['test/integration/resources/some-binary-file.png']
@@ -119,15 +104,6 @@ describe('Integration - Get wearable image and thumbnail', () => {
 
   describe('image', () => {
     it('when entity has not image, it should return 404', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
-
-      makeNoopValidator(server.components)
-
-      await server.startProgram()
-
       const deployResult = await buildDeployData(['wearable'], {
         metadata: { thumbnail: 'some-binary-file.png' },
         contentPaths: ['test/integration/resources/some-binary-file.png']
@@ -146,15 +122,6 @@ describe('Integration - Get wearable image and thumbnail', () => {
     })
 
     it('when entity has image, it should return the content and set the headers', async () => {
-      const server = await getTestEnv()
-        .configServer()
-        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-        .andBuild()
-
-      makeNoopValidator(server.components)
-
-      await server.startProgram()
-
       const deployResult = await buildDeployData(['wearable'], {
         metadata: { image: 'some-binary-file.png' },
         contentPaths: ['test/integration/resources/some-binary-file.png']
