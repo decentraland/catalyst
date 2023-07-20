@@ -1,12 +1,12 @@
 import { createFsComponent } from '@dcl/catalyst-storage'
 import fetch from 'node-fetch'
-import { EnvironmentConfig } from '../../../src/Environment'
 import { stopAllComponents } from '../../../src/logic/components-lifecycle'
 import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
-import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
 import { TestProgram } from '../TestProgram'
 import FormData = require('form-data')
+import { createSimpleTestEnvironment, SimpleTestEnvironment } from '../simpleTestEnvironment'
+import LeakDetector from 'jest-leak-detector'
 
 interface ActivePointersRow {
   entity_id: string
@@ -19,29 +19,34 @@ interface DeploymentsRow {
 }
 
 const fs = createFsComponent()
+const profileAddress = '0x31a19cb92ac89f1aa62fa72da5f52521daf130b0'
+const originalProfileEntityId = 'bafkreigiffn5v5j5o2rd24dvirirggghisva44owomrl65dqg5flan47le'
+const profileOverwriteEntityId = 'bafkreiczclosnorj7bzibuvotiwf2gyvtmnxmyvl62nacpxhluqsi72bxq'
 
 describe('Integration - Create entities', () => {
-  const getTestEnv = setupTestEnvironment()
-
   let server: TestProgram
+  let env: SimpleTestEnvironment
 
-  beforeEach(async () => {
-    // Initialize server
-    server = await getTestEnv().configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+  beforeAll(async () => {
+    env = await createSimpleTestEnvironment()
+    server = await env.start()
     makeNoopValidator(server.components)
     makeNoopServerValidator(server.components)
-    await server.startProgram()
   })
 
-  afterEach(async () => {
-    await server.stopProgram()
+  beforeEach(async () => {
+    server.components.activeEntities.reset()
+    await env.clearDatabase()
   })
 
-  afterAll(() => stopAllComponents({ fs }))
-
-  const profileAddress = '0x31a19cb92ac89f1aa62fa72da5f52521daf130b0'
-  const originalProfileEntityId = 'bafkreigiffn5v5j5o2rd24dvirirggghisva44owomrl65dqg5flan47le'
-  const profileOverwriteEntityId = 'bafkreiczclosnorj7bzibuvotiwf2gyvtmnxmyvl62nacpxhluqsi72bxq'
+  afterAll(async () => {
+    jest.restoreAllMocks()
+    stopAllComponents({ fs })
+    const detector = new LeakDetector(env)
+    await env.stop()
+    env = null as any
+    expect(await detector.isLeaking()).toBe(false)
+  })
 
   it('when creating a profile, pointer should be stored in active-pointers table', async () => {
     // Create profile
