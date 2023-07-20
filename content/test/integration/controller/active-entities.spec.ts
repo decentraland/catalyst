@@ -4,18 +4,31 @@ import * as deployments from '../../../src/logic/deployments'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { buildDeployData } from '../E2ETestUtils'
 import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
+import { SimpleTestEnvironment, createSimpleTestEnvironment } from '../simpleTestEnvironment'
 import { TestProgram } from '../TestProgram'
+import LeakDetector from 'jest-leak-detector'
 
 describe('Integration - Get Active Entities', () => {
   let server: TestProgram
+  let env: SimpleTestEnvironment
 
   beforeAll(async () => {
-    server = global.defaultServer
+    env = await createSimpleTestEnvironment()
+    server = await env.start()
     makeNoopValidator(server.components)
+  })
+
+  beforeEach(async () => {
+    server.components.activeEntities.reset()
+    await env.clearDatabase()
   })
 
   afterAll(async () => {
     jest.restoreAllMocks()
+    const detector = new LeakDetector(env)
+    await env.stop()
+    env = null as any
+    expect(await detector.isLeaking()).toBe(false)
   })
 
   it('when asking without params, it returns client error', async () => {
@@ -363,10 +376,12 @@ describe('Integration - Get Active Entities', () => {
       expect(entity.id).toEqual(deployResult.entity.id)
       expect(entity.metadata).toEqual(metadata)
     })
+
     it('when fetching entities by collection name, then paginated matching entities are retrieved', async () => {
       const metadata = {
         a: 'this is just some metadata'
       }
+
       for (let i = 0; i < 10; i++) {
         const pointer = [`urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:${i}`]
         const deployResult = await buildDeployData(pointer, { metadata })

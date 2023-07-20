@@ -56,6 +56,11 @@ export type ActiveEntities = {
    * Note: testing purposes
    */
   getCachedEntity(idOrPointer: string | string): string | NotActiveEntity | undefined
+  /**
+   * Reset interna state
+   * Note: testing purposes
+   */
+  reset(): void
 }
 
 /**
@@ -74,6 +79,7 @@ export function createActiveEntitiesComponent(
 
   const collectionUrnsByPrefixCache = new LRU<string, string[]>({
     ttl: 1000 * 60 * 60 * 24, // 24 hours
+    max: components.env.getConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE), //TODO
     fetchMethod: async (collectionUrn: string) =>
       gerUrnsThatMatchCollectionUrnPrefix(components.database, collectionUrn.toLowerCase())
   })
@@ -92,6 +98,9 @@ export function createActiveEntitiesComponent(
       },
       has(pointer: string) {
         return entityIdByPointers.has(normalizePointerCacheKey(pointer))
+      },
+      clear() {
+        return entityIdByPointers.clear()
       }
     }
   }
@@ -292,7 +301,14 @@ export function createActiveEntitiesComponent(
     }
   }
 
+  function reset() {
+    entityIdByPointers.clear()
+    collectionUrnsByPrefixCache.clear()
+    cache.clear()
+  }
+
   return {
+    reset,
     withIds,
     withPointers,
     withPrefix,

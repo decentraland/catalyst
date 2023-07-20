@@ -1,6 +1,5 @@
 import * as tsNode from 'ts-node'
 import { isCI } from './test/integration/E2ETestUtils'
-import { getDefaultTestServer } from './test/integration/simpleTestEnvironment'
 
 const globalSetup = async (): Promise<void> => {
   if (!isCI()) {
@@ -13,8 +12,6 @@ const globalSetup = async (): Promise<void> => {
     const { initializePostgresContainer } = await import('./test/postgres-test-container')
     await initializePostgresContainer('postgres_test')
   }
-  global.defaultServer = await getDefaultTestServer()
-  console.log('HERE')
 }
 
 export default globalSetup
