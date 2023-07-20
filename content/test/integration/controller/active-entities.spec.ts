@@ -168,7 +168,7 @@ describe('Integration - Get Active Entities', () => {
     })
 
     it('when fetching active entities by pointer but there is no one, then entity is cached as NOT_ACTIVE', async () => {
-      const somePointer = '30,0'
+      const somePointer = '0,0'
       const result = await fetchActiveEntityByPointers(server, somePointer)
       expect(result).toHaveLength(0)
 

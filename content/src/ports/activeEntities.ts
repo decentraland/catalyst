@@ -57,7 +57,7 @@ export type ActiveEntities = {
    */
   getCachedEntity(idOrPointer: string | string): string | NotActiveEntity | undefined
   /**
-   * Reset interna state
+   * Reset internal state
    * Note: testing purposes
    */
   reset(): void
