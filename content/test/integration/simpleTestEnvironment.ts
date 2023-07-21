@@ -12,7 +12,6 @@ import { TestProgram } from './TestProgram'
 
 const TEST_SCHEMA = 'e2etest'
 const POSTGRES_PORT = 5432
-const serverPort = 1200
 
 export async function createDB() {
   const dbName = 'db' + random.alphaNumeric(8)
@@ -62,14 +61,12 @@ export function resetServer(server: TestProgram): Promise<void> {
   return clearDatabase(server)
 }
 
-let dbCreated = false
-export async function createDefaultServer(overrideConfigs?: Record<number, any>): Promise<TestProgram> {
-  if (!dbCreated) {
-    process.env.__TEST_DB_NAME = await createDB()
-    dbCreated = true
-  }
-
-  const dao = MockedDAOClient.withAddresses()
+async function createServer(
+  dao: MockedDAOClient,
+  dbName: string,
+  serverPort: number,
+  overrideConfigs?: Record<number, any>
+): Promise<TestProgram> {
   const sharedEnv = new Environment()
     .setConfig(EnvironmentConfig.PSQL_PASSWORD, DEFAULT_DATABASE_CONFIG.password)
     .setConfig(EnvironmentConfig.PSQL_USER, DEFAULT_DATABASE_CONFIG.user)
@@ -82,12 +79,11 @@ export async function createDefaultServer(overrideConfigs?: Record<number, any>)
     .setConfig(EnvironmentConfig.LOG_REQUESTS, false)
     .setConfig(EnvironmentConfig.LOG_LEVEL, 'WARN')
     .setConfig(EnvironmentConfig.BOOTSTRAP_FROM_SCRATCH, false)
-    .setConfig(EnvironmentConfig.PSQL_DATABASE, process.env.__TEST_DB_NAME)
+    .setConfig(EnvironmentConfig.PSQL_DATABASE, dbName)
 
   if (overrideConfigs) {
     for (const key in overrideConfigs) {
       const value = overrideConfigs[key]
-      console.debug('Override for Environment Config: ', (<any>EnvironmentConfig)[key], value)
       sharedEnv.setConfig(parseInt(key) as EnvironmentConfig, value)
     }
   } else {
@@ -107,4 +103,25 @@ export async function createDefaultServer(overrideConfigs?: Record<number, any>)
   server.components.daoClient = dao
   await server.startProgram()
   return server
+}
+
+let dbCreated = false
+export async function createDefaultServer(overrideConfigs?: Record<number, any>): Promise<TestProgram> {
+  if (!dbCreated) {
+    process.env.__TEST_DB_NAME = await createDB()
+    dbCreated = true
+  }
+
+  const dao = MockedDAOClient.withAddresses()
+  return createServer(dao, process.env.__TEST_DB_NAME!, 1200, overrideConfigs)
+}
+
+export async function createAdditionalServer(
+  defaultServer: TestProgram,
+  port: number,
+  overrideConfigs?: Record<number, any>
+): Promise<TestProgram> {
+  const dbName = await createDB()
+
+  return createServer(defaultServer.components.daoClient as any, dbName, port, overrideConfigs)
 }
