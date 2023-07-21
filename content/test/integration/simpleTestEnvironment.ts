@@ -95,6 +95,7 @@ export async function createDefaultServer(): Promise<TestProgram> {
   const domain = `http://localhost:${serverPort}`
   dao.add(domain)
   const server = new TestProgram(components)
+  server.components.daoClient = dao
   await server.startProgram()
   return server
 }
