@@ -63,7 +63,7 @@ export function resetServer(server: TestProgram): Promise<void> {
 }
 
 let dbCreated = false
-export async function createDefaultServer(): Promise<TestProgram> {
+export async function createDefaultServer(overrideConfigs?: Record<number, any>): Promise<TestProgram> {
   if (!dbCreated) {
     process.env.__TEST_DB_NAME = await createDB()
     dbCreated = true
@@ -83,7 +83,16 @@ export async function createDefaultServer(): Promise<TestProgram> {
     .setConfig(EnvironmentConfig.LOG_LEVEL, 'WARN')
     .setConfig(EnvironmentConfig.BOOTSTRAP_FROM_SCRATCH, false)
     .setConfig(EnvironmentConfig.PSQL_DATABASE, process.env.__TEST_DB_NAME)
-    .setConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+
+  if (overrideConfigs) {
+    for (const key in overrideConfigs) {
+      const value = overrideConfigs[key]
+      console.debug('Override for Environment Config: ', (<any>EnvironmentConfig)[key], value)
+      sharedEnv.setConfig(parseInt(key) as EnvironmentConfig, value)
+    }
+  } else {
+    sharedEnv.setConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+  }
 
   const storageBaseFolder = sharedEnv.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER) ?? 'storage'
 
