@@ -3,7 +3,7 @@ import { ExternalCalls, ValidateFn } from '@dcl/content-validator'
 import { EntityType, SyncDeployment } from '@dcl/schemas'
 import { IDeployerComponent, SynchronizerComponent } from '@dcl/snapshots-fetcher'
 import { IJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
-import { IProcessedSnapshotStorageComponent, ISnapshotStorageComponent } from '@dcl/snapshots-fetcher/dist/types'
+import { ISnapshotStorageComponent } from '@dcl/snapshots-fetcher/dist/types'
 import {
   IConfigComponent,
   IFetchComponent,
@@ -37,6 +37,7 @@ import { IChallengeSupervisor } from './service/synchronization/ChallengeSupervi
 import { ContentCluster } from './service/synchronization/ContentCluster'
 import { IRetryFailedDeploymentsComponent } from './service/synchronization/retryFailedDeployments'
 import { ServerValidator } from './service/validations/server'
+import { ProcessedSnapshotsStorageComponent } from './ports/processedSnapshotStorage'
 
 // Minimum amount of needed stuff to make the sync work
 
@@ -99,7 +100,7 @@ export type AppComponents = {
   denylist: Denylist
   fs: IFileSystemComponent
   snapshotGenerator: SnapshotGenerator
-  processedSnapshotStorage: IProcessedSnapshotStorageComponent
+  processedSnapshotStorage: ProcessedSnapshotsStorageComponent
   clock: Clock
   snapshotStorage: ISnapshotStorageComponent
   l1Provider: HTTPProvider
