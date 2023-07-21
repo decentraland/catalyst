@@ -14,9 +14,8 @@ const TEST_SCHEMA = 'e2etest'
 const POSTGRES_PORT = 5432
 const serverPort = 1200
 
-export async function createDefaultDB() {
+export async function createDB() {
   const dbName = 'db' + random.alphaNumeric(8)
-  process.env.__TEST_DB_NAME = dbName
   const logs = await createLogComponent({
     config: createConfigComponent({
       LOG_LEVEL: 'WARN'
@@ -49,6 +48,7 @@ export async function createDefaultDB() {
   const migrationManager = createMigrationExecutor({ logs, env })
   await migrationManager.run()
   await stopAllComponents({ migrationManager, database })
+  return dbName
 }
 
 export async function clearDatabase(server: TestProgram): Promise<void> {
@@ -65,7 +65,7 @@ export function resetServer(server: TestProgram): Promise<void> {
 let dbCreated = false
 export async function createDefaultServer(): Promise<TestProgram> {
   if (!dbCreated) {
-    await createDefaultDB()
+    process.env.__TEST_DB_NAME = await createDB()
     dbCreated = true
   }
 
