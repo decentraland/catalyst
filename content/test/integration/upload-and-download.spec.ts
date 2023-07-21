@@ -4,22 +4,30 @@ import { DeploymentData } from 'dcl-catalyst-client/dist/client/utils/Deployment
 import fetch from 'node-fetch'
 import { makeNoopValidator } from '../helpers/service/validations/NoOpValidator'
 import { assertDeploymentsAreReported, buildDeployment } from './E2EAssertions'
-import { setupTestEnvironment } from './E2ETestEnvironment'
 import { buildDeployData } from './E2ETestUtils'
 import { getIntegrationResourcePathFor } from './resources/get-resource-path'
 import { TestProgram } from './TestProgram'
+import LeakDetector from 'jest-leak-detector'
+import { createDefaultServer, resetServer } from './simpleTestEnvironment'
 
+const POINTER0 = 'X0,Y0'
+const POINTER1 = 'X1,Y1'
 describe('End 2 end deploy test', () => {
-  const getTestEnv = setupTestEnvironment()
-
   let server: TestProgram
-  const POINTER0 = 'X0,Y0'
-  const POINTER1 = 'X1,Y1'
 
-  beforeEach(async () => {
-    server = await getTestEnv().configServer().andBuild()
+  beforeAll(async () => {
+    server = await createDefaultServer()
     makeNoopValidator(server.components)
-    await server.startProgram()
+  })
+
+  beforeEach(() => resetServer(server))
+
+  afterAll(async () => {
+    jest.restoreAllMocks()
+    const detector = new LeakDetector(server)
+    await server.stopProgram()
+    server = null as any
+    expect(await detector.isLeaking()).toBe(false)
   })
 
   it('When a user tries to deploy the same entity twice, then an exception is thrown', async () => {
