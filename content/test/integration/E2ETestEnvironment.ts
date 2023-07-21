@@ -52,7 +52,9 @@ export class E2ETestEnvironment {
       })
     })
     this.database = await createDatabaseComponent({ logs: this.logs, env: this.sharedEnv, metrics })
-    if (this.database.start) this.database.start()
+    if (this.database.start) {
+      await this.database.start()
+    }
   }
 
   async stop(): Promise<void> {

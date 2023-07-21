@@ -49,10 +49,12 @@ export async function buildDeployData(pointers: string[], options?: DeploymentOp
     signature
   )
 
-  const entity: Entity = getEntityFromBuffer(
-    deploymentPreparationData.files.get(deploymentPreparationData.entityId)!,
-    deploymentPreparationData.entityId
-  )
+  const content = deploymentPreparationData.files.get(deploymentPreparationData.entityId)
+  if (!content) {
+    throw new Error('Unexpected error: no content')
+  }
+
+  const entity: Entity = getEntityFromBuffer(content, deploymentPreparationData.entityId)
 
   const deployData: DeploymentData = {
     entityId: entity.id,
