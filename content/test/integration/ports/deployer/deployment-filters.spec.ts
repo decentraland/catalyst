@@ -10,18 +10,38 @@ import {
 import { getDeployments } from '../../../../src/logic/deployments'
 import { AppComponents } from '../../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
-import { setupTestEnvironment, testCaseWithComponents } from '../../E2ETestEnvironment'
 import { buildDeployData, buildDeployDataAfterEntity, EntityCombo } from '../../E2ETestUtils'
+import { TestProgram } from '../../TestProgram'
+import LeakDetector from 'jest-leak-detector'
+import { createDefaultServer, resetServer } from '../../simpleTestEnvironment'
 
+const P1 = 'x1,y1'
+const P2 = 'x2,y2'
+const P3 = 'x3,y3'
 /**
  * This test verifies that all deployment filters are working correctly
  */
 describe('Integration - Deployment Filters', () => {
-  const getTestEnv = setupTestEnvironment()
+  let server: TestProgram
 
-  const P1 = 'x1,y1'
-  const P2 = 'x2,y2'
-  const P3 = 'x3,y3'
+  beforeAll(async () => {
+    server = await createDefaultServer()
+    makeNoopValidator(server.components)
+    makeNoopServerValidator(server.components)
+  })
+
+  beforeEach(async () => {
+    await resetServer(server)
+  })
+
+  afterAll(async () => {
+    jest.restoreAllMocks()
+    const detector = new LeakDetector(server)
+    await server.stopProgram()
+    server = null as any
+    expect(await detector.isLeaking()).toBe(false)
+  })
+
   let E1: EntityCombo, E2: EntityCombo, E3: EntityCombo
 
   it('creates and deploys the initial entities', async () => {
@@ -30,98 +50,62 @@ describe('Integration - Deployment Filters', () => {
     E3 = await buildDeployDataAfterEntity(E2, [P1, P2, P3], { type: EntityType.PROFILE, metadata: { a: 'metadata' } })
   })
 
-  testCaseWithComponents(
-    getTestEnv,
-    'When local timestamp filter is set, then results are calculated correctly',
-    async (components) => {
-      // make noop validator
-      makeNoopValidator(components)
-      makeNoopServerValidator(components)
+  it('When local timestamp filter is set, then results are calculated correctly', async () => {
+    const { components } = server
+    // Deploy E1, E2 and E3
+    const [E1Timestamp, E2Timestamp, E3Timestamp] = await deploy(components, E1, E2, E3)
 
-      // Deploy E1, E2 and E3
-      const [E1Timestamp, E2Timestamp, E3Timestamp] = await deploy(components, E1, E2, E3)
+    await assertDeploymentsWithFilterAre(components, {}, E1, E2, E3)
+    await assertDeploymentsWithFilterAre(components, { from: E1Timestamp, to: E2Timestamp }, E1, E2)
+    await assertDeploymentsWithFilterAre(components, { from: E2Timestamp }, E2, E3)
+    await assertDeploymentsWithFilterAre(components, { from: E3Timestamp + 1 })
+  })
 
-      await assertDeploymentsWithFilterAre(components, {}, E1, E2, E3)
-      await assertDeploymentsWithFilterAre(components, { from: E1Timestamp, to: E2Timestamp }, E1, E2)
-      await assertDeploymentsWithFilterAre(components, { from: E2Timestamp }, E2, E3)
-      await assertDeploymentsWithFilterAre(components, { from: E3Timestamp + 1 })
-    }
-  )
+  it('When entity types filter is set, then results are calculated correctly', async () => {
+    const { components } = server
+    // Deploy E1 and E2
+    await deploy(components, E1, E2)
 
-  testCaseWithComponents(
-    getTestEnv,
-    'When entity types filter is set, then results are calculated correctly',
-    async (components) => {
-      // make noop validator
-      makeNoopValidator(components)
-      makeNoopServerValidator(components)
+    await assertDeploymentsWithFilterAre(components, {}, E1, E2)
+    await assertDeploymentsWithFilterAre(components, { entityTypes: [EntityType.PROFILE] }, E1)
+    await assertDeploymentsWithFilterAre(components, { entityTypes: [EntityType.SCENE] }, E2)
+    await assertDeploymentsWithFilterAre(components, { entityTypes: [EntityType.PROFILE, EntityType.SCENE] }, E1, E2)
+  })
 
-      // Deploy E1 and E2
-      await deploy(components, E1, E2)
+  it('When entity ids filter is set, then results are calculated correctly', async () => {
+    const { components } = server
+    // Deploy E1 and E2
+    await deploy(components, E1, E2)
 
-      await assertDeploymentsWithFilterAre(components, {}, E1, E2)
-      await assertDeploymentsWithFilterAre(components, { entityTypes: [EntityType.PROFILE] }, E1)
-      await assertDeploymentsWithFilterAre(components, { entityTypes: [EntityType.SCENE] }, E2)
-      await assertDeploymentsWithFilterAre(components, { entityTypes: [EntityType.PROFILE, EntityType.SCENE] }, E1, E2)
-    }
-  )
+    await assertDeploymentsWithFilterAre(components, {}, E1, E2)
+    await assertDeploymentsWithFilterAre(components, { entityIds: [E1.entity.id] }, E1)
+    await assertDeploymentsWithFilterAre(components, { entityIds: [E2.entity.id] }, E2)
+    await assertDeploymentsWithFilterAre(components, { entityIds: [E1.entity.id, E2.entity.id] }, E1, E2)
+  })
 
-  testCaseWithComponents(
-    getTestEnv,
-    'When entity ids filter is set, then results are calculated correctly',
-    async (components) => {
-      // make noop validator
-      makeNoopValidator(components)
-      makeNoopServerValidator(components)
+  it('When pointers filter is set, then results are calculated correctly', async () => {
+    const { components } = server
+    await deploy(components, E1, E2, E3)
 
-      // Deploy E1 and E2
-      await deploy(components, E1, E2)
+    await assertDeploymentsWithFilterAre(components, {}, E1, E2, E3)
+    await assertDeploymentsWithFilterAre(components, { pointers: [P1] }, E1, E3)
+    await assertDeploymentsWithFilterAre(components, { pointers: [P2] }, E2, E3)
+    await assertDeploymentsWithFilterAre(components, { pointers: [P3] }, E3)
+    await assertDeploymentsWithFilterAre(components, { pointers: [P1, P2, P3] }, E1, E2, E3)
+  })
 
-      await assertDeploymentsWithFilterAre(components, {}, E1, E2)
-      await assertDeploymentsWithFilterAre(components, { entityIds: [E1.entity.id] }, E1)
-      await assertDeploymentsWithFilterAre(components, { entityIds: [E2.entity.id] }, E2)
-      await assertDeploymentsWithFilterAre(components, { entityIds: [E1.entity.id, E2.entity.id] }, E1, E2)
-    }
-  )
+  it('When pointers filter is set, then results are calculated case insensitive', async () => {
+    const { components } = server
+    await deploy(components, E1, E2, E3)
+    const upperP1 = 'X1,Y1'
+    const upperP2 = 'X2,Y2'
+    const upperP3 = 'X3,Y3'
 
-  testCaseWithComponents(
-    getTestEnv,
-    'When pointers filter is set, then results are calculated correctly',
-    async (components) => {
-      // make noop validator
-      makeNoopValidator(components)
-      makeNoopServerValidator(components)
-
-      await deploy(components, E1, E2, E3)
-
-      await assertDeploymentsWithFilterAre(components, {}, E1, E2, E3)
-      await assertDeploymentsWithFilterAre(components, { pointers: [P1] }, E1, E3)
-      await assertDeploymentsWithFilterAre(components, { pointers: [P2] }, E2, E3)
-      await assertDeploymentsWithFilterAre(components, { pointers: [P3] }, E3)
-      await assertDeploymentsWithFilterAre(components, { pointers: [P1, P2, P3] }, E1, E2, E3)
-    }
-  )
-
-  testCaseWithComponents(
-    getTestEnv,
-    'When pointers filter is set, then results are calculated case insensitive',
-    async (components) => {
-      // make noop validator
-      makeNoopValidator(components)
-      makeNoopServerValidator(components)
-
-      const deployments = await deploy(components, E1, E2, E3)
-      console.dir({ deployments })
-      const upperP1 = 'X1,Y1'
-      const upperP2 = 'X2,Y2'
-      const upperP3 = 'X3,Y3'
-
-      await assertDeploymentsWithFilterAre(components, { pointers: [upperP1] }, E1, E3)
-      await assertDeploymentsWithFilterAre(components, { pointers: [upperP2] }, E2, E3)
-      await assertDeploymentsWithFilterAre(components, { pointers: [upperP3] }, E3)
-      await assertDeploymentsWithFilterAre(components, { pointers: [upperP1, upperP2, upperP3] }, E1, E2, E3)
-    }
-  )
+    await assertDeploymentsWithFilterAre(components, { pointers: [upperP1] }, E1, E3)
+    await assertDeploymentsWithFilterAre(components, { pointers: [upperP2] }, E2, E3)
+    await assertDeploymentsWithFilterAre(components, { pointers: [upperP3] }, E3)
+    await assertDeploymentsWithFilterAre(components, { pointers: [upperP1, upperP2, upperP3] }, E1, E2, E3)
+  })
 
   async function assertDeploymentsWithFilterAre(
     components: Pick<AppComponents, 'database' | 'denylist' | 'metrics'>,
