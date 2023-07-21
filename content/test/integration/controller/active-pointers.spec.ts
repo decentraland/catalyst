@@ -32,9 +32,7 @@ describe('Integration - Create entities', () => {
     makeNoopServerValidator(server.components)
   })
 
-  beforeEach(async () => {
-    resetServer(server)
-  })
+  beforeEach(() => resetServer(server))
 
   afterAll(async () => {
     jest.restoreAllMocks()

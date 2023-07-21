@@ -13,9 +13,7 @@ describe('Integration - Get Active Entities By Content Hash', () => {
     makeNoopValidator(server.components)
   })
 
-  beforeEach(async () => {
-    resetServer(server)
-  })
+  beforeEach(() => resetServer(server))
 
   afterAll(async () => {
     jest.restoreAllMocks()

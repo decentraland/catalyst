@@ -52,7 +52,9 @@ export async function createDefaultDB() {
 }
 
 export async function clearDatabase(server: TestProgram): Promise<void> {
-  await server.components.database.query('TRUNCATE TABLE deployments, content_files, active_pointers CASCADE')
+  await server.components.database.query(
+    'TRUNCATE TABLE deployments, content_files, active_pointers, processed_snapshots CASCADE'
+  )
 }
 
 export function resetServer(server: TestProgram): Promise<void> {
