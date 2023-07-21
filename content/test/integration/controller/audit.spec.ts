@@ -2,25 +2,23 @@ import { EntityType } from '@dcl/schemas'
 import fetch from 'node-fetch'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { buildDeployData, deployEntitiesCombo } from '../E2ETestUtils'
-import { SimpleTestEnvironment, createSimpleTestEnvironment } from '../simpleTestEnvironment'
+import { createDefaultServer } from '../simpleTestEnvironment'
 import { TestProgram } from '../TestProgram'
 import LeakDetector from 'jest-leak-detector'
 
 describe('Integration - Audit', () => {
   let server: TestProgram
-  let env: SimpleTestEnvironment
 
   beforeAll(async () => {
-    env = await createSimpleTestEnvironment()
-    server = await env.start()
+    server = await createDefaultServer()
     makeNoopValidator(server.components)
   })
 
   afterAll(async () => {
     jest.restoreAllMocks()
-    const detector = new LeakDetector(env)
-    await env.stop()
-    env = null as any
+    const detector = new LeakDetector(server)
+    await server.stopProgram()
+    server = null as any
     expect(await detector.isLeaking()).toBe(false)
   })
 

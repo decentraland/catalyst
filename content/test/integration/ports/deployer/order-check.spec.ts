@@ -2,7 +2,7 @@ import { getDeployments } from '../../../../src/logic/deployments'
 import { AppComponents } from '../../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo, EntityCombo } from '../../E2ETestUtils'
-import { SimpleTestEnvironment, createSimpleTestEnvironment } from '../../simpleTestEnvironment'
+import { createDefaultServer } from '../../simpleTestEnvironment'
 import { TestProgram } from '../../TestProgram'
 import LeakDetector from 'jest-leak-detector'
 
@@ -19,20 +19,18 @@ describe('Integration - Order Check', () => {
   let allEntities: EntityCombo[]
 
   let server: TestProgram
-  let env: SimpleTestEnvironment
 
   beforeAll(async () => {
-    env = await createSimpleTestEnvironment()
-    server = await env.start()
+    server = await createDefaultServer()
     makeNoopValidator(server.components)
     makeNoopServerValidator(server.components)
   })
 
   afterAll(async () => {
     jest.restoreAllMocks()
-    const detector = new LeakDetector(env)
-    await env.stop()
-    env = null as any
+    const detector = new LeakDetector(server)
+    await server.stopProgram()
+    server = null as any
     expect(await detector.isLeaking()).toBe(false)
   })
 

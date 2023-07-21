@@ -5,7 +5,7 @@ import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/servic
 import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
 import { TestProgram } from '../TestProgram'
 import FormData = require('form-data')
-import { createSimpleTestEnvironment, SimpleTestEnvironment } from '../simpleTestEnvironment'
+import { resetServer, createDefaultServer } from '../simpleTestEnvironment'
 import LeakDetector from 'jest-leak-detector'
 
 interface ActivePointersRow {
@@ -25,26 +25,23 @@ const profileOverwriteEntityId = 'bafkreiczclosnorj7bzibuvotiwf2gyvtmnxmyvl62nac
 
 describe('Integration - Create entities', () => {
   let server: TestProgram
-  let env: SimpleTestEnvironment
 
   beforeAll(async () => {
-    env = await createSimpleTestEnvironment()
-    server = await env.start()
+    server = await createDefaultServer()
     makeNoopValidator(server.components)
     makeNoopServerValidator(server.components)
   })
 
   beforeEach(async () => {
-    server.components.activeEntities.reset()
-    await env.clearDatabase()
+    resetServer(server)
   })
 
   afterAll(async () => {
     jest.restoreAllMocks()
     stopAllComponents({ fs })
-    const detector = new LeakDetector(env)
-    await env.stop()
-    env = null as any
+    const detector = new LeakDetector(server)
+    await server.stopProgram()
+    server = null as any
     expect(await detector.isLeaking()).toBe(false)
   })
 

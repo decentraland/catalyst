@@ -4,30 +4,27 @@ import * as deployments from '../../../src/logic/deployments'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { buildDeployData } from '../E2ETestUtils'
 import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
-import { SimpleTestEnvironment, createSimpleTestEnvironment } from '../simpleTestEnvironment'
 import { TestProgram } from '../TestProgram'
 import LeakDetector from 'jest-leak-detector'
+import { createDefaultServer, resetServer } from '../simpleTestEnvironment'
 
 describe('Integration - Get Active Entities', () => {
   let server: TestProgram
-  let env: SimpleTestEnvironment
 
   beforeAll(async () => {
-    env = await createSimpleTestEnvironment()
-    server = await env.start()
+    server = await createDefaultServer()
     makeNoopValidator(server.components)
   })
 
   beforeEach(async () => {
-    server.components.activeEntities.reset()
-    await env.clearDatabase()
+    await resetServer(server)
   })
 
   afterAll(async () => {
     jest.restoreAllMocks()
-    const detector = new LeakDetector(env)
-    await env.stop()
-    env = null as any
+    const detector = new LeakDetector(server)
+    await server.stopProgram()
+    server = null as any
     expect(await detector.isLeaking()).toBe(false)
   })
 
@@ -40,7 +37,10 @@ describe('Integration - Get Active Entities', () => {
 
     expect(result.status).toBe(400)
     expect(result.statusText).toBe('Bad Request')
-    expect(await result.json()).toEqual({ error: 'ids or pointers must be present, but not both. They must be arrays and contain at least one element. None of the elements can be empty.' })
+    expect(await result.json()).toEqual({
+      error:
+        'ids or pointers must be present, but not both. They must be arrays and contain at least one element. None of the elements can be empty.'
+    })
   })
 
   it('when asking by ID, it returns active entities with given ID', async () => {

@@ -6,7 +6,7 @@ import { toQueryParams } from '../../../src/logic/query-params'
 import { PointerChangesFilters } from '../../../src/service/pointers/types'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { buildDeployData, EntityCombo } from '../E2ETestUtils'
-import { SimpleTestEnvironment, createSimpleTestEnvironment } from '../simpleTestEnvironment'
+import { resetServer, createDefaultServer } from '../simpleTestEnvironment'
 import { TestProgram } from '../TestProgram'
 import LeakDetector from 'jest-leak-detector'
 
@@ -16,11 +16,9 @@ describe('Integration - Deployment Pagination', () => {
   let E1: EntityCombo, E2: EntityCombo, E3: EntityCombo
 
   let server: TestProgram
-  let env: SimpleTestEnvironment
 
   beforeAll(async () => {
-    env = await createSimpleTestEnvironment()
-    server = await env.start()
+    server = await createDefaultServer()
     makeNoopValidator(server.components)
 
     const P1 = 'X1,Y1'
@@ -41,16 +39,13 @@ describe('Integration - Deployment Pagination', () => {
     E3 = await buildDeployData([P3], { type, timestamp: timestamp + 1, metadata: { a: 'metadata3' } })
   })
 
-  beforeEach(async () => {
-    server.components.activeEntities.reset()
-    await env.clearDatabase()
-  })
+  beforeEach(() => resetServer(server))
 
   afterAll(async () => {
     jest.restoreAllMocks()
-    const detector = new LeakDetector(env)
-    await env.stop()
-    env = null as any
+    const detector = new LeakDetector(server)
+    await server.stopProgram()
+    server = null as any
     expect(await detector.isLeaking()).toBe(false)
   })
 
