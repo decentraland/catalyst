@@ -1,15 +1,15 @@
 import { getDeployments } from '../../../../src/logic/deployments'
 import { AppComponents } from '../../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
-import { setupTestEnvironment, testCaseWithComponents } from '../../E2ETestEnvironment'
 import { buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo, EntityCombo } from '../../E2ETestUtils'
+import { createDefaultServer } from '../../simpleTestEnvironment'
+import { TestProgram } from '../../TestProgram'
+import LeakDetector from 'jest-leak-detector'
 
 /**
  * This test verifies that the active entity and overwrites are calculated correctly, regardless of the order in which the entities where deployed.
  */
 describe('Integration - Order Check', () => {
-  const getTestEnv = setupTestEnvironment()
-
   const P1 = 'X1,Y1'
   const P2 = 'X2,Y2'
   const P3 = 'X3,Y3'
@@ -17,6 +17,22 @@ describe('Integration - Order Check', () => {
   let E1: EntityCombo, E2: EntityCombo, E3: EntityCombo, E4: EntityCombo, E5: EntityCombo
 
   let allEntities: EntityCombo[]
+
+  let server: TestProgram
+
+  beforeAll(async () => {
+    server = await createDefaultServer()
+    makeNoopValidator(server.components)
+    makeNoopServerValidator(server.components)
+  })
+
+  afterAll(async () => {
+    jest.restoreAllMocks()
+    const detector = new LeakDetector(server)
+    await server.stopProgram()
+    server = null as any
+    expect(await detector.isLeaking()).toBe(false)
+  })
 
   beforeAll(async () => {
     E1 = await buildDeployData([P1])
@@ -30,11 +46,8 @@ describe('Integration - Order Check', () => {
 
   permutator([0, 1, 2, 3, 4]).forEach(function (indices) {
     const names = indices.map((idx) => `E${idx + 1}`).join(' -> ')
-    testCaseWithComponents(getTestEnv, names, async (components) => {
-      // make noop validator
-      makeNoopValidator(components)
-      makeNoopServerValidator(components)
-
+    it(names, async () => {
+      const { components } = server
       const entityCombos = indices.map((idx) => allEntities[idx])
       await deployEntitiesCombo(components.deployer, ...entityCombos)
       await assertCommitsWhereDoneCorrectly(components)

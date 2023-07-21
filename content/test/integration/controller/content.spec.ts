@@ -1,21 +1,26 @@
 import fetch from 'node-fetch'
-import { EnvironmentConfig } from '../../../src/Environment'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
-import { setupTestEnvironment } from '../E2ETestEnvironment'
+import { createDefaultServer } from '../simpleTestEnvironment'
+import { TestProgram } from '../TestProgram'
+import LeakDetector from 'jest-leak-detector'
 
 describe('Integration - Get Content', () => {
-  const getTestEnv = setupTestEnvironment()
+  let server: TestProgram
+
+  beforeAll(async () => {
+    server = await createDefaultServer()
+    makeNoopValidator(server.components)
+  })
+
+  afterAll(async () => {
+    jest.restoreAllMocks()
+    const detector = new LeakDetector(server)
+    await server.stopProgram()
+    server = null as any
+    expect(await detector.isLeaking()).toBe(false)
+  })
 
   it('returns 404 when the content file does not exist', async () => {
-    const server = await getTestEnv()
-      .configServer()
-      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-      .andBuild()
-
-    makeNoopValidator(server.components)
-
-    await server.startProgram()
-
     const url = server.getUrl() + `/contents/non-existent-file`
     const res = await fetch(url)
 
@@ -23,15 +28,6 @@ describe('Integration - Get Content', () => {
   })
 
   it('returns 404 when the content file does not exist for the head method', async () => {
-    const server = await getTestEnv()
-      .configServer()
-      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-      .andBuild()
-
-    makeNoopValidator(server.components)
-
-    await server.startProgram()
-
     const url = server.getUrl() + `/contents/non-existent-file`
     const res = await fetch(url, { method: 'HEAD' })
 

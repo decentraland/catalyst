@@ -1,21 +1,26 @@
 import fetch from 'node-fetch'
-import { EnvironmentConfig } from '../../../src/Environment'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
-import { setupTestEnvironment } from '../E2ETestEnvironment'
+import { createDefaultServer } from '../simpleTestEnvironment'
+import { TestProgram } from '../TestProgram'
+import LeakDetector from 'jest-leak-detector'
 
 describe('Integration - Status', () => {
-  const getTestEnv = setupTestEnvironment()
+  let server: TestProgram
+
+  beforeAll(async () => {
+    server = await createDefaultServer()
+    makeNoopValidator(server.components)
+  })
+
+  afterAll(async () => {
+    jest.restoreAllMocks()
+    const detector = new LeakDetector(server)
+    await server.stopProgram()
+    server = null as any
+    expect(await detector.isLeaking()).toBe(false)
+  })
 
   it('returns 200 when the status is ok', async () => {
-    const server = await getTestEnv()
-      .configServer()
-      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-      .andBuild()
-
-    makeNoopValidator(server.components)
-
-    await server.startProgram()
-
     const url = server.getUrl() + `/status`
     const res = await fetch(url)
 
