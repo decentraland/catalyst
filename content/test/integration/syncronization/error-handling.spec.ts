@@ -16,28 +16,46 @@ import {
   assertThereIsAFailedDeployment,
   buildDeployment
 } from '../E2EAssertions'
-import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { awaitUntil, buildDeployData, buildDeployDataAfterEntity, createIdentity } from '../E2ETestUtils'
 import { TestProgram } from '../TestProgram'
+import LeakDetector from 'jest-leak-detector'
+import { createAdditionalServer, createDefaultServer } from '../simpleTestEnvironment'
 
 describe('End 2 end - Error handling', () => {
   const identity = createIdentity()
-  const getTestEnv = setupTestEnvironment()
   let server1: TestProgram, server2: TestProgram
 
-  beforeEach(async () => {
-    ;[server1, server2] = await getTestEnv()
-      .configServer()
-      .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
-      .withConfig(EnvironmentConfig.REQUEST_TTL_BACKWARDS, ms('2s'))
-      .andBuildMany(2)
-
+  beforeAll(async () => {
+    const config = {
+      [EnvironmentConfig.DECENTRALAND_ADDRESS]: identity.address,
+      [EnvironmentConfig.REQUEST_TTL_BACKWARDS]: ms('2s'),
+      [EnvironmentConfig.DISABLE_SYNCHRONIZATION]: true
+    }
+    server1 = await createDefaultServer(config)
     makeNoopValidator(server1.components)
     makeNoopServerValidator(server1.components)
     makeNoopDeploymentValidator(server1.components)
+
+    server2 = await createAdditionalServer(server1, 1201, config)
     makeNoopValidator(server2.components)
     makeNoopServerValidator(server2.components)
     makeNoopDeploymentValidator(server2.components)
+  })
+
+  afterAll(async () => {
+    jest.restoreAllMocks()
+    const detector = new LeakDetector(server1)
+    await server1.stopProgram()
+    server1 = null as any
+    expect(await detector.isLeaking()).toBe(false)
+  })
+
+  afterAll(async () => {
+    jest.restoreAllMocks()
+    const detector = new LeakDetector(server2)
+    await server2.stopProgram()
+    server2 = null as any
+    expect(await detector.isLeaking()).toBe(false)
   })
 
   //TODO: [new-sync] Check that this is being tested somewhere else
@@ -57,9 +75,6 @@ describe('End 2 end - Error handling', () => {
 
   //TODO: [new-sync] Fix this when deny-listed items are excluded from the snapshots and pointer changes
   xit(`When a user tries to fix an entity, it doesn't matter if there is already a newer entity deployed`, async () => {
-    // Start servers
-    await Promise.all([server1.startProgram(), server2.startProgram()])
-
     // Prepare entity to deploy
     const { deployData: deployData1, entity: entityBeingDeployed1 } = await buildDeployData(['0,0', '0,1'], {
       metadata: { a: 'metadata' },
@@ -100,9 +115,6 @@ describe('End 2 end - Error handling', () => {
   })
 
   it(`When a user tries to fix an entity that didn't exist, the entity gets deployed`, async () => {
-    // Start server
-    await server1.startProgram()
-
     // Prepare entity to deploy
     const { deployData, entity } = await buildDeployData(['0,0', '0,1'], { metadata: { a: 'metadata' } })
 
@@ -114,9 +126,6 @@ describe('End 2 end - Error handling', () => {
   })
 
   it(`When a user tries to fix an entity that hadn't fail, then it is an idempotent operation`, async () => {
-    // Start server
-    await server1.startProgram()
-
     // Prepare entity to deploy
     const { deployData } = await buildDeployData(['0,0', '0,1'], { metadata: { a: 'metadata' } })
 
@@ -135,9 +144,6 @@ describe('End 2 end - Error handling', () => {
     causeOfFailure: (entity: Entity) => Promise<void>,
     removeCauseOfFailure?: () => Promise<void>
   ) {
-    // Start server1
-    await server1.startProgram()
-
     // Prepare entity to deploy
     const { deployData, entity: entityBeingDeployed } = await buildDeployData(['0,0', '0,1'], {
       metadata: { a: 'metadata' },
@@ -149,10 +155,6 @@ describe('End 2 end - Error handling', () => {
 
     // Cause failure
     await causeOfFailure(entityBeingDeployed)
-
-    // Start server2
-
-    await server2.startProgram()
 
     // Assert deployment is marked as failed
     await awaitUntil(() => assertDeploymentFailed(server2, errorType, entityBeingDeployed))

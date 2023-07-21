@@ -16,9 +16,7 @@ describe('Integration - Get Active Entities', () => {
     makeNoopValidator(server.components)
   })
 
-  beforeEach(async () => {
-    await resetServer(server)
-  })
+  beforeEach(() => resetServer(server))
 
   afterAll(async () => {
     jest.restoreAllMocks()
