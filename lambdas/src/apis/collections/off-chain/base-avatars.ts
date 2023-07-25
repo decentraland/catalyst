@@ -279,7 +279,11 @@ const list: WearableId[] = [
   'urn:decentraland:off-chain:base-avatars:denimdungareesred',
   'urn:decentraland:off-chain:base-avatars:poloblacktshirt',
   'urn:decentraland:off-chain:base-avatars:polobluetshirt',
-  'urn:decentraland:off-chain:base-avatars:polocoloredtshirt'
+  'urn:decentraland:off-chain:base-avatars:polocoloredtshirt',
+  'urn:decentraland:off-chain:base-avatars:black_glove',
+  'urn:decentraland:off-chain:base-avatars:cord_bracelet',
+  'urn:decentraland:off-chain:base-avatars:dcl_watch',
+  'urn:decentraland:off-chain:base-avatars:emerald_ring'
 ]
 
 export default list
