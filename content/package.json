@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@dcl/block-indexer": "^1.1.2",
-    "@dcl/catalyst-api-specs": "^3.2.2",
+    "@dcl/catalyst-api-specs": "^3.2.3",
     "@dcl/catalyst-contracts": "^4.0.6",
     "@dcl/catalyst-storage": "^3.0.1",
     "@dcl/content-validator": "^4.8.0",
