@@ -992,10 +992,10 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@^4.8.0":
-  version "4.8.0"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.8.0.tgz#adfed94cc9e8ba6df7b195c7afa2b479499c1e95"
-  integrity sha512-S7eX3NNEQD5Opa5onmULcTge99HFFavuRCDU3Gveo2vAIHBpc87XkuYj9YIgBsy2ZEX+avRPaLQM90OM3moeJg==
+"@dcl/content-validator@^4.9.0":
+  version "4.9.0"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.9.0.tgz#56064eab2d9026ad67d5629b86df66691f49a3f1"
+  integrity sha512-ZRNJYeEvpWZ7B5MCEoh+vN/dDL8MkMEVQ9/DMssD22Fs05fQZshJ/inGau73hoXo5GscFuU/4J/2OGGy83ap7g==
   dependencies:
     "@dcl/block-indexer" "^1.1.1"
     "@dcl/content-hash-tree" "^1.1.4"
