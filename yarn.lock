@@ -992,14 +992,14 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@^4.9.0":
-  version "4.9.0"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.9.0.tgz#56064eab2d9026ad67d5629b86df66691f49a3f1"
-  integrity sha512-ZRNJYeEvpWZ7B5MCEoh+vN/dDL8MkMEVQ9/DMssD22Fs05fQZshJ/inGau73hoXo5GscFuU/4J/2OGGy83ap7g==
+"@dcl/content-validator@^4.9.2":
+  version "4.9.2"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.9.2.tgz#83673d436c120852ba68f21e36e2ee23a15115af"
+  integrity sha512-Lt8KX5h1Omd2ncaALzfgOExH2YA3hqoGTAM4rOcminufAl1V/n5aJKPLyYpll9HOdKP8RGiliskt093a8QyiHQ==
   dependencies:
     "@dcl/block-indexer" "^1.1.1"
     "@dcl/content-hash-tree" "^1.1.4"
-    "@dcl/hashing" "^2.0.0"
+    "@dcl/hashing" "^3.0.1"
     "@dcl/schemas" "^8.2.2"
     "@dcl/urn-resolver" "^2.0.3"
     "@well-known-components/interfaces" "^1.3.0"
@@ -1026,7 +1026,7 @@
     ipfs-unixfs-importer "^7.0.3"
     multiformats "^9.6.3"
 
-"@dcl/hashing@^3.0.3":
+"@dcl/hashing@^3.0.1", "@dcl/hashing@^3.0.3":
   version "3.0.3"
   resolved "https://registry.yarnpkg.com/@dcl/hashing/-/hashing-3.0.3.tgz#c0d1c35e1319153965e0ec90bea65ddaf18d7fc6"
   integrity sha512-fz643arBiTcotaC/mW2kSVBQFwELi2wkqAs6eJ6nsivqBEMP1FDdqRAL3x4iS3pk1aQntzQ5NebGmZTZaVK9IA==

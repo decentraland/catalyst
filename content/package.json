@@ -23,7 +23,7 @@
     "@dcl/catalyst-api-specs": "^3.2.3",
     "@dcl/catalyst-contracts": "^4.0.6",
     "@dcl/catalyst-storage": "^3.0.1",
-    "@dcl/content-validator": "^4.9.0",
+    "@dcl/content-validator": "^4.9.2",
     "@dcl/crypto": "^3.4.3",
     "@dcl/hashing": "^3.0.3",
     "@dcl/schemas": "^8.2.2",
