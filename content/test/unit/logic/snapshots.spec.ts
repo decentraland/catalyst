@@ -19,14 +19,14 @@ describe('generate snapshot', () => {
   const fs = createFsComponent()
   const metrics = createTestMetricsComponent(metricsDeclaration)
   const staticConfigs = { contentStorageFolder: '', tmpDownloadFolder: '' }
-  const denylist: Denylist = { isDenylisted: jest.fn() }
+  const denylist: Denylist = { isDenylisted: vi.fn() }
   const aTimeRange = { initTimestamp: 1, endTimestamp: 2 }
   const storage: IContentStorageComponent = {
-    storeStream: jest.fn(),
-    storeStreamAndCompress: jest.fn(),
-    delete: jest.fn(),
-    retrieve: jest.fn(),
-    exist: jest.fn(),
+    storeStream: vi.fn(),
+    storeStreamAndCompress: vi.fn(),
+    delete: vi.fn(),
+    retrieve: vi.fn(),
+    exist: vi.fn(),
     existMultiple: async (fileIds: string[]) => {
       const exist = new Map()
       for (const fileId of fileIds) {
@@ -34,7 +34,7 @@ describe('generate snapshot', () => {
       }
       return exist
     },
-    allFileIds: jest.fn()
+    allFileIds: vi.fn()
   }
   let logs: ILoggerComponent
 
@@ -43,13 +43,13 @@ describe('generate snapshot', () => {
   })
 
   beforeEach(() => {
-    jest.spyOn(database, 'transaction').mockImplementation(async (f) => {
+    vi.spyOn(database, 'transaction').mockImplementation(async (f) => {
       await f({ insideTx: true, ...database })
     })
   })
 
   afterAll(() => {
-    jest.restoreAllMocks()
+    vi.restoreAllMocks()
     return stopAllComponents({ logs, database, metrics, fs })
   })
 
@@ -100,14 +100,14 @@ describe('generate snapshot in multiple', () => {
   const fs = createFsComponent()
   const metrics = createTestMetricsComponent(metricsDeclaration)
   const staticConfigs = { contentStorageFolder: '', tmpDownloadFolder: '' }
-  const denylist: Denylist = { isDenylisted: jest.fn() }
+  const denylist: Denylist = { isDenylisted: vi.fn() }
   const clock = { now: Date.now }
   const storage: IContentStorageComponent = {
-    storeStream: jest.fn(),
-    storeStreamAndCompress: jest.fn(),
-    delete: jest.fn(),
-    retrieve: jest.fn(),
-    exist: jest.fn(),
+    storeStream: vi.fn(),
+    storeStreamAndCompress: vi.fn(),
+    delete: vi.fn(),
+    retrieve: vi.fn(),
+    exist: vi.fn(),
     existMultiple: async (fileIds: string[]) => {
       const exist = new Map()
       for (const fileId of fileIds) {
@@ -115,13 +115,13 @@ describe('generate snapshot in multiple', () => {
       }
       return exist
     },
-    allFileIds: jest.fn()
+    allFileIds: vi.fn()
   }
   let logs: ILoggerComponent
   const saveFn = snapshotQueries.saveSnapshot
   const deleteFn = snapshotQueries.deleteSnapshotsInTimeRange
-  let saveSpy: jest.SpyInstance<ReturnType<typeof saveFn>, Parameters<typeof saveFn>>
-  let deleteSpy: jest.SpyInstance<ReturnType<typeof deleteFn>, Parameters<typeof deleteFn>>
+  let saveSpy: vi.SpyInstance<ReturnType<typeof saveFn>, Parameters<typeof saveFn>>
+  let deleteSpy: vi.SpyInstance<ReturnType<typeof deleteFn>, Parameters<typeof deleteFn>>
   let generationTimestamp: number
 
   beforeAll(async () => {
@@ -129,27 +129,27 @@ describe('generate snapshot in multiple', () => {
   })
 
   beforeEach(() => {
-    jest.spyOn(database, 'transaction').mockImplementation(async (f) => {
+    vi.spyOn(database, 'transaction').mockImplementation(async (f) => {
       await f({ insideTx: true, ...database })
     })
-    saveSpy = jest.spyOn(snapshotQueries, 'saveSnapshot').mockImplementation()
-    deleteSpy = jest.spyOn(snapshotQueries, 'deleteSnapshotsInTimeRange').mockImplementation()
-    jest.spyOn(snapshotQueries, 'getNumberOfActiveEntitiesInTimeRange').mockImplementation()
-    jest.spyOn(snapshotQueries, 'getSnapshotHashesNotInTimeRange').mockResolvedValue(new Set())
-    jest.spyOn(snapshotQueries, 'snapshotIsOutdated').mockResolvedValue(false)
+    saveSpy = vi.spyOn(snapshotQueries, 'saveSnapshot').mockImplementation()
+    deleteSpy = vi.spyOn(snapshotQueries, 'deleteSnapshotsInTimeRange').mockImplementation()
+    vi.spyOn(snapshotQueries, 'getNumberOfActiveEntitiesInTimeRange').mockImplementation()
+    vi.spyOn(snapshotQueries, 'getSnapshotHashesNotInTimeRange').mockResolvedValue(new Set())
+    vi.spyOn(snapshotQueries, 'snapshotIsOutdated').mockResolvedValue(false)
     generationTimestamp = Date.now()
-    jest.spyOn(clock, 'now').mockReturnValue(generationTimestamp)
+    vi.spyOn(clock, 'now').mockReturnValue(generationTimestamp)
   })
 
   afterEach(() => {
-    jest.restoreAllMocks()
+    vi.restoreAllMocks()
   })
 
   it('should generate snapshot for time range when there are no saved snapshots for that time range', async () => {
     mockStreamedActiveEntitiesWith([])
     const oneYearRange = { initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR }
-    jest.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([])
-    jest.spyOn(tr, 'divideTimeInYearsMonthsWeeksAndDays').mockReturnValue({
+    vi.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([])
+    vi.spyOn(tr, 'divideTimeInYearsMonthsWeeksAndDays').mockReturnValue({
       intervals: [oneYearRange],
       remainder: { initTimestamp: tr.MS_PER_YEAR, endTimestamp: tr.MS_PER_YEAR }
     })
@@ -175,11 +175,11 @@ describe('generate snapshot in multiple', () => {
     const oneYearRange = { initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR }
     const firstHalfYear = { initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR / 2 }
     const secondHalfYear = { initTimestamp: tr.MS_PER_YEAR / 2, endTimestamp: tr.MS_PER_YEAR }
-    jest.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([
+    vi.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([
       { hash: 'h1', numberOfEntities: 1, replacedSnapshotHashes: [], timeRange: firstHalfYear, generationTimestamp },
       { hash: 'h2', numberOfEntities: 2, replacedSnapshotHashes: [], timeRange: secondHalfYear, generationTimestamp }
     ])
-    jest.spyOn(tr, 'divideTimeInYearsMonthsWeeksAndDays').mockReturnValue({
+    vi.spyOn(tr, 'divideTimeInYearsMonthsWeeksAndDays').mockReturnValue({
       intervals: [oneYearRange],
       remainder: { initTimestamp: tr.MS_PER_YEAR, endTimestamp: tr.MS_PER_YEAR }
     })
@@ -209,7 +209,7 @@ describe('generate snapshot in multiple', () => {
   it('should re-generate snapshot when there the current snapshot is not in storage', async () => {
     mockStreamedActiveEntitiesWith([])
     const oneYearRange = { initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR }
-    jest.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([
+    vi.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([
       {
         hash: 'snapshotNotInStorage',
         numberOfEntities: 1,
@@ -218,11 +218,11 @@ describe('generate snapshot in multiple', () => {
         generationTimestamp
       }
     ])
-    jest.spyOn(tr, 'divideTimeInYearsMonthsWeeksAndDays').mockReturnValue({
+    vi.spyOn(tr, 'divideTimeInYearsMonthsWeeksAndDays').mockReturnValue({
       intervals: [oneYearRange],
       remainder: { initTimestamp: tr.MS_PER_YEAR, endTimestamp: tr.MS_PER_YEAR }
     })
-    jest.spyOn(storage, 'existMultiple').mockImplementation(async () => {
+    vi.spyOn(storage, 'existMultiple').mockImplementation(async () => {
       const exist = new Map()
       exist.set('snapshotNotInStorage', false)
       return exist
@@ -254,7 +254,7 @@ describe('generate snapshot in multiple', () => {
     mockStreamedActiveEntitiesWith([])
     const oneYearRange = { initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR }
     const timeRangeWithinTheYear = { initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR / 2 }
-    jest.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([
+    vi.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([
       {
         hash: 'h1',
         numberOfEntities: 1,
@@ -263,7 +263,7 @@ describe('generate snapshot in multiple', () => {
         generationTimestamp
       }
     ])
-    jest.spyOn(tr, 'divideTimeInYearsMonthsWeeksAndDays').mockReturnValue({
+    vi.spyOn(tr, 'divideTimeInYearsMonthsWeeksAndDays').mockReturnValue({
       intervals: [oneYearRange],
       remainder: { initTimestamp: tr.MS_PER_YEAR, endTimestamp: tr.MS_PER_YEAR }
     })
@@ -283,11 +283,11 @@ describe('generate snapshot in multiple', () => {
     const oneYearRange = { initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR }
     const firstHalfYear = { initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR / 2 }
     const secondHalfYear = { initTimestamp: tr.MS_PER_YEAR / 2, endTimestamp: tr.MS_PER_YEAR }
-    jest.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([
+    vi.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([
       { hash: 'h1', numberOfEntities: 1, replacedSnapshotHashes: [], timeRange: firstHalfYear, generationTimestamp },
       { hash: 'h2', numberOfEntities: 2, replacedSnapshotHashes: [], timeRange: secondHalfYear, generationTimestamp }
     ])
-    jest.spyOn(tr, 'divideTimeInYearsMonthsWeeksAndDays').mockReturnValue({
+    vi.spyOn(tr, 'divideTimeInYearsMonthsWeeksAndDays').mockReturnValue({
       intervals: [oneYearRange],
       remainder: { initTimestamp: tr.MS_PER_YEAR, endTimestamp: tr.MS_PER_YEAR }
     })
@@ -311,12 +311,12 @@ describe('generate snapshot in multiple', () => {
     const oneYearRange = { initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR }
     const firstHalfYear = { initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR / 2 }
     const secondHalfYear = { initTimestamp: tr.MS_PER_YEAR / 2, endTimestamp: tr.MS_PER_YEAR }
-    jest.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([
+    vi.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([
       // These two snapshots cover the whole year.
       { hash: 'h1', numberOfEntities: 1, replacedSnapshotHashes: [], timeRange: firstHalfYear, generationTimestamp },
       { hash: 'h2', numberOfEntities: 2, replacedSnapshotHashes: [], timeRange: secondHalfYear, generationTimestamp }
     ])
-    jest.spyOn(tr, 'divideTimeInYearsMonthsWeeksAndDays').mockReturnValue({
+    vi.spyOn(tr, 'divideTimeInYearsMonthsWeeksAndDays').mockReturnValue({
       intervals: [oneYearRange],
       remainder: { initTimestamp: tr.MS_PER_YEAR, endTimestamp: tr.MS_PER_YEAR }
     })
@@ -345,12 +345,12 @@ describe('generate snapshot in multiple', () => {
     ])
     const oneYearRange = { initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR }
     const firstHalfYear = { initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR / 2 }
-    jest
+    vi
       .spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange')
       .mockResolvedValue([
         { hash: 'h1', numberOfEntities: 1, replacedSnapshotHashes: [], timeRange: firstHalfYear, generationTimestamp }
       ])
-    jest.spyOn(tr, 'divideTimeInYearsMonthsWeeksAndDays').mockReturnValue({
+    vi.spyOn(tr, 'divideTimeInYearsMonthsWeeksAndDays').mockReturnValue({
       intervals: [oneYearRange],
       remainder: { initTimestamp: tr.MS_PER_YEAR, endTimestamp: tr.MS_PER_YEAR }
     })
@@ -381,8 +381,8 @@ describe('generate snapshot in multiple', () => {
       timeRange: oneYearRange,
       generationTimestamp
     }
-    jest.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([expectedSnapshot])
-    jest.spyOn(tr, 'divideTimeInYearsMonthsWeeksAndDays').mockReturnValue({
+    vi.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([expectedSnapshot])
+    vi.spyOn(tr, 'divideTimeInYearsMonthsWeeksAndDays').mockReturnValue({
       intervals: [oneYearRange],
       remainder: { initTimestamp: tr.MS_PER_YEAR, endTimestamp: tr.MS_PER_YEAR }
     })
@@ -403,8 +403,8 @@ describe('generate snapshot in multiple', () => {
       initTimestamp: 0,
       endTimestamp: tr.MS_PER_YEAR + tr.MS_PER_MONTH + tr.MS_PER_WEEK + tr.MS_PER_DAY
     }
-    jest.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([])
-    jest.spyOn(tr, 'divideTimeInYearsMonthsWeeksAndDays').mockReturnValue({
+    vi.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([])
+    vi.spyOn(tr, 'divideTimeInYearsMonthsWeeksAndDays').mockReturnValue({
       intervals: [
         { initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR },
         { initTimestamp: tr.MS_PER_YEAR, endTimestamp: tr.MS_PER_YEAR + tr.MS_PER_MONTH },
@@ -458,13 +458,13 @@ describe('generate snapshot in multiple', () => {
       initTimestamp: 0,
       endTimestamp: tr.MS_PER_YEAR + tr.MS_PER_MONTH
     }
-    jest.spyOn(tr, 'divideTimeInYearsMonthsWeeksAndDays').mockReturnValue({
+    vi.spyOn(tr, 'divideTimeInYearsMonthsWeeksAndDays').mockReturnValue({
       intervals: [{ initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR }],
       remainder: { initTimestamp: tr.MS_PER_YEAR, endTimestamp: tr.MS_PER_YEAR }
     })
     const expectedHash = 'hash'
     mockCreateFileWriterMockWith('filePath', expectedHash)
-    jest.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([
+    vi.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([
       {
         hash: expectedHash,
         timeRange: { initTimestamp: 0, endTimestamp: tr.MS_PER_MONTH },
@@ -472,7 +472,7 @@ describe('generate snapshot in multiple', () => {
         generationTimestamp
       }
     ])
-    jest.spyOn(snapshotQueries, 'getSnapshotHashesNotInTimeRange').mockResolvedValue(new Set([expectedHash]))
+    vi.spyOn(snapshotQueries, 'getSnapshotHashesNotInTimeRange').mockResolvedValue(new Set([expectedHash]))
     await generateSnapshotsInMultipleTimeRanges(
       { database, fs, metrics, logs, staticConfigs, storage, denylist, clock },
       oneYearTimeRange
@@ -484,17 +484,17 @@ describe('generate snapshot in multiple', () => {
 function mockCreateFileWriterMockWith(filePath: string, storedHash: string): IFile {
   const fileWriterMock = {
     filePath,
-    appendDebounced: jest.fn(),
-    close: jest.fn(),
-    delete: jest.fn(),
-    store: jest.fn().mockResolvedValue(storedHash)
+    appendDebounced: vi.fn(),
+    close: vi.fn(),
+    delete: vi.fn(),
+    store: vi.fn().mockResolvedValue(storedHash)
   }
-  jest.spyOn(fileWriter, 'createFileWriter').mockResolvedValue(fileWriterMock)
+  vi.spyOn(fileWriter, 'createFileWriter').mockResolvedValue(fileWriterMock)
   return fileWriterMock
 }
 
 function mockStreamedActiveEntitiesWith(entities: SnapshotSyncDeployment[]) {
-  return jest.spyOn(snapshotQueries, 'streamActiveDeploymentsInTimeRange').mockImplementation(async function* gen() {
+  return vi.spyOn(snapshotQueries, 'streamActiveDeploymentsInTimeRange').mockImplementation(async function* gen() {
     for (const entity of entities) {
       yield entity
     }

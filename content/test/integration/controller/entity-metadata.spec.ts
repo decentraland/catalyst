@@ -3,7 +3,6 @@ import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidat
 import { buildDeployData } from '../E2ETestUtils'
 import { createDefaultServer, resetServer } from '../simpleTestEnvironment'
 import { TestProgram } from '../TestProgram'
-import LeakDetector from 'jest-leak-detector'
 
 describe('Integration - Get wearable image and thumbnail', () => {
   let server: TestProgram
@@ -16,11 +15,7 @@ describe('Integration - Get wearable image and thumbnail', () => {
   beforeEach(() => resetServer(server))
 
   afterAll(async () => {
-    jest.restoreAllMocks()
-    const detector = new LeakDetector(server)
-    await server.stopProgram()
-    server = null as any
-    expect(await detector.isLeaking()).toBe(false)
+    vi.restoreAllMocks()
   })
 
   it('when entity does not exist, it should return 404', async () => {

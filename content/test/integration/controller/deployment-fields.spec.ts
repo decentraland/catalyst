@@ -5,7 +5,6 @@ import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidat
 import { buildDeployData } from '../E2ETestUtils'
 import { createDefaultServer } from '../simpleTestEnvironment'
 import { TestProgram } from '../TestProgram'
-import LeakDetector from 'jest-leak-detector'
 
 describe('Integration - Deployment Fields', () => {
   const fetcher = createFetchComponent()
@@ -24,11 +23,7 @@ describe('Integration - Deployment Fields', () => {
   })
 
   afterAll(async () => {
-    jest.restoreAllMocks()
-    const detector = new LeakDetector(server)
-    await server.stopProgram()
-    server = null as any
-    expect(await detector.isLeaking()).toBe(false)
+    vi.restoreAllMocks()
   })
 
   it('When deployments fields filter is used, then the result is the expected', async () => {

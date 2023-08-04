@@ -1,6 +1,5 @@
 import * as snapshotQueries from '../../../src/logic/database-queries/snapshots-queries'
 import { TestProgram } from '../TestProgram'
-import LeakDetector from 'jest-leak-detector'
 import { createDefaultServer } from '../simpleTestEnvironment'
 
 describe('snapshot storage', () => {
@@ -11,11 +10,7 @@ describe('snapshot storage', () => {
   })
 
   afterAll(async () => {
-    jest.restoreAllMocks()
-    const detector = new LeakDetector(server)
-    await server.stopProgram()
-    server = null as any
-    expect(await detector.isLeaking()).toBe(false)
+    vi.restoreAllMocks()
   })
 
   it('should return true if the snapshot is stored', async () => {

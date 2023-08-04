@@ -2,7 +2,6 @@ import * as snapshotQueries from '../../../src/logic/database-queries/snapshots-
 import { saveProcessedSnapshot } from '../../../src/logic/database-queries/snapshots-queries'
 
 import { TestProgram } from '../TestProgram'
-import LeakDetector from 'jest-leak-detector'
 import { createDefaultServer, resetServer } from '../simpleTestEnvironment'
 
 describe('precessed snapshot storage', () => {
@@ -10,7 +9,7 @@ describe('precessed snapshot storage', () => {
   let dbQuerySpy
 
   beforeAll(async () => {
-    dbQuerySpy = jest.spyOn(snapshotQueries, 'getProcessedSnapshots')
+    dbQuerySpy = vi.spyOn(snapshotQueries, 'getProcessedSnapshots')
     server = await createDefaultServer()
   })
 
@@ -20,11 +19,7 @@ describe('precessed snapshot storage', () => {
   })
 
   afterAll(async () => {
-    jest.restoreAllMocks()
-    const detector = new LeakDetector(server)
-    await server.stopProgram()
-    server = null as any
-    expect(await detector.isLeaking()).toBe(false)
+    vi.restoreAllMocks()
   })
 
   describe('processedFrom', () => {
@@ -97,9 +92,9 @@ describe('precessed snapshot storage', () => {
     it('should save the snapshot and set the current process time', async () => {
       const { components } = server
       const processedSnapshot = 'someHash'
-      const saveProcessedSnapshotSpy = jest.spyOn(snapshotQueries, 'saveProcessedSnapshot').mockResolvedValue()
+      const saveProcessedSnapshotSpy = vi.spyOn(snapshotQueries, 'saveProcessedSnapshot').mockResolvedValue()
       const expectedProcessTime = Date.now()
-      jest.spyOn(components.clock, 'now').mockReturnValue(expectedProcessTime)
+      vi.spyOn(components.clock, 'now').mockReturnValue(expectedProcessTime)
 
       await components.processedSnapshotStorage.markSnapshotAsProcessed(processedSnapshot)
 

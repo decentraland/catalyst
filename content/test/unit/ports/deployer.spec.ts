@@ -61,16 +61,16 @@ describe('Deployer', function () {
       { metadata: 'metadata' }
     )
 
-    jest.spyOn(pointers, 'updateActiveDeployments').mockImplementation(() => Promise.resolve())
+    vi.spyOn(pointers, 'updateActiveDeployments').mockImplementation(() => Promise.resolve())
   })
 
   afterAll(() => {
-    jest.restoreAllMocks()
+    vi.restoreAllMocks()
   })
 
   it(`When no file matches the given entity id, then deployment fails`, async () => {
-    jest.spyOn(failedDeploymentQueries, 'getSnapshotFailedDeployments').mockResolvedValue([])
-    jest.spyOn(failedDeploymentQueries, 'deleteFailedDeployment').mockResolvedValue()
+    vi.spyOn(failedDeploymentQueries, 'getSnapshotFailedDeployments').mockResolvedValue([])
+    vi.spyOn(failedDeploymentQueries, 'deleteFailedDeployment').mockResolvedValue()
     const service = await buildDeployer()
     const deploymentResult = await service.deployEntity(
       [randomFile],
@@ -86,10 +86,10 @@ describe('Deployer', function () {
   })
 
   it(`When an entity is successfully deployed, then the content is stored correctly`, async () => {
-    jest.spyOn(failedDeploymentQueries, 'getSnapshotFailedDeployments').mockResolvedValue([])
-    jest.spyOn(failedDeploymentQueries, 'deleteFailedDeployment').mockResolvedValue()
+    vi.spyOn(failedDeploymentQueries, 'getSnapshotFailedDeployments').mockResolvedValue([])
+    vi.spyOn(failedDeploymentQueries, 'deleteFailedDeployment').mockResolvedValue()
     const service = await buildDeployer()
-    const storageSpy = jest.spyOn(service.components.storage, 'storeStream')
+    const storageSpy = vi.spyOn(service.components.storage, 'storeStream')
 
     const deploymentResult: DeploymentResult = await service.deployEntity(
       [entityFile, randomFile],
@@ -114,18 +114,18 @@ describe('Deployer', function () {
 
   it(`When a file is already uploaded, then don't try to upload it again`, async () => {
     const service = await buildDeployer()
-    jest.spyOn(deploymentQueries, 'getEntityById').mockResolvedValue(undefined)
+    vi.spyOn(deploymentQueries, 'getEntityById').mockResolvedValue(undefined)
 
     // Consider the random file as already uploaded, but not the entity file
-    jest
+    vi
       .spyOn(service.components.storage, 'existMultiple')
       .mockImplementation((ids: string[]) => Promise.resolve(new Map(ids.map((id) => [id, id === randomFileHash]))))
-    const storeSpy = jest.spyOn(service.components.storage, 'storeStream')
-    jest.spyOn(deploymentLogic, 'saveDeploymentAndContentFiles').mockImplementation(async (...args) => {
+    const storeSpy = vi.spyOn(service.components.storage, 'storeStream')
+    vi.spyOn(deploymentLogic, 'saveDeploymentAndContentFiles').mockImplementation(async (...args) => {
       console.dir([...args])
       return 123
     })
-    jest.spyOn(deploymentQueries, 'setEntitiesAsOverwritten').mockResolvedValue()
+    vi.spyOn(deploymentQueries, 'setEntitiesAsOverwritten').mockResolvedValue()
 
     await service.deployEntity([entityFile, randomFile], entity.id, auditInfo, DeploymentContext.LOCAL)
 
@@ -135,7 +135,7 @@ describe('Deployer', function () {
 
   it(`Given a pointer with no deployment, when is asked twice, then the second time cached the result is returned`, async () => {
     const service = await buildDeployer()
-    const serviceSpy = jest
+    const serviceSpy = vi
       .spyOn(deployments, 'getDeploymentsForActiveEntities')
       .mockImplementation(() => Promise.resolve([fakeDeployment()]))
 
@@ -152,7 +152,7 @@ describe('Deployer', function () {
 
   it(`When a pointer is affected by a deployment, then it is updated in the cache`, async () => {
     const service = await buildDeployer()
-    jest.spyOn(service.components.pointerManager, 'referenceEntityFromPointers').mockImplementation(() =>
+    vi.spyOn(service.components.pointerManager, 'referenceEntityFromPointers').mockImplementation(() =>
       Promise.resolve(
         new Map([
           [POINTERS[0], { before: undefined, after: DELTA_POINTER_RESULT.SET }],
@@ -161,12 +161,12 @@ describe('Deployer', function () {
       )
     )
 
-    let serviceSpy = jest
+    let serviceSpy = vi
       .spyOn(deployments, 'getDeploymentsForActiveEntities')
       .mockImplementation(() => Promise.resolve([fakeDeployment()]))
 
-    jest.spyOn(deploymentLogic, 'saveDeploymentAndContentFiles').mockImplementation(() => Promise.resolve(1))
-    jest.spyOn(deploymentQueries, 'setEntitiesAsOverwritten').mockImplementation(() => Promise.resolve())
+    vi.spyOn(deploymentLogic, 'saveDeploymentAndContentFiles').mockImplementation(() => Promise.resolve(1))
+    vi.spyOn(deploymentQueries, 'setEntitiesAsOverwritten').mockImplementation(() => Promise.resolve())
 
     // Call the first time
     await service.components.activeEntities.withPointers(service.components.database, POINTERS)
@@ -178,7 +178,7 @@ describe('Deployer', function () {
     // Reset spy and call again
     serviceSpy.mockClear()
 
-    serviceSpy = jest
+    serviceSpy = vi
       .spyOn(deployments, 'getDeploymentsForActiveEntities')
       .mockImplementation(() => Promise.resolve([fakeDeployment('QmSQc2mGpzanz1DDtTf2ZCFnwTpJvAbcwzsS4An5PXaTqg')]))
     await service.components.activeEntities.withPointers(service.components.database, POINTERS)

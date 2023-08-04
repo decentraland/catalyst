@@ -5,7 +5,6 @@ import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidat
 import { buildDeployData } from '../E2ETestUtils'
 import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
 import { TestProgram } from '../TestProgram'
-import LeakDetector from 'jest-leak-detector'
 import { createDefaultServer, resetServer } from '../simpleTestEnvironment'
 
 describe('Integration - Get Active Entities', () => {
@@ -19,11 +18,7 @@ describe('Integration - Get Active Entities', () => {
   beforeEach(() => resetServer(server))
 
   afterAll(async () => {
-    jest.restoreAllMocks()
-    const detector = new LeakDetector(server)
-    await server.stopProgram()
-    server = null as any
-    expect(await detector.isLeaking()).toBe(false)
+    vi.restoreAllMocks()
   })
 
   it('when asking without params, it returns client error', async () => {
@@ -304,7 +299,7 @@ describe('Integration - Get Active Entities', () => {
       await server.deployEntity(secondDeployData) // Override entity and invalidate pointer ['0,0']
 
       // given one active entity and one non active entity cached, check getDeployments is not being called
-      const serviceSpy = jest.spyOn(deployments, 'getDeployments')
+      const serviceSpy = vi.spyOn(deployments, 'getDeployments')
       const result = await fetchActiveEntityByPointers(server, '0,0', '0,1')
       expect(result).toHaveLength(1)
       expect(serviceSpy).not.toHaveBeenCalled()

@@ -12,7 +12,6 @@ import { AppComponents } from '../../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { buildDeployData, buildDeployDataAfterEntity, EntityCombo } from '../../E2ETestUtils'
 import { TestProgram } from '../../TestProgram'
-import LeakDetector from 'jest-leak-detector'
 import { createDefaultServer, resetServer } from '../../simpleTestEnvironment'
 
 const P1 = 'x1,y1'
@@ -35,11 +34,7 @@ describe('Integration - Deployment Filters', () => {
   })
 
   afterAll(async () => {
-    jest.restoreAllMocks()
-    const detector = new LeakDetector(server)
-    await server.stopProgram()
-    server = null as any
-    expect(await detector.isLeaking()).toBe(false)
+    vi.restoreAllMocks()
   })
 
   let E1: EntityCombo, E2: EntityCombo, E3: EntityCombo

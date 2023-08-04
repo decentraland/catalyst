@@ -9,9 +9,9 @@ const metrics = createTestMetricsComponent(metricsDeclaration)
 describe('isEntityDeployed', () => {
     it('when deployedEntitiesBloomFilter returns true, then it should call the database', async () => {
         const database = createTestDatabaseComponent()
-        database.queryWithValues = jest.fn().mockResolvedValue({ rowCount: 1 })
+        database.queryWithValues = vi.fn().mockResolvedValue({ rowCount: 1 })
         const deployedEntitiesBloomFilter = deployedEntitiesBloomFilterThatReturnsAlways(true)
-        const metricsSpy = jest.spyOn(metrics, 'increment')
+        const metricsSpy = vi.spyOn(metrics, 'increment')
         const components = {
             metrics,
             database,
@@ -24,7 +24,7 @@ describe('isEntityDeployed', () => {
 
     it('when deployedEntitiesBloomFilter returns false, then it should not call the database', async () => {
         const database = createTestDatabaseComponent()
-        database.queryWithValues = jest.fn().mockResolvedValue({ rowCount: 1 })
+        database.queryWithValues = vi.fn().mockResolvedValue({ rowCount: 1 })
         const deployedEntitiesBloomFilter = deployedEntitiesBloomFilterThatReturnsAlways(false)
         const components = {
             metrics,
@@ -37,7 +37,7 @@ describe('isEntityDeployed', () => {
 
     it('when deployedEntitiesBloomFilter returns true and the entity exists in db, it should return true', async () => {
         const database = createTestDatabaseComponent()
-        database.queryWithValues = jest.fn().mockResolvedValue({ rowCount: 1 })
+        database.queryWithValues = vi.fn().mockResolvedValue({ rowCount: 1 })
         const deployedEntitiesBloomFilter = deployedEntitiesBloomFilterThatReturnsAlways(true)
         const components = {
             metrics,
@@ -50,7 +50,7 @@ describe('isEntityDeployed', () => {
 
     it('when deployedEntitiesBloomFilter returns true and the entity dont exists in db, it should return false', async () => {
         const database = createTestDatabaseComponent()
-        database.queryWithValues = jest.fn().mockResolvedValue({ rowCount: 0 })
+        database.queryWithValues = vi.fn().mockResolvedValue({ rowCount: 0 })
         const deployedEntitiesBloomFilter = deployedEntitiesBloomFilterThatReturnsAlways(true)
         const components = {
             metrics,
@@ -63,9 +63,9 @@ describe('isEntityDeployed', () => {
 
     it('when deployedEntitiesBloomFilter returns true and db too, then it should register as non false positive', async () => {
         const database = createTestDatabaseComponent()
-        database.queryWithValues = jest.fn().mockResolvedValue({ rowCount: 1 })
+        database.queryWithValues = vi.fn().mockResolvedValue({ rowCount: 1 })
         const deployedEntitiesBloomFilter = deployedEntitiesBloomFilterThatReturnsAlways(true)
-        const metricsSpy = jest.spyOn(metrics, 'increment')
+        const metricsSpy = vi.spyOn(metrics, 'increment')
         const components = {
             metrics,
             database,
@@ -77,9 +77,9 @@ describe('isEntityDeployed', () => {
 
     it('when deployedEntitiesBloomFilter returns false, then it should register as non false positive', async () => {
         const database = createTestDatabaseComponent()
-        database.queryWithValues = jest.fn().mockResolvedValue({ rowCount: 1 })
+        database.queryWithValues = vi.fn().mockResolvedValue({ rowCount: 1 })
         const deployedEntitiesBloomFilter = deployedEntitiesBloomFilterThatReturnsAlways(false)
-        const metricsSpy = jest.spyOn(metrics, 'increment')
+        const metricsSpy = vi.spyOn(metrics, 'increment')
         const components = {
             metrics,
             database,
@@ -91,9 +91,9 @@ describe('isEntityDeployed', () => {
 
     it('when deployedEntitiesBloomFilter returns true and db false, then it should register as false positive', async () => {
         const database = createTestDatabaseComponent()
-        database.queryWithValues = jest.fn().mockResolvedValue({ rowCount: 0 })
+        database.queryWithValues = vi.fn().mockResolvedValue({ rowCount: 0 })
         const deployedEntitiesBloomFilter = deployedEntitiesBloomFilterThatReturnsAlways(true)
-        const metricsSpy = jest.spyOn(metrics, 'increment')
+        const metricsSpy = vi.spyOn(metrics, 'increment')
         const components = {
             metrics,
             database,
@@ -106,8 +106,8 @@ describe('isEntityDeployed', () => {
 
 function deployedEntitiesBloomFilterThatReturnsAlways(isProbablyDeployed: boolean): DeployedEntitiesBloomFilter {
     return {
-        add: jest.fn(),
-        isProbablyDeployed: jest.fn().mockResolvedValue(isProbablyDeployed),
-        addAllInTimeRange: jest.fn()
+        add: vi.fn(),
+        isProbablyDeployed: vi.fn().mockResolvedValue(isProbablyDeployed),
+        addAllInTimeRange: vi.fn()
     }
 }

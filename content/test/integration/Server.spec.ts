@@ -33,9 +33,9 @@ describe('Integration - Server', () => {
 
     address = server.getUrl()
 
-    jest.spyOn(server.components.activeEntities, 'withIds').mockResolvedValue([entity1, entity2])
-    jest.spyOn(server.components.activeEntities, 'withPointers').mockResolvedValue([entity1, entity2])
-    jest.spyOn(server.components.storage, 'retrieve').mockResolvedValue(SimpleContentItem.fromBuffer(content.buffer))
+    vi.spyOn(server.components.activeEntities, 'withIds').mockResolvedValue([entity1, entity2])
+    vi.spyOn(server.components.activeEntities, 'withPointers').mockResolvedValue([entity1, entity2])
+    vi.spyOn(server.components.storage, 'retrieve').mockResolvedValue(SimpleContentItem.fromBuffer(content.buffer))
   })
 
   it(`Get all scenes by id`, async () => {

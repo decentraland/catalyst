@@ -20,7 +20,7 @@ describe('End 2 end synchronization tests', function () {
 
   beforeAll(() => {
     const originalCreateLogComponent = loggerComponent.createLogComponent
-    jest.spyOn(loggerComponent, 'createLogComponent').mockImplementation(async (components) => {
+    vi.spyOn(loggerComponent, 'createLogComponent').mockImplementation(async (components) => {
       const logComponent = await originalCreateLogComponent(components)
       const originalGetLogger = logComponent.getLogger
       const assignedLoggerIndex = loggerIndex

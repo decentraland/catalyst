@@ -113,7 +113,7 @@ export class TestProgram {
 
 export async function startProgramAndWaitUntilBootstrapFinishes(server: TestProgram) {
   const startSyncOriginal = synchronization.startSynchronization
-  jest.spyOn(synchronization, 'startSynchronization').mockImplementation(async (...args) => {
+  vi.spyOn(synchronization, 'startSynchronization').mockImplementation(async (...args) => {
     const [a, b] = await startSyncOriginal(...args)
     await b
     return [a, b]

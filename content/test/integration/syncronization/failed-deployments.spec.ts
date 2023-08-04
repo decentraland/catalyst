@@ -17,7 +17,7 @@ describe('Errors during sync', () => {
   let server2: TestProgram
   let entity: Entity
   let deployData: DeploymentData
-  let serverValidatorStub2: jest.SpyInstance
+  let serverValidatorStub2: vi.SpyInstance
 
   describe('Deploy an entity on server 1', function () {
     beforeEach(async function () {
@@ -29,13 +29,13 @@ describe('Errors during sync', () => {
       // Start server1
       await server1.startProgram()
 
-      jest.spyOn(server1.components.validator, 'validate').mockResolvedValue({ ok: true })
-      jest.spyOn(server2.components.validator, 'validate').mockResolvedValue({ ok: true })
+      vi.spyOn(server1.components.validator, 'validate').mockResolvedValue({ ok: true })
+      vi.spyOn(server2.components.validator, 'validate').mockResolvedValue({ ok: true })
 
       makeNoopDeploymentValidator(server1.components)
       makeNoopDeploymentValidator(server2.components)
 
-      serverValidatorStub2 = jest
+      serverValidatorStub2 = vi
         .spyOn(server2.components.serverValidator, 'validate')
         .mockResolvedValueOnce({ ok: false, message: 'anyError' })
         .mockResolvedValueOnce({ ok: true })

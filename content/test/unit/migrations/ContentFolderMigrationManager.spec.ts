@@ -10,13 +10,13 @@ import { FileSystemUtils as fsu } from '../ports/contentStorage/FileSystemUtils'
 let files = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
 
 describe('ContentFolderMigrationManager', () => {
-  let storeStreamSpy: jest.Mock
+  let storeStreamSpy: vi.Mock
 
   let storage: IContentStorageComponent
 
   describe('when running the migration with no errors', () => {
     beforeAll(() => {
-      storeStreamSpy = jest.fn().mockResolvedValue(undefined)
+      storeStreamSpy = vi.fn().mockResolvedValue(undefined)
 
       storage = {
         storeStream: storeStreamSpy
@@ -53,9 +53,9 @@ async function runMigration(storage: IContentStorageComponent) {
 
   const fs = createFsComponent()
   fs.unlink = async () => { }
-  fs.createReadStream = jest.fn().mockImplementation((x) => x)
-  fs.stat = jest.fn().mockResolvedValue(({ isDirectory: () => false }))
-  fs.opendir = jest.fn().mockImplementation(function* () {
+  fs.createReadStream = vi.fn().mockImplementation((x) => x)
+  fs.stat = vi.fn().mockResolvedValue(({ isDirectory: () => false }))
+  fs.opendir = vi.fn().mockImplementation(function* () {
     let current = 0
     while (current < files.length) {
       yield {

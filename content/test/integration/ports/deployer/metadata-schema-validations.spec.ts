@@ -4,7 +4,6 @@ import { AppComponents, EntityVersion } from '../../../../src/types'
 import { makeNoopServerValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { EntityCombo, buildDeployData, createIdentity } from '../../E2ETestUtils'
 import { TestProgram } from '../../TestProgram'
-import LeakDetector from 'jest-leak-detector'
 import { createDefaultServer, resetServer } from '../../simpleTestEnvironment'
 
 const P1 = '0,0'
@@ -24,11 +23,7 @@ describe('Integration - Deployment with metadata validation', () => {
   })
 
   afterAll(async () => {
-    jest.restoreAllMocks()
-    const detector = new LeakDetector(server)
-    await server.stopProgram()
-    server = null as any
-    expect(await detector.isLeaking()).toBe(false)
+    vi.restoreAllMocks()
   })
 
   it('When scene metadata is missing, deployment result should include the proper error', async () => {

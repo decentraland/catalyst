@@ -20,9 +20,9 @@ describe('start', () => {
   it('should release client when connection is succesful', async () => {
     const p = new Pool()
     const clientMock = {
-      release: jest.fn()
+      release: vi.fn()
     }
-    jest.spyOn(p, 'connect').mockImplementation(() => clientMock)
+    vi.spyOn(p, 'connect').mockImplementation(() => clientMock)
     const database = await createDatabase({ logs, env, metrics }, p, {})
     expect(database.start).toBeDefined()
     if (database.start) await database.start()
@@ -39,9 +39,9 @@ describe('stop', () => {
   it('should release client when connection is succesful', async () => {
     const p = new Pool()
     const clientMock = {
-      release: jest.fn()
+      release: vi.fn()
     }
-    jest.spyOn(p, 'connect').mockImplementation(() => clientMock)
+    vi.spyOn(p, 'connect').mockImplementation(() => clientMock)
     const database = await createDatabase({ logs, env, metrics }, p, {})
     expect(database.start).toBeDefined()
     if (database.start) await database.start()
@@ -58,7 +58,7 @@ describe('DatabaseClient', () => {
   describe('when running outside a transaction', () => {
     it('(query) should use pool to run', async () => {
       const pool = new Pool()
-      jest.spyOn(pool, 'query').mockImplementation(() => ({ rows: [], rowCount: 0 }))
+      vi.spyOn(pool, 'query').mockImplementation(() => ({ rows: [], rowCount: 0 }))
       const database = await createDatabase({ logs, env, metrics }, pool, {})
       const aQuery = 'a query'
       await database.query(aQuery)
@@ -67,7 +67,7 @@ describe('DatabaseClient', () => {
 
     it('(queryWithValues) should use pool', async () => {
       const pool = new Pool()
-      jest.spyOn(pool, 'query').mockImplementation(() => ({ rows: [], rowCount: 0 }))
+      vi.spyOn(pool, 'query').mockImplementation(() => ({ rows: [], rowCount: 0 }))
       const database = await createDatabase({ logs, env, metrics }, pool, {})
       const aSQLQuery = SQL`aQuery`
       await database.queryWithValues(aSQLQuery)
@@ -79,10 +79,10 @@ describe('DatabaseClient', () => {
     it('should create a new client for inner queries', async () => {
       const pool = new Pool()
       const poolClient = {
-        query: jest.fn(),
-        release: jest.fn()
+        query: vi.fn(),
+        release: vi.fn()
       }
-      jest.spyOn(pool, 'connect').mockImplementation(() => poolClient)
+      vi.spyOn(pool, 'connect').mockImplementation(() => poolClient)
       const database = await createDatabase({ logs, env, metrics }, pool, {})
       await database.transaction(async () => {})
       expect(pool.connect).toBeCalled()
@@ -91,10 +91,10 @@ describe('DatabaseClient', () => {
     it('should query BEGIN when it starts', async () => {
       const pool = new Pool()
       const poolClient = {
-        query: jest.fn(),
-        release: jest.fn()
+        query: vi.fn(),
+        release: vi.fn()
       }
-      jest.spyOn(pool, 'connect').mockImplementation(() => poolClient)
+      vi.spyOn(pool, 'connect').mockImplementation(() => poolClient)
       const database = await createDatabase({ logs, env, metrics }, pool, {})
       await database.transaction(async () => {})
       expect(pool.connect).toBeCalled()
@@ -104,10 +104,10 @@ describe('DatabaseClient', () => {
     it('should run all inner queries with the provided client', async () => {
       const pool = new Pool()
       const poolClient = {
-        query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }),
-        release: jest.fn()
+        query: vi.fn().mockResolvedValue({ rows: [], rowCount: 0 }),
+        release: vi.fn()
       }
-      jest.spyOn(pool, 'connect').mockImplementation(() => poolClient)
+      vi.spyOn(pool, 'connect').mockImplementation(() => poolClient)
       const database = await createDatabase({ logs, env, metrics }, pool, {})
       const aQuery = SQL`a query`
       const otherQuery = SQL`a query`
@@ -122,10 +122,10 @@ describe('DatabaseClient', () => {
     it('should use the provided client when running within another transaction', async () => {
       const pool = new Pool()
       const poolClient = {
-        query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }),
-        release: jest.fn()
+        query: vi.fn().mockResolvedValue({ rows: [], rowCount: 0 }),
+        release: vi.fn()
       }
-      jest.spyOn(pool, 'connect').mockImplementation(() => poolClient)
+      vi.spyOn(pool, 'connect').mockImplementation(() => poolClient)
       const database = await createDatabase({ logs, env, metrics }, pool, {})
       const aQuery = SQL`a query`
       const otherQuery = SQL`a query`
@@ -140,10 +140,10 @@ describe('DatabaseClient', () => {
     it('should query COMMIT when callback finishes successfully', async () => {
       const pool = new Pool()
       const poolClient = {
-        query: jest.fn(),
-        release: jest.fn()
+        query: vi.fn(),
+        release: vi.fn()
       }
-      jest.spyOn(pool, 'connect').mockImplementation(() => poolClient)
+      vi.spyOn(pool, 'connect').mockImplementation(() => poolClient)
       const database = await createDatabase({ logs, env, metrics }, pool, {})
       await database.transaction(async () => {})
       expect(pool.connect).toBeCalled()
@@ -153,10 +153,10 @@ describe('DatabaseClient', () => {
     it('should query ROLLBACK when callback throws error', async () => {
       const pool = new Pool()
       const poolClient = {
-        query: jest.fn(),
-        release: jest.fn()
+        query: vi.fn(),
+        release: vi.fn()
       }
-      jest.spyOn(pool, 'connect').mockImplementation(() => poolClient)
+      vi.spyOn(pool, 'connect').mockImplementation(() => poolClient)
       const database = await createDatabase({ logs, env, metrics }, pool, {})
       await expect(
         database.transaction(async () => {
@@ -169,10 +169,10 @@ describe('DatabaseClient', () => {
     it('should release client if the callback is successfull', async () => {
       const pool = new Pool()
       const poolClient = {
-        query: jest.fn(),
-        release: jest.fn()
+        query: vi.fn(),
+        release: vi.fn()
       }
-      jest.spyOn(pool, 'connect').mockImplementation(() => poolClient)
+      vi.spyOn(pool, 'connect').mockImplementation(() => poolClient)
       const database = await createDatabase({ logs, env, metrics }, pool, {})
       await database.transaction(async () => {})
       expect(poolClient.release).toBeCalledTimes(1)
@@ -181,10 +181,10 @@ describe('DatabaseClient', () => {
     it('should release client if the callback failed', async () => {
       const pool = new Pool()
       const poolClient = {
-        query: jest.fn(),
-        release: jest.fn()
+        query: vi.fn(),
+        release: vi.fn()
       }
-      jest.spyOn(pool, 'connect').mockImplementation(() => poolClient)
+      vi.spyOn(pool, 'connect').mockImplementation(() => poolClient)
       const database = await createDatabase({ logs, env, metrics }, pool, {})
       await expect(
         database.transaction(async () => {
@@ -197,12 +197,12 @@ describe('DatabaseClient', () => {
     it('should use the pool to make queries when not using the provided database client', async () => {
       // You probable DO NOT want to do this
       const pool = new Pool()
-      jest.spyOn(pool, 'query').mockImplementation(() => ({ rows: [], rowCount: 0 }))
+      vi.spyOn(pool, 'query').mockImplementation(() => ({ rows: [], rowCount: 0 }))
       const poolClient = {
-        query: jest.fn(),
-        release: jest.fn()
+        query: vi.fn(),
+        release: vi.fn()
       }
-      jest.spyOn(pool, 'connect').mockImplementation(() => poolClient)
+      vi.spyOn(pool, 'connect').mockImplementation(() => poolClient)
       const database = await createDatabase({ logs, env, metrics }, pool, {})
       const aQuery = SQL`a-query`
       await database.transaction(async () => {
@@ -217,12 +217,12 @@ describe('DatabaseClient', () => {
 it('should use the pool to make external queries even if there is a transaction open', async () => {
   const logs = await createLogComponent({ config: createConfigComponent({ LOG_LEVEL: 'DEBUG' }) })
   const pool = new Pool()
-  jest.spyOn(pool, 'query').mockImplementation(() => ({ rows: [], rowCount: 0 }))
+  vi.spyOn(pool, 'query').mockImplementation(() => ({ rows: [], rowCount: 0 }))
   const poolClient = {
-    query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }),
-    release: jest.fn()
+    query: vi.fn().mockResolvedValue({ rows: [], rowCount: 0 }),
+    release: vi.fn()
   }
-  jest.spyOn(pool, 'connect').mockImplementation(() => poolClient)
+  vi.spyOn(pool, 'connect').mockImplementation(() => poolClient)
   const database = await createDatabase({ logs, env, metrics }, pool, {})
   const txQuery = SQL`tx-query`
   const txPromise = database.transaction(async (dbClient) => {

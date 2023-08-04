@@ -17,11 +17,11 @@ async function setupLogs() {
 describe('when creating a denylist', () => {
   let denylist: Denylist | undefined = undefined
   const env = new Environment()
-  const fetcher = { fetch: jest.fn() }
+  const fetcher = { fetch: vi.fn() }
   env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, 'storage')
   env.setConfig(EnvironmentConfig.DENYLIST_FILE_NAME, 'denylist.txt')
-  beforeAll(() => jest.useFakeTimers())
-  afterAll(() => jest.useRealTimers())
+  beforeAll(() => vi.useFakeTimers())
+  afterAll(() => vi.useRealTimers())
 
   afterEach(async () => {
     if (denylist) {
@@ -33,8 +33,8 @@ describe('when creating a denylist', () => {
     it('should create it without errors and no items', async () => {
       const logs = await setupLogs()
       const fs = {
-        createReadStream: jest.fn(),
-        existPath: jest.fn().mockResolvedValue(false)
+        createReadStream: vi.fn(),
+        existPath: vi.fn().mockResolvedValue(false)
       }
       denylist = await createDenylist({ env, logs, fetcher, fs })
       await denylist.start!()
@@ -48,13 +48,13 @@ describe('when creating a denylist', () => {
       const logs = await setupLogs()
       const denylistFilePath = resolve('storage', 'denylist.txt')
       const fs = {
-        createReadStream: jest.fn().mockReturnValue(
+        createReadStream: vi.fn().mockReturnValue(
           Readable.from(`# Denylisted items:
               denied1
               denied2
               denied3`)
         ),
-        existPath: jest.fn().mockResolvedValue(true)
+        existPath: vi.fn().mockResolvedValue(true)
       }
       const denylist = await createDenylist({ env, logs, fs, fetcher })
       await denylist.start!()
@@ -67,12 +67,12 @@ describe('when creating a denylist', () => {
     it('should create it with the denylisted items of the urls', async () => {
       const logs = await setupLogs()
       const fs = {
-        createReadStream: jest.fn().mockReturnValue(Readable.from(`denied1\n denied2`)),
-        existPath: jest.fn().mockResolvedValue(false)
+        createReadStream: vi.fn().mockReturnValue(Readable.from(`denied1\n denied2`)),
+        existPath: vi.fn().mockResolvedValue(false)
       }
       env.setConfig(EnvironmentConfig.DENYLIST_URLS, 'https://config.decentraland.org/denylist')
       const fetcher = {
-        fetch: jest.fn().mockResolvedValue({ text: () => Promise.resolve(`denied3\ndenied4`) } as Partial<Response>)
+        fetch: vi.fn().mockResolvedValue({ text: () => Promise.resolve(`denied3\ndenied4`) } as Partial<Response>)
       }
       const denylist = await createDenylist({ env, logs, fs, fetcher })
       await denylist.start!()
@@ -84,12 +84,12 @@ describe('when creating a denylist', () => {
     it('should create it without using the invalid url', async () => {
       const logs = await setupLogs()
       const fs = {
-        createReadStream: jest.fn(),
-        existPath: jest.fn().mockResolvedValue(false)
+        createReadStream: vi.fn(),
+        existPath: vi.fn().mockResolvedValue(false)
       }
       env.setConfig(EnvironmentConfig.DENYLIST_URLS, 'https://config.decentraland.org/denylist invalidUrl')
       const fetcher = {
-        fetch: jest.fn().mockResolvedValue({ text: () => Promise.resolve(`denied3\ndenied4`) } as Partial<Response>)
+        fetch: vi.fn().mockResolvedValue({ text: () => Promise.resolve(`denied3\ndenied4`) } as Partial<Response>)
       }
       denylist = await createDenylist({ env, logs, fs, fetcher })
       await denylist.start!()
@@ -101,12 +101,12 @@ describe('when creating a denylist', () => {
     it('should create it with the merge of the items in both denylists', async () => {
       const logs = await setupLogs()
       const fs = {
-        createReadStream: jest.fn().mockReturnValue(Readable.from(`denied1\n denied2`)),
-        existPath: jest.fn().mockResolvedValue(true)
+        createReadStream: vi.fn().mockReturnValue(Readable.from(`denied1\n denied2`)),
+        existPath: vi.fn().mockResolvedValue(true)
       }
       env.setConfig(EnvironmentConfig.DENYLIST_URLS, 'https://config.decentraland.org/denylist')
       const fetcher = {
-        fetch: jest.fn().mockResolvedValue({ text: () => Promise.resolve(`denied3\ndenied4`) } as Partial<Response>)
+        fetch: vi.fn().mockResolvedValue({ text: () => Promise.resolve(`denied3\ndenied4`) } as Partial<Response>)
       }
       denylist = await createDenylist({ env, logs, fs, fetcher })
       await denylist.start!()
@@ -118,12 +118,12 @@ describe('when creating a denylist', () => {
     it('should create it with no denied content other than the specified in the denylists', async () => {
       const logs = await setupLogs()
       const fs = {
-        createReadStream: jest.fn().mockReturnValue(Readable.from(`denied1\n denied2`)),
-        existPath: jest.fn().mockResolvedValue(true)
+        createReadStream: vi.fn().mockReturnValue(Readable.from(`denied1\n denied2`)),
+        existPath: vi.fn().mockResolvedValue(true)
       }
       env.setConfig(EnvironmentConfig.DENYLIST_URLS, 'https://config.decentraland.org/denylist')
       const fetcher = {
-        fetch: jest.fn().mockResolvedValue({ text: () => Promise.resolve(`denied3\ndenied4`) } as Partial<Response>)
+        fetch: vi.fn().mockResolvedValue({ text: () => Promise.resolve(`denied3\ndenied4`) } as Partial<Response>)
       }
       denylist = await createDenylist({ env, logs, fs, fetcher })
       await denylist.start!()
@@ -136,7 +136,7 @@ describe('when creating a denylist', () => {
     it('should be reloaded and a new element added', async () => {
       const logs = await setupLogs()
       const fs = {
-        createReadStream: jest
+        createReadStream: vi
           .fn()
           .mockReturnValueOnce(
             Readable.from(`# Denylisted items:
@@ -149,12 +149,12 @@ describe('when creating a denylist', () => {
             denied2
             denied3`)
           ),
-        existPath: jest.fn().mockResolvedValue(true)
+        existPath: vi.fn().mockResolvedValue(true)
       }
       denylist = await createDenylist({ env, logs, fs, fetcher })
       await denylist.start!()
       expect(['denied1', 'denied2'].every((item) => denylist!.isDenylisted(item))).toBe(true)
-      jest.advanceTimersByTime(120_000)
+      vi.advanceTimersByTime(120_000)
       await flushPromises()
       expect(denylist.isDenylisted('denied3')).toBe(true)
     })
@@ -163,7 +163,7 @@ describe('when creating a denylist', () => {
   describe('when the denylist is stopped', () => {
     it('should not reload and add new elements after two minutes', async () => {
       const fs = {
-        createReadStream: jest
+        createReadStream: vi
           .fn()
           .mockReturnValueOnce(
             Readable.from(`# Denylisted items:
@@ -176,7 +176,7 @@ describe('when creating a denylist', () => {
               denied2
               denied3`)
           ),
-        existPath: jest.fn().mockResolvedValue(true)
+        existPath: vi.fn().mockResolvedValue(true)
       }
       const logs = await createLogComponent({
         config: createConfigComponent({
@@ -188,7 +188,7 @@ describe('when creating a denylist', () => {
       await denylist.start!()
       expect(['denied1', 'denied2'].every((item) => denylist.isDenylisted(item))).toBe(true)
       denylist.stop && denylist.stop()
-      jest.advanceTimersByTime(120_00)
+      vi.advanceTimersByTime(120_00)
       await flushPromises()
       expect(denylist.isDenylisted('denied3')).toBe(false)
     })
@@ -196,5 +196,5 @@ describe('when creating a denylist', () => {
 })
 
 function flushPromises() {
-  return new Promise(jest.requireActual('timers').setImmediate)
+  return new Promise(vi.requireActual('timers').setImmediate)
 }

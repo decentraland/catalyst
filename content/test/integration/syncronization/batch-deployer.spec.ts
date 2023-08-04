@@ -4,11 +4,11 @@ import * as deployRemote from '../../../src/service/synchronization/deployRemote
 
 describe('batch deployer - ', () => {
   beforeEach(async () => {
-    jest.restoreAllMocks()
+    vi.restoreAllMocks()
   })
 
   afterAll(async () => {
-    jest.restoreAllMocks()
+    vi.restoreAllMocks()
   })
 
   function createComponents() {
@@ -21,13 +21,13 @@ describe('batch deployer - ', () => {
   it('multiple sequential deployments with same entityId is done one time but markAsDeployed is called for both', async () => {
     const components = await createComponents()
     const deployedEntitites = new Set()
-    const deployEntityFromRemoteServerSpy = jest
+    const deployEntityFromRemoteServerSpy = vi
       .spyOn(deployRemote, 'deployEntityFromRemoteServer')
       .mockImplementation(async (components, entityId, ...args) => {
         deployedEntitites.add(entityId)
       })
 
-    jest.spyOn(deployments, 'isEntityDeployed').mockImplementation(async (components, entityId) => {
+    vi.spyOn(deployments, 'isEntityDeployed').mockImplementation(async (components, entityId) => {
       return deployedEntitites.has(entityId)
     })
 
@@ -60,13 +60,13 @@ describe('batch deployer - ', () => {
   it('multiple concurrent deployments with same entityId is done one time but markAsDeployed is called for both', async () => {
     const components = await createComponents()
     const deployedEntitites = new Set()
-    const deployEntityFromRemoteServerSpy = jest
+    const deployEntityFromRemoteServerSpy = vi
       .spyOn(deployRemote, 'deployEntityFromRemoteServer')
       .mockImplementation(async (components, entityId, ...args) => {
         deployedEntitites.add(entityId)
       })
 
-    jest.spyOn(deployments, 'isEntityDeployed').mockImplementation(async (components, entityId) => {
+    vi.spyOn(deployments, 'isEntityDeployed').mockImplementation(async (components, entityId) => {
       return deployedEntitites.has(entityId)
     })
 
@@ -104,13 +104,13 @@ describe('batch deployer - ', () => {
   it('five concurrent deployments with different entityId are done for each one and markAsDeployed is called for each one', async () => {
     const components = await createComponents()
     const deployedEntitites = new Set()
-    const deployEntityFromRemoteServerSpy = jest
+    const deployEntityFromRemoteServerSpy = vi
       .spyOn(deployRemote, 'deployEntityFromRemoteServer')
       .mockImplementation(async (components, entityId, ...args) => {
         deployedEntitites.add(entityId)
       })
 
-    jest.spyOn(deployments, 'isEntityDeployed').mockImplementation(async (components, entityId) => {
+    vi.spyOn(deployments, 'isEntityDeployed').mockImplementation(async (components, entityId) => {
       return deployedEntitites.has(entityId)
     })
 
@@ -147,9 +147,9 @@ describe('batch deployer - ', () => {
 
   it('markAsDeployed is called but not deployed for deployments that are already deployed', async () => {
     const components = await createComponents()
-    const deployEntityFromRemoteServerSpy = jest.spyOn(deployRemote, 'deployEntityFromRemoteServer')
+    const deployEntityFromRemoteServerSpy = vi.spyOn(deployRemote, 'deployEntityFromRemoteServer')
 
-    jest.spyOn(deployments, 'isEntityDeployed').mockResolvedValue(true)
+    vi.spyOn(deployments, 'isEntityDeployed').mockResolvedValue(true)
 
     const markedAsDeployed = new Set()
     await components.batchDeployer.scheduleEntityDeployment(
@@ -173,14 +173,14 @@ describe('batch deployer - ', () => {
 
   it('when a deployment fails, it is reported as failed deployment and markAsDeployed is called', async () => {
     const components = await createComponents()
-    const deployEntityFromRemoteServerSpy = jest
+    const deployEntityFromRemoteServerSpy = vi
       .spyOn(deployRemote, 'deployEntityFromRemoteServer')
       .mockImplementation(async () => {
         throw new Error('error deploying entity (test)')
       })
 
-    jest.spyOn(deployments, 'isEntityDeployed').mockResolvedValue(false)
-    const reportFailureSpy = jest.spyOn(components.failedDeployments, 'reportFailure').mockResolvedValue()
+    vi.spyOn(deployments, 'isEntityDeployed').mockResolvedValue(false)
+    const reportFailureSpy = vi.spyOn(components.failedDeployments, 'reportFailure').mockResolvedValue()
 
     const markedAsDeployed = new Set()
     await components.batchDeployer.scheduleEntityDeployment(
@@ -206,13 +206,13 @@ describe('batch deployer - ', () => {
   it('when a deployment is successfull, consecutive ones with same entityId are ignored but markAsDeployed is called', async () => {
     const components = await createComponents()
     const deployedEntitites = new Set()
-    const deployEntityFromRemoteServerSpy = jest
+    const deployEntityFromRemoteServerSpy = vi
       .spyOn(deployRemote, 'deployEntityFromRemoteServer')
       .mockImplementation(async (components, entityId, ...args) => {
         deployedEntitites.add(entityId)
       })
 
-    const isEntityDeployedSpy = jest
+    const isEntityDeployedSpy = vi
       .spyOn(deployments, 'isEntityDeployed')
       .mockImplementation(async (components, entityId) => {
         return deployedEntitites.has(entityId)

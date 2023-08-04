@@ -28,7 +28,7 @@ describe('content files queries', () => {
     ]
 
     beforeAll(() => {
-      jest.spyOn(components.database, 'queryWithValues').mockResolvedValue({
+      vi.spyOn(components.database, 'queryWithValues').mockResolvedValue({
         rows: content_files_response,
         rowCount: 2
       })

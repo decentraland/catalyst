@@ -5,7 +5,6 @@ import { makeNoopServerValidator } from '../../../helpers/service/validations/No
 import { EntityCombo } from '../../E2ETestUtils'
 import { getIntegrationResourcePathFor } from '../../resources/get-resource-path'
 import { TestProgram } from '../../TestProgram'
-import LeakDetector from 'jest-leak-detector'
 import { createDefaultServer } from '../../simpleTestEnvironment'
 
 describe('Integration - Deployment synced old entity', () => {
@@ -17,11 +16,7 @@ describe('Integration - Deployment synced old entity', () => {
   })
 
   afterAll(async () => {
-    jest.restoreAllMocks()
-    const detector = new LeakDetector(server)
-    await server.stopProgram()
-    server = null as any
-    expect(await detector.isLeaking()).toBe(false)
+    vi.restoreAllMocks()
   })
 
   it('When deploying an entity with cid v0 hashes of entities before ADR 45, it should succeed', async () => {

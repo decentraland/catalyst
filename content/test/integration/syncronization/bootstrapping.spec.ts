@@ -22,7 +22,7 @@ describe('Bootstrapping synchronization tests', function () {
 
   beforeAll(() => {
     const originalCreateLogComponent = loggerComponent.createLogComponent
-    jest.spyOn(loggerComponent, 'createLogComponent').mockImplementation(async (components) => {
+    vi.spyOn(loggerComponent, 'createLogComponent').mockImplementation(async (components) => {
       const logComponent = await originalCreateLogComponent(components)
       const originalGetLogger = logComponent.getLogger
       const assignedLoggerIndex = loggerIndex
@@ -41,12 +41,12 @@ describe('Bootstrapping synchronization tests', function () {
     const now = Date.now()
     baseTimestamp = 0
     fakeNow = () => Date.now() - now + initialTimestamp + baseTimestamp
-    jest.spyOn(server1.components.clock, 'now').mockImplementation(fakeNow)
-    jest.spyOn(server2.components.clock, 'now').mockImplementation(fakeNow)
-    jest.spyOn(server1.components.validator, 'validate').mockResolvedValue({ ok: true })
-    jest.spyOn(server2.components.validator, 'validate').mockResolvedValue({ ok: true })
-    jest.spyOn(server1.components.synchronizationState, 'getState').mockReturnValue(State.SYNCING)
-    jest.spyOn(server2.components.synchronizationState, 'getState').mockReturnValue(State.SYNCING)
+    vi.spyOn(server1.components.clock, 'now').mockImplementation(fakeNow)
+    vi.spyOn(server2.components.clock, 'now').mockImplementation(fakeNow)
+    vi.spyOn(server1.components.validator, 'validate').mockResolvedValue({ ok: true })
+    vi.spyOn(server2.components.validator, 'validate').mockResolvedValue({ ok: true })
+    vi.spyOn(server1.components.synchronizationState, 'getState').mockReturnValue(State.SYNCING)
+    vi.spyOn(server2.components.synchronizationState, 'getState').mockReturnValue(State.SYNCING)
     loggerIndex = 1
   })
 
@@ -55,7 +55,7 @@ describe('Bootstrapping synchronization tests', function () {
     advanceTime(timeRangeLogic.MS_PER_WEEK)
     await server1.startProgram()
 
-    jest.spyOn(server2.components.snapshotStorage, 'has').mockResolvedValue(false)
+    vi.spyOn(server2.components.snapshotStorage, 'has').mockResolvedValue(false)
     await startProgramAndWaitUntilBootstrapFinishes(server2)
 
     // once the bootstrap from snapshots finished, it should have processed the server1 snapshots.
@@ -89,9 +89,9 @@ describe('Bootstrapping synchronization tests', function () {
     advanceTime(timeRangeLogic.MS_PER_DAY)
     if (server1.components.snapshotGenerator.start)
       await server1.components.snapshotGenerator.start({
-        started: jest.fn(),
-        live: jest.fn(),
-        getComponents: jest.fn()
+        started: vi.fn(),
+        live: vi.fn(),
+        getComponents: vi.fn()
       })
 
     // now we start a new server 2 and expect that after bootstrap, it processed all the snapshots from server 1
@@ -128,17 +128,17 @@ describe('Bootstrapping synchronization tests', function () {
     advanceTime(6 * timeRangeLogic.MS_PER_DAY)
     if (server1.components.snapshotGenerator.start)
       await server1.components.snapshotGenerator.start({
-        started: jest.fn(),
-        live: jest.fn(),
-        getComponents: jest.fn()
+        started: vi.fn(),
+        live: vi.fn(),
+        getComponents: vi.fn()
       })
 
     // now we start a new server 2 so it processes the 3 snapshots: the first one, the second one and the 5 empty ones (only one of these processed)
-    const markSnapshotAsProcessedSpy = jest.spyOn(
+    const markSnapshotAsProcessedSpy = vi.spyOn(
       server2.components.processedSnapshotStorage,
       'markSnapshotAsProcessed'
     )
-    jest.spyOn(server2.components.snapshotStorage, 'has').mockResolvedValue(false)
+    vi.spyOn(server2.components.snapshotStorage, 'has').mockResolvedValue(false)
     await startProgramAndWaitUntilBootstrapFinishes(server2)
     const sevenDaysSnapshots = await findSnapshotsStrictlyContainedInTimeRange(server1.components.database, {
       initTimestamp: initialTimestamp,
@@ -160,9 +160,9 @@ describe('Bootstrapping synchronization tests', function () {
     if (server1.components.snapshotGenerator.stop) await server1.components.snapshotGenerator.stop()
     if (server1.components.snapshotGenerator.start)
       await server1.components.snapshotGenerator.start({
-        started: jest.fn(),
-        live: jest.fn(),
-        getComponents: jest.fn()
+        started: vi.fn(),
+        live: vi.fn(),
+        getComponents: vi.fn()
       })
 
     // now we run the sync from snapshots again in server 2 (would be nice to have a mechanism to restart the server)
@@ -194,7 +194,7 @@ describe('Bootstrapping synchronization tests', function () {
   })
 
   it('when a server bootstraps, it should persist failed deployments but mark as processed the snapshots', async () => {
-    jest
+    vi
       .spyOn(server2.components.validator, 'validate')
       .mockResolvedValue({ ok: false, errors: ['error set in the test'] })
 
@@ -213,9 +213,9 @@ describe('Bootstrapping synchronization tests', function () {
     advanceTime(timeRangeLogic.MS_PER_DAY)
     if (server1.components.snapshotGenerator.start)
       await server1.components.snapshotGenerator.start({
-        started: jest.fn(),
-        live: jest.fn(),
-        getComponents: jest.fn()
+        started: vi.fn(),
+        live: vi.fn(),
+        getComponents: vi.fn()
       })
 
     // now we start a new server 2 and expect that after bootstrap, it processed all the snapshots from server 1
@@ -246,7 +246,7 @@ describe('Bootstrapping synchronization tests', function () {
   })
 
   it('when a server is boostrapping, it should not accept new deployments', async () => {
-    jest.spyOn(server1.components.synchronizationState, 'getState').mockReturnValue(State.BOOTSTRAPPING)
+    vi.spyOn(server1.components.synchronizationState, 'getState').mockReturnValue(State.BOOTSTRAPPING)
     await server1.startProgram()
 
     await expect(deployEntityAtTimestamp(server1, 'p1', fakeNow() + 1)).rejects.toThrow(
@@ -255,7 +255,7 @@ describe('Bootstrapping synchronization tests', function () {
   })
 
   it('when a server is syncing, it should accept new deployments', async () => {
-    jest.spyOn(server1.components.synchronizationState, 'getState').mockReturnValue(State.SYNCING)
+    vi.spyOn(server1.components.synchronizationState, 'getState').mockReturnValue(State.SYNCING)
     await server1.startProgram()
 
     const deployment = await deployEntityAtTimestamp(server1, 'p1', fakeNow() + 1)

@@ -22,8 +22,8 @@ describe('snapshot generator - ', () => {
 
   testCaseWithComponents(getTestEnv, 'should generate snapshot the first time', async (components) => {
     await startSnapshotNeededComponents(components)
-    const clockSpy = jest.spyOn(components.clock, 'now')
-    const divideTimeSpy = jest.spyOn(timeRangeLogic, 'divideTimeInYearsMonthsWeeksAndDays')
+    const clockSpy = vi.spyOn(components.clock, 'now')
+    const divideTimeSpy = vi.spyOn(timeRangeLogic, 'divideTimeInYearsMonthsWeeksAndDays')
 
     const timeRange = timeRangeOfDaysFromInitialTimestamp(1)
 
@@ -42,7 +42,7 @@ describe('snapshot generator - ', () => {
     'should generate the second snapshot but not recreate the first one',
     async (components) => {
       await startSnapshotNeededComponents(components)
-      const clockSpy = jest.spyOn(components.clock, 'now')
+      const clockSpy = vi.spyOn(components.clock, 'now')
       await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(1))
       const snapshots = await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(2))
 
@@ -58,7 +58,7 @@ describe('snapshot generator - ', () => {
     'should generate seven daily snapshots once time each and do not create weekly one yet',
     async (components) => {
       await startSnapshotNeededComponents(components)
-      const clockSpy = jest.spyOn(components.clock, 'now')
+      const clockSpy = vi.spyOn(components.clock, 'now')
       await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(1))
       await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(2))
       await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(3))
@@ -88,7 +88,7 @@ describe('snapshot generator - ', () => {
     'should generate a weekly snapshot replacing seven daily snapshots and a daily one, at the 8th day',
     async (components) => {
       await startSnapshotNeededComponents(components)
-      const clockSpy = jest.spyOn(components.clock, 'now')
+      const clockSpy = vi.spyOn(components.clock, 'now')
       await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(1))
       await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(2))
       await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(3))
@@ -140,7 +140,7 @@ describe('snapshot generator - ', () => {
     'should generate a weekly snapshot and do not replace the daily ones if they are not 7, at the 8th day',
     async (components) => {
       await startSnapshotNeededComponents(components)
-      const clockSpy = jest.spyOn(components.clock, 'now')
+      const clockSpy = vi.spyOn(components.clock, 'now')
       await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(1))
       await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(2))
       await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(3))
@@ -261,7 +261,7 @@ describe('snapshot generator - ', () => {
 
     await deployAnEntityAtTimestamp(components, '0x00000', daysAfterInitialTimestamp(0) + 1)
 
-    const storeSpy = jest.spyOn(components.storage, 'storeStreamAndCompress')
+    const storeSpy = vi.spyOn(components.storage, 'storeStreamAndCompress')
 
     // snapshot is generated and assert is correctly stored
     const snapshots = await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(1))
@@ -292,7 +292,7 @@ describe('snapshot generator - ', () => {
 
       await deployAnEntityAtTimestamp(components, '0x00000', daysAfterInitialTimestamp(0) + 1)
 
-      jest.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([
+      vi.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([
         {
           hash: 'h1',
           replacedSnapshotHashes: [],
@@ -303,8 +303,8 @@ describe('snapshot generator - ', () => {
       ])
 
       // the re-generation is forced
-      jest.spyOn(snapshotQueries, 'snapshotIsOutdated').mockResolvedValue(true)
-      const snapshotsNotInTimeRangeSpy = jest
+      vi.spyOn(snapshotQueries, 'snapshotIsOutdated').mockResolvedValue(true)
+      const snapshotsNotInTimeRangeSpy = vi
         .spyOn(snapshotQueries, 'getSnapshotHashesNotInTimeRange')
         .mockResolvedValue(new Set(['h1']))
 
@@ -367,7 +367,7 @@ describe('snapshot generator - ', () => {
       }
       await snapshotQueries.saveSnapshot(components.database, oldSnapshot)
 
-      jest.spyOn(components.storage, 'existMultiple').mockImplementation(async (hashes) => {
+      vi.spyOn(components.storage, 'existMultiple').mockImplementation(async (hashes) => {
         const e = new Map()
         for (const h of hashes) e.set(h, true)
         return e
@@ -448,7 +448,7 @@ async function startSnapshotNeededComponents(
     'database' | 'fs' | 'metrics' | 'storage' | 'logs' | 'denylist' | 'staticConfigs' | 'clock'
   >
 ) {
-  const startOptions = { started: jest.fn(), live: jest.fn(), getComponents: jest.fn() }
+  const startOptions = { started: vi.fn(), live: vi.fn(), getComponents: vi.fn() }
   await startComponent(components.database, startOptions)
   await startComponent(components.fs as IBaseComponent, startOptions)
   await startComponent(components.metrics as IBaseComponent, startOptions)
@@ -464,7 +464,7 @@ async function deployAnEntityAtTimestamp(
   entityTimestamp: number,
   localTimestamp?: number
 ) {
-  jest.spyOn(components.clock, 'now').mockReturnValue(localTimestamp ?? entityTimestamp)
+  vi.spyOn(components.clock, 'now').mockReturnValue(localTimestamp ?? entityTimestamp)
   const anEntity: EntityCombo = await buildDeployData([pointer], {
     type: EntityType.PROFILE,
     timestamp: entityTimestamp,

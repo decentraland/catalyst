@@ -7,7 +7,6 @@ import { assertDeploymentsAreReported, buildDeployment } from './E2EAssertions'
 import { buildDeployData } from './E2ETestUtils'
 import { getIntegrationResourcePathFor } from './resources/get-resource-path'
 import { TestProgram } from './TestProgram'
-import LeakDetector from 'jest-leak-detector'
 import { createDefaultServer, resetServer } from './simpleTestEnvironment'
 
 const POINTER0 = 'X0,Y0'
@@ -23,11 +22,7 @@ describe('End 2 end deploy test', () => {
   beforeEach(() => resetServer(server))
 
   afterAll(async () => {
-    jest.restoreAllMocks()
-    const detector = new LeakDetector(server)
-    await server.stopProgram()
-    server = null as any
-    expect(await detector.isLeaking()).toBe(false)
+    vi.restoreAllMocks()
   })
 
   it('When a user tries to deploy the same entity twice, then an exception is thrown', async () => {

@@ -14,9 +14,7 @@
     "start:maintenance": "node ./dist/src/entrypoints/run-maintenance.js",
     "start:content-files-fixer": "node ./dist/src/entrypoints/run-content-files-fixer.js",
     "start:server": "node ./dist/src/entrypoints/run-server.js",
-    "test": "jest --runInBand --detectOpenHandles --forceExit --coverage",
-    "test:integration": "jest --selectProjects integration --runInBand --forceExit --detectOpenHandles --coverage",
-    "test:unit": "jest --selectProjects unit --runInBand --forceExit --detectOpenHandles --coverage"
+    "test": "vitest run"
   },
   "dependencies": {
     "@dcl/block-indexer": "^1.1.2",
@@ -65,7 +63,6 @@
     "@types/uuid": "^8",
     "@typescript-eslint/eslint-plugin": "5.33.0",
     "@typescript-eslint/parser": "5.33.0",
-    "@well-known-components/test-helpers": "^1.5.3",
     "chalk": "4.1.2",
     "columnify": "1.6.0",
     "destroy": "1.2.0",
@@ -73,16 +70,14 @@
     "eslint-config-prettier": "8.5.0",
     "eslint-plugin-prettier": "4.2.1",
     "faker": "5.5.3",
-    "jest-extra-utils": "^0.1.0",
-    "jest-junit": "^16.0.0",
-    "jest-leak-detector": "^29.3.1",
     "lint-staged": "13.0.3",
     "prettier": "2.7.1",
     "testcontainers": "8.9.0",
     "ts-mockito": "2.6.1",
     "ts-node": "^10.9.1",
     "tsc": "2.0.4",
-    "typescript": "^4.7.4"
+    "typescript": "^4.7.4",
+    "vitest": "^0.34.1"
   },
   "resolutions": {
     "@well-known-components/http-server/path-to-regexp": "^6.2.1",

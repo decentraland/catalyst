@@ -41,12 +41,12 @@ describe('activeEntities', () => {
   }
 
   /** Mock of deployments.getDeploymentsForActiveEntities*/
-  const sut = jest
+  const sut = vi
     .spyOn(deployments, 'getDeploymentsForActiveEntities')
     .mockImplementation(() => Promise.resolve([fakeDeployment]))
 
   afterAll(() => {
-    jest.restoreAllMocks()
+    vi.restoreAllMocks()
   })
 
   describe('withPointers should', () => {

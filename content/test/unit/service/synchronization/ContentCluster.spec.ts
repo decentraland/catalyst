@@ -8,9 +8,9 @@ import { ChallengeSupervisor, IChallengeSupervisor } from '../../../../src/servi
 import { ContentCluster } from '../../../../src/service/synchronization/ContentCluster'
 import { MockedDAOClient } from '../../../helpers/service/synchronization/clients/MockedDAOClient'
 
-jest.mock('@dcl/snapshots-fetcher/dist/utils', () => ({
-  ...jest.requireActual('@dcl/snapshots-fetcher/dist/utils'),
-  sleep: jest.fn()
+vi.mock('@dcl/snapshots-fetcher/dist/utils', () => ({
+  ...vi.requireActual('@dcl/snapshots-fetcher/dist/utils'),
+  sleep: vi.fn()
 }))
 
 describe('ContentCluster', function () {
@@ -18,10 +18,10 @@ describe('ContentCluster', function () {
   const address2: string = 'http://address2'
   const challengeText: string = 'Some challenge text'
 
-  beforeEach(() => jest.restoreAllMocks())
+  beforeEach(() => vi.restoreAllMocks())
 
   afterAll(() => {
-    jest.restoreAllMocks()
+    vi.restoreAllMocks()
   })
 
   // TODO: review this test, there is no real-world case in which the DAO has no servers
@@ -72,7 +72,7 @@ class ContentClusterBuilder {
 
   addLocalChallenge(address: string, challengeText: string): ContentClusterBuilder {
     const original = this.fetcher.fetch
-    jest.spyOn(this.fetcher, 'fetch').mockImplementation(async (url) => {
+    vi.spyOn(this.fetcher, 'fetch').mockImplementation(async (url) => {
       if (url === `${address}/challenge`) {
         return new Response(JSON.stringify({ challengeText }))
       }
@@ -86,7 +86,7 @@ class ContentClusterBuilder {
 
   addAddressWithEndpoints(address: string, challengeText: string): ContentClusterBuilder {
     const original = this.fetcher.fetch
-    jest.spyOn(this.fetcher, 'fetch').mockImplementation(async (url) => {
+    vi.spyOn(this.fetcher, 'fetch').mockImplementation(async (url) => {
       if (url === `${address}/challenge`) {
         return new Response(JSON.stringify({ challengeText }))
       }

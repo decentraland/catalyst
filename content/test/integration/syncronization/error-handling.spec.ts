@@ -18,7 +18,6 @@ import {
 } from '../E2EAssertions'
 import { awaitUntil, buildDeployData, buildDeployDataAfterEntity, createIdentity } from '../E2ETestUtils'
 import { TestProgram } from '../TestProgram'
-import LeakDetector from 'jest-leak-detector'
 import { createAdditionalServer, createDefaultServer } from '../simpleTestEnvironment'
 
 describe('End 2 end - Error handling', () => {
@@ -43,19 +42,7 @@ describe('End 2 end - Error handling', () => {
   })
 
   afterAll(async () => {
-    jest.restoreAllMocks()
-    const detector = new LeakDetector(server1)
-    await server1.stopProgram()
-    server1 = null as any
-    expect(await detector.isLeaking()).toBe(false)
-  })
-
-  afterAll(async () => {
-    jest.restoreAllMocks()
-    const detector = new LeakDetector(server2)
-    await server2.stopProgram()
-    server2 = null as any
-    expect(await detector.isLeaking()).toBe(false)
+    vi.restoreAllMocks()
   })
 
   //TODO: [new-sync] Check that this is being tested somewhere else

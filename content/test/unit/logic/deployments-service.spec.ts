@@ -1,6 +1,5 @@
 import { EntityType } from '@dcl/schemas'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
-import { safe } from 'jest-extra-utils'
 import { Deployment, DeploymentOptions, PartialDeploymentHistory } from '../../../src/deployment-types'
 import { ContentFilesRow } from '../../../src/logic/database-queries/content-files-queries'
 import { HistoricalDeploymentsRow } from '../../../src/logic/database-queries/deployments-queries'
@@ -79,12 +78,11 @@ describe('deployments service', () => {
     describe('when no item is denylisted', () => {
       beforeAll(() => {
         components = {
-          database: safe({ queryWithValues: () => {} }),
+          database: { queryWithValues: () => {} },
           denylist: { isDenylisted: () => false },
           metrics: createTestMetricsComponent(metricsDeclaration)
         }
-        jest
-          .spyOn(components.database, 'queryWithValues')
+        vi.spyOn(components.database, 'queryWithValues')
           .mockResolvedValueOnce({ rows: historicalDeploymentsRows, rowCount: 2 })
           .mockResolvedValueOnce({ rows: contentFiles, rowCount: 2 })
           .mockResolvedValueOnce({ rows: migrationData, rowCount: 2 })
@@ -108,19 +106,18 @@ describe('deployments service', () => {
     describe('with a denylisted item', () => {
       beforeAll(() => {
         components = {
-          database: safe({ queryWithValues: () => {} }),
+          database: { queryWithValues: () => {} },
           denylist: { isDenylisted: () => false },
           metrics: createTestMetricsComponent(metricsDeclaration)
         }
-        jest
-          .spyOn(components.database, 'queryWithValues')
+        vi.spyOn(components.database, 'queryWithValues')
           .mockResolvedValueOnce({ rows: historicalDeploymentsRows, rowCount: 2 })
           .mockResolvedValueOnce({ rows: contentFiles, rowCount: 2 })
           .mockResolvedValueOnce({ rows: migrationData, rowCount: 2 })
       })
 
       it("should not return a deployment if it's denylisted", async () => {
-        jest.spyOn(components.denylist, 'isDenylisted').mockReturnValueOnce(true).mockReturnValueOnce(false)
+        vi.spyOn(components.denylist, 'isDenylisted').mockReturnValueOnce(true).mockReturnValueOnce(false)
         result = await getDeployments(components, components.database, options)
 
         expect(result).toEqual(
@@ -137,19 +134,18 @@ describe('deployments service', () => {
     describe('with a denylisted item but with includeDenylisted param', () => {
       beforeAll(() => {
         components = {
-          database: safe({ queryWithValues: () => {} }),
+          database: { queryWithValues: () => {} },
           denylist: { isDenylisted: () => false },
           metrics: createTestMetricsComponent(metricsDeclaration)
         }
-        jest
-          .spyOn(components.database, 'queryWithValues')
+        vi.spyOn(components.database, 'queryWithValues')
           .mockResolvedValueOnce({ rows: historicalDeploymentsRows, rowCount: 2 })
           .mockResolvedValueOnce({ rows: contentFiles, rowCount: 2 })
           .mockResolvedValueOnce({ rows: migrationData, rowCount: 2 })
       })
 
       it("should not return a deployment if it's denylisted", async () => {
-        jest.spyOn(components.denylist, 'isDenylisted').mockReturnValueOnce(true).mockReturnValueOnce(false)
+        vi.spyOn(components.denylist, 'isDenylisted').mockReturnValueOnce(true).mockReturnValueOnce(false)
         result = await getDeployments(components, components.database, { ...options, includeDenylisted: true })
 
         expect(result).toEqual(
