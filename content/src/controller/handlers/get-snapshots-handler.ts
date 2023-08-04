@@ -1,5 +1,5 @@
 import { Snapshots, Error } from '@dcl/catalyst-api-specs/lib/client'
-import { HandlerContextWithPath } from '../../types'
+import { HandlerContextWithPath } from '../../types.js'
 
 type Response = { status: 200; body: Snapshots } | { status: 503; body: Error }
 

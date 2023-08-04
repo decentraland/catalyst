@@ -1,7 +1,7 @@
 import { EntityContentItemReference } from '@dcl/hashing'
 import { Entity, EntityType } from '@dcl/schemas'
-import { qsGetArray, qsParser } from '../../logic/query-params'
-import { HandlerContextWithPath, parseEntityType } from '../../types'
+import { qsGetArray, qsParser } from '../../logic/query-params.js'
+import { HandlerContextWithPath, parseEntityType } from '../../types.js'
 
 export enum EntityField {
   CONTENT = 'content',

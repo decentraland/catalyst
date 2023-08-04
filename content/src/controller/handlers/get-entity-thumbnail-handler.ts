@@ -1,7 +1,7 @@
 import { ContentItem } from '@dcl/catalyst-storage'
-import { HandlerContextWithPath, NotFoundError } from '../../types'
-import { findEntityByPointer, findThumbnailHash } from '../../logic/entities'
-import { createContentFileHeaders } from '../utils'
+import { HandlerContextWithPath, NotFoundError } from '../../types.js'
+import { findEntityByPointer, findThumbnailHash } from '../../logic/entities.js'
+import { createContentFileHeaders } from '../utils.js'
 
 // Method: GET or HEAD
 export async function getEntityThumbnailHandler(

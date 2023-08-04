@@ -1,7 +1,7 @@
 import { DecentralandAssetIdentifier, parseUrn } from '@dcl/urn-resolver'
-import { paginationObject } from '../utils'
-import { HandlerContextWithPath, InvalidRequestError } from '../../types'
-import { BASE_AVATARS_COLLECTION_ID } from '../../ports/activeEntities'
+import { paginationObject } from '../utils.js'
+import { HandlerContextWithPath, InvalidRequestError } from '../../types.js'
+import { BASE_AVATARS_COLLECTION_ID } from '../../ports/activeEntities.js'
 import { GetEntitiesByPointerPrefix200 } from '@dcl/catalyst-api-specs/lib/client'
 
 async function isUrnPrefixValid(collectionUrn: string): Promise<string | false> {

@@ -1,9 +1,9 @@
 import { EntityType } from '@dcl/schemas'
-import { asEnumValue, fromCamelCaseToSnakeCase } from '../utils'
-import { qsGetArray, qsGetBoolean, qsGetNumber, qsParser, toQueryParams } from '../../logic/query-params'
-import { Deployment, DeploymentBase, DeploymentOptions, SortingField, SortingOrder } from '../../deployment-types'
-import { DeploymentField, HandlerContextWithPath, InvalidRequestError, parseEntityType } from '../../types'
-import { getDeployments } from '../../logic/deployments'
+import { asEnumValue, fromCamelCaseToSnakeCase } from '../utils.js'
+import { qsGetArray, qsGetBoolean, qsGetNumber, qsParser, toQueryParams } from '../../logic/query-params.js'
+import { Deployment, DeploymentBase, DeploymentOptions, SortingField, SortingOrder } from '../../deployment-types.js'
+import { DeploymentField, HandlerContextWithPath, InvalidRequestError, parseEntityType } from '../../types.js'
+import { getDeployments } from '../../logic/deployments.js'
 
 export const DEFAULT_FIELDS_ON_DEPLOYMENTS: DeploymentField[] = [
   DeploymentField.POINTERS,

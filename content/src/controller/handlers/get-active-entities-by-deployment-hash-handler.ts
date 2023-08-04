@@ -1,5 +1,5 @@
-import { HandlerContextWithPath, NotFoundError } from '../../types'
-import { getActiveDeploymentsByContentHash } from '../../logic/database-queries/deployments-queries'
+import { HandlerContextWithPath, NotFoundError } from '../../types.js'
+import { getActiveDeploymentsByContentHash } from '../../logic/database-queries/deployments-queries.js'
 
 // TODO: it's a bit annoying but our current openapi->ts generation tool doesn't generate a type for string[]
 

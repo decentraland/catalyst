@@ -1,7 +1,7 @@
 import { StatusContent } from '@dcl/catalyst-api-specs/lib/client'
-import { HandlerContextWithPath } from '../../types'
-import { CURRENT_COMMIT_HASH, CURRENT_VERSION, EnvironmentConfig } from '../../Environment'
-import { statusResponseFromComponents } from '../../logic/status-checks'
+import { HandlerContextWithPath } from '../../types.js'
+import { CURRENT_COMMIT_HASH, CURRENT_VERSION, EnvironmentConfig } from '../../Environment.js'
+import { statusResponseFromComponents } from '../../logic/status-checks.js'
 
 export async function getStatusHandler(
   context: HandlerContextWithPath<'contentCluster' | 'synchronizationState' | 'config', '/status'>

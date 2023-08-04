@@ -1,5 +1,5 @@
 import { ContentItem } from '@dcl/catalyst-storage'
-import { InvalidRequestError, Pagination } from '../types.js'
+import { InvalidRequestError, Pagination } from '../types.js.js'
 
 export function paginationObject(url: URL, maxPageSize: number = 1000): Pagination {
   const pageSize = url.searchParams.has('pageSize') ? parseInt(url.searchParams.get('pageSize')!, 10) : 100

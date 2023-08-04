@@ -1,5 +1,5 @@
 import { GetChallenge200 } from '@dcl/catalyst-api-specs/lib/client'
-import { HandlerContextWithPath } from '../../types'
+import { HandlerContextWithPath } from '../../types.js'
 
 export async function getChallengeHandler(
   context: HandlerContextWithPath<'challengeSupervisor', '/challenge'>

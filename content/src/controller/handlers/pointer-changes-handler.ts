@@ -1,11 +1,11 @@
 import { PointerChanges } from '@dcl/catalyst-api-specs/lib/client'
 import { EntityType, PointerChangesSyncDeployment } from '@dcl/schemas'
-import { asEnumValue, fromCamelCaseToSnakeCase } from '../utils'
-import { qsGetArray, qsGetBoolean, qsGetNumber, qsParser, toQueryParams } from '../../logic/query-params'
-import { HandlerContextWithPath, InvalidRequestError, parseEntityType } from '../../types'
-import { SortingField, SortingOrder } from '../../deployment-types'
-import { PointerChangesFilters } from '../../service/pointers/types'
-import { getPointerChanges } from '../../service/pointers/pointers'
+import { asEnumValue, fromCamelCaseToSnakeCase } from '../utils.js'
+import { qsGetArray, qsGetBoolean, qsGetNumber, qsParser, toQueryParams } from '../../logic/query-params.js'
+import { HandlerContextWithPath, InvalidRequestError, parseEntityType } from '../../types.js'
+import { SortingField, SortingOrder } from '../../deployment-types.js'
+import { PointerChangesFilters } from '../../service/pointers/types.js'
+import { getPointerChanges } from '../../service/pointers/pointers.js'
 
 // Method: GET
 // Query String: ?from={timestamp}&to={timestamp}&offset={number}&limit={number}&entityType={entityType}&includeAuthChain={boolean}

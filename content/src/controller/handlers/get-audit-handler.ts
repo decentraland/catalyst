@@ -6,8 +6,8 @@ import {
   DeploymentField
 } from '../../types'
 import { AuditResponse } from '@dcl/catalyst-api-specs/lib/client'
-import { getDeployments } from '../../logic/deployments'
-import { AuditInfo } from '../../deployment-types'
+import { getDeployments } from '../../logic/deployments.js'
+import { AuditInfo } from '../../deployment-types.js'
 
 // Method: GET
 export async function getEntityAuditInformationHandler(
