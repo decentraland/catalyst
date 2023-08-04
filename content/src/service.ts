@@ -12,9 +12,7 @@ async function setupApiCoverage(server: IHttpServerComponent<GlobalContext>) {
   const coverageDir = path.join(__dirname, '../api-coverage')
   try {
     await fs.promises.mkdir(coverageDir)
-  } catch (err) {
-    console.error(err)
-  }
+  } catch (err) {}
   const coverageFilePath = path.join(coverageDir, `api-coverage.csv`)
   server.use(async (context, next) => {
     const response = await next()
@@ -25,19 +23,6 @@ async function setupApiCoverage(server: IHttpServerComponent<GlobalContext>) {
     return response
   })
 }
-
-// TODO
-// if (env.getConfig(EnvironmentConfig.VALIDATE_API) || process.env.CI === 'true') {
-//   this.app.use(
-//     OpenApiValidator.middleware({
-//       apiSpec: CONTENT_API,
-//       validateResponses: true,
-//       validateRequests: false,
-//       ignoreUndocumented: true,
-//       ignorePaths: /\/entities/
-//     })
-//   )
-// }
 
 // this function wires the business logic (adapters & controllers) with the components (ports)
 export async function main(program: Lifecycle.EntryPointParameters<AppComponents>): Promise<void> {

@@ -77,11 +77,9 @@
     "jest-junit": "^13.0.0",
     "jest-leak-detector": "^29.3.1",
     "lint-staged": "13.0.3",
-    "nyc": "^15.1.0",
     "prettier": "2.7.1",
     "testcontainers": "8.9.0",
     "ts-mockito": "2.6.1",
-    "ts-node": "10.7.0",
     "tsc": "2.0.4",
     "typescript": "^4.7.4"
   },
