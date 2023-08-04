@@ -11,11 +11,11 @@ import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import path from 'path'
 import { Readable } from 'stream'
-import { Environment, EnvironmentBuilder, EnvironmentConfig } from '../Environment'
-import { saveContentFiles } from '../logic/database-queries/deployments-queries'
-import { metricsDeclaration } from '../metrics'
-import { createDatabaseComponent } from '../ports/postgres'
-import { AppComponents } from '../types'
+import { Environment, EnvironmentBuilder, EnvironmentConfig } from '../Environment.js'
+import { saveContentFiles } from '../logic/database-queries/deployments-queries.js'
+import { metricsDeclaration } from '../metrics.js'
+import { createDatabaseComponent } from '../ports/postgres.js'
+import { AppComponents } from '../types.js'
 
 export type ContentFilesFixerComponents = Pick<AppComponents, 'database' | 'env' | 'fetcher' | 'logs' | 'storage'>
 

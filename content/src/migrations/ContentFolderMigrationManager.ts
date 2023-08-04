@@ -1,7 +1,7 @@
 import PQueue from 'p-queue'
 import { join, resolve } from 'path'
-import { AppComponents } from '../../src/types'
-import { EnvironmentConfig } from '../Environment'
+import { AppComponents } from '../../src/types.js'
+import { EnvironmentConfig } from '../Environment.js'
 
 export type ContentFolderMigrationComponents = Pick<AppComponents, 'logs' | 'env' | 'metrics' | 'storage' | 'fs'>
 

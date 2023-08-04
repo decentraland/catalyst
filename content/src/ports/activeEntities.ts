@@ -1,14 +1,14 @@
 import { Entity, EntityType } from '@dcl/schemas'
 import LRU from 'lru-cache'
-import { EnvironmentConfig } from '../Environment'
+import { EnvironmentConfig } from '../Environment.js'
 import {
   gerUrnsThatMatchCollectionUrnPrefix,
   removeActiveDeployments,
   updateActiveDeployments
 } from '../logic/database-queries/pointers-queries'
-import { getDeploymentsForActiveEntities, mapDeploymentsToEntities } from '../logic/deployments'
-import { AppComponents } from '../types'
-import { DatabaseClient } from './postgres'
+import { getDeploymentsForActiveEntities, mapDeploymentsToEntities } from '../logic/deployments.js'
+import { AppComponents } from '../types.js'
+import { DatabaseClient } from './postgres.js'
 
 export const BASE_AVATARS_COLLECTION_ID = 'urn:decentraland:off-chain:base-avatars'
 

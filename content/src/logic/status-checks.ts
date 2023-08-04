@@ -1,4 +1,4 @@
-import { IStatusCapableComponent } from '../types'
+import { IStatusCapableComponent } from '../types.js'
 
 type StatusResponse = { successful: boolean; details: Record<string, any> }
 

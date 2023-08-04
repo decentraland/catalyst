@@ -5,7 +5,7 @@ import {
   getSnapshotFailedDeployments,
   saveSnapshotFailedDeployment
 } from '../logic/database-queries/failed-deployments-queries'
-import { AppComponents } from '../types'
+import { AppComponents } from '../types.js'
 
 export enum FailureReason {
   DEPLOYMENT_ERROR = 'Deployment error' // During sync, there was an error during deployment. Could be due to a validation

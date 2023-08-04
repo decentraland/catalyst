@@ -8,12 +8,12 @@ import {
   DeploymentOptions,
   PartialDeploymentHistory
 } from '../deployment-types'
-import { FailedDeployment } from '../ports/failedDeployments'
-import { DatabaseClient, DatabaseTransactionalClient } from '../ports/postgres'
-import { deployEntityFromRemoteServer } from '../service/synchronization/deployRemoteEntity'
-import { IGNORING_FIX_ERROR } from '../service/validations/server'
-import { AppComponents, DeploymentId, EntityVersion } from '../types'
-import { getContentFiles } from './database-queries/content-files-queries'
+import { FailedDeployment } from '../ports/failedDeployments.js'
+import { DatabaseClient, DatabaseTransactionalClient } from '../ports/postgres.js'
+import { deployEntityFromRemoteServer } from '../service/synchronization/deployRemoteEntity.js'
+import { IGNORING_FIX_ERROR } from '../service/validations/server.js'
+import { AppComponents, DeploymentId, EntityVersion } from '../types.js'
+import { getContentFiles } from './database-queries/content-files-queries.js'
 import {
   calculateOverwrittenByManyFast,
   calculateOverwrittenBySlow,

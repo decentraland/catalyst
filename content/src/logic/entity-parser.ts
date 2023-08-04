@@ -1,6 +1,6 @@
 import { EntityContentItemReference } from '@dcl/hashing'
 import { Entity, EntityType } from '@dcl/schemas'
-import { AnyObject } from '../types'
+import { AnyObject } from '../types.js'
 
 const textDecoder = new TextDecoder()
 

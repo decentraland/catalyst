@@ -1,5 +1,5 @@
-import { getSystemProperty, setSystemProperty } from '../logic/database-queries/system-properties-queries'
-import { AppComponents } from '../types'
+import { getSystemProperty, setSystemProperty } from '../logic/database-queries/system-properties-queries.js'
+import { AppComponents } from '../types.js'
 
 export type SystemProperty<T> = {
   key: string

@@ -1,5 +1,5 @@
 import qs from 'qs'
-import { QueryParams } from '../types'
+import { QueryParams } from '../types.js'
 
 export function qsParser(rawQueryParams: URLSearchParams): QueryParams {
   return qs.parse(rawQueryParams.toString(), { parseArrays: true })

@@ -8,7 +8,7 @@ import {
   L1Network
 } from '@dcl/catalyst-contracts'
 import RequestManager, { ContractFactory } from 'eth-connect'
-import { AppComponents } from '../types'
+import { AppComponents } from '../types.js'
 
 export interface DAOComponent {
   getAllContentServers(): Promise<CatalystServerInfo[]>

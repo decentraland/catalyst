@@ -1,7 +1,7 @@
 import { CatalystServerInfo } from '@dcl/catalyst-contracts'
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
-import { EnvironmentConfig } from '../Environment'
-import { AppComponents } from '../types'
+import { EnvironmentConfig } from '../Environment.js'
+import { AppComponents } from '../types.js'
 
 export async function getChallengeInServer(
   components: Pick<AppComponents, 'fetcher'>,

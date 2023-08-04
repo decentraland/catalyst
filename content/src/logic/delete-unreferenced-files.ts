@@ -1,7 +1,7 @@
 import * as bf from 'bloom-filters'
 import PQueue from 'p-queue'
-import { runLoggingPerformance } from '../instrument'
-import { AppComponents } from '../types'
+import { runLoggingPerformance } from '../instrument.js'
+import { AppComponents } from '../types.js'
 import {
   getAllSnapshotHashes,
   streamAllDistinctContentFileHashes,

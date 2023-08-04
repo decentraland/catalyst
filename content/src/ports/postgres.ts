@@ -3,8 +3,8 @@ import { IBaseComponent, IDatabase } from '@well-known-components/interfaces'
 import { Client, ClientConfig, Pool, PoolClient, PoolConfig } from 'pg'
 import QueryStream from 'pg-query-stream'
 import { SQLStatement } from 'sql-template-strings'
-import { EnvironmentConfig } from '../Environment'
-import { AppComponents } from '../types'
+import { EnvironmentConfig } from '../Environment.js'
+import { AppComponents } from '../types.js'
 
 export type DatabaseClient = Omit<IDatabaseComponent, 'transaction'>
 

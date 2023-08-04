@@ -2,7 +2,7 @@ import { ILoggerComponent } from '@well-known-components/interfaces'
 import { EntityType } from '@dcl/schemas'
 import ms from 'ms'
 import NodeCache from 'node-cache'
-import { AppComponents } from '../types'
+import { AppComponents } from '../types.js'
 
 export type IDeployRateLimiterComponent = {
   newDeployment(entityType: EntityType, pointers: string[], localTimestamp: number): void

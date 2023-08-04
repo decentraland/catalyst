@@ -1,4 +1,4 @@
-import { AppComponents } from '../types'
+import { AppComponents } from '../types.js'
 
 export enum State {
   BOOTSTRAPPING = 'Bootstrapping',

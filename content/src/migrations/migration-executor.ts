@@ -2,8 +2,8 @@ import runner from 'node-pg-migrate'
 import { MigrationDirection, RunnerOption } from 'node-pg-migrate/dist/types'
 import { join } from 'path'
 import { PoolConfig } from 'pg'
-import { EnvironmentConfig } from '../Environment'
-import { AppComponents } from '../types'
+import { EnvironmentConfig } from '../Environment.js'
+import { AppComponents } from '../types.js'
 
 export interface MigrationExecutor {
   run: () => Promise<void>

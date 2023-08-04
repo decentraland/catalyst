@@ -1,5 +1,5 @@
 import { L1Checker, L2Checker } from '@dcl/content-validator'
-import { inputCallFormatter, inputBlockNumberFormatter } from './formatters'
+import { inputCallFormatter, inputBlockNumberFormatter } from './formatters.js'
 import { RequestManager, HTTPProvider, ContractFactory, toData } from 'eth-connect'
 import { l1Contracts, l2Contracts, checkerAbi } from '@dcl/catalyst-contracts'
 import { code } from '@dcl/catalyst-contracts/dist/checkerByteCode'

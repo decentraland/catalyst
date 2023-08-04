@@ -1,7 +1,7 @@
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { exec } from 'child_process'
 import { promisify } from 'util'
-import { DEFAULT_DATABASE_CONFIG } from '../Environment'
+import { DEFAULT_DATABASE_CONFIG } from '../Environment.js'
 
 const execute = promisify(exec)
 

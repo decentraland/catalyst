@@ -1,7 +1,7 @@
 import { Lifecycle } from '@well-known-components/interfaces'
-import { AppComponents } from '../types'
-import { EnvironmentBuilder } from '../Environment'
-import { main } from '../service'
+import { AppComponents } from '../types.js'
+import { EnvironmentBuilder } from '../Environment.js'
+import { main } from '../service.js'
 
 // This file is the program entry point, it only calls the Lifecycle function
 void Lifecycle.run<AppComponents>({

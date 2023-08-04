@@ -1,5 +1,5 @@
 import future from 'fp-future'
-import { AppComponents } from '../types'
+import { AppComponents } from '../types.js'
 
 export async function startSynchronization(
   components: Pick<

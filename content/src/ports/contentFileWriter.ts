@@ -1,6 +1,6 @@
 import { checkFileExists } from '@dcl/snapshots-fetcher/dist/utils'
 import path from 'path'
-import { AppComponents } from '../types'
+import { AppComponents } from '../types.js'
 
 // this component opens file descriptors and enables us to write to them and close all the FD at once
 // it also has a buffering algorithm to write to disk less often and reduce IO latency

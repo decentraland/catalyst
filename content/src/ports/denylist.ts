@@ -3,8 +3,8 @@ import { IBaseComponent } from '@well-known-components/interfaces'
 import { resolve } from 'path'
 import { createInterface } from 'readline'
 import { URL } from 'url'
-import { EnvironmentConfig } from '../Environment'
-import { AppComponents } from '../types'
+import { EnvironmentConfig } from '../Environment.js'
+import { AppComponents } from '../types.js'
 
 export type Denylist = {
   isDenylisted: (id: string) => boolean

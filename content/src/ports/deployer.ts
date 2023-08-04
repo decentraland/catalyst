@@ -1,7 +1,7 @@
 import { bufferToStream } from '@dcl/catalyst-storage/dist/content-item'
 import { AuthChain, Authenticator } from '@dcl/crypto'
 import { Entity, EntityType, IPFSv2 } from '@dcl/schemas'
-import { EnvironmentConfig } from '../Environment'
+import { EnvironmentConfig } from '../Environment.js'
 import {
   AuditInfo,
   DeploymentContext,
@@ -11,14 +11,14 @@ import {
   LocalDeploymentAuditInfo,
   isInvalidDeployment
 } from '../deployment-types'
-import { getEntityById, setEntitiesAsOverwritten } from '../logic/database-queries/deployments-queries'
-import { calculateOverwrites, getDeployments, saveDeploymentAndContentFiles } from '../logic/deployments'
-import { getEntityFromBuffer } from '../logic/entity-parser'
-import { calculateDeprecatedHashes, calculateIPFSHashes } from '../logic/hashing'
-import { DELTA_POINTER_RESULT } from '../service/pointers/PointerManager'
-import { happenedBefore } from '../service/time/TimeSorting'
-import { AppComponents, EntityVersion } from '../types'
-import { DatabaseClient } from './postgres'
+import { getEntityById, setEntitiesAsOverwritten } from '../logic/database-queries/deployments-queries.js'
+import { calculateOverwrites, getDeployments, saveDeploymentAndContentFiles } from '../logic/deployments.js'
+import { getEntityFromBuffer } from '../logic/entity-parser.js'
+import { calculateDeprecatedHashes, calculateIPFSHashes } from '../logic/hashing.js'
+import { DELTA_POINTER_RESULT } from '../service/pointers/PointerManager.js'
+import { happenedBefore } from '../service/time/TimeSorting.js'
+import { AppComponents, EntityVersion } from '../types.js'
+import { DatabaseClient } from './postgres.js'
 
 export function isIPFSHash(hash: string): boolean {
   return IPFSv2.validate(hash)

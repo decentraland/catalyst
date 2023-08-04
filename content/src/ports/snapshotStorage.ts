@@ -1,5 +1,5 @@
-import { isOwnSnapshot } from '../logic/database-queries/snapshots-queries'
-import { AppComponents } from '../types'
+import { isOwnSnapshot } from '../logic/database-queries/snapshots-queries.js'
+import { AppComponents } from '../types.js'
 
 export function createSnapshotStorage(components: Pick<AppComponents, 'database'>) {
   return {
