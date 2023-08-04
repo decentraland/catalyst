@@ -4,8 +4,8 @@ import { TimeRange } from '@dcl/snapshots-fetcher/dist/types'
 import pg from 'pg'
 import SQL, { SQLStatement } from 'sql-template-strings'
 import { DatabaseClient, DatabaseTransactionalClient } from 'src/ports/postgres'
-import { AuditInfo, DeploymentFilters, DeploymentSorting, SortingField, SortingOrder } from '../../deployment-types'
-import { AppComponents, DeploymentId } from '../../types'
+import { AuditInfo, DeploymentFilters, DeploymentSorting, SortingField, SortingOrder } from '../../deployment-types.js'
+import { AppComponents, DeploymentId } from '../../types.js'
 
 export type HistoricalDeployment = SnapshotSyncDeployment & {
   deploymentId: number

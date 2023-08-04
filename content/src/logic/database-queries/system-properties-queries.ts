@@ -1,5 +1,5 @@
 import SQL from 'sql-template-strings'
-import { AppComponents } from '../../types'
+import { AppComponents } from '../../types.js'
 
 export async function getSystemProperty(
   components: Pick<AppComponents, 'database'>,

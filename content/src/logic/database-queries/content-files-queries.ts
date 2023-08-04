@@ -1,7 +1,7 @@
 import SQL from 'sql-template-strings'
 import { DatabaseClient } from 'src/ports/postgres'
-import { DeploymentContent } from '../../deployment-types'
-import { DeploymentId } from '../../types'
+import { DeploymentContent } from '../../deployment-types.js'
+import { DeploymentId } from '../../types.js'
 
 export interface ContentFilesRow {
   deployment: number

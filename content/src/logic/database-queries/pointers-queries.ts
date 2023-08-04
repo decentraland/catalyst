@@ -1,5 +1,5 @@
 import SQL from 'sql-template-strings'
-import { DatabaseClient } from '../../ports/postgres'
+import { DatabaseClient } from '../../ports/postgres.js'
 
 export async function gerUrnsThatMatchCollectionUrnPrefix(
   database: DatabaseClient,

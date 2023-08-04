@@ -1,6 +1,6 @@
 import SQL from 'sql-template-strings'
 import { DatabaseClient } from 'src/ports/postgres'
-import { SnapshotFailedDeployment } from '../../ports/failedDeployments'
+import { SnapshotFailedDeployment } from '../../ports/failedDeployments.js'
 
 export async function saveSnapshotFailedDeployment(
   database: DatabaseClient,
