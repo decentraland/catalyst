@@ -1,5 +1,5 @@
 import { Entity } from '@dcl/schemas'
-import { IDatabaseComponent } from 'src/ports/postgres'
+import { IDatabaseComponent } from '../ports/postgres.js'
 import { ActiveEntities } from '../ports/activeEntities.js'
 
 export async function findEntityByPointer(

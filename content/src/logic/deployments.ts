@@ -1,13 +1,13 @@
 import { Entity, EntityType } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
-import SQL, { SQLStatement } from 'sql-template-strings'
+import { SQL, SQLStatement } from 'sql-template-strings'
 import {
   AuditInfo,
   Deployment,
   DeploymentContext,
   DeploymentOptions,
   PartialDeploymentHistory
-} from '../deployment-types'
+} from '../deployment-types.js'
 import { FailedDeployment } from '../ports/failedDeployments.js'
 import { DatabaseClient, DatabaseTransactionalClient } from '../ports/postgres.js'
 import { deployEntityFromRemoteServer } from '../service/synchronization/deployRemoteEntity.js'
@@ -24,7 +24,7 @@ import {
   HistoricalDeploymentsRow,
   saveContentFiles,
   saveDeployment
-} from './database-queries/deployments-queries'
+} from './database-queries/deployments-queries.js'
 
 export async function isEntityDeployed(
   database: DatabaseClient,

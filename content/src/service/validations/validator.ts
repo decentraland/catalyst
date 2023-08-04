@@ -24,7 +24,7 @@ import { createSubgraphAccessCheckValidateFns } from '@dcl/content-validator/dis
 import { createTheGraphClient } from '@dcl/content-validator/dist/validations/access/subgraph/the-graph-client'
 import { Authenticator } from '@dcl/crypto'
 import { createSubgraphComponent } from '@well-known-components/thegraph-component'
-import RequestManager, { HTTPProvider } from 'eth-connect'
+import { RequestManager, HTTPProvider } from 'eth-connect'
 import { EnvironmentConfig } from '../../Environment.js'
 import { createL1Checker, createL2Checker } from '../../logic/checker.js'
 import { AppComponents } from '../../types.js'

@@ -1,7 +1,7 @@
 import { SnapshotSyncDeployment } from '@dcl/schemas'
 import { SnapshotMetadata, TimeRange } from '@dcl/snapshots-fetcher/dist/types'
-import SQL from 'sql-template-strings'
-import { DatabaseClient } from 'src/ports/postgres'
+import { SQL } from 'sql-template-strings'
+import { DatabaseClient } from '../../ports/postgres.js'
 
 export async function* streamActiveDeploymentsInTimeRange(
   database: DatabaseClient,

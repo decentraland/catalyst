@@ -1,4 +1,4 @@
-import SQL from 'sql-template-strings'
+import { SQL } from 'sql-template-strings'
 import { AppComponents } from '../../types.js'
 
 export async function getSystemProperty(

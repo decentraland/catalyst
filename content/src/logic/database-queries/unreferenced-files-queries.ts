@@ -1,4 +1,4 @@
-import SQL from 'sql-template-strings'
+import { SQL } from 'sql-template-strings'
 import { AppComponents } from '../../types.js'
 
 const CONTENT_FILE_HASHES_QUERY = SQL`SELECT DISTINCT content_hash FROM content_files;`

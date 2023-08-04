@@ -1,4 +1,4 @@
-import SQL from 'sql-template-strings'
+import { SQL } from 'sql-template-strings'
 import { DatabaseClient } from '../../ports/postgres.js'
 
 export async function gerUrnsThatMatchCollectionUrnPrefix(

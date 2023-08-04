@@ -1,12 +1,12 @@
 import * as bf from 'bloom-filters'
-import PQueue from 'p-queue'
+import { PQueue } from 'p-queue'
 import { runLoggingPerformance } from '../instrument.js'
 import { AppComponents } from '../types.js'
 import {
   getAllSnapshotHashes,
   streamAllDistinctContentFileHashes,
   streamAllDistinctEntityIds
-} from './database-queries/unreferenced-files-queries'
+} from './database-queries/unreferenced-files-queries.js'
 
 export async function deleteUnreferencedFiles(
   components: Pick<AppComponents, 'logs' | 'database' | 'storage' | 'fs'>

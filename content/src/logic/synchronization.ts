@@ -1,4 +1,4 @@
-import future from 'fp-future'
+import { future } from 'fp-future'
 import { AppComponents } from '../types.js'
 
 export async function startSynchronization(
