@@ -34,7 +34,7 @@ export function createSequentialTaskExecutor(components: SequentialTaskComponent
     metrics.increment('wkc_sequential_job_total', { job_name: jobName })
     const waitTimer = metrics.startTimer('wkc_sequential_job_wait_seconds', { job_name: jobName })
 
-    return queue.add<T>(async () => {
+    const r = queue.add<T>(async () => {
       waitTimer.end()
       const timer = metrics.startTimer('wkc_sequential_job_duration_seconds', { job_name: jobName })
       try {
@@ -49,6 +49,8 @@ export function createSequentialTaskExecutor(components: SequentialTaskComponent
         timer.end()
       }
     })
+
+    return r as any // TODO
   }
 
   return {
