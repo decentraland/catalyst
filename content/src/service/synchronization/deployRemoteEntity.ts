@@ -7,8 +7,8 @@
 import { streamToBuffer } from '@dcl/catalyst-storage/dist/content-item'
 import { AuthChain } from '@dcl/schemas'
 import { downloadEntityAndContentFiles } from '@dcl/snapshots-fetcher'
-import { DeploymentContext, isInvalidDeployment, LocalDeploymentAuditInfo } from '../../deployment-types'
-import { AppComponents } from '../../types'
+import { DeploymentContext, isInvalidDeployment, LocalDeploymentAuditInfo } from '../../deployment-types.js'
+import { AppComponents } from '../../types.js'
 
 const requestMaxRetries = 10
 const requestRetryWaitTime = 1000

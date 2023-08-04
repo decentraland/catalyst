@@ -1,5 +1,5 @@
 import { PointerChangesSyncDeployment } from '@dcl/schemas'
-import { DeploymentFilters } from '../../deployment-types'
+import { DeploymentFilters } from '../../deployment-types.js'
 
 export type PointerChangesFilters = Pick<DeploymentFilters, 'from' | 'to' | 'entityTypes'>
 

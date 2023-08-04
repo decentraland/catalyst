@@ -25,9 +25,9 @@ import { createTheGraphClient } from '@dcl/content-validator/dist/validations/ac
 import { Authenticator } from '@dcl/crypto'
 import { createSubgraphComponent } from '@well-known-components/thegraph-component'
 import RequestManager, { HTTPProvider } from 'eth-connect'
-import { EnvironmentConfig } from '../../Environment'
-import { createL1Checker, createL2Checker } from '../../logic/checker'
-import { AppComponents } from '../../types'
+import { EnvironmentConfig } from '../../Environment.js'
+import { createL1Checker, createL2Checker } from '../../logic/checker.js'
+import { AppComponents } from '../../types.js'
 
 const createEthereumProvider = (httpProvider: HTTPProvider): EthereumProvider => {
   const reqMan = new RequestManager(httpProvider)

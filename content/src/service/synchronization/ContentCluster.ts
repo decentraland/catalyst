@@ -2,9 +2,9 @@ import { CatalystServerInfo } from '@dcl/catalyst-contracts'
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import future from 'fp-future'
-import { EnvironmentConfig } from '../../Environment'
-import { determineCatalystIdentity, normalizeContentBaseUrl } from '../../logic/cluster-helpers'
-import { AppComponents } from '../../types'
+import { EnvironmentConfig } from '../../Environment.js'
+import { determineCatalystIdentity, normalizeContentBaseUrl } from '../../logic/cluster-helpers.js'
+import { AppComponents } from '../../types.js'
 
 export interface IdentityProvider {
   /**

@@ -1,7 +1,7 @@
 import { IBaseComponent } from '@well-known-components/interfaces'
-import { EnvironmentConfig } from '../../Environment'
-import { retryFailedDeploymentExecution } from '../../logic/deployments'
-import { AppComponents } from '../../types'
+import { EnvironmentConfig } from '../../Environment.js'
+import { retryFailedDeploymentExecution } from '../../logic/deployments.js'
+import { AppComponents } from '../../types.js'
 import { setTimeout } from 'timers/promises'
 
 export type IRetryFailedDeploymentsComponent = IBaseComponent & {

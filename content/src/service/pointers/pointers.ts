@@ -1,9 +1,9 @@
 import { PointerChangesSyncDeployment } from '@dcl/schemas'
 import { DatabaseClient } from 'src/ports/postgres'
-import { PointerChangesOptions } from '../../deployment-types'
-import { getHistoricalDeployments, HistoricalDeployment } from '../../logic/database-queries/deployments-queries'
-import { AppComponents } from '../../types'
-import { DeploymentPointerChanges } from './types'
+import { PointerChangesOptions } from '../../deployment-types.js'
+import { getHistoricalDeployments, HistoricalDeployment } from '../../logic/database-queries/deployments-queries.js'
+import { AppComponents } from '../../types.js'
+import { DeploymentPointerChanges } from './types.js'
 
 const MAX_HISTORY_LIMIT = 500
 

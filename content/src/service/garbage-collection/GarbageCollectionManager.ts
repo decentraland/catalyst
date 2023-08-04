@@ -1,7 +1,7 @@
 import { ILoggerComponent } from '@well-known-components/interfaces'
-import { findContentHashesNotBeingUsedAnymore } from '../../logic/database-queries/content-files-queries'
-import { SYSTEM_PROPERTIES } from '../../ports/system-properties'
-import { AppComponents } from '../../types'
+import { findContentHashesNotBeingUsedAnymore } from '../../logic/database-queries/content-files-queries.js'
+import { SYSTEM_PROPERTIES } from '../../ports/system-properties.js'
+import { AppComponents } from '../../types.js'
 
 export class GarbageCollectionManager {
   private LOGGER: ILoggerComponent.ILogger

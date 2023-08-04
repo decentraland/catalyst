@@ -1,6 +1,6 @@
 import { EntityType } from '@dcl/schemas'
 import { MigrationBuilder } from 'node-pg-migrate'
-import { considerDeploymentsOnPointersAsFailed } from '../Helper'
+import { considerDeploymentsOnPointersAsFailed } from '../Helper.js'
 
 export async function up(pgm: MigrationBuilder): Promise<void> {
   return considerDeploymentsOnPointersAsFailed(

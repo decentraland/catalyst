@@ -1,7 +1,7 @@
 import { Entity } from '@dcl/schemas'
-import { getDeployments } from '../../logic/database-queries/deployments-queries'
-import { DatabaseClient } from '../../ports/postgres'
-import { DeploymentId } from '../../types'
+import { getDeployments } from '../../logic/database-queries/deployments-queries.js'
+import { DatabaseClient } from '../../ports/postgres.js'
+import { DeploymentId } from '../../types.js'
 
 /**
  * Manage all pointer data
