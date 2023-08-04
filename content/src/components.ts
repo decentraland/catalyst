@@ -2,7 +2,7 @@ import { createFolderBasedFileSystemContentStorage, createFsComponent } from '@d
 import { ValidateFn } from '@dcl/content-validator'
 import { EntityType } from '@dcl/schemas'
 import { createSynchronizer } from '@dcl/snapshots-fetcher'
-import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
+import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port.js'
 import { createFetchComponent } from '@well-known-components/fetch-component'
 import { createServerComponent } from '@well-known-components/http-server'
 import { createLogComponent } from '@well-known-components/logger'
@@ -43,7 +43,7 @@ import {
   createIgnoreBlockchainValidator,
   createOnChainValidator,
   createSubgraphValidator
-} from './service/validations/validator'
+} from './service/validations/validator.js'
 import { AppComponents, GlobalContext } from './types.js'
 
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {

@@ -2,7 +2,7 @@ import { L1Checker, L2Checker } from '@dcl/content-validator'
 import { inputCallFormatter, inputBlockNumberFormatter } from './formatters.js'
 import { RequestManager, HTTPProvider, ContractFactory, toData } from 'eth-connect'
 import { l1Contracts, l2Contracts, checkerAbi } from '@dcl/catalyst-contracts'
-import { code } from '@dcl/catalyst-contracts/dist/checkerByteCode'
+import { code } from '@dcl/catalyst-contracts/dist/checkerByteCode.js'
 
 export async function createL1Checker(provider: HTTPProvider, network: 'mainnet' | 'goerli'): Promise<L1Checker> {
   const contracts = l1Contracts[network]

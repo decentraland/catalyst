@@ -1,4 +1,4 @@
-import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
+import { sleep } from '@dcl/snapshots-fetcher/dist/utils.js'
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import { DEFAULT_DATABASE_CONFIG } from '../Environment.js'

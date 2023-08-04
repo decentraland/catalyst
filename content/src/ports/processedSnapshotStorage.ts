@@ -1,4 +1,4 @@
-import { IProcessedSnapshotStorageComponent } from '@dcl/snapshots-fetcher/dist/types'
+import { IProcessedSnapshotStorageComponent } from '@dcl/snapshots-fetcher/dist/types.js'
 import { getProcessedSnapshots, saveProcessedSnapshot } from '../logic/database-queries/snapshots-queries.js'
 import { AppComponents } from '../types.js'
 

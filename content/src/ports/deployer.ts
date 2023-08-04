@@ -1,4 +1,4 @@
-import { bufferToStream } from '@dcl/catalyst-storage/dist/content-item'
+import { bufferToStream } from '@dcl/catalyst-storage/dist/content-item.js'
 import { AuthChain, Authenticator } from '@dcl/crypto'
 import { Entity, EntityType, IPFSv2 } from '@dcl/schemas'
 import { EnvironmentConfig } from '../Environment.js'
@@ -10,7 +10,7 @@ import {
   InvalidResult,
   LocalDeploymentAuditInfo,
   isInvalidDeployment
-} from '../deployment-types'
+} from '../deployment-types.js'
 import { getEntityById, setEntitiesAsOverwritten } from '../logic/database-queries/deployments-queries.js'
 import { calculateOverwrites, getDeployments, saveDeploymentAndContentFiles } from '../logic/deployments.js'
 import { getEntityFromBuffer } from '../logic/entity-parser.js'

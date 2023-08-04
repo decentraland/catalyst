@@ -1,5 +1,5 @@
-import { SnapshotMetadata, TimeRange } from '@dcl/snapshots-fetcher/dist/types'
-import { DatabaseClient } from 'src/ports/postgres'
+import { SnapshotMetadata, TimeRange } from '@dcl/snapshots-fetcher/dist/types.js'
+import { DatabaseClient } from '../ports/postgres.js'
 import { createFileWriter, IFile } from '../ports/fileWriter.js'
 import { AppComponents } from '../types.js'
 import {
@@ -10,13 +10,13 @@ import {
   saveSnapshot,
   snapshotIsOutdated,
   streamActiveDeploymentsInTimeRange
-} from './database-queries/snapshots-queries'
+} from './database-queries/snapshots-queries.js'
 import {
   divideTimeInYearsMonthsWeeksAndDays,
   intervalSizeLabel,
   isTimeRangeCoveredBy,
   MS_PER_MONTH
-} from './time-range'
+} from './time-range.js'
 
 export async function generateAndStoreSnapshot(
   components: Pick<AppComponents, 'fs' | 'metrics' | 'storage' | 'logs' | 'denylist' | 'staticConfigs'>,

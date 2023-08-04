@@ -4,7 +4,7 @@ import {
   NotFoundError,
   parseEntityType,
   DeploymentField
-} from '../../types'
+} from '../../types.js'
 import { AuditResponse } from '@dcl/catalyst-api-specs/lib/client'
 import { getDeployments } from '../../logic/deployments.js'
 import { AuditInfo } from '../../deployment-types.js'

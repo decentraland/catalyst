@@ -1,5 +1,5 @@
-import SQL from 'sql-template-strings'
-import { DatabaseClient } from 'src/ports/postgres'
+import { SQL } from 'sql-template-strings'
+import { DatabaseClient } from '../../ports/postgres.js'
 import { DeploymentContent } from '../../deployment-types.js'
 import { DeploymentId } from '../../types.js'
 

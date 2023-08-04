@@ -1,9 +1,9 @@
 import { IHttpServerComponent, ILoggerComponent } from '@well-known-components/interfaces'
 import { AppComponents } from '../types.js'
 import { State } from '../ports/synchronizationState.js'
-import { Error } from '@dcl/catalyst-api-specs/lib/client'
+import { Error } from '@dcl/catalyst-api-specs/lib/client/index.js'
 import { InvalidRequestError, NotFoundError } from '../types.js'
-import { Middleware } from '@well-known-components/http-server/dist/middleware'
+import { Middleware } from '@well-known-components/http-server/dist/middleware.js'
 
 export function preventExecutionIfBoostrapping({
   synchronizationState

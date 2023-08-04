@@ -1,5 +1,5 @@
 import { PointerChangesSyncDeployment } from '@dcl/schemas'
-import { DatabaseClient } from 'src/ports/postgres'
+import { DatabaseClient } from '../../ports/postgres.js'
 import { PointerChangesOptions } from '../../deployment-types.js'
 import { getHistoricalDeployments, HistoricalDeployment } from '../../logic/database-queries/deployments-queries.js'
 import { AppComponents } from '../../types.js'

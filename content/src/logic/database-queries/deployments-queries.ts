@@ -1,9 +1,9 @@
 import { AuthChain, Authenticator } from '@dcl/crypto'
 import { ContentMapping, Entity, EntityType, SnapshotSyncDeployment } from '@dcl/schemas'
-import { TimeRange } from '@dcl/snapshots-fetcher/dist/types'
+import { TimeRange } from '@dcl/snapshots-fetcher/dist/types.js'
 import pg from 'pg'
 import { SQL, SQLStatement } from 'sql-template-strings'
-import { DatabaseClient, DatabaseTransactionalClient } from 'src/ports/postgres'
+import { DatabaseClient, DatabaseTransactionalClient } from '../../ports/postgres.js'
 import { AuditInfo, DeploymentFilters, DeploymentSorting, SortingField, SortingOrder } from '../../deployment-types.js'
 import { AppComponents, DeploymentId } from '../../types.js'
 

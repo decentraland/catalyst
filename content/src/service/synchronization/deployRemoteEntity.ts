@@ -4,7 +4,7 @@
  *   2) Deploy the downloaded entity locally
  */
 
-import { streamToBuffer } from '@dcl/catalyst-storage/dist/content-item'
+import { streamToBuffer } from '@dcl/catalyst-storage/dist/content-item.js'
 import { AuthChain } from '@dcl/schemas'
 import { downloadEntityAndContentFiles } from '@dcl/snapshots-fetcher'
 import { DeploymentContext, isInvalidDeployment, LocalDeploymentAuditInfo } from '../../deployment-types.js'

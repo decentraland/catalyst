@@ -1,5 +1,5 @@
 import * as bf from 'bloom-filters'
-import { PQueue } from 'p-queue'
+import PQueue from 'p-queue'
 import { runLoggingPerformance } from '../instrument.js'
 import { AppComponents } from '../types.js'
 import {

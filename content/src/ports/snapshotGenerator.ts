@@ -1,4 +1,4 @@
-import { SnapshotMetadata } from '@dcl/snapshots-fetcher/dist/types'
+import { SnapshotMetadata } from '@dcl/snapshots-fetcher/dist/types.js'
 import { IBaseComponent } from '@well-known-components/interfaces'
 import ms from 'ms'
 import { generateSnapshotsInMultipleTimeRanges } from '../logic/snapshots.js'

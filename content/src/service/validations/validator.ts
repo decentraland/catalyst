@@ -8,7 +8,7 @@ import {
   loadTree
 } from '@dcl/block-indexer'
 import { l1Contracts } from '@dcl/catalyst-contracts'
-import { streamToBuffer } from '@dcl/catalyst-storage/dist/content-item'
+import { streamToBuffer } from '@dcl/catalyst-storage/dist/content-item.js'
 import {
   DeploymentToValidate,
   ExternalCalls,
@@ -17,11 +17,11 @@ import {
   ValidateFn,
   createValidator
 } from '@dcl/content-validator'
-import { createAccessValidateFn } from '@dcl/content-validator/dist/validations/access'
-import { createOnChainAccessCheckValidateFns } from '@dcl/content-validator/dist/validations/access/on-chain'
-import { createOnChainClient } from '@dcl/content-validator/dist/validations/access/on-chain/client'
-import { createSubgraphAccessCheckValidateFns } from '@dcl/content-validator/dist/validations/access/subgraph'
-import { createTheGraphClient } from '@dcl/content-validator/dist/validations/access/subgraph/the-graph-client'
+import { createAccessValidateFn } from '@dcl/content-validator/dist/validations/access/index.js'
+import { createOnChainAccessCheckValidateFns } from '@dcl/content-validator/dist/validations/access/on-chain/index.js'
+import { createOnChainClient } from '@dcl/content-validator/dist/validations/access/on-chain/client.js'
+import { createSubgraphAccessCheckValidateFns } from '@dcl/content-validator/dist/validations/access/subgraph/index.js'
+import { createTheGraphClient } from '@dcl/content-validator/dist/validations/access/subgraph/the-graph-client.js'
 import { Authenticator } from '@dcl/crypto'
 import { createSubgraphComponent } from '@well-known-components/thegraph-component'
 import { RequestManager, HTTPProvider } from 'eth-connect'

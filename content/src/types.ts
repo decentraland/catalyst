@@ -2,8 +2,8 @@ import { IContentStorageComponent, IFileSystemComponent } from '@dcl/catalyst-st
 import { ExternalCalls, ValidateFn } from '@dcl/content-validator'
 import { EntityType, SyncDeployment } from '@dcl/schemas'
 import { IDeployerComponent, SynchronizerComponent } from '@dcl/snapshots-fetcher'
-import { IJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
-import { ISnapshotStorageComponent } from '@dcl/snapshots-fetcher/dist/types'
+import { IJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port.js'
+import { ISnapshotStorageComponent } from '@dcl/snapshots-fetcher/dist/types.js'
 import {
   IConfigComponent,
   IFetchComponent,

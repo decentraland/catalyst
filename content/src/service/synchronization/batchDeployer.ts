@@ -1,6 +1,6 @@
 import { IDeployerComponent } from '@dcl/snapshots-fetcher'
-import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
-import { DeployableEntity, TimeRange } from '@dcl/snapshots-fetcher/dist/types'
+import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port.js'
+import { DeployableEntity, TimeRange } from '@dcl/snapshots-fetcher/dist/types.js'
 import { IBaseComponent } from '@well-known-components/interfaces'
 import { DeploymentContext } from '../../deployment-types.js'
 import { isEntityDeployed } from '../../logic/deployments.js'

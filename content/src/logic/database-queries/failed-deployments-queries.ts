@@ -1,5 +1,5 @@
-import SQL from 'sql-template-strings'
-import { DatabaseClient } from 'src/ports/postgres'
+import { SQL } from 'sql-template-strings'
+import { DatabaseClient } from '../../ports/postgres.js'
 import { SnapshotFailedDeployment } from '../../ports/failedDeployments.js'
 
 export async function saveSnapshotFailedDeployment(

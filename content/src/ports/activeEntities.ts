@@ -5,7 +5,7 @@ import {
   gerUrnsThatMatchCollectionUrnPrefix,
   removeActiveDeployments,
   updateActiveDeployments
-} from '../logic/database-queries/pointers-queries'
+} from '../logic/database-queries/pointers-queries.js'
 import { getDeploymentsForActiveEntities, mapDeploymentsToEntities } from '../logic/deployments.js'
 import { AppComponents } from '../types.js'
 import { DatabaseClient } from './postgres.js'

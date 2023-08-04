@@ -1,5 +1,5 @@
 import { CatalystServerInfo } from '@dcl/catalyst-contracts'
-import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
+import { sleep } from '@dcl/snapshots-fetcher/dist/utils.js'
 import { EnvironmentConfig } from '../Environment.js'
 import { AppComponents } from '../types.js'
 

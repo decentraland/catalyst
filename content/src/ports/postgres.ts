@@ -1,4 +1,4 @@
-import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
+import { sleep } from '@dcl/snapshots-fetcher/dist/utils.js'
 import { IBaseComponent, IDatabase } from '@well-known-components/interfaces'
 import { Client, ClientConfig, Pool, PoolClient, PoolConfig } from 'pg'
 import QueryStream from 'pg-query-stream'

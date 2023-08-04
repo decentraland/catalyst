@@ -1,5 +1,5 @@
 import runner from 'node-pg-migrate'
-import { MigrationDirection, RunnerOption } from 'node-pg-migrate/dist/types'
+import { MigrationDirection, RunnerOption } from 'node-pg-migrate/dist/types.js'
 import { join } from 'path'
 import { PoolConfig } from 'pg'
 import { EnvironmentConfig } from '../Environment.js'

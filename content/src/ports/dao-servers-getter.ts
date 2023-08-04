@@ -7,7 +7,7 @@ import {
   l1Contracts,
   L1Network
 } from '@dcl/catalyst-contracts'
-import RequestManager, { ContractFactory } from 'eth-connect'
+import { RequestManager, ContractFactory } from 'eth-connect'
 import { AppComponents } from '../types.js'
 
 export interface DAOComponent {

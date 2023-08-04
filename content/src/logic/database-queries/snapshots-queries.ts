@@ -1,5 +1,5 @@
 import { SnapshotSyncDeployment } from '@dcl/schemas'
-import { SnapshotMetadata, TimeRange } from '@dcl/snapshots-fetcher/dist/types'
+import { SnapshotMetadata, TimeRange } from '@dcl/snapshots-fetcher/dist/types.js'
 import { SQL } from 'sql-template-strings'
 import { DatabaseClient } from '../../ports/postgres.js'
 
