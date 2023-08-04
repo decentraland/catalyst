@@ -9,6 +9,7 @@ import { createDatabaseComponent } from '../../src/ports/postgres'
 import { MockedDAOClient } from '../helpers/service/synchronization/clients/MockedDAOClient'
 import { random } from 'faker'
 import { TestProgram } from './TestProgram'
+import { ContentCluster } from '../../src/service/synchronization/ContentCluster'
 
 const TEST_SCHEMA = 'e2etest'
 const POSTGRES_PORT = 5432
@@ -95,13 +96,29 @@ async function createServer(
 
   const components = await new EnvironmentBuilder(sharedEnv)
     .withConfig(EnvironmentConfig.HTTP_SERVER_PORT, serverPort)
+    .withConfig(EnvironmentConfig.HTTP_SERVER_HOST, 'localhost')
     .withConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, `${storageBaseFolder}/${serverPort}`)
+    .withConfig(EnvironmentConfig.LOG_LEVEL, `DEBUG`)
     .buildConfigAndComponents()
 
   const domain = `http://localhost:${serverPort}`
   dao.add(domain)
+
+  // NOTE: this a bit fragile, I'm overriding contentcluster because it depends on dao
+  const { challengeSupervisor, fetcher, logs, env, clock } = components
+  components.contentCluster = new ContentCluster(
+    {
+      daoClient: dao,
+      challengeSupervisor,
+      fetcher,
+      logs,
+      env,
+      clock
+    },
+    env.getConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL)
+  )
+
   const server = new TestProgram(components)
-  server.components.daoClient = dao
   await server.startProgram()
   return server
 }

@@ -14,9 +14,7 @@
     "start:maintenance": "node ./dist/src/entrypoints/run-maintenance.js",
     "start:content-files-fixer": "node ./dist/src/entrypoints/run-content-files-fixer.js",
     "start:server": "node ./dist/src/entrypoints/run-server.js",
-    "test": "jest --runInBand --detectOpenHandles --forceExit --coverage",
-    "test:integration": "jest --selectProjects integration --runInBand --forceExit --detectOpenHandles --coverage",
-    "test:unit": "jest --selectProjects unit --runInBand --forceExit --detectOpenHandles --coverage"
+    "test": "jest --runInBand --detectOpenHandles --forceExit --coverage"
   },
   "dependencies": {
     "@dcl/block-indexer": "^1.1.2",
@@ -74,14 +72,13 @@
     "eslint-plugin-prettier": "4.2.1",
     "faker": "5.5.3",
     "jest-extra-utils": "^0.1.0",
-    "jest-junit": "^13.0.0",
+    "jest-junit": "^16.0.0",
     "jest-leak-detector": "^29.3.1",
     "lint-staged": "13.0.3",
-    "nyc": "^15.1.0",
     "prettier": "2.7.1",
     "testcontainers": "8.9.0",
     "ts-mockito": "2.6.1",
-    "ts-node": "10.7.0",
+    "ts-node": "^10.9.1",
     "tsc": "2.0.4",
     "typescript": "^4.7.4"
   },

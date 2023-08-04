@@ -47,7 +47,7 @@ describe('OffChainWearablesManager', () => {
   })
 
   it(`When expire time ends, new objects are fetched from the content server`, async () => {
-    jest.useFakeTimers('legacy')
+    jest.useFakeTimers({ legacyFakeTimers: true })
     const contentClientMock = mock(SmartContentClient)
     const contentClient = instance(contentClientMock)
     const t1 = 1

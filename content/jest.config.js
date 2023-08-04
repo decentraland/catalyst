@@ -8,19 +8,9 @@ module.exports = {
   transform: {
     "^.+\\.(ts|tsx)$": ["ts-jest", {tsconfig: "test/tsconfig.json"}]
   },
-  projects: [
-    {
-      displayName: 'unit',
-      testMatch: ['**/test/unit/**/*.spec.(ts)'],
-      preset: 'ts-jest'
-    },
-    {
-      displayName: 'integration',
-      testMatch: ['**/test/integration/**/*.spec.(ts)'],
-      globalSetup: './jest.globalSetup.ts',
-      globalTeardown: './jest.globalTeardown.ts',
-      setupFilesAfterEnv: ['./jest.setupFilesAfterEnv.ts'],
-      preset: 'ts-jest'
-    }
-  ]
+  testMatch: ['**/test/unit/**/*.spec.(ts)', '**/test/integration/**/*.spec.(ts)'],
+  globalSetup: './jest.globalSetup.ts',
+  globalTeardown: './jest.globalTeardown.ts',
+  setupFilesAfterEnv: ['./jest.setupFilesAfterEnv.ts'],
+  preset: 'ts-jest'
 }
