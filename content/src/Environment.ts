@@ -1,8 +1,8 @@
 import { EntityType, EthAddress } from '@dcl/schemas'
 import { IConfigComponent, ILoggerComponent } from '@well-known-components/interfaces'
 import ms from 'ms'
-import { initComponentsWithEnv } from './components'
-import { AppComponents, parseEntityType } from './types'
+import { initComponentsWithEnv } from './components.js'
+import { AppComponents, parseEntityType } from './types.js'
 
 const DEFAULT_STORAGE_ROOT_FOLDER = 'storage'
 const DEFAULT_HTTP_SERVER_PORT = 6969

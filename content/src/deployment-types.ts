@@ -1,5 +1,5 @@
 import { AuthChain, EntityType, EthAddress } from '@dcl/schemas'
-import { EntityVersion, DeploymentField } from './types'
+import { EntityVersion, DeploymentField } from './types.js'
 
 export type DeploymentFilters = {
   from?: number
