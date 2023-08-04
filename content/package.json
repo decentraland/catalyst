@@ -4,6 +4,7 @@
   "description": "Content server",
   "license": "Apache-2.0",
   "author": "Decentraland Contributors",
+  "type": "module",
   "scripts": {
     "build": "tsc -b",
     "build:watch": "tsc -b --watch",

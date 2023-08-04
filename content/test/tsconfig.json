@@ -6,5 +6,6 @@
     "sourceMap": true,
     "declarationMap": true,
     "declaration": true,
+    "types": ["vitest/globals"]
   }
 }
