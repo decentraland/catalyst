@@ -25,7 +25,7 @@
     "@dcl/catalyst-storage": "^3.0.1",
     "@dcl/content-validator": "^4.9.2",
     "@dcl/crypto": "^3.4.3",
-    "@dcl/hashing": "^3.0.3",
+    "@dcl/hashing": "^3.0.4",
     "@dcl/schemas": "^8.2.2",
     "@dcl/snapshots-fetcher": "^9.0.2",
     "@dcl/urn-resolver": "^2.2.0",
