@@ -1026,6 +1026,15 @@
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
 
+"@dcl/schemas@^9.1.0":
+  version "9.1.0"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-9.1.0.tgz#d4c8e67c84f7bfeacd8f178fa54528b264793ddb"
+  integrity sha512-zOz/49XN3QM74S48LqDUEboDPfW40LNlQs5+1k+Y/zS3aeQ07/opKSc7OVL9zRNa9LSjG3IlFkJvBHa3j2A5AQ==
+  dependencies:
+    ajv "^8.11.0"
+    ajv-errors "^3.0.0"
+    ajv-keywords "^5.1.0"
+
 "@dcl/snapshots-fetcher@^9.0.2":
   version "9.0.2"
   resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-9.0.2.tgz#32910b42dcbabef7cf800f402d811756e145373e"
