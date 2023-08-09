@@ -1017,10 +1017,19 @@
   resolved "https://registry.yarnpkg.com/@dcl/hashing/-/hashing-3.0.4.tgz#4df2a4cb3a8114765aed34cb57b91c93bf33bfb3"
   integrity sha512-Cg+MoIOn+BYmQV2q8zSFnNYY+GldlnUazwBnfgrq3i66ZxOaZ65h01btd8OUtSAlfWG4VTNIOHDjtKqmuwJNBg==
 
-"@dcl/schemas@^8.1.0", "@dcl/schemas@^8.2.0", "@dcl/schemas@^8.2.2":
+"@dcl/schemas@^8.2.0", "@dcl/schemas@^8.2.2":
   version "8.2.2"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-8.2.2.tgz#31b3697ec517d4a5a6958bddf046441a969b8056"
   integrity sha512-IZqcT1YOKxw5XWs6LW6Uw+7Ue5vHCVERPMwefAdt26jW1OTH818od0rBc1tQzzfBTwsrAvbgFJvpbZedieu00g==
+  dependencies:
+    ajv "^8.11.0"
+    ajv-errors "^3.0.0"
+    ajv-keywords "^5.1.0"
+
+"@dcl/schemas@^9.0.0":
+  version "9.1.1"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-9.1.1.tgz#53823b973d2568c2d37fe1d12d730d3e9d07c688"
+  integrity sha512-1bsFlc8+no75e8hBrAH2vqvNQzpneBxvBt4Q7695EVvthL9BcZM6g0yK6FyQs+IkY45L2LRAe+UctUjROX5TPA==
   dependencies:
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
@@ -3618,15 +3627,15 @@ date-format@^4.0.10, date-format@^4.0.13:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-4.0.13.tgz#87c3aab3a4f6f37582c5f5f63692d2956fa67890"
   integrity sha512-bnYCwf8Emc3pTD8pXnre+wfnjGtfi5ncMDKy7+cWZXbmRAsdWkOQHrfC1yz/KiwP5thDp2kCHWYWKBX4HP1hoQ==
 
-dcl-catalyst-client@^21.5.4:
-  version "21.5.4"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-21.5.4.tgz#179867a38bd8e36500c924f206a283c2f32b3458"
-  integrity sha512-jnRfQS6ZJ/PKQZyXQpAXZKkayVKdzSXkdcVcACO0hdEUfECE9QHlwP7sJ9Eczp32vp7lb3T7np63cUA6o8NU6g==
+dcl-catalyst-client@^21.5.5:
+  version "21.5.5"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-21.5.5.tgz#ee76ee00dd93b0c070e3bc2e59475f400a1d5787"
+  integrity sha512-VXIypnUl4czyo+vTH0L082YgTqA5fKu/1Y5yusZ7bhuUs/uxgNsGSc35blqjUY67GaG4R7XaSOwn6jA3dzxPfg==
   dependencies:
     "@dcl/catalyst-contracts" "^4.0.2"
     "@dcl/crypto" "^3.4.0"
     "@dcl/hashing" "^3.0.0"
-    "@dcl/schemas" "^8.1.0"
+    "@dcl/schemas" "^9.0.0"
     "@well-known-components/fetch-component" "^2.0.0"
     cookie "^0.5.0"
     cross-fetch "^3.1.5"
