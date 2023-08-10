@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@dcl/catalyst-api-specs": "^3.2.3",
-    "@dcl/content-validator": "^4.9.2",
+    "@dcl/content-validator": "^4.9.3",
     "@dcl/crypto": "^3.4.3",
     "@dcl/schemas": "^9.1.1",
     "@dcl/urn-resolver": "^2.2.0",
