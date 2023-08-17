@@ -219,6 +219,7 @@ export function createActiveEntitiesComponent(
     return entities
   }
 
+  // any commet
   /**
    * Retrieve active entities by their ids
    */
