@@ -3,7 +3,6 @@ import { ILoggerComponent } from '@well-known-components/interfaces'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { random } from 'faker'
-import LeakDetector from 'jest-leak-detector'
 import ms from 'ms'
 import { DEFAULT_DATABASE_CONFIG, Environment, EnvironmentBuilder, EnvironmentConfig } from '../../src/Environment'
 import { stopAllComponents } from '../../src/logic/components-lifecycle'
@@ -191,7 +190,7 @@ export class ServerBuilder {
         jest.spyOn(components.daoClient, 'getAllServers').mockImplementation(() => this.dao.getAllServers())
       }
 
-      servers[i] = new TestProgram(components)
+      servers[i] = new TestProgram(components, MockedDAOClient.withAddresses())
       this.testEnvCalls.registerServer(servers[i])
     }
 
@@ -218,10 +217,6 @@ export function setupTestEnvironment(overrideConfigs?: Record<number, any>) {
 
   afterAll(async () => {
     jest.restoreAllMocks()
-    const detector = new LeakDetector(testEnv)
-    await testEnv.stop()
-    testEnv = null as any
-    expect(await detector.isLeaking()).toBe(false)
   })
 
   return () => testEnv

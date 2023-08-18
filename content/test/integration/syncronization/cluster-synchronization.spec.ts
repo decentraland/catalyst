@@ -8,13 +8,14 @@ import {
   assertEntityIsOverwrittenBy,
   buildDeployment
 } from '../E2EAssertions'
-import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { awaitUntil, buildDeployData, buildDeployDataAfterEntity } from '../E2ETestUtils'
+import { createDefaultServer, createAdditionalServer, clearDatabase } from '../simpleTestEnvironment'
 import { TestProgram } from '../TestProgram'
 
 describe('End 2 end synchronization tests', function () {
-  const getTestEnv = setupTestEnvironment()
-  let server1: TestProgram, server2: TestProgram, server3: TestProgram
+  let server1: TestProgram
+  let server2: TestProgram
+  let server3: TestProgram | null
 
   let loggerIndex = 1
 
@@ -34,8 +35,19 @@ describe('End 2 end synchronization tests', function () {
     loggerIndex = 1
   })
 
+  afterEach(async () => {
+    jest.restoreAllMocks()
+    clearDatabase(server1)
+    for (const server of [server1, server2, server3]) {
+      if (server) {
+        await server.stopProgram()
+      }
+    }
+  })
+
   it(`When a server gets some content uploaded, then the other servers download it`, async () => {
-    ;[server1, server2] = await getTestEnv().configServer().andBuildMany(2)
+    server1 = await createDefaultServer({}, false)
+    server2 = await createAdditionalServer(server1, 1201, {}, false)
     makeNoopValidator(server1.components)
     makeNoopValidator(server2.components)
     makeNoopDeploymentValidator(server1.components)
@@ -67,10 +79,11 @@ describe('End 2 end synchronization tests', function () {
   })
 
   it(`When a server finds a new deployment with already known content, it can still deploy it successfully`, async () => {
-    ;[server1, server2, server3] = await getTestEnv().configServer().andBuildMany(3)
+    server1 = await createDefaultServer({}, false)
+    server2 = await createAdditionalServer(server1, 1201, {}, false)
+    server3 = await createAdditionalServer(server1, 1202, {}, false)
     makeNoopValidator(server1.components)
     makeNoopValidator(server2.components)
-    makeNoopValidator(server3.components)
     makeNoopDeploymentValidator(server1.components)
     makeNoopDeploymentValidator(server2.components)
     makeNoopDeploymentValidator(server3.components)
@@ -120,7 +133,9 @@ describe('End 2 end synchronization tests', function () {
    */
   // TODO: [new-sync]
   xit("When a lost update is detected, previous entities are deleted but new ones aren't", async () => {
-    ;[server1, server2, server3] = await getTestEnv().configServer().andBuildMany(3)
+    server1 = await createDefaultServer({}, false)
+    server2 = await createAdditionalServer(server1, 1201, {}, false)
+    server3 = await createAdditionalServer(server1, 1202, {}, false)
     makeNoopValidator(server1.components)
     makeNoopValidator(server2.components)
     makeNoopValidator(server3.components)
@@ -151,18 +166,18 @@ describe('End 2 end synchronization tests', function () {
     await server2.stopProgram()
 
     // Start servers 1 and 3
-    await Promise.all([server1.startProgram(), server3.startProgram()])
+    await Promise.all([server1.startProgram(), server3!.startProgram()])
 
     // Deploy entities 1 and 3
     const deploymentTimestamp1 = await server1.deployEntity(deployData1)
     const deployment1 = buildDeployment(deployData1, entity1, deploymentTimestamp1)
 
-    const deploymentTimestamp3 = await server3.deployEntity(deployData3)
+    const deploymentTimestamp3 = await server3!.deployEntity(deployData3)
     const deployment3 = buildDeployment(deployData3, entity3, deploymentTimestamp3)
 
     // Wait for servers 1 and 3 to sync
     await awaitUntil(() => assertDeploymentsAreReported(server1, deployment1, deployment3))
-    await awaitUntil(() => assertDeploymentsAreReported(server3, deployment1, deployment3))
+    await awaitUntil(() => assertDeploymentsAreReported(server3!, deployment1, deployment3))
 
     // Make sure that both server 1 and 3 have entity E1 and E3 currently active
     await assertEntitiesAreActiveOnServer(server1, entity1, entity3)
@@ -173,7 +188,7 @@ describe('End 2 end synchronization tests', function () {
 
     // Wait for servers to sync
     await awaitUntil(() => assertEntitiesAreActiveOnServer(server1, entity2))
-    await awaitUntil(() => assertEntitiesAreActiveOnServer(server3, entity2))
+    await awaitUntil(() => assertEntitiesAreActiveOnServer(server3!, entity2))
 
     // Make assertions on Server 1
     await assertEntitiesAreActiveOnServer(server1, entity3)
@@ -187,10 +202,10 @@ describe('End 2 end synchronization tests', function () {
     await assertEntityIsNotOverwritten(server2, entity2)
 
     // Make assertions on Server 3
-    await assertEntitiesAreActiveOnServer(server3, entity3)
-    await assertEntitiesAreDeployedButNotActive(server3, entity1, entity2)
-    await assertEntityIsOverwrittenBy(server3, entity1, entity2)
-    await assertEntityIsOverwrittenBy(server3, entity2, entity3)
-    await assertEntityIsNotOverwritten(server3, entity3)
+    await assertEntitiesAreActiveOnServer(server3!, entity3)
+    await assertEntitiesAreDeployedButNotActive(server3!, entity1, entity2)
+    await assertEntityIsOverwrittenBy(server3!, entity1, entity2)
+    await assertEntityIsOverwrittenBy(server3!, entity2, entity3)
+    await assertEntityIsNotOverwritten(server3!, entity3)
   })
 })

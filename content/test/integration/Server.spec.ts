@@ -3,7 +3,8 @@ import { Entity, EntityType, PointerChangesSyncDeployment } from '@dcl/schemas'
 import { random } from 'faker'
 import fetch from 'node-fetch'
 import { randomEntity } from '../helpers/entity-tests-helper'
-import { E2ETestEnvironment } from './E2ETestEnvironment'
+import { createDefaultServer } from './simpleTestEnvironment'
+import { TestProgram } from './TestProgram'
 
 describe('Integration - Server', () => {
   const content = {
@@ -15,22 +16,17 @@ describe('Integration - Server', () => {
 
   let address: string
 
-  const testEnv = new E2ETestEnvironment()
+  let server: TestProgram
 
   beforeAll(async () => {
-    await testEnv.start()
+    server = await createDefaultServer()
   })
 
   afterAll(async () => {
-    await testEnv.clearDatabases()
-    await testEnv.stop()
+    server.stopProgram()
   })
 
   it('starts the server', async () => {
-    testEnv.resetDAOAndServers()
-    const [server] = await testEnv.buildMany(1)
-    await server.startProgram()
-
     address = server.getUrl()
 
     jest.spyOn(server.components.activeEntities, 'withIds').mockResolvedValue([entity1, entity2])

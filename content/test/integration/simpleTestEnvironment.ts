@@ -95,34 +95,50 @@ async function createServer(
 
   const components = await new EnvironmentBuilder(sharedEnv)
     .withConfig(EnvironmentConfig.HTTP_SERVER_PORT, serverPort)
+    .withConfig(EnvironmentConfig.HTTP_SERVER_HOST, 'localhost')
     .withConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, `${storageBaseFolder}/${serverPort}`)
     .buildConfigAndComponents()
 
   const domain = `http://localhost:${serverPort}`
   dao.add(domain)
-  const server = new TestProgram(components)
-  server.components.daoClient = dao
-  await server.startProgram()
-  return server
+
+  jest.spyOn(components.daoClient, 'getAllContentServers').mockImplementation(() => dao.getAllContentServers())
+  jest.spyOn(components.daoClient, 'getAllServers').mockImplementation(() => dao.getAllServers())
+
+  return new TestProgram(components, dao)
 }
 
 let dbCreated = false
-export async function createDefaultServer(overrideConfigs?: Record<number, any>): Promise<TestProgram> {
+export async function createDefaultServer(
+  overrideConfigs?: Record<number, any>,
+  start?: boolean
+): Promise<TestProgram> {
+  start = start ?? true
   if (!dbCreated) {
     process.env.__TEST_DB_NAME = await createDB()
     dbCreated = true
   }
 
   const dao = MockedDAOClient.withAddresses()
-  return createServer(dao, process.env.__TEST_DB_NAME!, 1200, overrideConfigs)
+  const server = await createServer(dao, process.env.__TEST_DB_NAME!, 1200, overrideConfigs)
+  if (start) {
+    await server.startProgram()
+  }
+  return server
 }
 
 export async function createAdditionalServer(
   defaultServer: TestProgram,
   port: number,
-  overrideConfigs?: Record<number, any>
+  overrideConfigs?: Record<number, any>,
+  start?: boolean
 ): Promise<TestProgram> {
+  start = start ?? true
   const dbName = await createDB()
 
-  return createServer(defaultServer.components.daoClient as any, dbName, port, overrideConfigs)
+  const server = await createServer(defaultServer.mockedDao, dbName, port, overrideConfigs)
+  if (start) {
+    await server.startProgram()
+  }
+  return server
 }

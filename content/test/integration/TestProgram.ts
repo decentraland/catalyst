@@ -11,6 +11,7 @@ import { FailedDeployment } from '../../src/ports/failedDeployments'
 import { main } from '../../src/service'
 import { AppComponents } from '../../src/types'
 import { deleteFolderRecursive } from './E2ETestUtils'
+import { MockedDAOClient } from '../helpers/service/synchronization/clients/MockedDAOClient'
 
 process.env.RUNNING_TESTS = 'true'
 
@@ -23,7 +24,7 @@ export class TestProgram {
   private readonly client: ContentClient
   logger: ILoggerComponent.ILogger
 
-  constructor(public components: AppComponents) {
+  constructor(public components: AppComponents, public mockedDao: MockedDAOClient) {
     this.client = createContentClient({
       url: this.getUrl(),
       fetcher: components.fetcher
@@ -48,7 +49,7 @@ export class TestProgram {
 
   getUrl(): string {
     const port = this.components.env.getConfig(EnvironmentConfig.HTTP_SERVER_PORT)
-    return `http://localhost:${port}`
+    return `http://127.0.0.1:${port}`
   }
 
   async stopProgram(): Promise<void> {
