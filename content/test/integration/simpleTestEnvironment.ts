@@ -98,7 +98,6 @@ async function createServer(
     .withConfig(EnvironmentConfig.HTTP_SERVER_PORT, serverPort)
     .withConfig(EnvironmentConfig.HTTP_SERVER_HOST, 'localhost')
     .withConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, `${storageBaseFolder}/${serverPort}`)
-    .withConfig(EnvironmentConfig.LOG_LEVEL, `DEBUG`)
     .buildConfigAndComponents()
 
   const domain = `http://localhost:${serverPort}`
