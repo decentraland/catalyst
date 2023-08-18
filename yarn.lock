@@ -1057,10 +1057,15 @@
     "@well-known-components/metrics" "^2.0.0"
     p-queue "^6.6.2"
 
-"@dcl/urn-resolver@^2.0.3", "@dcl/urn-resolver@^2.2.0":
+"@dcl/urn-resolver@^2.0.3":
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/@dcl/urn-resolver/-/urn-resolver-2.2.0.tgz#ea0759fd6f6584a83a07e7da7766966ae86245da"
   integrity sha512-Ut399wl+YyGS9k9zzgENePK31YIEAK+triaqgUMPA44TO4bKOR6MxjjZe1RDYTkL5E8+6Q8tlaVXnz+xuVEK+g==
+
+"@dcl/urn-resolver@^3.1.0":
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/@dcl/urn-resolver/-/urn-resolver-3.1.0.tgz#bc9ba521cde55e9e1b1bcbfaf428097e61fb72c4"
+  integrity sha512-g68ERxXPOYtBk1IMYtmWlCg8geX8AHCat/HLDOBNBcJIvNOEwGcnASYzENfdGa8mr8r7GlNmdI1O2ymn8V8aHw==
 
 "@eslint/eslintrc@^1.3.0":
   version "1.3.0"
