@@ -9,7 +9,6 @@ import { createDatabaseComponent } from '../../src/ports/postgres'
 import { MockedDAOClient } from '../helpers/service/synchronization/clients/MockedDAOClient'
 import { random } from 'faker'
 import { TestProgram } from './TestProgram'
-import { ContentCluster } from '../../src/service/synchronization/ContentCluster'
 
 const TEST_SCHEMA = 'e2etest'
 const POSTGRES_PORT = 5432
@@ -102,44 +101,44 @@ async function createServer(
 
   const domain = `http://localhost:${serverPort}`
   dao.add(domain)
-  components.daoClient = dao
 
-  // NOTE: this a bit fragile, I'm overriding contentcluster because it depends on dao
-  const { challengeSupervisor, fetcher, logs, env, clock } = components
-  components.contentCluster = new ContentCluster(
-    {
-      daoClient: dao,
-      challengeSupervisor,
-      fetcher,
-      logs,
-      env,
-      clock
-    },
-    env.getConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL)
-  )
+  jest.spyOn(components.daoClient, 'getAllContentServers').mockImplementation(() => dao.getAllContentServers())
+  jest.spyOn(components.daoClient, 'getAllServers').mockImplementation(() => dao.getAllServers())
 
-  const server = new TestProgram(components)
-  await server.startProgram()
-  return server
+  return new TestProgram(components, dao)
 }
 
 let dbCreated = false
-export async function createDefaultServer(overrideConfigs?: Record<number, any>): Promise<TestProgram> {
+export async function createDefaultServer(
+  overrideConfigs?: Record<number, any>,
+  start?: boolean
+): Promise<TestProgram> {
+  start = start ?? true
   if (!dbCreated) {
     process.env.__TEST_DB_NAME = await createDB()
     dbCreated = true
   }
 
   const dao = MockedDAOClient.withAddresses()
-  return createServer(dao, process.env.__TEST_DB_NAME!, 1200, overrideConfigs)
+  const server = await createServer(dao, process.env.__TEST_DB_NAME!, 1200, overrideConfigs)
+  if (start) {
+    await server.startProgram()
+  }
+  return server
 }
 
 export async function createAdditionalServer(
   defaultServer: TestProgram,
   port: number,
-  overrideConfigs?: Record<number, any>
+  overrideConfigs?: Record<number, any>,
+  start?: boolean
 ): Promise<TestProgram> {
+  start = start ?? true
   const dbName = await createDB()
 
-  return createServer(defaultServer.components.daoClient as any, dbName, port, overrideConfigs)
+  const server = await createServer(defaultServer.mockedDao, dbName, port, overrideConfigs)
+  if (start) {
+    await server.startProgram()
+  }
+  return server
 }

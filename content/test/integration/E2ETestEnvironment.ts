@@ -190,7 +190,7 @@ export class ServerBuilder {
         jest.spyOn(components.daoClient, 'getAllServers').mockImplementation(() => this.dao.getAllServers())
       }
 
-      servers[i] = new TestProgram(components)
+      servers[i] = new TestProgram(components, MockedDAOClient.withAddresses())
       this.testEnvCalls.registerServer(servers[i])
     }
 
