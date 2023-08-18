@@ -102,6 +102,7 @@ async function createServer(
 
   const domain = `http://localhost:${serverPort}`
   dao.add(domain)
+  components.daoClient = dao
 
   // NOTE: this a bit fragile, I'm overriding contentcluster because it depends on dao
   const { challengeSupervisor, fetcher, logs, env, clock } = components
