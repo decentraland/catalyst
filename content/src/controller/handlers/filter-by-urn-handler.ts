@@ -26,6 +26,8 @@ async function isUrnPrefixValid(collectionUrn: string): Promise<string | false> 
     }
 
     if (parsedUrn?.type === 'blockchain-collection-third-party') return collectionUrn
+
+    return collectionUrn
   } catch (error) {
     console.error(error)
   }
