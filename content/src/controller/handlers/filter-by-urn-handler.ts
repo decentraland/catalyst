@@ -50,7 +50,7 @@ export async function getEntitiesByPointerPrefixHandler(
   const parsedUrn = await isUrnPrefixValid(collectionUrn)
   if (!parsedUrn) {
     throw new InvalidRequestError(
-      `Invalid collection urn param, it should be a valid urn prefix of a 3rd party collection or base wearables, instead: '${collectionUrn}'`
+      `Invalid collection urn param, it must be a valid urn prefix of a collection or an item in the collection or base wearables, instead: '${collectionUrn}'`
     )
   }
 

@@ -351,7 +351,8 @@ describe('Integration - Get Active Entities', () => {
       const pointer2 = ['urn:decentraland:ethereum:collections-v1:sample-collection:blue_jeans']
       const metadata2 = { a: 'this is just some metadata' }
       const deployResult2 = await buildDeployData(pointer2, { metadata: metadata2 })
-      await server.deployEntity(deployResult2.deployData)
+      const number = await server.deployEntity(deployResult2.deployData)
+      console.log({ number })
 
       const response = await fetchActiveEntityByUrnPrefix(
         server,
@@ -373,7 +374,7 @@ describe('Integration - Get Active Entities', () => {
 
       const response2 = await fetchActiveEntityByUrnPrefix(
         server,
-        'urn:decentraland:ethereum:collections-v1:sample-collection'
+        'urn:decentraland:ethereum:collections-v1:sample-collection:red_hat'
       )
       console.log(response2)
       expect(response2).toBeDefined()
@@ -395,7 +396,7 @@ describe('Integration - Get Active Entities', () => {
       const deployResult2 = await buildDeployData(pointer2, { metadata: metadata2 })
       await server.deployEntity(deployResult2.deployData)
 
-      const response = await fetchActiveEntityByUrnPrefix(server, 'urn:decentraland:mumbai:collections-v1:0x1234')
+      const response = await fetchActiveEntityByUrnPrefix(server, 'urn:decentraland:mumbai:collections-v2:0x1234')
 
       console.log(response)
       expect(response).toBeDefined()
@@ -410,7 +411,10 @@ describe('Integration - Get Active Entities', () => {
       expect(entity2.id).toEqual(deployResult2.entity.id)
       expect(entity2.metadata).toEqual(metadata2)
 
-      const response2 = await fetchActiveEntityByUrnPrefix(server, 'urn:decentraland:mumbai:collections-v1:0x1234')
+      const response2 = await fetchActiveEntityByUrnPrefix(
+        server,
+        'urn:decentraland:mumbai:collections-v2:0x1234:blue_jeans'
+      )
 
       console.log(response2)
       expect(response2).toBeDefined()
