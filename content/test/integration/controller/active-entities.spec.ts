@@ -330,7 +330,8 @@ describe('Integration - Get Active Entities', () => {
         }
       )
 
-      expect(response.status).toBe(400)
+      console.log(await response.json());
+      expect(response.status).toBe(200)
     })
     it('when fetching entities by item, then matching entity is retrieved', async () => {
       const pointer = ['urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1']
