@@ -14,18 +14,25 @@ async function isUrnPrefixValid(collectionUrn: string): Promise<string | false> 
   try {
     const parsedUrn: DecentralandAssetIdentifier | null = await parseUrn(collectionUrn)
 
-    if (parsedUrn === null) return false
+    if (!parsedUrn) {
+      return false
+    }
 
     // We want to reduce the matches of the query,
     // so we enforce to write the full name of the third party or collection for the search
     if (
-      parsedUrn?.type === 'blockchain-collection-third-party-name' ||
-      parsedUrn?.type === 'blockchain-collection-third-party-collection'
+      parsedUrn.type === 'blockchain-collection-third-party-name' ||
+      parsedUrn.type === 'blockchain-collection-third-party-collection'
     ) {
       return `${collectionUrn}:`
     }
 
-    if (parsedUrn?.type === 'blockchain-collection-third-party') return collectionUrn
+    if (
+      parsedUrn.type === 'blockchain-collection-third-party' ||
+      parsedUrn.type === 'blockchain-collection-v1' ||
+      parsedUrn.type === 'blockchain-collection-v2'
+    )
+      return collectionUrn
 
     return collectionUrn
   } catch (error) {

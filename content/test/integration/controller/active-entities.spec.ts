@@ -320,19 +320,6 @@ describe('Integration - Get Active Entities', () => {
 
       expect(response.status).toBe(400)
     })
-    it('when fetching entities with invalid urn prefix, then a client error is returned', async () => {
-      const response = await fetch(
-        server.getUrl() +
-          `/entities/active/collections/urn:decentraland:ethereum:collections-v1:0x32b7495895264ac9d0b12d32afd435453458b1c6`,
-        {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' }
-        }
-      )
-
-      console.log(await response.json());
-      expect(response.status).toBe(200)
-    })
     it('when fetching entities by item, then matching entity is retrieved', async () => {
       const pointer = ['urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1']
       const metadata = {
@@ -354,6 +341,81 @@ describe('Integration - Get Active Entities', () => {
       expect(entity.pointers).toEqual(pointer.map((p) => p.toLocaleLowerCase()))
       expect(entity.id).toEqual(deployResult.entity.id)
       expect(entity.metadata).toEqual(metadata)
+    })
+    it('when fetching collections v1 entities, then matching entities are retrieved', async () => {
+      const pointer1 = ['urn:decentraland:ethereum:collections-v1:sample-collection:red_hat']
+      const metadata1 = { a: 'this is just some metadata' }
+      const deployResult1 = await buildDeployData(pointer1, { metadata: metadata1 })
+      await server.deployEntity(deployResult1.deployData)
+
+      const pointer2 = ['urn:decentraland:ethereum:collections-v1:sample-collection:blue_jeans']
+      const metadata2 = { a: 'this is just some metadata' }
+      const deployResult2 = await buildDeployData(pointer2, { metadata: metadata2 })
+      await server.deployEntity(deployResult2.deployData)
+
+      const response = await fetchActiveEntityByUrnPrefix(
+        server,
+        'urn:decentraland:ethereum:collections-v1:sample-collection'
+      )
+
+      expect(response).toBeDefined()
+      expect(response.total).toBe(2)
+
+      const entity1 = response.entities[0]
+      expect(entity1.pointers).toEqual(pointer1.map((p) => p.toLocaleLowerCase()))
+      expect(entity1.id).toEqual(deployResult1.entity.id)
+      expect(entity1.metadata).toEqual(metadata1)
+      const entity2 = response.entities[0]
+      expect(entity2.pointers).toEqual(pointer2.map((p) => p.toLocaleLowerCase()))
+      expect(entity2.id).toEqual(deployResult2.entity.id)
+      expect(entity2.metadata).toEqual(metadata2)
+
+      const response2 = await fetchActiveEntityByUrnPrefix(
+        server,
+        'urn:decentraland:ethereum:collections-v1:sample-collection'
+      )
+      expect(response2).toBeDefined()
+      expect(response2.total).toBe(1)
+
+      const entity3 = response2.entities[0]
+      expect(entity3.pointers).toEqual(pointer1.map((p) => p.toLocaleLowerCase()))
+      expect(entity3.id).toEqual(deployResult1.entity.id)
+      expect(entity3.metadata).toEqual(metadata1)
+    })
+    it('when fetching collections v2 entities, then matching entities are retrieved', async () => {
+      const pointer1 = ['urn:decentraland:mumbai:collections-v2:0x1234:red_hat']
+      const metadata1 = { a: 'this is just some metadata' }
+      const deployResult1 = await buildDeployData(pointer1, { metadata: metadata1 })
+      await server.deployEntity(deployResult1.deployData)
+
+      const pointer2 = ['urn:decentraland:mumbai:collections-v2:0x1234:blue_jeans']
+      const metadata2 = { a: 'this is just some metadata' }
+      const deployResult2 = await buildDeployData(pointer2, { metadata: metadata2 })
+      await server.deployEntity(deployResult2.deployData)
+
+      const response = await fetchActiveEntityByUrnPrefix(server, 'urn:decentraland:mumbai:collections-v1:0x1234')
+
+      expect(response).toBeDefined()
+      expect(response.total).toBe(2)
+
+      const entity1 = response.entities[0]
+      expect(entity1.pointers).toEqual(pointer1.map((p) => p.toLocaleLowerCase()))
+      expect(entity1.id).toEqual(deployResult1.entity.id)
+      expect(entity1.metadata).toEqual(metadata1)
+      const entity2 = response.entities[0]
+      expect(entity2.pointers).toEqual(pointer2.map((p) => p.toLocaleLowerCase()))
+      expect(entity2.id).toEqual(deployResult2.entity.id)
+      expect(entity2.metadata).toEqual(metadata2)
+
+      const response2 = await fetchActiveEntityByUrnPrefix(server, 'urn:decentraland:mumbai:collections-v1:0x1234')
+
+      expect(response2).toBeDefined()
+      expect(response2.total).toBe(1)
+
+      const entity3 = response2.entities[0]
+      expect(entity3.pointers).toEqual(pointer1.map((p) => p.toLocaleLowerCase()))
+      expect(entity3.id).toEqual(deployResult1.entity.id)
+      expect(entity3.metadata).toEqual(metadata1)
     })
     it('when fetching entities by collection name, then matching entity is retrieved', async () => {
       const pointer = ['urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1']
