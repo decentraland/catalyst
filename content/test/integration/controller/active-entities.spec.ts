@@ -343,12 +343,16 @@ describe('Integration - Get Active Entities', () => {
       expect(entity.metadata).toEqual(metadata)
     })
     it('when fetching collections v1 entities, then matching entities are retrieved', async () => {
-      const pointer1 = ['urn:decentraland:ethereum:collections-v1:sample-collection:red_hat']
+      const pointer1 = [
+        'urn:decentraland:ethereum:collections-v1:0x7038e9d2c6f5f84469a84cf9bc5f4909bb6ac5e0:dg_suit_top_upper_body'
+      ]
       const metadata1 = { a: 'this is just some metadata' }
       const deployResult1 = await buildDeployData(pointer1, { type: EntityType.WEARABLE, metadata: metadata1 })
       await server.deployEntity(deployResult1.deployData)
 
-      const pointer2 = ['urn:decentraland:ethereum:collections-v1:sample-collection:blue_jeans']
+      const pointer2 = [
+        'urn:decentraland:ethereum:collections-v1:0x7038e9d2c6f5f84469a84cf9bc5f4909bb6ac5e0:dg_kicks_feet'
+      ]
       const metadata2 = { a: 'this is just some metadata' }
       const deployResult2 = await buildDeployData(pointer2, { type: EntityType.WEARABLE, metadata: metadata2 })
       const number = await server.deployEntity(deployResult2.deployData)
@@ -356,7 +360,7 @@ describe('Integration - Get Active Entities', () => {
 
       const response = await fetchActiveEntityByUrnPrefix(
         server,
-        'urn:decentraland:ethereum:collections-v1:sample-collection'
+        'urn:decentraland:ethereum:collections-v1:0x7038e9d2c6f5f84469a84cf9bc5f4909bb6ac5e0:dg_suit_top_upper_body'
       )
 
       console.log(response)
@@ -374,7 +378,7 @@ describe('Integration - Get Active Entities', () => {
 
       const response2 = await fetchActiveEntityByUrnPrefix(
         server,
-        'urn:decentraland:ethereum:collections-v1:sample-collection:red_hat'
+        'urn:decentraland:ethereum:collections-v1:0x7038e9d2c6f5f84469a84cf9bc5f4909bb6ac5e0:dg_suit_top_upper_body'
       )
       console.log(response2)
       expect(response2).toBeDefined()
@@ -386,17 +390,20 @@ describe('Integration - Get Active Entities', () => {
       expect(entity3.metadata).toEqual(metadata1)
     })
     it('when fetching collections v2 entities, then matching entities are retrieved', async () => {
-      const pointer1 = ['urn:decentraland:mumbai:collections-v2:0x1234:red_hat']
+      const pointer1 = ['urn:decentraland:mumbai:collections-v2:0xaa40af0b4a18e0555ff3c87beab1d5b591947abe:3']
       const metadata1 = { a: 'this is just some metadata' }
       const deployResult1 = await buildDeployData(pointer1, { type: EntityType.WEARABLE, metadata: metadata1 })
       await server.deployEntity(deployResult1.deployData)
 
-      const pointer2 = ['urn:decentraland:mumbai:collections-v2:0x1234:blue_jeans']
+      const pointer2 = ['urn:decentraland:mumbai:collections-v2:0xaa40af0b4a18e0555ff3c87beab1d5b591947abe:4']
       const metadata2 = { a: 'this is just some metadata' }
       const deployResult2 = await buildDeployData(pointer2, { type: EntityType.WEARABLE, metadata: metadata2 })
       await server.deployEntity(deployResult2.deployData)
 
-      const response = await fetchActiveEntityByUrnPrefix(server, 'urn:decentraland:mumbai:collections-v2:0x1234')
+      const response = await fetchActiveEntityByUrnPrefix(
+        server,
+        'urn:decentraland:mumbai:collections-v2:0xaa40af0b4a18e0555ff3c87beab1d5b591947abe'
+      )
 
       console.log(response)
       expect(response).toBeDefined()
@@ -413,7 +420,7 @@ describe('Integration - Get Active Entities', () => {
 
       const response2 = await fetchActiveEntityByUrnPrefix(
         server,
-        'urn:decentraland:mumbai:collections-v2:0x1234:blue_jeans'
+        'urn:decentraland:mumbai:collections-v2:0xaa40af0b4a18e0555ff3c87beab1d5b591947abe:4'
       )
 
       console.log(response2)
