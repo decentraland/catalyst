@@ -1,4 +1,4 @@
-import { Entity } from '@dcl/schemas'
+import { Entity, EntityType } from '@dcl/schemas'
 import fetch from 'node-fetch'
 import * as deployments from '../../../src/logic/deployments'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
@@ -345,12 +345,12 @@ describe('Integration - Get Active Entities', () => {
     it('when fetching collections v1 entities, then matching entities are retrieved', async () => {
       const pointer1 = ['urn:decentraland:ethereum:collections-v1:sample-collection:red_hat']
       const metadata1 = { a: 'this is just some metadata' }
-      const deployResult1 = await buildDeployData(pointer1, { metadata: metadata1 })
+      const deployResult1 = await buildDeployData(pointer1, { type: EntityType.WEARABLE, metadata: metadata1 })
       await server.deployEntity(deployResult1.deployData)
 
       const pointer2 = ['urn:decentraland:ethereum:collections-v1:sample-collection:blue_jeans']
       const metadata2 = { a: 'this is just some metadata' }
-      const deployResult2 = await buildDeployData(pointer2, { metadata: metadata2 })
+      const deployResult2 = await buildDeployData(pointer2, { type: EntityType.WEARABLE, metadata: metadata2 })
       const number = await server.deployEntity(deployResult2.deployData)
       console.log({ number })
 
@@ -388,12 +388,12 @@ describe('Integration - Get Active Entities', () => {
     it('when fetching collections v2 entities, then matching entities are retrieved', async () => {
       const pointer1 = ['urn:decentraland:mumbai:collections-v2:0x1234:red_hat']
       const metadata1 = { a: 'this is just some metadata' }
-      const deployResult1 = await buildDeployData(pointer1, { metadata: metadata1 })
+      const deployResult1 = await buildDeployData(pointer1, { type: EntityType.WEARABLE, metadata: metadata1 })
       await server.deployEntity(deployResult1.deployData)
 
       const pointer2 = ['urn:decentraland:mumbai:collections-v2:0x1234:blue_jeans']
       const metadata2 = { a: 'this is just some metadata' }
-      const deployResult2 = await buildDeployData(pointer2, { metadata: metadata2 })
+      const deployResult2 = await buildDeployData(pointer2, { type: EntityType.WEARABLE, metadata: metadata2 })
       await server.deployEntity(deployResult2.deployData)
 
       const response = await fetchActiveEntityByUrnPrefix(server, 'urn:decentraland:mumbai:collections-v2:0x1234')
