@@ -358,6 +358,7 @@ describe('Integration - Get Active Entities', () => {
         'urn:decentraland:ethereum:collections-v1:sample-collection'
       )
 
+      console.log(response)
       expect(response).toBeDefined()
       expect(response.total).toBe(2)
 
@@ -374,6 +375,7 @@ describe('Integration - Get Active Entities', () => {
         server,
         'urn:decentraland:ethereum:collections-v1:sample-collection'
       )
+      console.log(response2)
       expect(response2).toBeDefined()
       expect(response2.total).toBe(1)
 
@@ -395,6 +397,7 @@ describe('Integration - Get Active Entities', () => {
 
       const response = await fetchActiveEntityByUrnPrefix(server, 'urn:decentraland:mumbai:collections-v1:0x1234')
 
+      console.log(response)
       expect(response).toBeDefined()
       expect(response.total).toBe(2)
 
@@ -409,6 +412,7 @@ describe('Integration - Get Active Entities', () => {
 
       const response2 = await fetchActiveEntityByUrnPrefix(server, 'urn:decentraland:mumbai:collections-v1:0x1234')
 
+      console.log(response2)
       expect(response2).toBeDefined()
       expect(response2.total).toBe(1)
 
