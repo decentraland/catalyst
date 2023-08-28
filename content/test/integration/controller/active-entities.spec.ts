@@ -406,7 +406,7 @@ describe('Integration - Get Active Entities', () => {
       expect(entity1.pointers).toEqual(pointer1.map((p) => p.toLocaleLowerCase()))
       expect(entity1.id).toEqual(deployResult1.entity.id)
       expect(entity1.metadata).toEqual(metadata1)
-      const entity2 = response.entities[0]
+      const entity2 = response.entities[1]
       expect(entity2.pointers).toEqual(pointer2.map((p) => p.toLocaleLowerCase()))
       expect(entity2.id).toEqual(deployResult2.entity.id)
       expect(entity2.metadata).toEqual(metadata2)
