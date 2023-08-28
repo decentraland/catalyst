@@ -360,7 +360,7 @@ describe('Integration - Get Active Entities', () => {
 
       const response = await fetchActiveEntityByUrnPrefix(
         server,
-        'urn:decentraland:ethereum:collections-v1:0x7038e9d2c6f5f84469a84cf9bc5f4909bb6ac5e0:dg_suit_top_upper_body'
+        'urn:decentraland:ethereum:collections-v1:0x7038e9d2c6f5f84469a84cf9bc5f4909bb6ac5e0'
       )
 
       console.log(response)
