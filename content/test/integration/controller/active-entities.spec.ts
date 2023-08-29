@@ -402,7 +402,6 @@ describe('Integration - Get Active Entities', () => {
         'urn:decentraland:mumbai:collections-v2:0xaa40af0b4a18e0555ff3c87beab1d5b591947abe'
       )
 
-      console.log(response)
       expect(response).toBeDefined()
       expect(response.total).toBe(2)
 
