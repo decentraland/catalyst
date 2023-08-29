@@ -355,13 +355,15 @@ describe('Integration - Get Active Entities', () => {
       ]
       const metadata2 = { a: 'this is just some metadata' }
       const deployResult2 = await buildDeployData(pointer2, { type: EntityType.WEARABLE, metadata: metadata2 })
-      await server.deployEntity(deployResult2.deployData)
+      const number = await server.deployEntity(deployResult2.deployData)
+      console.log({ number })
 
       const response = await fetchActiveEntityByUrnPrefix(
         server,
         'urn:decentraland:ethereum:collections-v1:0x7038e9d2c6f5f84469a84cf9bc5f4909bb6ac5e0'
       )
 
+      console.log(response)
       expect(response).toBeDefined()
       expect(response.total).toBe(2)
 
@@ -378,6 +380,7 @@ describe('Integration - Get Active Entities', () => {
         server,
         'urn:decentraland:ethereum:collections-v1:0x7038e9d2c6f5f84469a84cf9bc5f4909bb6ac5e0:dg_suit_top_upper_body'
       )
+      console.log(response2)
       expect(response2).toBeDefined()
       expect(response2.total).toBe(1)
 
@@ -402,6 +405,7 @@ describe('Integration - Get Active Entities', () => {
         'urn:decentraland:mumbai:collections-v2:0xaa40af0b4a18e0555ff3c87beab1d5b591947abe'
       )
 
+      console.log(response)
       expect(response).toBeDefined()
       expect(response.total).toBe(2)
 
@@ -419,6 +423,7 @@ describe('Integration - Get Active Entities', () => {
         'urn:decentraland:mumbai:collections-v2:0xaa40af0b4a18e0555ff3c87beab1d5b591947abe:4'
       )
 
+      console.log(response2)
       expect(response2).toBeDefined()
       expect(response2.total).toBe(1)
 
