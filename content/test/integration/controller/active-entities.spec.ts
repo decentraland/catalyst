@@ -355,8 +355,7 @@ describe('Integration - Get Active Entities', () => {
       ]
       const metadata2 = { a: 'this is just some metadata' }
       const deployResult2 = await buildDeployData(pointer2, { type: EntityType.WEARABLE, metadata: metadata2 })
-      const number = await server.deployEntity(deployResult2.deployData)
-      console.log({ number })
+      await server.deployEntity(deployResult2.deployData)
 
       const response = await fetchActiveEntityByUrnPrefix(
         server,
