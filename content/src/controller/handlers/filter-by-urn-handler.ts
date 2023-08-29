@@ -14,18 +14,28 @@ async function isUrnPrefixValid(collectionUrn: string): Promise<string | false> 
   try {
     const parsedUrn: DecentralandAssetIdentifier | null = await parseUrn(collectionUrn)
 
-    if (parsedUrn === null) return false
+    if (!parsedUrn) {
+      return false
+    }
 
     // We want to reduce the matches of the query,
     // so we enforce to write the full name of the third party or collection for the search
     if (
-      parsedUrn?.type === 'blockchain-collection-third-party-name' ||
-      parsedUrn?.type === 'blockchain-collection-third-party-collection'
+      parsedUrn.type === 'blockchain-collection-third-party-name' ||
+      parsedUrn.type === 'blockchain-collection-third-party-collection'
     ) {
       return `${collectionUrn}:`
     }
 
-    if (parsedUrn?.type === 'blockchain-collection-third-party') return collectionUrn
+    console.log(parsedUrn)
+    if (
+      parsedUrn.type === 'blockchain-collection-third-party' ||
+      parsedUrn.type === 'blockchain-collection-v1' ||
+      parsedUrn.type === 'blockchain-collection-v2' ||
+      parsedUrn.type === 'blockchain-collection-v1-asset' ||
+      parsedUrn.type === 'blockchain-collection-v2-asset'
+    )
+      return collectionUrn
   } catch (error) {
     console.error(error)
   }
@@ -41,7 +51,7 @@ export async function getEntitiesByPointerPrefixHandler(
   const parsedUrn = await isUrnPrefixValid(collectionUrn)
   if (!parsedUrn) {
     throw new InvalidRequestError(
-      `Invalid collection urn param, it should be a valid urn prefix of a 3rd party collection or base wearables, instead: '${collectionUrn}'`
+      `Invalid collection urn param, it must be a valid urn prefix of a collection or an item in the collection or base wearables, instead: '${collectionUrn}'`
     )
   }
 
