@@ -362,7 +362,6 @@ describe('Integration - Get Active Entities', () => {
         'urn:decentraland:ethereum:collections-v1:0x7038e9d2c6f5f84469a84cf9bc5f4909bb6ac5e0'
       )
 
-      console.log(response)
       expect(response).toBeDefined()
       expect(response.total).toBe(2)
 
