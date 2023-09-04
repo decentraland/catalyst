@@ -1013,12 +1013,12 @@
     p-queue "^6.6.2"
     sharp "^0.32.0"
 
-"@dcl/crypto@^3.4.0", "@dcl/crypto@^3.4.3":
-  version "3.4.3"
-  resolved "https://registry.yarnpkg.com/@dcl/crypto/-/crypto-3.4.3.tgz#74f55aed699949bc2566a7b0d6a23de499019afe"
-  integrity sha512-biG8PqImY3jtVM5bPizgAD0P6X9/7VMxKuD2hxiEEeZClfB1Zi76Qk8pHaLpJ5pU3B+NogwZ8xoREhq0Po+gXQ==
+"@dcl/crypto@^3.4.0", "@dcl/crypto@^3.4.4":
+  version "3.4.4"
+  resolved "https://registry.yarnpkg.com/@dcl/crypto/-/crypto-3.4.4.tgz#43a3ab68bce0be2ddcd72440f940b06098ca3f82"
+  integrity sha512-bXYPM+hh/AuNU7S2LgHDHv021mAjguwkjLvwO8XBKQRRIoZMxwH+EXizxeUpCLsf/oArjEp3cM0BnP29xV+IYQ==
   dependencies:
-    "@dcl/schemas" "^8.2.0"
+    "@dcl/schemas" "^9.2.0"
     eth-connect "^6.0.3"
     ethereum-cryptography "^1.0.3"
 
@@ -1036,7 +1036,7 @@
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
 
-"@dcl/schemas@^9.0.0", "@dcl/schemas@^9.1.1", "@dcl/schemas@^9.4.1":
+"@dcl/schemas@^9.0.0", "@dcl/schemas@^9.1.1", "@dcl/schemas@^9.2.0", "@dcl/schemas@^9.4.1":
   version "9.4.1"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-9.4.1.tgz#f342100171916a36025008dff3228764292fb8c3"
   integrity sha512-oM9y5CuKKMH6kjJLXpD9JC1L1JTCkJDshUk5TUNkkvWaP2ljXaxnU99a1LoI7jfKnTkBAASK685bf0totbXdcQ==
