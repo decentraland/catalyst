@@ -333,10 +333,10 @@
   resolved "https://registry.yarnpkg.com/@dcl/catalyst-contracts/-/catalyst-contracts-4.2.0.tgz#fb7bc3b2fb49abc9890a86561694e5e66893957a"
   integrity sha512-4xRIlrXTrUIZEf/TmZY4xiF7ZC1ixJJvCwEct1Xtyt3hrqVpfetuuzgBfKOvsy4kUu2syJ3hI8QL/vPO5CigcA==
 
-"@dcl/catalyst-storage@^4.0.0":
-  version "4.0.0"
-  resolved "https://registry.yarnpkg.com/@dcl/catalyst-storage/-/catalyst-storage-4.0.0.tgz#12e32721bb835728583dc93dc8ad3ed146796d81"
-  integrity sha512-WrHNCbTFiWNpF8SrBQ9dI/YIvE6vViW9pZ6LDx1iIdTUxhJzWt17y/ucJ6MxuZIjjuYhWNGNEykmrFE9uEGW6A==
+"@dcl/catalyst-storage@^4.0.0", "@dcl/catalyst-storage@^4.1.0":
+  version "4.1.0"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-storage/-/catalyst-storage-4.1.0.tgz#85cbd59cf8f38a702a6c17cd18e39235557fe19a"
+  integrity sha512-evXnRUXJOpbi/mCTYmc/TBBtlCgUawYgD1PPyvvwWtJh8lFkkvLaaQPxLL6lkRlgR0XkgsUfdMIUFGj1YDrNOQ==
   dependencies:
     "@well-known-components/interfaces" "^1.1.1"
     aws-sdk "^2.1426.0"
