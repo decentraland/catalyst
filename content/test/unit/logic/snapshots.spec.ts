@@ -34,7 +34,9 @@ describe('generate snapshot', () => {
       }
       return exist
     },
-    allFileIds: jest.fn()
+    allFileIds: jest.fn(),
+    fileInfo: jest.fn(),
+    fileInfoMultiple: jest.fn()
   }
   let logs: ILoggerComponent
 
@@ -115,7 +117,9 @@ describe('generate snapshot in multiple', () => {
       }
       return exist
     },
-    allFileIds: jest.fn()
+    allFileIds: jest.fn(),
+    fileInfo: jest.fn(),
+    fileInfoMultiple: jest.fn()
   }
   let logs: ILoggerComponent
   const saveFn = snapshotQueries.saveSnapshot
