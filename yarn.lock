@@ -1013,10 +1013,10 @@
     p-queue "^6.6.2"
     sharp "^0.32.0"
 
-"@dcl/crypto@^3.4.0", "@dcl/crypto@^3.4.4":
-  version "3.4.4"
-  resolved "https://registry.yarnpkg.com/@dcl/crypto/-/crypto-3.4.4.tgz#43a3ab68bce0be2ddcd72440f940b06098ca3f82"
-  integrity sha512-bXYPM+hh/AuNU7S2LgHDHv021mAjguwkjLvwO8XBKQRRIoZMxwH+EXizxeUpCLsf/oArjEp3cM0BnP29xV+IYQ==
+"@dcl/crypto@^3.4.0", "@dcl/crypto@^3.4.5":
+  version "3.4.5"
+  resolved "https://registry.yarnpkg.com/@dcl/crypto/-/crypto-3.4.5.tgz#95ca2beab46fa3494b4d38f009bf0d49c87ba235"
+  integrity sha512-uneyjOAOx7pi5kabZsLmPm9kSLkCk4Cok8FUsvT+6k8RquqkjKqocvkGVOMaoWsfU6S3mkLOyaeqEKmOy4ErxA==
   dependencies:
     "@dcl/schemas" "^9.2.0"
     eth-connect "^6.0.3"
