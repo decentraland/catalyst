@@ -1,11 +1,9 @@
 import { Request, Response, Router } from 'express'
 import { SmartContentServerFetcher } from '../../utils/SmartContentServerFetcher'
-import { getContents, getInfo, getScenes } from './controllers/translator'
+import { getInfo } from './controllers/translator'
 
 export function initializeContentV2Routes(router: Router, fetcher: SmartContentServerFetcher): Router {
-  router.get('/scenes', createHandler(fetcher, getScenes))
   router.get('/parcel_info', createHandler(fetcher, getInfo))
-  router.get('/contents/:cid', createHandler(fetcher, getContents))
   return router
 }
 
