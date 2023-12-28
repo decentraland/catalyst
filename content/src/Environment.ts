@@ -124,6 +124,7 @@ export enum EnvironmentConfig {
   LOG_REQUESTS,
   UPDATE_FROM_DAO_INTERVAL,
   DECENTRALAND_ADDRESS,
+  ADDITIONAL_DECENTRALAND_ADDRESS,
   DEPLOYMENTS_DEFAULT_RATE_LIMIT_TTL,
   DEPLOYMENTS_DEFAULT_RATE_LIMIT_MAX,
   ETH_NETWORK,
@@ -232,6 +233,11 @@ export class EnvironmentBuilder {
       () => process.env.UPDATE_FROM_DAO_INTERVAL ?? ms('30m')
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DECENTRALAND_ADDRESS, () => DECENTRALAND_ADDRESS)
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.ADDITIONAL_DECENTRALAND_ADDRESS,
+      () => process.env.ADDITIONAL_DECENTRALAND_ADDRESS
+    )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DEPLOYMENTS_DEFAULT_RATE_LIMIT_TTL, () =>
       Math.floor(ms((process.env.DEPLOYMENTS_DEFAULT_RATE_LIMIT_TTL ?? '1m') as string) / 1000)
     )

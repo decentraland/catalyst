@@ -359,7 +359,7 @@ async function buildComponents() {
   const pointerManager = NoOpPointerManager.build()
   const authenticator = new ContentAuthenticator(
     new HTTPProvider('https://rpc.decentraland.org/mainnet?project=catalyst-ci'),
-    DECENTRALAND_ADDRESS
+    [DECENTRALAND_ADDRESS]
   )
   const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, clock })
   env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)

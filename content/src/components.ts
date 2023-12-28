@@ -1,6 +1,6 @@
 import { createFolderBasedFileSystemContentStorage, createFsComponent } from '@dcl/catalyst-storage'
 import { ValidateFn } from '@dcl/content-validator'
-import { EntityType } from '@dcl/schemas'
+import { EntityType, EthAddress } from '@dcl/schemas'
 import { createSynchronizer } from '@dcl/snapshots-fetcher'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { createFetchComponent } from '@well-known-components/fetch-component'
@@ -108,7 +108,13 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       ? await createDAOComponent({ l1Provider }, ethNetwork as L1Network)
       : createCustomDAOComponent(customDAO)
 
-  const authenticator = new ContentAuthenticator(l1Provider, env.getConfig(EnvironmentConfig.DECENTRALAND_ADDRESS))
+  const decentralandAddresses = !!env.getConfig(EnvironmentConfig.ADDITIONAL_DECENTRALAND_ADDRESS)
+    ? [
+        env.getConfig(EnvironmentConfig.DECENTRALAND_ADDRESS),
+        env.getConfig(EnvironmentConfig.ADDITIONAL_DECENTRALAND_ADDRESS)
+      ]
+    : [env.getConfig(EnvironmentConfig.DECENTRALAND_ADDRESS)]
+  const authenticator = new ContentAuthenticator(l1Provider, decentralandAddresses as EthAddress[])
 
   const contentCluster = new ContentCluster(
     {
