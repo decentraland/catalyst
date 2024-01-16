@@ -1656,10 +1656,10 @@
   dependencies:
     prom-client "^14.1.0"
 
-"@well-known-components/multipart-wrapper@^1.0.2":
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/@well-known-components/multipart-wrapper/-/multipart-wrapper-1.0.2.tgz#ed07593273d569973002b4411237ffeff5d0385d"
-  integrity sha512-png8MSVkqPXPbHginPW4DcOtm0BfuYUCUBpORu59jOAoZLLt0Ragf5lNVTEWhbGEYQrobb9bCKIBF7qFk5hj6w==
+"@well-known-components/multipart-wrapper@^1.0.3":
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/@well-known-components/multipart-wrapper/-/multipart-wrapper-1.0.3.tgz#c9b1a80c669348cacf57fe032beaa150a843ce4e"
+  integrity sha512-OMi/jjJcnuFtEbh8vJdt8tg1PgB+02+D4lumhodrf4XA1jVJ6EmdFW9lUm6+CoGNdzcG2L5z2/9QX54WL0Xpyg==
   dependencies:
     "@well-known-components/interfaces" "^1.3.0"
     busboy "^1.6.0"
