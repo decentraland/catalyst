@@ -79,7 +79,7 @@ export class GarbageCollectionManager {
 
         this.LOGGER.info(`Profile cleanup will remove ${hashes.length} from content_files`)
         await this.components.database.queryWithValues(
-          SQL`DELETE FROM content_files WHERE content_hash = ANY(${hashes})`,
+          SQL`DELETE FROM content_files WHERE deployment = ANY(${deployments})`,
           'gc_delete_old_profile_content_files'
         )
 
