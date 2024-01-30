@@ -53,14 +53,14 @@ export class GarbageCollectionManager {
     this.sweeping = true
     const { end: endTimer } = this.components.metrics.startTimer('dcl_content_garbage_collection_time')
     try {
-      {
-        // NOTE: remove old profile deployments and their images, it will remove a max of ${PROFILE_CLEANUP_LIMIT} per iteration
-        const timestamp = new Date(Date.now() - PROFILE_DURATION)
-        const result = await this.components.database.queryWithValues<{ id: string; content_hash: string }>(
-          SQL`SELECT d.id, cf.content_hash FROM deployments d left join content_files cf on cf.deployment = d.id WHERE d.entity_type = 'profile' AND entity_timestamp < ${timestamp} LIMIT ${PROFILE_CLEANUP_LIMIT}`,
-          'gc_query_old_profile_deployments'
-        )
+      // NOTE: remove old profile deployments and their images, it will remove a max of ${PROFILE_CLEANUP_LIMIT} per iteration
+      const timestamp = new Date(Date.now() - PROFILE_DURATION)
+      const result = await this.components.database.queryWithValues<{ id: string; content_hash: string }>(
+        SQL`SELECT d.id, cf.content_hash FROM deployments d left join content_files cf on cf.deployment = d.id WHERE d.entity_type = 'profile' AND entity_timestamp < ${timestamp} LIMIT ${PROFILE_CLEANUP_LIMIT}`,
+        'gc_query_old_profile_deployments'
+      )
 
+      if (result.rowCount > 0) {
         const deploymentsSet = new Set<string>()
         const hashesSet = new Set<string>()
 
@@ -94,6 +94,8 @@ export class GarbageCollectionManager {
           SQL`DELETE FROM deployments WHERE id = ANY(${deployments})`,
           'gc_delete_old_profile_deployments'
         )
+      } else {
+        this.LOGGER.info(`Profile cleanup: no profiles to remove`)
       }
 
       const hashes = await findContentHashesNotBeingUsedAnymore(this.components.database, this.lastTimeOfCollection)
