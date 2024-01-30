@@ -1,4 +1,5 @@
 import { Entity, EntityType } from '@dcl/schemas'
+import SQL from 'sql-template-strings'
 import LRU from 'lru-cache'
 import { EnvironmentConfig } from '../Environment'
 import {
@@ -7,8 +8,9 @@ import {
   updateActiveDeployments
 } from '../logic/database-queries/pointers-queries'
 import { getDeploymentsForActiveEntities, mapDeploymentsToEntities } from '../logic/deployments'
-import { AppComponents } from '../types'
+import { AppComponents, PROFILE_DURATION } from '../types'
 import { DatabaseClient } from './postgres'
+import { IBaseComponent } from '@well-known-components/interfaces'
 
 export const BASE_AVATARS_COLLECTION_ID = 'urn:decentraland:off-chain:base-avatars'
 
@@ -19,7 +21,7 @@ export const isEntityPresent = (result: Entity | NotActiveEntity | undefined): r
 export const isPointingToEntity = (result: string | NotActiveEntity | undefined): result is string =>
   result !== undefined && result !== 'NOT_ACTIVE_ENTITY'
 
-export type ActiveEntities = {
+export type ActiveEntities = IBaseComponent & {
   /**
    * Retrieve active entities that are pointed by the given pointers
    * Note: result is cached, even if the pointer has no active entity
@@ -61,6 +63,12 @@ export type ActiveEntities = {
    * Note: testing purposes
    */
   reset(): void
+
+  /**
+   * Clear old profiles from active entities, it doesn't delete deployments or
+   * content files
+   */
+  clearOldProfiles(database: DatabaseClient): Promise<void>
 }
 
 /**
@@ -301,6 +309,24 @@ export function createActiveEntitiesComponent(
     }
   }
 
+  async function clearOldProfiles(database: DatabaseClient): Promise<void> {
+    logger.info('Running clear old profiles process')
+    const timestamp = new Date(Date.now() - PROFILE_DURATION)
+
+    const result = await database.queryWithValues<{ pointer: string }>(
+      SQL`DELETE FROM active_pointers ap USING deployments d WHERE d.entity_id = ap.entity_id AND entity_type = 'profile' AND entity_timestamp < ${timestamp} RETURNING ap.pointer`,
+      'delete_old_profiles'
+    )
+
+    for (const { pointer } of result.rows) {
+      if (entityIdByPointers.has(pointer)) {
+        const entityId = entityIdByPointers.get(pointer)!
+        cache.set(entityId, 'NOT_ACTIVE_ENTITY')
+        entityIdByPointers.set(pointer, 'NOT_ACTIVE_ENTITY')
+      }
+    }
+  }
+
   function reset() {
     entityIdByPointers.clear()
     collectionUrnsByPrefixCache.clear()
@@ -314,6 +340,7 @@ export function createActiveEntitiesComponent(
     withPrefix,
     update,
     clear,
+    clearOldProfiles,
 
     getCachedEntity(idOrPointer) {
       if (cache.has(idOrPointer)) {

@@ -38,6 +38,7 @@ import { ContentCluster } from './service/synchronization/ContentCluster'
 import { IRetryFailedDeploymentsComponent } from './service/synchronization/retryFailedDeployments'
 import { ServerValidator } from './service/validations/server'
 import { ProcessedSnapshotsStorageComponent } from './ports/processedSnapshotStorage'
+import ms from 'ms'
 
 // Minimum amount of needed stuff to make the sync work
 
@@ -183,3 +184,5 @@ export enum DeploymentField {
   METADATA = 'metadata',
   AUDIT_INFO = 'auditInfo'
 }
+
+export const PROFILE_DURATION = ms('1 year')

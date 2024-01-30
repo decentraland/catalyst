@@ -207,7 +207,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   })
 
   const garbageCollectionManager = new GarbageCollectionManager(
-    { clock, database, metrics, logs, storage, systemProperties },
+    { clock, database, metrics, logs, storage, systemProperties, activeEntities },
     env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION),
     env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL)
   )
