@@ -4,7 +4,7 @@ import { SYSTEM_PROPERTIES } from '../../ports/system-properties'
 import { AppComponents, PROFILE_DURATION } from '../../types'
 import SQL from 'sql-template-strings'
 
-const PROFILE_CLEANUP_LIMIT = 1000
+const PROFILE_CLEANUP_LIMIT = 10000
 
 export class GarbageCollectionManager {
   private LOGGER: ILoggerComponent.ILogger
