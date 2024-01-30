@@ -43,7 +43,7 @@ export class GarbageCollectionManager {
    * If they are not being used, then we will delete them.
    */
   async performSweep() {
-    this.components.activeEntities.clearOldProfiles(this.components.database)
+    await this.components.activeEntities.clearOldProfiles(this.components.database)
 
     if (!this.performGarbageCollection) {
       return
