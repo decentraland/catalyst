@@ -57,7 +57,7 @@ export class GarbageCollectionManager {
       const timestamp = new Date(Date.now() - PROFILE_DURATION)
       const result = await this.components.database.queryWithValues<{ id: string; content_hash: string }>(
         SQL`SELECT d.id, cf.content_hash FROM deployments d left join content_files cf on cf.deployment = d.id WHERE d.entity_type = 'profile' AND entity_timestamp < ${timestamp} LIMIT ${PROFILE_CLEANUP_LIMIT}`,
-        'gc_query_old_profile_deployments'
+        'gc_old_profiles_query_old_deployments'
       )
 
       if (result.rowCount > 0) {
@@ -71,6 +71,17 @@ export class GarbageCollectionManager {
           deploymentsSet.add(id)
         }
 
+        const hashesInUse = await this.components.database.queryWithValues<{ content_hash: string }>(
+          SQL`SELECT content_hash FROM content_files cf inner join deployments d on cf.deployment = d.id WHERE content_hash = ANY(${Array.from(
+            hashesSet
+          )}) AND d.entity_timestamp > ${timestamp}`,
+          'gc_old_profiles_check_hashes_in_use'
+        )
+
+        for (const { content_hash } of hashesInUse.rows) {
+          hashesSet.delete(content_hash)
+        }
+
         const hashes = Array.from(hashesSet)
         const deployments = Array.from(deploymentsSet)
 
@@ -80,19 +91,19 @@ export class GarbageCollectionManager {
         this.LOGGER.info(`Profile cleanup will remove ${hashes.length} from content_files`)
         await this.components.database.queryWithValues(
           SQL`DELETE FROM content_files WHERE deployment = ANY(${deployments})`,
-          'gc_delete_old_profile_content_files'
+          'gc_old_profiles_delete_content_files'
         )
 
         this.LOGGER.info(`Profile cleanup will remove foreign keys for ${deployments.length} deployments`)
         await this.components.database.queryWithValues(
           SQL`UPDATE deployments SET deleter_deployment = NULL WHERE deleter_deployment = ANY(${deployments})`,
-          'gc_update_old_profile_deployments'
+          'gc_old_profiles_update_deployments'
         )
 
         this.LOGGER.info(`Profile cleanup will remove ${deployments.length} deployments`)
         await this.components.database.queryWithValues(
           SQL`DELETE FROM deployments WHERE id = ANY(${deployments})`,
-          'gc_delete_old_profile_deployments'
+          'gc_old_profiles_delete_deployments'
         )
       } else {
         this.LOGGER.info(`Profile cleanup: no profiles to remove`)
