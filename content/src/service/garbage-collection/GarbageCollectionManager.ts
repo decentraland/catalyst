@@ -65,10 +65,9 @@ export class GarbageCollectionManager {
 
   // NOTE: remove old profile deployments and their images,
   // it will remove a max of ${PROFILE_CLEANUP_LIMIT}
-  async gcStaleProfiles(): Promise<GCStaleProfilesResult> {
-    const timestamp = new Date(Date.now() - PROFILE_DURATION)
+  async gcStaleProfiles(oldProfileSince: Date): Promise<GCStaleProfilesResult> {
     const result = await this.components.database.queryWithValues<{ id: string; content_hash: string }>(
-      SQL`SELECT d.id, cf.content_hash FROM deployments d left join content_files cf on cf.deployment = d.id WHERE d.entity_type = 'profile' AND entity_timestamp < ${timestamp} LIMIT ${PROFILE_CLEANUP_LIMIT}`,
+      SQL`SELECT d.id, cf.content_hash FROM deployments d left join content_files cf on cf.deployment = d.id WHERE d.entity_type = 'profile' AND entity_timestamp < ${oldProfileSince} LIMIT ${PROFILE_CLEANUP_LIMIT}`,
       'gc_old_profiles_query_old_deployments'
     )
 
@@ -93,7 +92,7 @@ export class GarbageCollectionManager {
     const hashesInUse = await this.components.database.queryWithValues<{ content_hash: string }>(
       SQL`SELECT content_hash FROM content_files cf inner join deployments d on cf.deployment = d.id WHERE content_hash = ANY(${Array.from(
         hashesSet
-      )}) AND d.entity_timestamp > ${timestamp}`,
+      )}) AND d.entity_timestamp > ${oldProfileSince}`,
       'gc_old_profiles_check_hashes_in_use'
     )
 
@@ -131,12 +130,11 @@ export class GarbageCollectionManager {
     }
   }
 
-  async gcProfileActiveEntities(): Promise<Set<string>> {
+  async gcProfileActiveEntities(oldProfileSince: Date): Promise<Set<string>> {
     this.LOGGER.info('Running clear old profiles process')
-    const timestamp = new Date(Date.now() - PROFILE_DURATION)
 
     const result = await this.components.database.queryWithValues<{ pointer: string }>(
-      SQL`DELETE FROM active_pointers ap USING deployments d WHERE d.entity_id = ap.entity_id AND entity_type = 'profile' AND entity_timestamp < ${timestamp} RETURNING ap.pointer`,
+      SQL`DELETE FROM active_pointers ap USING deployments d WHERE d.entity_id = ap.entity_id AND entity_type = 'profile' AND entity_timestamp < ${oldProfileSince} RETURNING ap.pointer`,
       'gc_old_profiles_delete_active_pointers'
     )
 
@@ -147,7 +145,8 @@ export class GarbageCollectionManager {
   }
 
   async performSweep() {
-    const gcProfileActiveEntitiesResult = await this.gcProfileActiveEntities()
+    const oldProfileSince = new Date(Date.now() - PROFILE_DURATION)
+    const gcProfileActiveEntitiesResult = await this.gcProfileActiveEntities(oldProfileSince)
 
     this.lastSweepResult = { gcProfileActiveEntitiesResult }
 
@@ -160,7 +159,7 @@ export class GarbageCollectionManager {
     const { end: endTimer } = this.components.metrics.startTimer('dcl_content_garbage_collection_time')
     try {
       this.lastSweepResult.gcUnusedHashResult = await this.gcUnusedHashes()
-      this.lastSweepResult.gcStaleProfilesResult = await this.gcStaleProfiles()
+      this.lastSweepResult.gcStaleProfilesResult = await this.gcStaleProfiles(oldProfileSince)
 
       await this.components.systemProperties.set(SYSTEM_PROPERTIES.lastGarbageCollectionTime, newTimeOfCollection)
 
