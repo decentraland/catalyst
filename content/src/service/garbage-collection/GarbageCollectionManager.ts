@@ -141,7 +141,7 @@ export class GarbageCollectionManager {
     )
 
     const pointers = result.rows.map((r) => r.pointer)
-    this.components.activeEntities.clearPointers(pointers)
+    await this.components.activeEntities.clearPointers(pointers)
 
     return new Set(pointers)
   }
