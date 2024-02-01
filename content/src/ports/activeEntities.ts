@@ -1,5 +1,4 @@
 import { Entity, EntityType } from '@dcl/schemas'
-import SQL from 'sql-template-strings'
 import LRU from 'lru-cache'
 import { EnvironmentConfig } from '../Environment'
 import {
@@ -8,7 +7,7 @@ import {
   updateActiveDeployments
 } from '../logic/database-queries/pointers-queries'
 import { getDeploymentsForActiveEntities, mapDeploymentsToEntities } from '../logic/deployments'
-import { AppComponents, PROFILE_DURATION } from '../types'
+import { AppComponents } from '../types'
 import { DatabaseClient } from './postgres'
 import { IBaseComponent } from '@well-known-components/interfaces'
 
@@ -65,10 +64,10 @@ export type ActiveEntities = IBaseComponent & {
   reset(): void
 
   /**
-   * Clear old profiles from active entities, it doesn't delete deployments or
-   * content files
+   * Clear pointers from active entities
+   * Note: only used in stale profiles GC
    */
-  clearOldProfiles(database: DatabaseClient): Promise<void>
+  clearPointers(pointers: string[]): Promise<void>
 }
 
 /**
@@ -309,16 +308,8 @@ export function createActiveEntitiesComponent(
     }
   }
 
-  async function clearOldProfiles(database: DatabaseClient): Promise<void> {
-    logger.info('Running clear old profiles process')
-    const timestamp = new Date(Date.now() - PROFILE_DURATION)
-
-    const result = await database.queryWithValues<{ pointer: string }>(
-      SQL`DELETE FROM active_pointers ap USING deployments d WHERE d.entity_id = ap.entity_id AND entity_type = 'profile' AND entity_timestamp < ${timestamp} RETURNING ap.pointer`,
-      'delete_old_profiles'
-    )
-
-    for (const { pointer } of result.rows) {
+  async function clearPointers(pointers: string[]): Promise<void> {
+    for (const pointer of pointers) {
       if (entityIdByPointers.has(pointer)) {
         const entityId = entityIdByPointers.get(pointer)!
         cache.set(entityId, 'NOT_ACTIVE_ENTITY')
@@ -340,7 +331,7 @@ export function createActiveEntitiesComponent(
     withPrefix,
     update,
     clear,
-    clearOldProfiles,
+    clearPointers,
 
     getCachedEntity(idOrPointer) {
       if (cache.has(idOrPointer)) {

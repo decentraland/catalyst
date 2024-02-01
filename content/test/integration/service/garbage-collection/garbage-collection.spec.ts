@@ -41,7 +41,7 @@ describe('Integration - Garbage Collection', () => {
       metadata: { a: 'metadata' }
     })
     E3 = await buildDeployDataAfterEntity(E2, [P2])
-      ;[sharedContent, onlyE1Content] = E1.entity.content?.map(({ hash }) => hash) ?? []
+    ;[sharedContent, onlyE1Content] = E1.entity.content?.map(({ hash }) => hash) ?? []
   })
 
   beforeEach(async () => {
@@ -91,7 +91,7 @@ describe('Integration - Garbage Collection', () => {
 
     // Assert all content is still available
     await assertContentIsAvailable(components, sharedContent, onlyE1Content)
-    await assertReportedAsDeletedAre()
+    assert.deepEqual(components.garbageCollectionManager.getLastSweepResults()?.gcUnusedHashResult, undefined)
   })
 
   it(`When garbage collection is started after deployments, then unused content is still deleted`, async () => {
@@ -122,7 +122,7 @@ describe('Integration - Garbage Collection', () => {
   })
 
   function assertReportedAsDeletedAre(...fileHashes: string[]) {
-    assert.deepEqual(components.garbageCollectionManager.deletedInLastSweep(), new Set(fileHashes))
+    assert.deepEqual(components.garbageCollectionManager.getLastSweepResults()?.gcUnusedHashResult, new Set(fileHashes))
     return Promise.resolve()
   }
 
