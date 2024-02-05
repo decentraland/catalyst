@@ -7,8 +7,8 @@ import SQL from 'sql-template-strings'
 const PROFILE_CLEANUP_LIMIT = 10000
 
 export type GCStaleProfilesResult = {
-  hashesDeleted: Set<string>
-  deploymentsDeleted: Set<string>
+  deletedHashes: Set<string>
+  deletedDeployments: Set<string>
 }
 
 export type SweepResult = {
@@ -74,8 +74,8 @@ export class GarbageCollectionManager {
     if (result.rowCount === 0) {
       this.LOGGER.info(`Profile cleanup: no profiles to remove`)
       return {
-        hashesDeleted: new Set<string>(),
-        deploymentsDeleted: new Set<string>()
+        deletedHashes: new Set<string>(),
+        deletedDeployments: new Set<string>()
       }
     }
 
@@ -125,8 +125,8 @@ export class GarbageCollectionManager {
     )
 
     return {
-      hashesDeleted: hashesSet,
-      deploymentsDeleted: deploymentsSet
+      deletedHashes: hashesSet,
+      deletedDeployments: deploymentsSet
     }
   }
 

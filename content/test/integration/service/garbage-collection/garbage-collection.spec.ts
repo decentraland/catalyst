@@ -204,8 +204,8 @@ describe('Integration - Garbage Collection', () => {
       const results = components.garbageCollectionManager.getLastSweepResults()
       expect(results?.gcProfileActiveEntitiesResult).toContain(p1.entity.pointers[0])
       expect(results?.gcProfileActiveEntitiesResult).not.toContain(p2.entity.pointers[0])
-      expect(results?.gcStaleProfilesResult?.hashesDeleted.size).toEqual(2)
-      expect(results?.gcStaleProfilesResult?.deploymentsDeleted).toContain(p1DeploymentId)
+      expect(results?.gcStaleProfilesResult?.deletedHashes.size).toEqual(2)
+      expect(results?.gcStaleProfilesResult?.deletedDeployments).toContain(p1DeploymentId)
     })
 
     it('if an older and newer profile share files, the files should not be deleted', async () => {
@@ -240,8 +240,8 @@ describe('Integration - Garbage Collection', () => {
       const results = components.garbageCollectionManager.getLastSweepResults()
       expect(results?.gcProfileActiveEntitiesResult).toContain(p1.entity.pointers[0])
       expect(results?.gcProfileActiveEntitiesResult).not.toContain(p2.entity.pointers[0])
-      expect(results?.gcStaleProfilesResult?.hashesDeleted.size).toEqual(0)
-      expect(results?.gcStaleProfilesResult?.deploymentsDeleted).toContain(p1DeploymentId)
+      expect(results?.gcStaleProfilesResult?.deletedHashes.size).toEqual(0)
+      expect(results?.gcStaleProfilesResult?.deletedDeployments).toContain(p1DeploymentId)
     })
   })
 
