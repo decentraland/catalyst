@@ -173,11 +173,14 @@ export async function createItemChecker(provider: HTTPProvider): Promise<ItemChe
         })
       )
     )
+
     const filteredItems = collectionItems.filter((ci) => ci !== undefined) as CollectionItem[]
-    const owners = await getOwnerOf(filteredItems)
-    owners.forEach((owner, idx) =>
-      result.set(uniqueItems[idx], !!owner && owner.toLowerCase() === ethAddress.toLowerCase())
-    )
+    if (filteredItems.length > 0) {
+      const owners = await getOwnerOf(filteredItems)
+      owners.forEach((owner, idx) =>
+        result.set(uniqueItems[idx], !!owner && owner.toLowerCase() === ethAddress.toLowerCase())
+      )
+    }
 
     const response = items.map((item) => result.get(item) || false)
     console.log('response', response)
