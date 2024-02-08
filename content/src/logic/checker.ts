@@ -1,8 +1,15 @@
-import { L1Checker, L2Checker } from '@dcl/content-validator'
-import { inputCallFormatter, inputBlockNumberFormatter } from './formatters'
-import { RequestManager, HTTPProvider, ContractFactory, toData } from 'eth-connect'
-import { l1Contracts, l2Contracts, checkerAbi } from '@dcl/catalyst-contracts'
+import { ItemChecker, L1Checker, L2Checker } from '@dcl/content-validator'
+import { inputBlockNumberFormatter, inputCallFormatter } from './formatters'
+import { ContractFactory, HTTPProvider, RequestManager, RPCSendableMessage, toBatchPayload, toData } from 'eth-connect'
+import { checkerAbi, l1Contracts, l2Contracts } from '@dcl/catalyst-contracts'
 import { code } from '@dcl/catalyst-contracts/dist/checkerByteCode'
+import { parseUrn } from '@dcl/urn-resolver'
+import { EthAddress } from '@dcl/schemas'
+
+type CollectionItem = {
+  contract: string
+  nftId: string
+}
 
 export async function createL1Checker(provider: HTTPProvider, network: 'mainnet' | 'sepolia'): Promise<L1Checker> {
   const contracts = l1Contracts[network]
@@ -122,5 +129,91 @@ export async function createL2Checker(provider: HTTPProvider, network: 'mumbai' 
     async validateThirdParty(tpId: string, root: Buffer, block: number): Promise<boolean> {
       return callCheckerMethod(checker.validateThirdParty, [contracts.thirdParty, tpId, root], block)
     }
+  }
+}
+
+const itemCheckerAbi = [
+  {
+    inputs: [{ internalType: 'uint256', name: 'tokenId', type: 'uint256' }],
+    name: 'ownerOf',
+    outputs: [{ internalType: 'address', name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function'
+  }
+]
+
+export async function createItemChecker(provider: HTTPProvider): Promise<ItemChecker> {
+  const requestManager = new RequestManager(provider)
+  const factory = new ContractFactory(requestManager, itemCheckerAbi)
+
+  async function checkItems(ethAddress: string, items: string[], block: number): Promise<boolean[]> {
+    const uniqueItems = Array.from(new Set(items))
+    const result = new Map<string, boolean>()
+    const collectionItems = await Promise.all(
+      uniqueItems.map((item) =>
+        parseUrn(item).then((parsed): CollectionItem | undefined => {
+          if (!parsed) {
+            console.log(`Invalid urn ${item}`)
+            return undefined
+          } else if (
+            parsed.type === 'blockchain-collection-v1-item' ||
+            parsed.type === 'blockchain-collection-v2-item'
+          ) {
+            if (!parsed.contractAddress) {
+              console.log('No contract address found for item', item)
+              return undefined
+            }
+            if (!parsed.tokenId) {
+              console.log('No tokenId found for item', item)
+              result.set(item, true)
+              return undefined
+            }
+            return { contract: parsed.contractAddress, nftId: parsed.tokenId }
+          }
+        })
+      )
+    )
+    const filteredItems = collectionItems.filter((ci) => ci !== undefined) as CollectionItem[]
+    const owners = await getOwnerOf(filteredItems)
+    owners.forEach((owner, idx) =>
+      result.set(uniqueItems[idx], !!owner && owner.toLowerCase() === ethAddress.toLowerCase())
+    )
+
+    const response = items.map((item) => result.get(item) || false)
+    console.log('response', response)
+    return response
+
+    function sendBatch(provider: HTTPProvider, batch: RPCSendableMessage[]) {
+      const payload = toBatchPayload(batch)
+      return new Promise<any>((resolve, reject) => {
+        provider.sendAsync(payload as any, (err: any, result: any) => {
+          if (err) {
+            reject(err)
+            return
+          }
+
+          resolve(result)
+        })
+      })
+    }
+
+    async function getOwnerOf(items: CollectionItem[]): Promise<(EthAddress | undefined)[]> {
+      const contracts = await Promise.all(items.map((item) => factory.at(item.contract) as any))
+      const batch: RPCSendableMessage[] = await Promise.all(
+        items.map((item, idx) => contracts[idx].ownerOf.toRPCMessage(item, block))
+      )
+
+      const result = await sendBatch(provider, batch)
+      return result.map((r: any, idx: number) => {
+        if (!r.result) {
+          return undefined
+        }
+        return contracts[idx].ownerOf.unpackOutput(toData(r.result))?.toLowerCase()
+      })
+    }
+  }
+
+  return {
+    checkItems
   }
 }

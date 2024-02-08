@@ -26,7 +26,7 @@ import { Authenticator } from '@dcl/crypto'
 import { createSubgraphComponent } from '@well-known-components/thegraph-component'
 import RequestManager, { HTTPProvider } from 'eth-connect'
 import { EnvironmentConfig } from '../../Environment'
-import { createL1Checker, createL2Checker } from '../../logic/checker'
+import { createItemChecker, createL1Checker, createL2Checker } from '../../logic/checker'
 import { AppComponents } from '../../types'
 
 const createEthereumProvider = (httpProvider: HTTPProvider): EthereumProvider => {
@@ -75,16 +75,18 @@ export async function createIgnoreBlockchainValidator(
 }
 
 export async function createOnChainValidator(
-  components: Pick<AppComponents, 'env' | 'metrics' | 'config' | 'externalCalls' | 'logs' | 'fetcher'>,
+  components: Pick<AppComponents, 'env' | 'metrics' | 'externalCalls' | 'logs'>,
   l1Provider: HTTPProvider,
   l2Provider: HTTPProvider
 ): Promise<ValidateFn> {
-  const { env, metrics, logs, fetcher, config, externalCalls } = components
+  const { env, metrics, logs, externalCalls } = components
   const l1Network: 'mainnet' | 'sepolia' = env.getConfig(EnvironmentConfig.ETH_NETWORK)
   const l2Network = l1Network === 'mainnet' ? 'polygon' : 'mumbai'
 
   const l1Checker = await createL1Checker(l1Provider, l1Network)
   const l2Checker = await createL2Checker(l2Provider, l2Network)
+  const l1ItemChecker = await createItemChecker(l1Provider)
+  const l2ItemChecker = await createItemChecker(l2Provider)
 
   const l1BlockSearch = createAvlBlockSearch({
     blockRepository: createBlockRepository({
@@ -127,19 +129,13 @@ export async function createOnChainValidator(
 
   const L1 = {
     checker: l1Checker,
-    collections: await createSubgraphComponent(
-      { config, fetch: fetcher, metrics, logs },
-      components.env.getConfig(EnvironmentConfig.COLLECTIONS_L1_SUBGRAPH_URL)
-    ),
+    collections: l1ItemChecker,
     blockSearch: l1BlockSearch
   }
 
   const L2 = {
     checker: l2Checker,
-    collections: await createSubgraphComponent(
-      { config, fetch: fetcher, metrics, logs },
-      components.env.getConfig(EnvironmentConfig.COLLECTIONS_L2_SUBGRAPH_URL)
-    ),
+    collections: l2ItemChecker,
     blockSearch: l2BlockSearch
   }
 
