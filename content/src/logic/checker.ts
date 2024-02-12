@@ -175,6 +175,7 @@ export async function createItemChecker(provider: HTTPProvider): Promise<ItemChe
     )
 
     const filteredItems = collectionItems.filter((ci) => ci !== undefined) as CollectionItem[]
+    console.log('filteredItems', filteredItems)
     if (filteredItems.length > 0) {
       const owners = await getOwnerOf(filteredItems)
       owners.forEach((owner, idx) =>
