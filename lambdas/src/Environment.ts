@@ -13,12 +13,12 @@ import { SmartContentServerFetcherFactory } from './utils/SmartContentServerFetc
 import { getCommsServerUrl } from './utils/commons'
 
 const DEFAULT_SERVER_PORT = 7070
-export const DEFAULT_ETH_NETWORK = 'goerli'
+export const DEFAULT_ETH_NETWORK = 'sepolia'
 export const DEFAULT_ENS_OWNER_PROVIDER_URL_TESTNET =
-  'https://api.thegraph.com/subgraphs/name/decentraland/marketplace-goerli'
+  'https://api.studio.thegraph.com/query/49472/marketplace-sepolia/version/latest'
 const DEFAULT_ENS_OWNER_PROVIDER_URL_MAINNET = 'https://api.thegraph.com/subgraphs/name/decentraland/marketplace'
 export const DEFAULT_COLLECTIONS_SUBGRAPH_TESTNET =
-  'https://api.thegraph.com/subgraphs/name/decentraland/collections-ethereum-goerli'
+  'https://api.studio.thegraph.com/query/49472/collections-ethereum-sepolia/version/latest'
 export const DEFAULT_COLLECTIONS_SUBGRAPH_MAINNET =
   'https://api.thegraph.com/subgraphs/name/decentraland/collections-ethereum-mainnet'
 export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MUMBAI =

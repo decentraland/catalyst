@@ -4,7 +4,7 @@ import { RequestManager, HTTPProvider, ContractFactory, toData } from 'eth-conne
 import { l1Contracts, l2Contracts, checkerAbi } from '@dcl/catalyst-contracts'
 import { code } from '@dcl/catalyst-contracts/dist/checkerByteCode'
 
-export async function createL1Checker(provider: HTTPProvider, network: 'mainnet' | 'goerli'): Promise<L1Checker> {
+export async function createL1Checker(provider: HTTPProvider, network: 'mainnet' | 'sepolia'): Promise<L1Checker> {
   const contracts = l1Contracts[network]
 
   const requestManager = new RequestManager(provider)
