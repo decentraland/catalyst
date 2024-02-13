@@ -80,7 +80,7 @@ export async function createOnChainValidator(
   l2Provider: HTTPProvider
 ): Promise<ValidateFn> {
   const { env, metrics, logs, fetcher, config, externalCalls } = components
-  const l1Network: 'mainnet' | 'goerli' = env.getConfig(EnvironmentConfig.ETH_NETWORK)
+  const l1Network: 'mainnet' | 'sepolia' = env.getConfig(EnvironmentConfig.ETH_NETWORK)
   const l2Network = l1Network === 'mainnet' ? 'polygon' : 'mumbai'
 
   const l1Checker = await createL1Checker(l1Provider, l1Network)
@@ -198,7 +198,7 @@ export async function createSubgraphValidator(
     }
   }
 
-  const network: 'mainnet' | 'goerli' = components.env.getConfig(EnvironmentConfig.ETH_NETWORK)
+  const network: 'mainnet' | 'sepolia' = components.env.getConfig(EnvironmentConfig.ETH_NETWORK)
   const contracts = l1Contracts[network]
   const tokenAddresses: TokenAddresses = {
     land: contracts.land,
