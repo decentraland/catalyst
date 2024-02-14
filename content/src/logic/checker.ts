@@ -156,6 +156,13 @@ export async function createItemChecker(provider: HTTPProvider): Promise<ItemChe
             console.log(`Invalid urn ${item}`)
             return undefined
           } else if (
+            parsed.type === 'blockchain-collection-v1-asset' ||
+            parsed.type === 'blockchain-collection-v2-asset'
+          ) {
+            console.log('Found asset, let it pass', item)
+            result.set(item, true) // old deployment, let it pass
+            return undefined
+          } else if (
             parsed.type === 'blockchain-collection-v1-item' ||
             parsed.type === 'blockchain-collection-v2-item'
           ) {
