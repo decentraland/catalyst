@@ -165,7 +165,7 @@ export async function createItemChecker(provider: HTTPProvider): Promise<ItemChe
             }
             if (!parsed.tokenId) {
               console.log('No tokenId found for item', item)
-              result.set(item, true)
+              result.set(item, true) // old deployment, let it pass
               return undefined
             }
             return { contract: parsed.contractAddress, nftId: parsed.tokenId }
@@ -188,6 +188,7 @@ export async function createItemChecker(provider: HTTPProvider): Promise<ItemChe
 
     function sendBatch(provider: HTTPProvider, batch: RPCSendableMessage[]) {
       const payload = toBatchPayload(batch)
+      console.log('payload', payload)
       return new Promise<any>((resolve, reject) => {
         provider.sendAsync(payload as any, (err: any, result: any) => {
           if (err) {
@@ -203,9 +204,8 @@ export async function createItemChecker(provider: HTTPProvider): Promise<ItemChe
     async function getOwnerOf(items: CollectionItem[]): Promise<(EthAddress | undefined)[]> {
       const contracts = await Promise.all(items.map((item) => factory.at(item.contract) as any))
       const batch: RPCSendableMessage[] = await Promise.all(
-        items.map((item, idx) => contracts[idx].ownerOf.toRPCMessage(item, block))
+        items.map((item, idx) => contracts[idx].ownerOf.toRPCMessage(item.nftId, block))
       )
-
       const result = await sendBatch(provider, batch)
       return result.map((r: any, idx: number) => {
         if (!r.result) {
