@@ -3064,10 +3064,10 @@ eth-connect@^6.0.3:
   resolved "https://registry.yarnpkg.com/eth-connect/-/eth-connect-6.1.0.tgz#94df7e019592825f0d2ee2429d19baf9fa3c5136"
   integrity sha512-p5FN4GieTxwfJvgmGCPgXqL6w8/2cbLiTmNxpgQg881gSI0RdOShTHHu8amgxlj3VM4crovBx7UEKS2RGOhBLQ==
 
-eth-connect@^6.1.1-20230207141318.commit-a23c356:
-  version "6.1.1-20230207141318.commit-a23c356"
-  resolved "https://registry.yarnpkg.com/eth-connect/-/eth-connect-6.1.1-20230207141318.commit-a23c356.tgz#ca91ee3e87d4e38f0b6c0280dda8da960f4cd8e7"
-  integrity sha512-gFSoPgnSvsnvLGOLcfy4DF2OeGMmFW1Gt3q1wS9u8gjebyB/gzTuUdd2eGhgsvbs3Ht6F1yzXStGvrLF0jl5KA==
+eth-connect@^6.2.4:
+  version "6.2.4"
+  resolved "https://registry.yarnpkg.com/eth-connect/-/eth-connect-6.2.4.tgz#81a94bce29f6743b46f336a0ec9d42ed73fbe6fd"
+  integrity sha512-K0+g+pZoWkcJKKc4hwlYvaruoMBFcARoULIdf50bz/Zk9YdgFoKPjlRQWAtBgSDfxJS7AAHqg40k2Z/uQI0aNw==
 
 ethereum-cryptography@^1.0.3:
   version "1.2.0"
