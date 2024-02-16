@@ -142,9 +142,38 @@ const itemCheckerAbi = [
   }
 ]
 
+function sendBatch(provider: HTTPProvider, batch: RPCSendableMessage[]) {
+  const payload = toBatchPayload(batch)
+  console.log('payload', payload)
+  return new Promise<any>((resolve, reject) => {
+    provider.sendAsync(payload as any, (err: any, result: any) => {
+      if (err) {
+        reject(err)
+        return
+      }
+
+      resolve(result)
+    })
+  })
+}
+
 export async function createItemChecker(provider: HTTPProvider): Promise<ItemChecker> {
   const requestManager = new RequestManager(provider)
   const factory = new ContractFactory(requestManager, itemCheckerAbi)
+
+  async function getOwnerOf(items: CollectionItem[], block: number): Promise<(EthAddress | undefined)[]> {
+    const contracts = await Promise.all(items.map((item) => factory.at(item.contract) as any))
+    const batch: RPCSendableMessage[] = await Promise.all(
+      items.map((item, idx) => contracts[idx].ownerOf.toRPCMessage(item.nftId, block))
+    )
+    const result = await sendBatch(provider, batch)
+    return result.map((r: any, idx: number) => {
+      if (!r.result) {
+        return undefined
+      }
+      return contracts[idx].ownerOf.unpackOutput(toData(r.result))?.toLowerCase()
+    })
+  }
 
   async function checkItems(ethAddress: string, items: string[], block: number): Promise<boolean[]> {
     const uniqueItems = Array.from(new Set(items))
@@ -184,7 +213,7 @@ export async function createItemChecker(provider: HTTPProvider): Promise<ItemChe
     const filteredItems = collectionItems.filter((ci) => ci !== undefined) as CollectionItem[]
     console.log('filteredItems', filteredItems)
     if (filteredItems.length > 0) {
-      const owners = await getOwnerOf(filteredItems)
+      const owners = await getOwnerOf(filteredItems, block)
       owners.forEach((owner, idx) =>
         result.set(uniqueItems[idx], !!owner && owner.toLowerCase() === ethAddress.toLowerCase())
       )
@@ -193,35 +222,6 @@ export async function createItemChecker(provider: HTTPProvider): Promise<ItemChe
     const response = items.map((item) => result.get(item) || false)
     console.log('response', response)
     return response
-
-    function sendBatch(provider: HTTPProvider, batch: RPCSendableMessage[]) {
-      const payload = toBatchPayload(batch)
-      console.log('payload', payload)
-      return new Promise<any>((resolve, reject) => {
-        provider.sendAsync(payload as any, (err: any, result: any) => {
-          if (err) {
-            reject(err)
-            return
-          }
-
-          resolve(result)
-        })
-      })
-    }
-
-    async function getOwnerOf(items: CollectionItem[]): Promise<(EthAddress | undefined)[]> {
-      const contracts = await Promise.all(items.map((item) => factory.at(item.contract) as any))
-      const batch: RPCSendableMessage[] = await Promise.all(
-        items.map((item, idx) => contracts[idx].ownerOf.toRPCMessage(item.nftId, block))
-      )
-      const result = await sendBatch(provider, batch)
-      return result.map((r: any, idx: number) => {
-        if (!r.result) {
-          return undefined
-        }
-        return contracts[idx].ownerOf.unpackOutput(toData(r.result))?.toLowerCase()
-      })
-    }
   }
 
   return {
