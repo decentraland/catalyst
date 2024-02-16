@@ -3,6 +3,7 @@ import { Field } from '@well-known-components/multipart-wrapper'
 import { AuthChain, Authenticator, AuthLink, EthAddress, Signature } from '@dcl/crypto'
 import { DeploymentContext, isInvalidDeployment, isSuccessfulDeployment } from '../../deployment-types'
 import { FormHandlerContextWithPath, InvalidRequestError } from '../../types'
+import { parseUrn } from '@dcl/urn-resolver'
 
 type ContentFile = {
   path?: string
@@ -10,6 +11,8 @@ type ContentFile = {
 }
 
 type Response = { status: 200; body: PostEntity200 } | { status: 400; body: PostEntity400 }
+
+export const isOldEmote = (wearable: string): boolean => /^[a-z]+$/i.test(wearable)
 
 // Method: POST
 export async function createEntity(
@@ -42,6 +45,71 @@ export async function createEntity(
     }
 
     const auditInfo = { authChain, version: 'v3' }
+
+    const entityFile = deployFiles.find((file) => file.path === entityId)
+    if (entityFile) {
+      const parsedEntity = JSON.parse(entityFile.content.toString())
+
+      function prefix() {
+        return `MARIANO ${auditInfo.authChain[0].payload} ${entityId} -`
+      }
+
+      let issues = false
+      if (parsedEntity.type === 'profile') {
+        for (const avatar of parsedEntity?.metadata?.avatars || []) {
+          for (const pointer of avatar.avatar.wearables) {
+            if (isOldEmote(pointer)) continue
+
+            const parsed = await parseUrn(pointer)
+            if (!parsed) {
+              issues = true
+              console.log(
+                `${prefix()} Each profile wearable pointer should be a urn, for example (urn:decentraland:{protocol}:collections-v2:{contract(0x[a-fA-F0-9]+)}:{name}). Invalid pointer: (${pointer})`
+              )
+              continue
+            }
+            if (
+              parsed?.type === 'blockchain-collection-v1-asset' ||
+              parsed?.type === 'blockchain-collection-v2-asset'
+            ) {
+              issues = true
+              console.log(
+                `${prefix()} Wearable pointer ${pointer} should be an item, not an asset. The URN must include the tokenId.`
+              )
+            }
+          }
+        }
+
+        for (const avatar of parsedEntity?.metadata?.avatars || []) {
+          const allEmotes = avatar.avatar.emotes ?? []
+          for (const { urn } of allEmotes) {
+            if (isOldEmote(urn)) continue
+            const parsed = await parseUrn(urn)
+            if (!parsed) {
+              issues = true
+              console.log(
+                `${prefix()} Each profile emote pointer should be a urn, for example (urn:decentraland:{protocol}:collections-v2:{contract(0x[a-fA-F0-9]+)}:{name}). Invalid pointer: (${urn})`
+              )
+              continue
+            }
+            if (
+              parsed?.type === 'blockchain-collection-v1-asset' ||
+              parsed?.type === 'blockchain-collection-v2-asset'
+            ) {
+              issues = true
+              console.log(
+                `${prefix()} Emote pointer ${urn} should be an item, not an asset. The URN must include the tokenId.`
+              )
+            }
+          }
+        }
+      }
+
+      if (issues) {
+        console.log(`${prefix()} referer: ${context.request.headers.get('referer')}`)
+        console.log(`${prefix()} user-agent: ${context.request.headers.get('user-agent')}`)
+      }
+    }
 
     const deploymentResult = await deployer.deployEntity(
       deployFiles.map(({ content }) => content),
