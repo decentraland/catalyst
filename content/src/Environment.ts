@@ -372,7 +372,11 @@ export class EnvironmentBuilder {
       EnvironmentConfig.GARBAGE_COLLECTION,
       () => process.env.GARBAGE_COLLECTION === 'true'
     )
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL, () => ms('6h'))
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL,
+      () => process.env.GARBAGE_COLLECTION_INTERVAL ?? ms('6h')
+    )
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PG_IDLE_TIMEOUT, () =>
       process.env.PG_IDLE_TIMEOUT ? ms(process.env.PG_IDLE_TIMEOUT) : ms('30s')

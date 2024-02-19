@@ -6,8 +6,9 @@ import { DeploymentContext } from '../../deployment-types'
 import { isEntityDeployed } from '../../logic/deployments'
 import { joinOverlappedTimeRanges } from '../../logic/time-range'
 import { FailureReason } from '../../ports/failedDeployments'
-import { AppComponents, CannonicalEntityDeployment } from '../../types'
+import { AppComponents, CannonicalEntityDeployment, PROFILE_DURATION } from '../../types'
 import { deployEntityFromRemoteServer } from './deployRemoteEntity'
+import { EntityType } from '@dcl/schemas'
 
 /**
  * An IDeployerComponent parallelizes deployments with a JobQueue.
@@ -54,9 +55,16 @@ export function createBatchDeployerComponent(
    * This function is used to filter out (ignore) deployments coming from remote
    * servers only. Local deployments using POST /entities _ARE NOT_ filtered by this function.
    */
+
+  const ignoreProfilesBefore = Date.now() - PROFILE_DURATION
   async function shouldRemoteEntityDeploymentBeIgnored(entity: DeployableEntity): Promise<boolean> {
     // ignore specific entity types using EnvironmentConfig.SYNC_IGNORED_ENTITY_TYPES
     if (syncOptions.ignoredTypes.has(entity.entityType)) {
+      return true
+    }
+
+    // ignore old profiles
+    if (entity.entityType === EntityType.PROFILE && entity.entityTimestamp < ignoreProfilesBefore) {
       return true
     }
 

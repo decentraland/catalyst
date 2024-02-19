@@ -9,6 +9,7 @@ import {
 import { getDeploymentsForActiveEntities, mapDeploymentsToEntities } from '../logic/deployments'
 import { AppComponents } from '../types'
 import { DatabaseClient } from './postgres'
+import { IBaseComponent } from '@well-known-components/interfaces'
 
 export const BASE_AVATARS_COLLECTION_ID = 'urn:decentraland:off-chain:base-avatars'
 export const BASE_EMOTES_COLLECTION_ID = 'urn:decentraland:off-chain:base-emotes'
@@ -20,7 +21,7 @@ export const isEntityPresent = (result: Entity | NotActiveEntity | undefined): r
 export const isPointingToEntity = (result: string | NotActiveEntity | undefined): result is string =>
   result !== undefined && result !== 'NOT_ACTIVE_ENTITY'
 
-export type ActiveEntities = {
+export type ActiveEntities = IBaseComponent & {
   /**
    * Retrieve active entities that are pointed by the given pointers
    * Note: result is cached, even if the pointer has no active entity
@@ -62,6 +63,12 @@ export type ActiveEntities = {
    * Note: testing purposes
    */
   reset(): void
+
+  /**
+   * Clear pointers from active entities
+   * Note: only used in stale profiles GC
+   */
+  clearPointers(pointers: string[]): Promise<void>
 }
 
 /**
@@ -302,6 +309,16 @@ export function createActiveEntitiesComponent(
     }
   }
 
+  async function clearPointers(pointers: string[]): Promise<void> {
+    for (const pointer of pointers) {
+      if (entityIdByPointers.has(pointer)) {
+        const entityId = entityIdByPointers.get(pointer)!
+        cache.set(entityId, 'NOT_ACTIVE_ENTITY')
+        entityIdByPointers.set(pointer, 'NOT_ACTIVE_ENTITY')
+      }
+    }
+  }
+
   function reset() {
     entityIdByPointers.clear()
     collectionUrnsByPrefixCache.clear()
@@ -315,6 +332,7 @@ export function createActiveEntitiesComponent(
     withPrefix,
     update,
     clear,
+    clearPointers,
 
     getCachedEntity(idOrPointer) {
       if (cache.has(idOrPointer)) {
