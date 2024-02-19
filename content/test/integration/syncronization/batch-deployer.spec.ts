@@ -1,8 +1,11 @@
 import { EnvironmentBuilder, EnvironmentConfig } from '../../../src/Environment'
 import * as deployments from '../../../src/logic/deployments'
 import * as deployRemote from '../../../src/service/synchronization/deployRemoteEntity'
+import ms from 'ms'
 
 describe('batch deployer - ', () => {
+  const entityTimestamp = Date.now() - ms('2 months')
+
   beforeEach(async () => {
     jest.restoreAllMocks()
   })
@@ -38,7 +41,7 @@ describe('batch deployer - ', () => {
       await components.batchDeployer.scheduleEntityDeployment(
         {
           entityId: 'asdf',
-          entityTimestamp: 123,
+          entityTimestamp,
           entityType: 'profile',
           pointers: ['anAddress'],
           authChain: [],
@@ -78,7 +81,7 @@ describe('batch deployer - ', () => {
         components.batchDeployer.scheduleEntityDeployment(
           {
             entityId: 'asdf',
-            entityTimestamp: 123,
+            entityTimestamp,
             entityType: 'profile',
             pointers: ['anAddress'],
             authChain: [],
@@ -122,7 +125,7 @@ describe('batch deployer - ', () => {
         components.batchDeployer.scheduleEntityDeployment(
           {
             entityId: i.toString(),
-            entityTimestamp: 123,
+            entityTimestamp,
             entityType: 'profile',
             pointers: ['anAddress'],
             authChain: [],
@@ -155,7 +158,7 @@ describe('batch deployer - ', () => {
     await components.batchDeployer.scheduleEntityDeployment(
       {
         entityId: 'asdf',
-        entityTimestamp: 123,
+        entityTimestamp,
         entityType: 'profile',
         pointers: ['anAddress'],
         authChain: [],
@@ -186,7 +189,7 @@ describe('batch deployer - ', () => {
     await components.batchDeployer.scheduleEntityDeployment(
       {
         entityId: 'asdf',
-        entityTimestamp: 123,
+        entityTimestamp,
         entityType: 'profile',
         pointers: ['anAddress'],
         authChain: [],
@@ -223,7 +226,7 @@ describe('batch deployer - ', () => {
     await components.batchDeployer.scheduleEntityDeployment(
       {
         entityId,
-        entityTimestamp: 123,
+        entityTimestamp,
         entityType: 'profile',
         pointers: ['anAddress'],
         authChain: [],
@@ -239,7 +242,7 @@ describe('batch deployer - ', () => {
     await components.batchDeployer.scheduleEntityDeployment(
       {
         entityId,
-        entityTimestamp: 123,
+        entityTimestamp,
         entityType: 'profile',
         pointers: ['anAddress'],
         authChain: [],
