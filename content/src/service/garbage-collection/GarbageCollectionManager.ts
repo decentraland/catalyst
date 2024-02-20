@@ -12,7 +12,7 @@ export type GCStaleProfilesResult = {
 }
 
 export type SweepResult = {
-  gcProfileActiveEntitiesResult: Set<string>
+  gcProfileActiveEntitiesResult?: Set<string>
   gcUnusedHashResult?: Set<string>
   gcStaleProfilesResult?: GCStaleProfilesResult
 }
@@ -139,6 +139,7 @@ export class GarbageCollectionManager {
     )
 
     const pointers = result.rows.map((r) => r.pointer)
+    this.LOGGER.info(`Clear old profiles process: ${pointers.length} active pointers deleted`)
     await this.components.activeEntities.clearPointers(pointers)
 
     return new Set(pointers)
@@ -146,9 +147,18 @@ export class GarbageCollectionManager {
 
   async performSweep() {
     const oldProfileSince = new Date(Date.now() - PROFILE_DURATION)
-    const gcProfileActiveEntitiesResult = await this.gcProfileActiveEntities(oldProfileSince)
-
-    this.lastSweepResult = { gcProfileActiveEntitiesResult }
+    this.lastSweepResult = {}
+    try {
+      const gcProfileActiveEntitiesResult = await this.gcProfileActiveEntities(oldProfileSince)
+      this.lastSweepResult.gcProfileActiveEntitiesResult = gcProfileActiveEntitiesResult
+    } catch (error) {
+      this.LOGGER.error(`Failed to perform old profiles cleanup`)
+      this.LOGGER.error(error)
+      if (!this.stopping) {
+        this.nextGarbageCollectionTimeout = setTimeout(() => this.performSweep(), this.sweepInterval)
+      }
+      return
+    }
 
     if (!this.performGarbageCollection) {
       return
