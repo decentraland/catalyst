@@ -139,6 +139,7 @@ export class GarbageCollectionManager {
     )
 
     const pointers = result.rows.map((r) => r.pointer)
+    this.LOGGER.info(`Clear old profiles process: ${pointers.length} active pointers deleted`)
     await this.components.activeEntities.clearPointers(pointers)
 
     return new Set(pointers)
