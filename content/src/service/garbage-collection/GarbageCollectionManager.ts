@@ -153,6 +153,7 @@ export class GarbageCollectionManager {
     } catch (error) {
       this.LOGGER.error(`Failed to perform old profiles cleanup`)
       this.LOGGER.error(error)
+      return
     }
 
     if (!this.performGarbageCollection) {
