@@ -24,7 +24,7 @@
     "@dcl/catalyst-api-specs": "^3.2.5",
     "@dcl/catalyst-contracts": "^4.3.1",
     "@dcl/catalyst-storage": "^4.2.0",
-    "@dcl/content-validator": "4.12.0",
+    "@dcl/content-validator": "https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/item-validation/dcl-content-validator-4.12.1-7994179823.commit-9f445e9.tgz",
     "@dcl/crypto": "^3.4.5",
     "@dcl/hashing": "^3.0.4",
     "@dcl/schemas": "^10.3.0",
