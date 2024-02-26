@@ -4,6 +4,7 @@ import { AuthChain, Authenticator, AuthLink, EthAddress, Signature } from '@dcl/
 import { DeploymentContext, isInvalidDeployment, isSuccessfulDeployment } from '../../deployment-types'
 import { FormHandlerContextWithPath, InvalidRequestError } from '../../types'
 import { parseUrn } from '@dcl/urn-resolver'
+import { Outfits } from '@dcl/schemas'
 
 type ContentFile = {
   path?: string
@@ -51,7 +52,7 @@ export async function createEntity(
       const parsedEntity = JSON.parse(entityFile.content.toString())
 
       function prefix() {
-        return `MARIANO ${auditInfo.authChain[0].payload} ${entityId} -`
+        return `MARIANO ${parsedEntity.pointers[0]} ${entityId} -`
       }
 
       let issues = false
@@ -102,6 +103,35 @@ export async function createEntity(
               )
             }
           }
+        }
+      } else if (parsedEntity.type === 'outfits') {
+        const outfits = parsedEntity.metadata as Outfits
+
+        const allWearables = outfits.outfits.map((outfit) => outfit.outfit.wearables).flat()
+        const invalidUrns: string[] = []
+        const nonItemUrns: string[] = []
+
+        for (const wearableUrn of [...new Set(allWearables)]) {
+          const parsed = await parseUrn(wearableUrn)
+          if (!parsed) {
+            invalidUrns.push(wearableUrn)
+          }
+          if (parsed?.type === 'blockchain-collection-v1-asset' || parsed?.type === 'blockchain-collection-v2-asset') {
+            nonItemUrns.push(wearableUrn)
+          }
+        }
+
+        if (invalidUrns.length > 0) {
+          issues = true
+          console.log(`${prefix()} Invalid wearable pointer: (${invalidUrns.join(', ')})`)
+        }
+        if (nonItemUrns.length > 0) {
+          issues = true
+          console.log(
+            `${prefix()} Wearable pointers ${nonItemUrns.join(
+              ', '
+            )} should be items, not assets. The URNs must include the tokenId.`
+          )
         }
       }
 
