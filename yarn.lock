@@ -350,10 +350,10 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@4.12.0":
-  version "4.12.0"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.12.0.tgz#32df1776e60bbe0428f84cea26acce8a606ddf52"
-  integrity sha512-VF0H4HIMh9N3hJIPk0kUlsY6pEhc7r7VMNqvkH9f1ZzpuTXpco9ZBOOKiIIV+fdl39Cuz2G5T61OPqghqZj1Tg==
+"@dcl/content-validator@4.13.2":
+  version "4.13.2"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.13.2.tgz#9a26c81cbdd02960638fbf09d752fb3c6c193f87"
+  integrity sha512-GAQvmNOTKvLRF8LaW7jh3X832FVz418iSHWbxbYp9oHBCqCUEMEmVxRtaeoC+D3gafmEOS+vmkLyhbsdVwH4PA==
   dependencies:
     "@dcl/block-indexer" "^1.1.1"
     "@dcl/content-hash-tree" "^1.1.4"
