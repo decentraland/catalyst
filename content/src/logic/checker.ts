@@ -5,6 +5,7 @@ import { checkerAbi, l1Contracts, l2Contracts } from '@dcl/catalyst-contracts'
 import { code } from '@dcl/catalyst-contracts/dist/checkerByteCode'
 import { parseUrn } from '@dcl/urn-resolver'
 import { EthAddress } from '@dcl/schemas'
+import { ILoggerComponent } from '@well-known-components/interfaces'
 
 type CollectionItem = {
   contract: string
@@ -144,7 +145,7 @@ const itemCheckerAbi = [
 
 function sendBatch(provider: HTTPProvider, batch: RPCSendableMessage[]) {
   const payload = toBatchPayload(batch)
-  console.log('payload', payload)
+  // console.log('payload', payload)
   return new Promise<any>((resolve, reject) => {
     provider.sendAsync(payload as any, (err: any, result: any) => {
       if (err) {
@@ -157,7 +158,8 @@ function sendBatch(provider: HTTPProvider, batch: RPCSendableMessage[]) {
   })
 }
 
-export async function createItemChecker(provider: HTTPProvider): Promise<ItemChecker> {
+export async function createItemChecker(logs: ILoggerComponent, provider: HTTPProvider): Promise<ItemChecker> {
+  const logger = logs.getLogger('item-checker')
   const requestManager = new RequestManager(provider)
   const factory = new ContractFactory(requestManager, itemCheckerAbi)
 
@@ -182,13 +184,13 @@ export async function createItemChecker(provider: HTTPProvider): Promise<ItemChe
       uniqueItems.map((item) =>
         parseUrn(item).then((parsed): CollectionItem | undefined => {
           if (!parsed) {
-            console.log(`Invalid urn ${item}`)
+            logger.warn(`Invalid urn ${item}`)
             return undefined
           } else if (
             parsed.type === 'blockchain-collection-v1-asset' ||
             parsed.type === 'blockchain-collection-v2-asset'
           ) {
-            console.log('Found asset, let it pass', item)
+            logger.warn(`Found asset, let it pass: ${item}`)
             result.set(item, true) // old deployment, let it pass
             return undefined
           } else if (
@@ -196,11 +198,11 @@ export async function createItemChecker(provider: HTTPProvider): Promise<ItemChe
             parsed.type === 'blockchain-collection-v2-item'
           ) {
             if (!parsed.contractAddress) {
-              console.log('No contract address found for item', item)
+              logger.warn(`No contract address found for item: ${item}`)
               return undefined
             }
             if (!parsed.tokenId) {
-              console.log('No tokenId found for item', item)
+              logger.warn(`No tokenId found for item: ${item})`)
               result.set(item, true) // old deployment, let it pass
               return undefined
             }
@@ -210,8 +212,8 @@ export async function createItemChecker(provider: HTTPProvider): Promise<ItemChe
       )
     )
 
-    const filteredItems = collectionItems.filter((ci) => ci !== undefined) as CollectionItem[]
-    console.log('filteredItems', filteredItems)
+    const filteredItems = collectionItems.filter((ci) => !!ci) as CollectionItem[]
+    // console.log('filteredItems', filteredItems)
     if (filteredItems.length > 0) {
       const owners = await getOwnerOf(filteredItems, block)
       owners.forEach((owner, idx) =>
@@ -219,9 +221,8 @@ export async function createItemChecker(provider: HTTPProvider): Promise<ItemChe
       )
     }
 
-    const response = items.map((item) => result.get(item) || false)
-    console.log('response', response)
-    return response
+    // console.log('response', response)
+    return items.map((item) => result.get(item) || false)
   }
 
   return {

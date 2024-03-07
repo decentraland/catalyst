@@ -85,8 +85,8 @@ export async function createOnChainValidator(
 
   const l1Checker = await createL1Checker(l1Provider, l1Network)
   const l2Checker = await createL2Checker(l2Provider, l2Network)
-  const l1ItemChecker = await createItemChecker(l1Provider)
-  const l2ItemChecker = await createItemChecker(l2Provider)
+  const l1ItemChecker = await createItemChecker(logs, l1Provider)
+  const l2ItemChecker = await createItemChecker(logs, l2Provider)
 
   const l1BlockSearch = createAvlBlockSearch({
     blockRepository: createBlockRepository({
