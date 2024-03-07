@@ -366,6 +366,21 @@
     p-queue "^6.6.2"
     sharp "0.32.6"
 
+"@dcl/content-validator@https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/onchain-profile-validations/dcl-content-validator-4.13.3-8188956399.commit-1af47ff.tgz":
+  version "4.13.3-8188956399.commit-1af47ff"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/onchain-profile-validations/dcl-content-validator-4.13.3-8188956399.commit-1af47ff.tgz#4847c5c9a13d8fa7f2f4d55327a23b93597cd7a8"
+  dependencies:
+    "@dcl/block-indexer" "^1.1.1"
+    "@dcl/content-hash-tree" "^1.1.4"
+    "@dcl/hashing" "^3.0.1"
+    "@dcl/schemas" "^10.3.0"
+    "@dcl/urn-resolver" "3.3.0"
+    "@well-known-components/interfaces" "^1.3.0"
+    "@well-known-components/thegraph-component" "^1.5.0"
+    ms "^2.1.3"
+    p-queue "^6.6.2"
+    sharp "0.32.6"
+
 "@dcl/crypto@^3.4.0", "@dcl/crypto@^3.4.5":
   version "3.4.5"
   resolved "https://registry.yarnpkg.com/@dcl/crypto/-/crypto-3.4.5.tgz#95ca2beab46fa3494b4d38f009bf0d49c87ba235"
