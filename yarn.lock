@@ -350,21 +350,6 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/onchain-profile-validations/dcl-content-validator-4.13.3-8253457532.commit-908929c.tgz":
-  version "4.13.3-8253457532.commit-908929c"
-  resolved "https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/onchain-profile-validations/dcl-content-validator-4.13.3-8253457532.commit-908929c.tgz#e8dde13a3d9072a90bf459174c128cb5726ee137"
-  dependencies:
-    "@dcl/block-indexer" "^1.1.1"
-    "@dcl/content-hash-tree" "^1.1.4"
-    "@dcl/hashing" "^3.0.1"
-    "@dcl/schemas" "^10.3.0"
-    "@dcl/urn-resolver" "^3.3.0"
-    "@well-known-components/interfaces" "^1.3.0"
-    "@well-known-components/thegraph-component" "^1.5.0"
-    ms "^2.1.3"
-    p-queue "^6.6.2"
-    sharp "0.32.6"
-
 "@dcl/content-validator@https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/onchain-profile-validations/dcl-content-validator-4.13.3-8265182302.commit-2737cc9.tgz":
   version "4.13.3-8265182302.commit-2737cc9"
   resolved "https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/onchain-profile-validations/dcl-content-validator-4.13.3-8265182302.commit-2737cc9.tgz#30e8792a2d4e3140dd86b6472b88fff95f9490a6"
@@ -423,11 +408,6 @@
     "@well-known-components/interfaces" "^1.4.0"
     "@well-known-components/metrics" "^2.0.0"
     p-queue "^6.6.2"
-
-"@dcl/urn-resolver@^3.2.0", "@dcl/urn-resolver@^3.3.0":
-  version "3.3.0"
-  resolved "https://registry.yarnpkg.com/@dcl/urn-resolver/-/urn-resolver-3.3.0.tgz#06c0b0b97839ba547d00c85485662c14cfdcf948"
-  integrity sha512-stDVUJk0hoagAKpy+P3QqLvg8Y1d9p2CN7JwqDtzwfcWxs9Ew6zyg+j/T7ADHQQk1mrvQ3lqoJd9KEWX6nHscQ==
 
 "@dcl/urn-resolver@^3.3.1":
   version "3.3.1"
