@@ -10,6 +10,7 @@ import { ILoggerComponent } from '@well-known-components/interfaces'
 type CollectionItem = {
   contract: string
   nftId: string
+  item: string
 }
 
 export async function createL1Checker(provider: HTTPProvider, network: 'mainnet' | 'sepolia'): Promise<L1Checker> {
@@ -198,7 +199,7 @@ export async function createItemChecker(logs: ILoggerComponent, provider: HTTPPr
           logger.warn(`No tokenId found for item: ${item})`)
           result.set(item, true) // old deployment, let it pass
         } else {
-          filteredItems.push({ contract: urn.contractAddress, nftId: urn.tokenId })
+          filteredItems.push({ contract: urn.contractAddress, nftId: urn.tokenId, item })
         }
       }
     }
@@ -206,7 +207,7 @@ export async function createItemChecker(logs: ILoggerComponent, provider: HTTPPr
     if (filteredItems.length > 0) {
       const owners = await getOwnerOf(filteredItems, block)
       owners.forEach((owner, idx) =>
-        result.set(uniqueItems[idx], !!owner && owner.toLowerCase() === ethAddress.toLowerCase())
+        result.set(filteredItems[idx].item, !!owner && owner.toLowerCase() === ethAddress.toLowerCase())
       )
     }
 
