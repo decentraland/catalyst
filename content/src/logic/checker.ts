@@ -145,7 +145,6 @@ const itemCheckerAbi = [
 
 function sendBatch(provider: HTTPProvider, batch: RPCSendableMessage[]) {
   const payload = toBatchPayload(batch)
-  // console.log('payload', payload)
   return new Promise<any>((resolve, reject) => {
     provider.sendAsync(payload as any, (err: any, result: any) => {
       if (err) {
@@ -179,41 +178,31 @@ export async function createItemChecker(logs: ILoggerComponent, provider: HTTPPr
 
   async function checkItems(ethAddress: string, items: string[], block: number): Promise<boolean[]> {
     const uniqueItems = Array.from(new Set(items))
-    const result = new Map<string, boolean>()
-    const collectionItems = await Promise.all(
-      uniqueItems.map((item) =>
-        parseUrn(item).then((parsed): CollectionItem | undefined => {
-          if (!parsed) {
-            logger.warn(`Invalid urn ${item}`)
-            return undefined
-          } else if (
-            parsed.type === 'blockchain-collection-v1-asset' ||
-            parsed.type === 'blockchain-collection-v2-asset'
-          ) {
-            logger.warn(`Found asset, let it pass: ${item}`)
-            result.set(item, true) // old deployment, let it pass
-            return undefined
-          } else if (
-            parsed.type === 'blockchain-collection-v1-item' ||
-            parsed.type === 'blockchain-collection-v2-item'
-          ) {
-            if (!parsed.contractAddress) {
-              logger.warn(`No contract address found for item: ${item}`)
-              return undefined
-            }
-            if (!parsed.tokenId) {
-              logger.warn(`No tokenId found for item: ${item})`)
-              result.set(item, true) // old deployment, let it pass
-              return undefined
-            }
-            return { contract: parsed.contractAddress, nftId: parsed.tokenId }
-          }
-        })
-      )
-    )
+    const urns = await Promise.all(uniqueItems.map((item) => parseUrn(item)))
 
-    const filteredItems = collectionItems.filter((ci) => !!ci) as CollectionItem[]
-    // console.log('filteredItems', filteredItems)
+    const result = new Map<string, boolean>()
+    const filteredItems: CollectionItem[] = []
+
+    for (let i = 0; i < urns.length; ++i) {
+      const item = uniqueItems[i]
+      const urn = urns[i]
+      if (!urn) {
+        logger.warn(`Invalid urn ${item}`)
+      } else if (urn.type === 'blockchain-collection-v1-asset' || urn.type === 'blockchain-collection-v2-asset') {
+        logger.warn(`Found asset, let it pass: ${item}`)
+        result.set(item, true) // old deployment, let it pass
+      } else if (urn.type === 'blockchain-collection-v1-item' || urn.type === 'blockchain-collection-v2-item') {
+        if (!urn.contractAddress) {
+          logger.warn(`No contract address found for item: ${item}`)
+        } else if (!urn.tokenId) {
+          logger.warn(`No tokenId found for item: ${item})`)
+          result.set(item, true) // old deployment, let it pass
+        } else {
+          filteredItems.push({ contract: urn.contractAddress, nftId: urn.tokenId })
+        }
+      }
+    }
+
     if (filteredItems.length > 0) {
       const owners = await getOwnerOf(filteredItems, block)
       owners.forEach((owner, idx) =>
@@ -221,7 +210,6 @@ export async function createItemChecker(logs: ILoggerComponent, provider: HTTPPr
       )
     }
 
-    // console.log('response', response)
     return items.map((item) => result.get(item) || false)
   }
 
