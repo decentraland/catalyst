@@ -350,9 +350,10 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/onchain-profile-validations/dcl-content-validator-4.13.3-8265182302.commit-2737cc9.tgz":
-  version "4.13.3-8265182302.commit-2737cc9"
-  resolved "https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/onchain-profile-validations/dcl-content-validator-4.13.3-8265182302.commit-2737cc9.tgz#30e8792a2d4e3140dd86b6472b88fff95f9490a6"
+"@dcl/content-validator@^4.14.0":
+  version "4.14.0"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.14.0.tgz#f30d1713a5bad857419cbd882248a47d6b9306b8"
+  integrity sha512-KA8UIi1b5aKrTd6nPu/wxk2Wedxjkw52pVOGQ5I0r4haeHc2H1RhJHQaWvYBmwENTVDM/B3O9/8GGmleZtMETQ==
   dependencies:
     "@dcl/block-indexer" "^1.1.1"
     "@dcl/content-hash-tree" "^1.1.4"
