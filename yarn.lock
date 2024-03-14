@@ -350,16 +350,16 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@^4.13.2":
-  version "4.13.2"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.13.2.tgz#9a26c81cbdd02960638fbf09d752fb3c6c193f87"
-  integrity sha512-GAQvmNOTKvLRF8LaW7jh3X832FVz418iSHWbxbYp9oHBCqCUEMEmVxRtaeoC+D3gafmEOS+vmkLyhbsdVwH4PA==
+"@dcl/content-validator@^4.14.0":
+  version "4.14.0"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.14.0.tgz#f30d1713a5bad857419cbd882248a47d6b9306b8"
+  integrity sha512-KA8UIi1b5aKrTd6nPu/wxk2Wedxjkw52pVOGQ5I0r4haeHc2H1RhJHQaWvYBmwENTVDM/B3O9/8GGmleZtMETQ==
   dependencies:
     "@dcl/block-indexer" "^1.1.1"
     "@dcl/content-hash-tree" "^1.1.4"
     "@dcl/hashing" "^3.0.1"
     "@dcl/schemas" "^10.3.0"
-    "@dcl/urn-resolver" "3.3.0"
+    "@dcl/urn-resolver" "^3.3.1"
     "@well-known-components/interfaces" "^1.3.0"
     "@well-known-components/thegraph-component" "^1.5.0"
     ms "^2.1.3"
@@ -410,10 +410,10 @@
     "@well-known-components/metrics" "^2.0.0"
     p-queue "^6.6.2"
 
-"@dcl/urn-resolver@3.3.0", "@dcl/urn-resolver@^3.2.0":
-  version "3.3.0"
-  resolved "https://registry.yarnpkg.com/@dcl/urn-resolver/-/urn-resolver-3.3.0.tgz#06c0b0b97839ba547d00c85485662c14cfdcf948"
-  integrity sha512-stDVUJk0hoagAKpy+P3QqLvg8Y1d9p2CN7JwqDtzwfcWxs9Ew6zyg+j/T7ADHQQk1mrvQ3lqoJd9KEWX6nHscQ==
+"@dcl/urn-resolver@^3.3.1":
+  version "3.3.1"
+  resolved "https://registry.yarnpkg.com/@dcl/urn-resolver/-/urn-resolver-3.3.1.tgz#440fa3e6427ea9e3a4473edcbcce463cfde0598a"
+  integrity sha512-mIar6XS+sYmKMHFcA1F9tuHqjvWTDRCE8zPK46Va8uftxFH/1KaqsfuutuBj9atj/61smxElmPb7O0qPguKVjA==
 
 "@eslint/eslintrc@^1.3.0":
   version "1.3.0"

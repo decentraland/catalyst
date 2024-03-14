@@ -162,8 +162,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       {
         env,
         metrics,
-        fetcher,
-        config,
         externalCalls,
         logs
       },

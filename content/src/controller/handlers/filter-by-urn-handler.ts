@@ -27,7 +27,6 @@ async function isUrnPrefixValid(collectionUrn: string): Promise<string | false> 
       return `${collectionUrn}:`
     }
 
-    console.log(parsedUrn)
     if (
       parsedUrn.type === 'blockchain-collection-third-party' ||
       parsedUrn.type === 'blockchain-collection-v1' ||
