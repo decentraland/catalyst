@@ -1,5 +1,5 @@
 import { IMetricsComponent } from '@well-known-components/interfaces'
-import { HttpMetrics } from '@well-known-components/metrics/dist/http'
+import { HttpMetrics } from '@well-known-components/http-server'
 import express from 'express'
 import { collectDefaultMetrics, Registry } from 'prom-client'
 
