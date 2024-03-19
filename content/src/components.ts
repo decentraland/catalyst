@@ -4,9 +4,9 @@ import { EntityType, EthAddress } from '@dcl/schemas'
 import { createSynchronizer } from '@dcl/snapshots-fetcher'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { createFetchComponent } from '@well-known-components/fetch-component'
-import { createServerComponent } from '@well-known-components/http-server'
+import { createServerComponent, instrumentHttpServerWithPromClientRegistry } from '@well-known-components/http-server'
 import { createLogComponent } from '@well-known-components/logger'
-import { createMetricsComponent, instrumentHttpServerWithMetrics } from '@well-known-components/metrics'
+import { createMetricsComponent } from '@well-known-components/metrics'
 import { HTTPProvider } from 'eth-connect'
 import ms from 'ms'
 import path from 'path'
@@ -348,7 +348,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   }
   metrics.observe('dcl_content_server_build_info', buildInfo, 1)
 
-  await instrumentHttpServerWithMetrics({ server, metrics, config })
+  await instrumentHttpServerWithPromClientRegistry({ server, metrics, config, registry: metrics.registry! })
 
   return {
     env,

@@ -380,15 +380,6 @@
   resolved "https://registry.yarnpkg.com/@dcl/hashing/-/hashing-3.0.4.tgz#4df2a4cb3a8114765aed34cb57b91c93bf33bfb3"
   integrity sha512-Cg+MoIOn+BYmQV2q8zSFnNYY+GldlnUazwBnfgrq3i66ZxOaZ65h01btd8OUtSAlfWG4VTNIOHDjtKqmuwJNBg==
 
-"@dcl/schemas@^10.3.0":
-  version "10.3.0"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-10.3.0.tgz#345e3710a34e278311606620969f4b020e53052c"
-  integrity sha512-92CDJjG6T2g437lkXaw8uOzehPqi0QIp3qnD5uSz5UQu4djoMJYwoGB/IL2RX7pFL8ojaBPFashX/FjqHLxP+A==
-  dependencies:
-    ajv "^8.11.0"
-    ajv-errors "^3.0.0"
-    ajv-keywords "^5.1.0"
-
 "@dcl/schemas@^11.0.0":
   version "11.0.0"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-11.0.0.tgz#5893fd56b2461d96465964d50d45a8f99c347468"
@@ -1643,20 +1634,6 @@
   dependencies:
     "@well-known-components/interfaces" "^1.4.1"
     cross-fetch "^3.1.5"
-
-"@well-known-components/http-server@^2.0.0":
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/@well-known-components/http-server/-/http-server-2.0.0.tgz#85ec93080ae64f962782699db3eeecd597f59405"
-  integrity sha512-baDP0+MpgqTnKLFFXS41WBbg9QIGCXTEA7BHf6JqW1evrTW10MKEx+rgEvQQlhCA5oXxUdKOD+xNnR3GqzGw9w==
-  dependencies:
-    "@types/http-errors" "^2.0.1"
-    destroy "^1.2.0"
-    fp-future "^1.0.1"
-    http-errors "^2.0.0"
-    mitt "^3.0.0"
-    node-fetch "^2.6.9"
-    on-finished "^2.4.1"
-    path-to-regexp "^6.2.1"
 
 "@well-known-components/http-server@^2.1.0":
   version "2.1.0"
