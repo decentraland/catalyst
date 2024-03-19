@@ -350,15 +350,15 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@^4.14.0":
-  version "4.14.0"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-4.14.0.tgz#f30d1713a5bad857419cbd882248a47d6b9306b8"
-  integrity sha512-KA8UIi1b5aKrTd6nPu/wxk2Wedxjkw52pVOGQ5I0r4haeHc2H1RhJHQaWvYBmwENTVDM/B3O9/8GGmleZtMETQ==
+"@dcl/content-validator@^5.0.0":
+  version "5.0.0"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-5.0.0.tgz#8869d29104cf9412d938e77f852ba155889b52c3"
+  integrity sha512-jwDb8Ak1lSNfYERvlUGcmNAggJrVQRwoDbleGpy+qOceIRLOjnw6imqyD91wmEiD7ouhp0lok9hWqUCXOfUFoA==
   dependencies:
     "@dcl/block-indexer" "^1.1.1"
     "@dcl/content-hash-tree" "^1.1.4"
     "@dcl/hashing" "^3.0.1"
-    "@dcl/schemas" "^10.3.0"
+    "@dcl/schemas" "^11.0.0"
     "@dcl/urn-resolver" "^3.3.1"
     "@well-known-components/interfaces" "^1.3.0"
     "@well-known-components/thegraph-component" "^1.5.0"
@@ -380,10 +380,10 @@
   resolved "https://registry.yarnpkg.com/@dcl/hashing/-/hashing-3.0.4.tgz#4df2a4cb3a8114765aed34cb57b91c93bf33bfb3"
   integrity sha512-Cg+MoIOn+BYmQV2q8zSFnNYY+GldlnUazwBnfgrq3i66ZxOaZ65h01btd8OUtSAlfWG4VTNIOHDjtKqmuwJNBg==
 
-"@dcl/schemas@^10.3.0":
-  version "10.3.0"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-10.3.0.tgz#345e3710a34e278311606620969f4b020e53052c"
-  integrity sha512-92CDJjG6T2g437lkXaw8uOzehPqi0QIp3qnD5uSz5UQu4djoMJYwoGB/IL2RX7pFL8ojaBPFashX/FjqHLxP+A==
+"@dcl/schemas@^11.0.0":
+  version "11.0.0"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-11.0.0.tgz#5893fd56b2461d96465964d50d45a8f99c347468"
+  integrity sha512-gBwW3Sv6pIebl3xddJ7mUrIA92e5CsZXV4RdBis56UU/3w7FunwGPBcHoQLkJVvuy8SVHYHNt7PVDEkNSfVHWw==
   dependencies:
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
@@ -1071,6 +1071,11 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
+"@opentelemetry/api@^1.4.0":
+  version "1.8.0"
+  resolved "https://registry.yarnpkg.com/@opentelemetry/api/-/api-1.8.0.tgz#5aa7abb48f23f693068ed2999ae627d2f7d902ec"
+  integrity sha512-I/s6F7yKUDdtMsoBWXJe8Qz40Tui5vsuKCWJEWVL+5q9sSWRzzx6v2KeNsOBEwd94j0eWkpWCH4yB6rZg9Mf0w==
+
 "@scure/base@~1.1.0":
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/@scure/base/-/base-1.1.1.tgz#ebb651ee52ff84f420097055f4bf46cfba403938"
@@ -1630,10 +1635,10 @@
     "@well-known-components/interfaces" "^1.4.1"
     cross-fetch "^3.1.5"
 
-"@well-known-components/http-server@^2.0.0":
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/@well-known-components/http-server/-/http-server-2.0.0.tgz#85ec93080ae64f962782699db3eeecd597f59405"
-  integrity sha512-baDP0+MpgqTnKLFFXS41WBbg9QIGCXTEA7BHf6JqW1evrTW10MKEx+rgEvQQlhCA5oXxUdKOD+xNnR3GqzGw9w==
+"@well-known-components/http-server@^2.1.0":
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/@well-known-components/http-server/-/http-server-2.1.0.tgz#23a18edc82904b3a575452c2d7e618c7da37a07f"
+  integrity sha512-IHD7aLTA+9DYEchQubHDBwc4FmVEmQC+2TWbi8Tz+QlkiQdtndcuba8XHH+EwqlB5sna/EAJGZGXPxS7okcHKA==
   dependencies:
     "@types/http-errors" "^2.0.1"
     destroy "^1.2.0"
@@ -1653,6 +1658,15 @@
     "@types/node-fetch" "^2.5.12"
     typed-url-params "^1.0.1"
 
+"@well-known-components/interfaces@^1.4.3":
+  version "1.4.3"
+  resolved "https://registry.yarnpkg.com/@well-known-components/interfaces/-/interfaces-1.4.3.tgz#026047966db480bd561a315fdc8116b88bf8d27a"
+  integrity sha512-roVtoOHG6uaH+nL4C0ISnAwkkopc2FLsS7fqX+roI22EdX9PAknPoImhPU8/3u6jgRAVpglX5Zj4nWZkSaXPkQ==
+  dependencies:
+    "@types/node" "^20.3.1"
+    "@types/node-fetch" "^2.5.12"
+    typed-url-params "^1.0.1"
+
 "@well-known-components/logger@^3.0.0", "@well-known-components/logger@^3.1.3":
   version "3.1.3"
   resolved "https://registry.yarnpkg.com/@well-known-components/logger/-/logger-3.1.3.tgz#b1f4a76ac5e0d89c276cf339fe44a61f46023d2f"
@@ -1664,6 +1678,13 @@
   integrity sha512-jgT9TuxVS9GzVMMYWXNJRM2qXvexuf4xfrFNBYa3w+gqEWCK4Id5R4zBee/bm6/F5yIPauAWxbOS6KNNDBIrGw==
   dependencies:
     prom-client "^14.1.0"
+
+"@well-known-components/metrics@^2.1.0":
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/@well-known-components/metrics/-/metrics-2.1.0.tgz#ad3b658787d68f06588be3a8f70abccc26e9f52e"
+  integrity sha512-nJ3TdVMiJN2i7TtelndDtxvZERcSE7dtlmRfRV7yYZZshDZrQTC9EFH2uhmCWDWI0qnonvlq++JRSXBNJJfbvg==
+  dependencies:
+    prom-client "^15.1.0"
 
 "@well-known-components/multipart-wrapper@^1.0.3":
   version "1.0.3"
@@ -5492,6 +5513,14 @@ prom-client@^14.1.0:
   resolved "https://registry.yarnpkg.com/prom-client/-/prom-client-14.2.0.tgz#ca94504e64156f6506574c25fb1c34df7812cf11"
   integrity sha512-sF308EhTenb/pDRPakm+WgiN+VdM/T1RaHj1x+MvAuT8UiQP8JmOEbxVqtkbfR4LrvOg5n7ic01kRBDGXjYikA==
   dependencies:
+    tdigest "^0.1.1"
+
+prom-client@^15.1.0:
+  version "15.1.0"
+  resolved "https://registry.yarnpkg.com/prom-client/-/prom-client-15.1.0.tgz#816a4a2128da169d0471093baeccc6d2f17a4613"
+  integrity sha512-cCD7jLTqyPdjEPBo/Xk4Iu8jxjuZgZJ3e/oET3L+ZwOuap/7Cw3dH/TJSsZKs1TQLZ2IHpIlRAKw82ef06kmMw==
+  dependencies:
+    "@opentelemetry/api" "^1.4.0"
     tdigest "^0.1.1"
 
 prompts@^2.0.1:
