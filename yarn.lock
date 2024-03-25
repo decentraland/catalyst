@@ -380,14 +380,15 @@
   resolved "https://registry.yarnpkg.com/@dcl/hashing/-/hashing-3.0.4.tgz#4df2a4cb3a8114765aed34cb57b91c93bf33bfb3"
   integrity sha512-Cg+MoIOn+BYmQV2q8zSFnNYY+GldlnUazwBnfgrq3i66ZxOaZ65h01btd8OUtSAlfWG4VTNIOHDjtKqmuwJNBg==
 
-"@dcl/schemas@^11.0.0":
-  version "11.0.0"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-11.0.0.tgz#5893fd56b2461d96465964d50d45a8f99c347468"
-  integrity sha512-gBwW3Sv6pIebl3xddJ7mUrIA92e5CsZXV4RdBis56UU/3w7FunwGPBcHoQLkJVvuy8SVHYHNt7PVDEkNSfVHWw==
+"@dcl/schemas@^11.0.0", "@dcl/schemas@^11.1.0":
+  version "11.1.0"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-11.1.0.tgz#158d354d905560e600458db775b6d69e98e84846"
+  integrity sha512-qDEqUW2+RBxPOQaqd/8LtFL/2Rtifpve1aAEMmYsq5z0JdAXEX+S6vCyx+pp1kkskNqnVm1+s9iYKy+M8qoQsQ==
   dependencies:
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
+    mitt "^3.0.1"
 
 "@dcl/schemas@^9.0.0", "@dcl/schemas@^9.1.1", "@dcl/schemas@^9.2.0":
   version "9.12.0"
@@ -4869,10 +4870,10 @@ minimist@^1.2.6:
   resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.6.tgz#8637a5b759ea0d6e98702cfb3a9283323c93af44"
   integrity sha512-Jsjnk4bw3YJqYzbdyBiNsPWHPfO++UGG749Cxs6peCu5Xg4nrena6OVxOYxrQTqww0Jmwt+Ref8rggumkTLz9Q==
 
-mitt@^3.0.0:
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/mitt/-/mitt-3.0.0.tgz#69ef9bd5c80ff6f57473e8d89326d01c414be0bd"
-  integrity sha512-7dX2/10ITVyqh4aOSVI9gdape+t9l2/8QxHrFmUXu4EEUpdlxl6RudZUPZoc+zuY2hk1j7XxVroIVIan/pD/SQ==
+mitt@^3.0.0, mitt@^3.0.1:
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/mitt/-/mitt-3.0.1.tgz#ea36cf0cc30403601ae074c8f77b7092cdab36d1"
+  integrity sha512-vKivATfr97l2/QBCYAkXYDbrIWPM2IIKEl7YPhjCvKlG3kE2gm+uBo6nEXK3M5/Ffh/FLpKExzOQ3JJoJGFKBw==
 
 mkdirp-classic@^0.5.2, mkdirp-classic@^0.5.3:
   version "0.5.3"
