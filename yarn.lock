@@ -380,10 +380,10 @@
   resolved "https://registry.yarnpkg.com/@dcl/hashing/-/hashing-3.0.4.tgz#4df2a4cb3a8114765aed34cb57b91c93bf33bfb3"
   integrity sha512-Cg+MoIOn+BYmQV2q8zSFnNYY+GldlnUazwBnfgrq3i66ZxOaZ65h01btd8OUtSAlfWG4VTNIOHDjtKqmuwJNBg==
 
-"@dcl/schemas@^11.0.0", "@dcl/schemas@^11.2.0":
-  version "11.2.0"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-11.2.0.tgz#2bb8eb4c09660cde68481b983cd78ffa6e12c688"
-  integrity sha512-XgxDqV/xD2r8ojJDd7jYknc+UgpbPuV25rehWzcte0vPiTja90L1cgnhdMEV5j2Yms5CDjyW9HQiq7IPTg42LA==
+"@dcl/schemas@^11.0.0", "@dcl/schemas@^11.4.0":
+  version "11.4.0"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-11.4.0.tgz#5557aa6982d49c8dac436901f22e9a75d9f8d805"
+  integrity sha512-pCMENllY9vcl4HS1ta/TpVqjWUov/oa9xab+Ki1iMur48nE5+xXfa7+laCPhWLOKSZEkC59i5S6zQGTSWFPYew==
   dependencies:
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
