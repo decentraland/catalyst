@@ -60,7 +60,10 @@ export async function createL1Checker(provider: HTTPProvider, network: 'mainnet'
   }
 }
 
-export async function createL2Checker(provider: HTTPProvider, network: 'mumbai' | 'polygon'): Promise<L2Checker> {
+export async function createL2Checker(
+  provider: HTTPProvider,
+  network: 'mumbai' | 'amoy' | 'polygon'
+): Promise<L2Checker> {
   const checkerAddress = l2Contracts[network].checker
   const requestManager = new RequestManager(provider)
   const factory = new ContractFactory(requestManager, checkerAbi)

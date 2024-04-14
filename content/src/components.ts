@@ -76,7 +76,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const l2HttpProviderUrl: string = env.getConfig(EnvironmentConfig.L2_HTTP_PROVIDER_URL)
   const useOnChainValidator = !!(l1HttpProviderUrl && l2HttpProviderUrl)
 
-  const l2Network = ethNetwork === 'mainnet' ? 'polygon' : 'mumbai'
+  const l2Network = ethNetwork === 'mainnet' ? 'polygon' : 'amoy'
 
   const l1Provider = new HTTPProvider(
     l1HttpProviderUrl || `https://rpc.decentraland.org/${encodeURIComponent(ethNetwork)}?project=catalyst-content`,

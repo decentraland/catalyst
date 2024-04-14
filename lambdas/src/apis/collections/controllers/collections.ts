@@ -148,6 +148,8 @@ function getProtocol(chainId: string): string | undefined {
       return 'matic'
     case ChainId.MATIC_MUMBAI:
       return 'mumbai'
+    case ChainId.MATIC_AMOY:
+      return 'amoy'
   }
 }
 
