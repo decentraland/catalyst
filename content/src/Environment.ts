@@ -25,10 +25,9 @@ export const DEFAULT_COLLECTIONS_SUBGRAPH_TESTNET =
   'https://api.studio.thegraph.com/query/49472/collections-ethereum-sepolia/version/latest'
 export const DEFAULT_COLLECTIONS_SUBGRAPH_MAINNET =
   'https://api.thegraph.com/subgraphs/name/decentraland/collections-ethereum-mainnet'
-export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MUMBAI =
-  'https://api.thegraph.com/subgraphs/name/decentraland/collections-matic-mumbai'
 export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MAINNET =
   'https://api.thegraph.com/subgraphs/name/decentraland/collections-matic-mainnet'
+export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_AMOY = 'https://subgraph.decentraland.org/collections-matic-amoy'
 export const DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_MUMBAI =
   'https://api.thegraph.com/subgraphs/name/decentraland/tpr-matic-mumbai'
 export const DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_MAINNET =
@@ -37,8 +36,7 @@ export const DEFAULT_BLOCKS_SUBGRAPH_TESTNET =
   'https://api.studio.thegraph.com/query/49472/blocks-ethereum-sepolia/version/latest'
 export const DEFAULT_BLOCKS_SUBGRAPH_MAINNET =
   'https://api.thegraph.com/subgraphs/name/decentraland/blocks-ethereum-mainnet'
-export const DEFAULT_BLOCKS_SUBGRAPH_MATIC_MUMBAI =
-  'https://api.thegraph.com/subgraphs/name/decentraland/blocks-matic-mumbai'
+export const DEFAULT_BLOCKS_SUBGRAPH_MATIC_AMOY = 'https://api.studio.thegraph.com/query/70948/test-amoy/version/latest'
 export const DEFAULT_BLOCKS_SUBGRAPH_MATIC_MAINNET =
   'https://api.thegraph.com/subgraphs/name/decentraland/blocks-matic-mainnet'
 
@@ -304,7 +302,7 @@ export class EnvironmentBuilder {
         process.env.COLLECTIONS_L2_SUBGRAPH_URL ??
         (process.env.ETH_NETWORK === 'mainnet'
           ? DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MAINNET
-          : DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MUMBAI)
+          : DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_AMOY)
     )
 
     this.registerConfigIfNotAlreadySet(
@@ -334,7 +332,7 @@ export class EnvironmentBuilder {
         process.env.BLOCKS_L2_SUBGRAPH_URL ??
         (process.env.ETH_NETWORK === 'mainnet'
           ? DEFAULT_BLOCKS_SUBGRAPH_MATIC_MAINNET
-          : DEFAULT_BLOCKS_SUBGRAPH_MATIC_MUMBAI)
+          : DEFAULT_BLOCKS_SUBGRAPH_MATIC_AMOY)
     )
     this.registerConfigIfNotAlreadySet(
       env,
