@@ -328,10 +328,13 @@
   dependencies:
     yaml "^2.3.4"
 
-"@dcl/catalyst-contracts@^4.0.2", "@dcl/catalyst-contracts@^4.3.1":
-  version "4.3.1"
-  resolved "https://registry.yarnpkg.com/@dcl/catalyst-contracts/-/catalyst-contracts-4.3.1.tgz#ee79b4bf9c07fbe79c35b208323b6e30bf6e2598"
-  integrity sha512-wOaIG/RwsKniQu1wDhigiQHDbfYMSu9Ifk7PToLMA01ellPrF0CZK06vGJLtXlahaXfUbv94N03teS7kYRORLA==
+"@dcl/catalyst-contracts@https://sdk-team-cdn.decentraland.org/@dcl/catalyst-contracts/branch/feat/add-polygon-amoy-support/dcl-catalyst-contracts-4.3.2-8681670053.commit-fcfeb80.tgz":
+  version "4.3.2-8681670053.commit-fcfeb80"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl/catalyst-contracts/branch/feat/add-polygon-amoy-support/dcl-catalyst-contracts-4.3.2-8681670053.commit-fcfeb80.tgz#d02e453f451245acbc37354b781f386b437011d3"
+
+"@dcl/catalyst-contracts@https://sdk-team-cdn.decentraland.org/@dcl/catalyst-contracts/branch/feat/add-polygon-amoy-support/dcl-catalyst-contracts-4.3.2-8695734824.commit-b21ff29.tgz":
+  version "4.3.2-8695734824.commit-b21ff29"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl/catalyst-contracts/branch/feat/add-polygon-amoy-support/dcl-catalyst-contracts-4.3.2-8695734824.commit-b21ff29.tgz#b1500c2e297fb477c3a582601e7f1af613b630ba"
 
 "@dcl/catalyst-storage@^4.0.0", "@dcl/catalyst-storage@^4.2.0":
   version "4.2.0"
@@ -350,16 +353,15 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@^5.1.1":
-  version "5.1.1"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-5.1.1.tgz#e2709c821476495139bbb8ab7d8364d0fd178280"
-  integrity sha512-ksIbBlg9nWSskDDT48YWA5jBYOFwUn+WjOoBvy3+4kmNlUf5PK1PNYxSKGAZOmdkAoDe1LpLvX4+Nl3udM2txA==
+"@dcl/content-validator@https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/feat/add-polygon-amoy-support/dcl-content-validator-5.1.2-8695675803.commit-74a68c9.tgz":
+  version "5.1.2-8695675803.commit-74a68c9"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/feat/add-polygon-amoy-support/dcl-content-validator-5.1.2-8695675803.commit-74a68c9.tgz#996ccfa1e1023ae24c00eb4fb635f36cd6419f3c"
   dependencies:
     "@dcl/block-indexer" "^1.1.1"
     "@dcl/content-hash-tree" "^1.1.4"
     "@dcl/hashing" "^3.0.1"
     "@dcl/schemas" "^11.4.0"
-    "@dcl/urn-resolver" "^3.3.1"
+    "@dcl/urn-resolver" "https://sdk-team-cdn.decentraland.org/@dcl/urn-resolver/branch/feat/add-polygon-amoy-support/dcl-urn-resolver-3.3.2-8681282457.commit-f52dd9e.tgz"
     "@well-known-components/interfaces" "^1.3.0"
     "@well-known-components/thegraph-component" "^1.5.0"
     ms "^2.1.3"
@@ -380,6 +382,15 @@
   resolved "https://registry.yarnpkg.com/@dcl/hashing/-/hashing-3.0.4.tgz#4df2a4cb3a8114765aed34cb57b91c93bf33bfb3"
   integrity sha512-Cg+MoIOn+BYmQV2q8zSFnNYY+GldlnUazwBnfgrq3i66ZxOaZ65h01btd8OUtSAlfWG4VTNIOHDjtKqmuwJNBg==
 
+"@dcl/schemas@^10.3.0":
+  version "10.4.0"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-10.4.0.tgz#8cb19d6710635938c1746c4e4b8eed9a1bbce43b"
+  integrity sha512-gd69ProYNRxU4YqY7hruLlWdtfHfAuBdn10LIg0kPayvIraBX78emulVFy47r7qDRiqscRn6+1KLyIfMkXEBdA==
+  dependencies:
+    ajv "^8.11.0"
+    ajv-errors "^3.0.0"
+    ajv-keywords "^5.1.0"
+
 "@dcl/schemas@^11.4.0":
   version "11.4.0"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-11.4.0.tgz#5557aa6982d49c8dac436901f22e9a75d9f8d805"
@@ -390,7 +401,7 @@
     ajv-keywords "^5.1.0"
     mitt "^3.0.1"
 
-"@dcl/schemas@^9.0.0", "@dcl/schemas@^9.1.1", "@dcl/schemas@^9.2.0":
+"@dcl/schemas@^9.1.1", "@dcl/schemas@^9.2.0":
   version "9.12.0"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-9.12.0.tgz#8652105b939dd36d7c55c0a0a4c1521ce7d5dec0"
   integrity sha512-CQjajLNZZCHdL8+c0wujbQ1DEmg4WBfwtQTAHgWEQenujQv4FLaEwFeZ5HOlBU6g7K0OU0qfotl8ArbtiTpfgw==
@@ -411,10 +422,9 @@
     "@well-known-components/metrics" "^2.0.0"
     p-queue "^6.6.2"
 
-"@dcl/urn-resolver@^3.3.1":
-  version "3.3.1"
-  resolved "https://registry.yarnpkg.com/@dcl/urn-resolver/-/urn-resolver-3.3.1.tgz#440fa3e6427ea9e3a4473edcbcce463cfde0598a"
-  integrity sha512-mIar6XS+sYmKMHFcA1F9tuHqjvWTDRCE8zPK46Va8uftxFH/1KaqsfuutuBj9atj/61smxElmPb7O0qPguKVjA==
+"@dcl/urn-resolver@https://sdk-team-cdn.decentraland.org/@dcl/urn-resolver/branch/feat/add-polygon-amoy-support/dcl-urn-resolver-3.3.2-8681282457.commit-f52dd9e.tgz":
+  version "3.3.2-8681282457.commit-f52dd9e"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl/urn-resolver/branch/feat/add-polygon-amoy-support/dcl-urn-resolver-3.3.2-8681282457.commit-f52dd9e.tgz#91bdb0fbac3bc9ecdc6c93ac8754a4429b28246c"
 
 "@eslint/eslintrc@^1.3.0":
   version "1.3.0"
@@ -2634,15 +2644,14 @@ date-format@^4.0.10, date-format@^4.0.13:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-4.0.13.tgz#87c3aab3a4f6f37582c5f5f63692d2956fa67890"
   integrity sha512-bnYCwf8Emc3pTD8pXnre+wfnjGtfi5ncMDKy7+cWZXbmRAsdWkOQHrfC1yz/KiwP5thDp2kCHWYWKBX4HP1hoQ==
 
-dcl-catalyst-client@^21.6.1:
-  version "21.6.1"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-21.6.1.tgz#494b07ff6eab615304a8e7dba0cb955e814b34f6"
-  integrity sha512-OsGvcu3rKn03tWfvfWnk91th4Le/bEUA1aUxYnE53w4ZsW8HHbaJjcBNFXeaZ+9kaQKTWrs8iuwi3B48d2CczA==
+"dcl-catalyst-client@https://sdk-team-cdn.decentraland.org/@dcl/catalyst-client/branch/feat/add-polygon-amoy-support/dcl-catalyst-client-21.6.2-8690530747.commit-8fcba0d.tgz":
+  version "21.6.2-8690530747.commit-8fcba0d"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl/catalyst-client/branch/feat/add-polygon-amoy-support/dcl-catalyst-client-21.6.2-8690530747.commit-8fcba0d.tgz#65c8e041f6718e3c183633c15383c7da10943f39"
   dependencies:
-    "@dcl/catalyst-contracts" "^4.0.2"
+    "@dcl/catalyst-contracts" "https://sdk-team-cdn.decentraland.org/@dcl/catalyst-contracts/branch/feat/add-polygon-amoy-support/dcl-catalyst-contracts-4.3.2-8681670053.commit-fcfeb80.tgz"
     "@dcl/crypto" "^3.4.0"
     "@dcl/hashing" "^3.0.0"
-    "@dcl/schemas" "^9.0.0"
+    "@dcl/schemas" "^10.3.0"
     "@well-known-components/fetch-component" "^2.0.0"
     cookie "^0.5.0"
     cross-fetch "^3.1.5"
