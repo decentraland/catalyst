@@ -328,13 +328,14 @@
   dependencies:
     yaml "^2.3.4"
 
+"@dcl/catalyst-contracts@4.4.0":
+  version "4.4.0"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-contracts/-/catalyst-contracts-4.4.0.tgz#a36a599f5e0c4b15e653650f74fcaa3da1f525ec"
+  integrity sha512-jA4LU/f0VQI4epwctUZFIxnvnXBSsWGdoDibuV1kIW1nnooqRmCKdN2bbQKYWhWKtwjQfUHvbUKLzA+dD2a1gw==
+
 "@dcl/catalyst-contracts@https://sdk-team-cdn.decentraland.org/@dcl/catalyst-contracts/branch/feat/add-polygon-amoy-support/dcl-catalyst-contracts-4.3.2-8681670053.commit-fcfeb80.tgz":
   version "4.3.2-8681670053.commit-fcfeb80"
   resolved "https://sdk-team-cdn.decentraland.org/@dcl/catalyst-contracts/branch/feat/add-polygon-amoy-support/dcl-catalyst-contracts-4.3.2-8681670053.commit-fcfeb80.tgz#d02e453f451245acbc37354b781f386b437011d3"
-
-"@dcl/catalyst-contracts@https://sdk-team-cdn.decentraland.org/@dcl/catalyst-contracts/branch/feat/add-polygon-amoy-support/dcl-catalyst-contracts-4.3.2-8709917431.commit-bf745de.tgz":
-  version "4.3.2-8709917431.commit-bf745de"
-  resolved "https://sdk-team-cdn.decentraland.org/@dcl/catalyst-contracts/branch/feat/add-polygon-amoy-support/dcl-catalyst-contracts-4.3.2-8709917431.commit-bf745de.tgz#a85490308e26f6af057487275b6b2af4a67a9d96"
 
 "@dcl/catalyst-storage@^4.0.0", "@dcl/catalyst-storage@^4.2.0":
   version "4.2.0"
