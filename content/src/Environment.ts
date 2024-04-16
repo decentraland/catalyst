@@ -36,7 +36,8 @@ export const DEFAULT_BLOCKS_SUBGRAPH_TESTNET =
   'https://api.studio.thegraph.com/query/49472/blocks-ethereum-sepolia/version/latest'
 export const DEFAULT_BLOCKS_SUBGRAPH_MAINNET =
   'https://api.thegraph.com/subgraphs/name/decentraland/blocks-ethereum-mainnet'
-export const DEFAULT_BLOCKS_SUBGRAPH_MATIC_AMOY = 'https://api.studio.thegraph.com/query/70948/test-amoy/version/latest'
+export const DEFAULT_BLOCKS_SUBGRAPH_MATIC_AMOY =
+  'https://api.studio.thegraph.com/query/49472/blocks-matic-amoy/version/latest'
 export const DEFAULT_BLOCKS_SUBGRAPH_MATIC_MAINNET =
   'https://api.thegraph.com/subgraphs/name/decentraland/blocks-matic-mainnet'
 
