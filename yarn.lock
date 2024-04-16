@@ -332,9 +332,9 @@
   version "4.3.2-8681670053.commit-fcfeb80"
   resolved "https://sdk-team-cdn.decentraland.org/@dcl/catalyst-contracts/branch/feat/add-polygon-amoy-support/dcl-catalyst-contracts-4.3.2-8681670053.commit-fcfeb80.tgz#d02e453f451245acbc37354b781f386b437011d3"
 
-"@dcl/catalyst-contracts@https://sdk-team-cdn.decentraland.org/@dcl/catalyst-contracts/branch/feat/add-polygon-amoy-support/dcl-catalyst-contracts-4.3.2-8695734824.commit-b21ff29.tgz":
-  version "4.3.2-8695734824.commit-b21ff29"
-  resolved "https://sdk-team-cdn.decentraland.org/@dcl/catalyst-contracts/branch/feat/add-polygon-amoy-support/dcl-catalyst-contracts-4.3.2-8695734824.commit-b21ff29.tgz#b1500c2e297fb477c3a582601e7f1af613b630ba"
+"@dcl/catalyst-contracts@https://sdk-team-cdn.decentraland.org/@dcl/catalyst-contracts/branch/feat/add-polygon-amoy-support/dcl-catalyst-contracts-4.3.2-8709917431.commit-bf745de.tgz":
+  version "4.3.2-8709917431.commit-bf745de"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl/catalyst-contracts/branch/feat/add-polygon-amoy-support/dcl-catalyst-contracts-4.3.2-8709917431.commit-bf745de.tgz#a85490308e26f6af057487275b6b2af4a67a9d96"
 
 "@dcl/catalyst-storage@^4.0.0", "@dcl/catalyst-storage@^4.2.0":
   version "4.2.0"
@@ -382,6 +382,16 @@
   resolved "https://registry.yarnpkg.com/@dcl/hashing/-/hashing-3.0.4.tgz#4df2a4cb3a8114765aed34cb57b91c93bf33bfb3"
   integrity sha512-Cg+MoIOn+BYmQV2q8zSFnNYY+GldlnUazwBnfgrq3i66ZxOaZ65h01btd8OUtSAlfWG4VTNIOHDjtKqmuwJNBg==
 
+"@dcl/schemas@11.5.0":
+  version "11.5.0"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-11.5.0.tgz#b07fe469523348eed4d4bfde1219123c38bdb3ee"
+  integrity sha512-FkDAsZm6Ydu5PEROup2dLjOcqNwOiUISGhVYQAg6bWIp3kDnAjxguutOXIfxuZrVZELEcIi6+ntbvvfR28FAwg==
+  dependencies:
+    ajv "^8.11.0"
+    ajv-errors "^3.0.0"
+    ajv-keywords "^5.1.0"
+    mitt "^3.0.1"
+
 "@dcl/schemas@^10.3.0":
   version "10.4.0"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-10.4.0.tgz#8cb19d6710635938c1746c4e4b8eed9a1bbce43b"
@@ -421,6 +431,11 @@
     "@well-known-components/interfaces" "^1.4.0"
     "@well-known-components/metrics" "^2.0.0"
     p-queue "^6.6.2"
+
+"@dcl/urn-resolver@3.4.0":
+  version "3.4.0"
+  resolved "https://registry.yarnpkg.com/@dcl/urn-resolver/-/urn-resolver-3.4.0.tgz#16c3d1d7d61b0345cdfd74c387d19df5d584bc9d"
+  integrity sha512-OKa4YTb03akx9Ic5YAjoF081gEsbd+1ITS1Gv33xlxNhkdA2p0jyWtqdZgzlCCMLbw+L6eIohRhhgqlmB0q32g==
 
 "@dcl/urn-resolver@https://sdk-team-cdn.decentraland.org/@dcl/urn-resolver/branch/feat/add-polygon-amoy-support/dcl-urn-resolver-3.3.2-8681282457.commit-f52dd9e.tgz":
   version "3.3.2-8681282457.commit-f52dd9e"
@@ -5566,9 +5581,9 @@ punycode@1.3.2:
   integrity sha512-RofWgt/7fL5wP1Y7fxE7/EmTLzQVnB0ycyibJ0OOHIlJqTNzglYFxVwETOcIoJqJmpDXJ9xImDv+Fq34F/d4Dw==
 
 punycode@^2.1.0:
-  version "2.3.0"
-  resolved "https://registry.yarnpkg.com/punycode/-/punycode-2.3.0.tgz#f67fa67c94da8f4d0cfff981aee4118064199b8f"
-  integrity sha512-rRV+zQD8tVFys26lAGR9WUuS4iUAngJScM+ZRSKtvl5tKeZ2t5bvdNFdNHBW9FWR4guGHlgmsZ1G7BSm2wTbuA==
+  version "2.3.1"
+  resolved "https://registry.yarnpkg.com/punycode/-/punycode-2.3.1.tgz#027422e2faec0b25e1549c3e1bd8309b9133b6e5"
+  integrity sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==
 
 punycode@^2.1.1:
   version "2.1.1"

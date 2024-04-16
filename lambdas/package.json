@@ -13,8 +13,8 @@
   "dependencies": {
     "@dcl/catalyst-api-specs": "^3.2.5",
     "@dcl/crypto": "^3.4.5",
-    "@dcl/schemas": "^11.4.0",
-    "@dcl/urn-resolver": "https://sdk-team-cdn.decentraland.org/@dcl/urn-resolver/branch/feat/add-polygon-amoy-support/dcl-urn-resolver-3.3.2-8681282457.commit-f52dd9e.tgz",
+    "@dcl/schemas": "11.5.0",
+    "@dcl/urn-resolver": "3.4.0",
     "@well-known-components/env-config-provider": "^1.2.0",
     "@well-known-components/fetch-component": "^2.0.2",
     "@well-known-components/http-server": "^2.1.0",
