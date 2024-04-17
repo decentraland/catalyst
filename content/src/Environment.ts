@@ -28,8 +28,7 @@ export const DEFAULT_COLLECTIONS_SUBGRAPH_MAINNET =
 export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MAINNET =
   'https://api.thegraph.com/subgraphs/name/decentraland/collections-matic-mainnet'
 export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_AMOY = 'https://subgraph.decentraland.org/collections-matic-amoy'
-export const DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_MUMBAI =
-  'https://api.thegraph.com/subgraphs/name/decentraland/tpr-matic-mumbai'
+export const DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_AMOY = 'https://subgraph.decentraland.org/tpr-matic-amoy'
 export const DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_MAINNET =
   'https://api.thegraph.com/subgraphs/name/decentraland/tpr-matic-mainnet'
 export const DEFAULT_BLOCKS_SUBGRAPH_TESTNET =
@@ -49,7 +48,7 @@ export const DEFAULT_DATABASE_CONFIG = {
   database: 'content',
   host: 'localhost',
   schema: 'public',
-  port: 5432
+  port: 5433
 }
 const DEFAULT_SYNC_STREAM_TIMEOUT = '10m'
 
@@ -313,7 +312,7 @@ export class EnvironmentBuilder {
         process.env.THIRD_PARTY_REGISTRY_L2_SUBGRAPH_URL ??
         (process.env.ETH_NETWORK === 'mainnet'
           ? DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_MAINNET
-          : DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_MUMBAI)
+          : DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_AMOY)
     )
 
     this.registerConfigIfNotAlreadySet(
