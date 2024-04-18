@@ -48,7 +48,7 @@ export const DEFAULT_DATABASE_CONFIG = {
   database: 'content',
   host: 'localhost',
   schema: 'public',
-  port: 5433
+  port: 5432
 }
 const DEFAULT_SYNC_STREAM_TIMEOUT = '10m'
 
