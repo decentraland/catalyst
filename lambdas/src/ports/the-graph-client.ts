@@ -365,7 +365,7 @@ export async function createTheGraphClient(components: {
   ): Promise<WearableId[]> {
     // Order will be L1 > L2
     const L1_NETWORKS = ['mainnet', 'sepolia', 'ropsten', 'kovan', 'rinkeby', 'goerli']
-    const L2_NETWORKS = ['matic', 'mumbai']
+    const L2_NETWORKS = ['matic', 'mumbai', 'amoy']
     const wearableTypes: BlockchainItemType[] = ['wearable_v1', 'wearable_v2', 'smart_wearable_v1', 'emote_v1']
 
     let limit = pagination.limit
@@ -406,7 +406,7 @@ export async function createTheGraphClient(components: {
   ): Promise<EmoteId[]> {
     // Order will be L1 > L2
     const L1_NETWORKS = ['mainnet', 'sepolia', 'kovan', 'rinkeby', 'goerli']
-    const L2_NETWORKS = ['matic', 'mumbai']
+    const L2_NETWORKS = ['matic', 'mumbai', 'amoy']
 
     let limit = pagination.limit
     let lastId = pagination.lastId

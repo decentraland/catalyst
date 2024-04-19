@@ -21,12 +21,10 @@ export const DEFAULT_COLLECTIONS_SUBGRAPH_TESTNET =
   'https://api.studio.thegraph.com/query/49472/collections-ethereum-sepolia/version/latest'
 export const DEFAULT_COLLECTIONS_SUBGRAPH_MAINNET =
   'https://api.thegraph.com/subgraphs/name/decentraland/collections-ethereum-mainnet'
-export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MUMBAI =
-  'https://api.thegraph.com/subgraphs/name/decentraland/collections-matic-mumbai'
+export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_AMOY = 'https://subgraph.decentraland.org/collections-matic-amoy'
 export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MAINNET =
   'https://api.thegraph.com/subgraphs/name/decentraland/collections-matic-mainnet'
-export const DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_MUMBAI =
-  'https://api.thegraph.com/subgraphs/name/decentraland/tpr-matic-mumbai'
+export const DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_AMOY = 'https://subgraph.decentraland.org/tpr-matic-amoy'
 export const DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_MAINNET =
   'https://api.thegraph.com/subgraphs/name/decentraland/tpr-matic-mainnet'
 
@@ -176,7 +174,7 @@ export class EnvironmentBuilder {
         process.env.COLLECTIONS_L2_SUBGRAPH_URL ??
         (process.env.ETH_NETWORK === 'mainnet'
           ? DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MAINNET
-          : DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MUMBAI)
+          : DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_AMOY)
     )
 
     this.registerConfigIfNotAlreadySet(
@@ -186,7 +184,7 @@ export class EnvironmentBuilder {
         process.env.THIRD_PARTY_REGISTRY_L2_SUBGRAPH_URL ??
         (process.env.ETH_NETWORK === 'mainnet'
           ? DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_MAINNET
-          : DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_MUMBAI)
+          : DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_AMOY)
     )
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.COMMIT_HASH, () => process.env.COMMIT_HASH ?? 'Unknown')

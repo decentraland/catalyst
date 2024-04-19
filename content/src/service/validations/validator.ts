@@ -81,7 +81,7 @@ export async function createOnChainValidator(
 ): Promise<ValidateFn> {
   const { env, metrics, logs, externalCalls } = components
   const l1Network: 'mainnet' | 'sepolia' = env.getConfig(EnvironmentConfig.ETH_NETWORK)
-  const l2Network = l1Network === 'mainnet' ? 'polygon' : 'mumbai'
+  const l2Network = l1Network === 'mainnet' ? 'polygon' : 'amoy'
 
   const l1Checker = await createL1Checker(l1Provider, l1Network)
   const l2Checker = await createL2Checker(l2Provider, l2Network)
