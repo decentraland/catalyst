@@ -18,14 +18,13 @@ jobs:
           cache: yarn
       - name: install
         run: yarn install --frozen-lockfile
+      - name: build
+        run: yarn build
       - name: lint
         run: yarn lint:check
 
   test-content:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        shard: [1, 2, 3, 4]
     services:
       postgres:
         image: postgres
@@ -51,9 +50,8 @@ jobs:
         run: yarn install --frozen-lockfile
       - name: create .env
         run: echo "" >> .env
-      - name: build
-        run: yarn build
-      - run: cd content; yarn test --shard=${{ matrix.shard }}/${{ strategy.job-total }} --coverage
+      - name: test
+        run: yarn test:lambdas
 
   test-lambdas:
     runs-on: ubuntu-latest
@@ -68,7 +66,5 @@ jobs:
         run: yarn install --frozen-lockfile
       - name: create .env
         run: echo "" >> .env
-      - name: build
-        run: yarn build
       - name: test
         run: yarn test:lambdas
