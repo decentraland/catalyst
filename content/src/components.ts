@@ -310,7 +310,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     clock
   })
 
-  const migrationManager = createMigrationExecutor({ logs, env })
+  // const migrationManager = createMigrationExecutor({ logs, env })
 
   env.logConfigValues(logs.getLogger('Environment'))
 
@@ -370,7 +370,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     pointerManager,
     storage,
     authenticator,
-    migrationManager,
+    // migrationManager,
     externalCalls,
     validator,
     serverValidator,
@@ -389,5 +389,5 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     snapshotStorage,
     config,
     l1Provider
-  }
+  } as any
 }

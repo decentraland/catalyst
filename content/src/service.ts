@@ -31,10 +31,10 @@ export async function main(program: Lifecycle.EntryPointParameters<AppComponents
     components
   }
 
-  await migrateContentFolderStructure(components)
+  // await migrateContentFolderStructure(components)
 
-  // first of all, run the migrations
-  await components.migrationManager.run()
+  // // first of all, run the migrations
+  // await components.migrationManager.run()
 
   const router = await setupRouter(globalContext)
 
@@ -53,11 +53,11 @@ export async function main(program: Lifecycle.EntryPointParameters<AppComponents
   await startComponents()
 
   // synchronization
-  const disableSynchronization = components.env.getConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION)
+  // const disableSynchronization = components.env.getConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION)
 
-  if (!disableSynchronization) {
-    await startSynchronization(components)
-  } else {
-    components.synchronizationState.toSyncing()
-  }
+  // if (!disableSynchronization) {
+  //   await startSynchronization(components)
+  // } else {
+  components.synchronizationState.toSyncing()
+  // }
 }
