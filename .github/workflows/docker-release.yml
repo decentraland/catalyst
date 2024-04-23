@@ -1,0 +1,13 @@
+name: Publish 'latest' image
+
+on:
+  release:
+    types:
+      - "created"
+
+jobs:
+  cd:
+    uses: decentraland/platform-actions/.github/workflows/apps-docker-release.yml@main
+    with:
+      service-name: catalyst
+    secrets: inherit

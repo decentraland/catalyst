@@ -1,0 +1,9 @@
+name: build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    uses: decentraland/platform-actions/.github/workflows/apps-with-db-build.yml@main
