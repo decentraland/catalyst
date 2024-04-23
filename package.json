@@ -24,7 +24,7 @@
     "start": "yarn workspaces run start:server",
     "start:content": "yarn workspace @catalyst/content-server start:db && yarn workspace @catalyst/content-server start:server",
     "start:lambdas": "yarn workspace @catalyst/lambdas-server start:server",
-    "test": "run-s 'test:*'",
+    "test": "yarn test:content && yarn test:lambdas",
     "test:content": "yarn workspace @catalyst/content-server test",
     "test:lambdas": "yarn workspace @catalyst/lambdas-server test",
     "unused": "npx depcheck; yarn unused:content; yarn unused:lambdas",
