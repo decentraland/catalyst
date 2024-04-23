@@ -25,6 +25,9 @@ jobs:
 
   test-content:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        shard: [1, 2, 3, 4]
     services:
       postgres:
         image: postgres
@@ -51,7 +54,8 @@ jobs:
       - name: create .env
         run: echo "" >> .env
       - name: test
-        run: yarn test:content
+        run: cd content; yarn test --shard=${{ matrix.shard }}/${{ strategy.job-total }} --coverage
+
 
   test-lambdas:
     runs-on: ubuntu-latest
