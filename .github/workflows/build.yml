@@ -29,9 +29,9 @@ jobs:
       postgres:
         image: postgres
         env:
+          POSTGRES_DB: postgres_test
           POSTGRES_USER: postgres
-          POSTGRES_DB: 12345678
-          POSTGRES_PASSWORD: postgres_test
+          POSTGRES_PASSWORD: 12345678
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -52,8 +52,6 @@ jobs:
         run: echo "" >> .env
       - name: test
         run: yarn test:content
-        env:
-          PG_COMPONENT_PSQL_CONNECTION_STRING: postgres://postgres:pass1234@localhost/db
 
   test-lambdas:
     runs-on: ubuntu-latest
