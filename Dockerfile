@@ -15,10 +15,8 @@ RUN yarn install --prod --frozen-lockfile
 # build sources
 FROM base as catalyst-builder
 RUN yarn install --frozen-lockfile
-
 COPY . .
-FROM catalyst-builder as content-builder
-RUN yarn workspace @catalyst/content-server build
+RUN yarn build
 
 # build final image with transpiled code and runtime dependencies
 FROM base

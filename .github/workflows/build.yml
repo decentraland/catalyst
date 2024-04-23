@@ -6,4 +6,8 @@ on:
 
 jobs:
   build:
-    uses: decentraland/platform-actions/.github/workflows/apps-with-db-build.yml@main
+    uses: decentraland/platform-actions/.github/workflows/apps-with-db-build.yml@db
+    with:
+      postgres-user: postgres
+      postgres-password: 12345678
+      postgres-db: postgres_test
