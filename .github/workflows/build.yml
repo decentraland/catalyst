@@ -7,9 +7,68 @@ on:
   pull_request:
 
 jobs:
-  build:
-    uses: decentraland/platform-actions/.github/workflows/apps-with-db-build.yml@db
-    with:
-      postgres-user: postgres
-      postgres-password: 12345678
-      postgres-db: postgres_test
+  validations:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js 18.x
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+          cache: yarn
+      - name: install
+        run: yarn install --frozen-lockfile
+      - name: lint
+        run: yarn lint:check
+
+  test-content:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        shard: [1, 2, 3, 4]
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_DB: 12345678
+          POSTGRES_PASSWORD: postgres_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js 16.16.0
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.16.0
+          cache: yarn
+      - name: install
+        run: yarn install --frozen-lockfile
+      - name: create .env
+        run: echo "" >> .env
+      - name: build
+        run: yarn build
+      - run: cd content; yarn test --shard=${{ matrix.shard }}/${{ strategy.job-total }} --coverage
+
+  test-lambdas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js 16.16.0
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.16.0
+          cache: yarn
+      - name: install
+        run: yarn install --frozen-lockfile
+      - name: create .env
+        run: echo "" >> .env
+      - name: build
+        run: yarn build
+      - name: test
+        run: yarn test:lambdas
