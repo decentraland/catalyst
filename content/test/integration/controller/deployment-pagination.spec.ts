@@ -8,6 +8,7 @@ import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidat
 import { buildDeployData, EntityCombo } from '../E2ETestUtils'
 import { resetServer, createDefaultServer } from '../simpleTestEnvironment'
 import { TestProgram } from '../TestProgram'
+import LeakDetector from 'jest-leak-detector'
 
 describe('Integration - Deployment Pagination', () => {
   const fetcher = createFetchComponent()
@@ -42,8 +43,10 @@ describe('Integration - Deployment Pagination', () => {
 
   afterAll(async () => {
     jest.restoreAllMocks()
+    const detector = new LeakDetector(server)
     await server.stopProgram()
     server = null as any
+    expect(await detector.isLeaking()).toBe(false)
   })
 
   it('given local timestamp and asc when getting two elements the next link page is correct', async () => {

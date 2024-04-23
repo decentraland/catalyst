@@ -4,6 +4,7 @@ import { AppComponents } from '../../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { buildDeployData, deployEntitiesCombo, EntityCombo } from '../../E2ETestUtils'
 import { TestProgram } from '../../TestProgram'
+import LeakDetector from 'jest-leak-detector'
 import { createDefaultServer } from '../../simpleTestEnvironment'
 
 const P1 = 'X1,Y1'
@@ -34,8 +35,10 @@ describe('Integration - Same Timestamp Check', () => {
 
   afterAll(async () => {
     jest.restoreAllMocks()
+    const detector = new LeakDetector(server)
     await server.stopProgram()
     server = null as any
+    expect(await detector.isLeaking()).toBe(false)
   })
 
   it(`When oldest is deployed first, the active is the newest`, async () => {

@@ -2,6 +2,7 @@ import fetch from 'node-fetch'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { createDefaultServer } from '../simpleTestEnvironment'
 import { TestProgram } from '../TestProgram'
+import LeakDetector from 'jest-leak-detector'
 
 describe('Integration - Get Content', () => {
   let server: TestProgram
@@ -13,8 +14,10 @@ describe('Integration - Get Content', () => {
 
   afterAll(async () => {
     jest.restoreAllMocks()
+    const detector = new LeakDetector(server)
     await server.stopProgram()
     server = null as any
+    expect(await detector.isLeaking()).toBe(false)
   })
 
   it('returns 404 when the content file does not exist', async () => {

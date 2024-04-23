@@ -3,6 +3,7 @@ import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidat
 import { buildDeployData } from '../E2ETestUtils'
 import { createDefaultServer, resetServer } from '../simpleTestEnvironment'
 import { TestProgram } from '../TestProgram'
+import LeakDetector from 'jest-leak-detector'
 
 describe('Integration - Get Active Entities By Content Hash', () => {
   let server: TestProgram
@@ -16,8 +17,10 @@ describe('Integration - Get Active Entities By Content Hash', () => {
 
   afterAll(async () => {
     jest.restoreAllMocks()
+    const detector = new LeakDetector(server)
     await server.stopProgram()
     server = null as any
+    expect(await detector.isLeaking()).toBe(false)
   })
 
   it("When the deployment doesn't exist returns 404", async () => {
