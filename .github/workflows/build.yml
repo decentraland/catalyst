@@ -51,7 +51,7 @@ jobs:
       - name: create .env
         run: echo "" >> .env
       - name: test
-        run: yarn test:lambdas
+        run: yarn test:content
 
   test-lambdas:
     runs-on: ubuntu-latest
