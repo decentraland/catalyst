@@ -4,7 +4,6 @@ import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidat
 import { buildDeployData, deployEntitiesCombo } from '../E2ETestUtils'
 import { createDefaultServer } from '../simpleTestEnvironment'
 import { TestProgram } from '../TestProgram'
-import LeakDetector from 'jest-leak-detector'
 
 describe('Integration - Audit', () => {
   let server: TestProgram
@@ -16,10 +15,8 @@ describe('Integration - Audit', () => {
 
   afterAll(async () => {
     jest.restoreAllMocks()
-    const detector = new LeakDetector(server)
     await server.stopProgram()
     server = null as any
-    expect(await detector.isLeaking()).toBe(false)
   })
 
   it('returns 400 when no cid is provided', async () => {

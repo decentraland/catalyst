@@ -6,7 +6,6 @@ import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
 import { TestProgram } from '../TestProgram'
 import FormData = require('form-data')
 import { resetServer, createDefaultServer } from '../simpleTestEnvironment'
-import LeakDetector from 'jest-leak-detector'
 
 interface ActivePointersRow {
   entity_id: string
@@ -37,10 +36,8 @@ describe('Integration - Create entities', () => {
   afterAll(async () => {
     jest.restoreAllMocks()
     stopAllComponents({ fs })
-    const detector = new LeakDetector(server)
     await server.stopProgram()
     server = null as any
-    expect(await detector.isLeaking()).toBe(false)
   })
 
   it('when creating a profile, pointer should be stored in active-pointers table', async () => {

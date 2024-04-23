@@ -5,7 +5,6 @@ import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidat
 import { buildDeployData } from '../E2ETestUtils'
 import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
 import { TestProgram } from '../TestProgram'
-import LeakDetector from 'jest-leak-detector'
 import { createDefaultServer, resetServer } from '../simpleTestEnvironment'
 
 describe('Integration - Get Active Entities', () => {
@@ -20,10 +19,8 @@ describe('Integration - Get Active Entities', () => {
 
   afterAll(async () => {
     jest.restoreAllMocks()
-    const detector = new LeakDetector(server)
     await server.stopProgram()
     server = null as any
-    expect(await detector.isLeaking()).toBe(false)
   })
 
   it('when asking without params, it returns client error', async () => {

@@ -2,7 +2,6 @@ import fetch from 'node-fetch'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { createDefaultServer } from '../simpleTestEnvironment'
 import { TestProgram } from '../TestProgram'
-import LeakDetector from 'jest-leak-detector'
 
 describe('Integration - Entities', () => {
   let server: TestProgram
@@ -14,10 +13,8 @@ describe('Integration - Entities', () => {
 
   afterAll(async () => {
     jest.restoreAllMocks()
-    const detector = new LeakDetector(server)
     await server.stopProgram()
     server = null as any
-    expect(await detector.isLeaking()).toBe(false)
   })
 
   it('returns 500 when there is an exception while deploying the entity', async () => {

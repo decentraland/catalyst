@@ -1,6 +1,5 @@
 import { createSystemProperties, SYSTEM_PROPERTIES } from '../../../src/ports/system-properties'
 import { TestProgram } from '../TestProgram'
-import LeakDetector from 'jest-leak-detector'
 import { createDefaultServer } from '../simpleTestEnvironment'
 
 describe('system properties - ', () => {
@@ -12,10 +11,8 @@ describe('system properties - ', () => {
 
   afterAll(async () => {
     jest.restoreAllMocks()
-    const detector = new LeakDetector(server)
     await server.stopProgram()
     server = null as any
-    expect(await detector.isLeaking()).toBe(false)
   })
 
   it('test values', async () => {

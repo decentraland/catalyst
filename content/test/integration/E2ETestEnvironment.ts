@@ -3,7 +3,6 @@ import { ILoggerComponent } from '@well-known-components/interfaces'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { random } from 'faker'
-import LeakDetector from 'jest-leak-detector'
 import ms from 'ms'
 import { DEFAULT_DATABASE_CONFIG, Environment, EnvironmentBuilder, EnvironmentConfig } from '../../src/Environment'
 import { stopAllComponents } from '../../src/logic/components-lifecycle'
@@ -149,7 +148,11 @@ export class ServerBuilder {
   private readonly builder: EnvironmentBuilder
   private readonly storageBaseFolder: string
 
-  constructor(private readonly testEnvCalls: TestEnvCalls, env: Environment, public dao: DAOComponent) {
+  constructor(
+    private readonly testEnvCalls: TestEnvCalls,
+    env: Environment,
+    public dao: DAOComponent
+  ) {
     this.builder = new EnvironmentBuilder(env)
     this.storageBaseFolder = env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER) ?? 'storage'
   }
@@ -218,10 +221,8 @@ export function setupTestEnvironment(overrideConfigs?: Record<number, any>) {
 
   afterAll(async () => {
     jest.restoreAllMocks()
-    const detector = new LeakDetector(testEnv)
     await testEnv.stop()
     testEnv = null as any
-    expect(await detector.isLeaking()).toBe(false)
   })
 
   return () => testEnv

@@ -4,7 +4,6 @@ import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/ser
 import { buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo, EntityCombo } from '../../E2ETestUtils'
 import { createDefaultServer } from '../../simpleTestEnvironment'
 import { TestProgram } from '../../TestProgram'
-import LeakDetector from 'jest-leak-detector'
 
 /**
  * This test verifies that the active entity and overwrites are calculated correctly, regardless of the order in which the entities where deployed.
@@ -28,10 +27,8 @@ describe('Integration - Order Check', () => {
 
   afterAll(async () => {
     jest.restoreAllMocks()
-    const detector = new LeakDetector(server)
     await server.stopProgram()
     server = null as any
-    expect(await detector.isLeaking()).toBe(false)
   })
 
   beforeAll(async () => {

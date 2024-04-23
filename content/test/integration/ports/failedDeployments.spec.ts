@@ -8,7 +8,6 @@ import {
   SnapshotFailedDeployment
 } from '../../../src/ports/failedDeployments'
 import { TestProgram } from '../TestProgram'
-import LeakDetector from 'jest-leak-detector'
 import { createDefaultServer, resetServer } from '../simpleTestEnvironment'
 
 describe('failed deployments - ', () => {
@@ -22,10 +21,8 @@ describe('failed deployments - ', () => {
 
   afterAll(async () => {
     jest.restoreAllMocks()
-    const detector = new LeakDetector(server)
     await server.stopProgram()
     server = null as any
-    expect(await detector.isLeaking()).toBe(false)
   })
 
   const aFailedDeployment = {

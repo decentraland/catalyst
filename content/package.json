@@ -77,7 +77,6 @@
     "jest": "27.4.7",
     "jest-extra-utils": "^0.1.0",
     "jest-junit": "^13.0.0",
-    "jest-leak-detector": "^29.3.1",
     "lint-staged": "13.0.3",
     "nyc": "^15.1.0",
     "prettier": "2.7.1",

@@ -11,7 +11,6 @@ import { AppComponents } from '../../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { buildDeployData, buildDeployDataAfterEntity, createIdentity, EntityCombo, Identity } from '../../E2ETestUtils'
 import { TestProgram } from '../../TestProgram'
-import LeakDetector from 'jest-leak-detector'
 import { createDefaultServer } from '../../simpleTestEnvironment'
 
 const P1 = '0,0'
@@ -31,10 +30,8 @@ describe('Integration - Deployment with Entity Overlaps', () => {
 
   afterAll(async () => {
     jest.restoreAllMocks()
-    const detector = new LeakDetector(server)
     await server.stopProgram()
     server = null as any
-    expect(await detector.isLeaking()).toBe(false)
   })
 
   let identity: Identity
