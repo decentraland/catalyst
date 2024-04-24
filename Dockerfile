@@ -50,9 +50,3 @@ ENTRYPOINT ["/sbin/tini", "--"]
 
 # Run the program under Tini
 CMD [ "/usr/local/bin/node", "--max-old-space-size=8192", "content/entrypoints/run-server.js" ]
-
-
-
-
-# EXPOSE 7070
-# CMD [ "/usr/local/bin/node", "--max-old-space-size=8192", "lambdas/entrypoints/run-server.js" ]
