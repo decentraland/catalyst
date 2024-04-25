@@ -1,0 +1,11 @@
+name: CI/CD on PR
+
+on:
+  pull_request:
+
+jobs:
+  pr:
+    uses: decentraland/platform-actions/.github/workflows/apps-pr.yml@main
+    with:
+      service-name: catalyst
+    secrets: inherit

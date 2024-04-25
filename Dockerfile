@@ -1,10 +1,11 @@
 FROM node:16-alpine as base
-
 WORKDIR /app
 RUN apk add --no-cache bash git
 
 COPY package.json .
 COPY yarn.lock .
+COPY content/blocks-cache-*.csv content/
+COPY content/package.json content/
 COPY lambdas/package.json lambdas/
 
 # get production dependencies
@@ -14,16 +15,18 @@ RUN yarn install --prod --frozen-lockfile
 # build sources
 FROM base as catalyst-builder
 RUN yarn install --frozen-lockfile
-
 COPY . .
-FROM catalyst-builder as lambdas-builder
-RUN yarn workspace @catalyst/lambdas-server build
+RUN yarn build
 
 # build final image with transpiled code and runtime dependencies
 FROM base
 
 COPY --from=dependencies /app/node_modules ./node_modules/
-COPY --from=lambdas-builder /app/lambdas/dist/src lambdas/
+COPY --from=dependencies /app/content/node_modules ./node_modules/
+
+COPY --from=catalyst-builder /app/content/dist/src content/
+COPY --from=catalyst-builder /app/content/blocks-cache-*.csv /app/
+COPY --from=catalyst-builder /app/lambdas/dist/src lambdas/
 
 # https://docs.docker.com/engine/reference/builder/#arg
 ARG CURRENT_VERSION=4.0.0-ci
@@ -33,7 +36,7 @@ ENV CURRENT_VERSION=${CURRENT_VERSION:-4.0.0}
 ARG COMMIT_HASH=local
 ENV COMMIT_HASH=${COMMIT_HASH:-local}
 
-EXPOSE 7070
+EXPOSE 6969
 
 # Please _DO NOT_ use a custom ENTRYPOINT because it may prevent signals
 # (i.e. SIGTERM) to reach the service
@@ -46,4 +49,4 @@ RUN apk add --no-cache tini
 ENTRYPOINT ["/sbin/tini", "--"]
 
 # Run the program under Tini
-CMD [ "/usr/local/bin/node", "--max-old-space-size=8192", "lambdas/entrypoints/run-server.js" ]
+CMD [ "/usr/local/bin/node", "--max-old-space-size=8192", "content/entrypoints/run-server.js" ]
