@@ -1,0 +1,13 @@
+name: CI/CD on main branch
+
+on:
+  push:
+    branches:
+      - "main"
+
+jobs:
+  cd:
+    uses: decentraland/platform-actions/.github/workflows/apps-docker-next.yml@main
+    with:
+      service-name: catalyst
+    secrets: inherit
