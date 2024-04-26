@@ -23,6 +23,22 @@ jobs:
       - name: lint
         run: yarn lint:check
 
+  test-content-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 18.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18.x
+          cache: yarn
+      - name: install
+        run: yarn install --frozen-lockfile
+      - name: create .env
+        run: echo "" >> .env
+      - name: test
+        run: yarn workspace @catalyst/content-server test:unit
+
   test-content:
     runs-on: ubuntu-latest
     services:
@@ -51,8 +67,7 @@ jobs:
       - name: create .env
         run: echo "" >> .env
       - name: test
-        run: yarn test:content
-
+        run: yarn workspace @catalyst/content-server test:integration
 
   test-lambdas:
     runs-on: ubuntu-latest
