@@ -15,7 +15,7 @@
     "start:content-files-fixer": "node ./dist/src/entrypoints/run-content-files-fixer.js",
     "start:server": "node ./dist/src/entrypoints/run-server.js",
     "test:ci": "node --max-old-space-size=8000 node_modules/.bin/jest --runInBand --forceExit --coverage",
-    "test": "jest --runInBand --detectOpenHandles --forceExit --coverage test/integration/controller/active-entities.spec.ts",
+    "test": "jest --runInBand --detectOpenHandles --forceExit --coverage",
     "test:integration": "jest --selectProjects integration --runInBand --forceExit --detectOpenHandles --coverage",
     "test:unit": "jest --selectProjects unit --runInBand --forceExit --detectOpenHandles --coverage"
   },
