@@ -330,13 +330,15 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   let started = false
   const server = {
     ..._server,
-    start: async (options) => {
+    start: async (options: any) => {
       started = true
-      return _server.start && _server.start(options)
+      if (_server.start) {
+        await _server.start(options)
+      }
     },
     stop: async () => {
-      if (started) {
-        return _server.stop && _server.stop()
+      if (started && _server.stop) {
+        return _server.stop()
       }
     }
   }

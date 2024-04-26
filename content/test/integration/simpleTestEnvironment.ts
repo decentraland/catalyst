@@ -98,7 +98,7 @@ async function createServer(
     .withConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, `${storageBaseFolder}/${serverPort}`)
     .buildConfigAndComponents()
 
-  const domain = `http://localhost:${serverPort}`
+  const domain = `http://127.0.0.1:${serverPort}`
   dao.add(domain)
   const server = new TestProgram(components)
   server.components.daoClient = dao

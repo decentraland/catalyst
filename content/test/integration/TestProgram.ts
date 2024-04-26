@@ -48,7 +48,7 @@ export class TestProgram {
 
   getUrl(): string {
     const port = this.components.env.getConfig(EnvironmentConfig.HTTP_SERVER_PORT)
-    return `http://localhost:${port}`
+    return `http://127.0.0.1:${port}`
   }
 
   async stopProgram(): Promise<void> {

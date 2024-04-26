@@ -41,10 +41,10 @@ jobs:
           - 5432:5432
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js 16.16.0
+      - name: Use Node.js 18.x
         uses: actions/setup-node@v4
         with:
-          node-version: 16.16.0
+          node-version: 18.x
           cache: yarn
       - name: install
         run: yarn install --frozen-lockfile
@@ -53,15 +53,14 @@ jobs:
       - name: test
         run: yarn test:content
 
-
   test-lambdas:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Use Node.js 16.16.0
+      - name: Use Node.js 18.x
         uses: actions/setup-node@v3
         with:
-          node-version: 16.16.0
+          node-version: 18.x
           cache: yarn
       - name: install
         run: yarn install --frozen-lockfile

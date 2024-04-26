@@ -149,7 +149,11 @@ export class ServerBuilder {
   private readonly builder: EnvironmentBuilder
   private readonly storageBaseFolder: string
 
-  constructor(private readonly testEnvCalls: TestEnvCalls, env: Environment, public dao: DAOComponent) {
+  constructor(
+    private readonly testEnvCalls: TestEnvCalls,
+    env: Environment,
+    public dao: DAOComponent
+  ) {
     this.builder = new EnvironmentBuilder(env)
     this.storageBaseFolder = env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER) ?? 'storage'
   }
@@ -175,7 +179,7 @@ export class ServerBuilder {
     const servers: TestProgram[] = []
     for (let i = 0; i < ports.length; i++) {
       const port = ports[i]
-      const domain = `http://localhost:${port}`
+      const domain = `http://127.0.0.1:${port}`
       this.testEnvCalls.addToDAO(domain)
       const components = await this.builder
         .withConfig(EnvironmentConfig.HTTP_SERVER_PORT, port)
