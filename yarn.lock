@@ -333,6 +333,11 @@
   resolved "https://registry.yarnpkg.com/@dcl/catalyst-contracts/-/catalyst-contracts-4.4.0.tgz#a36a599f5e0c4b15e653650f74fcaa3da1f525ec"
   integrity sha512-jA4LU/f0VQI4epwctUZFIxnvnXBSsWGdoDibuV1kIW1nnooqRmCKdN2bbQKYWhWKtwjQfUHvbUKLzA+dD2a1gw==
 
+"@dcl/catalyst-contracts@^4.4.1":
+  version "4.4.1"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-contracts/-/catalyst-contracts-4.4.1.tgz#c05e45c1e58d8633b8e0260f00b6b6908517471a"
+  integrity sha512-auKNcpZUQV4u7BiL65TXGB0j+eLRVzvpE7oDd7ML0wyB4A8op9B1Ca+7JKZQLClrhj6nbyXoDT7JzFeSpkipoA==
+
 "@dcl/catalyst-storage@^4.0.0", "@dcl/catalyst-storage@^4.2.0":
   version "4.2.0"
   resolved "https://registry.yarnpkg.com/@dcl/catalyst-storage/-/catalyst-storage-4.2.0.tgz#a8a6d4f96c2a3cffa4dcc3564fa24e83bbc8ebd0"
