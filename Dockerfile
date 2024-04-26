@@ -1,6 +1,6 @@
 FROM node:18-alpine as base
 WORKDIR /app
-RUN apk add --no-cache bash git
+RUN apk add --no-cache git
 
 COPY package.json .
 COPY yarn.lock .
@@ -20,6 +20,7 @@ RUN yarn build
 
 # build final image with transpiled code and runtime dependencies
 FROM base
+RUN apk update && apk upgrade
 
 COPY --from=dependencies /app/node_modules ./node_modules/
 COPY --from=dependencies /app/content/node_modules ./node_modules/
