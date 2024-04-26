@@ -408,7 +408,7 @@ export class EnvironmentBuilder {
       EnvironmentConfig.CONTENT_SERVER_ADDRESS,
       () =>
         process.env.CONTENT_SERVER_ADDRESS ||
-        'http://localhost:' + env.getConfig<number>(EnvironmentConfig.HTTP_SERVER_PORT).toString()
+        'http://127.0.0.1:' + env.getConfig<number>(EnvironmentConfig.HTTP_SERVER_PORT).toString()
     )
 
     this.registerConfigIfNotAlreadySet(
