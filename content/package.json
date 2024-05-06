@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@dcl/block-indexer": "^1.1.2",
-    "@dcl/catalyst-api-specs": "^3.2.5",
+    "@dcl/catalyst-api-specs": "^3.2.6",
     "@dcl/catalyst-contracts": "^4.4.1",
     "@dcl/catalyst-storage": "^4.2.0",
     "@dcl/content-validator": "^5.2.0",
