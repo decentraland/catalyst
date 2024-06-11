@@ -17,28 +17,23 @@ export const DEFAULT_ETH_NETWORK = 'sepolia'
 
 export const DEFAULT_ENS_OWNER_PROVIDER_URL_TESTNET =
   'https://api.studio.thegraph.com/query/49472/marketplace-sepolia/version/latest'
-const DEFAULT_ENS_OWNER_PROVIDER_URL_MAINNET = 'https://api.thegraph.com/subgraphs/name/decentraland/marketplace'
+const DEFAULT_ENS_OWNER_PROVIDER_URL_MAINNET = 'https://subgraph.decentraland.org/marketplace'
 export const DEFAULT_LAND_MANAGER_SUBGRAPH_TESTNET =
   'https://api.studio.thegraph.com/query/49472/land-manager-sepolia/version/latest'
-export const DEFAULT_LAND_MANAGER_SUBGRAPH_MAINNET = 'https://api.thegraph.com/subgraphs/name/decentraland/land-manager'
+export const DEFAULT_LAND_MANAGER_SUBGRAPH_MAINNET = 'https://subgraph.decentraland.org/land-manager'
 export const DEFAULT_COLLECTIONS_SUBGRAPH_TESTNET =
   'https://api.studio.thegraph.com/query/49472/collections-ethereum-sepolia/version/latest'
-export const DEFAULT_COLLECTIONS_SUBGRAPH_MAINNET =
-  'https://api.thegraph.com/subgraphs/name/decentraland/collections-ethereum-mainnet'
-export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MAINNET =
-  'https://api.thegraph.com/subgraphs/name/decentraland/collections-matic-mainnet'
+export const DEFAULT_COLLECTIONS_SUBGRAPH_MAINNET = 'https://subgraph.decentraland.org/collections-ethereum-mainnet'
+export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MAINNET = 'https://subgraph.decentraland.org/collections-matic-mainnet'
 export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_AMOY = 'https://subgraph.decentraland.org/collections-matic-amoy'
 export const DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_AMOY = 'https://subgraph.decentraland.org/tpr-matic-amoy'
-export const DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_MAINNET =
-  'https://api.thegraph.com/subgraphs/name/decentraland/tpr-matic-mainnet'
+export const DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_MAINNET = 'https://subgraph.decentraland.org/tpr-matic-mainnet'
 export const DEFAULT_BLOCKS_SUBGRAPH_TESTNET =
   'https://api.studio.thegraph.com/query/49472/blocks-ethereum-sepolia/version/latest'
-export const DEFAULT_BLOCKS_SUBGRAPH_MAINNET =
-  'https://api.thegraph.com/subgraphs/name/decentraland/blocks-ethereum-mainnet'
+export const DEFAULT_BLOCKS_SUBGRAPH_MAINNET = 'https://subgraph.decentraland.org/blocks-ethereum-mainnet'
 export const DEFAULT_BLOCKS_SUBGRAPH_MATIC_AMOY =
   'https://api.studio.thegraph.com/query/49472/blocks-matic-amoy/version/latest'
-export const DEFAULT_BLOCKS_SUBGRAPH_MATIC_MAINNET =
-  'https://api.thegraph.com/subgraphs/name/decentraland/blocks-matic-mainnet'
+export const DEFAULT_BLOCKS_SUBGRAPH_MATIC_MAINNET = 'https://subgraph.decentraland.org/blocks-matic-mainnet'
 
 export const CURRENT_COMMIT_HASH = process.env.COMMIT_HASH ?? 'Unknown'
 export const CURRENT_VERSION = process.env.CURRENT_VERSION ?? 'Unknown'
