@@ -16,17 +16,14 @@ const DEFAULT_SERVER_PORT = 7070
 export const DEFAULT_ETH_NETWORK = 'sepolia'
 export const DEFAULT_ENS_OWNER_PROVIDER_URL_TESTNET =
   'https://api.studio.thegraph.com/query/49472/marketplace-sepolia/version/latest'
-const DEFAULT_ENS_OWNER_PROVIDER_URL_MAINNET = 'https://api.thegraph.com/subgraphs/name/decentraland/marketplace'
+const DEFAULT_ENS_OWNER_PROVIDER_URL_MAINNET = 'https://subgraph.decentraland.org/marketplace'
 export const DEFAULT_COLLECTIONS_SUBGRAPH_TESTNET =
   'https://api.studio.thegraph.com/query/49472/collections-ethereum-sepolia/version/latest'
-export const DEFAULT_COLLECTIONS_SUBGRAPH_MAINNET =
-  'https://api.thegraph.com/subgraphs/name/decentraland/collections-ethereum-mainnet'
+export const DEFAULT_COLLECTIONS_SUBGRAPH_MAINNET = 'https://subgraph.decentraland.org/collections-ethereum-mainnet'
 export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_AMOY = 'https://subgraph.decentraland.org/collections-matic-amoy'
-export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MAINNET =
-  'https://api.thegraph.com/subgraphs/name/decentraland/collections-matic-mainnet'
+export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MAINNET = 'https://subgraph.decentraland.org/collections-matic-mainnet'
 export const DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_AMOY = 'https://subgraph.decentraland.org/tpr-matic-amoy'
-export const DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_MAINNET =
-  'https://api.thegraph.com/subgraphs/name/decentraland/tpr-matic-mainnet'
+export const DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_MAINNET = 'https://subgraph.decentraland.org/tpr-matic-mainnet'
 
 const DEFAULT_MAX_SYNCHRONIZATION_TIME = '15m'
 const DEFAULT_MAX_DEPLOYMENT_OBTENTION_TIME = '3s'
