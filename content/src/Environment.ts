@@ -468,13 +468,21 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.L1_HTTP_PROVIDER_URL,
-      () => process.env.L1_HTTP_PROVIDER_URL ?? ''
+      () =>
+        process.env.L1_HTTP_PROVIDER_URL ??
+        (env.getConfig(EnvironmentConfig.ETH_NETWORK) === 'mainnet'
+          ? 'https://rpc.decentraland.org/mainnet?project=catalyst-content'
+          : 'https://rpc.decentraland.org/sepolia?project=catalyst-content')
     )
 
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.L2_HTTP_PROVIDER_URL,
-      () => process.env.L2_HTTP_PROVIDER_URL ?? ''
+      () =>
+        process.env.L2_HTTP_PROVIDER_URL ??
+        (env.getConfig(EnvironmentConfig.ETH_NETWORK) === 'mainnet'
+          ? 'https://rpc.decentraland.org/polygon?project=catalyst-content'
+          : 'https://rpc.decentraland.org/amoy?project=catalyst-content')
     )
 
     this.registerConfigIfNotAlreadySet(
