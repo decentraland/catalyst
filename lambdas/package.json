@@ -13,7 +13,7 @@
   "dependencies": {
     "@dcl/catalyst-api-specs": "^3.2.5",
     "@dcl/crypto": "^3.4.5",
-    "@dcl/schemas": "^11.5.0",
+    "@dcl/schemas": "^11.10.0",
     "@dcl/urn-resolver": "^3.4.0",
     "@well-known-components/env-config-provider": "^1.2.0",
     "@well-known-components/fetch-component": "^2.0.2",
