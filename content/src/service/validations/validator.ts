@@ -80,6 +80,7 @@ export async function createOnChainValidator(
   l2Provider: HTTPProvider
 ): Promise<ValidateFn> {
   const { env, metrics, logs, externalCalls } = components
+  const logger = logs.getLogger('OnChainValidator')
   const l1Network: 'mainnet' | 'sepolia' = env.getConfig(EnvironmentConfig.ETH_NETWORK)
   const l2Network = l1Network === 'mainnet' ? 'polygon' : 'amoy'
 
@@ -119,9 +120,9 @@ export async function createOnChainValidator(
     const file = `blocks-cache-${networkName}.csv`
     try {
       await loadTree(tree, file, converter)
-      console.log(`loading snapshot for ${networkName} took ${new Date().getTime() - start} ms.`)
+      logger.debug(`loading snapshot for ${networkName} took ${new Date().getTime() - start} ms.`)
     } catch (e) {
-      console.log(`failed to load cache file ${file}`, e.toString())
+      logger.warn(`failed to load cache file ${file}`, e.toString())
     }
   }
   await warmUpCache(l1BlockSearch.tree, l1Network)

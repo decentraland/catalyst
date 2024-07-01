@@ -123,23 +123,18 @@ export class SmartContentClient implements ContentClient {
     return this.onlyKnownHeaders(response.headers as any)
   }
 
-  deployEntity(deployData: DeploymentData, fix?: boolean, options?: RequestOptions): Promise<number> {
+  deployEntity(_deployData: DeploymentData, _fix?: boolean, _options?: RequestOptions): Promise<number> {
     throw new Error('New deployments are currently not supported')
   }
 
-  deploy(deployData: DeploymentData, options?: RequestOptions): Promise<unknown> {
+  deploy(_deployData: DeploymentData, _options?: RequestOptions): Promise<unknown> {
     throw new Error('New deployments are currently not supported')
   }
 
-  buildEntity({ type, pointers, files, metadata }: BuildEntityOptions): Promise<DeploymentPreparationData> {
+  buildEntity(_: BuildEntityOptions): Promise<DeploymentPreparationData> {
     throw new Error('New deployments are currently not supported')
   }
-  buildEntityWithoutNewFiles({
-    type,
-    pointers,
-    hashesByKey,
-    metadata
-  }: BuildEntityWithoutFilesOptions): Promise<DeploymentPreparationData> {
+  buildEntityWithoutNewFiles(_: BuildEntityWithoutFilesOptions): Promise<DeploymentPreparationData> {
     throw new Error('New deployments are currently not supported')
   }
 
