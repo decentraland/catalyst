@@ -321,10 +321,10 @@
     "@well-known-components/metrics" "^2.0.1"
     lru-cache "^7.14.0"
 
-"@dcl/catalyst-api-specs@^3.2.5":
-  version "3.2.5"
-  resolved "https://registry.yarnpkg.com/@dcl/catalyst-api-specs/-/catalyst-api-specs-3.2.5.tgz#ce5cdc0c90d38108d64d9b8ea147cb3a02b29124"
-  integrity sha512-x6zFbYLOpcwxm+LI20aa9EB+IuLF8QYxOx5D86XgZVVGvIjHlyUVpZrkE+C/VAtQsOK3Ry80jGu7G1n0BHXw9w==
+"@dcl/catalyst-api-specs@^3.2.6":
+  version "3.2.6"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-api-specs/-/catalyst-api-specs-3.2.6.tgz#1d0d7e7803b38ed3d1de0eef83394444a825bc33"
+  integrity sha512-bm8bfmIsZV3QqhY3tolxYm3ljA1vxhC+lRRQkwEnjZJiXHP0aeyvkCeVZp2ZmNTskXm29LDPGo3mcCGb/qiztA==
   dependencies:
     yaml "^2.3.4"
 
@@ -355,10 +355,10 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@^5.2.0":
-  version "5.2.0"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-5.2.0.tgz#08ee420ebd45d11674800224d2c66d6abd3078e1"
-  integrity sha512-N4pri8wfWEGObo0P/F8TXl2xOoNMbhZRtbqodOTiCYDiVaw18ncbt/hyzMjYPscJtQsmRYFRuveTnzbUTsRYsg==
+"@dcl/content-validator@^5.3.0":
+  version "5.3.0"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-5.3.0.tgz#8d95c96de542e409a87c7747bf5193e0385b1e18"
+  integrity sha512-0FugkhIy4bzWnmt7ro6Gjp+PtHhitA9HxbbaA4247A1u0et5BWn7Kp6+/kWrqTsD3X++wgONlpwGlR+Kg8YfdA==
   dependencies:
     "@dcl/block-indexer" "^1.1.1"
     "@dcl/content-hash-tree" "^1.1.4"
@@ -384,6 +384,16 @@
   version "3.0.4"
   resolved "https://registry.yarnpkg.com/@dcl/hashing/-/hashing-3.0.4.tgz#4df2a4cb3a8114765aed34cb57b91c93bf33bfb3"
   integrity sha512-Cg+MoIOn+BYmQV2q8zSFnNYY+GldlnUazwBnfgrq3i66ZxOaZ65h01btd8OUtSAlfWG4VTNIOHDjtKqmuwJNBg==
+
+"@dcl/schemas@^11.10.2":
+  version "11.10.2"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-11.10.2.tgz#9085c533e79d5b7a38da0345b80759e638bcee5e"
+  integrity sha512-BQlyueum4n8AFQZBu07mIpyEwSGjNaIJo3++1chuxrVSWRK9UpFHv5HX/2ClzF3fyKoc/FHOpSjUwn+T3qlLHQ==
+  dependencies:
+    ajv "^8.11.0"
+    ajv-errors "^3.0.0"
+    ajv-keywords "^5.1.0"
+    mitt "^3.0.1"
 
 "@dcl/schemas@^11.5.0":
   version "11.5.0"

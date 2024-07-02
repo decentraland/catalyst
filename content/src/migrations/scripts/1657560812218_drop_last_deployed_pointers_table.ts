@@ -1,10 +1,10 @@
 import { MigrationBuilder } from 'node-pg-migrate'
 
-export async function up(pgm: MigrationBuilder): Promise<void> {
+export async function up(_pgm: MigrationBuilder): Promise<void> {
   // pgm.dropTable('last_deployed_pointers')
 }
 
-export async function down(pgm: MigrationBuilder): Promise<void> {
+export async function down(_pgm: MigrationBuilder): Promise<void> {
   // pgm.createTable(
   //   'last_deployed_pointers',
   //   {
