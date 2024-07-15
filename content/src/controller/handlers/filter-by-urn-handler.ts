@@ -6,7 +6,10 @@ import { GetEntitiesByPointerPrefix200 } from '@dcl/catalyst-api-specs/lib/clien
 
 async function isUrnPrefixValid(collectionUrn: string): Promise<string | false> {
   const regex = /^[a-zA-Z0-9_.:,-]+$/g
-  if (!regex.test(collectionUrn)) return false
+  if (!regex.test(collectionUrn)) {
+    return false
+  }
+
   if (collectionUrn === BASE_AVATARS_COLLECTION_ID || collectionUrn === BASE_EMOTES_COLLECTION_ID) {
     return collectionUrn
   }
