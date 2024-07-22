@@ -311,7 +311,7 @@
   dependencies:
     "@cspotcode/source-map-consumer" "0.8.0"
 
-"@dcl/block-indexer@^1.1.1", "@dcl/block-indexer@^1.1.2":
+"@dcl/block-indexer@^1.1.2":
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/@dcl/block-indexer/-/block-indexer-1.1.2.tgz#da990cff837d33a556f6d7c734b678b86f01dc03"
   integrity sha512-IHUkRRkJ4PH07monqf8zqKPvbei+SsMNW205RjqYhVN2Pg5sQFAB9Laj06eDuB1KGd8TNbkoPAXaZ9Rghqw7IA==
@@ -355,18 +355,18 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@^5.4.0":
-  version "5.4.0"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-5.4.0.tgz#a3a2dfac82ef636b2aa6814a115451bb3b007043"
-  integrity sha512-+9z/A+N4RqykqJW2PoGJNoJLngv4G1XfARI1msSaDKLvUbqac4yXCv8WLuLUnzOqql0a/OyuFjZglHEJWbCH/w==
+"@dcl/content-validator@^5.5.0":
+  version "5.5.0"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-5.5.0.tgz#5409be2f9acd6ab23cd1689d1a1dd01a2c219e49"
+  integrity sha512-15bWkha8NiwahSMlGze4aSahKbHCl40+e17SivLD/yLS4HyqYQLlVRherJ14MIK/wbI+AEh3gXR/2u010BVnWg==
   dependencies:
-    "@dcl/block-indexer" "^1.1.1"
+    "@dcl/block-indexer" "^1.1.2"
     "@dcl/content-hash-tree" "^1.1.4"
-    "@dcl/hashing" "^3.0.1"
-    "@dcl/schemas" "^11.12.0"
-    "@dcl/urn-resolver" "^3.5.0"
-    "@well-known-components/interfaces" "^1.3.0"
-    "@well-known-components/thegraph-component" "^1.5.0"
+    "@dcl/hashing" "^3.0.4"
+    "@dcl/schemas" "^13.2.1"
+    "@dcl/urn-resolver" "^3.6.0"
+    "@well-known-components/interfaces" "^1.4.3"
+    "@well-known-components/thegraph-component" "^1.6.0"
     ms "^2.1.3"
     p-queue "^6.6.2"
     sharp "0.32.6"
@@ -380,12 +380,12 @@
     eth-connect "^6.0.3"
     ethereum-cryptography "^1.0.3"
 
-"@dcl/hashing@^3.0.0", "@dcl/hashing@^3.0.1", "@dcl/hashing@^3.0.3", "@dcl/hashing@^3.0.4":
+"@dcl/hashing@^3.0.0", "@dcl/hashing@^3.0.3", "@dcl/hashing@^3.0.4":
   version "3.0.4"
   resolved "https://registry.yarnpkg.com/@dcl/hashing/-/hashing-3.0.4.tgz#4df2a4cb3a8114765aed34cb57b91c93bf33bfb3"
   integrity sha512-Cg+MoIOn+BYmQV2q8zSFnNYY+GldlnUazwBnfgrq3i66ZxOaZ65h01btd8OUtSAlfWG4VTNIOHDjtKqmuwJNBg==
 
-"@dcl/schemas@^11.12.0", "@dcl/schemas@^11.5.0":
+"@dcl/schemas@^11.5.0":
   version "11.12.0"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-11.12.0.tgz#f52493b615ebdea8e02819bc2ed4a456239f3747"
   integrity sha512-L04KTucvxSnrHDAl3/rnkzhjfZ785dSSPeKarBVfzyuw41uyQ0Mh4HVFWjX9hC+f/nMpM5Adg5udlT5efmepcA==
@@ -426,7 +426,7 @@
     "@well-known-components/metrics" "^2.0.0"
     p-queue "^6.6.2"
 
-"@dcl/urn-resolver@^3.5.0", "@dcl/urn-resolver@^3.6.0":
+"@dcl/urn-resolver@^3.6.0":
   version "3.6.0"
   resolved "https://registry.yarnpkg.com/@dcl/urn-resolver/-/urn-resolver-3.6.0.tgz#4450b3869433aa6724306c34769846bcd54ccc35"
   integrity sha512-hU8bCeanfMq3BmYkhBxcZ4zkH53atsCErmfN8GiTHEj0wuDCS7wKkzQPPdKPGOZieAfgsjm16/JmSXg0kAHgtA==
@@ -1703,7 +1703,7 @@
     "@well-known-components/interfaces" "^1.3.0"
     busboy "^1.6.0"
 
-"@well-known-components/thegraph-component@^1.5.0", "@well-known-components/thegraph-component@^1.6.0":
+"@well-known-components/thegraph-component@^1.6.0":
   version "1.6.0"
   resolved "https://registry.yarnpkg.com/@well-known-components/thegraph-component/-/thegraph-component-1.6.0.tgz#099466d0e8c21fcb34faa3351f33ab500b5cf928"
   integrity sha512-LfBszhAnYRoLtLFkCDxjYIFFTk9mWL9wMPUSSnM0l/r0k/X3859DXXe2CrWIu3CeGpXdWI29YHE14EKvaBs3sw==
