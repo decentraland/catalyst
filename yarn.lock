@@ -1645,10 +1645,18 @@
   dependencies:
     dotenv "^16.0.1"
 
-"@well-known-components/fetch-component@^2.0.0", "@well-known-components/fetch-component@^2.0.2":
+"@well-known-components/fetch-component@^2.0.0":
   version "2.0.2"
   resolved "https://registry.yarnpkg.com/@well-known-components/fetch-component/-/fetch-component-2.0.2.tgz#02260611f9d05551efe825c4358cbc628a71c4c0"
   integrity sha512-LdY+6n9kuyACg3fcU4qMrNhLZuG7eqPxLSqzDgQyoHKeNjlzggoUqTVJKtIyi6vjPs8pSQ/Fx1xdLuBhOKCgww==
+  dependencies:
+    "@well-known-components/interfaces" "^1.4.1"
+    cross-fetch "^3.1.5"
+
+"@well-known-components/fetch-component@^3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@well-known-components/fetch-component/-/fetch-component-3.0.0.tgz#93921f0d18b1fc21f1f5540cc4ae035a0dabf55d"
+  integrity sha512-ycIaojkwLJvhpicdPsmsEzA9qPbV7voAjrRcVE7+n7UNctIQC8ppymapj0UQ3FFpdEWWVSzjoo33H0BW+sD8eg==
   dependencies:
     "@well-known-components/interfaces" "^1.4.1"
     cross-fetch "^3.1.5"
