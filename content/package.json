@@ -29,7 +29,7 @@
     "@dcl/hashing": "^3.0.4",
     "@dcl/schemas": "^12.0.0",
     "@dcl/snapshots-fetcher": "^9.0.3",
-    "@dcl/urn-resolver": "^3.5.0",
+    "@dcl/urn-resolver": "^3.6.0",
     "@well-known-components/env-config-provider": "^1.2.0",
     "@well-known-components/fetch-component": "^2.0.2",
     "@well-known-components/http-server": "^2.1.0",
