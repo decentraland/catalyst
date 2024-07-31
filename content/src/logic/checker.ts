@@ -36,27 +36,31 @@ export async function createL1Checker(provider: HTTPProvider, network: 'mainnet'
     return checker.multicall.unpackOutput(data)
   }
 
+  async function checkLAND(ethAddress: string, parcels: [number, number][], block: number): Promise<boolean[]> {
+    const multicallPayload = await Promise.all(
+      parcels.map(async ([x, y]) => {
+        const payload = checker.checkLAND.toPayload(ethAddress, contracts.land, contracts.state, x, y)
+        return payload.data
+      })
+    )
+
+    return callMulticallCheckerMethod(multicallPayload, block)
+  }
+
+  async function checkNames(ethAddress: string, names: string[], block: number): Promise<boolean[]> {
+    const multicallPayload = await Promise.all(
+      names.map(async (name) => {
+        const payload = await checker.checkName.toPayload(ethAddress, contracts.registrar, name)
+        return payload.data
+      })
+    )
+
+    return callMulticallCheckerMethod(multicallPayload, block)
+  }
+
   return {
-    async checkLAND(ethAddress: string, parcels: [number, number][], block: number): Promise<boolean[]> {
-      const multicallPayload = await Promise.all(
-        parcels.map(async ([x, y]) => {
-          const payload = checker.checkLAND.toPayload(ethAddress, contracts.land, contracts.state, x, y)
-          return payload.data
-        })
-      )
-
-      return callMulticallCheckerMethod(multicallPayload, block)
-    },
-    async checkNames(ethAddress: string, names: string[], block: number): Promise<boolean[]> {
-      const multicallPayload = await Promise.all(
-        names.map(async (name) => {
-          const payload = await checker.checkName.toPayload(ethAddress, contracts.registrar, name)
-          return payload.data
-        })
-      )
-
-      return callMulticallCheckerMethod(multicallPayload, block)
-    }
+    checkLAND,
+    checkNames
   }
 }
 
@@ -97,40 +101,40 @@ export async function createL2Checker(provider: HTTPProvider, network: 'polygon'
     return method.unpackOutput(data)
   }
 
-  return {
-    async validateWearables(
-      ethAddress: string,
-      contractAddress: string,
-      assetId: string,
-      hashes: string[],
-      block: number
-    ): Promise<boolean> {
-      const factories = contracts.factories
-        .filter(({ sinceBlock }) => block >= sinceBlock)
-        .map(({ address }) => address)
-      const commitees = contracts.commitees
-        .filter(({ sinceBlock }) => block >= sinceBlock)
-        .map(({ address }) => address)
-      const multicallPayload = await Promise.all(
-        hashes.map(async (hash) => {
-          const payload = checker.validateWearables.toPayload(
-            ethAddress,
-            factories,
-            contractAddress,
-            assetId,
-            hash,
-            commitees
-          )
-          return payload.data
-        })
-      )
+  async function validateWearables(
+    ethAddress: string,
+    contractAddress: string,
+    assetId: string,
+    hashes: string[],
+    block: number
+  ): Promise<boolean> {
+    const factories = contracts.factories.filter(({ sinceBlock }) => block >= sinceBlock).map(({ address }) => address)
+    const commitees = contracts.commitees.filter(({ sinceBlock }) => block >= sinceBlock).map(({ address }) => address)
+    const multicallPayload = await Promise.all(
+      hashes.map(async (hash) => {
+        const payload = checker.validateWearables.toPayload(
+          ethAddress,
+          factories,
+          contractAddress,
+          assetId,
+          hash,
+          commitees
+        )
+        return payload.data
+      })
+    )
 
-      const result = (await callMulticallCheckerMethod(multicallPayload, block)) as boolean[]
-      return result.some((r) => r)
-    },
-    async validateThirdParty(tpId: string, root: Buffer, block: number): Promise<boolean> {
-      return callCheckerMethod(checker.validateThirdParty, [contracts.thirdParty, tpId, root], block)
-    }
+    const result = (await callMulticallCheckerMethod(multicallPayload, block)) as boolean[]
+    return result.some((r) => r)
+  }
+
+  async function validateThirdParty(tpId: string, root: Buffer, block: number): Promise<boolean> {
+    return callCheckerMethod(checker.validateThirdParty, [contracts.thirdParty, tpId, root], block)
+  }
+
+  return {
+    validateWearables,
+    validateThirdParty
   }
 }
 
