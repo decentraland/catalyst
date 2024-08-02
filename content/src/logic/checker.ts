@@ -1,11 +1,12 @@
 import { ItemChecker, L1Checker, L2Checker } from '@dcl/content-validator'
 import { inputBlockNumberFormatter, inputCallFormatter } from './formatters'
-import { ContractFactory, HTTPProvider, RequestManager, RPCSendableMessage, toBatchPayload, toData } from 'eth-connect'
+import { ContractFactory, HTTPProvider, RequestManager, RPCSendableMessage, toData } from 'eth-connect'
 import { checkerAbi, l1Contracts, l2Contracts } from '@dcl/catalyst-contracts'
 import { code } from '@dcl/catalyst-contracts/dist/checkerByteCode'
 import { parseUrn } from '@dcl/urn-resolver'
 import { EthAddress } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
+import { sendBatch } from './contract-helpers'
 
 type CollectionItem = {
   contract: string
@@ -147,20 +148,6 @@ const itemCheckerAbi = [
     type: 'function'
   }
 ]
-
-function sendBatch(provider: HTTPProvider, batch: RPCSendableMessage[]) {
-  const payload = toBatchPayload(batch)
-  return new Promise<any>((resolve, reject) => {
-    provider.sendAsync(payload as any, (err: any, result: any) => {
-      if (err) {
-        reject(err)
-        return
-      }
-
-      resolve(result)
-    })
-  })
-}
 
 export async function createItemChecker(logs: ILoggerComponent, provider: HTTPProvider): Promise<ItemChecker> {
   const logger = logs.getLogger('item-checker')
