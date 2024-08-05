@@ -169,6 +169,10 @@ export async function createItemChecker(logs: ILoggerComponent, provider: HTTPPr
   }
 
   async function checkItems(ethAddress: string, items: string[], block: number): Promise<boolean[]> {
+    if (items.length === 0) {
+      return []
+    }
+
     const uniqueItems = Array.from(new Set(items))
     const urns = await Promise.all(uniqueItems.map((item) => parseUrn(item)))
 
