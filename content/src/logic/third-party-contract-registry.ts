@@ -14,7 +14,6 @@ export enum ContractType {
 
 export function loadCacheFile(file: string): Record<string, ContractType> {
   try {
-    console.log(file, fs.existsSync(file))
     if (!fs.existsSync(file)) {
       saveCacheFile(file, {})
     }
@@ -51,7 +50,6 @@ export async function createThirdPartyContractRegistry(
 
   const file = path.join(storageRoot, `third-party-contracts-${network}.json`)
   const data: Record<ContractAddress, ContractType> = loadCacheFile(file)
-  console.log('data', JSON.stringify(data, null, 2))
 
   function isErc721(contractAddress: ContractAddress): boolean {
     return data[contractAddress.toLowerCase()] === ContractType.ERC721
@@ -66,14 +64,11 @@ export async function createThirdPartyContractRegistry(
   }
 
   async function checkIfErc721(contractAddress: ContractAddress): Promise<boolean> {
-    console.log('checkIfErc721', contractAddress)
-
     // ERC-721 checks
     const contract: any = await erc721ContractFactory.at(contractAddress)
     try {
       const r = await sendSingle(provider, await contract.ownerOf.toRPCMessage(0))
 
-      console.log('r', r)
       if (r.error?.code === 3) {
         // NFT id doesn't exist, but it is an ERC-721
         return true
@@ -81,7 +76,6 @@ export async function createThirdPartyContractRegistry(
       if (!r.result) {
         return false
       }
-      console.log('toData', toData(r.result), contract.ownerOf.unpackOutput(toData(r.result)))
       return !!contract.ownerOf.unpackOutput(toData(r.result))
     } catch (_) {
       return false
@@ -89,15 +83,12 @@ export async function createThirdPartyContractRegistry(
   }
 
   async function checkIfErc1155(contractAddress: ContractAddress): Promise<boolean> {
-    console.log('checkIfErc1155', contractAddress)
-
     // ERC-1155 checks
     const contract: any = await erc1155ContractFactory.at(contractAddress)
 
     try {
       const r = await sendSingle(provider, await contract.balanceOf.toRPCMessage(contract.address, 0))
 
-      console.log('r', r)
       if (!r.result) {
         return false
       }

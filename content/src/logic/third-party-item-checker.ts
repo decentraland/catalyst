@@ -16,7 +16,6 @@ type TempData = {
 export async function createThirdPartyItemChecker(
   logs: ILoggerComponent,
   provider: HTTPProvider,
-  network: 'mainnet' | 'sepolia' | 'polygon' | 'amoy',
   thirdPartyContractRegistry: ThirdPartyContractRegistry
 ): Promise<ThirdPartyItemChecker> {
   const logger = logs.getLogger('item-checker')
@@ -36,9 +35,6 @@ export async function createThirdPartyItemChecker(
       acc[urn] = { urn }
       return acc
     }, {} as Record<string, TempData>)
-    // console.log('allUrn', allUrns)
-
-    // TODO Fetch wearables from DB and check the mappings. If token ids are outside the mappings, return validation error
 
     // Mark as false all urns that cannot be parsed
     for (const urn of itemUrns) {
@@ -51,7 +47,6 @@ export async function createThirdPartyItemChecker(
         allUrns[urn].nftId = parsed1.nftTokenId
       }
     }
-    // console.log('allUrn', allUrns)
 
     // Ensure all contracts are of a known type, otherwise try to determine it and store it.
     await thirdPartyContractRegistry.ensureContractsKnown(
@@ -60,7 +55,7 @@ export async function createThirdPartyItemChecker(
         .map((asset) => asset.contract)
     )
 
-    // Mark as false all contracts that are of unknown type
+    // Mark as false all wearables referencing contracts that are of an unknown type
     Object.values(allUrns)
       .filter((tempData) => !!tempData.contract)
       .forEach((tempData) => {
@@ -68,11 +63,8 @@ export async function createThirdPartyItemChecker(
           tempData.result = false
         }
       })
-    // console.log('allUrn', allUrns)
 
     const filteredAssets: TempData[] = Object.values(allUrns).filter((tempData) => tempData.result === undefined)
-    console.log('filteredAssets', filteredAssets)
-
     const contracts: any = await Promise.all(
       filteredAssets.map((asset) => {
         if (thirdPartyContractRegistry.isErc721(asset.contract!)) {
@@ -95,8 +87,6 @@ export async function createThirdPartyItemChecker(
     )
 
     const result = await sendBatch(provider, batch)
-    // console.log('result', result)
-
     result.forEach((r: any, idx: number) => {
       if (!r.result) {
         filteredAssets[idx].result = false
@@ -111,7 +101,6 @@ export async function createThirdPartyItemChecker(
       }
     })
 
-    // console.log('allUrn', allUrns)
     return itemUrns.map((itemUrn) => allUrns[itemUrn].result)
   }
 
