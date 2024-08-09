@@ -30,6 +30,7 @@ export async function getWearablesByOwnerHandler(
   const includeDefinitions = 'includeDefinitions' in req.query
 
   try {
+    LOGGER.info(`Fetching wearables by owner ${owner}`)
     res.send(
       await getWearablesByOwner(includeDefinitions, client, theGraphClient, thirdPartyFetcher, collectionId, owner)
     )

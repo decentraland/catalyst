@@ -31,7 +31,9 @@ export async function createTheGraphClient(components: {
     variables: Record<string, any>
   ): Promise<ReturnType> {
     try {
+      logger.debug(`Executing query to the subgraph`, { query: query.query, variables: JSON.stringify(variables) })
       const response = await subgraphs[query.subgraph].query<QueryResult>(query.query, variables)
+      logger.debug(`Response from the subgraph`, { response: JSON.stringify(response) })
       return query.mapper(response)
     } catch (error) {
       logger.error(
@@ -229,6 +231,7 @@ export async function createTheGraphClient(components: {
     let shouldContinue = true
     let start = ''
     while (shouldContinue) {
+      // logger.debug('DEBUG', { query: JSON.stringify(query), first: MAX_PAGE_SIZE, start })
       const queried = await runQuery(query, { ...variables, first: MAX_PAGE_SIZE, start: start })
       if (!result) {
         result = queried
@@ -264,7 +267,7 @@ export async function createTheGraphClient(components: {
     const maticWearablesPromise = getItemsByOwner('maticCollectionsSubgraph', owner, itemTypes)
     const [ethereumWearables, maticWearables] = await Promise.all([ethereumWearablesPromise, maticWearablesPromise])
 
-    logger.debug('Matic response', { maticWearables: maticWearables.join(', ') })
+    logger.debug('Matic response', { owner, maticWearables: maticWearables.join(', ') })
     return ethereumWearables.concat(maticWearables)
   }
 
