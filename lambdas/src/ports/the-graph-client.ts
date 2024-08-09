@@ -264,6 +264,7 @@ export async function createTheGraphClient(components: {
     const maticWearablesPromise = getItemsByOwner('maticCollectionsSubgraph', owner, itemTypes)
     const [ethereumWearables, maticWearables] = await Promise.all([ethereumWearablesPromise, maticWearablesPromise])
 
+    logger.debug('Matic response', { maticWearables: maticWearables.join(', ') })
     return ethereumWearables.concat(maticWearables)
   }
 
