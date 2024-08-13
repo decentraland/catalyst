@@ -28,6 +28,8 @@ import RequestManager, { HTTPProvider } from 'eth-connect'
 import { EnvironmentConfig } from '../../Environment'
 import { createItemChecker, createL1Checker, createL2Checker } from '../../logic/checker'
 import { AppComponents } from '../../types'
+import { createThirdPartyItemChecker } from '../../logic/third-party-item-checker'
+import { createThirdPartyContractRegistry } from '../../logic/third-party-contract-registry'
 
 const createEthereumProvider = (httpProvider: HTTPProvider): EthereumProvider => {
   const reqMan = new RequestManager(httpProvider)
@@ -89,6 +91,12 @@ export async function createOnChainValidator(
   const l1ItemChecker = await createItemChecker(logs, l1Provider)
   const l2ItemChecker = await createItemChecker(logs, l2Provider)
 
+  const storageRoot = env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER) as string
+  const l1ThirdPartyContractRegistry = await createThirdPartyContractRegistry(logs, l1Provider, l1Network, storageRoot)
+  const l2ThirdPartyContractRegistry = await createThirdPartyContractRegistry(logs, l2Provider, l2Network, storageRoot)
+  const l1ThirdPartyItemChecker = await createThirdPartyItemChecker(logs, l1Provider, l1ThirdPartyContractRegistry)
+  const l2ThirdPartyItemChecker = await createThirdPartyItemChecker(logs, l2Provider, l2ThirdPartyContractRegistry)
+
   const l1BlockSearch = createAvlBlockSearch({
     blockRepository: createBlockRepository({
       metrics,
@@ -131,12 +139,14 @@ export async function createOnChainValidator(
   const L1 = {
     checker: l1Checker,
     collections: l1ItemChecker,
+    thirdParty: l1ThirdPartyItemChecker,
     blockSearch: l1BlockSearch
   }
 
   const L2 = {
     checker: l2Checker,
     collections: l2ItemChecker,
+    thirdParty: l2ThirdPartyItemChecker,
     blockSearch: l2BlockSearch
   }
 
