@@ -395,10 +395,10 @@
     ajv-keywords "^5.1.0"
     mitt "^3.0.1"
 
-"@dcl/schemas@^13.2.1":
-  version "13.2.1"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-13.2.1.tgz#39eaa7e06e06c8e938c80d9d91f70acff1f2d1e1"
-  integrity sha512-2RtH0eSqcv0d8FSrLUV5yk1eFWCBe66MChrhcqxC0aPp0tz+osKzablqNwx4d6GukEQpibmpOAsZztkeyI4f4A==
+"@dcl/schemas@^13.2.1", "@dcl/schemas@^13.6.2":
+  version "13.6.2"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-13.6.2.tgz#6c5a38cd5b0f867d4a4194c085c85463ba2aef59"
+  integrity sha512-sps6khw7pn8hY/TRr8aH4gV+t5xVi7A32PZ4EVVJzjDAhTXAxa74wAI9cA/y/gR6rYKWu96LtHoEBf7wde8/lQ==
   dependencies:
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
