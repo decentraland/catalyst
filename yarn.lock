@@ -328,15 +328,10 @@
   dependencies:
     yaml "^2.3.4"
 
-"@dcl/catalyst-contracts@^4.4.0":
-  version "4.4.0"
-  resolved "https://registry.yarnpkg.com/@dcl/catalyst-contracts/-/catalyst-contracts-4.4.0.tgz#a36a599f5e0c4b15e653650f74fcaa3da1f525ec"
-  integrity sha512-jA4LU/f0VQI4epwctUZFIxnvnXBSsWGdoDibuV1kIW1nnooqRmCKdN2bbQKYWhWKtwjQfUHvbUKLzA+dD2a1gw==
-
-"@dcl/catalyst-contracts@^4.4.1":
-  version "4.4.1"
-  resolved "https://registry.yarnpkg.com/@dcl/catalyst-contracts/-/catalyst-contracts-4.4.1.tgz#c05e45c1e58d8633b8e0260f00b6b6908517471a"
-  integrity sha512-auKNcpZUQV4u7BiL65TXGB0j+eLRVzvpE7oDd7ML0wyB4A8op9B1Ca+7JKZQLClrhj6nbyXoDT7JzFeSpkipoA==
+"@dcl/catalyst-contracts@^4.4.0", "@dcl/catalyst-contracts@^4.4.2":
+  version "4.4.2"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-contracts/-/catalyst-contracts-4.4.2.tgz#e7a329d7aee25c90d7ee07dbe82200a048f17ff9"
+  integrity sha512-gJZo3IB8U+jhBJWR0DgoLS+zaUDIb/u79e7Rp+MEM78uH3bvC19S3Dd8lxWEbPXNKlCB0saUptfK/Buw0c1y2Q==
 
 "@dcl/catalyst-storage@^4.0.0", "@dcl/catalyst-storage@^4.2.0":
   version "4.2.0"
