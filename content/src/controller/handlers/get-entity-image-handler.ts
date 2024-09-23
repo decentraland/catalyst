@@ -26,7 +26,7 @@ export async function getEntityImageHandler(
 
   return {
     status: 200,
-    headers: createContentFileHeaders(content, hash),
+    headers: await createContentFileHeaders(content, hash),
     body: context.request.method.toUpperCase() === 'GET' ? await content.asRawStream() : undefined
   }
 }

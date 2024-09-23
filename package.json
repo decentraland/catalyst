@@ -55,5 +55,7 @@
   "jest-junit": {
     "addFileAttribute": "true"
   },
-  "dependencies": {}
+  "dependencies": {
+    "file-type": "^19.5.0"
+  }
 }
