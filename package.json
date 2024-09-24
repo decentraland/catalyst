@@ -56,6 +56,6 @@
     "addFileAttribute": "true"
   },
   "dependencies": {
-    "file-type": "^19.5.0"
+    "file-type": "^15.0.1"
   }
 }
