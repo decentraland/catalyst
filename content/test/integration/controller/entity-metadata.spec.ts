@@ -90,7 +90,7 @@ describe('Integration - Get wearable image and thumbnail', () => {
 
       for (const response of responses) {
         expect(response.status).toEqual(200)
-        expect(response.headers.get('content-type')).toEqual('application/octet-stream')
+        expect(response.headers.get('content-type')).toEqual('image/png')
         expect(response.headers.get('ETag')).toBeTruthy()
         expect(response.headers.get('Cache-Control')).toBeTruthy()
       }
@@ -131,7 +131,7 @@ describe('Integration - Get wearable image and thumbnail', () => {
 
       for (const response of responses) {
         expect(response.status).toEqual(200)
-        expect(response.headers.get('content-type')).toEqual('application/octet-stream')
+        expect(response.headers.get('content-type')).toEqual('image/png')
         expect(response.headers.get('ETag')).toBeTruthy()
         expect(response.headers.get('Cache-Control')).toBeTruthy()
       }
