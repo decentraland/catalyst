@@ -77,8 +77,8 @@ describe('Integration - Get wearable image and thumbnail', () => {
 
     it('when entity has thumbnail, it should return the content and set the headers', async () => {
       const deployResult = await buildDeployData(['wearable'], {
-        metadata: { thumbnail: 'some-binary-file.png' },
-        contentPaths: ['test/integration/resources/some-binary-file.png']
+        metadata: { thumbnail: 'heavy-image.jpg' },
+        contentPaths: ['test/integration/resources/heavy-image.jpg']
       })
 
       await server.deployEntity(deployResult.deployData)
@@ -90,7 +90,49 @@ describe('Integration - Get wearable image and thumbnail', () => {
 
       for (const response of responses) {
         expect(response.status).toEqual(200)
-        expect(response.headers.get('content-type')).toEqual('image/png')
+        expect(response.headers.get('content-type')).toEqual('image/jpeg')
+        expect(response.headers.get('ETag')).toBeTruthy()
+        expect(response.headers.get('Cache-Control')).toBeTruthy()
+      }
+    })
+
+    it('when entity has thumbnail, it should return the content and set the headers (GLB detection)', async () => {
+      const deployResult = await buildDeployData(['wearable'], {
+        metadata: { thumbnail: 'new.glb' },
+        contentPaths: ['test/integration/resources/new.glb']
+      })
+
+      await server.deployEntity(deployResult.deployData)
+
+      const responses = await Promise.all([
+        fetch(`${server.getUrl()}/queries/items/wearable/thumbnail`),
+        fetch(`${server.getUrl()}/queries/items/wearable/thumbnail`, { method: 'HEAD' })
+      ])
+
+      for (const response of responses) {
+        expect(response.status).toEqual(200)
+        expect(response.headers.get('content-type')).toEqual('model/gltf-binary')
+        expect(response.headers.get('ETag')).toBeTruthy()
+        expect(response.headers.get('Cache-Control')).toBeTruthy()
+      }
+    })
+
+    it('when entity has thumbnail, it should return the content and set the headers (JSON detection)', async () => {
+      const deployResult = await buildDeployData(['wearable'], {
+        metadata: { thumbnail: 'another_scene.json' },
+        contentPaths: ['test/integration/resources/another_scene.json']
+      })
+
+      await server.deployEntity(deployResult.deployData)
+
+      const responses = await Promise.all([
+        fetch(`${server.getUrl()}/queries/items/wearable/thumbnail`),
+        fetch(`${server.getUrl()}/queries/items/wearable/thumbnail`, { method: 'HEAD' })
+      ])
+
+      for (const response of responses) {
+        expect(response.status).toEqual(200)
+        expect(response.headers.get('content-type')).toEqual('application/json')
         expect(response.headers.get('ETag')).toBeTruthy()
         expect(response.headers.get('Cache-Control')).toBeTruthy()
       }
