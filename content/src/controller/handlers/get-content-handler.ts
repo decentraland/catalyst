@@ -13,7 +13,7 @@ export async function getContentHandler(context: HandlerContextWithPath<'storage
 
   return {
     status: 200,
-    headers: createContentFileHeaders(content, hash),
+    headers: await createContentFileHeaders(content, hash),
     body: context.request.method.toUpperCase() === 'GET' ? await content.asRawStream() : undefined
   }
 }
