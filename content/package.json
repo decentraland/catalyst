@@ -41,6 +41,7 @@
     "bloom-filters": "^3.0.0",
     "dcl-catalyst-client": "^21.7.0",
     "eth-connect": "^6.2.4",
+    "file-type": "^15.0.1",
     "form-data": "^4.0.0",
     "fp-future": "^1.0.1",
     "joi": "^17.9.2",

@@ -1,5 +1,7 @@
 import { ContentItem } from '@dcl/catalyst-storage'
 import { InvalidRequestError, Pagination } from '../types'
+import { fromStream } from 'file-type'
+import { Readable } from 'stream'
 
 export function paginationObject(url: URL, maxPageSize: number = 1000): Pagination {
   const pageSize = url.searchParams.has('pageSize') ? parseInt(url.searchParams.get('pageSize')!, 10) : 100
@@ -37,9 +39,13 @@ export function asEnumValue<T extends { [key: number]: string }>(
   }
 }
 
-export function createContentFileHeaders(content: ContentItem, hashId: string): Record<string, string> {
+export async function createContentFileHeaders(content: ContentItem, hashId: string): Promise<Record<string, string>> {
+  const stream: Readable = await content.asRawStream()
+  const mime = await fromStream(stream)
+  const mimeType = mime?.mime || 'application/octet-stream'
+
   const headers: Record<string, string> = {
-    'Content-Type': 'application/octet-stream',
+    'Content-Type': mimeType,
     ETag: JSON.stringify(hashId), // by spec, the ETag must be a double-quoted string
     'Access-Control-Expose-Headers': 'ETag',
     'Cache-Control': 'public,max-age=31536000,s-maxage=31536000,immutable'
