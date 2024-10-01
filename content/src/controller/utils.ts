@@ -58,9 +58,9 @@ export async function createContentFileHeaders(content: ContentItem, hashId: str
     if (content.size) {
       headers['Content-Length'] = content.size.toString()
     }
+    return headers
   } catch (error) {
     stream.destroy()
     throw error
   }
-  return headers
 }
