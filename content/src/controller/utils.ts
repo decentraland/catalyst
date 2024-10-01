@@ -41,21 +41,26 @@ export function asEnumValue<T extends { [key: number]: string }>(
 
 export async function createContentFileHeaders(content: ContentItem, hashId: string): Promise<Record<string, string>> {
   const stream: Readable = await content.asRawStream()
-  const mime = await fromStream(stream)
-  const mimeType = mime?.mime || 'application/octet-stream'
+  try {
+    const mime = await fromStream(stream)
+    const mimeType = mime?.mime || 'application/octet-stream'
+    stream.destroy()
 
-  const headers: Record<string, string> = {
-    'Content-Type': mimeType,
-    ETag: JSON.stringify(hashId), // by spec, the ETag must be a double-quoted string
-    'Access-Control-Expose-Headers': 'ETag',
-    'Cache-Control': 'public,max-age=31536000,s-maxage=31536000,immutable'
+    const headers: Record<string, string> = {
+      'Content-Type': mimeType,
+      ETag: JSON.stringify(hashId), // by spec, the ETag must be a double-quoted string
+      'Access-Control-Expose-Headers': 'ETag',
+      'Cache-Control': 'public,max-age=31536000,s-maxage=31536000,immutable'
+    }
+    if (content.encoding) {
+      headers['Content-Encoding'] = content.encoding
+    }
+    if (content.size) {
+      headers['Content-Length'] = content.size.toString()
+    }
+    return headers
+  } catch (error) {
+    stream.destroy()
+    throw error
   }
-  if (content.encoding) {
-    headers['Content-Encoding'] = content.encoding
-  }
-  if (content.size) {
-    headers['Content-Length'] = content.size.toString()
-  }
-
-  return headers
 }
