@@ -28,7 +28,7 @@
     "@dcl/crypto": "^3.4.5",
     "@dcl/hashing": "^3.0.4",
     "@dcl/schemas": "^14.0.0",
-    "@dcl/snapshots-fetcher": "^9.0.3",
+    "@dcl/snapshots-fetcher": "https://sdk-team-cdn.decentraland.org/@dcl/snapshots-fetcher/branch/fix/remove-sv-after-retry/dcl-snapshots-fetcher-9.0.4-11275876250.commit-35f0cc4.tgz",
     "@dcl/urn-resolver": "^3.6.0",
     "@well-known-components/env-config-provider": "^1.2.0",
     "@well-known-components/fetch-component": "^2.0.2",

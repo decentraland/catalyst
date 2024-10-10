@@ -431,6 +431,17 @@
     "@well-known-components/metrics" "^2.0.0"
     p-queue "^6.6.2"
 
+"@dcl/snapshots-fetcher@https://sdk-team-cdn.decentraland.org/@dcl/snapshots-fetcher/branch/fix/remove-sv-after-retry/dcl-snapshots-fetcher-9.0.4-11275876250.commit-35f0cc4.tgz":
+  version "9.0.4-11275876250.commit-35f0cc4"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl/snapshots-fetcher/branch/fix/remove-sv-after-retry/dcl-snapshots-fetcher-9.0.4-11275876250.commit-35f0cc4.tgz#2e3ab55db3b67e3207932e8f413664b5960a0ccf"
+  dependencies:
+    "@dcl/catalyst-storage" "^4.0.0"
+    "@dcl/hashing" "^3.0.3"
+    "@dcl/schemas" "^9.1.1"
+    "@well-known-components/interfaces" "^1.4.0"
+    "@well-known-components/metrics" "^2.0.0"
+    p-queue "^6.6.2"
+
 "@dcl/urn-resolver@^3.6.0":
   version "3.6.0"
   resolved "https://registry.npmjs.org/@dcl/urn-resolver/-/urn-resolver-3.6.0.tgz"
@@ -5452,6 +5463,11 @@ path-to-regexp@0.1.10:
   version "0.1.10"
   resolved "https://registry.yarnpkg.com/path-to-regexp/-/path-to-regexp-0.1.10.tgz#67e9108c5c0551b9e5326064387de4763c4d5f8b"
   integrity sha512-7lf7qcQidTku0Gu3YDPc8DJ1q7OOucfa/BSsIwjuh56VU7katFvuM8hULfkwB3Fns/rsVF7PwPKVw1sl5KQS9w==
+
+path-to-regexp@0.1.7:
+  version "0.1.7"
+  resolved "https://registry.yarnpkg.com/path-to-regexp/-/path-to-regexp-0.1.7.tgz#df604178005f522f15eb4490e7247a1bfaa67f8c"
+  integrity sha512-5DFkuoqlv1uYQKxy8omFBeJPQcdoE07Kv2sferDCrAq1ohOU+MSDswDIbnx3YAM60qIOnYa53wBhXW0EbMonrQ==
 
 path-to-regexp@^1.7.0:
   version "1.8.0"
