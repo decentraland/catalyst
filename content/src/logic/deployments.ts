@@ -75,6 +75,7 @@ export async function retryFailedDeploymentExecution(
   for (const failedDeployment of failedDeployments) {
     // Build Deployment from other servers
     const { entityId, entityType, authChain } = failedDeployment
+
     if (authChain) {
       logs.debug(`Will retry to deploy entity`, { entityId, entityType })
       try {
