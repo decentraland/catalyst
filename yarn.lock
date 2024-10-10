@@ -350,10 +350,24 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@^5.6.1":
-  version "5.6.1"
-  resolved "https://registry.npmjs.org/@dcl/content-validator/-/content-validator-5.6.1.tgz"
-  integrity sha512-KFJNtKaxy01mp6N/IRP0DnhV7PxDJ3T0F32vifYGiuZeyYBg6Ya7i1KN1fMpsMRXQllk3BEE4MPJo+dcKujD2w==
+"@dcl/content-validator@https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/feat/hash-validaitons-on-profiles/dcl-content-validator-5.6.2-11280139091.commit-5a94e5c.tgz":
+  version "5.6.2-11280139091.commit-5a94e5c"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/feat/hash-validaitons-on-profiles/dcl-content-validator-5.6.2-11280139091.commit-5a94e5c.tgz#c035da80e7450c4a1efe8e6dcca7580513580373"
+  dependencies:
+    "@dcl/block-indexer" "^1.1.2"
+    "@dcl/content-hash-tree" "^1.1.4"
+    "@dcl/hashing" "^3.0.4"
+    "@dcl/schemas" "^13.2.1"
+    "@dcl/urn-resolver" "^3.6.0"
+    "@well-known-components/interfaces" "^1.4.3"
+    "@well-known-components/thegraph-component" "^1.6.0"
+    ms "^2.1.3"
+    p-queue "^6.6.2"
+    sharp "0.32.6"
+
+"@dcl/content-validator@https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/feat/hash-validaitons-on-profiles/dcl-content-validator-5.6.2-11281214678.commit-1019faa.tgz":
+  version "5.6.2-11281214678.commit-1019faa"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/feat/hash-validaitons-on-profiles/dcl-content-validator-5.6.2-11281214678.commit-1019faa.tgz#6e64eaf6c65d9cf5ec348e92749e147c056b6684"
   dependencies:
     "@dcl/block-indexer" "^1.1.2"
     "@dcl/content-hash-tree" "^1.1.4"
@@ -418,18 +432,6 @@
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
-
-"@dcl/snapshots-fetcher@^9.0.3":
-  version "9.0.3"
-  resolved "https://registry.npmjs.org/@dcl/snapshots-fetcher/-/snapshots-fetcher-9.0.3.tgz"
-  integrity sha512-IQutxo1bHCDuINFnMfU8fORTMIXfVdwRSdh3mVrpk7PepgPdbvXRHFXvnPF7KL8onkKbsHLLTma0QeaT84IPRw==
-  dependencies:
-    "@dcl/catalyst-storage" "^4.0.0"
-    "@dcl/hashing" "^3.0.3"
-    "@dcl/schemas" "^9.1.1"
-    "@well-known-components/interfaces" "^1.4.0"
-    "@well-known-components/metrics" "^2.0.0"
-    p-queue "^6.6.2"
 
 "@dcl/snapshots-fetcher@https://sdk-team-cdn.decentraland.org/@dcl/snapshots-fetcher/branch/fix/remove-sv-after-retry/dcl-snapshots-fetcher-9.0.4-11275876250.commit-35f0cc4.tgz":
   version "9.0.4-11275876250.commit-35f0cc4"

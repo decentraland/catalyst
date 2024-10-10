@@ -30,6 +30,8 @@ import { createItemChecker, createL1Checker, createL2Checker } from '../../logic
 import { AppComponents } from '../../types'
 import { createThirdPartyItemChecker } from '../../logic/third-party-item-checker'
 import { createThirdPartyContractRegistry } from '../../logic/third-party-contract-registry'
+import { hashV0, hashV1 } from '@dcl/hashing'
+import { Readable } from 'stream'
 
 const createEthereumProvider = (httpProvider: HTTPProvider): EthereumProvider => {
   const reqMan = new RequestManager(httpProvider)
@@ -46,6 +48,21 @@ const createEthereumProvider = (httpProvider: HTTPProvider): EthereumProvider =>
 export async function createExternalCalls(
   components: Pick<AppComponents, 'storage' | 'authenticator' | 'env' | 'logs'>
 ): Promise<ExternalCalls> {
+  async function calculateFilesHashes(
+    files: Map<string, Uint8Array>
+  ): Promise<Map<string, { calculatedHash: string; buffer: Uint8Array }>> {
+    const resultMap = new Map<string, { calculatedHash: string; buffer: Uint8Array }>()
+
+    for (const [key, value] of files.entries()) {
+      const hashGenerationFn = key.startsWith('Qm') ? hashV0 : hashV1
+      const readableContent = Readable.from(value)
+      const calculatedHash = await hashGenerationFn(readableContent)
+      resultMap.set(key, { calculatedHash, buffer: value })
+    }
+
+    return resultMap
+  }
+
   return {
     isContentStoredAlready: (hashes) => components.storage.existMultiple(hashes),
     fetchContentFileSize: async (hash) => {
@@ -60,7 +77,8 @@ export async function createExternalCalls(
     ownerAddress: (auditInfo) => Authenticator.ownerAddress(auditInfo.authChain),
     isAddressOwnedByDecentraland: (address: string) => components.authenticator.isAddressOwnedByDecentraland(address),
     validateSignature: (entityId, auditInfo, timestamp) =>
-      components.authenticator.validateSignature(entityId, auditInfo.authChain, timestamp)
+      components.authenticator.validateSignature(entityId, auditInfo.authChain, timestamp),
+    calculateFilesHashes
   }
 }
 
