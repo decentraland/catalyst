@@ -333,15 +333,16 @@
   resolved "https://registry.npmjs.org/@dcl/catalyst-contracts/-/catalyst-contracts-4.4.2.tgz"
   integrity sha512-gJZo3IB8U+jhBJWR0DgoLS+zaUDIb/u79e7Rp+MEM78uH3bvC19S3Dd8lxWEbPXNKlCB0saUptfK/Buw0c1y2Q==
 
-"@dcl/catalyst-storage@^4.0.0", "@dcl/catalyst-storage@^4.2.0":
-  version "4.2.0"
-  resolved "https://registry.npmjs.org/@dcl/catalyst-storage/-/catalyst-storage-4.2.0.tgz"
-  integrity sha512-aE+EteZkn+AuIRAA65hceSW2rpQ7OJ5gVB55KgTcbDZnnICSirqrb9X6zXnrAGWoX3zC0J81bq2fYmmr30QvQw==
+"@dcl/catalyst-storage@^4.0.0", "@dcl/catalyst-storage@^4.3.0":
+  version "4.3.0"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-storage/-/catalyst-storage-4.3.0.tgz#5ea39d7e80a1027a1e4603f474c9db5a48bab386"
+  integrity sha512-5r+Ip29fgG9sT9qVU5GRP2YmuA9rPd7K+STa/ofjgURdMb+1/uDhoJbMRfMbu+ft9FcEN3qYkVnIipxf5v2KzA==
   dependencies:
     "@well-known-components/interfaces" "^1.1.1"
     aws-sdk "^2.1426.0"
     aws-sdk-client-mock "^3.0.0"
     destroy "^1.2.0"
+    file-type "15"
 
 "@dcl/content-hash-tree@^1.1.4":
   version "1.1.4"
@@ -3405,7 +3406,7 @@ file-entry-cache@^6.0.1:
   dependencies:
     flat-cache "^3.0.4"
 
-file-type@^15.0.1:
+file-type@15, file-type@^15.0.1:
   version "15.0.1"
   resolved "https://registry.yarnpkg.com/file-type/-/file-type-15.0.1.tgz#54175484953d48b970c095ba8737d4e0c3a9b407"
   integrity sha512-0LieQlSA3bWUdErNrxzxfI4rhsvNAVPBO06R8pTc1hp9SE6nhqlVyvhcaXoMmtXkBTPnQenbMPLW9X76hH76oQ==
@@ -5452,11 +5453,6 @@ path-to-regexp@0.1.10:
   version "0.1.10"
   resolved "https://registry.yarnpkg.com/path-to-regexp/-/path-to-regexp-0.1.10.tgz#67e9108c5c0551b9e5326064387de4763c4d5f8b"
   integrity sha512-7lf7qcQidTku0Gu3YDPc8DJ1q7OOucfa/BSsIwjuh56VU7katFvuM8hULfkwB3Fns/rsVF7PwPKVw1sl5KQS9w==
-
-path-to-regexp@0.1.7:
-  version "0.1.7"
-  resolved "https://registry.yarnpkg.com/path-to-regexp/-/path-to-regexp-0.1.7.tgz#df604178005f522f15eb4490e7247a1bfaa67f8c"
-  integrity sha512-5DFkuoqlv1uYQKxy8omFBeJPQcdoE07Kv2sferDCrAq1ohOU+MSDswDIbnx3YAM60qIOnYa53wBhXW0EbMonrQ==
 
 path-to-regexp@^1.7.0:
   version "1.8.0"
