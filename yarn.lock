@@ -350,10 +350,10 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@^5.6.1":
-  version "5.6.1"
-  resolved "https://registry.npmjs.org/@dcl/content-validator/-/content-validator-5.6.1.tgz"
-  integrity sha512-KFJNtKaxy01mp6N/IRP0DnhV7PxDJ3T0F32vifYGiuZeyYBg6Ya7i1KN1fMpsMRXQllk3BEE4MPJo+dcKujD2w==
+"@dcl/content-validator@^6.0.0":
+  version "6.0.0"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-6.0.0.tgz#a442f62a43d9f0058ec9c94b8054f63569969142"
+  integrity sha512-oneaM8V22cGxE9APd8FfuFjzfklLcVinBaZW7YH/KcWJSeo5ONxwFFil06DsaJ95do7BpgyD4ptmzp8eO9rm/Q==
   dependencies:
     "@dcl/block-indexer" "^1.1.2"
     "@dcl/content-hash-tree" "^1.1.4"
@@ -419,10 +419,10 @@
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
 
-"@dcl/snapshots-fetcher@^9.0.3":
-  version "9.0.3"
-  resolved "https://registry.npmjs.org/@dcl/snapshots-fetcher/-/snapshots-fetcher-9.0.3.tgz"
-  integrity sha512-IQutxo1bHCDuINFnMfU8fORTMIXfVdwRSdh3mVrpk7PepgPdbvXRHFXvnPF7KL8onkKbsHLLTma0QeaT84IPRw==
+"@dcl/snapshots-fetcher@^9.1.0":
+  version "9.1.0"
+  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-9.1.0.tgz#e6a55ca2db6926de92db2e52fdf87e60621af8dd"
+  integrity sha512-Fxjw97Atmx7SA6KMui5+5Fe42cVU3ogUnSiFYl2X1a55SOZzlRhpa57qC2i5p6ZroKyrdG9Hk9YOpj1tF/fM7Q==
   dependencies:
     "@dcl/catalyst-storage" "^4.0.0"
     "@dcl/hashing" "^3.0.3"
@@ -5452,6 +5452,11 @@ path-to-regexp@0.1.10:
   version "0.1.10"
   resolved "https://registry.yarnpkg.com/path-to-regexp/-/path-to-regexp-0.1.10.tgz#67e9108c5c0551b9e5326064387de4763c4d5f8b"
   integrity sha512-7lf7qcQidTku0Gu3YDPc8DJ1q7OOucfa/BSsIwjuh56VU7katFvuM8hULfkwB3Fns/rsVF7PwPKVw1sl5KQS9w==
+
+path-to-regexp@0.1.7:
+  version "0.1.7"
+  resolved "https://registry.yarnpkg.com/path-to-regexp/-/path-to-regexp-0.1.7.tgz#df604178005f522f15eb4490e7247a1bfaa67f8c"
+  integrity sha512-5DFkuoqlv1uYQKxy8omFBeJPQcdoE07Kv2sferDCrAq1ohOU+MSDswDIbnx3YAM60qIOnYa53wBhXW0EbMonrQ==
 
 path-to-regexp@^1.7.0:
   version "1.8.0"
