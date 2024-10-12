@@ -98,7 +98,7 @@ describe('Integration - Get wearable image and thumbnail', () => {
   })
 
   describe('image', () => {
-    it('when entity has not image, it should return 404', async () => {
+    it('when entity has not image, it should return 404 with', async () => {
       const deployResult = await buildDeployData(['wearable'], {
         metadata: { thumbnail: 'some-binary-file.png' },
         contentPaths: ['test/integration/resources/some-binary-file.png']
@@ -107,8 +107,8 @@ describe('Integration - Get wearable image and thumbnail', () => {
       await server.deployEntity(deployResult.deployData)
 
       const responses = await Promise.all([
-        fetch(`${server.getUrl()}/queries/items/wearable/image`),
-        fetch(`${server.getUrl()}/queries/items/wearable/image`, { method: 'HEAD' })
+        fetch(`${server.getUrl()}/queries/items/wearable/image`, { headers: { Accept: 'Any' } }),
+        fetch(`${server.getUrl()}/queries/items/wearable/image`, { method: 'HEAD', headers: { Accept: 'Any' } })
       ])
 
       for (const response of responses) {
@@ -125,8 +125,8 @@ describe('Integration - Get wearable image and thumbnail', () => {
       await server.deployEntity(deployResult.deployData)
 
       const responses = await Promise.all([
-        fetch(`${server.getUrl()}/queries/items/wearable/image`),
-        fetch(`${server.getUrl()}/queries/items/wearable/image`, { method: 'HEAD' })
+        fetch(`${server.getUrl()}/queries/items/wearable/image`, { headers: { Accept: 'Any' } }),
+        fetch(`${server.getUrl()}/queries/items/wearable/image`, { method: 'HEAD', headers: { Accept: 'Any' } })
       ])
 
       for (const response of responses) {
