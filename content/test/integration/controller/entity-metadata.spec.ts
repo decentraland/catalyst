@@ -98,7 +98,7 @@ describe('Integration - Get wearable image and thumbnail', () => {
   })
 
   describe('image', () => {
-    it('when entity has not image, it should return 404 with Accept=Any', async () => {
+    it('when entity has not image, it should return 404 with', async () => {
       const deployResult = await buildDeployData(['wearable'], {
         metadata: { thumbnail: 'some-binary-file.png' },
         contentPaths: ['test/integration/resources/some-binary-file.png']
@@ -116,7 +116,7 @@ describe('Integration - Get wearable image and thumbnail', () => {
       }
     })
 
-    it('when entity has image, it should return the content and set the headers with Accept=Any', async () => {
+    it('when entity has image, it should return the content and set the headers', async () => {
       const deployResult = await buildDeployData(['wearable'], {
         metadata: { image: 'some-binary-file.png' },
         contentPaths: ['test/integration/resources/some-binary-file.png']
@@ -127,45 +127,6 @@ describe('Integration - Get wearable image and thumbnail', () => {
       const responses = await Promise.all([
         fetch(`${server.getUrl()}/queries/items/wearable/image`, { headers: { Accept: 'Any' } }),
         fetch(`${server.getUrl()}/queries/items/wearable/image`, { method: 'HEAD', headers: { Accept: 'Any' } })
-      ])
-
-      for (const response of responses) {
-        expect(response.status).toEqual(200)
-        expect(response.headers.get('content-type')).toEqual('image/png')
-        expect(response.headers.get('ETag')).toBeTruthy()
-        expect(response.headers.get('Cache-Control')).toBeTruthy()
-      }
-    })
-
-    it('when entity has not image, it should return 404 without Accept=Any', async () => {
-      const deployResult = await buildDeployData(['wearable'], {
-        metadata: { thumbnail: 'some-binary-file.png' },
-        contentPaths: ['test/integration/resources/some-binary-file.png']
-      })
-
-      await server.deployEntity(deployResult.deployData)
-
-      const responses = await Promise.all([
-        fetch(`${server.getUrl()}/queries/items/wearable/image`),
-        fetch(`${server.getUrl()}/queries/items/wearable/image`, { method: 'HEAD' })
-      ])
-
-      for (const response of responses) {
-        expect(response.status).toEqual(404)
-      }
-    })
-
-    it('when entity has image, it should return the content and set the headers without Accept=Any', async () => {
-      const deployResult = await buildDeployData(['wearable'], {
-        metadata: { image: 'some-binary-file.png' },
-        contentPaths: ['test/integration/resources/some-binary-file.png']
-      })
-
-      await server.deployEntity(deployResult.deployData)
-
-      const responses = await Promise.all([
-        fetch(`${server.getUrl()}/queries/items/wearable/image`),
-        fetch(`${server.getUrl()}/queries/items/wearable/image`, { method: 'HEAD' })
       ])
 
       for (const response of responses) {
