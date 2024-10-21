@@ -4,7 +4,7 @@ import { createContentFileHeaders } from '../utils'
 
 // Method: GET or HEAD
 export async function getContentHandler(context: HandlerContextWithPath<'storage', '/contents/:hashId'>) {
-  const shouldCalculateContentType = context.request.headers.get('Accept') === 'Any'
+  const shouldCalculateContentType = context.url.searchParams.has('includeMimeType')
   const hash = context.params.hashId
 
   const content: ContentItem | undefined = await context.components.storage.retrieve(hash)
