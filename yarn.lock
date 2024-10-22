@@ -420,10 +420,20 @@
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
 
-"@dcl/snapshots-fetcher@^9.1.0":
-  version "9.1.0"
-  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-9.1.0.tgz#e6a55ca2db6926de92db2e52fdf87e60621af8dd"
-  integrity sha512-Fxjw97Atmx7SA6KMui5+5Fe42cVU3ogUnSiFYl2X1a55SOZzlRhpa57qC2i5p6ZroKyrdG9Hk9YOpj1tF/fM7Q==
+"@dcl/snapshots-fetcher@https://sdk-team-cdn.decentraland.org/@dcl/snapshots-fetcher/branch/chore/debug/dcl-snapshots-fetcher-9.1.1-11466175329.commit-bf6a672.tgz":
+  version "9.1.1-11466175329.commit-bf6a672"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl/snapshots-fetcher/branch/chore/debug/dcl-snapshots-fetcher-9.1.1-11466175329.commit-bf6a672.tgz#78d0a4310f234a7070131a5311f0a1fbb8a23778"
+  dependencies:
+    "@dcl/catalyst-storage" "^4.0.0"
+    "@dcl/hashing" "^3.0.3"
+    "@dcl/schemas" "^9.1.1"
+    "@well-known-components/interfaces" "^1.4.0"
+    "@well-known-components/metrics" "^2.0.0"
+    p-queue "^6.6.2"
+
+"@dcl/snapshots-fetcher@https://sdk-team-cdn.decentraland.org/@dcl/snapshots-fetcher/branch/chore/debug/dcl-snapshots-fetcher-9.1.1-11467148273.commit-ac708b0.tgz":
+  version "9.1.1-11467148273.commit-ac708b0"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl/snapshots-fetcher/branch/chore/debug/dcl-snapshots-fetcher-9.1.1-11467148273.commit-ac708b0.tgz#819db2bb89c15fd0b9f36ea72164066bc7b376b4"
   dependencies:
     "@dcl/catalyst-storage" "^4.0.0"
     "@dcl/hashing" "^3.0.3"
@@ -5453,6 +5463,11 @@ path-to-regexp@0.1.10:
   version "0.1.10"
   resolved "https://registry.yarnpkg.com/path-to-regexp/-/path-to-regexp-0.1.10.tgz#67e9108c5c0551b9e5326064387de4763c4d5f8b"
   integrity sha512-7lf7qcQidTku0Gu3YDPc8DJ1q7OOucfa/BSsIwjuh56VU7katFvuM8hULfkwB3Fns/rsVF7PwPKVw1sl5KQS9w==
+
+path-to-regexp@0.1.7:
+  version "0.1.7"
+  resolved "https://registry.yarnpkg.com/path-to-regexp/-/path-to-regexp-0.1.7.tgz#df604178005f522f15eb4490e7247a1bfaa67f8c"
+  integrity sha512-5DFkuoqlv1uYQKxy8omFBeJPQcdoE07Kv2sferDCrAq1ohOU+MSDswDIbnx3YAM60qIOnYa53wBhXW0EbMonrQ==
 
 path-to-regexp@^1.7.0:
   version "1.8.0"
