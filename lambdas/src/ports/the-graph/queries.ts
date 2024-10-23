@@ -31,7 +31,7 @@ query ThirdPartyResolver($id: String!) {
 
 const ITEMS_BY_OWNER = `
 query itemsByOwner($owner: String, $item_types:[String], $first: Int, $start: String) {
-  nfts(where: {owner: $owner, searchItemType_in: $item_types, id_gt: $start}, first: $first) {
+  nfts(where: {owner_: {address: $owner}, searchItemType_in: $item_types, id_gt: $start}, first: $first) {
     id
     urn
     collection {
