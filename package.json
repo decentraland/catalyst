@@ -55,5 +55,7 @@
   "jest-junit": {
     "addFileAttribute": "true"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@dcl/content-validator": "https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/feat/add-owner-address-filter/dcl-content-validator-6.0.1-11478496226.commit-d10a9cd.tgz"
+  }
 }
