@@ -367,21 +367,6 @@
     p-queue "^6.6.2"
     sharp "0.32.6"
 
-"@dcl/content-validator@https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/feat/add-owner-address-filter/dcl-content-validator-6.0.1-11478496226.commit-d10a9cd.tgz":
-  version "6.0.1-11478496226.commit-d10a9cd"
-  resolved "https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/feat/add-owner-address-filter/dcl-content-validator-6.0.1-11478496226.commit-d10a9cd.tgz#d9a466b456101c3960fb271478e5c32dca84bbaf"
-  dependencies:
-    "@dcl/block-indexer" "^1.1.2"
-    "@dcl/content-hash-tree" "^1.1.4"
-    "@dcl/hashing" "^3.0.4"
-    "@dcl/schemas" "^13.2.1"
-    "@dcl/urn-resolver" "^3.6.0"
-    "@well-known-components/interfaces" "^1.4.3"
-    "@well-known-components/thegraph-component" "^1.6.0"
-    ms "^2.1.3"
-    p-queue "^6.6.2"
-    sharp "0.32.6"
-
 "@dcl/crypto@^3.4.0", "@dcl/crypto@^3.4.5":
   version "3.4.5"
   resolved "https://registry.npmjs.org/@dcl/crypto/-/crypto-3.4.5.tgz"
