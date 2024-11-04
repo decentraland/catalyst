@@ -401,10 +401,10 @@
     ajv-keywords "^5.1.0"
     mitt "^3.0.1"
 
-"@dcl/schemas@^14.1.0":
-  version "14.1.0"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-14.1.0.tgz#f138401748cedfda6c3d618265368405386be2cc"
-  integrity sha512-KE7679WNJqlrXH088pvXh2a6YLtDL+PvZYXY8ZXShhEJrnxjUhXGYH1LJckPLy4Tb7GEJBwaCcfYlVVVMrDLeA==
+"@dcl/schemas@^15.1.0":
+  version "15.1.0"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-15.1.0.tgz#8d3b810366b49c4c88b3ac700b8e624d44cb4dc5"
+  integrity sha512-FVg/1byY0f5Z7MTUj/yP/EjpmLjJSD863SLKKmy1jmK4FXGBnjcSSJhZouSSVJpTSxHL0faxSilpCx8EkBzpcg==
   dependencies:
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
