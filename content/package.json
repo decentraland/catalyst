@@ -24,7 +24,7 @@
     "@dcl/catalyst-api-specs": "^3.3.0",
     "@dcl/catalyst-contracts": "^4.4.2",
     "@dcl/catalyst-storage": "^4.3.0",
-    "@dcl/content-validator": "^6.0.0",
+    "@dcl/content-validator": "https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/feat/update-ownership-graphql-query/dcl-content-validator-6.0.2-11704767755.commit-ab10bab.tgz",
     "@dcl/crypto": "^3.4.5",
     "@dcl/hashing": "^3.0.4",
     "@dcl/schemas": "^14.1.0",
