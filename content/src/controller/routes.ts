@@ -20,6 +20,7 @@ import { getERC721EntityHandler } from './handlers/get-erc721-entity-handler'
 import { getDeploymentsHandler } from './handlers/get-deployments-handler'
 import { getChallengeHandler } from './handlers/get-challenge-handler'
 import { getActiveEntityIdsByDeploymentHashHandler } from './handlers/get-active-entities-by-deployment-hash-handler'
+import { getActiveEntitiesIdsHandler } from './handlers/active-entities-ids-handler'
 
 // We return the entire router because it will be easier to test than a whole server
 export async function setupRouter({ components }: GlobalContext): Promise<Router<GlobalContext>> {
@@ -42,6 +43,7 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
   router.get('/entities/:type', getEntitiesHandler) // TODO: Deprecate
   router.get('/entities/active/collections/:collectionUrn', getEntitiesByPointerPrefixHandler)
   router.post('/entities/active', getActiveEntitiesHandler)
+  router.post('/entities/active/ids', getActiveEntitiesIdsHandler)
   router.head('/contents/:hashId', getContentHandler)
   router.get('/contents/:hashId', getContentHandler)
   router.get('/available-content', getAvailableContentHandler)
