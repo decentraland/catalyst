@@ -12,7 +12,7 @@ const schema = Joi.alternatives().try(
 // Body: { pointers: string[]}
 export async function getActiveEntitiesIdsHandler(
   context: HandlerContextWithPath<'database' | 'activeEntities' | 'denylist', '/entities/active'>
-): Promise<{ status: 200; body: Pick<Entity, 'id' | 'pointers'>[] }> {
+): Promise<{ status: 200; body: Pick<Entity, 'id' | 'pointers' | 'timestamp'>[] }> {
   const { database, activeEntities, denylist } = context.components
   const { error, value: body } = schema.validate(await context.request.json())
 
@@ -22,12 +22,15 @@ export async function getActiveEntitiesIdsHandler(
     )
   }
 
-  const entities: Pick<Entity, 'id' | 'pointers'>[] = (await activeEntities.withPointers(database, body.pointers))
+  const entities: Pick<Entity, 'id' | 'pointers' | 'timestamp'>[] = (
+    await activeEntities.withPointers(database, body.pointers)
+  )
     .filter((result) => !denylist.isDenylisted(result.id))
     .map((entity) => {
       return {
         id: entity.id,
-        pointers: entity.pointers
+        pointers: entity.pointers,
+        timestamp: entity.timestamp
       }
     })
 
