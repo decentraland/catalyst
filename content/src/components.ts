@@ -186,6 +186,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, clock })
   const activeEntities = createActiveEntitiesComponent({ database, env, logs, metrics, denylist, sequentialExecutor })
 
+  await activeEntities.initialize(database)
+
   const deployer = createDeployer({
     metrics,
     storage,

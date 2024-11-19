@@ -2,25 +2,24 @@ import { Router } from '@well-known-components/http-server'
 import { multipartParserWrapper } from '@well-known-components/multipart-wrapper'
 import { EnvironmentConfig } from '../Environment'
 import { GlobalContext } from '../types'
-import { getActiveEntitiesHandler } from './handlers/active-entities-handler'
+import { getActiveEntitiesHandler, getActiveEntitiesScenesHandler } from './handlers/active-entities-handler'
 import { createEntity } from './handlers/create-entity-handler'
-import { createErrorHandler, preventExecutionIfBoostrapping } from './middlewares'
 import { getFailedDeploymentsHandler } from './handlers/failed-deployments-handler'
 import { getEntitiesByPointerPrefixHandler } from './handlers/filter-by-urn-handler'
+import { getActiveEntityIdsByDeploymentHashHandler } from './handlers/get-active-entities-by-deployment-hash-handler'
 import { getEntityAuditInformationHandler } from './handlers/get-audit-handler'
 import { getAvailableContentHandler } from './handlers/get-available-content-handler'
+import { getChallengeHandler } from './handlers/get-challenge-handler'
+import { getContentHandler } from './handlers/get-content-handler'
+import { getDeploymentsHandler } from './handlers/get-deployments-handler'
+import { getEntitiesHandler } from './handlers/get-entities-handler'
+import { getEntityImageHandler } from './handlers/get-entity-image-handler'
+import { getEntityThumbnailHandler } from './handlers/get-entity-thumbnail-handler'
+import { getERC721EntityHandler } from './handlers/get-erc721-entity-handler'
+import { getSnapshotsHandler } from './handlers/get-snapshots-handler'
 import { getPointerChangesHandler } from './handlers/pointer-changes-handler'
 import { getStatusHandler } from './handlers/status-handler'
-import { getSnapshotsHandler } from './handlers/get-snapshots-handler'
-import { getEntitiesHandler } from './handlers/get-entities-handler'
-import { getContentHandler } from './handlers/get-content-handler'
-import { getEntityThumbnailHandler } from './handlers/get-entity-thumbnail-handler'
-import { getEntityImageHandler } from './handlers/get-entity-image-handler'
-import { getERC721EntityHandler } from './handlers/get-erc721-entity-handler'
-import { getDeploymentsHandler } from './handlers/get-deployments-handler'
-import { getChallengeHandler } from './handlers/get-challenge-handler'
-import { getActiveEntityIdsByDeploymentHashHandler } from './handlers/get-active-entities-by-deployment-hash-handler'
-import { getActiveEntitiesIdsHandler } from './handlers/active-entities-ids-handler'
+import { createErrorHandler, preventExecutionIfBoostrapping } from './middlewares'
 
 // We return the entire router because it will be easier to test than a whole server
 export async function setupRouter({ components }: GlobalContext): Promise<Router<GlobalContext>> {
@@ -43,7 +42,7 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
   router.get('/entities/:type', getEntitiesHandler) // TODO: Deprecate
   router.get('/entities/active/collections/:collectionUrn', getEntitiesByPointerPrefixHandler)
   router.post('/entities/active', getActiveEntitiesHandler)
-  router.post('/entities/active/ids', getActiveEntitiesIdsHandler)
+  router.get('/entities/active/scenes', getActiveEntitiesScenesHandler)
   router.head('/contents/:hashId', getContentHandler)
   router.get('/contents/:hashId', getContentHandler)
   router.get('/available-content', getAvailableContentHandler)

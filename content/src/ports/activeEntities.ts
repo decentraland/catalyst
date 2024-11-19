@@ -69,6 +69,16 @@ export type ActiveEntities = IBaseComponent & {
    * Note: only used in stale profiles GC
    */
   clearPointers(pointers: string[]): Promise<void>
+
+  /**
+   * Initialize the cache with the active entities for the cached entity types
+   */
+  initialize(database: DatabaseClient): Promise<void>
+
+  /**
+   * Get all cached scenes
+   */
+  getAllCachedScenes(): Entity[]
 }
 
 /**
@@ -81,9 +91,6 @@ export function createActiveEntitiesComponent(
   components: Pick<AppComponents, 'database' | 'env' | 'logs' | 'metrics' | 'denylist' | 'sequentialExecutor'>
 ): ActiveEntities {
   const logger = components.logs.getLogger('ActiveEntities')
-  const cache = new LRU<string, Entity | NotActiveEntity>({
-    max: components.env.getConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE)
-  })
 
   const collectionUrnsByPrefixCache = new LRU<string, string[]>({
     ttl: 1000 * 60 * 60 * 24, // 24 hours
@@ -93,6 +100,47 @@ export function createActiveEntitiesComponent(
   })
 
   const normalizePointerCacheKey = (pointer: string) => pointer.toLowerCase()
+
+  const cache = new LRU<string, Entity | NotActiveEntity>({
+    max: components.env.getConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE)
+  })
+  const fixedCache = new Map<string, Entity | NotActiveEntity>()
+
+  const createLRUandFixedCache = (maxLRU: number, fixedTypes: EntityType[]) => {
+    return {
+      get(entityId: string) {
+        return cache.get(entityId) || fixedCache.get(entityId)
+      },
+      set(entityId: string, entity: Entity | NotActiveEntity) {
+        const isFixed = fixedCache.has(entityId) || (typeof entity !== 'string' && fixedTypes.includes(entity.type))
+        if (isFixed) {
+          return fixedCache.set(entityId, entity)
+        }
+        return cache.set(entityId, entity)
+      },
+      setFixed(entityId: string, entity: Entity | NotActiveEntity) {
+        return fixedCache.set(entityId, entity)
+      },
+      get max() {
+        return cache.max
+      },
+      clear() {
+        cache.clear()
+        fixedCache.clear()
+      },
+      has(entityId: string) {
+        return cache.has(entityId) || fixedCache.has(entityId)
+      }
+    }
+  }
+
+  const cachedEntityntityTypes = [EntityType.SCENE]
+
+  // Entities cache by key=entityId
+  const entityCache = createLRUandFixedCache(
+    components.env.getConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE),
+    cachedEntityntityTypes
+  )
 
   const createEntityByPointersCache = (): Map<string, string | NotActiveEntity> => {
     const entityIdByPointers = new Map<string, string | NotActiveEntity>()
@@ -116,7 +164,7 @@ export function createActiveEntitiesComponent(
   const entityIdByPointers = createEntityByPointersCache()
 
   // init gauge metrics
-  components.metrics.observe('dcl_entities_cache_storage_max_size', {}, cache.max)
+  components.metrics.observe('dcl_entities_cache_storage_max_size', {}, entityCache.max)
   Object.values(EntityType).forEach((entityType) => {
     components.metrics.observe('dcl_entities_cache_storage_size', { entity_type: entityType }, 0)
   })
@@ -133,9 +181,9 @@ export function createActiveEntitiesComponent(
       // pointer now have a different active entity, let's update the old one
       const entityId = entityIdByPointers.get(pointer)
       if (isPointingToEntity(entityId)) {
-        const entity = cache.get(entityId) // it should be present
+        const entity = entityCache.get(entityId) // it should be present
         if (isEntityPresent(entity)) {
-          cache.set(entityId, 'NOT_ACTIVE_ENTITY')
+          entityCache.set(entityId, 'NOT_ACTIVE_ENTITY')
           for (const pointer of entity.pointers) {
             entityIdByPointers.set(pointer, 'NOT_ACTIVE_ENTITY')
           }
@@ -158,7 +206,7 @@ export function createActiveEntitiesComponent(
       entityIdByPointers.set(pointer, isEntityPresent(entity) ? entity.id : entity)
     }
     if (isEntityPresent(entity)) {
-      cache.set(entity.id, entity)
+      entityCache.set(entity.id, entity)
       components.metrics.increment('dcl_entities_cache_storage_size', { entity_type: entity.type })
       // Store in the db the new entity pointed by pointers
       await updateActiveDeployments(database, pointers, entity.id)
@@ -196,7 +244,7 @@ export function createActiveEntitiesComponent(
       )
 
       for (const entityId of entityIdsWithoutActiveEntity) {
-        cache.set(entityId, 'NOT_ACTIVE_ENTITY')
+        entityCache.set(entityId, 'NOT_ACTIVE_ENTITY')
         logger.debug('entityId has no active entity', { entityId })
       }
     }
@@ -227,6 +275,19 @@ export function createActiveEntitiesComponent(
     return entities
   }
 
+  async function populateEntityType(database: DatabaseClient, entityType: EntityType): Promise<void> {
+    const deployments = await getDeploymentsForActiveEntities(database, undefined, undefined, entityType)
+
+    logger.info('Populating cache for entity type', { entityType, deployments: deployments.length })
+
+    for (const deployment of deployments) {
+      reportCacheAccess(deployment.entityType, 'miss')
+    }
+
+    const entities = mapDeploymentsToEntities(deployments)
+    await updateCache(database, entities, {})
+  }
+
   /**
    * Retrieve active entities by their ids
    */
@@ -236,7 +297,7 @@ export function createActiveEntitiesComponent(
     const onCache: (Entity | NotActiveEntity)[] = []
     const remaining: string[] = []
     for (const entityId of uniqueEntityIds) {
-      const entity = cache.get(entityId)
+      const entity = entityCache.get(entityId)
       if (entity) {
         onCache.push(entity)
         if (isEntityPresent(entity)) {
@@ -278,6 +339,8 @@ export function createActiveEntitiesComponent(
       }
     }
 
+    logger.info('Retrieving entities by pointers', { pointers: remaining.length })
+
     // once we get the ids, retrieve from cache or find
     const entityIds = Array.from(uniqueEntityIds.values())
     const entitiesById = await withIds(database, entityIds)
@@ -313,7 +376,7 @@ export function createActiveEntitiesComponent(
     for (const pointer of pointers) {
       if (entityIdByPointers.has(pointer)) {
         const entityId = entityIdByPointers.get(pointer)!
-        cache.set(entityId, 'NOT_ACTIVE_ENTITY')
+        entityCache.set(entityId, 'NOT_ACTIVE_ENTITY')
         entityIdByPointers.set(pointer, 'NOT_ACTIVE_ENTITY')
       }
     }
@@ -322,7 +385,23 @@ export function createActiveEntitiesComponent(
   function reset() {
     entityIdByPointers.clear()
     collectionUrnsByPrefixCache.clear()
-    cache.clear()
+    entityCache.clear()
+  }
+
+  async function initialize(database: DatabaseClient) {
+    logger.info('Initializing active entities cache', {
+      entityTypes: cachedEntityntityTypes.map((t) => t.toString()).toString()
+    })
+    for (const entityType of cachedEntityntityTypes) {
+      await populateEntityType(database, entityType)
+    }
+    logger.info('Active entities cache initialized')
+  }
+
+  function getAllCachedScenes() {
+    return Array.from(fixedCache.values()).filter(
+      (entity): entity is Entity => typeof entity !== 'string' && entity.type === EntityType.SCENE
+    )
   }
 
   return {
@@ -333,10 +412,11 @@ export function createActiveEntitiesComponent(
     update,
     clear,
     clearPointers,
-
+    initialize,
+    getAllCachedScenes,
     getCachedEntity(idOrPointer) {
-      if (cache.has(idOrPointer)) {
-        const cachedEntity = cache.get(idOrPointer)
+      if (entityCache.has(idOrPointer)) {
+        const cachedEntity = entityCache.get(idOrPointer)
         return isEntityPresent(cachedEntity) ? cachedEntity.id : cachedEntity
       }
       return entityIdByPointers.get(idOrPointer)
