@@ -392,10 +392,14 @@ export function createActiveEntitiesComponent(
     logger.info('Initializing active entities cache', {
       entityTypes: cachedEntityntityTypes.map((t) => t.toString()).toString()
     })
-    for (const entityType of cachedEntityntityTypes) {
-      await populateEntityType(database, entityType)
+    try {
+      for (const entityType of cachedEntityntityTypes) {
+        await populateEntityType(database, entityType)
+      }
+      logger.info('Active entities cache initialized')
+    } catch (error) {
+      logger.error('Error initializing active entities cache', { error })
     }
-    logger.info('Active entities cache initialized')
   }
 
   function getAllCachedScenes() {
