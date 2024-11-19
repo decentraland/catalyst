@@ -332,6 +332,62 @@ describe('activeEntities', () => {
       expect(firstResult).toMatchObject(fourthResult)
     })
   })
+
+  describe('after initialization', () => {
+    it('should populate cache with scenes during initialization', async () => {
+      const components = await buildComponents()
+      const sceneDeployment = {
+        ...fakeDeployment,
+        entityType: EntityType.SCENE,
+        entityId: 'scene1'
+      }
+
+      sut.mockImplementation(() => Promise.resolve([sceneDeployment]))
+
+      await components.activeEntities.initialize(components.database)
+
+      const cachedScenes = components.activeEntities.getAllCachedScenes()
+      expect(cachedScenes).toHaveLength(1)
+      expect(cachedScenes[0].id).toBe('scene1')
+      expect(cachedScenes[0].type).toBe(EntityType.SCENE)
+    })
+
+    it('should only cache scene type entities', async () => {
+      const components = await buildComponents()
+      const mixedDeployments = [
+        {
+          ...fakeDeployment,
+          entityType: EntityType.SCENE,
+          entityId: 'scene1',
+          pointers: ['bafkscene']
+        },
+        {
+          ...fakeDeployment,
+          entityType: EntityType.PROFILE,
+          entityId: 'profile1',
+          pointers: ['0xprofile']
+        }
+      ]
+
+      sut.mockImplementation(() => Promise.resolve(mixedDeployments))
+
+      await components.activeEntities.initialize(components.database)
+
+      const cachedScenes = components.activeEntities.getAllCachedScenes()
+      expect(cachedScenes).toHaveLength(1)
+      expect(cachedScenes[0].id).toBe('scene1')
+    })
+
+    it('should return empty array when no scenes are cached', async () => {
+      const components = await buildComponents()
+      sut.mockImplementation(() => Promise.resolve([]))
+
+      await components.activeEntities.initialize(components.database)
+
+      const cachedScenes = components.activeEntities.getAllCachedScenes()
+      expect(cachedScenes).toHaveLength(0)
+    })
+  })
 })
 
 async function buildComponents() {
