@@ -224,13 +224,16 @@ export async function getDeployments(
 export async function getDeploymentsForActiveEntities(
   database: DatabaseClient,
   entityIds?: string[],
-  pointers?: string[]
+  pointers?: string[],
+  entityType?: EntityType
 ): Promise<Deployment[]> {
-  // Generate the select according the info needed
-  const bothPresent = entityIds && entityIds.length > 0 && pointers && pointers.length > 0
-  const nonePresent = !entityIds && !pointers
-  if (bothPresent || nonePresent) {
-    throw Error('in getDeploymentsForActiveEntities ids or pointers must be present, but not both')
+  // Validate that only one parameter is provided
+  const providedParams = [entityIds && entityIds.length > 0, pointers && pointers.length > 0, entityType].filter(
+    Boolean
+  )
+
+  if (providedParams.length !== 1) {
+    throw Error('getDeploymentsForActiveEntities requires exactly one of: entityIds, pointers, or entityType')
   }
 
   const query: SQLStatement = SQL`
@@ -248,15 +251,23 @@ export async function getDeploymentsForActiveEntities(
       FROM deployments AS dep1
       WHERE dep1.deleter_deployment IS NULL
         AND `.append(
-    entityIds
+    entityIds && entityIds.length > 0
       ? SQL`dep1.entity_id = ANY (${entityIds})`
-      : SQL`dep1.entity_pointers && ${pointers!.map((p) => p.toLowerCase())}`
+      : pointers && pointers.length > 0
+      ? SQL`dep1.entity_pointers && ${pointers.map((p) => p.toLowerCase())}`
+      : SQL`dep1.entity_type = ${entityType}`
   )
 
-  const historicalDeploymentsResponse = await database.queryWithValues(query, 'get_active_entities')
+  const BATCH_SIZE = 1000
+  const deploymentsResult: HistoricalDeployment[] = []
+  const cursor = await database.streamQuery<HistoricalDeploymentsRow>(
+    query,
+    { batchSize: BATCH_SIZE },
+    'get_active_entities'
+  )
 
-  const deploymentsResult: HistoricalDeployment[] = historicalDeploymentsResponse.rows.map(
-    (row: HistoricalDeploymentsRow): HistoricalDeployment => ({
+  for await (const row of cursor) {
+    deploymentsResult.push({
       deploymentId: row.id,
       entityType: row.entity_type,
       entityId: row.entity_id,
@@ -269,12 +280,15 @@ export async function getDeploymentsForActiveEntities(
       localTimestamp: row.local_timestamp,
       overwrittenBy: row.overwritten_by ?? undefined
     })
+  }
+
+  // Batch fetch all content files at once
+  const content = await getContentFiles(
+    database,
+    deploymentsResult.map((d) => d.deploymentId)
   )
 
-  const deploymentIds = deploymentsResult.map(({ deploymentId }) => deploymentId)
-
-  const content = await getContentFiles(database, deploymentIds)
-
+  // Map results to final format
   return deploymentsResult.map((result) => ({
     entityVersion: result.version as EntityVersion,
     entityType: result.entityType as EntityType,
