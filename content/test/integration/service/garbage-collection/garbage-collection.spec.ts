@@ -243,6 +243,43 @@ describe('Integration - Garbage Collection', () => {
       expect(results?.gcStaleProfilesResult?.deletedHashes.size).toEqual(0)
       expect(results?.gcStaleProfilesResult?.deletedDeployments).toContain(p1DeploymentId)
     })
+
+    it('should not garbage collect default profiles even when they are old', async () => {
+      const timestamp = Date.now() - PROFILE_DURATION * 2
+      const defaultProfile = await buildDeployData(['default123'], {
+        type: EntityType.PROFILE,
+        contentPaths: [
+          'test/integration/resources/some-binary-file.png',
+          'test/integration/resources/some-text-file.txt'
+        ],
+        timestamp,
+        metadata: {}
+      })
+
+      const regularProfile = await buildDeployData(['0x000000000'], {
+        type: EntityType.PROFILE,
+        contentPaths: [
+          'test/integration/resources/some-binary-file.png',
+          'test/integration/resources/some-text-file.txt'
+        ],
+        timestamp,
+        metadata: {}
+      })
+
+      await deployEntitiesCombo(components.deployer, defaultProfile, regularProfile)
+      const regularProfileDeploymentId = await findDeploymentId(regularProfile.entity.id)
+
+      await components.garbageCollectionManager.start()
+
+      const results = components.garbageCollectionManager.getLastSweepResults()
+
+      expect(results?.gcProfileActiveEntitiesResult).toContain(regularProfile.entity.pointers[0])
+      expect(results?.gcStaleProfilesResult?.deletedDeployments).toContain(regularProfileDeploymentId)
+
+      expect(results?.gcProfileActiveEntitiesResult).not.toContain(defaultProfile.entity.pointers[0])
+      const defaultProfileDeploymentId = await findDeploymentId(defaultProfile.entity.id)
+      expect(results?.gcStaleProfilesResult?.deletedDeployments).not.toContain(defaultProfileDeploymentId)
+    })
   })
 
   async function assertContentIsAvailable(components: AppComponents, ...hashes: string[]) {
