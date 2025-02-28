@@ -67,7 +67,17 @@ export class GarbageCollectionManager {
   // it will remove a max of ${PROFILE_CLEANUP_LIMIT}
   async gcStaleProfiles(oldProfileSince: Date): Promise<GCStaleProfilesResult> {
     const result = await this.components.database.queryWithValues<{ id: string; content_hash: string }>(
-      SQL`SELECT d.id, cf.content_hash FROM deployments d left join content_files cf on cf.deployment = d.id WHERE d.entity_type = 'profile' AND entity_timestamp < ${oldProfileSince} LIMIT ${PROFILE_CLEANUP_LIMIT}`,
+      SQL`SELECT d.id, cf.content_hash
+          FROM deployments d
+          LEFT JOIN content_files cf on cf.deployment = d.id
+          WHERE d.entity_type = 'profile'
+          AND entity_timestamp < ${oldProfileSince}
+          AND NOT EXISTS (
+            SELECT 1 FROM active_pointers ap
+            WHERE ap.entity_id = d.entity_id
+            AND ap.pointer ~ '^default[0-9]+$'
+          )
+          LIMIT ${PROFILE_CLEANUP_LIMIT}`,
       'gc_old_profiles_query_old_deployments'
     )
 
@@ -134,7 +144,13 @@ export class GarbageCollectionManager {
     this.LOGGER.info('Running clear old profiles process')
 
     const result = await this.components.database.queryWithValues<{ pointer: string }>(
-      SQL`DELETE FROM active_pointers ap USING deployments d WHERE d.entity_id = ap.entity_id AND entity_type = 'profile' AND entity_timestamp < ${oldProfileSince} RETURNING ap.pointer`,
+      SQL`DELETE FROM active_pointers ap
+          USING deployments d
+          WHERE d.entity_id = ap.entity_id
+          AND entity_type = 'profile'
+          AND entity_timestamp < ${oldProfileSince}
+          AND ap.pointer !~ '^default[0-9]+$'
+          RETURNING ap.pointer`,
       'gc_old_profiles_delete_active_pointers'
     )
 
