@@ -16,6 +16,14 @@ type ItemData = {
   category: any
 }
 
+function getItemData(itemMetadata: StandardWearable | StandardEmote): ItemData {
+  return 'emoteDataADR74' in itemMetadata
+    ? itemMetadata.emoteDataADR74
+    : 'emoteDataADR287' in itemMetadata
+    ? itemMetadata.emoteDataADR287
+    : (itemMetadata as StandardWearable).data
+}
+
 export async function getStandardErc721(client: SmartContentClient, req: Request, res: Response) {
   // Method: GET
   // Path: /standard/erc721/:chainId/:contract/:option/:emission
@@ -41,8 +49,7 @@ export async function getStandardErc721(client: SmartContentClient, req: Request
       const description = emission ? `DCL Wearable ${emission}/${totalEmission}` : ''
       const image = createExternalContentUrl(client, entity, itemMetadata.image)
       const thumbnail = createExternalContentUrl(client, entity, itemMetadata.thumbnail)
-      const itemData: ItemData =
-        (itemMetadata as StandardEmote).emoteDataADR74 ?? (itemMetadata as StandardWearable).data
+      const itemData: ItemData = getItemData(itemMetadata)
       const bodyShapeTraits = getBodyShapes(itemData.representations).reduce(
         (bodyShapes: ERC721StandardTrait[], bodyShape) => {
           bodyShapes.push({
