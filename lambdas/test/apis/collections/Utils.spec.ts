@@ -1,6 +1,6 @@
-import { BodyShape, Entity, EntityType, Rarity, Wearable, WearableCategory } from '@dcl/schemas'
+import { BodyShape, Entity, EntityType, Rarity, Wearable, WearableCategory, Emote, EmoteCategory } from '@dcl/schemas'
 import { instance, mock, when } from 'ts-mockito'
-import { translateEntityIntoWearable } from '../../../src/apis/collections/Utils'
+import { translateEntityIntoWearable, translateEntityIntoEmote } from '../../../src/apis/collections/Utils'
 import { SmartContentClient } from '../../../src/utils/SmartContentClient'
 
 const EXTERNAL_URL = 'https://external.com'
@@ -37,6 +37,115 @@ describe('Collection Utils', () => {
     const [originalContent] = originalRepresentation.contents
     expect(translatedContent.key).toEqual(originalContent)
     expect(translatedContent.url).toEqual(`${EXTERNAL_URL}/contents/${CONTENT_HASH3}`)
+  })
+
+  describe('When emote metadata is translated, then url is added to file references', () => {
+    it('and emote metadata is ADR74', async () => {
+      const client = getClient()
+      const entity = buildADR74EmoteEntity()
+
+      const emote = translateEntityIntoEmote(client, entity)
+      const entityMetadata: Emote = entity.metadata
+
+      // Compare top level properties
+      expect(emote).toBeDefined()
+      expect(emote.thumbnail).toEqual(`${EXTERNAL_URL}/contents/${CONTENT_HASH1}`)
+      expect(emote.image).toEqual(`${EXTERNAL_URL}/contents/${CONTENT_HASH2}`)
+
+      // Check that it's an ADR74 emote
+      expect('emoteDataADR74' in emote).toBe(true)
+      expect('emoteDataADR287' in emote).toBe(false)
+
+      if ('emoteDataADR74' in emote && 'emoteDataADR74' in entityMetadata) {
+        // Compare emoteDataADR74
+        expect(emote.emoteDataADR74).toBeDefined()
+        assertAreEqualExceptProperties(emote.emoteDataADR74, entityMetadata.emoteDataADR74, 'representations')
+
+        // Compare representations
+        expect(emote.emoteDataADR74.representations.length).toEqual(1)
+        const [translatedRepresentation] = emote.emoteDataADR74.representations
+        const [originalRepresentation] = entityMetadata.emoteDataADR74.representations
+        assertAreEqualExceptProperties(translatedRepresentation, originalRepresentation, 'contents')
+
+        // Compare contents
+        expect(translatedRepresentation.contents.length).toEqual(1)
+        const [translatedContent] = translatedRepresentation.contents
+        const [originalContent] = originalRepresentation.contents
+        expect(translatedContent.key).toEqual(originalContent)
+        expect(translatedContent.url).toEqual(`${EXTERNAL_URL}/contents/${CONTENT_HASH3}`)
+      }
+    })
+
+    it('and emote metadata is ADR287', async () => {
+      const client = getClient()
+      const entity = buildADR287EmoteEntity()
+
+      const emote = translateEntityIntoEmote(client, entity)
+      const entityMetadata: Emote = entity.metadata
+
+      // Compare top level properties
+      expect(emote).toBeDefined()
+      expect(emote.thumbnail).toEqual(`${EXTERNAL_URL}/contents/${CONTENT_HASH1}`)
+      expect(emote.image).toEqual(`${EXTERNAL_URL}/contents/${CONTENT_HASH2}`)
+
+      // Check that it's an ADR287 emote
+      expect('emoteDataADR287' in emote).toBe(true)
+      expect('emoteDataADR74' in emote).toBe(false)
+
+      if ('emoteDataADR287' in emote && 'emoteDataADR287' in entityMetadata) {
+        // Compare emoteDataADR287
+        expect(emote.emoteDataADR287).toBeDefined()
+        assertAreEqualExceptProperties(emote.emoteDataADR287, entityMetadata.emoteDataADR287, 'representations')
+
+        // Compare representations
+        expect(emote.emoteDataADR287.representations.length).toEqual(1)
+        const [translatedRepresentation] = emote.emoteDataADR287.representations
+        const [originalRepresentation] = entityMetadata.emoteDataADR287.representations
+        assertAreEqualExceptProperties(translatedRepresentation, originalRepresentation, 'contents')
+
+        // Compare contents
+        expect(translatedRepresentation.contents.length).toEqual(1)
+        const [translatedContent] = translatedRepresentation.contents
+        const [originalContent] = originalRepresentation.contents
+        expect(translatedContent.key).toEqual(originalContent)
+        expect(translatedContent.url).toEqual(`${EXTERNAL_URL}/contents/${CONTENT_HASH3}`)
+      }
+    })
+  })
+
+  it(`When emote saved as wearable metadata is translated, then url is added to file references`, async () => {
+    const client = getClient()
+    const entity = buildEmoteAsWearableEntity()
+
+    const emote = translateEntityIntoEmote(client, entity)
+    const entityMetadata: Wearable = entity.metadata
+
+    // Compare top level properties
+    expect(emote).toBeDefined()
+    expect(emote.thumbnail).toEqual(`${EXTERNAL_URL}/contents/${CONTENT_HASH1}`)
+    expect(emote.image).toEqual(`${EXTERNAL_URL}/contents/${CONTENT_HASH2}`)
+
+    // Should have emoteDataADR74 with default values
+    expect('emoteDataADR74' in emote).toBe(true)
+    if ('emoteDataADR74' in emote) {
+      expect(emote.emoteDataADR74).toBeDefined()
+      expect(emote.emoteDataADR74.category).toEqual(EmoteCategory.DANCE)
+      expect(emote.emoteDataADR74.tags).toEqual(entityMetadata.data.tags)
+      expect(emote.emoteDataADR74.loop).toEqual(false)
+
+      // Compare representations
+      expect(emote.emoteDataADR74.representations.length).toEqual(1)
+      const [translatedRepresentation] = emote.emoteDataADR74.representations
+      const [originalRepresentation] = entityMetadata.data.representations
+      assertAreEqualExceptProperties(translatedRepresentation, originalRepresentation, 'contents')
+
+      // Compare contents
+      expect(translatedRepresentation.contents.length).toEqual(1)
+      const [translatedContent] = translatedRepresentation.contents
+      const [originalContent] = originalRepresentation.contents
+      expect(translatedContent.key).toEqual(originalContent)
+      expect(translatedContent.url).toEqual(`${EXTERNAL_URL}/contents/${CONTENT_HASH3}`)
+    }
   })
 
   function assertAreEqualExceptProperties<Union extends object, T extends Union, K extends Union>(
@@ -96,6 +205,167 @@ function buildMetadata(): Wearable {
       representations: [
         {
           bodyShapes: [BodyShape.MALE],
+          mainFile: CONTENT_KEY3,
+          contents: [CONTENT_KEY3],
+          overrideHides: [],
+          overrideReplaces: []
+        }
+      ]
+    }
+  }
+}
+
+function buildADR74EmoteEntity(): Entity {
+  return {
+    version: 'v3',
+    id: '',
+    type: EntityType.EMOTE,
+    pointers: [],
+    timestamp: 1,
+    content: [
+      {
+        file: CONTENT_KEY1,
+        hash: CONTENT_HASH1
+      },
+      {
+        file: CONTENT_KEY2,
+        hash: CONTENT_HASH2
+      },
+      {
+        file: CONTENT_KEY3,
+        hash: CONTENT_HASH3
+      }
+    ],
+    metadata: buildADR74EmoteMetadata()
+  }
+}
+
+function buildADR74EmoteMetadata(): Emote {
+  return {
+    id: 'emote-id',
+    name: 'my emote',
+    description: 'emote description',
+    thumbnail: CONTENT_KEY1,
+    image: CONTENT_KEY2,
+    rarity: Rarity.UNCOMMON,
+    collectionAddress: 'address',
+    i18n: [],
+    emoteDataADR74: {
+      category: EmoteCategory.DANCE,
+      tags: ['dance', 'fun'],
+      loop: false,
+      representations: [
+        {
+          bodyShapes: [BodyShape.MALE, BodyShape.FEMALE],
+          mainFile: CONTENT_KEY3,
+          contents: [CONTENT_KEY3]
+        }
+      ]
+    }
+  }
+}
+
+function buildADR287EmoteEntity(): Entity {
+  return {
+    version: 'v3',
+    id: '',
+    type: EntityType.EMOTE,
+    pointers: [],
+    timestamp: 1,
+    content: [
+      {
+        file: CONTENT_KEY1,
+        hash: CONTENT_HASH1
+      },
+      {
+        file: CONTENT_KEY2,
+        hash: CONTENT_HASH2
+      },
+      {
+        file: CONTENT_KEY3,
+        hash: CONTENT_HASH3
+      }
+    ],
+    metadata: buildADR287EmoteMetadata()
+  }
+}
+
+function buildADR287EmoteMetadata(): Emote {
+  return {
+    id: 'emote-id',
+    name: 'my emote',
+    description: 'emote description',
+    thumbnail: CONTENT_KEY1,
+    image: CONTENT_KEY2,
+    rarity: Rarity.UNCOMMON,
+    collectionAddress: 'address',
+    i18n: [],
+    emoteDataADR287: {
+      category: EmoteCategory.DANCE,
+      tags: ['dance', 'fun'],
+      loop: false,
+      representations: [
+        {
+          bodyShapes: [BodyShape.MALE, BodyShape.FEMALE],
+          mainFile: CONTENT_KEY3,
+          contents: [CONTENT_KEY3]
+        }
+      ],
+      startAnimation: {
+        Armature: {
+          animation: 'animation1',
+          loop: false
+        }
+      },
+      randomizeOutcomes: false,
+      outcomes: []
+    }
+  }
+}
+
+function buildEmoteAsWearableEntity(): Entity {
+  return {
+    version: 'v3',
+    id: '',
+    type: EntityType.EMOTE,
+    pointers: [],
+    timestamp: 1,
+    content: [
+      {
+        file: CONTENT_KEY1,
+        hash: CONTENT_HASH1
+      },
+      {
+        file: CONTENT_KEY2,
+        hash: CONTENT_HASH2
+      },
+      {
+        file: CONTENT_KEY3,
+        hash: CONTENT_HASH3
+      }
+    ],
+    metadata: buildEmoteAsWearableMetadata()
+  }
+}
+
+function buildEmoteAsWearableMetadata(): Wearable {
+  return {
+    id: 'emote-id',
+    name: 'my emote',
+    description: 'emote description',
+    thumbnail: CONTENT_KEY1,
+    image: CONTENT_KEY2,
+    rarity: Rarity.UNCOMMON,
+    collectionAddress: 'address',
+    i18n: [],
+    data: {
+      replaces: [],
+      hides: [],
+      tags: ['dance', 'fun'],
+      category: WearableCategory.EYES,
+      representations: [
+        {
+          bodyShapes: [BodyShape.MALE, BodyShape.FEMALE],
           mainFile: CONTENT_KEY3,
           contents: [CONTENT_KEY3],
           overrideHides: [],
