@@ -1,4 +1,4 @@
-import { Emote, EmoteCategory, Entity, I18N, Wearable, WearableId } from '@dcl/schemas'
+import { Emote, EmoteCategory, EmoteDataADR287, EmoteDataADR74, Entity, I18N, Wearable, WearableId } from '@dcl/schemas'
 import { parseUrn } from '@dcl/urn-resolver'
 import { SmartContentClient } from '../../../src/utils/SmartContentClient'
 import { LambdasEmote, LambdasWearable } from './types'
@@ -54,7 +54,7 @@ export function translateEntityIntoWearable(client: SmartContentClient, entity: 
 
 export function translateEntityIntoEmote(client: SmartContentClient, entity: Entity): LambdasEmote {
   const metadata: Emote | Wearable = entity.metadata!
-  const isNewEmote = 'emoteDataADR74' in metadata
+  const isNewEmote = 'emoteDataADR74' in metadata || 'emoteDataADR287' in metadata
   return isNewEmote
     ? translateEmoteIntoLambdasEmote(client, entity)
     : translateEmoteSavedAsWearableIntoLambdasEmote(client, entity)
@@ -62,10 +62,12 @@ export function translateEntityIntoEmote(client: SmartContentClient, entity: Ent
 
 function translateEmoteIntoLambdasEmote(client: SmartContentClient, entity: Entity): LambdasEmote {
   const metadata: Emote = entity.metadata!
-  if (!('emoteDataADR74' in metadata)) {
+  if (!('emoteDataADR74' in metadata) && !('emoteDataADR287' in metadata)) {
     throw new Error('Error translating entity into Emote. Entity is not an Emote')
   }
-  const representations = metadata.emoteDataADR74.representations.map((representation) =>
+  const emoteData: EmoteDataADR74 | EmoteDataADR287 =
+    'emoteDataADR74' in metadata ? metadata.emoteDataADR74 : metadata.emoteDataADR287
+  const representations = emoteData.representations.map((representation) =>
     mapRepresentation(representation, client, entity)
   )
   const externalImage = createExternalContentUrl(client, entity, metadata.image)
@@ -75,10 +77,19 @@ function translateEmoteIntoLambdasEmote(client: SmartContentClient, entity: Enti
     ...metadata,
     thumbnail,
     image,
-    emoteDataADR74: {
-      ...metadata.emoteDataADR74,
-      representations
-    }
+    ...('emoteDataADR74' in metadata
+      ? {
+          emoteDataADR74: {
+            ...(emoteData as EmoteDataADR74),
+            representations
+          }
+        }
+      : {
+          emoteDataADR287: {
+            ...(emoteData as EmoteDataADR287),
+            representations
+          }
+        })
   }
 }
 

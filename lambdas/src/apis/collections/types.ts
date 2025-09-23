@@ -1,5 +1,13 @@
 import { EthAddress } from '@dcl/crypto'
-import { Emote, EmoteRepresentationADR74, Wearable, WearableId, WearableRepresentation } from '@dcl/schemas'
+import {
+  Emote,
+  EmoteDataADR74,
+  EmoteDataADR287,
+  EmoteRepresentationADR74,
+  Wearable,
+  WearableId,
+  WearableRepresentation
+} from '@dcl/schemas'
 
 export type Collection = {
   id: string
@@ -15,11 +23,17 @@ export type LambdasWearableRepresentation = Omit<WearableRepresentation, 'conten
   contents: { key: string; url: string }[]
 }
 
-export type LambdasEmote = Omit<Emote, 'emoteDataADR74'> & {
-  emoteDataADR74: Omit<Emote['emoteDataADR74'], 'representations'> & {
-    representations: LambdasEmoteRepresentation[]
-  }
-}
+export type LambdasEmote =
+  | (Omit<Emote, 'emoteDataADR74'> & {
+      emoteDataADR74: Omit<EmoteDataADR74, 'representations'> & {
+        representations: LambdasEmoteRepresentation[]
+      }
+    })
+  | (Omit<Emote, 'emoteDataADR287'> & {
+      emoteDataADR287: Omit<EmoteDataADR287, 'representations'> & {
+        representations: LambdasEmoteRepresentation[]
+      }
+    })
 
 export type LambdasEmoteRepresentation = Omit<EmoteRepresentationADR74, 'contents'> & {
   contents: { key: string; url: string }[]
