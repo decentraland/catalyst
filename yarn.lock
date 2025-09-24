@@ -351,15 +351,14 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@^6.1.0":
-  version "6.1.0"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-6.1.0.tgz#cf5de10a1f5799ad401648a66e3367dbfc97ce4c"
-  integrity sha512-uz+BoVziCfomDCmSTuym4cIIM9ngNbAvO7019sDBC9p3sP/K3g4oBfoDWdLVhvZf5neolRYAK26/aYllYMAZfQ==
+"@dcl/content-validator@https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/feat/add-social-emote/dcl-content-validator-6.0.3-17984994005.commit-523e7dc.tgz":
+  version "6.0.3-17984994005.commit-523e7dc"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/feat/add-social-emote/dcl-content-validator-6.0.3-17984994005.commit-523e7dc.tgz#abfd9af6ccc902c6276be8eccfccbc0b54eb72d8"
   dependencies:
     "@dcl/block-indexer" "^1.1.2"
     "@dcl/content-hash-tree" "^1.1.4"
     "@dcl/hashing" "^3.0.4"
-    "@dcl/schemas" "^13.2.1"
+    "@dcl/schemas" "19.0.0"
     "@dcl/urn-resolver" "^3.6.0"
     "@well-known-components/interfaces" "^1.4.3"
     "@well-known-components/thegraph-component" "^1.6.0"
@@ -395,16 +394,6 @@
   version "11.12.0"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-11.12.0.tgz#f52493b615ebdea8e02819bc2ed4a456239f3747"
   integrity sha512-L04KTucvxSnrHDAl3/rnkzhjfZ785dSSPeKarBVfzyuw41uyQ0Mh4HVFWjX9hC+f/nMpM5Adg5udlT5efmepcA==
-  dependencies:
-    ajv "^8.11.0"
-    ajv-errors "^3.0.0"
-    ajv-keywords "^5.1.0"
-    mitt "^3.0.1"
-
-"@dcl/schemas@^13.2.1":
-  version "13.13.0"
-  resolved "https://registry.npmjs.org/@dcl/schemas/-/schemas-13.13.0.tgz"
-  integrity sha512-UY7YY7pn0TxSrinO5nayBushF5Sf1jcBpbsLdw4wWOq7urhzSQZGjbAomgJZ7UfOMi1C7DD2XaTZ89BCp/4Z9Q==
   dependencies:
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
