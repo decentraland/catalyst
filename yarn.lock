@@ -367,6 +367,21 @@
     p-queue "^6.6.2"
     sharp "0.32.6"
 
+"@dcl/content-validator@https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/feat/add-social-emote/dcl-content-validator-6.0.3-18097710223.commit-32e96db.tgz":
+  version "6.0.3-18097710223.commit-32e96db"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/feat/add-social-emote/dcl-content-validator-6.0.3-18097710223.commit-32e96db.tgz#d7123645784a37f9b1b9c352d22cc9ba77d75cb7"
+  dependencies:
+    "@dcl/block-indexer" "^1.1.2"
+    "@dcl/content-hash-tree" "^1.1.4"
+    "@dcl/hashing" "^3.0.4"
+    "@dcl/schemas" "https://sdk-team-cdn.decentraland.org/@dcl/schemas/branch/fix/emote-data-schema/dcl-schemas-19.0.1-18051230151.commit-fbc3a2c.tgz"
+    "@dcl/urn-resolver" "^3.6.0"
+    "@well-known-components/interfaces" "^1.4.3"
+    "@well-known-components/thegraph-component" "^1.6.0"
+    ms "^2.1.3"
+    p-queue "^6.6.2"
+    sharp "0.32.6"
+
 "@dcl/crypto@^3.4.0", "@dcl/crypto@^3.4.5":
   version "3.4.5"
   resolved "https://registry.npmjs.org/@dcl/crypto/-/crypto-3.4.5.tgz"
@@ -5416,6 +5431,11 @@ path-to-regexp@0.1.10:
   version "0.1.10"
   resolved "https://registry.npmjs.org/path-to-regexp/-/path-to-regexp-0.1.10.tgz"
   integrity sha512-7lf7qcQidTku0Gu3YDPc8DJ1q7OOucfa/BSsIwjuh56VU7katFvuM8hULfkwB3Fns/rsVF7PwPKVw1sl5KQS9w==
+
+path-to-regexp@0.1.7:
+  version "0.1.7"
+  resolved "https://registry.yarnpkg.com/path-to-regexp/-/path-to-regexp-0.1.7.tgz#df604178005f522f15eb4490e7247a1bfaa67f8c"
+  integrity sha512-5DFkuoqlv1uYQKxy8omFBeJPQcdoE07Kv2sferDCrAq1ohOU+MSDswDIbnx3YAM60qIOnYa53wBhXW0EbMonrQ==
 
 path-to-regexp@^1.7.0:
   version "1.8.0"
