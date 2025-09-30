@@ -367,7 +367,7 @@
     p-queue "^6.6.2"
     sharp "0.32.6"
 
-"@dcl/crypto@^3.4.0", "@dcl/crypto@^3.4.5":
+"@dcl/crypto@^3.4.0", "@dcl/crypto@^3.4.3", "@dcl/crypto@^3.4.5":
   version "3.4.5"
   resolved "https://registry.npmjs.org/@dcl/crypto/-/crypto-3.4.5.tgz"
   integrity sha512-uneyjOAOx7pi5kabZsLmPm9kSLkCk4Cok8FUsvT+6k8RquqkjKqocvkGVOMaoWsfU6S3mkLOyaeqEKmOy4ErxA==
@@ -380,6 +380,15 @@
   version "3.0.4"
   resolved "https://registry.npmjs.org/@dcl/hashing/-/hashing-3.0.4.tgz"
   integrity sha512-Cg+MoIOn+BYmQV2q8zSFnNYY+GldlnUazwBnfgrq3i66ZxOaZ65h01btd8OUtSAlfWG4VTNIOHDjtKqmuwJNBg==
+
+"@dcl/platform-crypto-middleware@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@dcl/platform-crypto-middleware/-/platform-crypto-middleware-1.1.0.tgz#11434eb4fc8d461799ab71d28ce869ab330bdb23"
+  integrity sha512-E2AAIRcbeF+DLQ6urmOkoqwSOGaBlX498nygyOc3EnChEPjJhM0LiTQ9rwAG572DdMGf8ZGbNg+odx6i9M3cMA==
+  dependencies:
+    "@dcl/crypto" "^3.4.3"
+    "@well-known-components/fetch-component" "^2.0.2"
+    "@well-known-components/interfaces" "^1.4.2"
 
 "@dcl/schemas@^11.5.0":
   version "11.12.0"

@@ -3,6 +3,8 @@ import { Field } from '@well-known-components/multipart-wrapper'
 import { AuthChain, Authenticator, AuthLink, EthAddress, Signature } from '@dcl/crypto'
 import { DeploymentContext, isInvalidDeployment, isSuccessfulDeployment } from '../../deployment-types'
 import { FormHandlerContextWithPath, InvalidRequestError } from '../../types'
+import { verifyMetadata } from '@dcl/platform-crypto-middleware/dist/verify'
+import { AUTH_METADATA_HEADER } from '@dcl/platform-crypto-middleware'
 
 type ContentFile = {
   path?: string
@@ -32,6 +34,11 @@ export async function createEntity(
     authChain = Authenticator.createSimpleAuthChain(entityId, ethAddress, signature)
   } else {
     throw new InvalidRequestError('No auth chain can be derivated')
+  }
+
+  const authChainMetadata = verifyMetadata(context.request.headers[AUTH_METADATA_HEADER])
+  if (authChainMetadata?.signer === 'decentraland-kernel-scene') {
+    throw new InvalidRequestError('Kernel scene is not allowed to deploy entities')
   }
 
   const deployFiles: ContentFile[] = []
