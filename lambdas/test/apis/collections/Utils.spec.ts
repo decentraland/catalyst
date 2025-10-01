@@ -312,9 +312,9 @@ function buildADR287EmoteMetadata(): Emote {
         }
       ],
       startAnimation: {
+        loop: false,
         Armature: {
-          animation: 'animation1',
-          loop: false
+          animation: 'animation1'
         }
       },
       randomizeOutcomes: false,
