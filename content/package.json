@@ -27,7 +27,7 @@
     "@dcl/content-validator": "^7.0.0",
     "@dcl/crypto": "^3.4.5",
     "@dcl/hashing": "^3.0.4",
-    "@dcl/schemas": "https://sdk-team-cdn.decentraland.org/@dcl/schemas/branch/fix/emote-data-schema/dcl-schemas-19.0.1-18051230151.commit-fbc3a2c.tgz",
+    "@dcl/schemas": "19.2.0",
     "@dcl/snapshots-fetcher": "^9.1.0",
     "@dcl/urn-resolver": "^3.6.0",
     "@well-known-components/env-config-provider": "^1.2.0",
