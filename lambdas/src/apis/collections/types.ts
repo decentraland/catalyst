@@ -23,17 +23,15 @@ export type LambdasWearableRepresentation = Omit<WearableRepresentation, 'conten
   contents: { key: string; url: string }[]
 }
 
+type BaseLambdasEmote<T> = Omit<Emote, keyof T> & {
+  [K in keyof T]: Omit<T[K], 'representations'> & {
+    representations: LambdasEmoteRepresentation[]
+  }
+}
+
 export type LambdasEmote =
-  | (Omit<Emote, 'emoteDataADR74'> & {
-      emoteDataADR74: Omit<EmoteDataADR74, 'representations'> & {
-        representations: LambdasEmoteRepresentation[]
-      }
-    })
-  | (Omit<Emote, 'emoteDataADR287'> & {
-      emoteDataADR287: Omit<EmoteDataADR287, 'representations'> & {
-        representations: LambdasEmoteRepresentation[]
-      }
-    })
+  | BaseLambdasEmote<{ emoteDataADR74: EmoteDataADR74 }>
+  | BaseLambdasEmote<{ emoteDataADR287: EmoteDataADR287 }>
 
 export type LambdasEmoteRepresentation = Omit<EmoteRepresentationADR74, 'contents'> & {
   contents: { key: string; url: string }[]
