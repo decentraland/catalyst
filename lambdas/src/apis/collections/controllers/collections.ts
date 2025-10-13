@@ -17,9 +17,9 @@ type ItemData = {
 }
 
 function getItemData(itemMetadata: StandardWearable | StandardEmote): ItemData {
-  return 'emoteDataADR74' in itemMetadata
+  return 'emoteDataADR74' in itemMetadata && itemMetadata.emoteDataADR74 != null
     ? itemMetadata.emoteDataADR74
-    : 'emoteDataADR287' in itemMetadata
+    : 'emoteDataADR287' in itemMetadata && itemMetadata.emoteDataADR287 != null
     ? itemMetadata.emoteDataADR287
     : (itemMetadata as StandardWearable).data
 }
