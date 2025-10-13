@@ -51,9 +51,9 @@ function getBodyShapes(representations: WearableRepresentation[]) {
 }
 
 function getItemData(itemMetadata: Wearable | Emote): ItemData {
-  return 'emoteDataADR74' in itemMetadata
+  return 'emoteDataADR74' in itemMetadata && itemMetadata.emoteDataADR74 != null
     ? itemMetadata.emoteDataADR74
-    : 'emoteDataADR287' in itemMetadata
+    : 'emoteDataADR287' in itemMetadata && itemMetadata.emoteDataADR287 != null
     ? itemMetadata.emoteDataADR287
     : (itemMetadata as Wearable).data
 }
