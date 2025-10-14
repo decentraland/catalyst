@@ -51,11 +51,7 @@ function getBodyShapes(representations: WearableRepresentation[]) {
 }
 
 function getItemData(itemMetadata: Wearable | Emote): ItemData {
-  return 'emoteDataADR74' in itemMetadata && itemMetadata.emoteDataADR74 != null
-    ? itemMetadata.emoteDataADR74
-    : 'emoteDataADR287' in itemMetadata && itemMetadata.emoteDataADR287 != null
-    ? itemMetadata.emoteDataADR287
-    : (itemMetadata as Wearable).data
+  return (itemMetadata as Emote)?.emoteDataADR74 ?? (itemMetadata as Wearable).data
 }
 
 export function formatERC21Entity(env: Environment, urn: string, entity: Entity, emission: string | undefined) {

@@ -17,11 +17,7 @@ type ItemData = {
 }
 
 function getItemData(itemMetadata: StandardWearable | StandardEmote): ItemData {
-  return 'emoteDataADR74' in itemMetadata && itemMetadata.emoteDataADR74 != null
-    ? itemMetadata.emoteDataADR74
-    : 'emoteDataADR287' in itemMetadata && itemMetadata.emoteDataADR287 != null
-    ? itemMetadata.emoteDataADR287
-    : (itemMetadata as StandardWearable).data
+  return (itemMetadata as StandardEmote).emoteDataADR74 ?? (itemMetadata as StandardWearable).data
 }
 
 export async function getStandardErc721(client: SmartContentClient, req: Request, res: Response) {
