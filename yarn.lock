@@ -381,16 +381,6 @@
   resolved "https://registry.npmjs.org/@dcl/hashing/-/hashing-3.0.4.tgz"
   integrity sha512-Cg+MoIOn+BYmQV2q8zSFnNYY+GldlnUazwBnfgrq3i66ZxOaZ65h01btd8OUtSAlfWG4VTNIOHDjtKqmuwJNBg==
 
-"@dcl/schemas@19.2.0":
-  version "19.2.0"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-19.2.0.tgz#bc5a16f88230417ad0ab5e11b9c07e4be7a19be1"
-  integrity sha512-4yIUV0b1IAUajBzaQFkpIMNS7QN8uguZhyfwM4xTMnSGRN6sB0iCT5lKlSJcnIuAb/H5whoSiJWCO3is3Ljf7A==
-  dependencies:
-    ajv "^8.11.0"
-    ajv-errors "^3.0.0"
-    ajv-keywords "^5.1.0"
-    mitt "^3.0.1"
-
 "@dcl/schemas@^11.5.0":
   version "11.12.0"
   resolved "https://registry.npmjs.org/@dcl/schemas/-/schemas-11.12.0.tgz"
@@ -419,6 +409,15 @@
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
+
+"@dcl/schemas@https://sdk-team-cdn.decentraland.org/@dcl/schemas/branch/fix/update-emote-data/dcl-schemas-19.4.1-18510169386.commit-c29431b.tgz":
+  version "19.4.1-18510169386.commit-c29431b"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl/schemas/branch/fix/update-emote-data/dcl-schemas-19.4.1-18510169386.commit-c29431b.tgz#7f9f044bacd8c05dcba56795ec673e002ac101d6"
+  dependencies:
+    ajv "^8.11.0"
+    ajv-errors "^3.0.0"
+    ajv-keywords "^5.1.0"
+    mitt "^3.0.1"
 
 "@dcl/snapshots-fetcher@^9.1.0":
   version "9.1.0"
