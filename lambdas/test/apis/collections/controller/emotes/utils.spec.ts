@@ -72,11 +72,7 @@ describe('emotes translation', () => {
     expect(Wearable.validate(emoteSavedAsWearable.metadata)).toBeTruthy()
     const lambdasEmote = translateEntityIntoEmote(instance(mockedClient), emoteSavedAsWearable)
     // We validate that the representations are correctly mapped
-    const representations =
-      'emoteDataADR74' in lambdasEmote
-        ? lambdasEmote.emoteDataADR74.representations
-        : lambdasEmote.emoteDataADR287.representations
-    const allContents: { key: string; url: string }[] = representations.flatMap(
+    const allContents: { key: string; url: string }[] = lambdasEmote.emoteDataADR74.representations.flatMap(
       (r: { contents: { key: string; url: string }[] }) => r.contents
     )
     expect(allContents.length).toBe(2)
@@ -161,11 +157,7 @@ describe('emotes translation', () => {
     }
     expect(Emote.validate(trueEmote.metadata)).toBeTruthy()
     const lambdasEmote = translateEntityIntoEmote(instance(mockedClient), trueEmote)
-    const representations =
-      'emoteDataADR74' in lambdasEmote
-        ? lambdasEmote.emoteDataADR74.representations
-        : lambdasEmote.emoteDataADR287.representations
-    const allContents: { key: string; url: string }[] = representations.flatMap(
+    const allContents: { key: string; url: string }[] = lambdasEmote.emoteDataADR74.representations.flatMap(
       (r: { contents: { key: string; url: string }[] }) => r.contents
     )
     expect(allContents.length).toBe(2)
