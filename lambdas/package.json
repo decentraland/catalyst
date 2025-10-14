@@ -13,7 +13,7 @@
   "dependencies": {
     "@dcl/catalyst-api-specs": "^3.3.0",
     "@dcl/crypto": "^3.4.5",
-    "@dcl/schemas": "19.2.0",
+    "@dcl/schemas": "https://sdk-team-cdn.decentraland.org/@dcl/schemas/branch/fix/update-emote-data/dcl-schemas-19.4.1-18510169386.commit-c29431b.tgz",
     "@dcl/urn-resolver": "^3.6.0",
     "@well-known-components/env-config-provider": "^1.2.0",
     "@well-known-components/fetch-component": "^2.0.2",
