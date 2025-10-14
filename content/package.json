@@ -24,7 +24,7 @@
     "@dcl/catalyst-api-specs": "^3.3.0",
     "@dcl/catalyst-contracts": "^4.4.2",
     "@dcl/catalyst-storage": "^4.3.0",
-    "@dcl/content-validator": "https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/feat/add-social-emote/dcl-content-validator-6.0.5-18510753700.commit-c2a6ce9.tgz",
+    "@dcl/content-validator": "https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/feat/add-social-emote/dcl-content-validator-6.0.5-18511386204.commit-6479304.tgz",
     "@dcl/crypto": "^3.4.5",
     "@dcl/hashing": "^3.0.4",
     "@dcl/schemas": "https://sdk-team-cdn.decentraland.org/@dcl/schemas/branch/fix/update-emote-data/dcl-schemas-19.4.1-18510169386.commit-c29431b.tgz",
