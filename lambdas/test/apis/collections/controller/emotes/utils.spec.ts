@@ -4,7 +4,6 @@ import { translateEntityIntoEmote } from '../../../../../src/apis/collections/Ut
 import { SmartContentClient } from '../../../../../src/utils/SmartContentClient'
 
 describe('emotes translation', () => {
-
   it('translate old emote into LambdasEmote', async () => {
     const mockedClient: SmartContentClient = mock<SmartContentClient>()
     const contentServerUrl = 'content-server-url'
@@ -22,7 +21,7 @@ describe('emotes translation', () => {
         { file: 'image.png', hash: 'Qmbd1mvR7Wuo4VGEPfRkMGLDnhXwY3v4cZYdCQz2P4cZY1' },
         { file: 'thumbnail.png', hash: 'QmeuXyj1tu1biCbNuNTB2eyEfJ32g1oDRU2xWtgzSeFgqg' },
         { file: femaleFilename, hash: femaleHash },
-        { file: maleFilename, hash: maleHash },
+        { file: maleFilename, hash: maleHash }
       ],
       pointers: [],
       metadata: {
@@ -54,7 +53,6 @@ describe('emotes translation', () => {
           ],
           hides: [],
           replaces: []
-
         },
         image: 'image.png',
         thumbnail: 'thumbnail.png',
@@ -74,8 +72,9 @@ describe('emotes translation', () => {
     expect(Wearable.validate(emoteSavedAsWearable.metadata)).toBeTruthy()
     const lambdasEmote = translateEntityIntoEmote(instance(mockedClient), emoteSavedAsWearable)
     // We validate that the representations are correctly mapped
-    const allContents: { key: string, url: string }[] = lambdasEmote.emoteDataADR74.representations
-      .flatMap((r: { contents: { key: string, url: string }[] }) => r.contents)
+    const allContents: { key: string; url: string }[] = lambdasEmote.emoteDataADR74.representations.flatMap(
+      (r: { contents: { key: string; url: string }[] }) => r.contents
+    )
     expect(allContents.length).toBe(2)
     for (const content of allContents) {
       if (content.key == femaleFilename) {
@@ -93,7 +92,7 @@ describe('emotes translation', () => {
     validEmote.emoteDataADR74.representations = [
       {
         bodyShapes: ['urn:decentraland:off-chain:base-avatars:BaseMale'],
-        mainFile: "male/emote.glb",
+        mainFile: 'male/emote.glb',
         contents: ['male/emote.glb']
       }
     ]
@@ -118,7 +117,7 @@ describe('emotes translation', () => {
         { file: 'thumbnail.png', hash: 'bafkreibhdozxxroantqhehz3z2wjwpbrchyjyyboutoecqn67ofl745jji' },
         { file: 'image.png', hash: 'bafkreiarq4yg3db2gaibjfzkq53s6ppgznx4e4qz4do3qvdhvn7qawbjry' },
         { file: femaleFilename, hash: femaleHash },
-        { file: maleFilename, hash: maleHash },
+        { file: maleFilename, hash: maleHash }
       ],
       metadata: {
         id: 'urn:decentraland:mumbai:collections-v2:0x4c2cd3106d934e83db3b365baafb6623a8b80099:0',
@@ -132,7 +131,7 @@ describe('emotes translation', () => {
           representations: [
             {
               bodyShapes: ['urn:decentraland:off-chain:base-avatars:BaseMale'],
-              mainFile: "male/emote.glb",
+              mainFile: 'male/emote.glb',
               contents: ['male/emote.glb']
             },
             {
@@ -158,8 +157,9 @@ describe('emotes translation', () => {
     }
     expect(Emote.validate(trueEmote.metadata)).toBeTruthy()
     const lambdasEmote = translateEntityIntoEmote(instance(mockedClient), trueEmote)
-    const allContents: { key: string, url: string }[] = lambdasEmote.emoteDataADR74.representations
-      .flatMap((r: { contents: { key: string, url: string }[] }) => r.contents)
+    const allContents: { key: string; url: string }[] = lambdasEmote.emoteDataADR74.representations.flatMap(
+      (r: { contents: { key: string; url: string }[] }) => r.contents
+    )
     expect(allContents.length).toBe(2)
     for (const content of allContents) {
       if (content.key == femaleFilename) {

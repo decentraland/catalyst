@@ -65,7 +65,8 @@ function translateEmoteIntoLambdasEmote(client: SmartContentClient, entity: Enti
   if (!('emoteDataADR74' in metadata)) {
     throw new Error('Error translating entity into Emote. Entity is not an Emote')
   }
-  const representations = metadata.emoteDataADR74.representations.map((representation) =>
+  const emoteData = metadata.emoteDataADR74
+  const representations = emoteData.representations.map((representation) =>
     mapRepresentation(representation, client, entity)
   )
   const externalImage = createExternalContentUrl(client, entity, metadata.image)
@@ -76,7 +77,7 @@ function translateEmoteIntoLambdasEmote(client: SmartContentClient, entity: Enti
     thumbnail,
     image,
     emoteDataADR74: {
-      ...metadata.emoteDataADR74,
+      ...emoteData,
       representations
     }
   }
