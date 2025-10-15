@@ -351,9 +351,9 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/feat/add-social-emote/dcl-content-validator-6.0.5-18510753700.commit-c2a6ce9.tgz":
-  version "6.0.5-18510753700.commit-c2a6ce9"
-  resolved "https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/feat/add-social-emote/dcl-content-validator-6.0.5-18510753700.commit-c2a6ce9.tgz#da235a158781460f08b93bf20646595fa1c259bc"
+"@dcl/content-validator@https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/feat/add-social-emote/dcl-content-validator-6.0.5-18511386204.commit-6479304.tgz":
+  version "6.0.5-18511386204.commit-6479304"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/feat/add-social-emote/dcl-content-validator-6.0.5-18511386204.commit-6479304.tgz#2d151ea8dfd2e725c6b4a351e2555a3393151fa8"
   dependencies:
     "@dcl/block-indexer" "^1.1.2"
     "@dcl/content-hash-tree" "^1.1.4"
@@ -366,14 +366,14 @@
     p-queue "^6.6.2"
     sharp "0.32.6"
 
-"@dcl/content-validator@https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/feat/add-social-emote/dcl-content-validator-6.0.5-18511386204.commit-6479304.tgz":
-  version "6.0.5-18511386204.commit-6479304"
-  resolved "https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/feat/add-social-emote/dcl-content-validator-6.0.5-18511386204.commit-6479304.tgz#2d151ea8dfd2e725c6b4a351e2555a3393151fa8"
+"@dcl/content-validator@https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/feat/add-social-emote/dcl-content-validator-6.1.1-18536773960.commit-51347cb.tgz":
+  version "6.1.1-18536773960.commit-51347cb"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/feat/add-social-emote/dcl-content-validator-6.1.1-18536773960.commit-51347cb.tgz#5681457da6c8d1af4021097fea23047590ad4c5b"
   dependencies:
     "@dcl/block-indexer" "^1.1.2"
     "@dcl/content-hash-tree" "^1.1.4"
     "@dcl/hashing" "^3.0.4"
-    "@dcl/schemas" "https://sdk-team-cdn.decentraland.org/@dcl/schemas/branch/fix/update-emote-data/dcl-schemas-19.4.1-18510169386.commit-c29431b.tgz"
+    "@dcl/schemas" "https://sdk-team-cdn.decentraland.org/@dcl/schemas/branch/fix/add-validation-to-schema/dcl-schemas-19.4.1-18535538910.commit-7d5099f.tgz"
     "@dcl/urn-resolver" "^3.6.0"
     "@well-known-components/interfaces" "^1.4.3"
     "@well-known-components/thegraph-component" "^1.6.0"
@@ -413,6 +413,15 @@
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
+
+"@dcl/schemas@https://sdk-team-cdn.decentraland.org/@dcl/schemas/branch/fix/add-validation-to-schema/dcl-schemas-19.4.1-18535538910.commit-7d5099f.tgz":
+  version "19.4.1-18535538910.commit-7d5099f"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl/schemas/branch/fix/add-validation-to-schema/dcl-schemas-19.4.1-18535538910.commit-7d5099f.tgz#b2380d0cb6d961c51d86c04147757eaedaf20811"
+  dependencies:
+    ajv "^8.11.0"
+    ajv-errors "^3.0.0"
+    ajv-keywords "^5.1.0"
+    mitt "^3.0.1"
 
 "@dcl/schemas@https://sdk-team-cdn.decentraland.org/@dcl/schemas/branch/fix/update-emote-data/dcl-schemas-19.4.1-18510169386.commit-c29431b.tgz":
   version "19.4.1-18510169386.commit-c29431b"
