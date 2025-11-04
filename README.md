@@ -62,3 +62,7 @@ Read our [contributing guide](https://github.com/decentraland/catalyst/blob/main
 
 - Create a tag release in Git
 - It will trigger the CI job which publishes a new docker image version under `@latest` tag
+
+## AI Agent Context
+
+For detailed AI Agent context, see [docs/ai-agent-context.md](docs/ai-agent-context.md).
