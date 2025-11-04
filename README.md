@@ -63,7 +63,7 @@ Read our [contributing guide](https://github.com/decentraland/catalyst/blob/main
 - Create a tag release in Git
 - It will trigger the CI job which publishes a new docker image version under `@latest` tag
 
-## 🤖 AI Agent Context
+## AI Agent Context
 
 **Service Purpose:** Monorepo containing the core Catalyst server implementation. Catalyst servers are the decentralized content infrastructure for Decentraland, bundling multiple services (Content Server, Lambdas, BFF, Archipelago) to provide entity storage, content delivery, peer communication, and client APIs.
 
@@ -92,6 +92,7 @@ Read our [contributing guide](https://github.com/decentraland/catalyst/blob/main
 
 **External Dependencies:**
 
+- Database: PostgreSQL (deployment metadata, content file references, snapshots)
 - Content Validator: @dcl/content-validator (entity validation)
 - Blockchain: Ethereum providers, The Graph subgraphs (ownership validation)
 - Storage: IPFS or local storage for entity content files
@@ -103,5 +104,11 @@ Read our [contributing guide](https://github.com/decentraland/catalyst/blob/main
 - `content/`: Content Server implementation (entity storage, deployment handling, sync)
 - `lambdas/`: Lambdas service (utility APIs, entity queries, ownership validation)
 - Services are orchestrated via Catalyst Owner deployment
+
+**Database Schema:**
+
+- **Tables**: `deployments` (entity deployments), `content_files` (file references), `failed_deployments` (validation failures), `active_pointers` (pointer mappings), `snapshots` (sync state), `processed_snapshots` (sync tracking), `system_properties` (config)
+- **Key Columns**: `deployments.entity_id` (unique), `deployments.entity_pointers` (array), `active_pointers.pointer` (PK), `snapshots.hash`
+- **Full Documentation**: See [content/docs/database-schema.md](content/docs/database-schema.md) for detailed schema, column definitions, example queries, migration history, and relationships
 
 **API Specification:** Implements Catalyst API v1 specification (see catalyst-api-specs repository)
