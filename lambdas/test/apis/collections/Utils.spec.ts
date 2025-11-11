@@ -74,79 +74,108 @@ describe('Collection Utils', () => {
       })
 
       it('should preserve emoteDataADR74 properties except representations', () => {
-        if ('emoteDataADR74' in emote && 'emoteDataADR74' in entityMetadata) {
-          expect(emote.emoteDataADR74).toBeDefined()
-          assertAreEqualExceptProperties(emote.emoteDataADR74, entityMetadata.emoteDataADR74, 'representations')
-        }
+        expect(emote.emoteDataADR74).toBeDefined()
+        assertAreEqualExceptProperties(emote.emoteDataADR74, entityMetadata.emoteDataADR74, 'representations')
       })
 
       it('should have one representation in emoteDataADR74', () => {
-        if ('emoteDataADR74' in emote) {
-          expect(emote.emoteDataADR74.representations.length).toEqual(1)
-        }
+        expect(emote.emoteDataADR74.representations.length).toEqual(1)
       })
 
       it('should preserve representation properties except contents', () => {
-        if ('emoteDataADR74' in emote && 'emoteDataADR74' in entityMetadata) {
-          const [translatedRepresentation] = emote.emoteDataADR74.representations
-          const [originalRepresentation] = entityMetadata.emoteDataADR74.representations
-          assertAreEqualExceptProperties(translatedRepresentation, originalRepresentation, 'contents')
-        }
+        const [translatedRepresentation] = emote.emoteDataADR74.representations
+        const [originalRepresentation] = entityMetadata.emoteDataADR74.representations
+        assertAreEqualExceptProperties(translatedRepresentation, originalRepresentation, 'contents')
       })
 
       it('should have one content in representation', () => {
-        if ('emoteDataADR74' in emote) {
-          const [translatedRepresentation] = emote.emoteDataADR74.representations
-          expect(translatedRepresentation.contents.length).toEqual(1)
-        }
+        const [translatedRepresentation] = emote.emoteDataADR74.representations
+        expect(translatedRepresentation.contents.length).toEqual(1)
       })
 
       it('should add url to content and preserve key', () => {
-        if ('emoteDataADR74' in emote && 'emoteDataADR74' in entityMetadata) {
-          const [translatedRepresentation] = emote.emoteDataADR74.representations
-          const [originalRepresentation] = entityMetadata.emoteDataADR74.representations
-          const [translatedContent] = translatedRepresentation.contents
-          const [originalContent] = originalRepresentation.contents
-          expect(translatedContent.key).toEqual(originalContent)
-          expect(translatedContent.url).toEqual(`${EXTERNAL_URL}/contents/${CONTENT_HASH3}`)
-        }
+        const [translatedRepresentation] = emote.emoteDataADR74.representations
+        const [originalRepresentation] = entityMetadata.emoteDataADR74.representations
+        const [translatedContent] = translatedRepresentation.contents
+        const [originalContent] = originalRepresentation.contents
+        expect(translatedContent.key).toEqual(originalContent)
+        expect(translatedContent.url).toEqual(`${EXTERNAL_URL}/contents/${CONTENT_HASH3}`)
       })
     })
-  })
 
-  it(`When emote saved as wearable metadata is translated, then url is added to file references`, async () => {
-    const client = getClient()
-    const entity = buildEmoteAsWearableEntity()
+    describe('and emote is saved as wearable metadata', () => {
+      let client: SmartContentClient
+      let entity: Entity
+      let emote: any
+      let entityMetadata: Wearable
 
-    const emote = translateEntityIntoEmote(client, entity)
-    const entityMetadata: Wearable = entity.metadata
+      beforeEach(() => {
+        client = getClient()
+        entity = buildEmoteAsWearableEntity()
+        emote = translateEntityIntoEmote(client, entity)
+        entityMetadata = entity.metadata
+      })
 
-    // Compare top level properties
-    expect(emote).toBeDefined()
-    expect(emote.thumbnail).toEqual(`${EXTERNAL_URL}/contents/${CONTENT_HASH1}`)
-    expect(emote.image).toEqual(`${EXTERNAL_URL}/contents/${CONTENT_HASH2}`)
+      afterEach(() => {
+        jest.resetAllMocks()
+      })
 
-    // Should have emoteDataADR74 with default values
-    expect('emoteDataADR74' in emote).toBe(true)
-    if ('emoteDataADR74' in emote) {
-      expect(emote.emoteDataADR74).toBeDefined()
-      expect(emote.emoteDataADR74.category).toEqual(EmoteCategory.DANCE)
-      expect(emote.emoteDataADR74.tags).toEqual(entityMetadata.data.tags)
-      expect(emote.emoteDataADR74.loop).toEqual(false)
+      it('should be defined', () => {
+        expect(emote).toBeDefined()
+      })
 
-      // Compare representations
-      expect(emote.emoteDataADR74.representations.length).toEqual(1)
-      const [translatedRepresentation] = emote.emoteDataADR74.representations
-      const [originalRepresentation] = entityMetadata.data.representations
-      assertAreEqualExceptProperties(translatedRepresentation, originalRepresentation, 'contents')
+      it('should add url to thumbnail', () => {
+        expect(emote.thumbnail).toEqual(`${EXTERNAL_URL}/contents/${CONTENT_HASH1}`)
+      })
 
-      // Compare contents
-      expect(translatedRepresentation.contents.length).toEqual(1)
-      const [translatedContent] = translatedRepresentation.contents
-      const [originalContent] = originalRepresentation.contents
-      expect(translatedContent.key).toEqual(originalContent)
-      expect(translatedContent.url).toEqual(`${EXTERNAL_URL}/contents/${CONTENT_HASH3}`)
-    }
+      it('should add url to image', () => {
+        expect(emote.image).toEqual(`${EXTERNAL_URL}/contents/${CONTENT_HASH2}`)
+      })
+
+      it('should have emoteDataADR74 property', () => {
+        expect('emoteDataADR74' in emote).toBe(true)
+      })
+
+      it('should have defined emoteDataADR74', () => {
+        expect(emote.emoteDataADR74).toBeDefined()
+      })
+
+      it('should set default category to DANCE', () => {
+        expect(emote.emoteDataADR74.category).toEqual(EmoteCategory.DANCE)
+      })
+
+      it('should preserve tags from original metadata', () => {
+        expect(emote.emoteDataADR74.tags).toEqual(entityMetadata.data.tags)
+      })
+
+      it('should set loop to false', () => {
+        expect(emote.emoteDataADR74.loop).toEqual(false)
+      })
+
+      it('should have one representation in emoteDataADR74', () => {
+        expect(emote.emoteDataADR74.representations.length).toEqual(1)
+      })
+
+      it('should preserve representation properties except contents', () => {
+        const [translatedRepresentation] = emote.emoteDataADR74.representations
+        const [originalRepresentation] = entityMetadata.data.representations
+        assertAreEqualExceptProperties(translatedRepresentation, originalRepresentation, 'contents')
+      })
+
+      it('should have one content in representation', () => {
+        const [translatedRepresentation] = emote.emoteDataADR74.representations
+        expect(translatedRepresentation.contents.length).toEqual(1)
+      })
+
+      it('should add url to content and preserve key', () => {
+        const [translatedRepresentation] = emote.emoteDataADR74.representations
+        const [originalRepresentation] = entityMetadata.data.representations
+        const [translatedContent] = translatedRepresentation.contents
+        const [originalContent] = originalRepresentation.contents
+        expect(translatedContent.key).toEqual(originalContent)
+        expect(translatedContent.url).toEqual(`${EXTERNAL_URL}/contents/${CONTENT_HASH3}`)
+      })
+    })
   })
 
   function assertAreEqualExceptProperties<Union extends object, T extends Union, K extends Union>(
