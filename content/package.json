@@ -24,7 +24,7 @@
     "@dcl/catalyst-api-specs": "^3.3.0",
     "@dcl/catalyst-contracts": "^4.4.2",
     "@dcl/catalyst-storage": "^4.3.0",
-    "@dcl/content-validator": "^6.1.0",
+    "@dcl/content-validator": "^7.0.0",
     "@dcl/crypto": "^3.4.5",
     "@dcl/hashing": "^3.0.4",
     "@dcl/schemas": "^15.1.2",
