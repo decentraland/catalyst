@@ -16,3 +16,4 @@ storage_*/**
 storage/**
 serverStorage.json
 .vscode
+.cursor/rules

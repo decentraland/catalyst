@@ -391,10 +391,10 @@
     ajv-keywords "^5.1.0"
     mitt "^3.0.1"
 
-"@dcl/schemas@^15.1.2":
-  version "15.1.2"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-15.1.2.tgz#f68512fec27951e7708368df2b420659b64a2213"
-  integrity sha512-RD7ML7gpQiIbSHSF1xquYfOZgq1KlYO+TvKPVmeI+X6wfj6cbC1A46NPj+Hm39lKsPqvVXivfrfhcZskGATjfA==
+"@dcl/schemas@^19.8.0":
+  version "19.8.0"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-19.8.0.tgz#0a1edb79b89e359c4c5efa7a8858ab0504a2ece4"
+  integrity sha512-Jx0osV3akupfuzza2p+Ohqzewz9zaE8MCaOSH2+wfvph1WuvBkyQP5WrCEzs8iIZx7Dh2uCr6Q4+o3tgfC+vnQ==
   dependencies:
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
@@ -5451,13 +5451,8 @@ path-parse@^1.0.7:
 
 path-to-regexp@0.1.10:
   version "0.1.10"
-  resolved "https://registry.yarnpkg.com/path-to-regexp/-/path-to-regexp-0.1.10.tgz#67e9108c5c0551b9e5326064387de4763c4d5f8b"
+  resolved "https://registry.npmjs.org/path-to-regexp/-/path-to-regexp-0.1.10.tgz"
   integrity sha512-7lf7qcQidTku0Gu3YDPc8DJ1q7OOucfa/BSsIwjuh56VU7katFvuM8hULfkwB3Fns/rsVF7PwPKVw1sl5KQS9w==
-
-path-to-regexp@0.1.7:
-  version "0.1.7"
-  resolved "https://registry.yarnpkg.com/path-to-regexp/-/path-to-regexp-0.1.7.tgz#df604178005f522f15eb4490e7247a1bfaa67f8c"
-  integrity sha512-5DFkuoqlv1uYQKxy8omFBeJPQcdoE07Kv2sferDCrAq1ohOU+MSDswDIbnx3YAM60qIOnYa53wBhXW0EbMonrQ==
 
 path-to-regexp@^1.7.0:
   version "1.8.0"
