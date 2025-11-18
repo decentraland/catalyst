@@ -351,15 +351,15 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@^6.1.0":
-  version "6.1.0"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-6.1.0.tgz#cf5de10a1f5799ad401648a66e3367dbfc97ce4c"
-  integrity sha512-uz+BoVziCfomDCmSTuym4cIIM9ngNbAvO7019sDBC9p3sP/K3g4oBfoDWdLVhvZf5neolRYAK26/aYllYMAZfQ==
+"@dcl/content-validator@^7.0.0":
+  version "7.0.0"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-7.0.0.tgz#3ed5134d482b3e1a5d8dab96fe6ec69a393d17ae"
+  integrity sha512-PvLVH4i9tApCnCqMz3YXENRspZ9/CFYIm3d3w2eZ1TusfVSi9C4EopTOyIdK1O55eq8whQBig6jkmB/p5yg2GQ==
   dependencies:
     "@dcl/block-indexer" "^1.1.2"
     "@dcl/content-hash-tree" "^1.1.4"
     "@dcl/hashing" "^3.0.4"
-    "@dcl/schemas" "^13.2.1"
+    "@dcl/schemas" "^20.0.0"
     "@dcl/urn-resolver" "^3.6.0"
     "@well-known-components/interfaces" "^1.4.3"
     "@well-known-components/thegraph-component" "^1.6.0"
@@ -391,20 +391,20 @@
     ajv-keywords "^5.1.0"
     mitt "^3.0.1"
 
-"@dcl/schemas@^13.2.1":
-  version "13.2.1"
-  resolved "https://registry.npmjs.org/@dcl/schemas/-/schemas-13.2.1.tgz"
-  integrity sha512-2RtH0eSqcv0d8FSrLUV5yk1eFWCBe66MChrhcqxC0aPp0tz+osKzablqNwx4d6GukEQpibmpOAsZztkeyI4f4A==
+"@dcl/schemas@^15.1.2":
+  version "15.1.2"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-15.1.2.tgz#f68512fec27951e7708368df2b420659b64a2213"
+  integrity sha512-RD7ML7gpQiIbSHSF1xquYfOZgq1KlYO+TvKPVmeI+X6wfj6cbC1A46NPj+Hm39lKsPqvVXivfrfhcZskGATjfA==
   dependencies:
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
     mitt "^3.0.1"
 
-"@dcl/schemas@^15.1.2":
-  version "15.1.2"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-15.1.2.tgz#f68512fec27951e7708368df2b420659b64a2213"
-  integrity sha512-RD7ML7gpQiIbSHSF1xquYfOZgq1KlYO+TvKPVmeI+X6wfj6cbC1A46NPj+Hm39lKsPqvVXivfrfhcZskGATjfA==
+"@dcl/schemas@^20.0.0":
+  version "20.1.1"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-20.1.1.tgz#2109a72ea5d16208fda5cb0cd9f1ce6e40362765"
+  integrity sha512-s6OI2u7mJU8VnHGStw2j2V7bu8s8ryPtH/ju04R312vNjkZc4GiaSyWLKoMnCqZ0zfLtjBD5G4M5bjjKdAvARQ==
   dependencies:
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
