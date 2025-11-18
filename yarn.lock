@@ -391,17 +391,7 @@
     ajv-keywords "^5.1.0"
     mitt "^3.0.1"
 
-"@dcl/schemas@^19.8.0":
-  version "19.8.0"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-19.8.0.tgz#0a1edb79b89e359c4c5efa7a8858ab0504a2ece4"
-  integrity sha512-Jx0osV3akupfuzza2p+Ohqzewz9zaE8MCaOSH2+wfvph1WuvBkyQP5WrCEzs8iIZx7Dh2uCr6Q4+o3tgfC+vnQ==
-  dependencies:
-    ajv "^8.11.0"
-    ajv-errors "^3.0.0"
-    ajv-keywords "^5.1.0"
-    mitt "^3.0.1"
-
-"@dcl/schemas@^20.0.0":
+"@dcl/schemas@^20.0.0", "@dcl/schemas@^20.1.1":
   version "20.1.1"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-20.1.1.tgz#2109a72ea5d16208fda5cb0cd9f1ce6e40362765"
   integrity sha512-s6OI2u7mJU8VnHGStw2j2V7bu8s8ryPtH/ju04R312vNjkZc4GiaSyWLKoMnCqZ0zfLtjBD5G4M5bjjKdAvARQ==
