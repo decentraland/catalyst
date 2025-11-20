@@ -36,3 +36,20 @@ export async function getActiveEntitiesHandler(
     body: entities
   }
 }
+
+// Method: GET
+export async function getActiveEntitiesScenesHandler(
+  context: HandlerContextWithPath<'activeEntities' | 'denylist', '/entities/active/scenes'>
+): Promise<{ status: 200; body: Pick<Entity, 'id' | 'pointers' | 'timestamp'>[] }> {
+  const { activeEntities, denylist } = context.components
+  const entities: Entity[] = activeEntities.getAllCachedScenes().filter((result) => !denylist.isDenylisted(result.id))
+  const mapping = entities.map((entity) => ({
+    id: entity.id,
+    pointers: entity.pointers,
+    timestamp: entity.timestamp
+  }))
+  return {
+    status: 200,
+    body: mapping
+  }
+}
