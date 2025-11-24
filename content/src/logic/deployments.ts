@@ -226,6 +226,12 @@ export async function getDeploymentsForActiveEntities(
   entityIds?: string[],
   pointers?: string[]
 ): Promise<Deployment[]> {
+  const startTime = performance.now()
+  console.log('[PERF] [Deployments] getDeploymentsForActiveEntities START', {
+    entityIdsCount: entityIds?.length ?? 0,
+    pointersCount: pointers?.length ?? 0
+  })
+
   // Generate the select according the info needed
   const bothPresent = entityIds && entityIds.length > 0 && pointers && pointers.length > 0
   const nonePresent = !entityIds && !pointers
@@ -253,8 +259,15 @@ export async function getDeploymentsForActiveEntities(
       : SQL`dep1.entity_pointers && ${pointers!.map((p) => p.toLowerCase())}`
   )
 
+  const queryStartTime = performance.now()
   const historicalDeploymentsResponse = await database.queryWithValues(query, 'get_active_entities')
+  const queryDuration = performance.now() - queryStartTime
+  console.log('[PERF] [Deployments] Main SELECT query executed', {
+    duration: `${queryDuration.toFixed(2)}ms`,
+    rowsReturned: historicalDeploymentsResponse.rows.length
+  })
 
+  const mapStartTime = performance.now()
   const deploymentsResult: HistoricalDeployment[] = historicalDeploymentsResponse.rows.map(
     (row: HistoricalDeploymentsRow): HistoricalDeployment => ({
       deploymentId: row.id,
@@ -270,12 +283,25 @@ export async function getDeploymentsForActiveEntities(
       overwrittenBy: row.overwritten_by ?? undefined
     })
   )
+  const mapDuration = performance.now() - mapStartTime
+  console.log('[PERF] [Deployments] Rows mapped to HistoricalDeployment', {
+    duration: `${mapDuration.toFixed(2)}ms`,
+    deploymentsMapped: deploymentsResult.length
+  })
 
   const deploymentIds = deploymentsResult.map(({ deploymentId }) => deploymentId)
 
+  const getContentStartTime = performance.now()
   const content = await getContentFiles(database, deploymentIds)
+  const getContentDuration = performance.now() - getContentStartTime
+  console.log('[PERF] [Deployments] getContentFiles completed', {
+    duration: `${getContentDuration.toFixed(2)}ms`,
+    deploymentIdsRequested: deploymentIds.length,
+    contentFilesRetrieved: content.size
+  })
 
-  return deploymentsResult.map((result) => ({
+  const finalMapStartTime = performance.now()
+  const deployments = deploymentsResult.map((result) => ({
     entityVersion: result.version as EntityVersion,
     entityType: result.entityType as EntityType,
     entityId: result.entityId,
@@ -291,4 +317,22 @@ export async function getDeploymentsForActiveEntities(
       overwrittenBy: result.overwrittenBy
     }
   }))
+  const finalMapDuration = performance.now() - finalMapStartTime
+  console.log('[PERF] [Deployments] Final mapping to Deployment objects', {
+    duration: `${finalMapDuration.toFixed(2)}ms`
+  })
+
+  const totalDuration = performance.now() - startTime
+  console.log('[PERF] [Deployments] getDeploymentsForActiveEntities END', {
+    totalDuration: `${totalDuration.toFixed(2)}ms`,
+    breakdown: {
+      mainQuery: `${queryDuration.toFixed(2)}ms`,
+      mapHistorical: `${mapDuration.toFixed(2)}ms`,
+      getContent: `${getContentDuration.toFixed(2)}ms`,
+      finalMap: `${finalMapDuration.toFixed(2)}ms`
+    },
+    deploymentsReturned: deployments.length
+  })
+
+  return deployments
 }
