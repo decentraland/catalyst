@@ -2,7 +2,7 @@ import { Entity, EntityType } from '@dcl/schemas'
 import LRU from 'lru-cache'
 import { EnvironmentConfig } from '../Environment'
 import {
-  gerUrnsThatMatchCollectionUrnPrefix,
+  getItemEntitiesIdsThatMatchCollectionUrnPrefix,
   removeActiveDeployments,
   updateActiveDeployments
 } from '../logic/database-queries/pointers-queries'
@@ -85,11 +85,11 @@ export function createActiveEntitiesComponent(
     max: components.env.getConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE)
   })
 
-  const collectionUrnsByPrefixCache = new LRU<string, string[]>({
+  const collectionItemsEntityIdsByPrefixCache = new LRU<string, string[]>({
     ttl: 1000 * 60 * 60 * 24, // 24 hours
     max: components.env.getConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE), //TODO
     fetchMethod: async (collectionUrn: string) =>
-      gerUrnsThatMatchCollectionUrnPrefix(components.database, collectionUrn.toLowerCase())
+      getItemEntitiesIdsThatMatchCollectionUrnPrefix(components.database, collectionUrn.toLowerCase())
   })
 
   const normalizePointerCacheKey = (pointer: string) => pointer.toLowerCase()
@@ -173,10 +173,8 @@ export function createActiveEntitiesComponent(
     entities: Entity[],
     { pointers, entityIds }: { pointers?: string[]; entityIds?: string[] }
   ): Promise<void> {
-    // Update cache for each entity
-    for (const entity of entities) {
-      await update(database, entity.pointers, entity)
-    }
+    await Promise.all(entities.map((entity) => update(database, entity.pointers, entity)))
+
     // Check which pointers or ids doesn't have an active entity and set as NONE
     if (pointers) {
       const pointersWithoutActiveEntity = pointers.filter(
@@ -222,7 +220,7 @@ export function createActiveEntitiesComponent(
     }
 
     const entities = mapDeploymentsToEntities(deployments)
-    await updateCache(database, entities, { pointers, entityIds })
+    void updateCache(database, entities, { pointers, entityIds })
 
     return entities
   }
@@ -235,6 +233,7 @@ export function createActiveEntitiesComponent(
     const uniqueEntityIds = new Set(entityIds)
     const onCache: (Entity | NotActiveEntity)[] = []
     const remaining: string[] = []
+
     for (const entityId of uniqueEntityIds) {
       const entity = cache.get(entityId)
       if (entity) {
@@ -297,12 +296,15 @@ export function createActiveEntitiesComponent(
     offset: number,
     limit: number
   ): Promise<{ total: number; entities: Entity[] }> {
-    const urns = await collectionUrnsByPrefixCache.fetch(collectionUrn)
-    if (!urns) {
+    const entityIds = await collectionItemsEntityIdsByPrefixCache.fetch(collectionUrn)
+
+    if (!entityIds) {
       throw new Error(`error fetching urns for collection: ${collectionUrn}`)
     }
-    const total = urns.length
-    const entities = await withPointers(database, urns.slice(offset, offset + limit))
+
+    const total = entityIds.length
+    const entities = await withIds(database, entityIds.slice(offset, offset + limit))
+
     return {
       total,
       entities
@@ -321,7 +323,7 @@ export function createActiveEntitiesComponent(
 
   function reset() {
     entityIdByPointers.clear()
-    collectionUrnsByPrefixCache.clear()
+    collectionItemsEntityIdsByPrefixCache.clear()
     cache.clear()
   }
 

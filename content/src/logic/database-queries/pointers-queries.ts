@@ -1,17 +1,18 @@
 import SQL from 'sql-template-strings'
 import { DatabaseClient } from '../../ports/postgres'
 
-export async function gerUrnsThatMatchCollectionUrnPrefix(
+export async function getItemEntitiesIdsThatMatchCollectionUrnPrefix(
   database: DatabaseClient,
   collectionUrn: string
 ): Promise<string[]> {
   // sql-template-strings don't allow ' in the query string
   const matchingString = `${collectionUrn}%`
-  const query = SQL`SELECT pointer FROM active_pointers as p WHERE p.pointer LIKE ${matchingString} ORDER BY pointer DESC;`
+  const query = SQL`SELECT entity_id FROM active_pointers as p WHERE p.pointer LIKE ${matchingString};`
 
-  const queryResult = (await database.queryWithValues<{ pointer: string }>(query, 'filter_by_urn_prefix')).rows
+  const queryResult = (await database.queryWithValues<{ entity_id: string }>(query, 'filter_by_urn_prefix')).rows
+  const entityIds = queryResult.map((row) => row.entity_id)
 
-  return queryResult.map((row) => row.pointer)
+  return entityIds
 }
 
 export async function updateActiveDeployments(
