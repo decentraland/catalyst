@@ -5,29 +5,12 @@ export async function getItemEntitiesIdsThatMatchCollectionUrnPrefix(
   database: DatabaseClient,
   collectionUrn: string
 ): Promise<string[]> {
-  const startTime = performance.now()
-  console.log('[PERF] [DB Query] getItemEntitiesIdsThatMatchCollectionUrnPrefix START', { collectionUrn })
-
   // sql-template-strings don't allow ' in the query string
   const matchingString = `${collectionUrn}%`
   const query = SQL`SELECT entity_id FROM active_pointers as p WHERE p.pointer LIKE ${matchingString};`
 
-  const queryStartTime = performance.now()
   const queryResult = (await database.queryWithValues<{ entity_id: string }>(query, 'filter_by_urn_prefix')).rows
-  const queryDuration = performance.now() - queryStartTime
-  console.log('[PERF] [DB Query] SELECT query executed', {
-    duration: `${queryDuration.toFixed(2)}ms`,
-    rowsReturned: queryResult.length,
-    matchingString
-  })
-
   const entityIds = queryResult.map((row) => row.entity_id)
-  const totalDuration = performance.now() - startTime
-  console.log('[PERF] [DB Query] getItemEntitiesIdsThatMatchCollectionUrnPrefix END', {
-    totalDuration: `${totalDuration.toFixed(2)}ms`,
-    entityIdsFound: entityIds.length,
-    sampleEntityIds: entityIds.slice(0, 5)
-  })
 
   return entityIds
 }

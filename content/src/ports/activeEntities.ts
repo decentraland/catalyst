@@ -173,10 +173,6 @@ export function createActiveEntitiesComponent(
     entities: Entity[],
     { pointers, entityIds }: { pointers?: string[]; entityIds?: string[] }
   ): Promise<void> {
-    // Update cache for each entity
-    // for (const entity of entities) {
-    //   await update(database, entity.pointers, entity)
-    // }
     await Promise.all(entities.map((entity) => update(database, entity.pointers, entity)))
 
     // Check which pointers or ids doesn't have an active entity and set as NONE
@@ -218,48 +214,15 @@ export function createActiveEntitiesComponent(
       pointers?: string[]
     }
   ): Promise<Entity[]> {
-    const startTime = performance.now()
-    console.log('[PERF] [ActiveEntities] findEntities START', {
-      entityIdsCount: entityIds?.length ?? 0,
-      pointersCount: pointers?.length ?? 0
-    })
-
-    const getDeploymentsStartTime = performance.now()
     const deployments = await getDeploymentsForActiveEntities(database, entityIds, pointers)
-    const getDeploymentsDuration = performance.now() - getDeploymentsStartTime
-    console.log('[PERF] [ActiveEntities] getDeploymentsForActiveEntities completed', {
-      duration: `${getDeploymentsDuration.toFixed(2)}ms`,
-      deploymentsFound: deployments.length
-    })
 
     for (const deployment of deployments) {
       reportCacheAccess(deployment.entityType, 'miss')
     }
 
-    const mapStartTime = performance.now()
     const entities = mapDeploymentsToEntities(deployments)
-    const mapDuration = performance.now() - mapStartTime
-    console.log('[PERF] [ActiveEntities] mapDeploymentsToEntities completed', {
-      duration: `${mapDuration.toFixed(2)}ms`,
-      entitiesMapped: entities.length
-    })
 
-    const updateCacheStartTime = performance.now()
     void updateCache(database, entities, { pointers, entityIds })
-    const updateCacheDuration = performance.now() - updateCacheStartTime
-    console.log('[PERF] [ActiveEntities] updateCache completed', {
-      duration: `${updateCacheDuration.toFixed(2)}ms`
-    })
-
-    const totalDuration = performance.now() - startTime
-    console.log('[PERF] [ActiveEntities] findEntities END', {
-      totalDuration: `${totalDuration.toFixed(2)}ms`,
-      breakdown: {
-        getDeployments: `${getDeploymentsDuration.toFixed(2)}ms`,
-        mapEntities: `${mapDuration.toFixed(2)}ms`,
-        updateCache: `${updateCacheDuration.toFixed(2)}ms`
-      }
-    })
 
     return entities
   }
@@ -268,15 +231,11 @@ export function createActiveEntitiesComponent(
    * Retrieve active entities by their ids
    */
   async function withIds(database: DatabaseClient, entityIds: string[]): Promise<Entity[]> {
-    const startTime = performance.now()
-    console.log('[PERF] [ActiveEntities] withIds START', { entityIdsCount: entityIds.length })
-
     // check what is on the cache
     const uniqueEntityIds = new Set(entityIds)
     const onCache: (Entity | NotActiveEntity)[] = []
     const remaining: string[] = []
 
-    const cacheCheckStartTime = performance.now()
     for (const entityId of uniqueEntityIds) {
       const entity = cache.get(entityId)
       if (entity) {
@@ -289,37 +248,12 @@ export function createActiveEntitiesComponent(
         remaining.push(entityId)
       }
     }
-    const cacheCheckDuration = performance.now() - cacheCheckStartTime
-    console.log('[PERF] [ActiveEntities] withIds cache check completed', {
-      duration: `${cacheCheckDuration.toFixed(2)}ms`,
-      totalEntityIds: uniqueEntityIds.size,
-      cachedEntities: onCache.length,
-      remainingIds: remaining.length,
-      cacheHitRate: `${(((uniqueEntityIds.size - remaining.length) / uniqueEntityIds.size) * 100).toFixed(1)}%`
-    })
 
     // calculate values for those remaining keys
-    const findEntitiesStartTime = performance.now()
     const remainingEntities: Entity[] =
       remaining.length > 0 ? await findEntities(database, { entityIds: remaining }) : []
-    const findEntitiesDuration = performance.now() - findEntitiesStartTime
-    if (remaining.length > 0) {
-      console.log('[PERF] [ActiveEntities] withIds findEntities completed', {
-        duration: `${findEntitiesDuration.toFixed(2)}ms`,
-        entitiesFound: remainingEntities.length
-      })
-    }
 
-    const totalDuration = performance.now() - startTime
     const cachedEntitiesFiltered = onCache.filter(isEntityPresent)
-    console.log('[PERF] [ActiveEntities] withIds END', {
-      totalDuration: `${totalDuration.toFixed(2)}ms`,
-      breakdown: {
-        cacheCheck: `${cacheCheckDuration.toFixed(2)}ms`,
-        findEntities: `${findEntitiesDuration.toFixed(2)}ms`
-      },
-      totalEntitiesReturned: cachedEntitiesFiltered.length + remainingEntities.length
-    })
 
     return [...cachedEntitiesFiltered, ...remainingEntities]
   }
@@ -328,14 +262,10 @@ export function createActiveEntitiesComponent(
    * Retrieve active entities that are pointed by the given pointers
    */
   async function withPointers(database: DatabaseClient, pointers: string[]) {
-    const startTime = performance.now()
-    console.log('[PERF] [ActiveEntities] withPointers START', { pointersCount: pointers.length })
-
     const uniquePointers = new Set(pointers)
     const uniqueEntityIds = new Set<string>() // entityIds that are associated to the given pointers
     const remaining: string[] = [] // pointers that are not associated to any entity
 
-    const cacheCheckStartTime = performance.now()
     // get associated entity ids to pointers or save for later
     for (const pointer of uniquePointers) {
       const entityId = entityIdByPointers.get(pointer)
@@ -350,48 +280,13 @@ export function createActiveEntitiesComponent(
         }
       }
     }
-    const cacheCheckDuration = performance.now() - cacheCheckStartTime
-    console.log('[PERF] [ActiveEntities] Cache check completed', {
-      duration: `${cacheCheckDuration.toFixed(2)}ms`,
-      totalPointers: uniquePointers.size,
-      cachedEntityIds: uniqueEntityIds.size,
-      remainingPointers: remaining.length,
-      cacheHitRate: `${(((uniquePointers.size - remaining.length) / uniquePointers.size) * 100).toFixed(1)}%`
-    })
 
     // once we get the ids, retrieve from cache or find
     const entityIds = Array.from(uniqueEntityIds.values())
-    const withIdsStartTime = performance.now()
     const entitiesById = await withIds(database, entityIds)
-    const withIdsDuration = performance.now() - withIdsStartTime
-    console.log('[PERF] [ActiveEntities] withIds completed', {
-      duration: `${withIdsDuration.toFixed(2)}ms`,
-      entityIdsRequested: entityIds.length,
-      entitiesFound: entitiesById.length
-    })
 
     // find entities for remaining pointers (we don't know the entity id), it easier to find entire entity instead of ids
-    const findEntitiesStartTime = performance.now()
     const remainingEntities = remaining.length > 0 ? await findEntities(database, { pointers: remaining }) : []
-    const findEntitiesDuration = performance.now() - findEntitiesStartTime
-    if (remaining.length > 0) {
-      console.log('[PERF] [ActiveEntities] findEntities completed', {
-        duration: `${findEntitiesDuration.toFixed(2)}ms`,
-        remainingPointersCount: remaining.length,
-        entitiesFound: remainingEntities.length
-      })
-    }
-
-    const totalDuration = performance.now() - startTime
-    console.log('[PERF] [ActiveEntities] withPointers END', {
-      totalDuration: `${totalDuration.toFixed(2)}ms`,
-      breakdown: {
-        cacheCheck: `${cacheCheckDuration.toFixed(2)}ms`,
-        withIds: `${withIdsDuration.toFixed(2)}ms`,
-        findEntities: `${findEntitiesDuration.toFixed(2)}ms`
-      },
-      totalEntitiesReturned: entitiesById.length + remainingEntities.length
-    })
 
     return [...entitiesById, ...remainingEntities]
   }
@@ -405,54 +300,15 @@ export function createActiveEntitiesComponent(
     offset: number,
     limit: number
   ): Promise<{ total: number; entities: Entity[] }> {
-    const startTime = performance.now()
-    console.log('[PERF] [ActiveEntities] withPrefix START', { collectionUrn, offset, limit })
-
-    const cacheFetchStartTime = performance.now()
     const entityIds = await collectionItemsEntityIdsByPrefixCache.fetch(collectionUrn)
-    const cacheFetchDuration = performance.now() - cacheFetchStartTime
-    console.log('[PERF] [ActiveEntities] collectionUrnsByPrefixCache.fetch completed', {
-      duration: `${cacheFetchDuration.toFixed(2)}ms`,
-      urnsFound: entityIds?.length ?? 0
-    })
 
     if (!entityIds) {
-      const duration = performance.now() - startTime
-      console.log('[PERF] [ActiveEntities] withPrefix END - Error fetching URNs', {
-        collectionUrn,
-        duration: `${duration.toFixed(2)}ms`
-      })
       throw new Error(`error fetching urns for collection: ${collectionUrn}`)
     }
 
     const total = entityIds.length
     const slicedUrns = entityIds.slice(offset, offset + limit)
-    console.log('[PERF] [ActiveEntities] URNs sliced for pagination', {
-      totalUrns: total,
-      offset,
-      limit,
-      slicedUrnsCount: slicedUrns.length,
-      sampleUrns: slicedUrns.slice(0, 5)
-    })
-
-    const withPointersStartTime = performance.now()
     const entities = await withIds(database, slicedUrns)
-    // const entities = await withPointers(database, slicedUrns)
-    const withPointersDuration = performance.now() - withPointersStartTime
-    console.log('[PERF] [ActiveEntities] withPointers completed', {
-      duration: `${withPointersDuration.toFixed(2)}ms`,
-      entitiesReturned: entities.length
-    })
-
-    const totalDuration = performance.now() - startTime
-    console.log('[PERF] [ActiveEntities] withPrefix END', {
-      totalDuration: `${totalDuration.toFixed(2)}ms`,
-      breakdown: {
-        cacheFetch: `${cacheFetchDuration.toFixed(2)}ms`,
-        withPointers: `${withPointersDuration.toFixed(2)}ms`
-      },
-      result: { total, entitiesCount: entities.length }
-    })
 
     return {
       total,
