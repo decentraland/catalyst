@@ -215,13 +215,11 @@ export function createActiveEntitiesComponent(
     }
   ): Promise<Entity[]> {
     const deployments = await getDeploymentsForActiveEntities(database, entityIds, pointers)
-
     for (const deployment of deployments) {
       reportCacheAccess(deployment.entityType, 'miss')
     }
 
     const entities = mapDeploymentsToEntities(deployments)
-
     void updateCache(database, entities, { pointers, entityIds })
 
     return entities
@@ -253,9 +251,7 @@ export function createActiveEntitiesComponent(
     const remainingEntities: Entity[] =
       remaining.length > 0 ? await findEntities(database, { entityIds: remaining }) : []
 
-    const cachedEntitiesFiltered = onCache.filter(isEntityPresent)
-
-    return [...cachedEntitiesFiltered, ...remainingEntities]
+    return [...onCache.filter(isEntityPresent), ...remainingEntities]
   }
 
   /**
@@ -307,8 +303,7 @@ export function createActiveEntitiesComponent(
     }
 
     const total = entityIds.length
-    const slicedUrns = entityIds.slice(offset, offset + limit)
-    const entities = await withIds(database, slicedUrns)
+    const entities = await withIds(database, entityIds.slice(offset, offset + limit))
 
     return {
       total,

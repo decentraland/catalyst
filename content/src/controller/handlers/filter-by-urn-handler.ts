@@ -6,9 +6,7 @@ import { GetEntitiesByPointerPrefix200 } from '@dcl/catalyst-api-specs/lib/clien
 
 async function isUrnPrefixValid(collectionUrn: string): Promise<string | false> {
   const regex = /^[a-zA-Z0-9_.:,-]+$/g
-  if (!regex.test(collectionUrn)) {
-    return false
-  }
+  if (!regex.test(collectionUrn)) return false
   if (collectionUrn === BASE_AVATARS_COLLECTION_ID || collectionUrn === BASE_EMOTES_COLLECTION_ID) {
     return collectionUrn
   }
@@ -26,8 +24,7 @@ async function isUrnPrefixValid(collectionUrn: string): Promise<string | false> 
       parsedUrn.type === 'blockchain-collection-third-party-name' ||
       parsedUrn.type === 'blockchain-collection-third-party-collection'
     ) {
-      const result = `${collectionUrn}:`
-      return result
+      return `${collectionUrn}:`
     }
 
     if (
@@ -36,11 +33,10 @@ async function isUrnPrefixValid(collectionUrn: string): Promise<string | false> 
       parsedUrn.type === 'blockchain-collection-v2' ||
       parsedUrn.type === 'blockchain-collection-v1-asset' ||
       parsedUrn.type === 'blockchain-collection-v2-asset'
-    ) {
+    )
       return collectionUrn
-    }
   } catch (error) {
-    console.error('[ERROR] isUrnPrefixValid failed', { collectionUrn, error })
+    console.error(error)
   }
   return false
 }
@@ -52,7 +48,6 @@ export async function getEntitiesByPointerPrefixHandler(
   const collectionUrn: string = context.params.collectionUrn
 
   const parsedUrn = await isUrnPrefixValid(collectionUrn)
-
   if (!parsedUrn) {
     throw new InvalidRequestError(
       `Invalid collection urn param, it must be a valid urn prefix of a collection or an item in the collection or base wearables, instead: '${collectionUrn}'`

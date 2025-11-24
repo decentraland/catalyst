@@ -272,9 +272,10 @@ export async function getDeploymentsForActiveEntities(
   )
 
   const deploymentIds = deploymentsResult.map(({ deploymentId }) => deploymentId)
+
   const content = await getContentFiles(database, deploymentIds)
 
-  const deployments = deploymentsResult.map((result) => ({
+  return deploymentsResult.map((result) => ({
     entityVersion: result.version as EntityVersion,
     entityType: result.entityType as EntityType,
     entityId: result.entityId,
@@ -290,6 +291,4 @@ export async function getDeploymentsForActiveEntities(
       overwrittenBy: result.overwrittenBy
     }
   }))
-
-  return deployments
 }
