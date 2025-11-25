@@ -186,7 +186,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const serverValidator = createServerValidator({ failedDeployments, metrics, clock })
 
   const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, clock })
-  const deployments = createDeploymentsComponent({ database })
+  const deployments = createDeploymentsComponent({ database, logs })
   const activeEntities = createActiveEntitiesComponent({
     database,
     env,

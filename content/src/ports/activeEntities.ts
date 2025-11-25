@@ -271,15 +271,6 @@ export function createActiveEntitiesComponent(
     return [...onCache.filter(isEntityPresent), ...remainingEntities]
   }
 
-  // TODO: candidate to be removed
-  // async function findItemEntitiesByThirdPartyCollection(
-  //   database: DatabaseClient,
-  //   collectionId: string
-  // ): Promise<Entity[]> {
-  //   const deployments = await components.deployments.getDeploymentsForActiveThirdPartyCollectionItems(collectionId)
-  //   return mapDeploymentsToEntities(deployments)
-  // }
-
   /**
    * Retrieve active entities by their ids
    */
@@ -351,60 +342,20 @@ export function createActiveEntitiesComponent(
     offset: number,
     limit: number
   ): Promise<{ total: number; entities: Entity[] }> {
-    const startTime = performance.now()
-    console.log('[PERF] [ActiveEntities] withPrefix START', {
-      collectionUrn,
-      offset,
-      limit
-    })
-
-    const parseStartTime = performance.now()
     const parsedUrn = await parseUrn(collectionUrn)
     const isThirdPartyCollection = parsedUrn?.type === 'blockchain-collection-third-party-collection'
-    const parseDuration = performance.now() - parseStartTime
-    console.log('[PERF] [ActiveEntities] URN parsed', {
-      duration: `${parseDuration.toFixed(2)}ms`,
-      isThirdPartyCollection
-    })
 
-    const fetchIdsStartTime = performance.now()
     const entityIds = await (isThirdPartyCollection
       ? thirdPartyCollectionItemsEntityIdsByPrefixCache.fetch(collectionUrn)
       : collectionItemsEntityIdsByPrefixCache.fetch(collectionUrn))
-    const fetchIdsDuration = performance.now() - fetchIdsStartTime
-    console.log('[PERF] [ActiveEntities] Entity IDs fetched from cache', {
-      duration: `${fetchIdsDuration.toFixed(2)}ms`,
-      entityIdsFound: entityIds?.length ?? 0,
-      cacheType: isThirdPartyCollection ? 'thirdPartyCollection' : 'collection'
-    })
 
     if (!entityIds) {
       throw new Error(`error fetching urns for collection: ${collectionUrn}`)
     }
 
-    const fetchEntitiesStartTime = performance.now()
     const entities = await (isThirdPartyCollection
       ? findThirdPartyCollectionItemsEntities(entityIds)
       : withIds(database, entityIds.slice(offset, offset + limit)))
-    const fetchEntitiesDuration = performance.now() - fetchEntitiesStartTime
-    console.log('[PERF] [ActiveEntities] Entities fetched', {
-      duration: `${fetchEntitiesDuration.toFixed(2)}ms`,
-      entitiesReturned: entities.length,
-      method: isThirdPartyCollection ? 'findThirdPartyCollectionItemsEntities' : 'withIds',
-      entityIdsRequested: isThirdPartyCollection ? entityIds.length : Math.min(limit, entityIds.length - offset)
-    })
-
-    const totalDuration = performance.now() - startTime
-    console.log('[PERF] [ActiveEntities] withPrefix END', {
-      totalDuration: `${totalDuration.toFixed(2)}ms`,
-      breakdown: {
-        parse: `${parseDuration.toFixed(2)}ms`,
-        fetchIds: `${fetchIdsDuration.toFixed(2)}ms`,
-        fetchEntities: `${fetchEntitiesDuration.toFixed(2)}ms`
-      },
-      total: entityIds.length,
-      returned: entities.length
-    })
 
     return {
       total: entityIds.length,
