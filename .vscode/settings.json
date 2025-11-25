@@ -1,7 +1,5 @@
 {
   "files.exclude": {
-    "**/dist/": true,
-    "**/node_modules/": true,
     "**/coverage/": true
   },
   "typescript.tsdk": "node_modules/typescript/lib",

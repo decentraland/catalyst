@@ -45,6 +45,8 @@ import {
   createSubgraphValidator
 } from './service/validations/validator'
 import { AppComponents, GlobalContext } from './types'
+import { createJobComponent } from '@dcl/job-component'
+import { createDeploymentsComponent } from './logic/deployments'
 
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
   const clock = createClock()
@@ -184,7 +186,16 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const serverValidator = createServerValidator({ failedDeployments, metrics, clock })
 
   const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, clock })
-  const activeEntities = createActiveEntitiesComponent({ database, env, logs, metrics, denylist, sequentialExecutor })
+  const deployments = createDeploymentsComponent({ database, logs })
+  const activeEntities = createActiveEntitiesComponent({
+    database,
+    env,
+    logs,
+    metrics,
+    denylist,
+    sequentialExecutor,
+    deployments
+  })
 
   const deployer = createDeployer({
     metrics,
@@ -247,6 +258,15 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   )
 
   const snapshotStorage = createSnapshotStorage({ database })
+
+  const materializedViewUpdateJob = createJobComponent(
+    { logs },
+    deployments.updateMaterializedViews,
+    1000 * 60 * 60 * 24, // 24 hours
+    {
+      startupDelay: 10 * 60 * 1000 // 10 minutes
+    }
+  )
 
   const synchronizer = await createSynchronizer(
     {
@@ -354,6 +374,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   return {
     env,
+    materializedViewUpdateJob,
     database,
     deployer,
     metrics,
@@ -381,6 +402,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     daoClient,
     server,
     retryFailedDeployments,
+    deployments,
     activeEntities,
     sequentialExecutor,
     denylist,

@@ -4,6 +4,7 @@ import SQL, { SQLStatement } from 'sql-template-strings'
 import {
   AuditInfo,
   Deployment,
+  DeploymentContent,
   DeploymentContext,
   DeploymentOptions,
   PartialDeploymentHistory
@@ -161,6 +162,28 @@ export function getCuratedLimit(options?: DeploymentOptions): number {
   return options?.limit && options.limit > 0 && options.limit <= MAX_HISTORY_LIMIT ? options.limit : MAX_HISTORY_LIMIT
 }
 
+export function buildDeploymentFromHistoricalDeployment(
+  historicalDeployment: HistoricalDeployment,
+  content: Map<DeploymentId, DeploymentContent[]>
+): Deployment {
+  return {
+    entityVersion: historicalDeployment.version as EntityVersion,
+    entityType: historicalDeployment.entityType as EntityType,
+    entityId: historicalDeployment.entityId,
+    pointers: historicalDeployment.pointers,
+    entityTimestamp: historicalDeployment.entityTimestamp,
+    content: content.get(historicalDeployment.deploymentId) || [],
+    metadata: historicalDeployment.metadata,
+    deployedBy: historicalDeployment.deployerAddress,
+    auditInfo: {
+      version: historicalDeployment.version as EntityVersion,
+      authChain: historicalDeployment.authChain,
+      localTimestamp: historicalDeployment.localTimestamp,
+      overwrittenBy: historicalDeployment.overwrittenBy
+    }
+  }
+}
+
 export async function getDeployments(
   components: Pick<AppComponents, 'denylist' | 'metrics'>,
   database: DatabaseClient,
@@ -190,22 +213,9 @@ export async function getDeployments(
     deploymentsResult = deploymentsResult.filter((result) => !components.denylist.isDenylisted(result.entityId))
   }
 
-  const deployments: Deployment[] = deploymentsResult.map((result) => ({
-    entityVersion: result.version as EntityVersion,
-    entityType: result.entityType as EntityType,
-    entityId: result.entityId,
-    pointers: result.pointers,
-    entityTimestamp: result.entityTimestamp,
-    content: content.get(result.deploymentId) || [],
-    metadata: result.metadata,
-    deployedBy: result.deployerAddress,
-    auditInfo: {
-      version: result.version as EntityVersion,
-      authChain: result.authChain,
-      localTimestamp: result.localTimestamp,
-      overwrittenBy: result.overwrittenBy
-    }
-  }))
+  const deployments: Deployment[] = deploymentsResult.map((result) =>
+    buildDeploymentFromHistoricalDeployment(result, content)
+  )
 
   return {
     deployments,
@@ -291,4 +301,59 @@ export async function getDeploymentsForActiveEntities(
       overwrittenBy: result.overwrittenBy
     }
   }))
+}
+
+export interface IDeploymentsComponent {
+  getDeploymentsForActiveThirdPartyCollectionItemsByEntityIds(entityIds: string[]): Promise<Deployment[]>
+  updateMaterializedViews(): Promise<void>
+}
+
+export const createDeploymentsComponent = (
+  components: Pick<AppComponents, 'database' | 'logs'>
+): IDeploymentsComponent => {
+  const { database, logs } = components
+  const logger = logs.getLogger('deployments-component')
+
+  async function getDeploymentsForActiveThirdPartyCollectionItemsByEntityIds(
+    entityIds: string[]
+  ): Promise<Deployment[]> {
+    const query = SQL`
+      SELECT * FROM active_third_party_collection_items_deployments_with_content
+      WHERE entity_id = ANY(${entityIds});
+    `
+    const deployments = await database.queryWithValues<
+      HistoricalDeploymentsRow & { content_keys: string[]; content_hashes: string[] }
+    >(query, 'get_deployments_for_active_third_party_collection_items_by_entity_ids')
+    return deployments.rows.map(
+      (row: HistoricalDeploymentsRow & { content_keys: string[]; content_hashes: string[] }): Deployment => ({
+        entityVersion: row.version as EntityVersion,
+        entityType: row.entity_type as EntityType,
+        entityId: row.entity_id,
+        pointers: row.entity_pointers,
+        entityTimestamp: row.entity_timestamp,
+        content: row.content_keys.map((content_key, index) => ({ key: content_key, hash: row.content_hashes[index] })),
+        metadata: row.entity_metadata,
+        deployedBy: row.deployer_address,
+        auditInfo: {
+          version: row.version as EntityVersion,
+          authChain: row.auth_chain,
+          localTimestamp: row.local_timestamp,
+          overwrittenBy: row.overwritten_by
+        }
+      })
+    )
+  }
+
+  async function updateMaterializedViews(): Promise<void> {
+    logger.info('Updating active third party collection items deployments with content materialized view')
+    await database.query(
+      'REFRESH MATERIALIZED VIEW CONCURRENTLY active_third_party_collection_items_deployments_with_content'
+    )
+    logger.info('Active third party collection items deployments with content materialized view updated')
+  }
+
+  return {
+    getDeploymentsForActiveThirdPartyCollectionItemsByEntityIds,
+    updateMaterializedViews
+  }
 }

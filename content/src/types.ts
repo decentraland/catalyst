@@ -39,6 +39,8 @@ import { IRetryFailedDeploymentsComponent } from './service/synchronization/retr
 import { ServerValidator } from './service/validations/server'
 import { ProcessedSnapshotsStorageComponent } from './ports/processedSnapshotStorage'
 import ms from 'ms'
+import { IDeploymentsComponent } from './logic/deployments'
+import { IJobComponent } from '@dcl/job-component'
 
 // Minimum amount of needed stuff to make the sync work
 
@@ -76,6 +78,8 @@ export type AppComponents = {
   }
   batchDeployer: IDeployerComponent
   synchronizer: SynchronizerComponent
+  deployments: IDeploymentsComponent
+  materializedViewUpdateJob: IJobComponent
   synchronizationState: SynchronizationState
   deployedEntitiesBloomFilter: DeployedEntitiesBloomFilter
   challengeSupervisor: IChallengeSupervisor
