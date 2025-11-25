@@ -21,7 +21,6 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
       COALESCE(cf_agg.content_hashes, '{}') as content_hashes,
       COALESCE(cf_agg.content_keys, '{}') as content_keys
     FROM active_pointers ap
-    WHERE ap.pointer LIKE 'urn:decentraland:matic:collections-thirdparty:%'
     JOIN deployments d ON d.entity_id = ap.entity_id
     LEFT JOIN LATERAL (
       SELECT
@@ -29,7 +28,10 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
         array_agg(key) as content_keys
       FROM content_files
       WHERE deployment = d.id
-    ) cf_agg ON true`
+    ) cf_agg ON true
+    WHERE ap.pointer LIKE 'urn:decentraland:matic:collections-thirdparty:%'
+    AND d.deleter_deployment IS NULL
+    `
   )
 
   // Create UNIQUE index first (required for CONCURRENT refresh)
