@@ -292,3 +292,99 @@ export async function getDeploymentsForActiveEntities(
     }
   }))
 }
+
+export interface IDeploymentsComponent {
+  getDeploymentsForActiveThirdPartyCollectionItems(thirdPartyCollectionUrn: string): Promise<Deployment[]>
+  getDeploymentsForActiveThirdPartyCollectionItemsByEntityIds(entityIds: string[]): Promise<Deployment[]>
+  updateMaterializedViews(): Promise<void>
+}
+
+export const createDeploymentsComponent = (components: Pick<AppComponents, 'database'>): IDeploymentsComponent => {
+  const { database } = components
+
+  // TODO: cantidate to be removed
+  async function getDeploymentsForActiveThirdPartyCollectionItems(
+    thirdPartyCollectionUrn: string
+  ): Promise<Deployment[]> {
+    const query = SQL`
+      SELECT
+      id,
+      entity_type,
+      entity_id,
+      entity_pointers,
+      entity_timestamp,
+      entity_metadata,
+      deployer_address,
+      version,
+      auth_chain,
+      local_timestamp,
+      content_hashes,
+      content_keys
+      FROM active_third_party_collection_items_deployments_with_content
+      WHERE pointer LIKE '${thirdPartyCollectionUrn}:%';
+    `
+    const deployments = await database.queryWithValues<
+      HistoricalDeploymentsRow & { content_keys: string[]; content_hashes: string[] }
+    >(query, 'get_deployments_for_active_third_party_collection_items')
+    return deployments.rows.map(
+      (row: HistoricalDeploymentsRow & { content_keys: string[]; content_hashes: string[] }): Deployment => ({
+        entityVersion: row.version as EntityVersion,
+        entityType: row.entity_type as EntityType,
+        entityId: row.entity_id,
+        pointers: row.entity_pointers,
+        entityTimestamp: row.entity_timestamp,
+        content: row.content_keys.map((content_key, index) => ({ key: content_key, hash: row.content_hashes[index] })),
+        metadata: row.entity_metadata ? row.entity_metadata.v : undefined,
+        deployedBy: row.deployer_address,
+        auditInfo: {
+          version: row.version as EntityVersion,
+          authChain: row.auth_chain,
+          localTimestamp: row.local_timestamp,
+          overwrittenBy: row.overwritten_by
+        }
+      })
+    )
+  }
+
+  async function getDeploymentsForActiveThirdPartyCollectionItemsByEntityIds(
+    entityIds: string[]
+  ): Promise<Deployment[]> {
+    const query = SQL`
+      SELECT * FROM active_third_party_collection_items_deployments_with_content
+      WHERE entity_id = ANY(${entityIds});
+    `
+    const deployments = await database.queryWithValues<
+      HistoricalDeploymentsRow & { content_keys: string[]; content_hashes: string[] }
+    >(query, 'get_deployments_for_active_third_party_collection_items_by_entity_ids')
+    return deployments.rows.map(
+      (row: HistoricalDeploymentsRow & { content_keys: string[]; content_hashes: string[] }): Deployment => ({
+        entityVersion: row.version as EntityVersion,
+        entityType: row.entity_type as EntityType,
+        entityId: row.entity_id,
+        pointers: row.entity_pointers,
+        entityTimestamp: row.entity_timestamp,
+        content: row.content_keys.map((content_key, index) => ({ key: content_key, hash: row.content_hashes[index] })),
+        metadata: row.entity_metadata,
+        deployedBy: row.deployer_address,
+        auditInfo: {
+          version: row.version as EntityVersion,
+          authChain: row.auth_chain,
+          localTimestamp: row.local_timestamp,
+          overwrittenBy: row.overwritten_by
+        }
+      })
+    )
+  }
+
+  async function updateMaterializedViews(): Promise<void> {
+    await database.query(
+      'REFRESH MATERIALIZED VIEW CONCURRENTLY active_third_party_collection_items_deployments_with_content'
+    )
+  }
+
+  return {
+    getDeploymentsForActiveThirdPartyCollectionItems,
+    getDeploymentsForActiveThirdPartyCollectionItemsByEntityIds,
+    updateMaterializedViews
+  }
+}

@@ -3,6 +3,7 @@ import LRU from 'lru-cache'
 import { EnvironmentConfig } from '../Environment'
 import {
   getItemEntitiesIdsThatMatchCollectionUrnPrefix,
+  getThirdPartyCollectionItemsEntityIdsThatMatchCollectionUrnPrefix,
   removeActiveDeployments,
   updateActiveDeployments
 } from '../logic/database-queries/pointers-queries'
@@ -10,6 +11,7 @@ import { getDeploymentsForActiveEntities, mapDeploymentsToEntities } from '../lo
 import { AppComponents } from '../types'
 import { DatabaseClient } from './postgres'
 import { IBaseComponent } from '@well-known-components/interfaces'
+import { parseUrn } from '@dcl/urn-resolver'
 
 export const BASE_AVATARS_COLLECTION_ID = 'urn:decentraland:off-chain:base-avatars'
 export const BASE_EMOTES_COLLECTION_ID = 'urn:decentraland:off-chain:base-emotes'
@@ -78,7 +80,10 @@ export type ActiveEntities = IBaseComponent & {
  *  - keep the relation between pointers and the active entity ids
  */
 export function createActiveEntitiesComponent(
-  components: Pick<AppComponents, 'database' | 'env' | 'logs' | 'metrics' | 'denylist' | 'sequentialExecutor'>
+  components: Pick<
+    AppComponents,
+    'database' | 'env' | 'logs' | 'metrics' | 'denylist' | 'sequentialExecutor' | 'deployments'
+  >
 ): ActiveEntities {
   const logger = components.logs.getLogger('ActiveEntities')
   const cache = new LRU<string, Entity | NotActiveEntity>({
@@ -90,6 +95,16 @@ export function createActiveEntitiesComponent(
     max: components.env.getConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE), //TODO
     fetchMethod: async (collectionUrn: string) =>
       getItemEntitiesIdsThatMatchCollectionUrnPrefix(components.database, collectionUrn.toLowerCase())
+  })
+
+  const thirdPartyCollectionItemsEntityIdsByPrefixCache = new LRU<string, string[]>({
+    ttl: 1000 * 60 * 60 * 24, // 24 hours
+    max: components.env.getConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE), //TODO
+    fetchMethod: async (collectionUrn: string) =>
+      getThirdPartyCollectionItemsEntityIdsThatMatchCollectionUrnPrefix(
+        components.database,
+        collectionUrn.toLowerCase()
+      )
   })
 
   const normalizePointerCacheKey = (pointer: string) => pointer.toLowerCase()
@@ -168,6 +183,17 @@ export function createActiveEntitiesComponent(
     }
   }
 
+  function updateEntitiesCache(entities: Entity[], entityIds: string[]): void {
+    const entityIdsWithoutActiveEntity = entityIds.filter(
+      (entityId) => !entities.some((entity) => entity.id === entityId)
+    )
+
+    for (const entityId of entityIdsWithoutActiveEntity) {
+      cache.set(entityId, 'NOT_ACTIVE_ENTITY')
+      logger.debug('entityId has no active entity', { entityId })
+    }
+  }
+
   async function updateCache(
     database: DatabaseClient,
     entities: Entity[],
@@ -189,14 +215,7 @@ export function createActiveEntitiesComponent(
         logger.debug('pointer has no active entity', { pointer })
       }
     } else if (entityIds) {
-      const entityIdsWithoutActiveEntity = entityIds.filter(
-        (entityId) => !entities.some((entity) => entity.id === entityId)
-      )
-
-      for (const entityId of entityIdsWithoutActiveEntity) {
-        cache.set(entityId, 'NOT_ACTIVE_ENTITY')
-        logger.debug('entityId has no active entity', { entityId })
-      }
+      updateEntitiesCache(entities, entityIds)
     }
   }
 
@@ -224,6 +243,42 @@ export function createActiveEntitiesComponent(
 
     return entities
   }
+
+  async function findThirdPartyCollectionItemsEntities(entityIds: string[]): Promise<Entity[]> {
+    const uniqueEntityIds = new Set(entityIds)
+    const onCache: (Entity | NotActiveEntity)[] = []
+    const remaining: string[] = []
+
+    for (const entityId of uniqueEntityIds) {
+      const entity = cache.get(entityId)
+      if (entity) {
+        onCache.push(entity)
+        if (isEntityPresent(entity)) {
+          reportCacheAccess(entity.type, 'hit')
+        }
+      } else {
+        logger.debug('Entity not found on cache', { entityId })
+        remaining.push(entityId)
+      }
+    }
+
+    const deployments = await components.deployments.getDeploymentsForActiveThirdPartyCollectionItemsByEntityIds(
+      remaining
+    )
+    const remainingEntities = mapDeploymentsToEntities(deployments)
+    updateEntitiesCache(remainingEntities, remaining)
+
+    return [...onCache.filter(isEntityPresent), ...remainingEntities]
+  }
+
+  // TODO: candidate to be removed
+  // async function findItemEntitiesByThirdPartyCollection(
+  //   database: DatabaseClient,
+  //   collectionId: string
+  // ): Promise<Entity[]> {
+  //   const deployments = await components.deployments.getDeploymentsForActiveThirdPartyCollectionItems(collectionId)
+  //   return mapDeploymentsToEntities(deployments)
+  // }
 
   /**
    * Retrieve active entities by their ids
@@ -296,17 +351,63 @@ export function createActiveEntitiesComponent(
     offset: number,
     limit: number
   ): Promise<{ total: number; entities: Entity[] }> {
-    const entityIds = await collectionItemsEntityIdsByPrefixCache.fetch(collectionUrn)
+    const startTime = performance.now()
+    console.log('[PERF] [ActiveEntities] withPrefix START', {
+      collectionUrn,
+      offset,
+      limit
+    })
+
+    const parseStartTime = performance.now()
+    const parsedUrn = await parseUrn(collectionUrn)
+    const isThirdPartyCollection = parsedUrn?.type === 'blockchain-collection-third-party-collection'
+    const parseDuration = performance.now() - parseStartTime
+    console.log('[PERF] [ActiveEntities] URN parsed', {
+      duration: `${parseDuration.toFixed(2)}ms`,
+      isThirdPartyCollection
+    })
+
+    const fetchIdsStartTime = performance.now()
+    const entityIds = await (isThirdPartyCollection
+      ? thirdPartyCollectionItemsEntityIdsByPrefixCache.fetch(collectionUrn)
+      : collectionItemsEntityIdsByPrefixCache.fetch(collectionUrn))
+    const fetchIdsDuration = performance.now() - fetchIdsStartTime
+    console.log('[PERF] [ActiveEntities] Entity IDs fetched from cache', {
+      duration: `${fetchIdsDuration.toFixed(2)}ms`,
+      entityIdsFound: entityIds?.length ?? 0,
+      cacheType: isThirdPartyCollection ? 'thirdPartyCollection' : 'collection'
+    })
 
     if (!entityIds) {
       throw new Error(`error fetching urns for collection: ${collectionUrn}`)
     }
 
-    const total = entityIds.length
-    const entities = await withIds(database, entityIds.slice(offset, offset + limit))
+    const fetchEntitiesStartTime = performance.now()
+    const entities = await (isThirdPartyCollection
+      ? findThirdPartyCollectionItemsEntities(entityIds)
+      : withIds(database, entityIds.slice(offset, offset + limit)))
+    const fetchEntitiesDuration = performance.now() - fetchEntitiesStartTime
+    console.log('[PERF] [ActiveEntities] Entities fetched', {
+      duration: `${fetchEntitiesDuration.toFixed(2)}ms`,
+      entitiesReturned: entities.length,
+      method: isThirdPartyCollection ? 'findThirdPartyCollectionItemsEntities' : 'withIds',
+      entityIdsRequested: isThirdPartyCollection ? entityIds.length : Math.min(limit, entityIds.length - offset)
+    })
+
+    const totalDuration = performance.now() - startTime
+    console.log('[PERF] [ActiveEntities] withPrefix END', {
+      totalDuration: `${totalDuration.toFixed(2)}ms`,
+      breakdown: {
+        parse: `${parseDuration.toFixed(2)}ms`,
+        fetchIds: `${fetchIdsDuration.toFixed(2)}ms`,
+        fetchEntities: `${fetchEntitiesDuration.toFixed(2)}ms`
+      },
+      total: entityIds.length,
+      returned: entities.length
+    })
 
     return {
-      total,
+      total: entityIds.length,
       entities
     }
   }
