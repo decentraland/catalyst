@@ -36,6 +36,7 @@ import { EntityVersion } from '../../../src/types'
 import { buildEntityAndFile } from '../../helpers/entity-tests-helper'
 import { NoOpServerValidator, NoOpValidator } from '../../helpers/service/validations/NoOpValidator'
 import { NoOpPointerManager } from '../service/pointers/NoOpPointerManager'
+import { createDeploymentsComponentMock } from '../../mocks/deployments-component-mock'
 
 export const DECENTRALAND_ADDRESS: EthAddress = '0x1337e0507eb4ab47e08a179573ed4533d9e22a7b'
 
@@ -217,7 +218,16 @@ describe('Deployer', function () {
     env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)
     const denylist: Denylist = { isDenylisted: () => false }
     const sequentialExecutor = createSequentialTaskExecutor({ logs, metrics })
-    const activeEntities = createActiveEntitiesComponent({ database, logs, env, metrics, denylist, sequentialExecutor })
+    const deployments = createDeploymentsComponentMock()
+    const activeEntities = createActiveEntitiesComponent({
+      database,
+      logs,
+      env,
+      metrics,
+      denylist,
+      sequentialExecutor,
+      deployments
+    })
     await failedDeployments.start()
     const deployerComponents = {
       env,
