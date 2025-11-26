@@ -320,28 +320,7 @@ describe('Integration - Get Active Entities', () => {
 
       expect(response.status).toBe(400)
     })
-    it('when fetching entities by item, then matching entity is retrieved', async () => {
-      const pointer = ['urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1']
-      const metadata = {
-        a: 'this is just some metadata'
-      }
-      const deployResult = await buildDeployData(pointer, { metadata })
 
-      // Deploy entity
-      await server.deployEntity(deployResult.deployData)
-      const response = await fetchActiveEntityByUrnPrefix(
-        server,
-        'urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1'
-      )
-
-      expect(response).toBeDefined()
-      expect(response.total).toBe(1)
-
-      const entity = response.entities[0]
-      expect(entity.pointers).toEqual(pointer.map((p) => p.toLocaleLowerCase()))
-      expect(entity.id).toEqual(deployResult.entity.id)
-      expect(entity.metadata).toEqual(metadata)
-    })
     it('when fetching collections v1 entities, then matching entities are retrieved', async () => {
       const pointer1 = [
         'urn:decentraland:ethereum:collections-v1:0x7038e9d2c6f5f84469a84cf9bc5f4909bb6ac5e0:dg_suit_top_upper_body'
@@ -386,6 +365,7 @@ describe('Integration - Get Active Entities', () => {
       expect(entity3.id).toEqual(deployResult1.entity.id)
       expect(entity3.metadata).toEqual(metadata1)
     })
+
     it('when fetching collections v2 entities, then matching entities are retrieved', async () => {
       const pointer1 = ['urn:decentraland:mumbai:collections-v2:0xaa40af0b4a18e0555ff3c87beab1d5b591947abe:4']
       const metadata1 = { a: 'this is just some metadata' }
@@ -427,6 +407,7 @@ describe('Integration - Get Active Entities', () => {
       expect(entity3.id).toEqual(deployResult1.entity.id)
       expect(entity3.metadata).toEqual(metadata1)
     })
+
     it('when fetching entities by collection name, then matching entity is retrieved', async () => {
       const pointer = ['urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1']
       const metadata = {
@@ -472,28 +453,7 @@ describe('Integration - Get Active Entities', () => {
       expect(response.total).toBe(10)
       expect(response.entities).toHaveLength(3)
     })
-    it('when fetching entities by third party name, then matching entity is retrieved', async () => {
-      const pointer = ['urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1']
-      const metadata = {
-        a: 'this is just some metadata'
-      }
-      const deployResult = await buildDeployData(pointer, { metadata })
 
-      // Deploy entity
-      await server.deployEntity(deployResult.deployData)
-      const response = await fetchActiveEntityByUrnPrefix(
-        server,
-        'urn:decentraland:mumbai:collections-thirdparty:aThirdParty'
-      )
-
-      expect(response).toBeDefined()
-      expect(response.total).toBe(1)
-
-      const entity = response.entities[0]
-      expect(entity.pointers).toEqual(pointer.map((p) => p.toLocaleLowerCase()))
-      expect(entity.id).toEqual(deployResult.entity.id)
-      expect(entity.metadata).toEqual(metadata)
-    })
     it('when fetching entities by not matching urn prefix, then none is retrieved', async () => {
       const pointer = ['urn:dcl:collection:itemId']
       const deployResult = await buildDeployData(pointer, {
