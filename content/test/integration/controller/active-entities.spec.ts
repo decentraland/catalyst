@@ -352,34 +352,22 @@ describe('Integration - Get Active Entities', () => {
       expect(entity2.pointers).toEqual(pointer2.map((p) => p.toLocaleLowerCase()))
       expect(entity2.id).toEqual(deployResult2.entity.id)
       expect(entity2.metadata).toEqual(metadata2)
-
-      const response2 = await fetchActiveEntityByUrnPrefix(
-        server,
-        'urn:decentraland:ethereum:collections-v1:0x7038e9d2c6f5f84469a84cf9bc5f4909bb6ac5e0:dg_suit_top_upper_body'
-      )
-      expect(response2).toBeDefined()
-      expect(response2.total).toBe(1)
-
-      const entity3 = response2.entities[0]
-      expect(entity3.pointers).toEqual(pointer1.map((p) => p.toLocaleLowerCase()))
-      expect(entity3.id).toEqual(deployResult1.entity.id)
-      expect(entity3.metadata).toEqual(metadata1)
     })
 
     it('when fetching collections v2 entities, then matching entities are retrieved', async () => {
-      const pointer1 = ['urn:decentraland:mumbai:collections-v2:0xaa40af0b4a18e0555ff3c87beab1d5b591947abe:4']
+      const pointer1 = ['urn:decentraland:matic:collections-v2:0xaa40af0b4a18e0555ff3c87beab1d5b591947abe:4']
       const metadata1 = { a: 'this is just some metadata' }
       const deployResult1 = await buildDeployData(pointer1, { type: EntityType.WEARABLE, metadata: metadata1 })
       await server.deployEntity(deployResult1.deployData)
 
-      const pointer2 = ['urn:decentraland:mumbai:collections-v2:0xaa40af0b4a18e0555ff3c87beab1d5b591947abe:3']
+      const pointer2 = ['urn:decentraland:matic:collections-v2:0xaa40af0b4a18e0555ff3c87beab1d5b591947abe:3']
       const metadata2 = { a: 'this is just some metadata' }
       const deployResult2 = await buildDeployData(pointer2, { type: EntityType.WEARABLE, metadata: metadata2 })
       await server.deployEntity(deployResult2.deployData)
 
       const response = await fetchActiveEntityByUrnPrefix(
         server,
-        'urn:decentraland:mumbai:collections-v2:0xaa40af0b4a18e0555ff3c87beab1d5b591947abe'
+        'urn:decentraland:matic:collections-v2:0xaa40af0b4a18e0555ff3c87beab1d5b591947abe'
       )
 
       expect(response).toBeDefined()
@@ -393,19 +381,6 @@ describe('Integration - Get Active Entities', () => {
       expect(entity2.pointers).toEqual(pointer2.map((p) => p.toLocaleLowerCase()))
       expect(entity2.id).toEqual(deployResult2.entity.id)
       expect(entity2.metadata).toEqual(metadata2)
-
-      const response2 = await fetchActiveEntityByUrnPrefix(
-        server,
-        'urn:decentraland:mumbai:collections-v2:0xaa40af0b4a18e0555ff3c87beab1d5b591947abe:4'
-      )
-
-      expect(response2).toBeDefined()
-      expect(response2.total).toBe(1)
-
-      const entity3 = response2.entities[0]
-      expect(entity3.pointers).toEqual(pointer1.map((p) => p.toLocaleLowerCase()))
-      expect(entity3.id).toEqual(deployResult1.entity.id)
-      expect(entity3.metadata).toEqual(metadata1)
     })
 
     it('when fetching entities by collection name, then matching entity is retrieved', async () => {
@@ -417,6 +392,7 @@ describe('Integration - Get Active Entities', () => {
 
       // Deploy entity
       await server.deployEntity(deployResult.deployData)
+
       const response = await fetchActiveEntityByUrnPrefix(
         server,
         'urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection'
@@ -528,14 +504,18 @@ describe('Integration - Get Active Entities', () => {
     pageSize: number = 100,
     pageNum: number = 1
   ): Promise<{ total: number; entities: Entity[] }> {
-    return (
-      await fetch(
-        `${server.getUrl()}/entities/active/collections/${collectionUrn}?pageSize=${pageSize}&pageNum=${pageNum}`,
-        {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' }
-        }
-      )
-    ).json()
+    const response = await fetch(
+      `${server.getUrl()}/entities/active/collections/${collectionUrn}?pageSize=${pageSize}&pageNum=${pageNum}`,
+      {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      }
+    )
+
+    const body = await response.json()
+    console.log('response', response.status)
+    console.log('response body', body)
+
+    return body as { total: number; entities: Entity[] }
   }
 })

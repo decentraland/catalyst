@@ -336,7 +336,6 @@ export function createActiveEntitiesComponent(
     const database = components.database
     const parsedUrn = await parseUrn(collectionUrn)
     const isThirdPartyCollection = parsedUrn?.type === 'blockchain-collection-third-party-collection'
-
     const entityIds = await (isThirdPartyCollection
       ? thirdPartyCollectionItemsEntityIdsByPrefixCache.fetch(collectionUrn)
       : collectionItemsEntityIdsByPrefixCache.fetch(collectionUrn))
@@ -346,9 +345,10 @@ export function createActiveEntitiesComponent(
       return { total: 0, entities: [] }
     }
 
+    const paginatedEntityIds = entityIds.slice(offset, offset + limit)
     const entities = await (isThirdPartyCollection
-      ? findThirdPartyCollectionItemsEntities(entityIds)
-      : withIds(database, entityIds.slice(offset, offset + limit)))
+      ? findThirdPartyCollectionItemsEntities(paginatedEntityIds)
+      : withIds(database, paginatedEntityIds))
 
     return {
       total: entityIds.length,

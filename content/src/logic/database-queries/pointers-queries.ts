@@ -20,7 +20,7 @@ export async function getThirdPartyCollectionItemsEntityIdsThatMatchUrnPrefix(
   collectionUrn: string
 ): Promise<string[]> {
   const matchingString = `${collectionUrn}%`
-  const query = SQL`SELECT entity_id FROM active_third_party_collection_items_deployments_with_content as WHERE pointer LIKE ${matchingString};`
+  const query = SQL`SELECT entity_id FROM active_third_party_collection_items_deployments_with_content WHERE pointer LIKE ${matchingString};`
   const queryResult = (
     await database.queryWithValues<{ entity_id: string }>(query, 'filter_third_party_collection_items_by_urn_prefix')
   ).rows
