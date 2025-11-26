@@ -3,7 +3,7 @@ import LRU from 'lru-cache'
 import { EnvironmentConfig } from '../Environment'
 import {
   getItemEntitiesIdsThatMatchCollectionUrnPrefix,
-  getThirdPartyCollectionItemsEntityIdsThatMatchCollectionUrnPrefix,
+  getThirdPartyCollectionItemsEntityIdsThatMatchUrnPrefix,
   removeActiveDeployments,
   updateActiveDeployments
 } from '../logic/database-queries/pointers-queries'
@@ -32,12 +32,7 @@ export type ActiveEntities = IBaseComponent & {
   /**
    * Retrieve active entities which their pointers match the given urn prefix
    */
-  withPrefix(
-    database: DatabaseClient,
-    collectionUrn: string,
-    offset: number,
-    limit: number
-  ): Promise<{ total: number; entities: Entity[] }>
+  withPrefix(collectionUrn: string, offset: number, limit: number): Promise<{ total: number; entities: Entity[] }>
   /**
    * Retrieve active entities by their ids
    * Note: result is cached, even if the id has no active entity
@@ -101,10 +96,7 @@ export function createActiveEntitiesComponent(
     ttl: 1000 * 60 * 60 * 24, // 24 hours
     max: components.env.getConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE), //TODO
     fetchMethod: async (collectionUrn: string) =>
-      getThirdPartyCollectionItemsEntityIdsThatMatchCollectionUrnPrefix(
-        components.database,
-        collectionUrn.toLowerCase()
-      )
+      getThirdPartyCollectionItemsEntityIdsThatMatchUrnPrefix(components.database, collectionUrn.toLowerCase())
   })
 
   const normalizePointerCacheKey = (pointer: string) => pointer.toLowerCase()
@@ -337,11 +329,11 @@ export function createActiveEntitiesComponent(
    * Retrieve active entities that are pointed by pointers that match the urn prefix
    */
   async function withPrefix(
-    database: DatabaseClient,
     collectionUrn: string,
     offset: number,
     limit: number
   ): Promise<{ total: number; entities: Entity[] }> {
+    const database = components.database
     const parsedUrn = await parseUrn(collectionUrn)
     const isThirdPartyCollection = parsedUrn?.type === 'blockchain-collection-third-party-collection'
 
@@ -349,8 +341,9 @@ export function createActiveEntitiesComponent(
       ? thirdPartyCollectionItemsEntityIdsByPrefixCache.fetch(collectionUrn)
       : collectionItemsEntityIdsByPrefixCache.fetch(collectionUrn))
 
-    if (!entityIds) {
-      throw new Error(`error fetching urns for collection: ${collectionUrn}`)
+    // If the entity ids are not found, return an empty list
+    if (!entityIds || entityIds.length === 0) {
+      return { total: 0, entities: [] }
     }
 
     const entities = await (isThirdPartyCollection
@@ -376,7 +369,16 @@ export function createActiveEntitiesComponent(
   function reset() {
     entityIdByPointers.clear()
     collectionItemsEntityIdsByPrefixCache.clear()
+    thirdPartyCollectionItemsEntityIdsByPrefixCache.clear()
     cache.clear()
+  }
+
+  function getCachedEntity(idOrPointer: string | string): string | NotActiveEntity | undefined {
+    if (cache.has(idOrPointer)) {
+      const cachedEntity = cache.get(idOrPointer)
+      return isEntityPresent(cachedEntity) ? cachedEntity.id : cachedEntity
+    }
+    return entityIdByPointers.get(idOrPointer)
   }
 
   return {
@@ -387,13 +389,6 @@ export function createActiveEntitiesComponent(
     update,
     clear,
     clearPointers,
-
-    getCachedEntity(idOrPointer) {
-      if (cache.has(idOrPointer)) {
-        const cachedEntity = cache.get(idOrPointer)
-        return isEntityPresent(cachedEntity) ? cachedEntity.id : cachedEntity
-      }
-      return entityIdByPointers.get(idOrPointer)
-    }
+    getCachedEntity
   }
 }

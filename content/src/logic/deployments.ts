@@ -184,6 +184,22 @@ export function buildDeploymentFromHistoricalDeployment(
   }
 }
 
+export function buildHistoricalDeploymentsFromRow(row: HistoricalDeploymentsRow): HistoricalDeployment {
+  return {
+    deploymentId: row.id,
+    entityType: row.entity_type,
+    entityId: row.entity_id,
+    pointers: row.entity_pointers,
+    entityTimestamp: row.entity_timestamp,
+    metadata: row.entity_metadata ? row.entity_metadata.v : undefined,
+    deployerAddress: row.deployer_address,
+    version: row.version,
+    authChain: row.auth_chain,
+    localTimestamp: row.local_timestamp,
+    overwrittenBy: row.overwritten_by ?? undefined
+  }
+}
+
 export async function getDeployments(
   components: Pick<AppComponents, 'denylist' | 'metrics'>,
   database: DatabaseClient,
@@ -266,41 +282,11 @@ export async function getDeploymentsForActiveEntities(
   const historicalDeploymentsResponse = await database.queryWithValues(query, 'get_active_entities')
 
   const deploymentsResult: HistoricalDeployment[] = historicalDeploymentsResponse.rows.map(
-    (row: HistoricalDeploymentsRow): HistoricalDeployment => ({
-      deploymentId: row.id,
-      entityType: row.entity_type,
-      entityId: row.entity_id,
-      pointers: row.entity_pointers,
-      entityTimestamp: row.entity_timestamp,
-      metadata: row.entity_metadata ? row.entity_metadata.v : undefined,
-      deployerAddress: row.deployer_address,
-      version: row.version,
-      authChain: row.auth_chain,
-      localTimestamp: row.local_timestamp,
-      overwrittenBy: row.overwritten_by ?? undefined
-    })
+    (row: HistoricalDeploymentsRow): HistoricalDeployment => buildHistoricalDeploymentsFromRow(row)
   )
-
   const deploymentIds = deploymentsResult.map(({ deploymentId }) => deploymentId)
-
   const content = await getContentFiles(database, deploymentIds)
-
-  return deploymentsResult.map((result) => ({
-    entityVersion: result.version as EntityVersion,
-    entityType: result.entityType as EntityType,
-    entityId: result.entityId,
-    pointers: result.pointers,
-    entityTimestamp: result.entityTimestamp,
-    content: content.get(result.deploymentId) || [],
-    metadata: result.metadata,
-    deployedBy: result.deployerAddress,
-    auditInfo: {
-      version: result.version as EntityVersion,
-      authChain: result.authChain,
-      localTimestamp: result.localTimestamp,
-      overwrittenBy: result.overwrittenBy
-    }
-  }))
+  return deploymentsResult.map((result) => buildDeploymentFromHistoricalDeployment(result, content))
 }
 
 export interface IDeploymentsComponent {
@@ -324,23 +310,16 @@ export const createDeploymentsComponent = (
     const deployments = await database.queryWithValues<
       HistoricalDeploymentsRow & { content_keys: string[]; content_hashes: string[] }
     >(query, 'get_deployments_for_active_third_party_collection_items_by_entity_ids')
+    const contents = new Map<DeploymentId, DeploymentContent[]>(
+      deployments.rows.map((row) => [
+        row.id,
+        row.content_keys.map((content_key, index) => ({ key: content_key, hash: row.content_hashes[index] }))
+      ])
+    )
+
     return deployments.rows.map(
-      (row: HistoricalDeploymentsRow & { content_keys: string[]; content_hashes: string[] }): Deployment => ({
-        entityVersion: row.version as EntityVersion,
-        entityType: row.entity_type as EntityType,
-        entityId: row.entity_id,
-        pointers: row.entity_pointers,
-        entityTimestamp: row.entity_timestamp,
-        content: row.content_keys.map((content_key, index) => ({ key: content_key, hash: row.content_hashes[index] })),
-        metadata: row.entity_metadata,
-        deployedBy: row.deployer_address,
-        auditInfo: {
-          version: row.version as EntityVersion,
-          authChain: row.auth_chain,
-          localTimestamp: row.local_timestamp,
-          overwrittenBy: row.overwritten_by
-        }
-      })
+      (row: HistoricalDeploymentsRow & { content_keys: string[]; content_hashes: string[] }): Deployment =>
+        buildDeploymentFromHistoricalDeployment(buildHistoricalDeploymentsFromRow(row), contents)
     )
   }
 

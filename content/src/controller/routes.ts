@@ -6,7 +6,7 @@ import { getActiveEntitiesHandler } from './handlers/active-entities-handler'
 import { createEntity } from './handlers/create-entity-handler'
 import { createErrorHandler, preventExecutionIfBoostrapping } from './middlewares'
 import { getFailedDeploymentsHandler } from './handlers/failed-deployments-handler'
-import { getEntitiesByPointerPrefixHandler } from './handlers/filter-by-urn-handler'
+import { getEntitiesByCollectionPointerPrefixHandler } from './handlers/filter-by-urn-handler'
 import { getEntityAuditInformationHandler } from './handlers/get-audit-handler'
 import { getAvailableContentHandler } from './handlers/get-available-content-handler'
 import { getPointerChangesHandler } from './handlers/pointer-changes-handler'
@@ -40,7 +40,7 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
   }
 
   router.get('/entities/:type', getEntitiesHandler) // TODO: Deprecate
-  router.get('/entities/active/collections/:collectionUrn', getEntitiesByPointerPrefixHandler)
+  router.get('/entities/active/collections/:collectionUrn', getEntitiesByCollectionPointerPrefixHandler)
   router.post('/entities/active', getActiveEntitiesHandler)
   router.head('/contents/:hashId', getContentHandler)
   router.get('/contents/:hashId', getContentHandler)

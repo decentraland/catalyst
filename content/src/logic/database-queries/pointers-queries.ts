@@ -15,7 +15,7 @@ export async function getItemEntitiesIdsThatMatchCollectionUrnPrefix(
   return entityIds
 }
 
-export async function getThirdPartyCollectionItemsEntityIdsThatMatchCollectionUrnPrefix(
+export async function getThirdPartyCollectionItemsEntityIdsThatMatchUrnPrefix(
   database: DatabaseClient,
   collectionUrn: string
 ): Promise<string[]> {
