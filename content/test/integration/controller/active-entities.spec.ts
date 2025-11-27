@@ -513,9 +513,6 @@ describe('Integration - Get Active Entities', () => {
     )
 
     const body = await response.json()
-    console.log('response', response.status)
-    console.log('response body', body)
-
     return body as { total: number; entities: Entity[] }
   }
 })
