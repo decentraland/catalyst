@@ -7,6 +7,7 @@ import { GetEntitiesByPointerPrefix200 } from '@dcl/catalyst-api-specs/lib/clien
 export async function getEntitiesByCollectionPointerPrefixHandler(
   context: HandlerContextWithPath<'activeEntities', '/entities/active/collections/:collectionUrn'>
 ): Promise<{ status: 200; body: GetEntitiesByPointerPrefix200 }> {
+  // Collection URN or Third Party ID
   const collectionUrn: string = context.params.collectionUrn
 
   let parsedUrn: DecentralandAssetIdentifier | null = null
@@ -19,7 +20,7 @@ export async function getEntitiesByCollectionPointerPrefixHandler(
 
   if (
     !parsedUrn ||
-    (parsedUrn.type !== 'blockchain-collection-third-party-collection' &&
+    (parsedUrn.type !== 'blockchain-collection-third-party-name' &&
       parsedUrn.type !== 'blockchain-collection-v1' &&
       parsedUrn.type !== 'blockchain-collection-v2' &&
       (parsedUrn.type !== 'off-chain' ||
@@ -28,7 +29,7 @@ export async function getEntitiesByCollectionPointerPrefixHandler(
           parsedUrn.registry !== 'base-avatars')))
   ) {
     throw new InvalidRequestError(
-      `Invalid collection urn param, it must be a valid urn prefix of a collection or a third party collection, instead: '${collectionUrn}'`
+      `Invalid collection urn param, it must be a valid urn prefix of a collection or a third party id, instead: '${collectionUrn}'`
     )
   }
 

@@ -37,7 +37,7 @@ describe('when getting the deployments for active third party collection items b
     })
 
     it('should return an empty array', async () => {
-      const result = await deployments.getDeploymentsForActiveThirdPartyCollectionItemsByEntityIds(['123'])
+      const result = await deployments.getDeploymentsForActiveThirdPartyItemsByEntityIds(['123'])
       expect(result).toEqual([])
     })
   })
@@ -86,7 +86,7 @@ describe('when getting the deployments for active third party collection items b
     })
 
     it('should return the deployments', async () => {
-      const result = await deployments.getDeploymentsForActiveThirdPartyCollectionItemsByEntityIds(['123', '456'])
+      const result = await deployments.getDeploymentsForActiveThirdPartyItemsByEntityIds(['123', '456'])
       expect(result).toEqual([
         buildDeploymentFromHistoricalDeployment(buildHistoricalDeploymentsFromRow(rowEntities[0]), contents),
         buildDeploymentFromHistoricalDeployment(buildHistoricalDeploymentsFromRow(rowEntities[1]), contents)

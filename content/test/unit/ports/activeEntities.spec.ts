@@ -344,14 +344,14 @@ describe('activeEntities', () => {
       Promise<IDatabase.IQueryResult<any>>,
       [sql: SQLStatement, durationQueryNameLabel?: string]
     >
-    let getDeploymentsForActiveThirdPartyCollectionItemsByEntityIdsMock: jest.MockedFn<
-      IDeploymentsComponent['getDeploymentsForActiveThirdPartyCollectionItemsByEntityIds']
+    let getDeploymentsForActiveThirdPartyItemsByEntityIdsMock: jest.MockedFn<
+      IDeploymentsComponent['getDeploymentsForActiveThirdPartyItemsByEntityIds']
     >
     let urn: string
 
     beforeEach(() => {
       queryWithValuesMock = jest.fn()
-      getDeploymentsForActiveThirdPartyCollectionItemsByEntityIdsMock = jest.fn()
+      getDeploymentsForActiveThirdPartyItemsByEntityIdsMock = jest.fn()
       const env = new Environment()
       env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)
       activeEntities = createActiveEntitiesComponent({
@@ -362,15 +362,14 @@ describe('activeEntities', () => {
         denylist: { isDenylisted: () => false },
         sequentialExecutor: createMockedSequentialTaskExecutorComponent(),
         deployments: createDeploymentsComponentMock({
-          getDeploymentsForActiveThirdPartyCollectionItemsByEntityIds:
-            getDeploymentsForActiveThirdPartyCollectionItemsByEntityIdsMock
+          getDeploymentsForActiveThirdPartyItemsByEntityIds: getDeploymentsForActiveThirdPartyItemsByEntityIdsMock
         })
       })
     })
 
     describe('and the URN prefix is of a third party collection', () => {
       beforeEach(() => {
-        urn = 'urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection'
+        urn = 'urn:decentraland:mumbai:collections-thirdparty:aThirdParty'
       })
 
       describe('and no entity ids are found with the URN prefix', () => {
@@ -394,7 +393,7 @@ describe('activeEntities', () => {
             rows: entities.map((e) => ({ entity_id: e.id })),
             rowCount: entities.length
           })
-          getDeploymentsForActiveThirdPartyCollectionItemsByEntityIdsMock.mockResolvedValueOnce(deployments)
+          getDeploymentsForActiveThirdPartyItemsByEntityIdsMock.mockResolvedValueOnce(deployments)
         })
 
         it('should return the active entities that match the URN prefix', async () => {

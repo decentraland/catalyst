@@ -14,7 +14,7 @@ describe('when retrieving active entities by a collection URN prefix', () => {
 
     context = {
       params: {
-        collectionUrn: 'urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection'
+        collectionUrn: 'urn:decentraland:mumbai:collections-thirdparty:aThirdParty'
       },
       components: { activeEntities: createMockedActiveEntitiesComponent({ withPrefix: withPrefixMock }) },
       url: new URL(
@@ -28,6 +28,11 @@ describe('when retrieving active entities by a collection URN prefix', () => {
     {
       description: 'a third party collection',
       urn: 'urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection',
+      shouldBeValid: false
+    },
+    {
+      description: 'a third party id',
+      urn: 'urn:decentraland:mumbai:collections-thirdparty:aThirdParty',
       shouldBeValid: true
     },
     {
@@ -80,7 +85,7 @@ describe('when retrieving active entities by a collection URN prefix', () => {
       it('should throw an InvalidRequestError', async () => {
         await expect(getEntitiesByCollectionPointerPrefixHandler(context)).rejects.toThrow(InvalidRequestError)
         await expect(getEntitiesByCollectionPointerPrefixHandler(context)).rejects.toThrow(
-          `Invalid collection urn param, it must be a valid urn prefix of a collection or a third party collection, instead: '${urn}'`
+          `Invalid collection urn param, it must be a valid urn prefix of a collection or a third party id, instead: '${urn}'`
         )
       })
     }
