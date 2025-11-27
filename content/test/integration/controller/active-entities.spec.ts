@@ -395,7 +395,7 @@ describe('Integration - Get Active Entities', () => {
 
       const response = await fetchActiveEntityByUrnPrefix(
         server,
-        'urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection'
+        'urn:decentraland:mumbai:collections-thirdparty:aThirdParty'
       )
 
       expect(response).toBeDefined()
@@ -421,7 +421,7 @@ describe('Integration - Get Active Entities', () => {
 
       const response = await fetchActiveEntityByUrnPrefix(
         server,
-        'urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection',
+        'urn:decentraland:mumbai:collections-thirdparty:aThirdParty',
         3
       )
 
@@ -441,7 +441,7 @@ describe('Integration - Get Active Entities', () => {
       await server.deployEntity(deployResult.deployData)
       const response = await fetchActiveEntityByUrnPrefix(
         server,
-        'urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection'
+        'urn:decentraland:mumbai:collections-thirdparty:aThirdParty'
       )
 
       expect(response).toBeDefined()
@@ -465,7 +465,7 @@ describe('Integration - Get Active Entities', () => {
       await server.deployEntity(secondDeploy.deployData)
       const response = await fetchActiveEntityByUrnPrefix(
         server,
-        'urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection'
+        'urn:decentraland:mumbai:collections-thirdparty:aThirdParty'
       )
 
       expect(response).toBeDefined()
