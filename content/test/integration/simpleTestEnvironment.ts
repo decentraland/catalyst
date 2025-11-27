@@ -54,6 +54,10 @@ export async function clearDatabase(server: TestProgram): Promise<void> {
   await server.components.database.query(
     'TRUNCATE TABLE deployments, content_files, active_pointers, processed_snapshots, failed_deployments CASCADE'
   )
+  // Refresh materialized view to reflect truncated data
+  await server.components.database.query(
+    'REFRESH MATERIALIZED VIEW CONCURRENTLY active_third_party_collection_items_deployments_with_content'
+  )
 }
 
 export function resetServer(server: TestProgram): Promise<void> {

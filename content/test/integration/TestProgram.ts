@@ -70,6 +70,12 @@ export class TestProgram {
       throw new Error(returnValue.errors.join(','))
     }
     this.logger.info('Deployed entity ' + deployData.entityId, { creationTimestamp: returnValue.creationTimestamp })
+
+    // Refresh materialized view to make the deployment immediately available for third-party collection queries
+    await this.components.database.query(
+      'REFRESH MATERIALIZED VIEW CONCURRENTLY active_third_party_collection_items_deployments_with_content'
+    )
+
     return returnValue.creationTimestamp as number
   }
 

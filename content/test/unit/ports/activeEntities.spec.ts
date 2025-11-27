@@ -1,28 +1,32 @@
 import { createInMemoryStorage } from '@dcl/catalyst-storage'
 import { Authenticator } from '@dcl/crypto'
-import { EntityType, EthAddress } from '@dcl/schemas'
-import { createConfigComponent } from '@well-known-components/env-config-provider'
-import { createLogComponent } from '@well-known-components/logger'
+import { Entity, EntityType, EthAddress } from '@dcl/schemas'
+import { IDatabase } from '@well-known-components/interfaces'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { HTTPProvider } from 'eth-connect'
 import ms from 'ms'
+import { SQLStatement } from 'sql-template-strings'
 import { Deployment } from '../../../src/deployment-types'
 import { DEFAULT_ENTITIES_CACHE_SIZE, Environment, EnvironmentConfig } from '../../../src/Environment'
 import * as deployments from '../../../src/logic/deployments'
 import { metricsDeclaration } from '../../../src/metrics'
-import { createActiveEntitiesComponent } from '../../../src/ports/activeEntities'
+import { ActiveEntities, createActiveEntitiesComponent } from '../../../src/ports/activeEntities'
 import { createClock } from '../../../src/ports/clock'
 import { Denylist } from '../../../src/ports/denylist'
 import { createDeployedEntitiesBloomFilter } from '../../../src/ports/deployedEntitiesBloomFilter'
 import { createDeployRateLimiter } from '../../../src/ports/deployRateLimiterComponent'
 import { createFailedDeployments } from '../../../src/ports/failedDeployments'
-import { createTestDatabaseComponent } from '../../../src/ports/postgres'
-import { createSequentialTaskExecutor } from '../../../src/ports/sequecuentialTaskExecutor'
 import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
 import { EntityVersion } from '../../../src/types'
 import { NoOpServerValidator, NoOpValidator } from '../../helpers/service/validations/NoOpValidator'
-import { NoOpPointerManager } from '../service/pointers/NoOpPointerManager'
 import { createDeploymentsComponentMock } from '../../mocks/deployments-component-mock'
+import { NoOpPointerManager } from '../service/pointers/NoOpPointerManager'
+import { createMockedSequentialTaskExecutorComponent } from '../../mocks/sequential-task-executor-componen-mock'
+import { createDatabaseMockedComponent } from '../../mocks/database-component-mock'
+import { createLogsMockedComponent } from '../../mocks/logger-component-mock'
+import { IDeploymentsComponent } from '../../../src/logic/deployments'
+import { createDeploymentMock } from '../../mocks/deployment-mock'
+import { mapDeploymentsToEntities } from '../../../src/logic/deployments'
 
 export const DECENTRALAND_ADDRESS: EthAddress = '0x1337e0507eb4ab47e08a179573ed4533d9e22a7b'
 
@@ -333,23 +337,125 @@ describe('activeEntities', () => {
       expect(firstResult).toMatchObject(fourthResult)
     })
   })
+
+  describe('when retrieving active entities by a URN prefix', () => {
+    let activeEntities: ActiveEntities
+    let queryWithValuesMock: jest.Mock<
+      Promise<IDatabase.IQueryResult<any>>,
+      [sql: SQLStatement, durationQueryNameLabel?: string]
+    >
+    let getDeploymentsForActiveThirdPartyCollectionItemsByEntityIdsMock: jest.MockedFn<
+      IDeploymentsComponent['getDeploymentsForActiveThirdPartyCollectionItemsByEntityIds']
+    >
+    let urn: string
+
+    beforeEach(() => {
+      queryWithValuesMock = jest.fn()
+      getDeploymentsForActiveThirdPartyCollectionItemsByEntityIdsMock = jest.fn()
+      const env = new Environment()
+      env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)
+      activeEntities = createActiveEntitiesComponent({
+        database: createDatabaseMockedComponent({ queryWithValues: queryWithValuesMock }),
+        env,
+        logs: createLogsMockedComponent(),
+        metrics: createTestMetricsComponent(metricsDeclaration),
+        denylist: { isDenylisted: () => false },
+        sequentialExecutor: createMockedSequentialTaskExecutorComponent(),
+        deployments: createDeploymentsComponentMock({
+          getDeploymentsForActiveThirdPartyCollectionItemsByEntityIds:
+            getDeploymentsForActiveThirdPartyCollectionItemsByEntityIdsMock
+        })
+      })
+    })
+
+    describe('and the URN prefix is of a third party collection', () => {
+      beforeEach(() => {
+        urn = 'urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection'
+      })
+
+      describe('and no entity ids are found with the URN prefix', () => {
+        beforeEach(() => {
+          queryWithValuesMock.mockResolvedValueOnce({ rows: [], rowCount: 0 })
+        })
+
+        it('should return an empty list', async () => {
+          const result = await activeEntities.withPrefix(urn, 0, 100)
+          expect(result).toEqual({ total: 0, entities: [] })
+        })
+      })
+
+      describe('and entity ids are found with the URN prefix', () => {
+        let entities: Entity[]
+
+        beforeEach(() => {
+          const deployments = [createDeploymentMock({ entityId: 'anEntityId' })]
+          entities = mapDeploymentsToEntities(deployments)
+          queryWithValuesMock.mockResolvedValueOnce({
+            rows: entities.map((e) => ({ entity_id: e.id })),
+            rowCount: entities.length
+          })
+          getDeploymentsForActiveThirdPartyCollectionItemsByEntityIdsMock.mockResolvedValueOnce(deployments)
+        })
+
+        it('should return the active entities that match the URN prefix', async () => {
+          const result = await activeEntities.withPrefix(urn, 0, 100)
+          expect(result).toEqual({ total: entities.length, entities })
+        })
+      })
+    })
+
+    describe('and the URN prefix is not of a third party collection', () => {
+      beforeEach(() => {
+        urn = 'urn:decentraland:mumbai:collections-v2:0x1a8a8c6b6d6e9e7b1c0a1e8f8d4b2e3c7f9a8b6c'
+      })
+
+      describe('and no entity ids are found with the URN prefix', () => {
+        beforeEach(() => {
+          queryWithValuesMock.mockResolvedValueOnce({ rows: [], rowCount: 0 })
+        })
+
+        it('should return an empty list', async () => {
+          const result = await activeEntities.withPrefix(urn, 0, 100)
+          expect(result).toEqual({ total: 0, entities: [] })
+        })
+      })
+
+      describe('and entity ids are found with the URN prefix', () => {
+        let entities: Entity[]
+        let deployments: Deployment[]
+
+        beforeEach(() => {
+          sut.mockClear()
+          deployments = [createDeploymentMock({ entityId: 'anEntityId' })]
+          entities = mapDeploymentsToEntities(deployments)
+          queryWithValuesMock.mockResolvedValueOnce({
+            rows: entities.map((e) => ({ entity_id: e.id })),
+            rowCount: entities.length
+          })
+          sut.mockImplementationOnce(() => Promise.resolve(deployments))
+        })
+
+        it('should return the active entities that match the URN prefix', async () => {
+          const result = await activeEntities.withPrefix(urn, 0, 100)
+          expect(result).toEqual({ total: entities.length, entities })
+        })
+      })
+    })
+  })
 })
 
 async function buildComponents() {
-  const database = createTestDatabaseComponent()
-  database.queryWithValues = () => Promise.resolve({ rows: [], rowCount: 0 })
-  database.query = () => Promise.resolve({ rows: [], rowCount: 0 })
-  database.transaction = () => Promise.resolve()
+  const database = createDatabaseMockedComponent({
+    queryWithValues: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }),
+    query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }),
+    transaction: jest.fn().mockResolvedValue(undefined)
+  })
   const env = new Environment()
   env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, 'inexistent')
   env.setConfig(EnvironmentConfig.DENYLIST_FILE_NAME, 'file')
   const clock = createClock()
   const serverValidator = new NoOpServerValidator()
-  const logs = await createLogComponent({
-    config: createConfigComponent({
-      LOG_LEVEL: 'DEBUG'
-    })
-  })
+  const logs = createLogsMockedComponent()
   const deployRateLimiter = createDeployRateLimiter(
     { logs },
     { defaultMax: 300, defaultTtl: ms('1m'), entitiesConfigMax: new Map(), entitiesConfigTtl: new Map() }
@@ -365,7 +471,7 @@ async function buildComponents() {
   const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, clock })
   env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)
   const denylist: Denylist = { isDenylisted: () => false }
-  const sequentialExecutor = createSequentialTaskExecutor({ logs, metrics })
+  const sequentialExecutor = createMockedSequentialTaskExecutorComponent()
   const deployments = createDeploymentsComponentMock()
   const activeEntities = createActiveEntitiesComponent({
     database,
