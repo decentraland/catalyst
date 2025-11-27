@@ -31,6 +31,11 @@ describe('when retrieving active entities by a collection URN prefix', () => {
       shouldBeValid: true
     },
     {
+      description: 'a third party id',
+      urn: 'urn:decentraland:mumbai:collections-thirdparty:aThirdParty',
+      shouldBeValid: true
+    },
+    {
       description: 'a blockchain collection v1',
       urn: 'urn:decentraland:ethereum:collections-v1:0x06012c8cf97bead5deae237070f9587f8e7a266d',
       shouldBeValid: true
@@ -80,7 +85,7 @@ describe('when retrieving active entities by a collection URN prefix', () => {
       it('should throw an InvalidRequestError', async () => {
         await expect(getEntitiesByCollectionPointerPrefixHandler(context)).rejects.toThrow(InvalidRequestError)
         await expect(getEntitiesByCollectionPointerPrefixHandler(context)).rejects.toThrow(
-          `Invalid collection urn param, it must be a valid urn prefix of a collection or a third party collection, instead: '${urn}'`
+          `Invalid collection urn param, it must be a valid urn prefix of a collection or a third party id, instead: '${urn}'`
         )
       })
     }

@@ -92,11 +92,11 @@ export function createActiveEntitiesComponent(
       getItemEntitiesIdsThatMatchCollectionUrnPrefix(components.database, collectionUrn.toLowerCase())
   })
 
-  const thirdPartyCollectionItemsEntityIdsByPrefixCache = new LRU<string, string[]>({
+  const thirdPartyItemsEntityIdsByPrefixCache = new LRU<string, string[]>({
     ttl: 1000 * 60 * 60 * 24, // 24 hours
     max: components.env.getConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE), //TODO
-    fetchMethod: async (collectionUrn: string) =>
-      getThirdPartyCollectionItemsEntityIdsThatMatchUrnPrefix(components.database, collectionUrn.toLowerCase())
+    fetchMethod: async (thirdPartyUrn: string) =>
+      getThirdPartyCollectionItemsEntityIdsThatMatchUrnPrefix(components.database, thirdPartyUrn.toLowerCase())
   })
 
   const normalizePointerCacheKey = (pointer: string) => pointer.toLowerCase()
@@ -236,7 +236,7 @@ export function createActiveEntitiesComponent(
     return entities
   }
 
-  async function findThirdPartyCollectionItemsEntities(entityIds: string[]): Promise<Entity[]> {
+  async function findThirdPartyItemsEntities(entityIds: string[]): Promise<Entity[]> {
     const uniqueEntityIds = new Set(entityIds)
     const onCache: (Entity | NotActiveEntity)[] = []
     const remaining: string[] = []
@@ -254,9 +254,7 @@ export function createActiveEntitiesComponent(
       }
     }
 
-    const deployments = await components.deployments.getDeploymentsForActiveThirdPartyCollectionItemsByEntityIds(
-      remaining
-    )
+    const deployments = await components.deployments.getDeploymentsForActiveThirdPartyItemsByEntityIds(remaining)
     const remainingEntities = mapDeploymentsToEntities(deployments)
     updateEntitiesCache(remainingEntities, remaining)
 
@@ -329,15 +327,16 @@ export function createActiveEntitiesComponent(
    * Retrieve active entities that are pointed by pointers that match the urn prefix
    */
   async function withPrefix(
+    // Collection URN or Third Party ID
     collectionUrn: string,
     offset: number,
     limit: number
   ): Promise<{ total: number; entities: Entity[] }> {
     const database = components.database
     const parsedUrn = await parseUrn(collectionUrn)
-    const isThirdPartyCollection = parsedUrn?.type === 'blockchain-collection-third-party-collection'
+    const isThirdPartyCollection = parsedUrn?.type === 'blockchain-collection-third-party-name'
     const entityIds = await (isThirdPartyCollection
-      ? thirdPartyCollectionItemsEntityIdsByPrefixCache.fetch(collectionUrn)
+      ? thirdPartyItemsEntityIdsByPrefixCache.fetch(collectionUrn)
       : collectionItemsEntityIdsByPrefixCache.fetch(collectionUrn))
 
     // If the entity ids are not found, return an empty list
@@ -347,7 +346,7 @@ export function createActiveEntitiesComponent(
 
     const paginatedEntityIds = entityIds.slice(offset, offset + limit)
     const entities = await (isThirdPartyCollection
-      ? findThirdPartyCollectionItemsEntities(paginatedEntityIds)
+      ? findThirdPartyItemsEntities(paginatedEntityIds)
       : withIds(database, paginatedEntityIds))
 
     return {
@@ -369,7 +368,7 @@ export function createActiveEntitiesComponent(
   function reset() {
     entityIdByPointers.clear()
     collectionItemsEntityIdsByPrefixCache.clear()
-    thirdPartyCollectionItemsEntityIdsByPrefixCache.clear()
+    thirdPartyItemsEntityIdsByPrefixCache.clear()
     cache.clear()
   }
 

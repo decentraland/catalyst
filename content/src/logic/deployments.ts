@@ -290,7 +290,7 @@ export async function getDeploymentsForActiveEntities(
 }
 
 export interface IDeploymentsComponent {
-  getDeploymentsForActiveThirdPartyCollectionItemsByEntityIds(entityIds: string[]): Promise<Deployment[]>
+  getDeploymentsForActiveThirdPartyItemsByEntityIds(entityIds: string[]): Promise<Deployment[]>
   updateMaterializedViews(): Promise<void>
 }
 
@@ -300,9 +300,7 @@ export const createDeploymentsComponent = (
   const { database, logs } = components
   const logger = logs.getLogger('deployments-component')
 
-  async function getDeploymentsForActiveThirdPartyCollectionItemsByEntityIds(
-    entityIds: string[]
-  ): Promise<Deployment[]> {
+  async function getDeploymentsForActiveThirdPartyItemsByEntityIds(entityIds: string[]): Promise<Deployment[]> {
     const query = SQL`
       SELECT * FROM active_third_party_collection_items_deployments_with_content
       WHERE entity_id = ANY(${entityIds});
@@ -332,7 +330,7 @@ export const createDeploymentsComponent = (
   }
 
   return {
-    getDeploymentsForActiveThirdPartyCollectionItemsByEntityIds,
+    getDeploymentsForActiveThirdPartyItemsByEntityIds,
     updateMaterializedViews
   }
 }
