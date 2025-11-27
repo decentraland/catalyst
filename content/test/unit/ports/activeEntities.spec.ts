@@ -369,7 +369,7 @@ describe('activeEntities', () => {
 
     describe('and the URN prefix is of a third party collection', () => {
       beforeEach(() => {
-        urn = 'urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection'
+        urn = 'urn:decentraland:mumbai:collections-thirdparty:aThirdParty'
       })
 
       describe('and no entity ids are found with the URN prefix', () => {

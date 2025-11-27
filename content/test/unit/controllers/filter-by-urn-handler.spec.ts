@@ -14,7 +14,7 @@ describe('when retrieving active entities by a collection URN prefix', () => {
 
     context = {
       params: {
-        collectionUrn: 'urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection'
+        collectionUrn: 'urn:decentraland:mumbai:collections-thirdparty:aThirdParty'
       },
       components: { activeEntities: createMockedActiveEntitiesComponent({ withPrefix: withPrefixMock }) },
       url: new URL(
@@ -28,7 +28,7 @@ describe('when retrieving active entities by a collection URN prefix', () => {
     {
       description: 'a third party collection',
       urn: 'urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection',
-      shouldBeValid: true
+      shouldBeValid: false
     },
     {
       description: 'a third party id',
