@@ -4,6 +4,7 @@ dist/
 node_modules/
 **/dist
 **/node_modules
+**/__mocks__
 tmpbin
 content/test
 lambdas/test
