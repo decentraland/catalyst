@@ -1,6 +1,6 @@
 import { ContentItem } from '@dcl/catalyst-storage'
 import { InvalidRequestError, Pagination } from '../types'
-import { fromStream } from 'file-type'
+import { FileTypeParser } from 'file-type'
 import { Readable } from 'stream'
 
 export function paginationObject(url: URL, maxPageSize: number = 1000): Pagination {
@@ -41,8 +41,9 @@ export function asEnumValue<T extends { [key: number]: string }>(
 
 export async function createContentFileHeaders(content: ContentItem, hashId: string): Promise<Record<string, string>> {
   const stream: Readable = await content.asRawStream()
+  const fileTypeParser = new FileTypeParser()
   try {
-    const mime = await fromStream(stream)
+    const mime = await fileTypeParser.fromStream(stream)
     const mimeType = mime?.mime || 'application/octet-stream'
     stream.destroy()
 
