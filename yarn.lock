@@ -372,6 +372,22 @@
     p-queue "^6.6.2"
     sharp "0.32.6"
 
+"@dcl/content-validator@^7.0.2":
+  version "7.0.2"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-7.0.2.tgz#4178b9eeeefef22edf9d60714468ff1d0c4dcbe0"
+  integrity sha512-sRay3onnC7TdlA9b+m9uCV9xsXp36KD5dStpofItWnoYKnTFo5dn4DbLZHJUpoUdGCNJ8IID99aryGwip2C6kg==
+  dependencies:
+    "@dcl/block-indexer" "^1.1.2"
+    "@dcl/content-hash-tree" "^1.1.4"
+    "@dcl/hashing" "^3.0.4"
+    "@dcl/schemas" "^20.0.0"
+    "@dcl/urn-resolver" "^3.6.0"
+    "@well-known-components/interfaces" "^1.4.3"
+    "@well-known-components/thegraph-component" "^1.6.0"
+    ms "^2.1.3"
+    p-queue "^6.6.2"
+    sharp "0.32.6"
+
 "@dcl/core-commons@0.5.1":
   version "0.5.1"
   resolved "https://registry.yarnpkg.com/@dcl/core-commons/-/core-commons-0.5.1.tgz#a0fe702ac3dfe09b8253ef319f1ba8be63cfbfff"
