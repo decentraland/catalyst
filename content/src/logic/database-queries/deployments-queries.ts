@@ -329,12 +329,9 @@ export async function setEntitiesAsOverwritten(
   allOverwritten: Set<DeploymentId>,
   overwrittenBy: DeploymentId
 ): Promise<void> {
-  const queries = Array.from(allOverwritten.values()).map(
-    (overwritten) => SQL`UPDATE deployments SET deleter_deployment = ${overwrittenBy} WHERE id = ${overwritten}`
-  )
-  for (const query of queries) {
-    await database.queryWithValues(query)
-  }
+  const ids = Array.from(allOverwritten.values())
+  const query = SQL`UPDATE deployments SET deleter_deployment = ${overwrittenBy} WHERE id = ANY(${ids})`
+  await database.queryWithValues(query)
 }
 
 export async function calculateOverwrote(database: DatabaseClient, entity: Entity): Promise<DeploymentId[]> {
