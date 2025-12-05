@@ -356,10 +356,10 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@^7.0.1":
-  version "7.0.1"
-  resolved "https://registry.npmjs.org/@dcl/content-validator/-/content-validator-7.0.1.tgz"
-  integrity sha512-l4fcPD9qlo2Jubp5S/S/sl0nGnichAAWrKKrCpD+U2CGpR7Zy9iNNEgvK5ra0fvMJuqUxYqLGiY9qRCsSFN4xA==
+"@dcl/content-validator@^7.0.2":
+  version "7.0.2"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-7.0.2.tgz#4178b9eeeefef22edf9d60714468ff1d0c4dcbe0"
+  integrity sha512-sRay3onnC7TdlA9b+m9uCV9xsXp36KD5dStpofItWnoYKnTFo5dn4DbLZHJUpoUdGCNJ8IID99aryGwip2C6kg==
   dependencies:
     "@dcl/block-indexer" "^1.1.2"
     "@dcl/content-hash-tree" "^1.1.4"
@@ -5587,11 +5587,6 @@ path-to-regexp@0.1.10:
   version "0.1.10"
   resolved "https://registry.npmjs.org/path-to-regexp/-/path-to-regexp-0.1.10.tgz"
   integrity sha512-7lf7qcQidTku0Gu3YDPc8DJ1q7OOucfa/BSsIwjuh56VU7katFvuM8hULfkwB3Fns/rsVF7PwPKVw1sl5KQS9w==
-
-path-to-regexp@0.1.7:
-  version "0.1.7"
-  resolved "https://registry.yarnpkg.com/path-to-regexp/-/path-to-regexp-0.1.7.tgz#df604178005f522f15eb4490e7247a1bfaa67f8c"
-  integrity sha512-5DFkuoqlv1uYQKxy8omFBeJPQcdoE07Kv2sferDCrAq1ohOU+MSDswDIbnx3YAM60qIOnYa53wBhXW0EbMonrQ==
 
 path-to-regexp@^1.7.0:
   version "1.8.0"
