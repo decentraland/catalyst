@@ -356,15 +356,15 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@^7.0.2":
-  version "7.0.2"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-7.0.2.tgz#4178b9eeeefef22edf9d60714468ff1d0c4dcbe0"
-  integrity sha512-sRay3onnC7TdlA9b+m9uCV9xsXp36KD5dStpofItWnoYKnTFo5dn4DbLZHJUpoUdGCNJ8IID99aryGwip2C6kg==
+"@dcl/content-validator@^7.0.3":
+  version "7.0.3"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-7.0.3.tgz#c25609060b72b33f114d2e1bb9cfbb8c6dd04880"
+  integrity sha512-0rfoU6OL1HolMJDtTiMCE4EOPRp+1udqF3u5ZwoVqQgQkK6NmS5reJc4DhMY7WkemVp6qGxL8i8F/BPpMukFbw==
   dependencies:
     "@dcl/block-indexer" "^1.1.2"
     "@dcl/content-hash-tree" "^1.1.4"
     "@dcl/hashing" "^3.0.4"
-    "@dcl/schemas" "^20.0.0"
+    "@dcl/schemas" "20.4.1"
     "@dcl/urn-resolver" "^3.6.0"
     "@well-known-components/interfaces" "^1.4.3"
     "@well-known-components/thegraph-component" "^1.6.0"
@@ -401,6 +401,16 @@
     "@dcl/core-commons" "0.5.1"
     "@well-known-components/interfaces" "^1.5.2"
 
+"@dcl/schemas@20.4.1":
+  version "20.4.1"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-20.4.1.tgz#b94943b46f1f2e672b743aa369877912d89a4fc7"
+  integrity sha512-lEbNJ8Iu7rHwoeaxGTUY0vWZaGbHbjcw0glaL21kk3KYNGTXgO0i9W9yKBzzHCBi3ff224u9RxA1XMa+9837CQ==
+  dependencies:
+    ajv "^8.11.0"
+    ajv-errors "^3.0.0"
+    ajv-keywords "^5.1.0"
+    mitt "^3.0.1"
+
 "@dcl/schemas@^11.5.0":
   version "11.12.0"
   resolved "https://registry.npmjs.org/@dcl/schemas/-/schemas-11.12.0.tgz"
@@ -411,7 +421,7 @@
     ajv-keywords "^5.1.0"
     mitt "^3.0.1"
 
-"@dcl/schemas@^20.0.0", "@dcl/schemas@^20.1.1":
+"@dcl/schemas@^20.1.1":
   version "20.2.0"
   resolved "https://registry.npmjs.org/@dcl/schemas/-/schemas-20.2.0.tgz"
   integrity sha512-7NIEDNvAybLrzUPcB700gMWs1zXlzsKOZCVKlph8/SLzloB84iT6gdyE1Zs0yyKmBx4+9G2B7ojf0sbQIqJ1XA==
