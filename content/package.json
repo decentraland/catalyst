@@ -23,7 +23,7 @@
     "@dcl/block-indexer": "^1.1.2",
     "@dcl/catalyst-api-specs": "^3.3.0",
     "@dcl/catalyst-contracts": "^4.4.2",
-    "@dcl/catalyst-storage": "^4.3.0",
+    "@dcl/catalyst-storage": "^4.3.1",
     "@dcl/content-validator": "^7.0.3",
     "@dcl/crypto": "^3.4.5",
     "@dcl/hashing": "^3.0.4",
