@@ -76,7 +76,7 @@ export async function createDenylist(
       logger.error(err)
     }
   }
-  let reloadTimer: NodeJS.Timer | undefined = undefined
+  let reloadTimer: ReturnType<typeof setInterval> | undefined = undefined
   return {
     isDenylisted: (id: string): boolean => {
       const denied = deniedContentIdentifiers.has(id)
