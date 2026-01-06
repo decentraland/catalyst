@@ -135,7 +135,7 @@ export enum EntityVersion {
 
 export type CannonicalEntityDeployment = { entity: SyncDeployment; servers: string[] }
 
-export type StatusProbeResult = {
+type StatusProbeResult = {
   /** name is used as unique key for the status map */
   name: string
   data: Record<string, any>

@@ -50,10 +50,9 @@
     "lint-staged": "13.0.3",
     "prettier": "2.7.1",
     "syncpack": "8.2.4",
-    "typescript": "^4.7.4"
+    "typescript": "^5.9.3"
   },
   "jest-junit": {
     "addFileAttribute": "true"
-  },
-  "dependencies": {}
+  }
 }

@@ -88,7 +88,7 @@
     "ts-mockito": "2.6.1",
     "ts-node": "10.7.0",
     "tsc": "2.0.4",
-    "typescript": "^4.7.4"
+    "typescript": "^5.9.3"
   },
   "resolutions": {
     "@well-known-components/http-server/path-to-regexp": "^6.2.1",

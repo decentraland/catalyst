@@ -20,7 +20,7 @@ import { happenedBefore } from '../service/time/TimeSorting'
 import { AppComponents, EntityVersion } from '../types'
 import { DatabaseClient } from './postgres'
 
-export function isIPFSHash(hash: string): boolean {
+function isIPFSHash(hash: string): boolean {
   return IPFSv2.validate(hash)
 }
 

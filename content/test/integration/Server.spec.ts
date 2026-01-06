@@ -35,7 +35,9 @@ describe('Integration - Server', () => {
 
     jest.spyOn(server.components.activeEntities, 'withIds').mockResolvedValue([entity1, entity2])
     jest.spyOn(server.components.activeEntities, 'withPointers').mockResolvedValue([entity1, entity2])
-    jest.spyOn(server.components.storage, 'retrieve').mockResolvedValue(SimpleContentItem.fromBuffer(content.buffer))
+    jest
+      .spyOn(server.components.storage, 'retrieve')
+      .mockResolvedValue(SimpleContentItem.fromBuffer(content.buffer as unknown as Uint8Array))
   })
 
   it(`Get all scenes by id`, async () => {

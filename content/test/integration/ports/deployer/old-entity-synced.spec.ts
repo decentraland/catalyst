@@ -60,8 +60,8 @@ describe('Integration - Deployment synced old entity', () => {
       deployData: {
         entityId: 'QmYfCVBv7PJCcBh3AutAzNesdGZVKUEd8KCc8Jh1Y8ba4u',
         files: new Map([
-          ['QmbNcPuVAq6Dv821kfFnyaM59Go3xCeBMnSxYRSHEpwWeF', contentFile],
-          ['QmYfCVBv7PJCcBh3AutAzNesdGZVKUEd8KCc8Jh1Y8ba4u', entityFile]
+          ['QmbNcPuVAq6Dv821kfFnyaM59Go3xCeBMnSxYRSHEpwWeF', contentFile as unknown as Uint8Array],
+          ['QmYfCVBv7PJCcBh3AutAzNesdGZVKUEd8KCc8Jh1Y8ba4u', entityFile as unknown as Uint8Array]
         ]),
         authChain: [
           {

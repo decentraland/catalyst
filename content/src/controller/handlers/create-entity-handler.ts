@@ -44,7 +44,7 @@ export async function createEntity(
     const auditInfo = { authChain, version: 'v3' }
 
     const deploymentResult = await deployer.deployEntity(
-      deployFiles.map(({ content }) => content),
+      deployFiles.map(({ content }) => content as unknown as Uint8Array),
       entityId,
       auditInfo,
       DeploymentContext.LOCAL

@@ -1,6 +1,6 @@
 import { TimeRange } from '@dcl/snapshots-fetcher/dist/types'
 
-export type TimeRangeDivision = {
+type TimeRangeDivision = {
   intervals: TimeRange[]
   remainder: TimeRange
 }

@@ -11,7 +11,7 @@ export type LambdasWearable = Omit<Wearable, 'data'> & {
     representations: LambdasWearableRepresentation[]
   }
 }
-export type LambdasWearableRepresentation = Omit<WearableRepresentation, 'contents'> & {
+type LambdasWearableRepresentation = Omit<WearableRepresentation, 'contents'> & {
   contents: { key: string; url: string }[]
 }
 
@@ -21,7 +21,7 @@ export type LambdasEmote = Omit<Emote, 'emoteDataADR74'> & {
   }
 }
 
-export type LambdasEmoteRepresentation = Omit<EmoteRepresentationADR74, 'contents'> & {
+type LambdasEmoteRepresentation = Omit<EmoteRepresentationADR74, 'contents'> & {
   contents: { key: string; url: string }[]
 }
 

@@ -6,7 +6,7 @@ import SQL from 'sql-template-strings'
 
 const PROFILE_CLEANUP_LIMIT = 10000
 
-export type GCStaleProfilesResult = {
+type GCStaleProfilesResult = {
   deletedHashes: Set<string>
   deletedDeployments: Set<string>
 }
