@@ -50,7 +50,7 @@ describe('findItemUrns', () => {
       expect(wearableUrns[0]).toEqual(TPW_WEARABLE_ID)
       expect(mockedGraphClient.findThirdPartyResolver).toHaveBeenCalledWith(
         'thirdPartyRegistrySubgraph',
-        'some-third-party'
+        'urn:decentraland:mumbai:collections-thirdparty:some-third-party'
       )
     })
   })
@@ -139,7 +139,7 @@ describe('findItemUrns', () => {
       expect(wearableUrns[0]).toEqual(TPW_WEARABLE_ID)
       expect(mockedGraphClient.findThirdPartyResolver).toHaveBeenCalledWith(
         'thirdPartyRegistrySubgraph',
-        'some-third-party'
+        'urn:decentraland:mumbai:collections-thirdparty:some-third-party'
       )
     })
   })

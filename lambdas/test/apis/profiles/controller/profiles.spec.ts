@@ -6,7 +6,6 @@ import { NFTOwnership } from '../../../../src/apis/profiles/NFTOwnership'
 import { WearablesOwnership } from '../../../../src/apis/profiles/WearablesOwnership'
 import * as pfs from '../../../../src/apis/profiles/controllers/profiles'
 import * as tpOwnership from '../../../../src/apis/profiles/tp-wearables-ownership'
-import * as tpUrnFinder from '../../../../src/logic/third-party-urn-finder'
 import { TheGraphClient } from '../../../../src/ports/the-graph/types'
 import { SmartContentClient } from '../../../../src/utils/SmartContentClient'
 
@@ -166,7 +165,9 @@ describe('profiles', () => {
       emotesOwnership = ownedNFTs(SOME_ADDRESS, WEARABLE_ID_1)
       theGraphClient = theGraph()
       thirdPartyFetcher = { fetchAssets: () => Promise.resolve([]) }
-      jest.spyOn(tpOwnership, 'checkForThirdPartyWearablesOwnership').mockResolvedValue(new Map([[SOME_ADDRESS, [TPW_ID]]]))
+      jest
+        .spyOn(tpOwnership, 'checkForThirdPartyWearablesOwnership')
+        .mockResolvedValue(new Map([[SOME_ADDRESS, [TPW_ID]]]))
     })
 
     afterEach(() => {
@@ -212,7 +213,9 @@ describe('profiles', () => {
       emotesOwnership = ownedNFTs(SOME_ADDRESS, WEARABLE_ID_1)
       theGraphClient = theGraph()
       thirdPartyFetcher = { fetchAssets: () => Promise.resolve([]) }
-      jest.spyOn(tpUrnFinder, 'findThirdPartyItemUrns').mockResolvedValue([TPW_ID])
+      jest
+        .spyOn(tpOwnership, 'checkForThirdPartyWearablesOwnership')
+        .mockResolvedValue(new Map([[SOME_ADDRESS, [TPW_ID]]]))
     })
 
     afterEach(() => {
@@ -331,6 +334,7 @@ describe('profiles', () => {
       emotesOwnership = ownedNFTs(SOME_ADDRESS, WEARABLE_ID_1)
       theGraphClient = theGraph()
       thirdPartyFetcher = { fetchAssets: () => Promise.resolve([]) }
+      jest.spyOn(tpOwnership, 'checkForThirdPartyWearablesOwnership').mockResolvedValue(new Map())
     })
 
     afterEach(() => {
@@ -374,6 +378,7 @@ describe('profiles', () => {
       emotesOwnership = ownedNFTs(SOME_ADDRESS, WEARABLE_ID_1)
       theGraphClient = theGraph()
       thirdPartyFetcher = { fetchAssets: () => Promise.resolve([]) }
+      jest.spyOn(tpOwnership, 'checkForThirdPartyWearablesOwnership').mockResolvedValue(new Map())
     })
 
     afterEach(() => {
@@ -520,10 +525,10 @@ function theGraph(): TheGraphClient {
 
 function noNFTs<T extends NFTOwnership>(): jest.Mocked<T> {
   return {
-    areNFTsOwned: jest.fn().mockImplementation((names: Map<EthAddress, string[]>) => {
-      const entries = Array.from(names.entries()).map<[EthAddress, Map<string, boolean>]>(([address, names]) => [
+    areNFTsOwned: jest.fn().mockImplementation((nftsToCheck: Map<EthAddress, string[]>) => {
+      const entries = Array.from(nftsToCheck.entries()).map<[EthAddress, Map<string, boolean>]>(([address, nftIds]) => [
         address,
-        new Map(names.map((name) => [name, false]))
+        new Map(nftIds.map((nftId) => [nftId, false]))
       ])
       return Promise.resolve(new Map(entries))
     })
@@ -532,10 +537,10 @@ function noNFTs<T extends NFTOwnership>(): jest.Mocked<T> {
 
 function ownedNFTs<T extends NFTOwnership>(ethAddress: EthAddress, ...ownedWearables: WearableId[]): jest.Mocked<T> {
   return {
-    areNFTsOwned: jest.fn().mockImplementation((names: Map<EthAddress, string[]>) => {
-      const entries = Array.from(names.entries()).map<[EthAddress, Map<string, boolean>]>(([address, names]) => [
+    areNFTsOwned: jest.fn().mockImplementation((nftsToCheck: Map<EthAddress, string[]>) => {
+      const entries = Array.from(nftsToCheck.entries()).map<[EthAddress, Map<string, boolean>]>(([address, nftIds]) => [
         address,
-        new Map(names.map((name) => [name, address === ethAddress && ownedWearables.includes(name)]))
+        new Map(nftIds.map((nftId) => [nftId, address === ethAddress && ownedWearables.includes(nftId)]))
       ])
       return Promise.resolve(new Map(entries))
     })

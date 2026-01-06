@@ -3,6 +3,16 @@ import { OffChainWearablesManager } from '../../../../src/apis/collections/off-c
 import { LambdasWearable } from '../../../../src/apis/collections/types'
 import { SmartContentClient } from '../../../../src/utils/SmartContentClient'
 
+/**
+ * Flushes the microtask queue by yielding to pending promises.
+ * Multiple awaits are needed because async operations may chain promises.
+ */
+async function flushPromises(): Promise<void> {
+  await Promise.resolve()
+  await Promise.resolve()
+  await Promise.resolve()
+}
+
 const COLLECTION_ID_1 = 'some-collection'
 const COLLECTION_ID_2 = 'some-other-collection'
 const WEARABLE_ID_1 = `${COLLECTION_ID_1}-some-wearable`
@@ -30,7 +40,11 @@ describe('OffChainWearablesManager', () => {
     })
 
     it('should query the content server', async () => {
-      const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS, refreshTime: '2s' })
+      const manager = new OffChainWearablesManager({
+        client: contentClient,
+        collections: COLLECTIONS,
+        refreshTime: '2s'
+      })
 
       await manager.find({ collectionIds: [COLLECTION_ID_1] })
 
@@ -51,7 +65,11 @@ describe('OffChainWearablesManager', () => {
     })
 
     it('should call the content server again', async () => {
-      const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS, refreshTime: '2s' })
+      const manager = new OffChainWearablesManager({
+        client: contentClient,
+        collections: COLLECTIONS,
+        refreshTime: '2s'
+      })
 
       await manager.find({ collectionIds: [COLLECTION_ID_1] })
 
@@ -73,7 +91,6 @@ describe('OffChainWearablesManager', () => {
     let t2: number
 
     beforeEach(() => {
-      jest.useFakeTimers('legacy')
       t1 = 1
       t2 = 2
       contentClientMock = {
@@ -100,10 +117,10 @@ describe('OffChainWearablesManager', () => {
       expect(firstWearables[0].id).toBe(WEARABLE_ID_3)
       expect(firstWearables[0]['timestamp']).toBe(t1)
 
-      contentClientMock.fetchEntitiesByPointers.mockClear()
+      // Advance timers to trigger the refresh and flush pending async operations
       jest.advanceTimersByTime(2000)
-      // Needed to finish the promise in the TimeRefreshedDataHolder that calls the content server
-      await new Promise(process.nextTick)
+      await flushPromises()
+
       const secondWearables = await manager.find({ collectionIds: [COLLECTION_ID_2] })
       expect(secondWearables.length).toBe(1)
       expect(secondWearables[0].id).toBe(WEARABLE_ID_3)
@@ -123,7 +140,11 @@ describe('OffChainWearablesManager', () => {
     })
 
     it('should calculate definition only once', async () => {
-      const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS, refreshTime: '2s' })
+      const manager = new OffChainWearablesManager({
+        client: contentClient,
+        collections: COLLECTIONS,
+        refreshTime: '2s'
+      })
 
       await Promise.all([
         manager.find({ collectionIds: [COLLECTION_ID_1] }),
@@ -148,7 +169,11 @@ describe('OffChainWearablesManager', () => {
     })
 
     it('should filter wearables correctly', async () => {
-      const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS, refreshTime: '2s' })
+      const manager = new OffChainWearablesManager({
+        client: contentClient,
+        collections: COLLECTIONS,
+        refreshTime: '2s'
+      })
 
       const wearables = await manager.find({ collectionIds: [COLLECTION_ID_1] })
 
@@ -168,7 +193,11 @@ describe('OffChainWearablesManager', () => {
     })
 
     it('should filter wearables correctly', async () => {
-      const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS, refreshTime: '2s' })
+      const manager = new OffChainWearablesManager({
+        client: contentClient,
+        collections: COLLECTIONS,
+        refreshTime: '2s'
+      })
 
       const wearables = await manager.find({ itemIds: [WEARABLE_ID_2, WEARABLE_ID_3] })
 
@@ -188,7 +217,11 @@ describe('OffChainWearablesManager', () => {
     })
 
     it('should filter wearables correctly', async () => {
-      const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS, refreshTime: '2s' })
+      const manager = new OffChainWearablesManager({
+        client: contentClient,
+        collections: COLLECTIONS,
+        refreshTime: '2s'
+      })
 
       const wearables = await manager.find({ textSearch: 'other' })
 
@@ -208,7 +241,11 @@ describe('OffChainWearablesManager', () => {
     })
 
     it('should filter wearables correctly', async () => {
-      const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS, refreshTime: '2s' })
+      const manager = new OffChainWearablesManager({
+        client: contentClient,
+        collections: COLLECTIONS,
+        refreshTime: '2s'
+      })
 
       const wearables = await manager.find({ textSearch: 'other', collectionIds: [COLLECTION_ID_1] })
 
@@ -224,9 +261,9 @@ function assertReturnWearablesAre(wearables: LambdasWearable[], ...ids: Wearable
 
 function contentServer(): jest.Mocked<SmartContentClient> {
   return {
-    fetchEntitiesByPointers: jest.fn().mockImplementation((ids: string[]) =>
-      Promise.resolve(ids.map((id) => buildEntity(id)))
-    )
+    fetchEntitiesByPointers: jest
+      .fn()
+      .mockImplementation((ids: string[]) => Promise.resolve(ids.map((id) => buildEntity(id))))
   } as unknown as jest.Mocked<SmartContentClient>
 }
 
