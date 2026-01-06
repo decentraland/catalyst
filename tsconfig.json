@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "module": "commonjs",
-    "target": "es2024",
+    "target": "es2023",
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
@@ -17,7 +17,7 @@
     "jsx": "react",
     "skipLibCheck": true,
     "lib": [
-      "es2024",
+      "es2023",
       "esnext.asynciterable",
       "esnext"
     ]
