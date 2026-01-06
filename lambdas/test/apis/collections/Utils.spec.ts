@@ -1,5 +1,4 @@
 import { BodyShape, Entity, EntityType, Rarity, Wearable, WearableCategory, Emote, EmoteCategory } from '@dcl/schemas'
-import { instance, mock, when } from 'ts-mockito'
 import { translateEntityIntoWearable, translateEntityIntoEmote } from '../../../src/apis/collections/Utils'
 import { SmartContentClient } from '../../../src/utils/SmartContentClient'
 
@@ -8,40 +7,51 @@ const [CONTENT_KEY1, CONTENT_KEY2, CONTENT_KEY3] = ['key1', 'key2', 'key3']
 const [CONTENT_HASH1, CONTENT_HASH2, CONTENT_HASH3] = ['hash1', 'hash2', 'hash3']
 
 describe('Collection Utils', () => {
-  it(`When wearable metadata is translated, then url is added to file references`, async () => {
-    const client = getClient()
-    const entity = buildEntity()
+  describe('when wearable metadata is translated', () => {
+    let client: jest.Mocked<SmartContentClient>
+    let entity: Entity
 
-    let wearable = translateEntityIntoWearable(client, entity)
-    const entityMetadata: Wearable = entity.metadata
+    beforeEach(() => {
+      client = getClient()
+      entity = buildEntity()
+    })
 
-    // Compare top level properties
-    expect(wearable).toBeDefined()
-    assertAreEqualExceptProperties(wearable!, entityMetadata, 'thumbnail', 'image', 'data')
-    wearable = wearable!
-    expect(wearable.thumbnail).toEqual(`${EXTERNAL_URL}/contents/${CONTENT_HASH1}`)
-    expect(wearable.image).toEqual(`${EXTERNAL_URL}/contents/${CONTENT_HASH2}`)
+    afterEach(() => {
+      jest.resetAllMocks()
+    })
 
-    // Compare data
-    assertAreEqualExceptProperties(wearable.data, entityMetadata.data, 'representations')
+    it('should add url to file references', () => {
+      let wearable = translateEntityIntoWearable(client, entity)
+      const entityMetadata: Wearable = entity.metadata
 
-    // Compare representations
-    expect(wearable.data.representations.length).toEqual(1)
-    const [translatedRepresentation] = wearable.data.representations
-    const [originalRepresentation] = entityMetadata.data.representations
-    assertAreEqualExceptProperties(translatedRepresentation, originalRepresentation, 'contents')
+      // Compare top level properties
+      expect(wearable).toBeDefined()
+      assertAreEqualExceptProperties(wearable!, entityMetadata, 'thumbnail', 'image', 'data')
+      wearable = wearable!
+      expect(wearable.thumbnail).toEqual(`${EXTERNAL_URL}/contents/${CONTENT_HASH1}`)
+      expect(wearable.image).toEqual(`${EXTERNAL_URL}/contents/${CONTENT_HASH2}`)
 
-    // Compare contents
-    expect(translatedRepresentation.contents.length).toEqual(1)
-    const [translatedContent] = translatedRepresentation.contents
-    const [originalContent] = originalRepresentation.contents
-    expect(translatedContent.key).toEqual(originalContent)
-    expect(translatedContent.url).toEqual(`${EXTERNAL_URL}/contents/${CONTENT_HASH3}`)
+      // Compare data
+      assertAreEqualExceptProperties(wearable.data, entityMetadata.data, 'representations')
+
+      // Compare representations
+      expect(wearable.data.representations.length).toEqual(1)
+      const [translatedRepresentation] = wearable.data.representations
+      const [originalRepresentation] = entityMetadata.data.representations
+      assertAreEqualExceptProperties(translatedRepresentation, originalRepresentation, 'contents')
+
+      // Compare contents
+      expect(translatedRepresentation.contents.length).toEqual(1)
+      const [translatedContent] = translatedRepresentation.contents
+      const [originalContent] = originalRepresentation.contents
+      expect(translatedContent.key).toEqual(originalContent)
+      expect(translatedContent.url).toEqual(`${EXTERNAL_URL}/contents/${CONTENT_HASH3}`)
+    })
   })
 
   describe('when emote metadata is translated', () => {
     describe('and emote metadata is ADR74', () => {
-      let client: SmartContentClient
+      let client: jest.Mocked<SmartContentClient>
       let entity: Entity
       let emote: any
       let entityMetadata: Emote
@@ -104,7 +114,7 @@ describe('Collection Utils', () => {
     })
 
     describe('and emote is saved as wearable metadata', () => {
-      let client: SmartContentClient
+      let client: jest.Mocked<SmartContentClient>
       let entity: Entity
       let emote: any
       let entityMetadata: Wearable
@@ -348,8 +358,8 @@ function buildEmoteAsWearableMetadata(): Wearable {
   }
 }
 
-function getClient(): SmartContentClient {
-  const mockedClient = mock(SmartContentClient)
-  when(mockedClient.getExternalContentServerUrl()).thenReturn(EXTERNAL_URL)
-  return instance(mockedClient)
+function getClient(): jest.Mocked<SmartContentClient> {
+  return {
+    getExternalContentServerUrl: jest.fn().mockReturnValue(EXTERNAL_URL)
+  } as unknown as jest.Mocked<SmartContentClient>
 }

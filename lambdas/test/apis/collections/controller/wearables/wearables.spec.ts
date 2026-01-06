@@ -1,5 +1,4 @@
 import { Entity, EntityType, WearableId } from '@dcl/schemas'
-import { anything, deepEqual, instance, mock, verify, when } from 'ts-mockito'
 import { getWearables } from '../../../../../src/apis/collections/controllers/wearables'
 import {
   BASE_AVATARS_COLLECTION_ID,
@@ -16,112 +15,189 @@ const OFF_CHAIN_WEARABLE = {
 } as any
 
 describe('wearables', () => {
-  it(`When only off-chain ids are requested, then content server and subgraph are not queried`, async () => {
-    const { instance: contentClient, mock: contentServerMock } = emptyContentServer()
-    const mockedGraphClient = noExistingWearables()
-    const { instance: offChain } = offChainManagerWith(OFF_CHAIN_WEARABLE)
+  describe('when only off-chain ids are requested', () => {
+    let contentClient: jest.Mocked<SmartContentClient>
+    let mockedGraphClient: { findWearableUrnsByFilters: jest.Mock }
+    let offChain: jest.Mocked<OffChainWearablesManager>
 
-    const pagination = { limit: 3, lastId: undefined }
-    const response = await getWearables(
-      { itemIds: [OFF_CHAIN_WEARABLE_ID] },
-      pagination,
-      contentClient,
-      mockedGraphClient as any,
-      offChain
-    )
+    beforeEach(() => {
+      contentClient = emptyContentServer()
+      mockedGraphClient = noExistingWearables()
+      offChain = offChainManagerWith(OFF_CHAIN_WEARABLE)
+    })
 
-    expect(response.wearables).toEqual([OFF_CHAIN_WEARABLE])
-    expect(response.lastId).toBeUndefined()
-    expect(mockedGraphClient.findWearableUrnsByFilters).not.toHaveBeenCalled()
-    verify(contentServerMock.fetchEntitiesByPointers(anything(), anything())).never()
+    afterEach(() => {
+      jest.resetAllMocks()
+    })
+
+    it('should not query content server and subgraph', async () => {
+      const pagination = { limit: 3, lastId: undefined }
+      const response = await getWearables(
+        { itemIds: [OFF_CHAIN_WEARABLE_ID] },
+        pagination,
+        contentClient,
+        mockedGraphClient as any,
+        offChain
+      )
+
+      expect(response.wearables).toEqual([OFF_CHAIN_WEARABLE])
+      expect(response.lastId).toBeUndefined()
+      expect(mockedGraphClient.findWearableUrnsByFilters).not.toHaveBeenCalled()
+      expect(contentClient.fetchEntitiesByPointers).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('when on-chain ids are requested', () => {
+    let contentClient: jest.Mocked<SmartContentClient>
+    let mockedGraphClient: { findWearableUrnsByFilters: jest.Mock }
+    let offChain: jest.Mocked<OffChainWearablesManager>
+
+    beforeEach(() => {
+      contentClient = contentServerThatReturns(ON_CHAIN_WEARABLE_ID)
+      mockedGraphClient = noExistingWearables()
+      offChain = offChainManagerWith(OFF_CHAIN_WEARABLE)
+    })
+
+    afterEach(() => {
+      jest.resetAllMocks()
+    })
+
+    it('should query content servers but not subgraph', async () => {
+      const pagination = { limit: 3, lastId: undefined }
+      const response = await getWearables(
+        { itemIds: [OFF_CHAIN_WEARABLE_ID, ON_CHAIN_WEARABLE_ID] },
+        pagination,
+        contentClient,
+        mockedGraphClient as any,
+        offChain
+      )
+
+      expectWearablesToBe(response, OFF_CHAIN_WEARABLE_ID, ON_CHAIN_WEARABLE_ID)
+      expect(response.lastId).toBeUndefined()
+      expect(mockedGraphClient.findWearableUrnsByFilters).not.toHaveBeenCalled()
+      expect(contentClient.fetchEntitiesByPointers).toHaveBeenCalledWith([ON_CHAIN_WEARABLE_ID])
+      expect(contentClient.fetchEntitiesByPointers).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('when lastId is not a base avatar', () => {
+    let contentClient: jest.Mocked<SmartContentClient>
+    let mockedGraphClient: { findWearableUrnsByFilters: jest.Mock }
+    let offChain: jest.Mocked<OffChainWearablesManager>
+
+    beforeEach(() => {
+      contentClient = contentServerThatReturns(ON_CHAIN_WEARABLE_ID)
+      mockedGraphClient = noExistingWearables()
+      offChain = emptyOffChainManager()
+    })
+
+    afterEach(() => {
+      jest.resetAllMocks()
+    })
+
+    it('should not call the offChainManager', async () => {
+      const pagination = { limit: 3, lastId: ON_CHAIN_WEARABLE_ID }
+      const filters = { textSearch: 'Something' }
+      const response = await getWearables(filters, pagination, contentClient, mockedGraphClient as any, offChain)
+
+      expect(response.wearables.length).toEqual(0)
+      expect(mockedGraphClient.findWearableUrnsByFilters).toHaveBeenCalledWith(filters, expect.objectContaining(pagination))
+      expect(offChain.find).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('when lastId is a base avatar', () => {
+    let contentClient: jest.Mocked<SmartContentClient>
+    let mockedGraphClient: { findWearableUrnsByFilters: jest.Mock }
+    let offChain: jest.Mocked<OffChainWearablesManager>
+
+    beforeEach(() => {
+      contentClient = contentServerThatReturns(ON_CHAIN_WEARABLE_ID)
+      mockedGraphClient = noExistingWearables()
+      offChain = emptyOffChainManager()
+    })
+
+    afterEach(() => {
+      jest.resetAllMocks()
+    })
+
+    it('should call the offChainManager', async () => {
+      const pagination = { limit: 3, lastId: OFF_CHAIN_WEARABLE_ID }
+      const filters = { textSearch: 'Something' }
+      const response = await getWearables(filters, pagination, contentClient, mockedGraphClient as any, offChain)
+
+      expect(response.wearables.length).toEqual(0)
+      expect(mockedGraphClient.findWearableUrnsByFilters).toHaveBeenCalledWith(
+        filters,
+        expect.objectContaining({ ...pagination, lastId: undefined })
+      )
+      expect(offChain.find).toHaveBeenCalledWith(filters, OFF_CHAIN_WEARABLE_ID)
+      expect(offChain.find).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('when collection id is base avatars', () => {
+    let contentClient: jest.Mocked<SmartContentClient>
+    let mockedGraphClient: { findWearableUrnsByFilters: jest.Mock }
+    let offChain: jest.Mocked<OffChainWearablesManager>
+
+    beforeEach(() => {
+      contentClient = contentServerThatReturns(ON_CHAIN_WEARABLE_ID)
+      mockedGraphClient = noExistingWearables()
+      offChain = emptyOffChainManager()
+    })
+
+    afterEach(() => {
+      jest.resetAllMocks()
+    })
+
+    it('should never query subgraph', async () => {
+      const pagination = { limit: 3, lastId: undefined }
+      const filters = { collectionIds: [BASE_AVATARS_COLLECTION_ID] }
+      const response = await getWearables(filters, pagination, contentClient, mockedGraphClient as any, offChain)
+
+      expect(response.wearables.length).toEqual(0)
+      expect(mockedGraphClient.findWearableUrnsByFilters).not.toHaveBeenCalled()
+      expect(offChain.find).toHaveBeenCalledWith(filters, undefined)
+      expect(offChain.find).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('when there is more data than the one returned', () => {
+    let contentClient: jest.Mocked<SmartContentClient>
+    let mockedGraphClient: { findWearableUrnsByFilters: jest.Mock }
+    let offChain: jest.Mocked<OffChainWearablesManager>
+
+    beforeEach(() => {
+      contentClient = contentServerThatReturns(ON_CHAIN_WEARABLE_ID)
+      mockedGraphClient = existingWearables(ON_CHAIN_WEARABLE_ID)
+      offChain = offChainManagerWith(OFF_CHAIN_WEARABLE)
+    })
+
+    afterEach(() => {
+      jest.resetAllMocks()
+    })
+
+    it('should include last id', async () => {
+      const pagination = { limit: 1, lastId: undefined }
+      const filters = { textSearch: 'Something' }
+      const response = await getWearables(filters, pagination, contentClient, mockedGraphClient as any, offChain)
+
+      expect(response.wearables.length).toEqual(1)
+      expect(response.lastId).toEqual(OFF_CHAIN_WEARABLE_ID)
+      expect(mockedGraphClient.findWearableUrnsByFilters).toHaveBeenCalledWith(
+        filters,
+        expect.objectContaining({ limit: 0, lastId: undefined })
+      )
+      expect(offChain.find).toHaveBeenCalledWith(filters, undefined)
+      expect(offChain.find).toHaveBeenCalledTimes(1)
+      expect(contentClient.fetchEntitiesByPointers).toHaveBeenCalledWith([ON_CHAIN_WEARABLE_ID])
+      expect(contentClient.fetchEntitiesByPointers).toHaveBeenCalledTimes(1)
+    })
   })
 })
 
-it(`When on-chain ids are requested, then content servers is queried, but subgraph isn't`, async () => {
-  const { instance: contentClient, mock: contentServerMock } = contentServerThatReturns(ON_CHAIN_WEARABLE_ID)
-  const mockedGraphClient = noExistingWearables()
-  const { instance: offChain } = offChainManagerWith(OFF_CHAIN_WEARABLE)
-
-  const pagination = { limit: 3, lastId: undefined }
-  const response = await getWearables(
-    { itemIds: [OFF_CHAIN_WEARABLE_ID, ON_CHAIN_WEARABLE_ID] },
-    pagination,
-    contentClient,
-    mockedGraphClient as any,
-    offChain
-  )
-
-  expectWearablesToBe(response, OFF_CHAIN_WEARABLE_ID, ON_CHAIN_WEARABLE_ID)
-  expect(response.lastId).toBeUndefined()
-  expect(mockedGraphClient.findWearableUrnsByFilters).not.toHaveBeenCalled()
-  verify(contentServerMock.fetchEntitiesByPointers(deepEqual([ON_CHAIN_WEARABLE_ID]))).once()
-})
-
-it(`When lastId isn't base avatar, then the offChainManager isn't called`, async () => {
-  const { instance: contentClient } = contentServerThatReturns(ON_CHAIN_WEARABLE_ID)
-  const mockedGraphClient = noExistingWearables()
-  const { instance: offChain, mock: offChainMock } = emptyOffChainManager()
-
-  const pagination = { limit: 3, lastId: ON_CHAIN_WEARABLE_ID }
-  const filters = { textSearch: 'Something' }
-  const response = await getWearables(filters, pagination, contentClient, mockedGraphClient as any, offChain)
-
-  expect(response.wearables.length).toEqual(0)
-  expect(mockedGraphClient.findWearableUrnsByFilters).toHaveBeenCalledWith(filters, expect.objectContaining(pagination))
-  verify(offChainMock.find(anything(), anything())).never()
-})
-
-it(`When lastId is a base avatar, then the offChainManager is called`, async () => {
-  const { instance: contentClient } = contentServerThatReturns(ON_CHAIN_WEARABLE_ID)
-  const mockedGraphClient = noExistingWearables()
-  const { instance: offChain, mock: offChainMock } = emptyOffChainManager()
-
-  const pagination = { limit: 3, lastId: OFF_CHAIN_WEARABLE_ID }
-  const filters = { textSearch: 'Something' }
-  const response = await getWearables(filters, pagination, contentClient, mockedGraphClient as any, offChain)
-
-  expect(response.wearables.length).toEqual(0)
-  expect(mockedGraphClient.findWearableUrnsByFilters).toHaveBeenCalledWith(
-    filters,
-    expect.objectContaining({ ...pagination, lastId: undefined })
-  )
-  verify(offChainMock.find(filters, OFF_CHAIN_WEARABLE_ID)).once()
-})
-
-it(`When collection id is base avatars, then subgraph is never queried`, async () => {
-  const { instance: contentClient } = contentServerThatReturns(ON_CHAIN_WEARABLE_ID)
-  const mockedGraphClient = noExistingWearables()
-  const { instance: offChain, mock: offChainMock } = emptyOffChainManager()
-
-  const pagination = { limit: 3, lastId: undefined }
-  const filters = { collectionIds: [BASE_AVATARS_COLLECTION_ID] }
-  const response = await getWearables(filters, pagination, contentClient, mockedGraphClient as any, offChain)
-
-  expect(response.wearables.length).toEqual(0)
-  expect(mockedGraphClient.findWearableUrnsByFilters).not.toHaveBeenCalled()
-  verify(offChainMock.find(filters, undefined)).once()
-})
-
-it(`When there is more data than the one returned, then last id is included`, async () => {
-  const { instance: contentClient, mock: contentServerMock } = contentServerThatReturns(ON_CHAIN_WEARABLE_ID)
-  const mockedGraphClient = existingWearables(ON_CHAIN_WEARABLE_ID)
-  const { instance: offChain, mock: offChainMock } = offChainManagerWith(OFF_CHAIN_WEARABLE)
-
-  const pagination = { limit: 1, lastId: undefined }
-  const filters = { textSearch: 'Something' }
-  const response = await getWearables(filters, pagination, contentClient, mockedGraphClient as any, offChain)
-
-  expect(response.wearables.length).toEqual(1)
-  expect(response.lastId).toEqual(OFF_CHAIN_WEARABLE_ID)
-  expect(mockedGraphClient.findWearableUrnsByFilters).toHaveBeenCalledWith(
-    filters,
-    expect.objectContaining({ limit: 0, lastId: undefined })
-  )
-  verify(offChainMock.find(filters, undefined)).once()
-  verify(contentServerMock.fetchEntitiesByPointers(deepEqual([ON_CHAIN_WEARABLE_ID]))).once()
-})
-
-function emptyContentServer() {
+function emptyContentServer(): jest.Mocked<SmartContentClient> {
   return contentServerThatReturns()
 }
 
@@ -130,21 +206,17 @@ function expectWearablesToBe(response: { wearables: LambdasWearable[] }, ...expe
   expect(ids).toEqual(expectedIds)
 }
 
-function emptyOffChainManager(): { instance: OffChainWearablesManager; mock: OffChainWearablesManager } {
+function emptyOffChainManager(): jest.Mocked<OffChainWearablesManager> {
   return offChainManagerWith()
 }
 
-function offChainManagerWith(...wearables: LambdasWearable[]): {
-  instance: OffChainWearablesManager
-  mock: OffChainWearablesManager
-} {
-  const mockedManager = mock(OffChainWearablesManager)
-  when(mockedManager.find(anything())).thenResolve(wearables)
-  when(mockedManager.find(anything(), anything())).thenResolve(wearables)
-  return { instance: instance(mockedManager), mock: mockedManager }
+function offChainManagerWith(...wearables: LambdasWearable[]): jest.Mocked<OffChainWearablesManager> {
+  return {
+    find: jest.fn().mockResolvedValue(wearables)
+  } as unknown as jest.Mocked<OffChainWearablesManager>
 }
 
-function contentServerThatReturns(id?: WearableId) {
+function contentServerThatReturns(id?: WearableId): jest.Mocked<SmartContentClient> {
   const entity: Entity = {
     version: 'v3',
     id: '',
@@ -160,9 +232,9 @@ function contentServerThatReturns(id?: WearableId) {
       thumbnail: undefined
     }
   }
-  const mockedClient = mock(SmartContentClient)
-  when(mockedClient.fetchEntitiesByPointers(anything())).thenResolve(id ? [entity] : [])
-  return { instance: instance(mockedClient), mock: mockedClient }
+  return {
+    fetchEntitiesByPointers: jest.fn().mockResolvedValue(id ? [entity] : [])
+  } as unknown as jest.Mocked<SmartContentClient>
 }
 
 function noExistingWearables() {
@@ -170,8 +242,7 @@ function noExistingWearables() {
 }
 
 function existingWearables(...existingWearables: WearableId[]) {
-  const mockedGraphClient = {
+  return {
     findWearableUrnsByFilters: jest.fn().mockResolvedValue(existingWearables)
   }
-  return mockedGraphClient
 }

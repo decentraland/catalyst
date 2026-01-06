@@ -1,5 +1,4 @@
 import { Entity, EntityType, WearableId } from '@dcl/schemas'
-import { anything, deepEqual, instance, mock, objectContaining, resetCalls, verify, when } from 'ts-mockito'
 import { OffChainWearablesManager } from '../../../../src/apis/collections/off-chain/OffChainWearablesManager'
 import { LambdasWearable } from '../../../../src/apis/collections/types'
 import { SmartContentClient } from '../../../../src/utils/SmartContentClient'
@@ -19,112 +18,202 @@ describe('OffChainWearablesManager', () => {
 
   afterAll(() => jest.useRealTimers())
 
-  it(`When definitions are loaded for the first time, then content server is queried`, async () => {
-    const { instance: contentClient, mock: contentClientMock } = contentServer()
-    const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS, refreshTime: '2s' })
+  describe('when definitions are loaded for the first time', () => {
+    let contentClient: jest.Mocked<SmartContentClient>
 
-    await manager.find({ collectionIds: [COLLECTION_ID_1] })
-
-    assertContentServerWasCalledOnceWithIds(contentClientMock, WEARABLE_ID_1, WEARABLE_ID_2)
-    assertContentServerWasCalledOnceWithIds(contentClientMock, WEARABLE_ID_3)
-  })
-
-  it(`When expire time ends, then the content server is called again`, async () => {
-    const { instance: contentClient, mock: contentClientMock } = contentServer()
-    const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS, refreshTime: '2s' })
-
-    await manager.find({ collectionIds: [COLLECTION_ID_1] })
-
-    assertContentServerWasCalledOnceWithIds(contentClientMock, WEARABLE_ID_1, WEARABLE_ID_2)
-    assertContentServerWasCalledOnceWithIds(contentClientMock, WEARABLE_ID_3)
-
-    resetCalls(contentClientMock)
-    jest.runOnlyPendingTimers()
-    // Althouth the find method isn't the one that triggers the update, it is needed for process to run the next tick
-    await manager.find({ collectionIds: [COLLECTION_ID_1] })
-    assertContentServerWasCalledOnceWithIds(contentClientMock, WEARABLE_ID_1, WEARABLE_ID_2)
-    assertContentServerWasCalledOnceWithIds(contentClientMock, WEARABLE_ID_3)
-  })
-
-  it(`When expire time ends, new objects are fetched from the content server`, async () => {
-    jest.useFakeTimers('legacy')
-    const contentClientMock = mock(SmartContentClient)
-    const contentClient = instance(contentClientMock)
-    const t1 = 1
-    const t2 = 2
-
-    when(contentClientMock.fetchEntitiesByPointers(objectContaining([WEARABLE_ID_3])))
-      .thenResolve([buildEntityWithTimestampInMetadata(WEARABLE_ID_3, t1)])
-      .thenResolve([buildEntityWithTimestampInMetadata(WEARABLE_ID_3, t2)])
-
-    const manager = new OffChainWearablesManager({
-      client: contentClient,
-      collections: { [COLLECTION_ID_2]: [WEARABLE_ID_3] },
-      refreshTime: '2s'
+    beforeEach(() => {
+      contentClient = contentServer()
     })
 
-    const firstWearables = await manager.find({ collectionIds: [COLLECTION_ID_2] })
-    expect(firstWearables.length).toBe(1)
-    expect(firstWearables[0].id).toBe(WEARABLE_ID_3)
-    expect(firstWearables[0]['timestamp']).toBe(t1)
+    afterEach(() => {
+      jest.resetAllMocks()
+    })
 
-    resetCalls(contentClientMock)
-    jest.advanceTimersByTime(2000)
-    // Needed to finish the promise in the TimeRefreshedDataHolder that calls the content server
-    await new Promise(process.nextTick)
-    const secondWearables = await manager.find({ collectionIds: [COLLECTION_ID_2] })
-    expect(secondWearables.length).toBe(1)
-    expect(secondWearables[0].id).toBe(WEARABLE_ID_3)
-    expect(secondWearables[0]['timestamp']).toBe(t2)
+    it('should query the content server', async () => {
+      const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS, refreshTime: '2s' })
+
+      await manager.find({ collectionIds: [COLLECTION_ID_1] })
+
+      expect(contentClient.fetchEntitiesByPointers).toHaveBeenCalledWith([WEARABLE_ID_1, WEARABLE_ID_2])
+      expect(contentClient.fetchEntitiesByPointers).toHaveBeenCalledWith([WEARABLE_ID_3])
+    })
   })
 
-  it(`When multiple requests happen concurrently, then definition is only calculated once`, async () => {
-    const { instance: contentClient, mock: contentClientMock } = contentServer()
-    const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS, refreshTime: '2s' })
+  describe('when expire time ends', () => {
+    let contentClient: jest.Mocked<SmartContentClient>
 
-    await Promise.all([
-      manager.find({ collectionIds: [COLLECTION_ID_1] }),
-      manager.find({ collectionIds: [COLLECTION_ID_2] })
-    ])
+    beforeEach(() => {
+      contentClient = contentServer()
+    })
 
-    assertContentServerWasCalledOnceWithIds(contentClientMock, WEARABLE_ID_1, WEARABLE_ID_2)
-    assertContentServerWasCalledOnceWithIds(contentClientMock, WEARABLE_ID_3)
+    afterEach(() => {
+      jest.resetAllMocks()
+    })
+
+    it('should call the content server again', async () => {
+      const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS, refreshTime: '2s' })
+
+      await manager.find({ collectionIds: [COLLECTION_ID_1] })
+
+      expect(contentClient.fetchEntitiesByPointers).toHaveBeenCalledWith([WEARABLE_ID_1, WEARABLE_ID_2])
+      expect(contentClient.fetchEntitiesByPointers).toHaveBeenCalledWith([WEARABLE_ID_3])
+
+      contentClient.fetchEntitiesByPointers.mockClear()
+      jest.runOnlyPendingTimers()
+      // Although the find method isn't the one that triggers the update, it is needed for process to run the next tick
+      await manager.find({ collectionIds: [COLLECTION_ID_1] })
+      expect(contentClient.fetchEntitiesByPointers).toHaveBeenCalledWith([WEARABLE_ID_1, WEARABLE_ID_2])
+      expect(contentClient.fetchEntitiesByPointers).toHaveBeenCalledWith([WEARABLE_ID_3])
+    })
   })
 
-  it(`When the collection id filter is used, then wearables are filtered correctly`, async () => {
-    const { instance: contentClient } = contentServer()
-    const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS, refreshTime: '2s' })
+  describe('when expire time ends and new objects need to be fetched', () => {
+    let contentClientMock: jest.Mocked<SmartContentClient>
+    let t1: number
+    let t2: number
 
-    const wearables = await manager.find({ collectionIds: [COLLECTION_ID_1] })
+    beforeEach(() => {
+      jest.useFakeTimers('legacy')
+      t1 = 1
+      t2 = 2
+      contentClientMock = {
+        fetchEntitiesByPointers: jest
+          .fn()
+          .mockResolvedValueOnce([buildEntityWithTimestampInMetadata(WEARABLE_ID_3, t1)])
+          .mockResolvedValueOnce([buildEntityWithTimestampInMetadata(WEARABLE_ID_3, t2)])
+      } as unknown as jest.Mocked<SmartContentClient>
+    })
 
-    assertReturnWearablesAre(wearables, WEARABLE_ID_1, WEARABLE_ID_2)
+    afterEach(() => {
+      jest.resetAllMocks()
+    })
+
+    it('should fetch new objects from the content server', async () => {
+      const manager = new OffChainWearablesManager({
+        client: contentClientMock,
+        collections: { [COLLECTION_ID_2]: [WEARABLE_ID_3] },
+        refreshTime: '2s'
+      })
+
+      const firstWearables = await manager.find({ collectionIds: [COLLECTION_ID_2] })
+      expect(firstWearables.length).toBe(1)
+      expect(firstWearables[0].id).toBe(WEARABLE_ID_3)
+      expect(firstWearables[0]['timestamp']).toBe(t1)
+
+      contentClientMock.fetchEntitiesByPointers.mockClear()
+      jest.advanceTimersByTime(2000)
+      // Needed to finish the promise in the TimeRefreshedDataHolder that calls the content server
+      await new Promise(process.nextTick)
+      const secondWearables = await manager.find({ collectionIds: [COLLECTION_ID_2] })
+      expect(secondWearables.length).toBe(1)
+      expect(secondWearables[0].id).toBe(WEARABLE_ID_3)
+      expect(secondWearables[0]['timestamp']).toBe(t2)
+    })
   })
 
-  it(`When the wearable id filter is used, then wearables are filtered correctly`, async () => {
-    const { instance: contentClient } = contentServer()
-    const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS, refreshTime: '2s' })
+  describe('when multiple requests happen concurrently', () => {
+    let contentClient: jest.Mocked<SmartContentClient>
 
-    const wearables = await manager.find({ itemIds: [WEARABLE_ID_2, WEARABLE_ID_3] })
+    beforeEach(() => {
+      contentClient = contentServer()
+    })
 
-    assertReturnWearablesAre(wearables, WEARABLE_ID_2, WEARABLE_ID_3)
+    afterEach(() => {
+      jest.resetAllMocks()
+    })
+
+    it('should calculate definition only once', async () => {
+      const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS, refreshTime: '2s' })
+
+      await Promise.all([
+        manager.find({ collectionIds: [COLLECTION_ID_1] }),
+        manager.find({ collectionIds: [COLLECTION_ID_2] })
+      ])
+
+      expect(contentClient.fetchEntitiesByPointers).toHaveBeenCalledWith([WEARABLE_ID_1, WEARABLE_ID_2])
+      expect(contentClient.fetchEntitiesByPointers).toHaveBeenCalledWith([WEARABLE_ID_3])
+      expect(contentClient.fetchEntitiesByPointers).toHaveBeenCalledTimes(2)
+    })
   })
 
-  it(`When the text search filter is used, then wearables are filtered correctly`, async () => {
-    const { instance: contentClient } = contentServer()
-    const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS, refreshTime: '2s' })
+  describe('when the collection id filter is used', () => {
+    let contentClient: jest.Mocked<SmartContentClient>
 
-    const wearables = await manager.find({ textSearch: 'other' })
+    beforeEach(() => {
+      contentClient = contentServer()
+    })
 
-    assertReturnWearablesAre(wearables, WEARABLE_ID_2, WEARABLE_ID_3)
+    afterEach(() => {
+      jest.resetAllMocks()
+    })
+
+    it('should filter wearables correctly', async () => {
+      const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS, refreshTime: '2s' })
+
+      const wearables = await manager.find({ collectionIds: [COLLECTION_ID_1] })
+
+      assertReturnWearablesAre(wearables, WEARABLE_ID_1, WEARABLE_ID_2)
+    })
   })
 
-  it(`When multiple filters are used, then wearables are filtered correctly`, async () => {
-    const { instance: contentClient } = contentServer()
-    const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS, refreshTime: '2s' })
+  describe('when the wearable id filter is used', () => {
+    let contentClient: jest.Mocked<SmartContentClient>
 
-    const wearables = await manager.find({ textSearch: 'other', collectionIds: [COLLECTION_ID_1] })
+    beforeEach(() => {
+      contentClient = contentServer()
+    })
 
-    assertReturnWearablesAre(wearables, WEARABLE_ID_2)
+    afterEach(() => {
+      jest.resetAllMocks()
+    })
+
+    it('should filter wearables correctly', async () => {
+      const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS, refreshTime: '2s' })
+
+      const wearables = await manager.find({ itemIds: [WEARABLE_ID_2, WEARABLE_ID_3] })
+
+      assertReturnWearablesAre(wearables, WEARABLE_ID_2, WEARABLE_ID_3)
+    })
+  })
+
+  describe('when the text search filter is used', () => {
+    let contentClient: jest.Mocked<SmartContentClient>
+
+    beforeEach(() => {
+      contentClient = contentServer()
+    })
+
+    afterEach(() => {
+      jest.resetAllMocks()
+    })
+
+    it('should filter wearables correctly', async () => {
+      const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS, refreshTime: '2s' })
+
+      const wearables = await manager.find({ textSearch: 'other' })
+
+      assertReturnWearablesAre(wearables, WEARABLE_ID_2, WEARABLE_ID_3)
+    })
+  })
+
+  describe('when multiple filters are used', () => {
+    let contentClient: jest.Mocked<SmartContentClient>
+
+    beforeEach(() => {
+      contentClient = contentServer()
+    })
+
+    afterEach(() => {
+      jest.resetAllMocks()
+    })
+
+    it('should filter wearables correctly', async () => {
+      const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS, refreshTime: '2s' })
+
+      const wearables = await manager.find({ textSearch: 'other', collectionIds: [COLLECTION_ID_1] })
+
+      assertReturnWearablesAre(wearables, WEARABLE_ID_2)
+    })
   })
 })
 
@@ -133,16 +222,12 @@ function assertReturnWearablesAre(wearables: LambdasWearable[], ...ids: Wearable
   expect(returnedIds).toEqual(new Set(ids))
 }
 
-function assertContentServerWasCalledOnceWithIds(contentClient: SmartContentClient, ...ids: WearableId[]) {
-  verify(contentClient.fetchEntitiesByPointers(deepEqual(ids))).once()
-}
-
-function contentServer() {
-  const mockedClient = mock(SmartContentClient)
-  when(mockedClient.fetchEntitiesByPointers(anything())).thenCall((ids) =>
-    Promise.resolve(ids.map((id) => buildEntity(id)))
-  )
-  return { instance: instance(mockedClient), mock: mockedClient }
+function contentServer(): jest.Mocked<SmartContentClient> {
+  return {
+    fetchEntitiesByPointers: jest.fn().mockImplementation((ids: string[]) =>
+      Promise.resolve(ids.map((id) => buildEntity(id)))
+    )
+  } as unknown as jest.Mocked<SmartContentClient>
 }
 
 function buildEntity(id: WearableId) {
