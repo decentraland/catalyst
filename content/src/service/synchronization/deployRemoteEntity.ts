@@ -78,12 +78,7 @@ export async function deployDownloadedEntity(
       throw new Error('Trying to deploy empty entityFile')
     }
 
-    const deploymentResult = await components.deployer.deployEntity(
-      [entityFile as unknown as Uint8Array],
-      entityId,
-      auditInfo,
-      context
-    )
+    const deploymentResult = await components.deployer.deployEntity([entityFile], entityId, auditInfo, context)
     if (isInvalidDeployment(deploymentResult)) {
       throw new Error(
         `Errors deploying entity(${entityId}):\n${deploymentResult.errors.map(($) => ' - ' + $).join('\n')}`

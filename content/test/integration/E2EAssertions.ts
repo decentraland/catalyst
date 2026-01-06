@@ -151,7 +151,7 @@ async function assertEntityIsOnServer(server: TestProgram, entity: Entity) {
 
 export async function assertFileIsOnServer(server: TestProgram, hash: string) {
   const content = await server.downloadContent(hash)
-  const downloadedContentHashes = await Promise.all([hashV0(content as unknown as Uint8Array), hashV1(content as unknown as Uint8Array)])
+  const downloadedContentHashes = await Promise.all([hashV0(content), hashV1(content)])
   assert.ok(downloadedContentHashes.includes(hash))
 }
 

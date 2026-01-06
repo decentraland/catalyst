@@ -46,7 +46,7 @@ describe('Deployer', function () {
     authChain: Authenticator.createSimpleAuthChain('entityId', 'ethAddress', 'signature')
   }
 
-  const randomFile = Buffer.from('1234') as unknown as Uint8Array
+  const randomFile = Buffer.from('1234')
   let randomFileHash: string
   let entity: Entity
   let entityFile: Uint8Array

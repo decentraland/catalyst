@@ -64,7 +64,7 @@
     "@types/faker": "5.5.9",
     "@types/jest": "27.4.1",
     "@types/lru-cache": "7.6.1",
-    "@types/node": "17.0.45",
+    "@types/node": "^24",
     "@types/pg": "^8",
     "@types/uuid": "^8",
     "@typescript-eslint/eslint-plugin": "5.33.0",
