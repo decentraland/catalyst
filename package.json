@@ -50,6 +50,7 @@
     "lint-staged": "13.0.3",
     "prettier": "2.7.1",
     "syncpack": "8.2.4",
+    "tslib": "^2.8.1",
     "typescript": "^5.9.3"
   },
   "jest-junit": {

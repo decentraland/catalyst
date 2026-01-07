@@ -145,9 +145,9 @@ describe('Bootstrapping synchronization tests', function () {
       endTimestamp: fakeNow()
     })
     expect(sevenDaysSnapshots).toHaveLength(7)
-    expect(markSnapshotAsProcessedSpy).toBeCalledTimes(3)
+    expect(markSnapshotAsProcessedSpy).toHaveBeenCalledTimes(3)
     for (const snapshotHash of sevenDaysSnapshots.map((s) => s.hash)) {
-      expect(markSnapshotAsProcessedSpy).toBeCalledWith(snapshotHash)
+      expect(markSnapshotAsProcessedSpy).toHaveBeenCalledWith(snapshotHash)
     }
 
     // now we deploy a new entity for the 8th day
@@ -187,9 +187,9 @@ describe('Bootstrapping synchronization tests', function () {
     for (const newSnapshotHash of eightDaysSnapshots) {
       expect(oldSnapshots.has(newSnapshotHash)).toBeFalsy()
     }
-    expect(markSnapshotAsProcessedSpy).toBeCalledTimes(2)
+    expect(markSnapshotAsProcessedSpy).toHaveBeenCalledTimes(2)
     for (const snapshotHash of eightDaysSnapshots.map((s) => s.hash)) {
-      expect(markSnapshotAsProcessedSpy).toBeCalledWith(snapshotHash)
+      expect(markSnapshotAsProcessedSpy).toHaveBeenCalledWith(snapshotHash)
     }
   })
 

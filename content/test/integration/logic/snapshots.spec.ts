@@ -28,13 +28,13 @@ describe('snapshot generator - ', () => {
     const timeRange = timeRangeOfDaysFromInitialTimestamp(1)
 
     const snapshots = await generateSnapshotsInMultipleTimeRanges(components, timeRange)
-    expect(divideTimeSpy).toBeCalledWith(timeRange)
+    expect(divideTimeSpy).toHaveBeenCalledWith(timeRange)
     expect(snapshots).toEqual(expect.arrayContaining([expect.objectContaining(emptySnapshot)]))
     if (snapshots) {
       const exist = await components.storage.existMultiple(snapshots.map((s) => s.hash))
       expect(Array.from(exist.values()).every((e) => e)).toBeTruthy()
     }
-    expect(clockSpy).toBeCalledTimes(1)
+    expect(clockSpy).toHaveBeenCalledTimes(1)
   })
 
   testCaseWithComponents(
@@ -49,7 +49,7 @@ describe('snapshot generator - ', () => {
       expect(snapshots).toEqual(
         expect.arrayContaining([expect.objectContaining(emptySnapshot), expect.objectContaining(emptySnapshot)])
       )
-      expect(clockSpy).toBeCalledTimes(2)
+      expect(clockSpy).toHaveBeenCalledTimes(2)
     }
   )
 
@@ -79,7 +79,7 @@ describe('snapshot generator - ', () => {
         ])
       )
       // It's called one time every time a snapshot is created
-      expect(clockSpy).toBeCalledTimes(7)
+      expect(clockSpy).toHaveBeenCalledTimes(7)
     }
   )
 
@@ -100,7 +100,7 @@ describe('snapshot generator - ', () => {
 
       // It's called one time every time a snapshot is created
       // 7 daily + (1 weekly + 1 daily)
-      expect(clockSpy).toBeCalledTimes(9)
+      expect(clockSpy).toHaveBeenCalledTimes(9)
 
       const weeklySnapshot = snapshots[0]
       expect(weeklySnapshot).toEqual({
@@ -131,7 +131,7 @@ describe('snapshot generator - ', () => {
       })
       // It's called one time every time a snapshot is created
       // 7 daily + (1 weekly + 1 daily)
-      expect(clockSpy).toBeCalledTimes(9)
+      expect(clockSpy).toHaveBeenCalledTimes(9)
     }
   )
 
@@ -151,7 +151,7 @@ describe('snapshot generator - ', () => {
 
       // It's called one time every time a snapshot is created
       // 5 daily + (1 weekly + 1 daily)
-      expect(clockSpy).toBeCalledTimes(7)
+      expect(clockSpy).toHaveBeenCalledTimes(7)
 
       const weeklySnapshot = snapshots[0]
       expect(weeklySnapshot).toEqual({
@@ -267,7 +267,7 @@ describe('snapshot generator - ', () => {
     const snapshots = await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(1))
 
     expect(snapshots).toEqual(expect.arrayContaining([expect.objectContaining({ numberOfEntities: 1 })]))
-    expect(storeSpy).toBeCalledWith(snapshots[0].hash, expect.anything())
+    expect(storeSpy).toHaveBeenCalledWith(snapshots[0].hash, expect.anything())
     expect(await components.storage.exist(snapshots[0].hash)).toBeTruthy()
 
     // now the snapshot is deleted from storage so it needs to be re-generated
@@ -278,7 +278,7 @@ describe('snapshot generator - ', () => {
     // now the snapshot is re-generated and stored again
     const snapshots2 = await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(1))
     expect(snapshots2).toEqual(expect.arrayContaining([expect.objectContaining({ numberOfEntities: 1 })]))
-    expect(storeSpy).toBeCalledWith(snapshots2[0].hash, expect.anything())
+    expect(storeSpy).toHaveBeenCalledWith(snapshots2[0].hash, expect.anything())
     expect(await components.storage.exist(snapshots2[0].hash)).toBeTruthy()
   })
 
@@ -313,7 +313,7 @@ describe('snapshot generator - ', () => {
 
       expect(snapshots).toEqual(expect.arrayContaining([expect.objectContaining({ numberOfEntities: 1 })]))
       expect(await components.storage.exist(snapshots[0].hash)).toBeTruthy()
-      expect(snapshotsNotInTimeRangeSpy).toBeCalledWith(
+      expect(snapshotsNotInTimeRangeSpy).toHaveBeenCalledWith(
         expect.anything(),
         expect.arrayContaining(['h1']),
         expect.anything()

@@ -103,6 +103,6 @@ describe('Service', () => {
   function assertInvalidFile(file: Buffer, entityId: string, errorMessage: string) {
     expect(() => {
       getEntityFromBuffer(file, entityId)
-    }).toThrowError(errorMessage)
+    }).toThrow(errorMessage)
   }
 })

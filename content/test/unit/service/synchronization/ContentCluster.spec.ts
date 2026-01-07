@@ -60,7 +60,7 @@ describe('ContentCluster', function () {
     process.env.CI = 'true'
     // Check that no identity was detected
     expect(await contentCluster.getIdentity()).toBeUndefined()
-    expect(sleep).toBeCalledTimes(10)
+    expect(sleep).toHaveBeenCalledTimes(10)
     expect(sleep).toHaveBeenCalledWith(1000)
   })
 })

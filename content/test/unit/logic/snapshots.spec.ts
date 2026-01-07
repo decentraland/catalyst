@@ -61,22 +61,22 @@ describe('generate snapshot', () => {
     const expectedTimeRange = { initTimestamp: 1, endTimestamp: 2 }
 
     await generateAndStoreSnapshot({ fs, metrics, logs, staticConfigs, storage, denylist }, database, expectedTimeRange)
-    expect(streamSpy).toBeCalledWith(expect.anything(), expectedTimeRange)
+    expect(streamSpy).toHaveBeenCalledWith(expect.anything(), expectedTimeRange)
   })
 
   it('should append snapshot header to tmp file', async () => {
     mockStreamedActiveEntitiesWith([])
     const fileWriterMock = mockCreateFileWriterMockWith('filePath', 'hash')
     await generateAndStoreSnapshot({ fs, metrics, logs, staticConfigs, storage, denylist }, database, aTimeRange)
-    expect(fileWriterMock.appendDebounced).toBeCalledWith('### Decentraland json snapshot\n')
-    expect(fileWriterMock.appendDebounced).toBeCalledTimes(1)
+    expect(fileWriterMock.appendDebounced).toHaveBeenCalledWith('### Decentraland json snapshot\n')
+    expect(fileWriterMock.appendDebounced).toHaveBeenCalledTimes(1)
   })
 
   it('should close tmp file after streaming all active entities', async () => {
     mockStreamedActiveEntitiesWith([])
     const fileWriterMock = mockCreateFileWriterMockWith('filePath', 'hash')
     await generateAndStoreSnapshot({ fs, metrics, logs, staticConfigs, storage, denylist }, database, aTimeRange)
-    expect(fileWriterMock.close).toBeCalledTimes(1)
+    expect(fileWriterMock.close).toHaveBeenCalledTimes(1)
   })
 
   it('should return snapshot hash and total number of entities', async () => {
@@ -205,9 +205,9 @@ describe('generate snapshot in multiple', () => {
     )
     expect(snapshots).toHaveLength(1)
     expect(snapshots[0]).toEqual(expectedSnapshot)
-    expect(storage.delete).toBeCalledWith(expect.arrayContaining(expectedReplacedHashes))
-    expect(deleteSpy).toBeCalledWith(expect.anything(), expect.arrayContaining(expectedReplacedHashes), oneYearRange)
-    expect(saveSpy).toBeCalledWith(expect.anything(), expectedSnapshot)
+    expect(storage.delete).toHaveBeenCalledWith(expect.arrayContaining(expectedReplacedHashes))
+    expect(deleteSpy).toHaveBeenCalledWith(expect.anything(), expect.arrayContaining(expectedReplacedHashes), oneYearRange)
+    expect(saveSpy).toHaveBeenCalledWith(expect.anything(), expectedSnapshot)
   })
 
   it('should re-generate snapshot when there the current snapshot is not in storage', async () => {
@@ -249,9 +249,9 @@ describe('generate snapshot in multiple', () => {
     )
     expect(snapshots).toHaveLength(1)
     expect(snapshots[0]).toEqual(expectedSnapshot)
-    expect(storage.delete).toBeCalledWith(expect.arrayContaining(expectedReplacedHashes))
-    expect(deleteSpy).toBeCalledWith(expect.anything(), expect.arrayContaining(expectedReplacedHashes), oneYearRange)
-    expect(saveSpy).toBeCalledWith(expect.anything(), expectedSnapshot)
+    expect(storage.delete).toHaveBeenCalledWith(expect.arrayContaining(expectedReplacedHashes))
+    expect(deleteSpy).toHaveBeenCalledWith(expect.anything(), expect.arrayContaining(expectedReplacedHashes), oneYearRange)
+    expect(saveSpy).toHaveBeenCalledWith(expect.anything(), expectedSnapshot)
   })
 
   it('should delete old snapshots within the interval of the new snapshot generated', async () => {
@@ -278,8 +278,8 @@ describe('generate snapshot in multiple', () => {
       { database, fs, metrics, logs, staticConfigs, storage, denylist, clock },
       oneYearRange
     )
-    expect(storage.delete).toBeCalledWith(expect.arrayContaining(['h1']))
-    expect(deleteSpy).toBeCalledWith(expect.anything(), expect.arrayContaining(['h1']), oneYearRange)
+    expect(storage.delete).toHaveBeenCalledWith(expect.arrayContaining(['h1']))
+    expect(deleteSpy).toHaveBeenCalledWith(expect.anything(), expect.arrayContaining(['h1']), oneYearRange)
   })
 
   it('should delete snapshots when they are replaced', async () => {
@@ -302,8 +302,8 @@ describe('generate snapshot in multiple', () => {
       { database, fs, metrics, logs, staticConfigs, storage, denylist, clock },
       oneYearRange
     )
-    expect(storage.delete).toBeCalledWith(expect.arrayContaining(['h1', 'h2']))
-    expect(deleteSpy).toBeCalledWith(expect.anything(), expect.arrayContaining(['h1', 'h2']), oneYearRange)
+    expect(storage.delete).toHaveBeenCalledWith(expect.arrayContaining(['h1', 'h2']))
+    expect(deleteSpy).toHaveBeenCalledWith(expect.anything(), expect.arrayContaining(['h1', 'h2']), oneYearRange)
   })
 
   it('should replace snapshots when they cover the time range', async () => {
@@ -481,7 +481,7 @@ describe('generate snapshot in multiple', () => {
       { database, fs, metrics, logs, staticConfigs, storage, denylist, clock },
       oneYearTimeRange
     )
-    expect(storage.delete).toBeCalledWith([])
+    expect(storage.delete).toHaveBeenCalledWith([])
   })
 })
 

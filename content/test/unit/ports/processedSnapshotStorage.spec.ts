@@ -38,11 +38,11 @@ describe('processed snapshot storage', () => {
         .mockResolvedValue(new Set([processedSnapshot]))
 
       await processedSnapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot])
-      expect(dbQuerySpy).toBeCalledTimes(1)
+      expect(dbQuerySpy).toHaveBeenCalledTimes(1)
       // now the result should be cached
       dbQuerySpy.mockReset()
       await processedSnapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot])
-      expect(dbQuerySpy).toBeCalledTimes(0)
+      expect(dbQuerySpy).toHaveBeenCalledTimes(0)
     })
 
     it('should query the db if not ALL the snapshots are in the cache', async () => {
@@ -56,7 +56,7 @@ describe('processed snapshot storage', () => {
       // now the snapshot 'processedSnapshot' is cached
       const anotherHashNotInCache = 'anotherHashNotInCache'
       await processedSnapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot, anotherHashNotInCache])
-      expect(dbQuerySpy).toBeCalledWith(
+      expect(dbQuerySpy).toHaveBeenCalledWith(
         expect.anything(),
         expect.arrayContaining([processedSnapshot, anotherHashNotInCache])
       )
@@ -82,7 +82,7 @@ describe('processed snapshot storage', () => {
         otherProcessedSnapshot,
         anotherProcessedSnapshot
       ])
-      expect(dbQuerySpy).toBeCalledTimes(0)
+      expect(dbQuerySpy).toHaveBeenCalledTimes(0)
     })
   })
 
@@ -96,7 +96,7 @@ describe('processed snapshot storage', () => {
 
       await processedSnapshotStorage.markSnapshotAsProcessed(processedSnapshot)
 
-      expect(saveProcessedSnapshotSpy).toBeCalledWith(database, processedSnapshot, expectedProcessTime)
+      expect(saveProcessedSnapshotSpy).toHaveBeenCalledWith(database, processedSnapshot, expectedProcessTime)
     })
 
     it('should cache the processed snapshot when saving a snapshot', async () => {
@@ -107,7 +107,7 @@ describe('processed snapshot storage', () => {
       await processedSnapshotStorage.markSnapshotAsProcessed(processedSnapshot)
       const dbQuerySpy = jest.spyOn(snapshotQueries, 'getProcessedSnapshots')
       const processedSnapshots = await processedSnapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot])
-      expect(dbQuerySpy).toBeCalledTimes(0)
+      expect(dbQuerySpy).toHaveBeenCalledTimes(0)
       expect(processedSnapshots).toEqual(new Set([processedSnapshot]))
     })
   })

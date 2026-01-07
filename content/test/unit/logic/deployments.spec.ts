@@ -18,8 +18,8 @@ describe('isEntityDeployed', () => {
             deployedEntitiesBloomFilter
         }
         await isEntityDeployed(components.database, components, 'id', 1)
-        expect(components.database.queryWithValues).toBeCalled()
-        expect(metricsSpy).toBeCalledWith('dcl_deployed_entities_bloom_filter_checks_total', { hit: 'true' })
+        expect(components.database.queryWithValues).toHaveBeenCalled()
+        expect(metricsSpy).toHaveBeenCalledWith('dcl_deployed_entities_bloom_filter_checks_total', { hit: 'true' })
     })
 
     it('when deployedEntitiesBloomFilter returns false, then it should not call the database', async () => {
@@ -32,7 +32,7 @@ describe('isEntityDeployed', () => {
             deployedEntitiesBloomFilter
         }
         await isEntityDeployed(components.database, components, 'id', 1)
-        expect(components.database.queryWithValues).not.toBeCalled()
+        expect(components.database.queryWithValues).not.toHaveBeenCalled()
     })
 
     it('when deployedEntitiesBloomFilter returns true and the entity exists in db, it should return true', async () => {
@@ -72,7 +72,7 @@ describe('isEntityDeployed', () => {
             deployedEntitiesBloomFilter: deployedEntitiesBloomFilter
         }
         await isEntityDeployed(components.database, components, 'id', 1)
-        expect(metricsSpy).toBeCalledWith('dcl_deployed_entities_bloom_filter_checks_total', { hit: 'true' })
+        expect(metricsSpy).toHaveBeenCalledWith('dcl_deployed_entities_bloom_filter_checks_total', { hit: 'true' })
     })
 
     it('when deployedEntitiesBloomFilter returns false, then it should register as non false positive', async () => {
@@ -86,7 +86,7 @@ describe('isEntityDeployed', () => {
             deployedEntitiesBloomFilter
         }
         await isEntityDeployed(components.database, components, 'another-id', 1)
-        expect(metricsSpy).toBeCalledWith('dcl_deployed_entities_bloom_filter_checks_total', { hit: 'true' })
+        expect(metricsSpy).toHaveBeenCalledWith('dcl_deployed_entities_bloom_filter_checks_total', { hit: 'true' })
     })
 
     it('when deployedEntitiesBloomFilter returns true and db false, then it should register as false positive', async () => {
@@ -100,7 +100,7 @@ describe('isEntityDeployed', () => {
             deployedEntitiesBloomFilter
         }
         await isEntityDeployed(components.database, components, 'id', 1)
-        expect(metricsSpy).toBeCalledWith('dcl_deployed_entities_bloom_filter_checks_total', { hit: 'false' })
+        expect(metricsSpy).toHaveBeenCalledWith('dcl_deployed_entities_bloom_filter_checks_total', { hit: 'false' })
     })
 })
 
