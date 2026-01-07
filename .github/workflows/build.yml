@@ -25,6 +25,8 @@ jobs:
 
   test-content:
     runs-on: ubuntu-latest
+    env:
+      NODE_OPTIONS: "--max-old-space-size=8192"
     services:
       postgres:
         image: postgres
@@ -55,6 +57,8 @@ jobs:
 
   test-lambdas:
     runs-on: ubuntu-latest
+    env:
+      NODE_OPTIONS: "--max-old-space-size=8192"
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js 24.x
