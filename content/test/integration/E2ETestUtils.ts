@@ -40,7 +40,7 @@ export async function buildDeployData(pointers: string[], options?: DeploymentOp
   const deploymentPreparationData = await buildEntity({
     ...opts,
     pointers,
-    files: buffers ? new Map(Array.from(buffers.entries()).map(([k, v]) => [k, v])) : undefined
+    files: buffers
   })
   const [, signature] = hashAndSignMessage(deploymentPreparationData.entityId, opts.identity)
   const authChain = Authenticator.createSimpleAuthChain(
