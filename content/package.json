@@ -30,7 +30,7 @@
     "@dcl/http-server": "^1.0.0",
     "@dcl/job-component": "^0.2.7",
     "@dcl/schemas": "^20.1.1",
-    "@dcl/snapshots-fetcher": "^9.1.0",
+    "@dcl/snapshots-fetcher": "^9.2.2",
     "@dcl/urn-resolver": "^3.6.0",
     "@well-known-components/env-config-provider": "^1.2.0",
     "@well-known-components/fetch-component": "^2.0.2",
