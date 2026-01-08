@@ -1,140 +1,172 @@
-import { Logger } from 'log4js'
-import sinon from 'sinon'
-import { anything, instance, mock, when } from 'ts-mockito'
 import { HealthStatus, refreshContentServerStatus } from '../../../src/apis/status/health'
 import { SmartContentClient } from '../../../src/utils/SmartContentClient'
 
 describe("Lambda's Controller Utils", () => {
   describe('refreshContentServerStatus', () => {
-    let contentClientMock: SmartContentClient
-
     describe('when the service is synced', () => {
-      const mockedHealthyStatus = {
-        currentTime: 100,
-        synchronizationStatus: {
-          lastSyncWithOtherServers: 100,
-          synchronizationState: 'Syncing',
-        }
-      }
+      let contentClientMock: jest.Mocked<SmartContentClient>
+      let mockedHealthyStatus: any
+      let logger: any
 
-      beforeAll(() => {
-        contentClientMock = mock(SmartContentClient)
-        when(contentClientMock.fetchContentStatus()).thenReturn(Promise.resolve(mockedHealthyStatus as any))
-        when(contentClientMock.fetchEntitiesByPointers(anything(), anything())).thenReturn(
-          Promise.resolve(mockedHealthyStatus as any)
-        )
+      beforeEach(() => {
+        mockedHealthyStatus = {
+          currentTime: 100,
+          synchronizationStatus: {
+            lastSyncWithOtherServers: 100,
+            synchronizationState: 'Syncing'
+          }
+        }
+        contentClientMock = {
+          fetchContentStatus: jest.fn().mockResolvedValue(mockedHealthyStatus),
+          fetchEntitiesByPointers: jest.fn().mockResolvedValue(mockedHealthyStatus)
+        } as unknown as jest.Mocked<SmartContentClient>
+        logger = {
+          debug: jest.fn(),
+          error: jest.fn(),
+          info: jest.fn(),
+          log: jest.fn(),
+          warn: jest.fn()
+        }
+      })
+
+      afterEach(() => {
+        jest.resetAllMocks()
       })
 
       it('should return a healthy status', async () => {
-        const logger = mock(Logger)
-
-        expect(await refreshContentServerStatus(instance(contentClientMock), '10s', '10s', logger)).toEqual(
-          HealthStatus.HEALTHY
-        )
+        expect(await refreshContentServerStatus(contentClientMock, '10s', '10s', logger)).toEqual(HealthStatus.HEALTHY)
       })
     })
 
     describe('when the service has old information', () => {
-      const mockedHealthyStatus = {
-        currentTime: 1000000,
-        synchronizationStatus: {
-          lastSyncWithOtherServers: 100,
-          synchronizationState: 'Syncing',
-        }
-      }
+      let contentClientMock: jest.Mocked<SmartContentClient>
+      let mockedHealthyStatus: any
+      let logger: any
 
-      beforeAll(() => {
-        contentClientMock = mock(SmartContentClient)
-        when(contentClientMock.fetchContentStatus()).thenReturn(Promise.resolve(mockedHealthyStatus as any))
-        when(contentClientMock.fetchEntitiesByPointers(anything(), anything())).thenReturn(
-          Promise.resolve(mockedHealthyStatus as any)
-        )
+      beforeEach(() => {
+        mockedHealthyStatus = {
+          currentTime: 1000000,
+          synchronizationStatus: {
+            lastSyncWithOtherServers: 100,
+            synchronizationState: 'Syncing'
+          }
+        }
+        contentClientMock = {
+          fetchContentStatus: jest.fn().mockResolvedValue(mockedHealthyStatus),
+          fetchEntitiesByPointers: jest.fn().mockResolvedValue(mockedHealthyStatus)
+        } as unknown as jest.Mocked<SmartContentClient>
+        logger = {
+          debug: jest.fn(),
+          error: jest.fn(),
+          info: jest.fn(),
+          log: jest.fn(),
+          warn: jest.fn()
+        }
+      })
+
+      afterEach(() => {
+        jest.resetAllMocks()
       })
 
       it('should return an unhealthy status', async () => {
-        const logger = mock(Logger)
-
-        expect(await refreshContentServerStatus(instance(contentClientMock), '10s', '10s', logger)).toEqual(
-          HealthStatus.UNHEALTHY
-        )
+        expect(await refreshContentServerStatus(contentClientMock, '10s', '10s', logger)).toEqual(HealthStatus.UNHEALTHY)
       })
     })
 
     describe('when the service takes too much time to obtain deployment', () => {
-      const mockedHealthyStatus = {
-        currentTime: 100,
-        synchronizationStatus: {
-          lastSyncWithOtherServers: 100,
-          synchronizationState: 'Syncing',
+      let contentClientMock: jest.Mocked<SmartContentClient>
+      let mockedHealthyStatus: any
+      let logger: any
+      let dateNowSpy: jest.SpyInstance
+
+      beforeEach(() => {
+        mockedHealthyStatus = {
+          currentTime: 100,
+          synchronizationStatus: {
+            lastSyncWithOtherServers: 100,
+            synchronizationState: 'Syncing'
+          }
         }
-      }
-      let dateNowStub: sinon.SinonStub
+        contentClientMock = {
+          fetchContentStatus: jest.fn().mockResolvedValue(mockedHealthyStatus),
+          fetchEntitiesByPointers: jest.fn().mockResolvedValue(mockedHealthyStatus)
+        } as unknown as jest.Mocked<SmartContentClient>
+        logger = {
+          debug: jest.fn(),
+          error: jest.fn(),
+          info: jest.fn(),
+          log: jest.fn(),
+          warn: jest.fn()
+        }
 
-      beforeAll(() => {
-        contentClientMock = mock(SmartContentClient)
-        when(contentClientMock.fetchContentStatus()).thenReturn(Promise.resolve(mockedHealthyStatus as any))
-        when(contentClientMock.fetchEntitiesByPointers(anything(), anything())).thenReturn(
-          Promise.resolve(mockedHealthyStatus as any)
-        )
-
-        dateNowStub = sinon
-          .stub(Date, 'now' as any)
-          .onFirstCall()
-          .returns(100)
-          .onSecondCall()
-          .returns(1000000)
+        dateNowSpy = jest.spyOn(Date, 'now').mockReturnValueOnce(100).mockReturnValueOnce(1000000)
       })
 
-      afterAll(() => {
-        dateNowStub.restore()
+      afterEach(() => {
+        dateNowSpy.mockRestore()
+        jest.resetAllMocks()
       })
 
-      it('should return aa unhealthy status', async () => {
-        const logger = mock(Logger)
-
-        expect(await refreshContentServerStatus(instance(contentClientMock), '10s', '10s', logger)).toEqual(
-          HealthStatus.UNHEALTHY
-        )
+      it('should return an unhealthy status', async () => {
+        expect(await refreshContentServerStatus(contentClientMock, '10s', '10s', logger)).toEqual(HealthStatus.UNHEALTHY)
       })
     })
 
     describe('when the service is bootstrapping', () => {
-      const mockedUnhealthyStatus = {
-        currentTime: 100,
-        synchronizationStatus: {
-          lastSyncWithOtherServers: 100,
-          synchronizationState: 'Bootstrapping',
-        }
-      }
+      let contentClientMock: jest.Mocked<SmartContentClient>
+      let mockedUnhealthyStatus: any
+      let logger: any
 
-      beforeAll(() => {
-        contentClientMock = mock(SmartContentClient)
-        when(contentClientMock.fetchContentStatus()).thenReturn(Promise.resolve(mockedUnhealthyStatus as any))
-        when(contentClientMock.fetchEntitiesByPointers(anything(), anything())).thenReturn(
-          Promise.resolve(mockedUnhealthyStatus as any)
-        )
+      beforeEach(() => {
+        mockedUnhealthyStatus = {
+          currentTime: 100,
+          synchronizationStatus: {
+            lastSyncWithOtherServers: 100,
+            synchronizationState: 'Bootstrapping'
+          }
+        }
+        contentClientMock = {
+          fetchContentStatus: jest.fn().mockResolvedValue(mockedUnhealthyStatus),
+          fetchEntitiesByPointers: jest.fn().mockResolvedValue(mockedUnhealthyStatus)
+        } as unknown as jest.Mocked<SmartContentClient>
+        logger = {
+          debug: jest.fn(),
+          error: jest.fn(),
+          info: jest.fn(),
+          log: jest.fn(),
+          warn: jest.fn()
+        }
+      })
+
+      afterEach(() => {
+        jest.resetAllMocks()
       })
 
       it('should return an unhealthy status', async () => {
-        const logger = mock(Logger)
-
-        expect(await refreshContentServerStatus(instance(contentClientMock), '10s', '10s', logger)).toEqual(
-          HealthStatus.UNHEALTHY
-        )
+        expect(await refreshContentServerStatus(contentClientMock, '10s', '10s', logger)).toEqual(HealthStatus.UNHEALTHY)
       })
     })
 
     describe('when the request fails', () => {
-      it('should return a down status', async () => {
-        const logger = mock(Logger)
+      let logger: any
 
+      beforeEach(() => {
+        logger = {
+          debug: jest.fn(),
+          error: jest.fn(),
+          info: jest.fn(),
+          log: jest.fn(),
+          warn: jest.fn()
+        }
+      })
+
+      afterEach(() => {
+        jest.resetAllMocks()
+      })
+
+      it('should return a down status', async () => {
         expect(
-          await refreshContentServerStatus(
-            { getClientUrl: () => Promise.resolve('mockUrl') } as any,
-            '10s',
-            '10s',
-            logger
-          )
+          await refreshContentServerStatus({ getClientUrl: () => Promise.resolve('mockUrl') } as any, '10s', '10s', logger)
         ).toEqual(HealthStatus.DOWN)
       })
     })

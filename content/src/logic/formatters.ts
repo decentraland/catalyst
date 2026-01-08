@@ -22,7 +22,7 @@ import * as utils from 'eth-connect'
  *
  * @param blockNumber - The given blocknumber
  */
-export function isPredefinedBlockNumber(blockNumber: utils.Quantity | utils.Tag): blockNumber is utils.Tag {
+function isPredefinedBlockNumber(blockNumber: utils.Quantity | utils.Tag): blockNumber is utils.Tag {
   return blockNumber === 'latest' || blockNumber === 'pending' || blockNumber === 'earliest'
 }
 
@@ -62,7 +62,7 @@ export function inputCallFormatter(options: utils.TransactionOptions) {
   return options
 }
 
-export function inputAddressFormatter(address: string) {
+function inputAddressFormatter(address: string) {
   if (utils.isStrictAddress(address)) {
     return address
   } else if (utils.isAddress(address)) {

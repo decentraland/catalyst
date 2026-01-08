@@ -6,6 +6,7 @@ import log4js from 'log4js'
 import fetch from 'node-fetch'
 import onFinished from 'on-finished'
 import sharp from 'sharp'
+import { Readable } from 'stream'
 import { SmartContentServerFetcher } from '../../../utils/SmartContentServerFetcher'
 
 const LOGGER = log4js.getLogger('ImagesController')
@@ -51,7 +52,7 @@ export async function getResizedImage(
 
     validateSize(size)
 
-    const [stream, length]: [NodeJS.ReadableStream, number] = await getStreamFor(cid, size)
+    const [stream, length]: [Readable, number] = await getStreamFor(cid, size)
 
     res.writeHead(200, {
       'Content-Type': 'application/octet-stream',
@@ -73,7 +74,7 @@ export async function getResizedImage(
     }
   }
 
-  async function getFileStream(filePath: string): Promise<[NodeJS.ReadableStream, number]> {
+  async function getFileStream(filePath: string): Promise<[Readable, number]> {
     const stat = await fs.promises.stat(filePath)
     return [fs.createReadStream(filePath), stat.size]
   }

@@ -68,8 +68,8 @@ describe('third party item checker', () => {
     )
 
     expect(result).toEqual([])
-    expect(registry.isErc1155).not.toBeCalled()
-    expect(registry.isErc721).not.toBeCalled()
-    expect(registry.isUnknown).not.toBeCalled()
+    expect(registry.isErc1155).not.toHaveBeenCalled()
+    expect(registry.isErc721).not.toHaveBeenCalled()
+    expect(registry.isUnknown).not.toHaveBeenCalled()
   })
 })

@@ -191,7 +191,7 @@ async function fetchEntity(client: SmartContentClient, urn: string): Promise<Ent
   return entities && entities.length > 0 && entities[0].metadata ? entities[0] : undefined
 }
 
-export function getBodyShapes(representations: WearableRepresentation[]) {
+function getBodyShapes(representations: WearableRepresentation[]) {
   const bodyShapes = new Set<string>()
   for (const representation of representations) {
     for (const bodyShape of representation.bodyShapes) {

@@ -1,5 +1,5 @@
 import { EthAddress } from '@dcl/crypto'
-import { Entity, Profile, WearableId } from '@dcl/schemas'
+import { Entity, WearableId } from '@dcl/schemas'
 import { NextFunction, Request, RequestHandler, Response } from 'express'
 import log4js from 'log4js'
 import { TheGraphClient } from '../../../ports/the-graph/types'
@@ -385,10 +385,6 @@ export type ProfileMetadata = {
   }[]
 }
 
-export type LambdasProfile = Profile & {
-  timestamp: number
-}
-
 type AvatarSnapshots = Record<string, string>
 
 type Avatar = {
@@ -403,16 +399,6 @@ type Avatar = {
     slot: number
     urn: string
   }[]
-}
-
-export type ProfileMetadataForSnapshots = {
-  ethAddress: EthAddress
-  avatars: {
-    avatar: AvatarForSnapshots
-  }[]
-}
-type AvatarForSnapshots = {
-  snapshots: AvatarSnapshots
 }
 
 function asyncHandler(handler: (req: Request, res: Response, next: NextFunction) => Promise<void>): RequestHandler {

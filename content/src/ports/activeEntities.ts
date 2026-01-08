@@ -14,13 +14,12 @@ import { IBaseComponent } from '@well-known-components/interfaces'
 import { parseUrn } from '@dcl/urn-resolver'
 
 export const BASE_AVATARS_COLLECTION_ID = 'urn:decentraland:off-chain:base-avatars'
-export const BASE_EMOTES_COLLECTION_ID = 'urn:decentraland:off-chain:base-emotes'
 
-export type NotActiveEntity = 'NOT_ACTIVE_ENTITY'
+type NotActiveEntity = 'NOT_ACTIVE_ENTITY'
 
-export const isEntityPresent = (result: Entity | NotActiveEntity | undefined): result is Entity =>
+const isEntityPresent = (result: Entity | NotActiveEntity | undefined): result is Entity =>
   result !== undefined && result !== 'NOT_ACTIVE_ENTITY'
-export const isPointingToEntity = (result: string | NotActiveEntity | undefined): result is string =>
+const isPointingToEntity = (result: string | NotActiveEntity | undefined): result is string =>
   result !== undefined && result !== 'NOT_ACTIVE_ENTITY'
 
 export type ActiveEntities = IBaseComponent & {

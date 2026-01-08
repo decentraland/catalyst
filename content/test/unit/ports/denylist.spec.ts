@@ -39,8 +39,8 @@ describe('when creating a denylist', () => {
       denylist = await createDenylist({ env, logs, fetcher, fs })
       await denylist.start!()
       expect(denylist.isDenylisted('denied1')).toBe(false)
-      expect(fs.createReadStream).not.toBeCalled()
-      expect(fetcher.fetch).not.toBeCalled()
+      expect(fs.createReadStream).not.toHaveBeenCalled()
+      expect(fetcher.fetch).not.toHaveBeenCalled()
     })
   })
   describe('with a denylist file and no urls to fetch denylists', () => {
@@ -59,8 +59,8 @@ describe('when creating a denylist', () => {
       const denylist = await createDenylist({ env, logs, fs, fetcher })
       await denylist.start!()
       expect(['denied1', 'denied2', 'denied3'].every((line) => denylist.isDenylisted(line))).toBe(true)
-      expect(fs.createReadStream).toBeCalledWith(denylistFilePath, { encoding: 'utf-8' })
-      expect(fetcher.fetch).not.toBeCalled()
+      expect(fs.createReadStream).toHaveBeenCalledWith(denylistFilePath, { encoding: 'utf-8' })
+      expect(fetcher.fetch).not.toHaveBeenCalled()
     })
   })
   describe('with urls to fetch denylists and no denylist file', () => {
@@ -78,7 +78,7 @@ describe('when creating a denylist', () => {
       await denylist.start!()
       expect(['denied3', 'denied4'].every((line) => denylist.isDenylisted(line))).toBe(true)
       expect(['denied1', 'denied2'].every((line) => denylist.isDenylisted(line))).toBe(false)
-      expect(fetcher.fetch).toBeCalledWith('https://config.decentraland.org/denylist')
+      expect(fetcher.fetch).toHaveBeenCalledWith('https://config.decentraland.org/denylist')
     })
 
     it('should create it without using the invalid url', async () => {
@@ -93,8 +93,8 @@ describe('when creating a denylist', () => {
       }
       denylist = await createDenylist({ env, logs, fs, fetcher })
       await denylist.start!()
-      expect(fetcher.fetch).toBeCalledWith('https://config.decentraland.org/denylist')
-      expect(fetcher.fetch).not.toBeCalledWith('invalidUrl')
+      expect(fetcher.fetch).toHaveBeenCalledWith('https://config.decentraland.org/denylist')
+      expect(fetcher.fetch).not.toHaveBeenCalledWith('invalidUrl')
     })
   })
   describe('with both a denylist file and urls to fetch denylists', () => {
@@ -112,7 +112,7 @@ describe('when creating a denylist', () => {
       await denylist.start!()
 
       expect(['denied1', 'denied2', 'denied3', 'denied4'].every((line) => denylist!.isDenylisted(line))).toBe(true)
-      expect(fetcher.fetch).toBeCalledWith('https://config.decentraland.org/denylist')
+      expect(fetcher.fetch).toHaveBeenCalledWith('https://config.decentraland.org/denylist')
     })
 
     it('should create it with no denied content other than the specified in the denylists', async () => {
@@ -128,7 +128,7 @@ describe('when creating a denylist', () => {
       denylist = await createDenylist({ env, logs, fs, fetcher })
       await denylist.start!()
       expect(['otherDenied1', 'otherDenied2'].every((line) => denylist!.isDenylisted(line))).toBe(false)
-      expect(fetcher.fetch).toBeCalledWith('https://config.decentraland.org/denylist')
+      expect(fetcher.fetch).toHaveBeenCalledWith('https://config.decentraland.org/denylist')
     })
   })
 

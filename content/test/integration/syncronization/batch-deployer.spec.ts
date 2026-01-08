@@ -57,7 +57,7 @@ describe('batch deployer - ', () => {
     for (let i = 0; i < numberOfDeployments; i++) {
       expect(markedAsDeployed.has(i)).toBeTruthy()
     }
-    expect(deployEntityFromRemoteServerSpy).toBeCalledTimes(1)
+    expect(deployEntityFromRemoteServerSpy).toHaveBeenCalledTimes(1)
   })
 
   it('multiple concurrent deployments with same entityId is done one time but markAsDeployed is called for both', async () => {
@@ -101,7 +101,7 @@ describe('batch deployer - ', () => {
       expect(markedAsDeployed.has(i)).toBeTruthy()
     }
 
-    expect(deployEntityFromRemoteServerSpy).toBeCalledTimes(1)
+    expect(deployEntityFromRemoteServerSpy).toHaveBeenCalledTimes(1)
   })
 
   it('five concurrent deployments with different entityId are done for each one and markAsDeployed is called for each one', async () => {
@@ -145,7 +145,7 @@ describe('batch deployer - ', () => {
       expect(markedAsDeployed.has(i)).toBeTruthy()
     }
 
-    expect(deployEntityFromRemoteServerSpy).toBeCalledTimes(numberOfDeployments)
+    expect(deployEntityFromRemoteServerSpy).toHaveBeenCalledTimes(numberOfDeployments)
   })
 
   it('markAsDeployed is called but not deployed for deployments that are already deployed', async () => {
@@ -171,7 +171,7 @@ describe('batch deployer - ', () => {
 
     await components.batchDeployer.onIdle()
     expect(markedAsDeployed.has(1)).toBeTruthy()
-    expect(deployEntityFromRemoteServerSpy).toBeCalledTimes(0)
+    expect(deployEntityFromRemoteServerSpy).toHaveBeenCalledTimes(0)
   })
 
   it('when a deployment fails, it is reported as failed deployment and markAsDeployed is called', async () => {
@@ -202,8 +202,8 @@ describe('batch deployer - ', () => {
 
     await components.batchDeployer.onIdle()
     expect(markedAsDeployed.has(1)).toBeTruthy()
-    expect(deployEntityFromRemoteServerSpy).toBeCalledTimes(1)
-    expect(reportFailureSpy).toBeCalledTimes(1)
+    expect(deployEntityFromRemoteServerSpy).toHaveBeenCalledTimes(1)
+    expect(reportFailureSpy).toHaveBeenCalledTimes(1)
   })
 
   it('when a deployment is successfull, consecutive ones with same entityId are ignored but markAsDeployed is called', async () => {
@@ -257,8 +257,8 @@ describe('batch deployer - ', () => {
     expect(markedAsDeployed.has(1)).toBeTruthy()
     expect(markedAsDeployed.has(2)).toBeTruthy()
     // Only the first one is truly deployed
-    expect(deployEntityFromRemoteServerSpy).toBeCalledTimes(1)
+    expect(deployEntityFromRemoteServerSpy).toHaveBeenCalledTimes(1)
     // It is consulted two times but by the first deployment (early noop and in-queue check)
-    expect(isEntityDeployedSpy).toBeCalledTimes(2)
+    expect(isEntityDeployedSpy).toHaveBeenCalledTimes(2)
   })
 })
