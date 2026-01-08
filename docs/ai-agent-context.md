@@ -12,6 +12,7 @@
 - **Entity Validation**: Uses @dcl/content-validator to validate all entity deployments before storage
 
 **Communication Pattern:**
+
 - Synchronous HTTP REST API (Content Server, Lambdas)
 - Real-time WebSocket/P2P (BFF, Archipelago)
 - NATS messaging between internal services
@@ -20,7 +21,7 @@
 
 - Runtime: Node.js
 - Language: TypeScript
-- HTTP Framework: @well-known-components/http-server
+- HTTP Framework: @dcl/http-server
 - Database: PostgreSQL (content metadata)
 - Storage: IPFS/local file system (entity content)
 - Component Architecture: @well-known-components (logger, metrics, http-server, pg-component)
