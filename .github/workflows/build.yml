@@ -14,7 +14,7 @@ jobs:
       - name: Use Node.js 24.x
         uses: actions/setup-node@v4
         with:
-          node-version: 24.x
+          node-version: '24.13'
           cache: yarn
       - name: install
         run: yarn install --frozen-lockfile
@@ -44,7 +44,7 @@ jobs:
       - name: Use Node.js 24.x
         uses: actions/setup-node@v4
         with:
-          node-version: 24.x
+          node-version: '24.13'
           cache: yarn
       - name: install
         run: yarn install --frozen-lockfile
@@ -60,7 +60,7 @@ jobs:
       - name: Use Node.js 24.x
         uses: actions/setup-node@v4
         with:
-          node-version: 24.x
+          node-version: '24.13'
           cache: yarn
       - name: install
         run: yarn install --frozen-lockfile
