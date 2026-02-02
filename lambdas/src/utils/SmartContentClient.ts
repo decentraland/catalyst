@@ -138,6 +138,13 @@ export class SmartContentClient implements ContentClient {
     throw new Error('New deployments are currently not supported')
   }
 
+  checkPointerConsistency(
+    _pointer: string,
+    _options?: RequestOptions
+  ): Promise<{ isConsistent: boolean; upToDateEntities?: Entity[]; outdatedEntities?: Entity[] }> {
+    throw new Error('Pointer consistency check is currently not supported')
+  }
+
   getContentUrl(): string {
     throw new Error('Get content url is currently not supported')
   }

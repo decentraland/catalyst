@@ -326,16 +326,9 @@
     "@well-known-components/metrics" "^2.0.1"
     lru-cache "^7.14.0"
 
-"@dcl/catalyst-api-specs@^3.3.0":
-  version "3.3.0"
-  resolved "https://registry.npmjs.org/@dcl/catalyst-api-specs/-/catalyst-api-specs-3.3.0.tgz"
-  integrity sha512-SwOY3+XRP0KBFOkUl4k4plSP8iYMd3On5iDcCeHkcWBuDvNplW2eydC2S9A6XHjjGwRZI7pmqMS9Q2LX1xeGGQ==
-  dependencies:
-    yaml "^2.3.4"
-
-"@dcl/catalyst-api-specs@https://sdk-team-cdn.decentraland.org/@dcl/catalyst-api-specs/branch/feat/add-name-color/dcl-catalyst-api-specs-3.7.1-21489944611.commit-677f8fd.tgz":
-  version "3.7.1-21489944611.commit-677f8fd"
-  resolved "https://sdk-team-cdn.decentraland.org/@dcl/catalyst-api-specs/branch/feat/add-name-color/dcl-catalyst-api-specs-3.7.1-21489944611.commit-677f8fd.tgz#a808a1a00856528926e5e94b86b23ec8c83d276e"
+"@dcl/catalyst-api-specs@https://sdk-team-cdn.decentraland.org/@dcl/catalyst-api-specs/branch/feat/add-name-color/dcl-catalyst-api-specs-3.7.1-21517318371.commit-990c595.tgz":
+  version "3.7.1-21517318371.commit-990c595"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl/catalyst-api-specs/branch/feat/add-name-color/dcl-catalyst-api-specs-3.7.1-21517318371.commit-990c595.tgz#c906c9023fa1a6564d30d67102c7aaa005ad8f4a"
   dependencies:
     yaml "^2.3.4"
 
@@ -372,22 +365,6 @@
   integrity sha512-xa9uSIkVOUHV2pkJMaTdmXI7cedbUMuxQbbp6p5tU/WViMbeGW065BkFbM64iGmbfpynLEYZwNsGocBB1o0o9g==
   dependencies:
     ethers "^5.6.8"
-
-"@dcl/content-validator@^7.0.3":
-  version "7.0.3"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-7.0.3.tgz#c25609060b72b33f114d2e1bb9cfbb8c6dd04880"
-  integrity sha512-0rfoU6OL1HolMJDtTiMCE4EOPRp+1udqF3u5ZwoVqQgQkK6NmS5reJc4DhMY7WkemVp6qGxL8i8F/BPpMukFbw==
-  dependencies:
-    "@dcl/block-indexer" "^1.1.2"
-    "@dcl/content-hash-tree" "^1.1.4"
-    "@dcl/hashing" "^3.0.4"
-    "@dcl/schemas" "20.4.1"
-    "@dcl/urn-resolver" "^3.6.0"
-    "@well-known-components/interfaces" "^1.4.3"
-    "@well-known-components/thegraph-component" "^1.6.0"
-    ms "^2.1.3"
-    p-queue "^6.6.2"
-    sharp "0.32.6"
 
 "@dcl/content-validator@https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/chore/bump-dcl-schemas/dcl-content-validator-7.0.4-21454618317.commit-aadb731.tgz":
   version "7.0.4-21454618317.commit-aadb731"
@@ -433,16 +410,6 @@
     "@dcl/core-commons" "0.5.1"
     "@well-known-components/interfaces" "^1.5.2"
 
-"@dcl/schemas@20.4.1":
-  version "20.4.1"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-20.4.1.tgz#b94943b46f1f2e672b743aa369877912d89a4fc7"
-  integrity sha512-lEbNJ8Iu7rHwoeaxGTUY0vWZaGbHbjcw0glaL21kk3KYNGTXgO0i9W9yKBzzHCBi3ff224u9RxA1XMa+9837CQ==
-  dependencies:
-    ajv "^8.11.0"
-    ajv-errors "^3.0.0"
-    ajv-keywords "^5.1.0"
-    mitt "^3.0.1"
-
 "@dcl/schemas@22.5.0", "@dcl/schemas@^22.5.0":
   version "22.5.0"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-22.5.0.tgz#59b3e3c7b1e336df30429bd3fdd6897ecb44baf9"
@@ -455,18 +422,8 @@
 
 "@dcl/schemas@^11.5.0":
   version "11.12.0"
-  resolved "https://registry.npmjs.org/@dcl/schemas/-/schemas-11.12.0.tgz"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-11.12.0.tgz#f52493b615ebdea8e02819bc2ed4a456239f3747"
   integrity sha512-L04KTucvxSnrHDAl3/rnkzhjfZ785dSSPeKarBVfzyuw41uyQ0Mh4HVFWjX9hC+f/nMpM5Adg5udlT5efmepcA==
-  dependencies:
-    ajv "^8.11.0"
-    ajv-errors "^3.0.0"
-    ajv-keywords "^5.1.0"
-    mitt "^3.0.1"
-
-"@dcl/schemas@^20.1.1":
-  version "20.2.0"
-  resolved "https://registry.npmjs.org/@dcl/schemas/-/schemas-20.2.0.tgz"
-  integrity sha512-7NIEDNvAybLrzUPcB700gMWs1zXlzsKOZCVKlph8/SLzloB84iT6gdyE1Zs0yyKmBx4+9G2B7ojf0sbQIqJ1XA==
   dependencies:
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
@@ -475,7 +432,7 @@
 
 "@dcl/schemas@^9.1.1", "@dcl/schemas@^9.2.0":
   version "9.15.0"
-  resolved "https://registry.npmjs.org/@dcl/schemas/-/schemas-9.15.0.tgz"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-9.15.0.tgz#81337faa396d21a2d1e704e5ec3cfd7b7b14343e"
   integrity sha512-nip5rsOcJplNfBWeImwezuHLprM0gLW03kEeqGIvT9J6HnEBTtvIwkk9+NSt7hzFKEvWGI+C23vyNWbG3nU+SQ==
   dependencies:
     ajv "^8.11.0"
@@ -1878,12 +1835,12 @@ aggregate-error@^3.0.0:
 
 ajv-errors@^3.0.0:
   version "3.0.0"
-  resolved "https://registry.npmjs.org/ajv-errors/-/ajv-errors-3.0.0.tgz"
+  resolved "https://registry.yarnpkg.com/ajv-errors/-/ajv-errors-3.0.0.tgz#e54f299f3a3d30fe144161e5f0d8d51196c527bc"
   integrity sha512-V3wD15YHfHz6y0KdhYFjyy9vWtEVALT9UrxfN3zqlI6dMioHnJrqOYfyPKol3oqrnCM9uwkcdCwkJ0WUcbLMTQ==
 
 ajv-keywords@^5.1.0:
   version "5.1.0"
-  resolved "https://registry.npmjs.org/ajv-keywords/-/ajv-keywords-5.1.0.tgz"
+  resolved "https://registry.yarnpkg.com/ajv-keywords/-/ajv-keywords-5.1.0.tgz#69d4d385a4733cdbeab44964a1170a88f87f0e16"
   integrity sha512-YCS/JNFAUyr5vAuhk1DWm1CBxRHW9LbJ2ozWeemrIqpbsqKjHVxYPyi5GC0rjZIT5JxJ3virVTS8wk4i/Z+krw==
   dependencies:
     fast-deep-equal "^3.1.3"
@@ -1899,14 +1856,14 @@ ajv@^6.10.0, ajv@^6.12.4, ajv@^6.12.6:
     uri-js "^4.2.2"
 
 ajv@^8.11.0:
-  version "8.12.0"
-  resolved "https://registry.npmjs.org/ajv/-/ajv-8.12.0.tgz"
-  integrity sha512-sRu1kpcO9yLtYxBKvqfTeh9KzZEwO3STyX1HT+4CaDzC6HpTGYhIhPIzj9XuKU7KYDwnaeh5hcOwjy1QuJzBPA==
+  version "8.17.1"
+  resolved "https://registry.yarnpkg.com/ajv/-/ajv-8.17.1.tgz#37d9a5c776af6bc92d7f4f9510eba4c0a60d11a6"
+  integrity sha512-B/gBuNg5SiMTrPkC+A2+cW0RszwxYmn6VYxB/inlBStS5nx6xHIt/ehKRhIMhqusl7a8LjQoZnjCs5vhwxOQ1g==
   dependencies:
-    fast-deep-equal "^3.1.1"
+    fast-deep-equal "^3.1.3"
+    fast-uri "^3.0.1"
     json-schema-traverse "^1.0.0"
     require-from-string "^2.0.2"
-    uri-js "^4.2.2"
 
 ansi-escapes@^4.2.1, ansi-escapes@^4.3.0:
   version "4.3.2"
@@ -2819,6 +2776,19 @@ dcl-catalyst-client@^21.7.0:
     cross-fetch "^3.1.5"
     form-data "^4.0.0"
 
+"dcl-catalyst-client@https://sdk-team-cdn.decentraland.org/@dcl/catalyst-client/branch/chore/bump-catalyst-api-specs/dcl-catalyst-client-21.10.3-21598057260.commit-2b2de27.tgz":
+  version "21.10.3-21598057260.commit-2b2de27"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl/catalyst-client/branch/chore/bump-catalyst-api-specs/dcl-catalyst-client-21.10.3-21598057260.commit-2b2de27.tgz#9946decfd427f5a1b053ff7e4ba49a8bd19644ee"
+  dependencies:
+    "@dcl/catalyst-contracts" "^4.4.0"
+    "@dcl/crypto" "^3.4.0"
+    "@dcl/hashing" "^3.0.0"
+    "@dcl/schemas" "^22.5.0"
+    "@well-known-components/fetch-component" "^2.0.0"
+    cookie "^0.5.0"
+    cross-fetch "^3.1.5"
+    form-data "^4.0.0"
+
 debug@2.6.9:
   version "2.6.9"
   resolved "https://registry.npmjs.org/debug/-/debug-2.6.9.tgz"
@@ -3480,7 +3450,7 @@ faker@5.5.3:
 
 fast-deep-equal@^3.1.1, fast-deep-equal@^3.1.3:
   version "3.1.3"
-  resolved "https://registry.npmjs.org/fast-deep-equal/-/fast-deep-equal-3.1.3.tgz"
+  resolved "https://registry.yarnpkg.com/fast-deep-equal/-/fast-deep-equal-3.1.3.tgz#3a7d56b559d6cbc3eb512325244e619a65c6c525"
   integrity sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==
 
 fast-diff@^1.1.2:
@@ -3513,6 +3483,11 @@ fast-levenshtein@^2.0.6, fast-levenshtein@~2.0.6:
   version "2.0.6"
   resolved "https://registry.npmjs.org/fast-levenshtein/-/fast-levenshtein-2.0.6.tgz"
   integrity sha512-DCXu6Ifhqcks7TZKY3Hxp3y6qphY5SJZmrWMDrKcERSOXWQdMhU9Ig/PYrzyw/ul9jOIyh0N4M0tbC5hodg8dw==
+
+fast-uri@^3.0.1:
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/fast-uri/-/fast-uri-3.1.0.tgz#66eecff6c764c0df9b762e62ca7edcfb53b4edfa"
+  integrity sha512-iPeeDKJSWf4IEOasVVrknXpaBV0IApz/gp7S2bb7Z4Lljbl2MGJRqInZiUrQwV16cpzw/D3S5j5Julj/gT52AA==
 
 fastq@^1.6.0:
   version "1.13.0"
@@ -4828,7 +4803,7 @@ json-schema-traverse@^0.4.1:
 
 json-schema-traverse@^1.0.0:
   version "1.0.0"
-  resolved "https://registry.npmjs.org/json-schema-traverse/-/json-schema-traverse-1.0.0.tgz"
+  resolved "https://registry.yarnpkg.com/json-schema-traverse/-/json-schema-traverse-1.0.0.tgz#ae7bcb3656ab77a73ba5c49bf654f38e6b6860e2"
   integrity sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug==
 
 json-stable-stringify-without-jsonify@^1.0.1:
@@ -5640,6 +5615,11 @@ path-to-regexp@0.1.10:
   resolved "https://registry.npmjs.org/path-to-regexp/-/path-to-regexp-0.1.10.tgz"
   integrity sha512-7lf7qcQidTku0Gu3YDPc8DJ1q7OOucfa/BSsIwjuh56VU7katFvuM8hULfkwB3Fns/rsVF7PwPKVw1sl5KQS9w==
 
+path-to-regexp@0.1.7:
+  version "0.1.7"
+  resolved "https://registry.yarnpkg.com/path-to-regexp/-/path-to-regexp-0.1.7.tgz#df604178005f522f15eb4490e7247a1bfaa67f8c"
+  integrity sha512-5DFkuoqlv1uYQKxy8omFBeJPQcdoE07Kv2sferDCrAq1ohOU+MSDswDIbnx3YAM60qIOnYa53wBhXW0EbMonrQ==
+
 path-to-regexp@^1.7.0:
   version "1.8.0"
   resolved "https://registry.npmjs.org/path-to-regexp/-/path-to-regexp-1.8.0.tgz"
@@ -5902,7 +5882,7 @@ punycode@1.3.2:
 
 punycode@^2.1.0:
   version "2.3.1"
-  resolved "https://registry.npmjs.org/punycode/-/punycode-2.3.1.tgz"
+  resolved "https://registry.yarnpkg.com/punycode/-/punycode-2.3.1.tgz#027422e2faec0b25e1549c3e1bd8309b9133b6e5"
   integrity sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==
 
 punycode@^2.1.1:
@@ -6056,7 +6036,7 @@ require-directory@^2.1.1:
 
 require-from-string@^2.0.2:
   version "2.0.2"
-  resolved "https://registry.npmjs.org/require-from-string/-/require-from-string-2.0.2.tgz"
+  resolved "https://registry.yarnpkg.com/require-from-string/-/require-from-string-2.0.2.tgz#89a7fdd938261267318eafe14f9c32e598c36909"
   integrity sha512-Xf0nWe6RseziFMu+Ap9biiUbmplq6S9/p+7w7YXP/JBHhrUDDUhwa+vANyubuqfZWTveU//DYVGsDG7RKL/vEw==
 
 require-main-filename@^2.0.0:
@@ -7001,7 +6981,7 @@ update-browserslist-db@^1.0.4:
 
 uri-js@^4.2.2:
   version "4.4.1"
-  resolved "https://registry.npmjs.org/uri-js/-/uri-js-4.4.1.tgz"
+  resolved "https://registry.yarnpkg.com/uri-js/-/uri-js-4.4.1.tgz#9b1a52595225859e55f669d928f88c6c57f2a77e"
   integrity sha512-7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg==
   dependencies:
     punycode "^2.1.0"
