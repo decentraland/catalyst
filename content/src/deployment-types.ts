@@ -63,6 +63,8 @@ export type AuditInfo = {
   overwrittenBy?: string
   isDenylisted?: boolean
   denylistedContent?: string[]
+  /** Optional attestation AuthChains for pending wearables/emotes (1 AuthChain per attestation) */
+  attestationAuthChains?: AuthChain[]
 }
 
 export type Deployment = DeploymentBase & {
@@ -84,7 +86,7 @@ export type PartialDeploymentHistory<T extends DeploymentBase> = {
   }
 }
 
-export type LocalDeploymentAuditInfo = Pick<AuditInfo, 'authChain'>
+export type LocalDeploymentAuditInfo = Pick<AuditInfo, 'authChain' | 'attestationAuthChains'>
 
 export type InvalidResult = { errors: string[] }
 export function InvalidResult(val: InvalidResult): InvalidResult {

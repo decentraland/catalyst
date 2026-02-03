@@ -44,6 +44,7 @@ import {
   createOnChainValidator,
   createSubgraphValidator
 } from './service/validations/validator'
+import { createAttestationAwareValidator } from './service/validations/attestation-validator-wrapper'
 import { AppComponents, GlobalContext } from './types'
 import { createJobComponent } from '@dcl/job-component'
 import { createDeploymentsComponent } from './logic/deployments'
@@ -156,11 +157,11 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const ignoreBlockChainAccess = env.getConfig(EnvironmentConfig.IGNORE_BLOCKCHAIN_ACCESS_CHECKS) === 'true'
 
-  let validate: ValidateFn
+  let baseValidate: ValidateFn
   if (ignoreBlockChainAccess) {
-    validate = await createIgnoreBlockchainValidator({ logs, externalCalls })
+    baseValidate = await createIgnoreBlockchainValidator({ logs, externalCalls })
   } else if (useOnChainValidator) {
-    validate = await createOnChainValidator(
+    baseValidate = await createOnChainValidator(
       {
         env,
         metrics,
@@ -171,7 +172,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       l2Provider
     )
   } else {
-    validate = await createSubgraphValidator({
+    baseValidate = await createSubgraphValidator({
       env,
       metrics,
       fetcher,
@@ -180,6 +181,13 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       logs
     })
   }
+
+  const attestationLogger = logs.getLogger('attestation-validator')
+  const validate = createAttestationAwareValidator({
+    baseValidator: baseValidate,
+    logger: attestationLogger,
+    enabled: true
+  })
 
   const validator = { validate }
 
