@@ -2774,6 +2774,19 @@ date-format@^4.0.10, date-format@^4.0.13:
     cross-fetch "^3.1.5"
     form-data "^4.0.0"
 
+"dcl-catalyst-client@https://sdk-team-cdn.decentraland.org/@dcl/catalyst-client/branch/chore/bump-catalyst-api-specs/dcl-catalyst-client-21.10.3-21642070214.commit-285d2e5.tgz":
+  version "21.10.3-21642070214.commit-285d2e5"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl/catalyst-client/branch/chore/bump-catalyst-api-specs/dcl-catalyst-client-21.10.3-21642070214.commit-285d2e5.tgz#40e1f4b370fae12e2416bedeacd85b0e34ede3cd"
+  dependencies:
+    "@dcl/catalyst-contracts" "^4.4.0"
+    "@dcl/crypto" "^3.4.0"
+    "@dcl/hashing" "^3.0.0"
+    "@dcl/schemas" "https://sdk-team-cdn.decentraland.org/@dcl/schemas/branch/feat/make-content-mandatory-again/dcl-schemas-22.5.1-21637687696.commit-b54b12b.tgz"
+    "@well-known-components/fetch-component" "^2.0.0"
+    cookie "^0.5.0"
+    cross-fetch "^3.1.5"
+    form-data "^4.0.0"
+
 debug@2.6.9:
   version "2.6.9"
   resolved "https://registry.npmjs.org/debug/-/debug-2.6.9.tgz"
