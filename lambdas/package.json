@@ -12,9 +12,9 @@
   },
   "dependencies": {
     "@dcl/catalyst-api-specs": "https://sdk-team-cdn.decentraland.org/@dcl/catalyst-api-specs/branch/feat/add-name-color/dcl-catalyst-api-specs-3.7.1-21517318371.commit-990c595.tgz",
-    "@dcl/content-validator": "https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/chore/bump-dcl-schemas/dcl-content-validator-7.0.4-21454618317.commit-aadb731.tgz",
+    "@dcl/content-validator": "https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/chore/bump-dcl-schemas/dcl-content-validator-7.0.4-21640283448.commit-a824e53.tgz",
     "@dcl/crypto": "^3.4.5",
-    "@dcl/schemas": "^22.5.0",
+    "@dcl/schemas": "https://sdk-team-cdn.decentraland.org/@dcl/schemas/branch/feat/make-content-mandatory-again/dcl-schemas-22.5.1-21637687696.commit-b54b12b.tgz",
     "@dcl/urn-resolver": "^3.6.0",
     "@well-known-components/env-config-provider": "^1.2.0",
     "@well-known-components/fetch-component": "^2.0.2",

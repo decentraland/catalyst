@@ -366,14 +366,14 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/chore/bump-dcl-schemas/dcl-content-validator-7.0.4-21454618317.commit-aadb731.tgz":
-  version "7.0.4-21454618317.commit-aadb731"
-  resolved "https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/chore/bump-dcl-schemas/dcl-content-validator-7.0.4-21454618317.commit-aadb731.tgz#dbc5a372ce8446695c04637d195a033727af8186"
+"@dcl/content-validator@https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/chore/bump-dcl-schemas/dcl-content-validator-7.0.4-21640283448.commit-a824e53.tgz":
+  version "7.0.4-21640283448.commit-a824e53"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/chore/bump-dcl-schemas/dcl-content-validator-7.0.4-21640283448.commit-a824e53.tgz#4f69a10bdc9626bdb967e94e97f02e5b00cc7a14"
   dependencies:
     "@dcl/block-indexer" "^1.1.2"
     "@dcl/content-hash-tree" "^1.1.4"
     "@dcl/hashing" "^3.0.4"
-    "@dcl/schemas" "22.5.0"
+    "@dcl/schemas" "https://sdk-team-cdn.decentraland.org/@dcl/schemas/branch/feat/make-content-mandatory-again/dcl-schemas-22.5.1-21637687696.commit-b54b12b.tgz"
     "@dcl/urn-resolver" "^3.6.0"
     "@well-known-components/interfaces" "^1.4.3"
     "@well-known-components/thegraph-component" "^1.6.0"
@@ -410,20 +410,10 @@
     "@dcl/core-commons" "0.5.1"
     "@well-known-components/interfaces" "^1.5.2"
 
-"@dcl/schemas@22.5.0", "@dcl/schemas@^22.5.0":
+"@dcl/schemas@^22.5.0":
   version "22.5.0"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-22.5.0.tgz#59b3e3c7b1e336df30429bd3fdd6897ecb44baf9"
   integrity sha512-cl3mCoB/G5CmG6KVFyWVl+9y9bP6Jzm/YKzdiuR8ej3843OxTt91SQBrBbVtrGsBVJeebTEPhwSrB2CIiMzXjg==
-  dependencies:
-    ajv "^8.11.0"
-    ajv-errors "^3.0.0"
-    ajv-keywords "^5.1.0"
-    mitt "^3.0.1"
-
-"@dcl/schemas@^11.5.0":
-  version "11.12.0"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-11.12.0.tgz#f52493b615ebdea8e02819bc2ed4a456239f3747"
-  integrity sha512-L04KTucvxSnrHDAl3/rnkzhjfZ785dSSPeKarBVfzyuw41uyQ0Mh4HVFWjX9hC+f/nMpM5Adg5udlT5efmepcA==
   dependencies:
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
@@ -438,6 +428,15 @@
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
+
+"@dcl/schemas@https://sdk-team-cdn.decentraland.org/@dcl/schemas/branch/feat/make-content-mandatory-again/dcl-schemas-22.5.1-21637687696.commit-b54b12b.tgz":
+  version "22.5.1-21637687696.commit-b54b12b"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl/schemas/branch/feat/make-content-mandatory-again/dcl-schemas-22.5.1-21637687696.commit-b54b12b.tgz#de45404f9fdc09e114a94648b6a01ac740e75700"
+  dependencies:
+    ajv "^8.11.0"
+    ajv-errors "^3.0.0"
+    ajv-keywords "^5.1.0"
+    mitt "^3.0.1"
 
 "@dcl/snapshots-fetcher@^9.1.0":
   version "9.1.0"
@@ -2761,20 +2760,6 @@ date-format@^4.0.10, date-format@^4.0.13:
   version "4.0.13"
   resolved "https://registry.npmjs.org/date-format/-/date-format-4.0.13.tgz"
   integrity sha512-bnYCwf8Emc3pTD8pXnre+wfnjGtfi5ncMDKy7+cWZXbmRAsdWkOQHrfC1yz/KiwP5thDp2kCHWYWKBX4HP1hoQ==
-
-dcl-catalyst-client@^21.7.0:
-  version "21.7.0"
-  resolved "https://registry.npmjs.org/dcl-catalyst-client/-/dcl-catalyst-client-21.7.0.tgz"
-  integrity sha512-10NyeYrKSh7yM5y7suLfoDeVAM9xknlvlxDBof1lJiuPYPzj5Aee8kaEDfXzVWTpfI7ssvSXhBlGVRvyd0RcJA==
-  dependencies:
-    "@dcl/catalyst-contracts" "^4.4.0"
-    "@dcl/crypto" "^3.4.0"
-    "@dcl/hashing" "^3.0.0"
-    "@dcl/schemas" "^11.5.0"
-    "@well-known-components/fetch-component" "^2.0.0"
-    cookie "^0.5.0"
-    cross-fetch "^3.1.5"
-    form-data "^4.0.0"
 
 "dcl-catalyst-client@https://sdk-team-cdn.decentraland.org/@dcl/catalyst-client/branch/chore/bump-catalyst-api-specs/dcl-catalyst-client-21.10.3-21598057260.commit-2b2de27.tgz":
   version "21.10.3-21598057260.commit-2b2de27"
@@ -5614,11 +5599,6 @@ path-to-regexp@0.1.10:
   version "0.1.10"
   resolved "https://registry.npmjs.org/path-to-regexp/-/path-to-regexp-0.1.10.tgz"
   integrity sha512-7lf7qcQidTku0Gu3YDPc8DJ1q7OOucfa/BSsIwjuh56VU7katFvuM8hULfkwB3Fns/rsVF7PwPKVw1sl5KQS9w==
-
-path-to-regexp@0.1.7:
-  version "0.1.7"
-  resolved "https://registry.yarnpkg.com/path-to-regexp/-/path-to-regexp-0.1.7.tgz#df604178005f522f15eb4490e7247a1bfaa67f8c"
-  integrity sha512-5DFkuoqlv1uYQKxy8omFBeJPQcdoE07Kv2sferDCrAq1ohOU+MSDswDIbnx3YAM60qIOnYa53wBhXW0EbMonrQ==
 
 path-to-regexp@^1.7.0:
   version "1.8.0"
