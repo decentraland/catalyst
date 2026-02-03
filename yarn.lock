@@ -326,9 +326,10 @@
     "@well-known-components/metrics" "^2.0.1"
     lru-cache "^7.14.0"
 
-"@dcl/catalyst-api-specs@https://sdk-team-cdn.decentraland.org/@dcl/catalyst-api-specs/branch/feat/add-name-color/dcl-catalyst-api-specs-3.7.1-21517318371.commit-990c595.tgz":
-  version "3.7.1-21517318371.commit-990c595"
-  resolved "https://sdk-team-cdn.decentraland.org/@dcl/catalyst-api-specs/branch/feat/add-name-color/dcl-catalyst-api-specs-3.7.1-21517318371.commit-990c595.tgz#c906c9023fa1a6564d30d67102c7aaa005ad8f4a"
+"@dcl/catalyst-api-specs@^3.8.0":
+  version "3.8.0"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-api-specs/-/catalyst-api-specs-3.8.0.tgz#7adf22113bb6f8d00ca78a421cabbdd484bd70e1"
+  integrity sha512-l0h3Q6O76bMH679FKeeIN3UWix+2D1tC2zSJAx7ROPZ42nZY3m4EGJIr5OI9aJAiYq0T/vTFNp7ypOnUOeBXiA==
   dependencies:
     yaml "^2.3.4"
 
@@ -366,14 +367,15 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/chore/bump-dcl-schemas/dcl-content-validator-7.0.4-21640283448.commit-a824e53.tgz":
-  version "7.0.4-21640283448.commit-a824e53"
-  resolved "https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/chore/bump-dcl-schemas/dcl-content-validator-7.0.4-21640283448.commit-a824e53.tgz#4f69a10bdc9626bdb967e94e97f02e5b00cc7a14"
+"@dcl/content-validator@^7.0.4":
+  version "7.0.4"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-7.0.4.tgz#bcc406ad75d52b545329cd493eb86142208ba42e"
+  integrity sha512-59PHE1VCkyOyEXJX3kGhifxJnD2NDUJDvIH2CrsgJylHxe8RppohB/jxIqHllsuSg8o2ueg08JGXXNzUfUWclA==
   dependencies:
     "@dcl/block-indexer" "^1.1.2"
     "@dcl/content-hash-tree" "^1.1.4"
     "@dcl/hashing" "^3.0.4"
-    "@dcl/schemas" "https://sdk-team-cdn.decentraland.org/@dcl/schemas/branch/feat/make-content-mandatory-again/dcl-schemas-22.5.1-21637687696.commit-b54b12b.tgz"
+    "@dcl/schemas" "^23.0.0"
     "@dcl/urn-resolver" "^3.6.0"
     "@well-known-components/interfaces" "^1.4.3"
     "@well-known-components/thegraph-component" "^1.6.0"
@@ -410,10 +412,10 @@
     "@dcl/core-commons" "0.5.1"
     "@well-known-components/interfaces" "^1.5.2"
 
-"@dcl/schemas@^22.5.0":
-  version "22.5.0"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-22.5.0.tgz#59b3e3c7b1e336df30429bd3fdd6897ecb44baf9"
-  integrity sha512-cl3mCoB/G5CmG6KVFyWVl+9y9bP6Jzm/YKzdiuR8ej3843OxTt91SQBrBbVtrGsBVJeebTEPhwSrB2CIiMzXjg==
+"@dcl/schemas@^23.0.0":
+  version "23.0.0"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-23.0.0.tgz#e15486e64b2f19e30a1be7edb3f551ceaf0999b8"
+  integrity sha512-DChEhcQZA3Q5uKsa5Z+5aG+bpIiqTCf8dOdx6dta0XmtCrdqMJgGuzu2ZW//7EmzXH6zlgsI+pUv3JpTFlleOA==
   dependencies:
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
@@ -428,15 +430,6 @@
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
-
-"@dcl/schemas@https://sdk-team-cdn.decentraland.org/@dcl/schemas/branch/feat/make-content-mandatory-again/dcl-schemas-22.5.1-21637687696.commit-b54b12b.tgz":
-  version "22.5.1-21637687696.commit-b54b12b"
-  resolved "https://sdk-team-cdn.decentraland.org/@dcl/schemas/branch/feat/make-content-mandatory-again/dcl-schemas-22.5.1-21637687696.commit-b54b12b.tgz#de45404f9fdc09e114a94648b6a01ac740e75700"
-  dependencies:
-    ajv "^8.11.0"
-    ajv-errors "^3.0.0"
-    ajv-keywords "^5.1.0"
-    mitt "^3.0.1"
 
 "@dcl/snapshots-fetcher@^9.1.0":
   version "9.1.0"
@@ -2761,27 +2754,15 @@ date-format@^4.0.10, date-format@^4.0.13:
   resolved "https://registry.npmjs.org/date-format/-/date-format-4.0.13.tgz"
   integrity sha512-bnYCwf8Emc3pTD8pXnre+wfnjGtfi5ncMDKy7+cWZXbmRAsdWkOQHrfC1yz/KiwP5thDp2kCHWYWKBX4HP1hoQ==
 
-"dcl-catalyst-client@https://sdk-team-cdn.decentraland.org/@dcl/catalyst-client/branch/chore/bump-catalyst-api-specs/dcl-catalyst-client-21.10.3-21598057260.commit-2b2de27.tgz":
-  version "21.10.3-21598057260.commit-2b2de27"
-  resolved "https://sdk-team-cdn.decentraland.org/@dcl/catalyst-client/branch/chore/bump-catalyst-api-specs/dcl-catalyst-client-21.10.3-21598057260.commit-2b2de27.tgz#9946decfd427f5a1b053ff7e4ba49a8bd19644ee"
+dcl-catalyst-client@^21.10.3:
+  version "21.10.3"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-21.10.3.tgz#c3eaf6edf712314f1aaf77f5d0e5a4d9b807a9aa"
+  integrity sha512-P3j+oSNwezqIN/MZtz0Ii8dmd5bTxziBqR2ifq4ZMydf016+MLSCwkexFZhz9wZ5eW0PN/bEOAcx4Rhx+xTcwg==
   dependencies:
     "@dcl/catalyst-contracts" "^4.4.0"
     "@dcl/crypto" "^3.4.0"
     "@dcl/hashing" "^3.0.0"
-    "@dcl/schemas" "^22.5.0"
-    "@well-known-components/fetch-component" "^2.0.0"
-    cookie "^0.5.0"
-    cross-fetch "^3.1.5"
-    form-data "^4.0.0"
-
-"dcl-catalyst-client@https://sdk-team-cdn.decentraland.org/@dcl/catalyst-client/branch/chore/bump-catalyst-api-specs/dcl-catalyst-client-21.10.3-21642070214.commit-285d2e5.tgz":
-  version "21.10.3-21642070214.commit-285d2e5"
-  resolved "https://sdk-team-cdn.decentraland.org/@dcl/catalyst-client/branch/chore/bump-catalyst-api-specs/dcl-catalyst-client-21.10.3-21642070214.commit-285d2e5.tgz#40e1f4b370fae12e2416bedeacd85b0e34ede3cd"
-  dependencies:
-    "@dcl/catalyst-contracts" "^4.4.0"
-    "@dcl/crypto" "^3.4.0"
-    "@dcl/hashing" "^3.0.0"
-    "@dcl/schemas" "https://sdk-team-cdn.decentraland.org/@dcl/schemas/branch/feat/make-content-mandatory-again/dcl-schemas-22.5.1-21637687696.commit-b54b12b.tgz"
+    "@dcl/schemas" "^23.0.0"
     "@well-known-components/fetch-component" "^2.0.0"
     cookie "^0.5.0"
     cross-fetch "^3.1.5"
