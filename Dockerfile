@@ -23,6 +23,10 @@ FROM base
 RUN apk update && apk upgrade
 
 COPY --from=dependencies /app/node_modules ./node_modules/
+
+# Remove file-type@15 (root workspace dep) before overlaying content's file-type@21
+# to prevent its stale nested token-types@2.1.1 from leaking into the merged tree
+RUN rm -rf ./node_modules/file-type
 COPY --from=dependencies /app/content/node_modules ./node_modules/
 
 COPY --from=catalyst-builder /app/content/dist/src content/
