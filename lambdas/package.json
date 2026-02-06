@@ -11,10 +11,10 @@
     "test": "jest --runInBand --forceExit --coverage"
   },
   "dependencies": {
-    "@dcl/catalyst-api-specs": "^3.3.0",
-    "@dcl/content-validator": "^7.0.3",
+    "@dcl/catalyst-api-specs": "^3.8.0",
+    "@dcl/content-validator": "^7.0.4",
     "@dcl/crypto": "^3.4.5",
-    "@dcl/schemas": "^20.1.1",
+    "@dcl/schemas": "^23.0.0",
     "@dcl/urn-resolver": "^3.6.0",
     "@well-known-components/env-config-provider": "^1.2.0",
     "@well-known-components/fetch-component": "^2.0.2",
@@ -25,7 +25,7 @@
     "@well-known-components/thegraph-component": "^1.6.0",
     "compression": "1.7.4",
     "cors": "2.8.5",
-    "dcl-catalyst-client": "^21.7.0",
+    "dcl-catalyst-client": "^21.10.3",
     "destroy": "1.2.0",
     "eth-connect": "^6.2.4",
     "express": "4.20.0",
