@@ -2,7 +2,7 @@ import { metricsDefinitions as snapshotFetcherMetricsDefinitions } from '@dcl/sn
 import { metricsDefinitions as blockIndexerMetricsDefinitions } from '@dcl/block-indexer'
 import { metricDeclarations as loggerMetricDeclarations } from '@well-known-components/logger'
 import { validateMetricsDeclaration } from '@well-known-components/metrics'
-import { getDefaultHttpMetrics } from '@well-known-components/http-server'
+import { getDefaultHttpMetrics } from '@dcl/wkc-http-server'
 import { metricDeclarations as theGraphMetricDeclarations } from '@well-known-components/thegraph-component'
 import { sequentialJobMetrics } from './ports/sequecuentialTaskExecutor'
 

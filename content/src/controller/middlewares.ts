@@ -3,7 +3,7 @@ import { AppComponents } from '../types'
 import { State } from '../ports/synchronizationState'
 import { Error } from '@dcl/catalyst-api-specs/lib/client'
 import { InvalidRequestError, NotFoundError } from '../types'
-import { Middleware } from '@well-known-components/http-server/dist/middleware'
+import { Middleware } from '@dcl/wkc-http-server/dist/middleware'
 
 export function preventExecutionIfBoostrapping({
   synchronizationState
