@@ -13,7 +13,10 @@ export type DatabaseTransactionalClient = DatabaseClient & {
 }
 
 export interface IDatabaseComponent extends IDatabase, IBaseComponent {
-  queryWithValues<T extends Record<string, any>>(sql: SQLStatement, durationQueryNameLabel?: string): Promise<IDatabase.IQueryResult<T>>
+  queryWithValues<T extends Record<string, any>>(
+    sql: SQLStatement,
+    durationQueryNameLabel?: string
+  ): Promise<IDatabase.IQueryResult<T>>
   streamQuery<T = any>(
     sql: SQLStatement,
     config?: { batchSize?: number },
@@ -99,7 +102,10 @@ export async function createDatabase(
           rowCount: rows.rowCount
         }
       },
-      async queryWithValues<T extends Record<string, any>>(sql: SQLStatement, durationQueryNameLabel?: string): Promise<IDatabase.IQueryResult<T>> {
+      async queryWithValues<T extends Record<string, any>>(
+        sql: SQLStatement,
+        durationQueryNameLabel?: string
+      ): Promise<IDatabase.IQueryResult<T>> {
         const endTimer = startTimer(durationQueryNameLabel)
         try {
           const rows = await queryClient.query<T[]>(sql)
