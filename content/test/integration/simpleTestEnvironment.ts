@@ -63,6 +63,7 @@ export async function clearDatabase(server: TestProgram): Promise<void> {
 export function resetServer(server: TestProgram): Promise<void> {
   server.components.activeEntities.reset()
   server.components.processedSnapshotStorage.reset()
+  server.components.deployRateLimiter.reset()
   return clearDatabase(server)
 }
 
