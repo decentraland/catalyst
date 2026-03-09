@@ -143,7 +143,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       entitiesConfigTtl:
         env.getConfig<Map<EntityType, number>>(EnvironmentConfig.DEPLOYMENT_RATE_LIMIT_TTL) ?? new Map(),
       entitiesConfigMax:
-        env.getConfig<Map<EntityType, number>>(EnvironmentConfig.DEPLOYMENT_RATE_LIMIT_MAX) ?? new Map()
+        env.getConfig<Map<EntityType, number>>(EnvironmentConfig.DEPLOYMENT_RATE_LIMIT_MAX) ?? new Map(),
+      entitiesConfigUnchangedTtl: new Map([[EntityType.PROFILE, ms('5m')]])
     }
   )
 

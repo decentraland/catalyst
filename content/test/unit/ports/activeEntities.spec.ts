@@ -457,7 +457,7 @@ async function buildComponents() {
   const logs = createLogsMockedComponent()
   const deployRateLimiter = createDeployRateLimiter(
     { logs },
-    { defaultMax: 300, defaultTtl: ms('1m'), entitiesConfigMax: new Map(), entitiesConfigTtl: new Map() }
+    { defaultMax: 300, defaultTtl: Math.floor(ms('1m') / 1000), entitiesConfigMax: new Map(), entitiesConfigTtl: new Map(), entitiesConfigUnchangedTtl: new Map() }
   )
   const metrics = createTestMetricsComponent(metricsDeclaration)
   const failedDeployments = await createFailedDeployments({ metrics, database })
