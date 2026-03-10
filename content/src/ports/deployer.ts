@@ -1,6 +1,7 @@
 import { bufferToStream } from '@dcl/catalyst-storage/dist/content-item'
 import { AuthChain, Authenticator } from '@dcl/crypto'
 import { Entity, EntityType, IPFSv2 } from '@dcl/schemas'
+import { isDeepStrictEqual } from 'util'
 import { EnvironmentConfig } from '../Environment'
 import {
   AuditInfo,
@@ -25,12 +26,14 @@ export function isIPFSHash(hash: string): boolean {
 }
 
 /**
- * Compare two entities' metadata, ignoring fields that change on every
- * deployment (id, timestamp, version, pointers). Since ADR-290, profiles
- * no longer carry content files so only metadata is compared.
+ * Compare two entities' metadata using deep equality (order-independent).
+ * id, timestamp, version and pointers are top-level Entity fields, not
+ * inside metadata, so they are excluded automatically.
+ * Since ADR-290, profiles no longer carry content files so only metadata
+ * is compared.
  */
 export function isEntityContentUnchanged(newEntity: Entity, activeEntity: Entity): boolean {
-  return JSON.stringify(newEntity.metadata) === JSON.stringify(activeEntity.metadata)
+  return isDeepStrictEqual(newEntity.metadata, activeEntity.metadata)
 }
 
 /**
@@ -227,18 +230,10 @@ export function createDeployer(
       areThereNewerEntities: (entity) => areThereNewerEntitiesOnPointers(entity),
       isEntityDeployedAlready: () => isEntityDeployedAlready,
       isNotFailedDeployment: (entity) => components.failedDeployments.findFailedDeployment(entity.id) === undefined,
-      isEntityRateLimited: (entity) => {
-        if (components.deployRateLimiter.isRateLimited(entity.type, entity.pointers)) {
-          return true
-        }
-        if (
-          isContentUnchanged &&
-          components.deployRateLimiter.isUnchangedDeploymentRateLimited(entity.type, entity.pointers)
-        ) {
-          return true
-        }
-        return false
-      },
+      isEntityRateLimited: (entity) =>
+        components.deployRateLimiter.isRateLimited(entity.type, entity.pointers) ||
+        (isContentUnchanged &&
+          components.deployRateLimiter.isUnchangedDeploymentRateLimited(entity.type, entity.pointers)),
       isRequestTtlBackwards: (entity) =>
         components.clock.now() - entity.timestamp >
         components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)

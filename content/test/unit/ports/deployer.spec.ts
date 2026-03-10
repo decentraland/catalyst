@@ -8,6 +8,7 @@ import { createTestMetricsComponent } from '@well-known-components/metrics'
 import assert from 'assert'
 import { HTTPProvider } from 'eth-connect'
 
+import { isEntityContentUnchanged } from '../../../src/ports/deployer'
 import { DEFAULT_ENTITIES_CACHE_SIZE, Environment, EnvironmentConfig } from '../../../src/Environment'
 import {
   Deployment,
@@ -249,6 +250,53 @@ describe('Deployer', function () {
       components: deployerComponents
     }
   }
+  describe('isEntityContentUnchanged', () => {
+    function entityWith(metadata: any): Entity {
+      return {
+        id: 'id',
+        type: EntityType.PROFILE,
+        pointers: ['0x1234'],
+        timestamp: Date.now(),
+        version: 'v3',
+        content: [],
+        metadata
+      }
+    }
+
+    it('should return true for identical metadata', () => {
+      const a = entityWith({ avatars: [{ name: 'test' }] })
+      const b = entityWith({ avatars: [{ name: 'test' }] })
+      expect(isEntityContentUnchanged(a, b)).toBe(true)
+    })
+
+    it('should return true when metadata keys are in different order', () => {
+      const a = entityWith({ name: 'test', color: 'red', size: 10 })
+      const b = entityWith({ size: 10, name: 'test', color: 'red' })
+      expect(isEntityContentUnchanged(a, b)).toBe(true)
+    })
+
+    it('should return false when metadata values differ', () => {
+      const a = entityWith({ avatars: [{ name: 'test' }] })
+      const b = entityWith({ avatars: [{ name: 'changed' }] })
+      expect(isEntityContentUnchanged(a, b)).toBe(false)
+    })
+
+    it('should return false when metadata has extra keys', () => {
+      const a = entityWith({ name: 'test' })
+      const b = entityWith({ name: 'test', extra: true })
+      expect(isEntityContentUnchanged(a, b)).toBe(false)
+    })
+
+    it('should ignore top-level entity fields (id, timestamp, pointers)', () => {
+      const a = entityWith({ avatars: [] })
+      const b = entityWith({ avatars: [] })
+      b.id = 'different-id'
+      b.timestamp = a.timestamp + 1000
+      b.pointers = ['0x5678']
+      expect(isEntityContentUnchanged(a, b)).toBe(true)
+    })
+  })
+
   function fakeDeployment(entityId?: string): Deployment {
     return {
       entityVersion: EntityVersion.V3,
