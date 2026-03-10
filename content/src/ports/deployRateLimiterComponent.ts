@@ -9,7 +9,6 @@ export type IDeployRateLimiterComponent = {
   isRateLimited(entityType: EntityType, pointers: string[]): boolean
   newUnchangedDeployment(entityType: EntityType, pointers: string[], localTimestamp: number): void
   isUnchangedDeploymentRateLimited(entityType: EntityType, pointers: string[]): boolean
-  reset(): void
 }
 
 export type DeploymentRateLimitConfig = {
@@ -80,15 +79,6 @@ export function createDeployRateLimiter(
     isUnchangedDeploymentRateLimited(entityType: EntityType, pointers: string[]): boolean {
       const cache = getUnchangedCacheFromEntityType(entityType)
       return pointers.some((p) => !!cache.get(p))
-    },
-
-    reset(): void {
-      for (const { cache } of deploymentCacheMap.values()) {
-        cache.flushAll()
-      }
-      for (const cache of unchangedDeploymentCacheMap.values()) {
-        cache.flushAll()
-      }
     }
   }
 }

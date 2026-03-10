@@ -13,6 +13,7 @@ import { DAOComponent } from '../../src/ports/dao-servers-getter'
 import { IDatabaseComponent, createDatabaseComponent } from '../../src/ports/postgres'
 import { AppComponents } from '../../src/types'
 import { MockedDAOClient } from '../helpers/service/synchronization/clients/MockedDAOClient'
+import { createNoOpDeployRateLimiter } from '../mocks/deploy-rate-limiter-mock'
 import { TestProgram } from './TestProgram'
 
 export class E2ETestEnvironment {
@@ -195,6 +196,9 @@ export class ServerBuilder {
         jest.spyOn(components.daoClient, 'getAllServers').mockImplementation(() => this.dao.getAllServers())
       }
 
+      // Override methods on the existing rate limiter object (not replace it)
+      // because the deployer captures its own reference to the original object
+      Object.assign(components.deployRateLimiter, createNoOpDeployRateLimiter())
       servers[i] = new TestProgram(components)
       this.testEnvCalls.registerServer(servers[i])
     }

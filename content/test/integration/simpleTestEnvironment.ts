@@ -8,6 +8,7 @@ import { createMigrationExecutor } from '../../src/migrations/migration-executor
 import { createDatabaseComponent } from '../../src/ports/postgres'
 import { MockedDAOClient } from '../helpers/service/synchronization/clients/MockedDAOClient'
 import { random } from 'faker'
+import { createNoOpDeployRateLimiter } from '../mocks/deploy-rate-limiter-mock'
 import { TestProgram } from './TestProgram'
 
 const TEST_SCHEMA = 'e2etest'
@@ -63,7 +64,6 @@ export async function clearDatabase(server: TestProgram): Promise<void> {
 export function resetServer(server: TestProgram): Promise<void> {
   server.components.activeEntities.reset()
   server.components.processedSnapshotStorage.reset()
-  server.components.deployRateLimiter.reset()
   return clearDatabase(server)
 }
 
@@ -107,6 +107,10 @@ async function createServer(
   dao.add(domain)
   const server = new TestProgram(components)
   server.components.daoClient = dao
+  // Override methods on the existing rate limiter object (not replace it)
+  // because the deployer captures its own reference to the original object
+  const noOp = createNoOpDeployRateLimiter()
+  Object.assign(server.components.deployRateLimiter, noOp)
   await server.startProgram()
   return server
 }

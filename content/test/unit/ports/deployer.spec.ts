@@ -7,7 +7,7 @@ import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import assert from 'assert'
 import { HTTPProvider } from 'eth-connect'
-import ms from 'ms'
+
 import { DEFAULT_ENTITIES_CACHE_SIZE, Environment, EnvironmentConfig } from '../../../src/Environment'
 import {
   Deployment,
@@ -24,7 +24,7 @@ import * as deployments from '../../../src/logic/deployments'
 import { metricsDeclaration } from '../../../src/metrics'
 import { createActiveEntitiesComponent } from '../../../src/ports/activeEntities'
 import { Denylist } from '../../../src/ports/denylist'
-import { createDeployRateLimiter } from '../../../src/ports/deployRateLimiterComponent'
+import { createNoOpDeployRateLimiter } from '../../mocks/deploy-rate-limiter-mock'
 import { createDeployedEntitiesBloomFilter } from '../../../src/ports/deployedEntitiesBloomFilter'
 import { createDeployer } from '../../../src/ports/deployer'
 import { createFailedDeployments } from '../../../src/ports/failedDeployments'
@@ -202,10 +202,7 @@ describe('Deployer', function () {
         LOG_LEVEL: 'DEBUG'
       })
     })
-    const deployRateLimiter = createDeployRateLimiter(
-      { logs },
-      { defaultMax: 300, defaultTtl: Math.floor(ms('1m') / 1000), entitiesConfigMax: new Map(), entitiesConfigTtl: new Map(), entitiesConfigUnchangedTtl: new Map() }
-    )
+    const deployRateLimiter = createNoOpDeployRateLimiter()
     const metrics = createTestMetricsComponent(metricsDeclaration)
     const failedDeployments = await createFailedDeployments({ metrics, database })
     const storage = createInMemoryStorage()
