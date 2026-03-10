@@ -1,6 +1,7 @@
 import { bufferToStream } from '@dcl/catalyst-storage/dist/content-item'
 import { AuthChain, Authenticator } from '@dcl/crypto'
 import { Entity, EntityType, IPFSv2 } from '@dcl/schemas'
+import { isDeepStrictEqual } from 'util'
 import { EnvironmentConfig } from '../Environment'
 import {
   AuditInfo,
@@ -22,6 +23,17 @@ import { DatabaseClient } from './postgres'
 
 export function isIPFSHash(hash: string): boolean {
   return IPFSv2.validate(hash)
+}
+
+/**
+ * Compare two entities' metadata using deep equality (order-independent).
+ * id, timestamp, version and pointers are top-level Entity fields, not
+ * inside metadata, so they are excluded automatically.
+ * Since ADR-290, profiles no longer carry content files so only metadata
+ * is compared.
+ */
+export function isEntityContentUnchanged(newEntity: Entity, activeEntity: Entity): boolean {
+  return isDeepStrictEqual(newEntity.metadata, activeEntity.metadata)
 }
 
 /**
@@ -93,12 +105,20 @@ export function createDeployer(
     entity: Entity,
     auditInfo: LocalDeploymentAuditInfo,
     hashes: Map<string, Uint8Array>,
-    context: DeploymentContext
+    context: DeploymentContext,
+    isContentUnchanged: boolean
   ): Promise<InvalidResult | { auditInfoComplete: AuditInfo; wasEntityDeployed: boolean }> {
     const deployedEntity = await getEntityById(database, entityId)
     const isEntityAlreadyDeployed = !!deployedEntity
 
-    const validationResult = await validateDeployment(entity, context, isEntityAlreadyDeployed, auditInfo, hashes)
+    const validationResult = await validateDeployment(
+      entity,
+      context,
+      isEntityAlreadyDeployed,
+      auditInfo,
+      hashes,
+      isContentUnchanged
+    )
 
     if (!validationResult.ok) {
       logger.warn(`Validations for deployment failed`, {
@@ -202,14 +222,18 @@ export function createDeployer(
     context: DeploymentContext,
     isEntityDeployedAlready: boolean,
     auditInfo: LocalDeploymentAuditInfo,
-    hashes: Map<string, Uint8Array>
+    hashes: Map<string, Uint8Array>,
+    isContentUnchanged: boolean
   ): Promise<{ ok: boolean; errors?: string[] }> {
     // When deploying a new entity in some context which is not sync, we run some server side checks
     const serverValidationResult = await components.serverValidator.validate(entity, context, {
       areThereNewerEntities: (entity) => areThereNewerEntitiesOnPointers(entity),
       isEntityDeployedAlready: () => isEntityDeployedAlready,
       isNotFailedDeployment: (entity) => components.failedDeployments.findFailedDeployment(entity.id) === undefined,
-      isEntityRateLimited: (entity) => components.deployRateLimiter.isRateLimited(entity.type, entity.pointers),
+      isEntityRateLimited: (entity) =>
+        components.deployRateLimiter.isRateLimited(entity.type, entity.pointers) ||
+        (isContentUnchanged &&
+          components.deployRateLimiter.isUnchangedDeploymentRateLimited(entity.type, entity.pointers)),
       isRequestTtlBackwards: (entity) =>
         components.clock.now() - entity.timestamp >
         components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
@@ -292,6 +316,19 @@ export function createDeployer(
 
       const contextToDeploy: DeploymentContext = calculateIfLegacy(entity, auditInfo.authChain, context)
 
+      // Check if the entity content is unchanged from the currently active entity
+      let isContentUnchanged = false
+      if (context === DeploymentContext.LOCAL) {
+        try {
+          const activeEntities = await components.activeEntities.withPointers(components.database, entity.pointers)
+          if (activeEntities.length > 0) {
+            isContentUnchanged = isEntityContentUnchanged(entity, activeEntities[0])
+          }
+        } catch (error) {
+          logger.warn(`Failed to check if entity content is unchanged, assuming changed`, { entityId })
+        }
+      }
+
       try {
         logger.info(`Deploying entity`, {
           entityId,
@@ -304,7 +341,8 @@ export function createDeployer(
           entity,
           auditInfo,
           hashes,
-          contextToDeploy
+          contextToDeploy,
+          isContentUnchanged
         )
 
         if (!storeResult) {
@@ -348,6 +386,14 @@ export function createDeployer(
             entity.pointers,
             storeResult.auditInfoComplete.localTimestamp
           )
+
+          if (isContentUnchanged) {
+            components.deployRateLimiter.newUnchangedDeployment(
+              entity.type,
+              entity.pointers,
+              storeResult.auditInfoComplete.localTimestamp
+            )
+          }
         }
 
         // add the entity to the bloom filter to prevent expensive operations during the sync

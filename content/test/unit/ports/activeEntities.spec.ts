@@ -4,7 +4,7 @@ import { Entity, EntityType, EthAddress } from '@dcl/schemas'
 import { IDatabase } from '@well-known-components/interfaces'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { HTTPProvider } from 'eth-connect'
-import ms from 'ms'
+
 import { SQLStatement } from 'sql-template-strings'
 import { Deployment } from '../../../src/deployment-types'
 import { DEFAULT_ENTITIES_CACHE_SIZE, Environment, EnvironmentConfig } from '../../../src/Environment'
@@ -14,7 +14,7 @@ import { ActiveEntities, createActiveEntitiesComponent } from '../../../src/port
 import { createClock } from '../../../src/ports/clock'
 import { Denylist } from '../../../src/ports/denylist'
 import { createDeployedEntitiesBloomFilter } from '../../../src/ports/deployedEntitiesBloomFilter'
-import { createDeployRateLimiter } from '../../../src/ports/deployRateLimiterComponent'
+import { createNoOpDeployRateLimiter } from '../../mocks/deploy-rate-limiter-mock'
 import { createFailedDeployments } from '../../../src/ports/failedDeployments'
 import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
 import { EntityVersion } from '../../../src/types'
@@ -455,10 +455,7 @@ async function buildComponents() {
   const clock = createClock()
   const serverValidator = new NoOpServerValidator()
   const logs = createLogsMockedComponent()
-  const deployRateLimiter = createDeployRateLimiter(
-    { logs },
-    { defaultMax: 300, defaultTtl: ms('1m'), entitiesConfigMax: new Map(), entitiesConfigTtl: new Map() }
-  )
+  const deployRateLimiter = createNoOpDeployRateLimiter()
   const metrics = createTestMetricsComponent(metricsDeclaration)
   const failedDeployments = await createFailedDeployments({ metrics, database })
   const storage = createInMemoryStorage()

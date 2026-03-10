@@ -7,6 +7,8 @@ import { AppComponents } from '../types'
 export type IDeployRateLimiterComponent = {
   newDeployment(entityType: EntityType, pointers: string[], localTimestamp: number): void
   isRateLimited(entityType: EntityType, pointers: string[]): boolean
+  newUnchangedDeployment(entityType: EntityType, pointers: string[], localTimestamp: number): void
+  isUnchangedDeploymentRateLimited(entityType: EntityType, pointers: string[]): boolean
 }
 
 export type DeploymentRateLimitConfig = {
@@ -14,6 +16,7 @@ export type DeploymentRateLimitConfig = {
   defaultMax: number
   entitiesConfigTtl: Map<EntityType, number>
   entitiesConfigMax: Map<EntityType, number>
+  entitiesConfigUnchangedTtl: Map<EntityType, number>
 }
 
 export function createDeployRateLimiter(
@@ -27,8 +30,21 @@ export function createDeployRateLimiter(
     rateLimitConfig
   )
 
+  const unchangedDeploymentCacheMap: Map<EntityType, NodeCache> = generateUnchangedDeploymentCacheMap(
+    logs,
+    rateLimitConfig
+  )
+
   function getCacheFromEntityType(entityType: EntityType): { cache: NodeCache; maxSize: number } {
     const cache = deploymentCacheMap.get(entityType)
+    if (!cache) {
+      throw new Error(`Invalid Entity Type: ${entityType}`)
+    }
+    return cache
+  }
+
+  function getUnchangedCacheFromEntityType(entityType: EntityType): NodeCache {
+    const cache = unchangedDeploymentCacheMap.get(entityType)
     if (!cache) {
       throw new Error(`Invalid Entity Type: ${entityType}`)
     }
@@ -38,7 +54,7 @@ export function createDeployRateLimiter(
   return {
     newDeployment(entityType: EntityType, pointers: string[], localTimestamp: number): void {
       const cacheByEntityType = getCacheFromEntityType(entityType)
-      for (const pointer in pointers) {
+      for (const pointer of pointers) {
         cacheByEntityType.cache.set(pointer, localTimestamp)
       }
     },
@@ -51,8 +67,44 @@ export function createDeployRateLimiter(
         pointers.some((p) => !!cacheByEntityType.cache.get(p)) ||
         cacheByEntityType.cache.stats.keys > cacheByEntityType.maxSize
       )
+    },
+
+    newUnchangedDeployment(entityType: EntityType, pointers: string[], localTimestamp: number): void {
+      const cache = getUnchangedCacheFromEntityType(entityType)
+      for (const pointer of pointers) {
+        cache.set(pointer, localTimestamp)
+      }
+    },
+
+    isUnchangedDeploymentRateLimited(entityType: EntityType, pointers: string[]): boolean {
+      const cache = getUnchangedCacheFromEntityType(entityType)
+      return pointers.some((p) => !!cache.get(p))
     }
   }
+}
+
+function generateUnchangedDeploymentCacheMap(
+  logs: ILoggerComponent.ILogger,
+  rateLimitConfig: DeploymentRateLimitConfig
+): Map<EntityType, NodeCache> {
+  const unchangedCacheMap: Map<EntityType, NodeCache> = new Map()
+
+  for (const entityType of Object.values(EntityType)) {
+    const ttl: number = toSeconds(rateLimitConfig.entitiesConfigUnchangedTtl.get(entityType) ?? 0)
+    unchangedCacheMap.set(entityType, new NodeCache({ stdTTL: ttl, checkperiod: ttl }))
+  }
+
+  const configEntries: string[] = []
+  for (const [entityType, cache] of unchangedCacheMap) {
+    if (cache.options.stdTTL && cache.options.stdTTL > 0) {
+      configEntries.push(`${entityType}: { unchanged_ttl: ${cache.options.stdTTL} }`)
+    }
+  }
+  if (configEntries.length > 0) {
+    logs.info(`Unchanged deployment rate limit configured for:\n${configEntries.join('\n')}`)
+  }
+
+  return unchangedCacheMap
 }
 
 function generateDeploymentCacheMap(
@@ -97,6 +149,13 @@ function toString(deploymentCacheMap: Map<EntityType, { cache: NodeCache; maxSiz
   return stringifyMap.join('\n')
 }
 
+/**
+ * Convert milliseconds to seconds for NodeCache stdTTL which expects seconds.
+ */
+function toSeconds(milliseconds: number): number {
+  return Math.floor(milliseconds / 1000)
+}
+
 function getCacheConfigPerEntityMap(
   entitiesConfigMax: Map<EntityType, number>,
   entitiesConfigTtl: Map<EntityType, number>
@@ -106,28 +165,28 @@ function getCacheConfigPerEntityMap(
       EntityType.PROFILE,
       {
         max: entitiesConfigMax.get(EntityType.PROFILE) ?? 300,
-        ttl: entitiesConfigTtl.get(EntityType.PROFILE) ?? ms('1m')
+        ttl: toSeconds(entitiesConfigTtl.get(EntityType.PROFILE) ?? ms('15s'))
       }
     ],
     [
       EntityType.SCENE,
       {
         max: entitiesConfigMax.get(EntityType.SCENE) ?? 100000,
-        ttl: entitiesConfigTtl.get(EntityType.SCENE) ?? ms('20s')
+        ttl: toSeconds(entitiesConfigTtl.get(EntityType.SCENE) ?? ms('20s'))
       }
     ],
     [
       EntityType.WEARABLE,
       {
         max: entitiesConfigMax.get(EntityType.WEARABLE) ?? 100000,
-        ttl: entitiesConfigTtl.get(EntityType.WEARABLE) ?? ms('20s')
+        ttl: toSeconds(entitiesConfigTtl.get(EntityType.WEARABLE) ?? ms('20s'))
       }
     ],
     [
       EntityType.STORE,
       {
         max: entitiesConfigMax.get(EntityType.STORE) ?? 300,
-        ttl: entitiesConfigTtl.get(EntityType.STORE) ?? ms('1m')
+        ttl: toSeconds(entitiesConfigTtl.get(EntityType.STORE) ?? ms('1m'))
       }
     ]
   ])
