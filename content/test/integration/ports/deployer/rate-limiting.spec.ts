@@ -13,6 +13,7 @@ const UNCHANGED_TTL_MS = 5000
 describe('Rate limiting E2E', () => {
   let server: TestProgram
   let currentTime: number
+  let dateNowSpy: jest.SpyInstance
 
   /**
    * Advances the mocked Date.now() by the given milliseconds.
@@ -50,13 +51,13 @@ describe('Rate limiting E2E', () => {
 
   beforeEach(async () => {
     currentTime = Date.now()
-    jest.spyOn(Date, 'now').mockImplementation(() => currentTime)
+    dateNowSpy = jest.spyOn(Date, 'now').mockImplementation(() => currentTime)
     await resetServer(server)
     applyRealRateLimiter()
   })
 
   afterEach(() => {
-    jest.restoreAllMocks()
+    dateNowSpy.mockRestore()
   })
 
   afterAll(async () => {
