@@ -32,7 +32,7 @@ function isRequestTtlForwards(components: Pick<AppComponents, 'clock'>, entity: 
 const localChecks = async (
   entity: Entity,
   serviceCalls: ServiceCalls,
-  components: Pick<AppComponents, 'metrics' | 'clock'>
+  components: Pick<AppComponents, 'clock'>
 ): Promise<string | undefined> => {
   /** Validate that there are no newer deployments on the entity's pointers */
   if (await serviceCalls.areThereNewerEntities(entity))
@@ -46,7 +46,6 @@ const localChecks = async (
 
   /** Validate the deployment is not rate limited */
   if (await serviceCalls.isEntityRateLimited(entity)) {
-    components.metrics.increment('dcl_content_rate_limited_deployments_total', { entity_type: entity.type })
     return `Entity rate limited (entityId=${entity.id} pointers=${entity.pointers.join(',')}).`
   }
 
@@ -78,7 +77,7 @@ export const IGNORING_FIX_ERROR = 'Ignoring fix for failed deployment since ther
  * Server side validations for current deploying entity for LOCAL and FIX_ATTEMPT contexts
  */
 export const createServerValidator = (
-  components: Pick<AppComponents, 'failedDeployments' | 'metrics' | 'clock'>
+  components: Pick<AppComponents, 'failedDeployments' | 'clock'>
 ): ServerValidator => ({
   validate: async (entity, context, serviceCalls) => {
     // these contexts doesn't validate anything in this side
