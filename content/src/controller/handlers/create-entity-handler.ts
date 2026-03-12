@@ -19,6 +19,7 @@ export async function createEntity(
 
   const logger = logs.getLogger('create-entity')
   const entityId: string = context.formData.fields.entityId.value
+  const userAgent: string = context.request.headers.get('user-agent') ?? 'unknown'
 
   let authChain = extractAuthChain(context.formData.fields)
   const ethAddress: EthAddress = authChain ? authChain[0].payload : ''
@@ -52,13 +53,18 @@ export async function createEntity(
 
     if (isSuccessfulDeployment(deploymentResult)) {
       metrics.increment('dcl_deployments_endpoint_counter', { kind: 'success' })
+      logger.info(`POST /entities - Deployment successful`, { entityId, ethAddress, userAgent })
       return {
         status: 200,
         body: { creationTimestamp: deploymentResult }
       }
     } else if (isInvalidDeployment(deploymentResult)) {
       metrics.increment('dcl_deployments_endpoint_counter', { kind: 'validation_error' })
-      logger.error(`POST /entities - Deployment failed (${deploymentResult.errors.join(',')})`)
+      logger.error(`POST /entities - Deployment failed (${deploymentResult.errors.join(',')})`, {
+        entityId,
+        ethAddress,
+        userAgent
+      })
       return {
         status: 400,
         body: { errors: deploymentResult.errors }
@@ -73,7 +79,8 @@ export async function createEntity(
       entityId,
       authChain: JSON.stringify(authChain),
       ethAddress,
-      signature
+      signature,
+      userAgent
     })
     logger.error(error)
     throw error

@@ -1,18 +1,28 @@
 import { EntityType } from '@dcl/schemas'
-import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import LeakDetector from 'jest-leak-detector'
 import { createDeployRateLimiter } from '../../../../src/ports/deployRateLimiterComponent'
 import { makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
-import { buildDeployData, buildDeployDataAfterEntity } from '../../E2ETestUtils'
+import { buildDeployData, buildDeployDataAfterEntity, EntityCombo } from '../../E2ETestUtils'
 import { TestProgram } from '../../TestProgram'
 import { createDefaultServer, resetServer } from '../../simpleTestEnvironment'
 
-// Short TTLs for testing (in milliseconds — converted to seconds internally by the rate limiter)
+// Short TTLs for testing (in milliseconds)
 const NORMAL_TTL_MS = 2000
 const UNCHANGED_TTL_MS = 5000
 
 describe('Rate limiting E2E', () => {
   let server: TestProgram
+  let currentTime: number
+  let dateNowSpy: jest.SpyInstance
+
+  /**
+   * Advances the mocked Date.now() by the given milliseconds.
+   * NodeCache and the deployer's Clock component both rely on Date.now(),
+   * so this controls TTL expiration without real sleeps.
+   */
+  function advanceTime(ms: number): void {
+    currentTime += ms
+  }
 
   /**
    * Creates a real rate limiter with short TTLs and assigns its methods
@@ -20,7 +30,7 @@ describe('Rate limiting E2E', () => {
    * captures a reference to the same object via Object.assign in the
    * test environment setup.
    */
-  function applyRealRateLimiter() {
+  function applyRealRateLimiter(): void {
     const realRateLimiter = createDeployRateLimiter(
       { logs: server.components.logs },
       {
@@ -36,15 +46,18 @@ describe('Rate limiting E2E', () => {
 
   beforeAll(async () => {
     server = await createDefaultServer()
-    // Bypass protocol validation (blockchain checks) but keep server
-    // validation active — rate limiting is part of server validation
     makeNoopValidator(server.components)
   })
 
   beforeEach(async () => {
+    currentTime = Date.now()
+    dateNowSpy = jest.spyOn(Date, 'now').mockImplementation(() => currentTime)
     await resetServer(server)
-    // Fresh rate limiter per test so cached entries don't leak across tests
     applyRealRateLimiter()
+  })
+
+  afterEach(() => {
+    dateNowSpy.mockRestore()
   })
 
   afterAll(async () => {
@@ -55,101 +68,125 @@ describe('Rate limiting E2E', () => {
     expect(await detector.isLeaking()).toBe(false)
   })
 
-  it('should reject a deployment to the same pointer within the rate limit TTL', async () => {
-    const { deployData: d1 } = await buildDeployData(['X100,Y100', 'X100,Y101'], {
-      metadata: { v: 1 }
+  describe('when deploying to the same pointer within the normal TTL', () => {
+    let firstDeploy: EntityCombo
+    let secondDeploy: EntityCombo
+
+    beforeEach(async () => {
+      firstDeploy = await buildDeployData(['X100,Y100', 'X100,Y101'], {
+        metadata: { v: 1 }
+      })
+      await server.deployEntity(firstDeploy.deployData)
+
+      secondDeploy = await buildDeployDataAfterEntity(
+        { timestamp: currentTime },
+        ['X100,Y100', 'X100,Y101'],
+        { metadata: { v: 2 } }
+      )
     })
-    await server.deployEntity(d1)
 
-    // Different entity (different metadata → different entity ID) to the same pointers
-    const { deployData: d2 } = await buildDeployDataAfterEntity(
-      { timestamp: Date.now() },
-      ['X100,Y100', 'X100,Y101'],
-      { metadata: { v: 2 } }
-    )
-
-    await expect(server.deployEntity(d2)).rejects.toThrow(/rate limited/i)
-  })
-
-  it('should allow a deployment after the normal rate limit TTL expires', async () => {
-    const { deployData: d1 } = await buildDeployData(['X200,Y200'], {
-      metadata: { v: 1 }
+    it('should reject the deployment', async () => {
+      await expect(server.deployEntity(secondDeploy.deployData)).rejects.toThrow(/rate limited/i)
     })
-    const ts1 = await server.deployEntity(d1)
-
-    // Wait for the 2s TTL to expire
-    await sleep(NORMAL_TTL_MS + 1000)
-
-    const { deployData: d2 } = await buildDeployDataAfterEntity(
-      { timestamp: ts1 },
-      ['X200,Y200'],
-      { metadata: { v: 2 } }
-    )
-
-    // Should succeed — TTL has expired
-    const ts2 = await server.deployEntity(d2)
-    expect(ts2).toBeGreaterThan(ts1)
   })
 
-  it('should apply a longer rate limit TTL when the same metadata is re-deployed', async () => {
-    const metadata = { outfit: 'red-shirt', version: 1 }
+  describe('when deploying after the normal TTL has expired', () => {
+    let firstTimestamp: number
+    let secondDeploy: EntityCombo
 
-    // Deploy 1: initial deployment
-    const { deployData: d1 } = await buildDeployData(['X300,Y300'], { metadata })
-    const ts1 = await server.deployEntity(d1)
+    beforeEach(async () => {
+      const { deployData: d1 } = await buildDeployData(['X200,Y200'], {
+        metadata: { v: 1 }
+      })
+      firstTimestamp = await server.deployEntity(d1)
 
-    // Wait for normal TTL (2s) to expire
-    await sleep(NORMAL_TTL_MS + 1000)
+      advanceTime(NORMAL_TTL_MS + 1000)
 
-    // Deploy 2: same metadata → succeeds, but registers in the unchanged cache (5s TTL)
-    const { deployData: d2 } = await buildDeployDataAfterEntity(
-      { timestamp: ts1 },
-      ['X300,Y300'],
-      { metadata }
-    )
-    const ts2 = await server.deployEntity(d2)
-    expect(ts2).toBeGreaterThan(ts1)
+      secondDeploy = await buildDeployDataAfterEntity(
+        { timestamp: firstTimestamp },
+        ['X200,Y200'],
+        { metadata: { v: 2 } }
+      )
+    })
 
-    // Wait for normal TTL (2s) to expire, but NOT the unchanged TTL (5s)
-    await sleep(NORMAL_TTL_MS + 1000)
-
-    // Deploy 3: same metadata again → should be rate-limited by the unchanged cache
-    const { deployData: d3 } = await buildDeployDataAfterEntity(
-      { timestamp: ts2 },
-      ['X300,Y300'],
-      { metadata }
-    )
-    await expect(server.deployEntity(d3)).rejects.toThrow(/rate limited/i)
+    it('should allow the deployment', async () => {
+      const secondTimestamp: number = await server.deployEntity(secondDeploy.deployData)
+      expect(secondTimestamp).toBeGreaterThan(firstTimestamp)
+    })
   })
 
-  it('should allow a deployment with changed metadata even when the unchanged rate limit TTL is active', async () => {
+  describe('when re-deploying with the same metadata (unchanged content)', () => {
     const metadata = { outfit: 'red-shirt', version: 1 }
+    let secondTimestamp: number
 
-    // Deploy 1: initial deployment
-    const { deployData: d1 } = await buildDeployData(['X400,Y400'], { metadata })
-    const ts1 = await server.deployEntity(d1)
+    beforeEach(async () => {
+      const { deployData: d1 } = await buildDeployData(['X300,Y300'], { metadata })
+      const firstTimestamp: number = await server.deployEntity(d1)
 
-    // Wait for normal TTL to expire
-    await sleep(NORMAL_TTL_MS + 1000)
+      advanceTime(NORMAL_TTL_MS + 1000)
 
-    // Deploy 2: same metadata → sets the unchanged cache (5s TTL)
-    const { deployData: d2 } = await buildDeployDataAfterEntity(
-      { timestamp: ts1 },
-      ['X400,Y400'],
-      { metadata }
-    )
-    const ts2 = await server.deployEntity(d2)
+      const { deployData: d2 } = await buildDeployDataAfterEntity(
+        { timestamp: firstTimestamp },
+        ['X300,Y300'],
+        { metadata }
+      )
+      secondTimestamp = await server.deployEntity(d2)
+    })
 
-    // Wait for normal TTL to expire, but NOT unchanged TTL
-    await sleep(NORMAL_TTL_MS + 1000)
+    describe('and the normal TTL has expired but the unchanged TTL has not', () => {
+      let thirdDeploy: EntityCombo
 
-    // Deploy 3: DIFFERENT metadata → unchanged check doesn't apply → should succeed
-    const { deployData: d3 } = await buildDeployDataAfterEntity(
-      { timestamp: ts2 },
-      ['X400,Y400'],
-      { metadata: { outfit: 'blue-shirt', version: 2 } }
-    )
-    const ts3 = await server.deployEntity(d3)
-    expect(ts3).toBeGreaterThan(ts2)
+      beforeEach(async () => {
+        advanceTime(NORMAL_TTL_MS + 1000)
+
+        thirdDeploy = await buildDeployDataAfterEntity(
+          { timestamp: secondTimestamp },
+          ['X300,Y300'],
+          { metadata }
+        )
+      })
+
+      it('should reject the deployment', async () => {
+        await expect(server.deployEntity(thirdDeploy.deployData)).rejects.toThrow(/rate limited/i)
+      })
+    })
+  })
+
+  describe('when the unchanged TTL is active from a previous identical deployment', () => {
+    const metadata = { outfit: 'red-shirt', version: 1 }
+    let secondTimestamp: number
+
+    beforeEach(async () => {
+      const { deployData: d1 } = await buildDeployData(['X400,Y400'], { metadata })
+      const firstTimestamp: number = await server.deployEntity(d1)
+
+      advanceTime(NORMAL_TTL_MS + 1000)
+
+      const { deployData: d2 } = await buildDeployDataAfterEntity(
+        { timestamp: firstTimestamp },
+        ['X400,Y400'],
+        { metadata }
+      )
+      secondTimestamp = await server.deployEntity(d2)
+
+      advanceTime(NORMAL_TTL_MS + 1000)
+    })
+
+    describe('and the new deployment has different metadata', () => {
+      let thirdDeploy: EntityCombo
+
+      beforeEach(async () => {
+        thirdDeploy = await buildDeployDataAfterEntity(
+          { timestamp: secondTimestamp },
+          ['X400,Y400'],
+          { metadata: { outfit: 'blue-shirt', version: 2 } }
+        )
+      })
+
+      it('should allow the deployment', async () => {
+        const thirdTimestamp: number = await server.deployEntity(thirdDeploy.deployData)
+        expect(thirdTimestamp).toBeGreaterThan(secondTimestamp)
+      })
+    })
   })
 })
