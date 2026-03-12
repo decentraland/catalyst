@@ -32,7 +32,7 @@ describe('Rate limiting E2E', () => {
    */
   function applyRealRateLimiter(): void {
     const realRateLimiter = createDeployRateLimiter(
-      { logs: server.components.logs },
+      { logs: server.components.logs, metrics: server.components.metrics },
       {
         defaultTtl: NORMAL_TTL_MS,
         defaultMax: 10000,

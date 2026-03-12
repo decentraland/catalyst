@@ -20,7 +20,7 @@ export type DeploymentRateLimitConfig = {
 }
 
 export function createDeployRateLimiter(
-  components: Pick<AppComponents, 'logs'>,
+  components: Pick<AppComponents, 'logs' | 'metrics'>,
   rateLimitConfig: DeploymentRateLimitConfig
 ): IDeployRateLimiterComponent {
   const logs: ILoggerComponent.ILogger = components.logs.getLogger('DeployRateLimiterComponent')
@@ -34,6 +34,11 @@ export function createDeployRateLimiter(
     logs,
     rateLimitConfig
   )
+
+  // Set static max size gauge for each entity type
+  for (const [entityType, { maxSize }] of deploymentCacheMap) {
+    components.metrics.observe('dcl_content_rate_limiter_cache_max_size', { entity_type: entityType }, maxSize)
+  }
 
   function getCacheFromEntityType(entityType: EntityType): { cache: NodeCache; maxSize: number } {
     const cache = deploymentCacheMap.get(entityType)
@@ -57,16 +62,28 @@ export function createDeployRateLimiter(
       for (const pointer of pointers) {
         cacheByEntityType.cache.set(pointer, localTimestamp)
       }
+      components.metrics.observe(
+        'dcl_content_rate_limiter_cache_keys',
+        { entity_type: entityType, cache_type: 'deployment' },
+        cacheByEntityType.cache.stats.keys
+      )
     },
 
     /** Check if the entity should be rate limit: no deployment has been made for the same pointer in the last ttl
      * and no more than max size of deployments were made either   */
     isRateLimited(entityType: EntityType, pointers: string[]): boolean {
       const cacheByEntityType = getCacheFromEntityType(entityType)
-      return (
-        pointers.some((p) => !!cacheByEntityType.cache.get(p)) ||
-        cacheByEntityType.cache.stats.keys > cacheByEntityType.maxSize
-      )
+      const ttlHit = pointers.some((p) => !!cacheByEntityType.cache.get(p))
+      const maxSizeHit = cacheByEntityType.cache.stats.keys > cacheByEntityType.maxSize
+
+      if (ttlHit || maxSizeHit) {
+        components.metrics.increment('dcl_content_rate_limited_deployments_total', {
+          entity_type: entityType,
+          reason: ttlHit ? 'ttl' : 'max_size'
+        })
+      }
+
+      return ttlHit || maxSizeHit
     },
 
     newUnchangedDeployment(entityType: EntityType, pointers: string[], localTimestamp: number): void {
@@ -74,11 +91,23 @@ export function createDeployRateLimiter(
       for (const pointer of pointers) {
         cache.set(pointer, localTimestamp)
       }
+      components.metrics.observe(
+        'dcl_content_rate_limiter_cache_keys',
+        { entity_type: entityType, cache_type: 'unchanged' },
+        cache.stats.keys
+      )
     },
 
     isUnchangedDeploymentRateLimited(entityType: EntityType, pointers: string[]): boolean {
       const cache = getUnchangedCacheFromEntityType(entityType)
-      return pointers.some((p) => !!cache.get(p))
+      const limited = pointers.some((p) => !!cache.get(p))
+      if (limited) {
+        components.metrics.increment('dcl_content_rate_limited_deployments_total', {
+          entity_type: entityType,
+          reason: 'unchanged_ttl'
+        })
+      }
+      return limited
     }
   }
 }

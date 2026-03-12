@@ -136,7 +136,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const failedDeployments = await createFailedDeployments({ metrics, database })
 
   const deployRateLimiter = createDeployRateLimiter(
-    { logs },
+    { logs, metrics },
     {
       defaultTtl: env.getConfig(EnvironmentConfig.DEPLOYMENTS_DEFAULT_RATE_LIMIT_TTL) ?? ms('1m'),
       defaultMax: env.getConfig(EnvironmentConfig.DEPLOYMENTS_DEFAULT_RATE_LIMIT_MAX) ?? 300,
@@ -184,7 +184,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const validator = { validate }
 
-  const serverValidator = createServerValidator({ failedDeployments, metrics, clock })
+  const serverValidator = createServerValidator({ failedDeployments, clock })
 
   const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, clock })
   const deployments = createDeploymentsComponent({ database, logs })
