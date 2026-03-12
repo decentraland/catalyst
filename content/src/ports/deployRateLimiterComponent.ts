@@ -76,16 +76,10 @@ export function createDeployRateLimiter(
       const ttlHit = pointers.some((p) => !!cacheByEntityType.cache.get(p))
       const maxSizeHit = cacheByEntityType.cache.stats.keys > cacheByEntityType.maxSize
 
-      if (ttlHit) {
+      if (ttlHit || maxSizeHit) {
         components.metrics.increment('dcl_content_rate_limited_deployments_total', {
           entity_type: entityType,
-          reason: 'ttl'
-        })
-      }
-      if (maxSizeHit) {
-        components.metrics.increment('dcl_content_rate_limited_deployments_total', {
-          entity_type: entityType,
-          reason: 'max_size'
+          reason: ttlHit ? 'ttl' : 'max_size'
         })
       }
 
