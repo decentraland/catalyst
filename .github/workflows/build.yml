@@ -64,6 +64,8 @@ jobs:
           cache: yarn
       - name: install
         run: yarn install --frozen-lockfile
+      - name: ensure sharp platform binary
+        run: npm rebuild sharp
       - name: create .env
         run: echo "" >> .env
       - name: test
