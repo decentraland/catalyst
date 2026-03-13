@@ -161,6 +161,12 @@ export function createBatchDeployerComponent(
                 )
                 wasEntityProcessed = true
                 successfulDeployments.add(entity.entityId)
+                logs.info(`Synced deployment successful`, {
+                  entityType: entity.entityType,
+                  entityId: entity.entityId,
+                  pointer: entity.pointers?.[0],
+                  servers: elementInMap.servers.join(',')
+                })
               } catch (err: any) {
                 const errorDescription = err.toString()
                 logs.warn(`Entity deployment failed`, {

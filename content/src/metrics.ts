@@ -72,6 +72,18 @@ export const metricsDeclaration = validateMetricsDeclaration({
   dcl_content_rate_limited_deployments_total: {
     help: 'Total failed deployments due rate limit',
     type: 'counter',
+    labelNames: ['entity_type', 'reason']
+  },
+
+  dcl_content_rate_limiter_cache_keys: {
+    help: 'Current number of keys in rate limiter caches',
+    type: 'gauge',
+    labelNames: ['entity_type', 'cache_type']
+  },
+
+  dcl_content_rate_limiter_cache_max_size: {
+    help: 'Configured max size for deployment rate limiter cache',
+    type: 'gauge',
     labelNames: ['entity_type']
   },
 
