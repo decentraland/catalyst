@@ -157,7 +157,8 @@ export function createBatchDeployerComponent(
                   entity.entityType,
                   entity.authChain,
                   elementInMap.servers,
-                  DeploymentContext.SYNCED
+                  DeploymentContext.SYNCED,
+                  (entity as any).attestationAuthChains
                 )
                 wasEntityProcessed = true
                 successfulDeployments.add(entity.entityId)

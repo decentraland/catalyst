@@ -2,6 +2,7 @@ import { PostEntity200, PostEntity400 } from '@dcl/catalyst-api-specs/lib/client
 import { Field } from '@well-known-components/multipart-wrapper'
 import { AuthChain, Authenticator, AuthLink, EthAddress, Signature } from '@dcl/crypto'
 import { DeploymentContext, isInvalidDeployment, isSuccessfulDeployment } from '../../deployment-types'
+import { parseAttestationsFromField } from '../../service/validations/attestations'
 import { FormHandlerContextWithPath, InvalidRequestError } from '../../types'
 
 type ContentFile = {
@@ -42,7 +43,11 @@ export async function createEntity(
       deployFiles.push({ path: filename, content: file.value })
     }
 
-    const auditInfo = { authChain, version: 'v3' }
+    const ownershipAttestations = parseAttestationsFromField(context.formData.fields.ownershipAttestations?.value)
+    const attestationAuthChains =
+      ownershipAttestations.length > 0 ? ownershipAttestations.map((att) => att.authChain) : undefined
+
+    const auditInfo = { authChain, attestationAuthChains }
 
     const deploymentResult = await deployer.deployEntity(
       deployFiles.map(({ content }) => content),

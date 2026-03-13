@@ -14,6 +14,7 @@ export type HistoricalDeployment = SnapshotSyncDeployment & {
   deployerAddress: string
   version: string
   overwrittenBy?: string
+  attestationAuthChains?: AuthChain[]
 }
 
 export interface HistoricalDeploymentsRow {
@@ -27,6 +28,7 @@ export interface HistoricalDeploymentsRow {
   entity_pointers: string[]
   local_timestamp: number
   auth_chain: AuthChain
+  attestation_auth_chains?: AuthChain[] | null
   deleter_deployment: number
 
   overwritten_by?: string
@@ -89,6 +91,7 @@ export function getHistoricalDeploymentsQuery(
                   dep1.deployer_address,
                   dep1.version,
                   dep1.auth_chain,
+                  dep1.attestation_auth_chains,
                   date_part('epoch', dep1.local_timestamp) * 1000 AS local_timestamp
               FROM deployments AS dep1`
 
@@ -207,7 +210,8 @@ export async function getHistoricalDeployments(
       version: row.version,
       authChain: row.auth_chain,
       localTimestamp: row.local_timestamp,
-      overwrittenBy: row.overwritten_by ?? undefined
+      overwrittenBy: row.overwritten_by ?? undefined,
+      attestationAuthChains: row.attestation_auth_chains ?? undefined
     })
   )
 
@@ -277,14 +281,15 @@ export async function saveDeployment(
 ): Promise<DeploymentId> {
   const deployer = Authenticator.ownerAddress(auditInfo.authChain)
   const metadata = entity.metadata ? { v: entity.metadata } : null // We want to be able to store whatever we want, but psql is heavily typed. So we will wrap the metadata with an object
+  const attestationAuthChains = auditInfo.attestationAuthChains ? JSON.stringify(auditInfo.attestationAuthChains) : null
   const query = SQL`INSERT INTO deployments
-  (deployer_address, version, entity_type, entity_id, entity_timestamp, entity_pointers, entity_metadata, local_timestamp, auth_chain, deleter_deployment)
+  (deployer_address, version, entity_type, entity_id, entity_timestamp, entity_pointers, entity_metadata, local_timestamp, auth_chain, attestation_auth_chains, deleter_deployment)
   VALUES
   (${deployer}, ${entity.version}, ${entity.type}, ${entity.id}, to_timestamp(${entity.timestamp} / 1000.0), ${
     entity.pointers
   }, ${metadata}, to_timestamp(${auditInfo.localTimestamp} / 1000.0), ${JSON.stringify(
     auditInfo.authChain
-  )}, ${overwrittenBy})
+  )}, ${attestationAuthChains}, ${overwrittenBy})
   RETURNING id`
   const queryResult = await database.queryWithValues<{ id: number }>(query, 'save_deployment')
   return queryResult.rows[0].id
