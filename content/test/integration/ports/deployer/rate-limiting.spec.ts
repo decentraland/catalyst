@@ -1,5 +1,6 @@
 import { EntityType } from '@dcl/schemas'
 import LeakDetector from 'jest-leak-detector'
+import { DeploymentContext } from '../../../../src/deployment-types'
 import { createDeployRateLimiter } from '../../../../src/ports/deployRateLimiterComponent'
 import { makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { buildDeployData, buildDeployDataAfterEntity, EntityCombo } from '../../E2ETestUtils'
@@ -187,6 +188,94 @@ describe('Rate limiting E2E', () => {
         const thirdTimestamp: number = await server.deployEntity(thirdDeploy.deployData)
         expect(thirdTimestamp).toBeGreaterThan(secondTimestamp)
       })
+    })
+  })
+
+  describe('when a synced deployment arrives before a local deployment', () => {
+    let syncedEntity: EntityCombo
+    let localEntity: EntityCombo
+
+    beforeEach(async () => {
+      syncedEntity = await buildDeployData(['X500,Y500', 'X500,Y501'], {
+        metadata: { v: 1 }
+      })
+
+      await server.components.deployer.deployEntity(
+        Array.from(syncedEntity.deployData.files.values()),
+        syncedEntity.deployData.entityId,
+        { authChain: syncedEntity.deployData.authChain },
+        DeploymentContext.SYNCED
+      )
+
+      localEntity = await buildDeployDataAfterEntity(
+        { timestamp: currentTime },
+        ['X500,Y500', 'X500,Y501'],
+        { metadata: { v: 2 } }
+      )
+    })
+
+    it('should allow the local deployment on the same pointers', async () => {
+      const localTimestamp: number = await server.deployEntity(localEntity.deployData)
+      expect(localTimestamp).toBeGreaterThan(0)
+    })
+  })
+
+  describe('when a fix-attempt deployment arrives before a local deployment', () => {
+    let fixEntity: EntityCombo
+    let localEntity: EntityCombo
+
+    beforeEach(async () => {
+      fixEntity = await buildDeployData(['X600,Y600', 'X600,Y601'], {
+        metadata: { v: 1 }
+      })
+
+      await server.components.deployer.deployEntity(
+        Array.from(fixEntity.deployData.files.values()),
+        fixEntity.deployData.entityId,
+        { authChain: fixEntity.deployData.authChain },
+        DeploymentContext.FIX_ATTEMPT
+      )
+
+      localEntity = await buildDeployDataAfterEntity(
+        { timestamp: currentTime },
+        ['X600,Y600', 'X600,Y601'],
+        { metadata: { v: 2 } }
+      )
+    })
+
+    it('should allow the local deployment on the same pointers', async () => {
+      const localTimestamp: number = await server.deployEntity(localEntity.deployData)
+      expect(localTimestamp).toBeGreaterThan(0)
+    })
+  })
+
+  describe('when multiple synced deployments arrive to the same pointer', () => {
+    let localEntity: EntityCombo
+
+    beforeEach(async () => {
+      for (let i = 0; i < 3; i++) {
+        const syncedEntity: EntityCombo = await buildDeployData(['X700,Y700'], {
+          metadata: { v: i },
+          timestamp: currentTime + i
+        })
+        await server.components.deployer.deployEntity(
+          Array.from(syncedEntity.deployData.files.values()),
+          syncedEntity.deployData.entityId,
+          { authChain: syncedEntity.deployData.authChain },
+          DeploymentContext.SYNCED
+        )
+      }
+
+      localEntity = await buildDeployDataAfterEntity(
+        { timestamp: currentTime + 10 },
+        ['X700,Y700'],
+        { metadata: { v: 'local' } }
+      )
+    })
+
+    it('should allow the local deployment on the same pointer', async () => {
+      const localTimestamp: number = await server.deployEntity(localEntity.deployData)
+      expect(localTimestamp).toBeGreaterThan(0)
     })
   })
 })
