@@ -380,19 +380,22 @@ export function createDeployer(
             1
           )
 
-          // Insert in deployments cache the updated entities
-          components.deployRateLimiter.newDeployment(
-            entity.type,
-            entity.pointers,
-            storeResult.auditInfoComplete.localTimestamp
-          )
-
-          if (isContentUnchanged) {
-            components.deployRateLimiter.newUnchangedDeployment(
+          // Only record in rate limiter for LOCAL deployments to prevent
+          // synced/fix-attempt entities from polluting the cache
+          if (context === DeploymentContext.LOCAL) {
+            components.deployRateLimiter.newDeployment(
               entity.type,
               entity.pointers,
               storeResult.auditInfoComplete.localTimestamp
             )
+
+            if (isContentUnchanged) {
+              components.deployRateLimiter.newUnchangedDeployment(
+                entity.type,
+                entity.pointers,
+                storeResult.auditInfoComplete.localTimestamp
+              )
+            }
           }
         }
 

@@ -217,6 +217,20 @@ function getCacheConfigPerEntityMap(
         max: entitiesConfigMax.get(EntityType.STORE) ?? 300,
         ttl: toSeconds(entitiesConfigTtl.get(EntityType.STORE) ?? ms('1m'))
       }
+    ],
+    [
+      EntityType.EMOTE,
+      {
+        max: entitiesConfigMax.get(EntityType.EMOTE) ?? 100000,
+        ttl: toSeconds(entitiesConfigTtl.get(EntityType.EMOTE) ?? ms('20s'))
+      }
+    ],
+    [
+      EntityType.OUTFITS,
+      {
+        max: entitiesConfigMax.get(EntityType.OUTFITS) ?? 100000,
+        ttl: toSeconds(entitiesConfigTtl.get(EntityType.OUTFITS) ?? ms('20s'))
+      }
     ]
   ])
 }
