@@ -232,7 +232,8 @@ export function createDeployer(
       isNotFailedDeployment: (entity) => components.failedDeployments.findFailedDeployment(entity.id) === undefined,
       isEntityRateLimited: (entity) =>
         components.deployRateLimiter.isRateLimited(entity.type, entity.pointers) ||
-        (isContentUnchanged &&
+        (entity.type === EntityType.PROFILE &&
+          isContentUnchanged &&
           components.deployRateLimiter.isUnchangedDeploymentRateLimited(entity.type, entity.pointers)),
       isRequestTtlBackwards: (entity) =>
         components.clock.now() - entity.timestamp >
@@ -316,9 +317,10 @@ export function createDeployer(
 
       const contextToDeploy: DeploymentContext = calculateIfLegacy(entity, auditInfo.authChain, context)
 
-      // Check if the entity content is unchanged from the currently active entity
+      // Check if the entity content is unchanged from the currently active entity.
+      // Only relevant for profiles, which have unchanged content rate limiting.
       let isContentUnchanged = false
-      if (context === DeploymentContext.LOCAL) {
+      if (context === DeploymentContext.LOCAL && entity.type === EntityType.PROFILE) {
         try {
           const activeEntities = await components.activeEntities.withPointers(components.database, entity.pointers)
           if (activeEntities.length > 0) {
@@ -380,19 +382,22 @@ export function createDeployer(
             1
           )
 
-          // Insert in deployments cache the updated entities
-          components.deployRateLimiter.newDeployment(
-            entity.type,
-            entity.pointers,
-            storeResult.auditInfoComplete.localTimestamp
-          )
-
-          if (isContentUnchanged) {
-            components.deployRateLimiter.newUnchangedDeployment(
+          // Only record in rate limiter for LOCAL deployments to prevent
+          // synced/fix-attempt entities from polluting the cache
+          if (context === DeploymentContext.LOCAL) {
+            components.deployRateLimiter.newDeployment(
               entity.type,
               entity.pointers,
               storeResult.auditInfoComplete.localTimestamp
             )
+
+            if (entity.type === EntityType.PROFILE && isContentUnchanged) {
+              components.deployRateLimiter.newUnchangedDeployment(
+                entity.type,
+                entity.pointers,
+                storeResult.auditInfoComplete.localTimestamp
+              )
+            }
           }
         }
 
