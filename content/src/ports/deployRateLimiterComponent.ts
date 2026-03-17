@@ -193,8 +193,8 @@ function getCacheConfigPerEntityMap(
     [
       EntityType.PROFILE,
       {
-        max: entitiesConfigMax.get(EntityType.PROFILE) ?? 300,
-        ttl: toSeconds(entitiesConfigTtl.get(EntityType.PROFILE) ?? ms('15s'))
+        max: entitiesConfigMax.get(EntityType.PROFILE) ?? 500,
+        ttl: toSeconds(entitiesConfigTtl.get(EntityType.PROFILE) ?? ms('3s'))
       }
     ],
     [
