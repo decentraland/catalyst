@@ -1511,7 +1511,7 @@
 
 "@types/sharp@0.30.5":
   version "0.30.5"
-  resolved "https://registry.npmjs.org/@types/sharp/-/sharp-0.30.5.tgz"
+  resolved "https://registry.yarnpkg.com/@types/sharp/-/sharp-0.30.5.tgz#d75d91f7acf5260525aeae229845046dcff6d17a"
   integrity sha512-EhO29617AIBqxoVtpd1qdBanWpspk/kD2B6qTFRJ31Q23Rdf+DNU1xlHSwtqvwq1vgOqBwq1i38SX+HGCymIQg==
   dependencies:
     "@types/node" "*"

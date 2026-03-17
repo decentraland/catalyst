@@ -34,7 +34,7 @@ import { ContentAuthenticator } from './service/auth/Authenticator'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { PointerManager } from './service/pointers/PointerManager'
 import { IChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
-import { ContentCluster } from './service/synchronization/ContentCluster'
+import { IContentClusterComponent } from './logic/cluster'
 import { IRetryFailedDeploymentsComponent } from './service/synchronization/retryFailedDeployments'
 import { ServerValidator } from './service/validations/server'
 import { ProcessedSnapshotsStorageComponent } from './ports/processedSnapshotStorage'
@@ -83,7 +83,7 @@ export type AppComponents = {
   synchronizationState: SynchronizationState
   deployedEntitiesBloomFilter: DeployedEntitiesBloomFilter
   challengeSupervisor: IChallengeSupervisor
-  contentCluster: ContentCluster
+  contentCluster: IContentClusterComponent
   pointerManager: PointerManager
   failedDeployments: IFailedDeploymentsComponent
   deployRateLimiter: IDeployRateLimiterComponent

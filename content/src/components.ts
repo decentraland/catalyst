@@ -34,7 +34,7 @@ import { ContentAuthenticator } from './service/auth/Authenticator'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { PointerManager } from './service/pointers/PointerManager'
 import { ChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
-import { ContentCluster } from './service/synchronization/ContentCluster'
+import { createContentCluster } from './logic/cluster'
 import { createBatchDeployerComponent } from './service/synchronization/batchDeployer'
 import { createRetryFailedDeployments } from './service/synchronization/retryFailedDeployments'
 import { createServerValidator } from './service/validations/server'
@@ -118,11 +118,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     : [env.getConfig(EnvironmentConfig.DECENTRALAND_ADDRESS)]
   const authenticator = new ContentAuthenticator(l1Provider, decentralandAddresses as EthAddress[])
 
-  const contentCluster = new ContentCluster(
+  const contentCluster = createContentCluster(
     {
       daoClient,
-      challengeSupervisor,
-      fetcher,
       logs,
       env,
       clock
