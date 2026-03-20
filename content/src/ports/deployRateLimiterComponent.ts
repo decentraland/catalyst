@@ -200,14 +200,14 @@ function getCacheConfigPerEntityMap(
     [
       EntityType.SCENE,
       {
-        max: entitiesConfigMax.get(EntityType.SCENE) ?? 100000,
+        max: entitiesConfigMax.get(EntityType.SCENE) ?? 1000,
         ttl: toSeconds(entitiesConfigTtl.get(EntityType.SCENE) ?? ms('20s'))
       }
     ],
     [
       EntityType.WEARABLE,
       {
-        max: entitiesConfigMax.get(EntityType.WEARABLE) ?? 100000,
+        max: entitiesConfigMax.get(EntityType.WEARABLE) ?? 1000,
         ttl: toSeconds(entitiesConfigTtl.get(EntityType.WEARABLE) ?? ms('20s'))
       }
     ],
@@ -215,21 +215,21 @@ function getCacheConfigPerEntityMap(
       EntityType.STORE,
       {
         max: entitiesConfigMax.get(EntityType.STORE) ?? 300,
-        ttl: toSeconds(entitiesConfigTtl.get(EntityType.STORE) ?? ms('1m'))
+        ttl: toSeconds(entitiesConfigTtl.get(EntityType.STORE) ?? ms('3s'))
       }
     ],
     [
       EntityType.EMOTE,
       {
-        max: entitiesConfigMax.get(EntityType.EMOTE) ?? 100000,
+        max: entitiesConfigMax.get(EntityType.EMOTE) ?? 1000,
         ttl: toSeconds(entitiesConfigTtl.get(EntityType.EMOTE) ?? ms('20s'))
       }
     ],
     [
       EntityType.OUTFITS,
       {
-        max: entitiesConfigMax.get(EntityType.OUTFITS) ?? 100000,
-        ttl: toSeconds(entitiesConfigTtl.get(EntityType.OUTFITS) ?? ms('20s'))
+        max: entitiesConfigMax.get(EntityType.OUTFITS) ?? 2000,
+        ttl: toSeconds(entitiesConfigTtl.get(EntityType.OUTFITS) ?? ms('3s'))
       }
     ]
   ])
