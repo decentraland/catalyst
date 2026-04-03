@@ -1,7 +1,6 @@
-import { ContentItem } from '@dcl/catalyst-storage'
 import { HandlerContextWithPath, NotFoundError } from '../../types'
 import { findEntityByPointer, findThumbnailHash } from '../../logic/entities'
-import { createContentFileHeaders, parseRangeHeader } from '../utils'
+import { createContentFileHeaders, retrieveContentWithRange } from '../utils'
 
 // Method: GET or HEAD
 export async function getEntityThumbnailHandler(
@@ -22,36 +21,21 @@ export async function getEntityThumbnailHandler(
     throw new NotFoundError('Entity has no thumbnail.')
   }
 
-  const fullContent: ContentItem | undefined = await context.components.storage.retrieve(hash)
-  if (!fullContent) {
+  const rangeHeader = context.request.headers.get('range')
+  const result = await retrieveContentWithRange(context.components.storage, hash, rangeHeader)
+  if (!result) {
     throw new NotFoundError('Entity has no thumbnail.')
   }
 
-  const headers = await createContentFileHeaders(fullContent, hash)
-  const totalSize = fullContent.size
-  const rangeHeader = context.request.headers.get('range')
-  const range = parseRangeHeader(rangeHeader, totalSize)
-
-  if (range) {
-    const rangedContent = await context.components.storage.retrieve(hash, range)
-    if (!rangedContent) {
-      throw new NotFoundError('Entity has no thumbnail.')
-    }
-
-    return {
-      status: 206,
-      headers: {
-        ...headers,
-        'Content-Range': `bytes ${range.start}-${range.end}/${totalSize}`,
-        'Content-Length': rangedContent.size!.toString()
-      },
-      body: context.request.method.toUpperCase() === 'GET' ? await rangedContent.asRawStream() : undefined
-    }
-  }
+  const { content, status } = result
+  const headers = await createContentFileHeaders(content, hash)
 
   return {
-    status: 200,
-    headers,
-    body: context.request.method.toUpperCase() === 'GET' ? await fullContent.asRawStream() : undefined
+    status,
+    headers: {
+      ...headers,
+      ...result.rangeHeaders
+    },
+    body: context.request.method.toUpperCase() === 'GET' ? await content.asRawStream() : undefined
   }
 }

@@ -1,4 +1,4 @@
-import { ContentItem } from '@dcl/catalyst-storage'
+import { ContentItem, IContentStorageComponent } from '@dcl/catalyst-storage'
 import { InvalidRequestError, Pagination } from '../types'
 import { FileTypeParser } from 'file-type'
 import { Readable } from 'stream'
@@ -88,4 +88,42 @@ export async function createContentFileHeaders(content: ContentItem, hashId: str
     stream.destroy()
     throw error
   }
+}
+
+export async function retrieveContentWithRange(
+  storage: IContentStorageComponent,
+  hash: string,
+  rangeHeader: string | null
+): Promise<
+  | { content: ContentItem; status: 200; rangeHeaders?: undefined }
+  | { content: ContentItem; status: 206; rangeHeaders: Record<string, string> }
+  | undefined
+> {
+  const fileInfo = await storage.fileInfo(hash)
+  if (!fileInfo) {
+    return undefined
+  }
+
+  const range = parseRangeHeader(rangeHeader, fileInfo.size)
+
+  if (range) {
+    const content = await storage.retrieve(hash, range)
+    if (!content) {
+      return undefined
+    }
+    return {
+      content,
+      status: 206,
+      rangeHeaders: {
+        'Content-Range': `bytes ${range.start}-${range.end}/${fileInfo.size}`,
+        'Content-Length': content.size!.toString()
+      }
+    }
+  }
+
+  const content = await storage.retrieve(hash)
+  if (!content) {
+    return undefined
+  }
+  return { content, status: 200 }
 }
