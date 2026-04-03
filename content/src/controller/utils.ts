@@ -39,6 +39,29 @@ export function asEnumValue<T extends { [key: number]: string }>(
   }
 }
 
+export function parseRangeHeader(
+  rangeHeader: string | null,
+  totalSize: number | null
+): { start: number; end: number } | undefined {
+  if (!rangeHeader || !totalSize) {
+    return undefined
+  }
+
+  const match = rangeHeader.match(/^bytes=(\d+)-(\d*)$/)
+  if (!match) {
+    return undefined
+  }
+
+  const start = parseInt(match[1], 10)
+  const end = match[2] ? parseInt(match[2], 10) : totalSize - 1
+
+  if (start > end || start >= totalSize) {
+    return undefined
+  }
+
+  return { start, end: Math.min(end, totalSize - 1) }
+}
+
 export async function createContentFileHeaders(content: ContentItem, hashId: string): Promise<Record<string, string>> {
   const stream: Readable = await content.asRawStream()
   const fileTypeParser = new FileTypeParser()
@@ -51,6 +74,7 @@ export async function createContentFileHeaders(content: ContentItem, hashId: str
       'Content-Type': mimeType,
       ETag: JSON.stringify(hashId), // by spec, the ETag must be a double-quoted string
       'Access-Control-Expose-Headers': 'ETag',
+      'Accept-Ranges': 'bytes',
       'Cache-Control': 'public,max-age=31536000,s-maxage=31536000,immutable'
     }
     if (content.encoding) {
