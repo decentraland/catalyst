@@ -317,7 +317,7 @@
   resolved "https://registry.npmjs.org/@dcl/catalyst-contracts/-/catalyst-contracts-4.4.2.tgz"
   integrity sha512-gJZo3IB8U+jhBJWR0DgoLS+zaUDIb/u79e7Rp+MEM78uH3bvC19S3Dd8lxWEbPXNKlCB0saUptfK/Buw0c1y2Q==
 
-"@dcl/catalyst-storage@^4.0.0", "@dcl/catalyst-storage@^4.4.0":
+"@dcl/catalyst-storage@^4.0.0":
   version "4.4.0"
   resolved "https://registry.npmjs.org/@dcl/catalyst-storage/-/catalyst-storage-4.4.0.tgz"
   integrity sha512-0YwdWqOkvvBQEbcK0woD8KBKwAx4D3o6+2vK/FdhbpYd/iL7loNdL3E1aRPOkiI3vBhTgaLyDT1bLDkgw1pb6Q==
@@ -328,9 +328,10 @@
     destroy "^1.2.0"
     file-type "15"
 
-"@dcl/catalyst-storage@https://sdk-team-cdn.decentraland.org/@dcl/catalyst-storage/branch/feat/add-content-size-to-file-info/dcl-catalyst-storage-4.4.1-24264600601.commit-1b3a4b1.tgz":
-  version "4.4.1-24264600601.commit-1b3a4b1"
-  resolved "https://sdk-team-cdn.decentraland.org/@dcl/catalyst-storage/branch/feat/add-content-size-to-file-info/dcl-catalyst-storage-4.4.1-24264600601.commit-1b3a4b1.tgz#a229da6dd5d30d26e61859dd8e5f8509152b9729"
+"@dcl/catalyst-storage@^4.5.0":
+  version "4.5.0"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-storage/-/catalyst-storage-4.5.0.tgz#8c4c2816efffff40c01f6ffd6090730453f23dfe"
+  integrity sha512-wocH2WppuDfzp8kkS1TK2R0Lgl1kWZy8CzZ7/fUSD0o9p11Gf0sYJRbkdKOsOhaBbjynzSs97jFAW/dRCVVZ5Q==
   dependencies:
     "@well-known-components/interfaces" "^1.1.1"
     aws-sdk "^2.1426.0"
