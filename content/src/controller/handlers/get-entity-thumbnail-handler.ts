@@ -27,6 +27,13 @@ export async function getEntityThumbnailHandler(
     throw new NotFoundError('Entity has no thumbnail.')
   }
 
+  if (result.status === 416) {
+    return {
+      status: 416,
+      headers: result.rangeHeaders
+    }
+  }
+
   const { content, status } = result
   const headers = await createContentFileHeaders(content, hash)
 

@@ -12,6 +12,13 @@ export async function getContentHandler(context: HandlerContextWithPath<'storage
     throw new NotFoundError(`No content found with hash ${hash}`)
   }
 
+  if (result.status === 416) {
+    return {
+      status: 416,
+      headers: result.rangeHeaders
+    }
+  }
+
   const { content, status } = result
   const calculatedHeaders = await createContentFileHeaders(content, hash)
   const headers = shouldCalculateContentType

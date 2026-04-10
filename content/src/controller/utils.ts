@@ -42,24 +42,35 @@ export function asEnumValue<T extends { [key: number]: string }>(
 export function parseRangeHeader(
   rangeHeader: string | null,
   totalSize: number | null
-): { start: number; end: number } | undefined {
-  if (!rangeHeader || !totalSize) {
+): { type: 'range'; start: number; end: number } | { type: 'unsatisfiable' } | undefined {
+  if (!rangeHeader || totalSize === null) {
     return undefined
   }
 
   const match = rangeHeader.match(/^bytes=(\d+)-(\d*)$/)
-  if (!match) {
-    return undefined
+  if (match) {
+    const start = parseInt(match[1], 10)
+    const end = match[2] ? parseInt(match[2], 10) : totalSize - 1
+
+    if (start > end || start >= totalSize) {
+      return { type: 'unsatisfiable' }
+    }
+
+    return { type: 'range', start, end: Math.min(end, totalSize - 1) }
   }
 
-  const start = parseInt(match[1], 10)
-  const end = match[2] ? parseInt(match[2], 10) : totalSize - 1
-
-  if (start > end || start >= totalSize) {
-    return undefined
+  const suffixMatch = rangeHeader.match(/^bytes=-(\d+)$/)
+  if (suffixMatch) {
+    const suffixLength = parseInt(suffixMatch[1], 10)
+    if (suffixLength === 0 || totalSize === 0) {
+      return { type: 'unsatisfiable' }
+    }
+    const start = Math.max(0, totalSize - suffixLength)
+    const end = totalSize - 1
+    return { type: 'range', start, end }
   }
 
-  return { start, end: Math.min(end, totalSize - 1) }
+  return undefined
 }
 
 export async function createContentFileHeaders(content: ContentItem, hashId: string): Promise<Record<string, string>> {
@@ -73,7 +84,7 @@ export async function createContentFileHeaders(content: ContentItem, hashId: str
     const headers: Record<string, string> = {
       'Content-Type': mimeType,
       ETag: JSON.stringify(hashId), // by spec, the ETag must be a double-quoted string
-      'Access-Control-Expose-Headers': 'ETag',
+      'Access-Control-Expose-Headers': 'ETag, Content-Range, Accept-Ranges, Content-Length',
       'Accept-Ranges': 'bytes',
       'Cache-Control': 'public,max-age=31536000,s-maxage=31536000,immutable'
     }
@@ -97,6 +108,7 @@ export async function retrieveContentWithRange(
 ): Promise<
   | { content: ContentItem; status: 200; rangeHeaders?: undefined }
   | { content: ContentItem; status: 206; rangeHeaders: Record<string, string> }
+  | { content?: undefined; status: 416; rangeHeaders: Record<string, string> }
   | undefined
 > {
   const fileInfo = await storage.fileInfo(hash)
@@ -104,20 +116,45 @@ export async function retrieveContentWithRange(
     return undefined
   }
 
-  const range = parseRangeHeader(rangeHeader, fileInfo.size)
+  // contentSize is the uncompressed content size, available in @dcl/catalyst-storage >= 4.5.0.
+  // Falls back to size (which may be the compressed size for gzip files) for older versions.
+  const totalSize = ((fileInfo as any).contentSize as number | null | undefined) ?? fileInfo.size
+  const range = parseRangeHeader(rangeHeader, totalSize)
 
-  if (range) {
-    const content = await storage.retrieve(hash, range)
-    if (!content) {
-      return undefined
-    }
+  if (range?.type === 'unsatisfiable') {
     return {
-      content,
-      status: 206,
+      status: 416,
       rangeHeaders: {
-        'Content-Range': `bytes ${range.start}-${range.end}/${fileInfo.size}`,
-        'Content-Length': content.size!.toString()
+        'Content-Range': `bytes */${totalSize}`
       }
+    }
+  }
+
+  if (range?.type === 'range') {
+    try {
+      const content = await storage.retrieve(hash, range)
+      if (!content) {
+        return undefined
+      }
+      const contentLength = content.size ?? range.end - range.start + 1
+      return {
+        content,
+        status: 206,
+        rangeHeaders: {
+          'Content-Range': `bytes ${range.start}-${range.end}/${totalSize}`,
+          'Content-Length': contentLength.toString()
+        }
+      }
+    } catch (error) {
+      if (error instanceof RangeError) {
+        return {
+          status: 416,
+          rangeHeaders: {
+            'Content-Range': `bytes */${totalSize}`
+          }
+        }
+      }
+      throw error
     }
   }
 

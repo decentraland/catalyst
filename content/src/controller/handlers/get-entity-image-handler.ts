@@ -24,6 +24,13 @@ export async function getEntityImageHandler(
     throw new NotFoundError('Entity has no image.')
   }
 
+  if (result.status === 416) {
+    return {
+      status: 416,
+      headers: result.rangeHeaders
+    }
+  }
+
   const { content, status } = result
   const headers = await createContentFileHeaders(content, hash)
 
