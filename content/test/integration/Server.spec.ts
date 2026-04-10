@@ -35,6 +35,11 @@ describe('Integration - Server', () => {
 
     jest.spyOn(server.components.activeEntities, 'withIds').mockResolvedValue([entity1, entity2])
     jest.spyOn(server.components.activeEntities, 'withPointers').mockResolvedValue([entity1, entity2])
+    jest.spyOn(server.components.storage, 'fileInfo').mockResolvedValue({
+      size: content.buffer.length,
+      encoding: null,
+      contentSize: content.buffer.length
+    })
     jest.spyOn(server.components.storage, 'retrieve').mockResolvedValue(SimpleContentItem.fromBuffer(content.buffer))
   })
 

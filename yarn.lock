@@ -317,10 +317,21 @@
   resolved "https://registry.npmjs.org/@dcl/catalyst-contracts/-/catalyst-contracts-4.4.2.tgz"
   integrity sha512-gJZo3IB8U+jhBJWR0DgoLS+zaUDIb/u79e7Rp+MEM78uH3bvC19S3Dd8lxWEbPXNKlCB0saUptfK/Buw0c1y2Q==
 
-"@dcl/catalyst-storage@^4.0.0", "@dcl/catalyst-storage@^4.3.1":
+"@dcl/catalyst-storage@^4.0.0":
   version "4.3.1"
   resolved "https://registry.npmjs.org/@dcl/catalyst-storage/-/catalyst-storage-4.3.1.tgz"
   integrity sha512-6CXKFsS2I0cDX7fvL2TsXj1r2CzeOoSpns6NMvQxj0W1/W4LXqXLXz3XgDtfLy3EoHYJMTBXaJfmU07mZ0MyCQ==
+  dependencies:
+    "@well-known-components/interfaces" "^1.1.1"
+    aws-sdk "^2.1426.0"
+    aws-sdk-client-mock "^3.0.0"
+    destroy "^1.2.0"
+    file-type "15"
+
+"@dcl/catalyst-storage@^4.5.0":
+  version "4.5.0"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-storage/-/catalyst-storage-4.5.0.tgz#8c4c2816efffff40c01f6ffd6090730453f23dfe"
+  integrity sha512-wocH2WppuDfzp8kkS1TK2R0Lgl1kWZy8CzZ7/fUSD0o9p11Gf0sYJRbkdKOsOhaBbjynzSs97jFAW/dRCVVZ5Q==
   dependencies:
     "@well-known-components/interfaces" "^1.1.1"
     aws-sdk "^2.1426.0"

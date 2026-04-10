@@ -1,7 +1,6 @@
-import { ContentItem } from '@dcl/catalyst-storage'
 import { HandlerContextWithPath, NotFoundError } from '../../types'
 import { findEntityByPointer, findThumbnailHash } from '../../logic/entities'
-import { createContentFileHeaders } from '../utils'
+import { createContentFileHeaders, retrieveContentWithRange } from '../utils'
 
 // Method: GET or HEAD
 export async function getEntityThumbnailHandler(
@@ -22,14 +21,28 @@ export async function getEntityThumbnailHandler(
     throw new NotFoundError('Entity has no thumbnail.')
   }
 
-  const content: ContentItem | undefined = await context.components.storage.retrieve(hash)
-  if (!content) {
+  const rangeHeader = context.request.headers.get('range')
+  const result = await retrieveContentWithRange(context.components.storage, hash, rangeHeader)
+  if (!result) {
     throw new NotFoundError('Entity has no thumbnail.')
   }
 
+  if (result.status === 416) {
+    return {
+      status: 416,
+      headers: result.rangeHeaders
+    }
+  }
+
+  const { content, status } = result
+  const headers = await createContentFileHeaders(content, hash)
+
   return {
-    status: 200,
-    headers: await createContentFileHeaders(content, hash),
+    status,
+    headers: {
+      ...headers,
+      ...result.rangeHeaders
+    },
     body: context.request.method.toUpperCase() === 'GET' ? await content.asRawStream() : undefined
   }
 }
