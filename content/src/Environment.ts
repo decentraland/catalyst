@@ -501,26 +501,18 @@ export class EnvironmentBuilder {
       EnvironmentConfig.SUBGRAPH_COMPONENT_QUERY_TIMEOUT,
       () => process.env.SUBGRAPH_COMPONENT_QUERY_TIMEOUT ?? ms('1m')
     )
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.STORAGE_DECOMPRESS_CACHE_TTL,
-      () => (process.env.STORAGE_DECOMPRESS_CACHE_TTL ? ms(process.env.STORAGE_DECOMPRESS_CACHE_TTL) : undefined)
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.STORAGE_DECOMPRESS_CACHE_TTL, () =>
+      process.env.STORAGE_DECOMPRESS_CACHE_TTL ? ms(process.env.STORAGE_DECOMPRESS_CACHE_TTL) : undefined
     )
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.STORAGE_DECOMPRESS_CACHE_MAX_SIZE,
-      () =>
-        process.env.STORAGE_DECOMPRESS_CACHE_MAX_SIZE
-          ? parseInt(process.env.STORAGE_DECOMPRESS_CACHE_MAX_SIZE, 10)
-          : undefined
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.STORAGE_DECOMPRESS_CACHE_MAX_SIZE, () =>
+      process.env.STORAGE_DECOMPRESS_CACHE_MAX_SIZE
+        ? parseInt(process.env.STORAGE_DECOMPRESS_CACHE_MAX_SIZE, 10)
+        : undefined
     )
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.STORAGE_DECOMPRESS_CACHE_EVICTION_INTERVAL,
-      () =>
-        process.env.STORAGE_DECOMPRESS_CACHE_EVICTION_INTERVAL
-          ? ms(process.env.STORAGE_DECOMPRESS_CACHE_EVICTION_INTERVAL)
-          : undefined
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.STORAGE_DECOMPRESS_CACHE_EVICTION_INTERVAL, () =>
+      process.env.STORAGE_DECOMPRESS_CACHE_EVICTION_INTERVAL
+        ? ms(process.env.STORAGE_DECOMPRESS_CACHE_EVICTION_INTERVAL)
+        : undefined
     )
 
     return env
