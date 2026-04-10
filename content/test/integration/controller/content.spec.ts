@@ -88,6 +88,27 @@ describe('GET /contents/:hashId', () => {
         expect(body).toEqual(fileBuffer.slice(0, 100))
       })
 
+      it('should return a Content-Length header that matches the actual body length', async () => {
+        const res = await fetch(`${server.getUrl()}/contents/${fileHash}`, {
+          headers: { Range: 'bytes=0-99' }
+        })
+        const body = await res.buffer()
+        expect(res.headers.get('content-length')).toBe('100')
+        expect(body.length).toBe(parseInt(res.headers.get('content-length')!))
+      })
+
+      it('should return the same ETag as a full 200 response', async () => {
+        const [fullRes, rangeRes] = await Promise.all([
+          fetch(`${server.getUrl()}/contents/${fileHash}`),
+          fetch(`${server.getUrl()}/contents/${fileHash}`, {
+            headers: { Range: 'bytes=0-99' }
+          })
+        ])
+        expect(fullRes.status).toBe(200)
+        expect(rangeRes.status).toBe(206)
+        expect(rangeRes.headers.get('etag')).toBe(fullRes.headers.get('etag'))
+      })
+
       describe('and the range starts from a middle offset', () => {
         it('should return the correct byte slice', async () => {
           const start = 100
@@ -165,6 +186,19 @@ describe('GET /contents/:hashId', () => {
           const body = await res.buffer()
           expect(res.status).toBe(206)
           expect(res.headers.get('content-range')).toBe(`bytes 0-99/${fileBuffer.length}`)
+          expect(body.length).toBe(0)
+        })
+      })
+
+      describe('and an unsatisfiable range header is provided', () => {
+        it('should respond with a 416 status, the Content-Range header, and no body', async () => {
+          const res = await fetch(`${server.getUrl()}/contents/${fileHash}`, {
+            method: 'HEAD',
+            headers: { Range: `bytes=${fileBuffer.length + 100}-${fileBuffer.length + 200}` }
+          })
+          const body = await res.buffer()
+          expect(res.status).toBe(416)
+          expect(res.headers.get('content-range')).toBe(`bytes */${fileBuffer.length}`)
           expect(body.length).toBe(0)
         })
       })
