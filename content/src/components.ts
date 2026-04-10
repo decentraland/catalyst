@@ -102,7 +102,11 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const challengeSupervisor = new ChallengeSupervisor()
 
   const contentFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
-  const storage = await createFolderBasedFileSystemContentStorage({ fs, logs }, contentFolder)
+  const storage = await createFolderBasedFileSystemContentStorage({ fs, logs }, contentFolder, {
+    decompressCacheTTL: env.getConfig(EnvironmentConfig.STORAGE_DECOMPRESS_CACHE_TTL),
+    decompressCacheMaxSize: env.getConfig(EnvironmentConfig.STORAGE_DECOMPRESS_CACHE_MAX_SIZE),
+    decompressCacheEvictionInterval: env.getConfig(EnvironmentConfig.STORAGE_DECOMPRESS_CACHE_EVICTION_INTERVAL)
+  })
 
   const customDAO: string = env.getConfig(EnvironmentConfig.CUSTOM_DAO) ?? ''
   const daoClient =

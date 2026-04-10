@@ -166,7 +166,12 @@ export enum EnvironmentConfig {
   SYNC_IGNORED_ENTITY_TYPES,
   IGNORE_BLOCKCHAIN_ACCESS_CHECKS,
   L1_HTTP_PROVIDER_URL,
-  L2_HTTP_PROVIDER_URL
+  L2_HTTP_PROVIDER_URL,
+
+  // Decompression cache settings for folder-based storage
+  STORAGE_DECOMPRESS_CACHE_TTL,
+  STORAGE_DECOMPRESS_CACHE_MAX_SIZE,
+  STORAGE_DECOMPRESS_CACHE_EVICTION_INTERVAL
 }
 export class EnvironmentBuilder {
   private baseEnv: Environment
@@ -495,6 +500,27 @@ export class EnvironmentBuilder {
       env,
       EnvironmentConfig.SUBGRAPH_COMPONENT_QUERY_TIMEOUT,
       () => process.env.SUBGRAPH_COMPONENT_QUERY_TIMEOUT ?? ms('1m')
+    )
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.STORAGE_DECOMPRESS_CACHE_TTL,
+      () => (process.env.STORAGE_DECOMPRESS_CACHE_TTL ? ms(process.env.STORAGE_DECOMPRESS_CACHE_TTL) : undefined)
+    )
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.STORAGE_DECOMPRESS_CACHE_MAX_SIZE,
+      () =>
+        process.env.STORAGE_DECOMPRESS_CACHE_MAX_SIZE
+          ? parseInt(process.env.STORAGE_DECOMPRESS_CACHE_MAX_SIZE, 10)
+          : undefined
+    )
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.STORAGE_DECOMPRESS_CACHE_EVICTION_INTERVAL,
+      () =>
+        process.env.STORAGE_DECOMPRESS_CACHE_EVICTION_INTERVAL
+          ? ms(process.env.STORAGE_DECOMPRESS_CACHE_EVICTION_INTERVAL)
+          : undefined
     )
 
     return env
