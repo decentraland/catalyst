@@ -234,7 +234,8 @@ describe('retrieveContentWithRange', () => {
       expect(result).toEqual(
         expect.objectContaining({
           rangeHeaders: {
-            'Content-Range': 'bytes */500'
+            'Content-Range': 'bytes */500',
+            'Access-Control-Expose-Headers': 'Content-Range'
           }
         })
       )
@@ -284,7 +285,8 @@ describe('retrieveContentWithRange', () => {
       expect(result).toEqual(
         expect.objectContaining({
           rangeHeaders: {
-            'Content-Range': 'bytes */500'
+            'Content-Range': 'bytes */500',
+            'Access-Control-Expose-Headers': 'Content-Range'
           }
         })
       )

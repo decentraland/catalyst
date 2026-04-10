@@ -150,12 +150,13 @@ describe('GET /contents/:hashId', () => {
     })
 
     describe('and the range exceeds the file size', () => {
-      it('should respond with a 416 status and the Content-Range header', async () => {
+      it('should respond with a 416 status, the Content-Range header, and CORS expose headers', async () => {
         const res = await fetch(`${server.getUrl()}/contents/${fileHash}`, {
           headers: { Range: `bytes=${fileBuffer.length + 100}-${fileBuffer.length + 200}` }
         })
         expect(res.status).toBe(416)
         expect(res.headers.get('content-range')).toBe(`bytes */${fileBuffer.length}`)
+        expect(res.headers.get('access-control-expose-headers')).toContain('Content-Range')
       })
     })
 

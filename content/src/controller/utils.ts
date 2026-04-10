@@ -123,7 +123,8 @@ export async function retrieveContentWithRange(
     return {
       status: 416,
       rangeHeaders: {
-        'Content-Range': `bytes */${totalSize}`
+        'Content-Range': `bytes */${totalSize}`,
+        'Access-Control-Expose-Headers': 'Content-Range'
       }
     }
   }
@@ -148,7 +149,8 @@ export async function retrieveContentWithRange(
         return {
           status: 416,
           rangeHeaders: {
-            'Content-Range': `bytes */${totalSize}`
+            'Content-Range': `bytes */${totalSize}`,
+            'Access-Control-Expose-Headers': 'Content-Range'
           }
         }
       }
