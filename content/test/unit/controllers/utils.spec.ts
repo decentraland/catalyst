@@ -46,32 +46,17 @@ describe('parseRangeHeader', () => {
     })
   })
 
-  describe('when the range header has an invalid format', () => {
-    it('should return undefined', () => {
+  describe('when the range header is not a valid byte range', () => {
+    it('should return undefined for invalid formats and unsupported units', () => {
       expect(parseRangeHeader('invalid', 1000)).toBeUndefined()
-    })
-  })
-
-  describe('when the range header uses an unsupported unit', () => {
-    it('should return undefined', () => {
       expect(parseRangeHeader('chars=0-99', 1000)).toBeUndefined()
     })
   })
 
-  describe('when the start is greater than the end', () => {
-    it('should return unsatisfiable', () => {
+  describe('when the start is beyond the file boundary', () => {
+    it('should return unsatisfiable when start equals or exceeds total size', () => {
       expect(parseRangeHeader('bytes=500-100', 1000)).toEqual({ type: 'unsatisfiable' })
-    })
-  })
-
-  describe('when the start is equal to the total size', () => {
-    it('should return unsatisfiable', () => {
       expect(parseRangeHeader('bytes=1000-1000', 1000)).toEqual({ type: 'unsatisfiable' })
-    })
-  })
-
-  describe('when the start exceeds the total size', () => {
-    it('should return unsatisfiable', () => {
       expect(parseRangeHeader('bytes=1500-2000', 1000)).toEqual({ type: 'unsatisfiable' })
     })
   })
@@ -95,32 +80,17 @@ describe('parseRangeHeader', () => {
   })
 
   describe('when a suffix range is provided', () => {
-    it('should return the last N bytes', () => {
+    it('should return the last N bytes, clamping start to 0 if suffix exceeds file size', () => {
       expect(parseRangeHeader('bytes=-500', 1000)).toEqual({ type: 'range', start: 500, end: 999 })
-    })
-  })
-
-  describe('when a suffix range exceeds the total size', () => {
-    it('should clamp start to 0', () => {
+      expect(parseRangeHeader('bytes=-1000', 1000)).toEqual({ type: 'range', start: 0, end: 999 })
       expect(parseRangeHeader('bytes=-2000', 1000)).toEqual({ type: 'range', start: 0, end: 999 })
     })
   })
 
-  describe('when a suffix range of zero is provided', () => {
-    it('should return unsatisfiable', () => {
+  describe('when a suffix range is unsatisfiable', () => {
+    it('should return unsatisfiable for zero suffix or zero total size', () => {
       expect(parseRangeHeader('bytes=-0', 1000)).toEqual({ type: 'unsatisfiable' })
-    })
-  })
-
-  describe('when a suffix range is provided and the total size is zero', () => {
-    it('should return unsatisfiable', () => {
       expect(parseRangeHeader('bytes=-500', 0)).toEqual({ type: 'unsatisfiable' })
-    })
-  })
-
-  describe('when a suffix range requests the entire file', () => {
-    it('should return start 0 to end', () => {
-      expect(parseRangeHeader('bytes=-1000', 1000)).toEqual({ type: 'range', start: 0, end: 999 })
     })
   })
 })
@@ -156,13 +126,9 @@ describe('retrieveContentWithRange', () => {
       })
     })
 
-    it('should return the full content with status 200', async () => {
+    it('should return the full content with status 200 and call retrieve without a range', async () => {
       const result = await retrieveContentWithRange(storage, 'some-hash', null)
       expect(result).toEqual({ content: contentItem, status: 200 })
-    })
-
-    it('should call retrieve without a range', async () => {
-      await retrieveContentWithRange(storage, 'some-hash', null)
       expect(storage.retrieve).toHaveBeenCalledWith('some-hash')
     })
   })
@@ -178,7 +144,7 @@ describe('retrieveContentWithRange', () => {
       })
     })
 
-    it('should return the content with status 206 and the correct headers', async () => {
+    it('should return status 206 with correct headers and call retrieve with the parsed range', async () => {
       const result = await retrieveContentWithRange(storage, 'some-hash', 'bytes=0-99')
       expect(result!.status).toBe(206)
       expect(result).toEqual(
@@ -189,22 +155,15 @@ describe('retrieveContentWithRange', () => {
           }
         })
       )
-    })
-
-    it('should call retrieve with the parsed range', async () => {
-      await retrieveContentWithRange(storage, 'some-hash', 'bytes=0-99')
       expect(storage.retrieve).toHaveBeenCalledWith('some-hash', expect.objectContaining({ start: 0, end: 99 }))
     })
   })
 
   describe('when the range header is valid and the retrieved content has a null size', () => {
-    let contentItem: ContentItem
-
     beforeEach(() => {
-      contentItem = createMockContentItem(null)
       storage = createMockStorage({
         fileInfo: jest.fn().mockResolvedValue({ size: 500, encoding: null, contentSize: 500 }),
-        retrieve: jest.fn().mockResolvedValue(contentItem)
+        retrieve: jest.fn().mockResolvedValue(createMockContentItem(null))
       })
     })
 
@@ -228,7 +187,7 @@ describe('retrieveContentWithRange', () => {
       })
     })
 
-    it('should return status 416 with the Content-Range header and not call retrieve', async () => {
+    it('should return status 416 with Content-Range and CORS headers, and not call retrieve', async () => {
       const result = await retrieveContentWithRange(storage, 'some-hash', 'bytes=500-600')
       expect(result!.status).toBe(416)
       expect(result).toEqual(
@@ -243,7 +202,7 @@ describe('retrieveContentWithRange', () => {
     })
   })
 
-  describe('when storage.retrieve returns undefined for a ranged request', () => {
+  describe('when storage.retrieve returns undefined', () => {
     beforeEach(() => {
       storage = createMockStorage({
         fileInfo: jest.fn().mockResolvedValue({ size: 500, encoding: null, contentSize: 500 }),
@@ -251,23 +210,9 @@ describe('retrieveContentWithRange', () => {
       })
     })
 
-    it('should return undefined', async () => {
-      const result = await retrieveContentWithRange(storage, 'some-hash', 'bytes=0-99')
-      expect(result).toBeUndefined()
-    })
-  })
-
-  describe('when storage.retrieve returns undefined for a full request', () => {
-    beforeEach(() => {
-      storage = createMockStorage({
-        fileInfo: jest.fn().mockResolvedValue({ size: 500, encoding: null, contentSize: 500 }),
-        retrieve: jest.fn().mockResolvedValue(undefined)
-      })
-    })
-
-    it('should return undefined', async () => {
-      const result = await retrieveContentWithRange(storage, 'some-hash', null)
-      expect(result).toBeUndefined()
+    it('should return undefined for both ranged and full requests', async () => {
+      expect(await retrieveContentWithRange(storage, 'some-hash', 'bytes=0-99')).toBeUndefined()
+      expect(await retrieveContentWithRange(storage, 'some-hash', null)).toBeUndefined()
     })
   })
 
@@ -279,7 +224,7 @@ describe('retrieveContentWithRange', () => {
       })
     })
 
-    it('should return status 416 with the Content-Range header', async () => {
+    it('should return status 416 with Content-Range and CORS headers', async () => {
       const result = await retrieveContentWithRange(storage, 'some-hash', 'bytes=0-99')
       expect(result!.status).toBe(416)
       expect(result).toEqual(
@@ -294,51 +239,37 @@ describe('retrieveContentWithRange', () => {
   })
 
   describe('when fileInfo returns contentSize different from size (gzip file)', () => {
-    let contentItem: ContentItem
-
     beforeEach(() => {
-      contentItem = createMockContentItem(100)
       storage = createMockStorage({
         fileInfo: jest.fn().mockResolvedValue({ size: 300, encoding: 'gzip', contentSize: 1000 }),
-        retrieve: jest.fn().mockResolvedValue(contentItem)
+        retrieve: jest.fn().mockResolvedValue(createMockContentItem(100))
       })
     })
 
-    it('should use contentSize for range validation and Content-Range total', async () => {
+    it('should use contentSize for range validation and allow ranges beyond compressed size', async () => {
       const result = await retrieveContentWithRange(storage, 'some-hash', 'bytes=0-99')
       expect(result!.status).toBe(206)
       expect(result).toEqual(
         expect.objectContaining({
-          rangeHeaders: {
-            'Content-Range': 'bytes 0-99/1000',
-            'Content-Length': '100'
-          }
+          rangeHeaders: { 'Content-Range': 'bytes 0-99/1000', 'Content-Length': '100' }
         })
       )
-    })
 
-    it('should allow ranges beyond the compressed size', async () => {
-      const result = await retrieveContentWithRange(storage, 'some-hash', 'bytes=500-599')
-      expect(result!.status).toBe(206)
-      expect(result).toEqual(
+      const beyondCompressed = await retrieveContentWithRange(storage, 'some-hash', 'bytes=500-599')
+      expect(beyondCompressed!.status).toBe(206)
+      expect(beyondCompressed).toEqual(
         expect.objectContaining({
-          rangeHeaders: {
-            'Content-Range': 'bytes 500-599/1000',
-            'Content-Length': '100'
-          }
+          rangeHeaders: { 'Content-Range': 'bytes 500-599/1000', 'Content-Length': '100' }
         })
       )
     })
   })
 
   describe('when fileInfo returns contentSize as null (legacy gzip)', () => {
-    let contentItem: ContentItem
-
     beforeEach(() => {
-      contentItem = createMockContentItem(100)
       storage = createMockStorage({
         fileInfo: jest.fn().mockResolvedValue({ size: 300, encoding: 'gzip', contentSize: null }),
-        retrieve: jest.fn().mockResolvedValue(contentItem)
+        retrieve: jest.fn().mockResolvedValue(createMockContentItem(100))
       })
     })
 
@@ -347,10 +278,7 @@ describe('retrieveContentWithRange', () => {
       expect(result!.status).toBe(206)
       expect(result).toEqual(
         expect.objectContaining({
-          rangeHeaders: {
-            'Content-Range': 'bytes 0-99/300',
-            'Content-Length': '100'
-          }
+          rangeHeaders: { 'Content-Range': 'bytes 0-99/300', 'Content-Length': '100' }
         })
       )
     })

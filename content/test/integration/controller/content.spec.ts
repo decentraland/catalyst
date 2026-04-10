@@ -60,16 +60,12 @@ describe('GET /contents/:hashId', () => {
     })
 
     describe('and no range header is provided', () => {
-      it('should respond with a 200 status, the Accept-Ranges header, and the full file content', async () => {
+      it('should respond with a 200 status, full content, Accept-Ranges, and CORS expose headers', async () => {
         const res = await fetch(`${server.getUrl()}/contents/${fileHash}`)
         const body = await res.buffer()
         expect(res.status).toBe(200)
         expect(res.headers.get('accept-ranges')).toBe('bytes')
         expect(body.length).toBe(fileBuffer.length)
-      })
-
-      it('should expose Content-Range and Accept-Ranges via CORS headers', async () => {
-        const res = await fetch(`${server.getUrl()}/contents/${fileHash}`)
         const exposed = res.headers.get('access-control-expose-headers')
         expect(exposed).toContain('Content-Range')
         expect(exposed).toContain('Accept-Ranges')
@@ -77,35 +73,19 @@ describe('GET /contents/:hashId', () => {
     })
 
     describe('and a valid range header is provided', () => {
-      it('should respond with a 206 status, the Content-Range header, and only the requested bytes', async () => {
-        const res = await fetch(`${server.getUrl()}/contents/${fileHash}`, {
-          headers: { Range: 'bytes=0-99' }
-        })
-        const body = await res.buffer()
-        expect(res.status).toBe(206)
-        expect(res.headers.get('content-range')).toBe(`bytes 0-99/${fileBuffer.length}`)
-        expect(body.length).toBe(100)
-        expect(body).toEqual(fileBuffer.slice(0, 100))
-      })
-
-      it('should return a Content-Length header that matches the actual body length', async () => {
-        const res = await fetch(`${server.getUrl()}/contents/${fileHash}`, {
-          headers: { Range: 'bytes=0-99' }
-        })
-        const body = await res.buffer()
-        expect(res.headers.get('content-length')).toBe('100')
-        expect(body.length).toBe(parseInt(res.headers.get('content-length')!))
-      })
-
-      it('should return the same ETag as a full 200 response', async () => {
+      it('should respond with a 206 status, correct Content-Range, Content-Length, ETag, and only the requested bytes', async () => {
         const [fullRes, rangeRes] = await Promise.all([
           fetch(`${server.getUrl()}/contents/${fileHash}`),
           fetch(`${server.getUrl()}/contents/${fileHash}`, {
             headers: { Range: 'bytes=0-99' }
           })
         ])
-        expect(fullRes.status).toBe(200)
+        const body = await rangeRes.buffer()
         expect(rangeRes.status).toBe(206)
+        expect(rangeRes.headers.get('content-range')).toBe(`bytes 0-99/${fileBuffer.length}`)
+        expect(rangeRes.headers.get('content-length')).toBe('100')
+        expect(body.length).toBe(100)
+        expect(body).toEqual(fileBuffer.slice(0, 100))
         expect(rangeRes.headers.get('etag')).toBe(fullRes.headers.get('etag'))
       })
 
