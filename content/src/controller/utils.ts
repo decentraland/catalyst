@@ -116,9 +116,7 @@ export async function retrieveContentWithRange(
     return undefined
   }
 
-  // contentSize is the uncompressed content size, available in @dcl/catalyst-storage >= 4.5.0.
-  // Falls back to size (which may be the compressed size for gzip files) for older versions.
-  const totalSize = ((fileInfo as any).contentSize as number | null | undefined) ?? fileInfo.size
+  const totalSize = fileInfo.contentSize ?? fileInfo.size
   const range = parseRangeHeader(rangeHeader, totalSize)
 
   if (range?.type === 'unsatisfiable') {

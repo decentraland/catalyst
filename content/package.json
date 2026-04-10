@@ -23,7 +23,7 @@
     "@dcl/block-indexer": "^1.1.2",
     "@dcl/catalyst-api-specs": "^3.8.0",
     "@dcl/catalyst-contracts": "^4.4.2",
-    "@dcl/catalyst-storage": "^4.3.1",
+    "@dcl/catalyst-storage": "https://sdk-team-cdn.decentraland.org/@dcl/catalyst-storage/branch/feat/add-content-size-to-file-info/dcl-catalyst-storage-4.4.1-24264600601.commit-1b3a4b1.tgz",
     "@dcl/content-validator": "^7.0.5",
     "@dcl/crypto": "^3.4.5",
     "@dcl/hashing": "^3.0.4",

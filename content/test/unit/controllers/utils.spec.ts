@@ -6,6 +6,7 @@ function createMockContentItem(size: number | null = 100, encoding: string | nul
   return {
     size,
     encoding,
+    contentSize: size,
     asStream: jest.fn().mockResolvedValue(Readable.from(Buffer.alloc(size ?? 0))),
     asRawStream: jest.fn().mockResolvedValue(Readable.from(Buffer.alloc(size ?? 0)))
   }
