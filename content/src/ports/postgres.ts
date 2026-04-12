@@ -252,7 +252,7 @@ export async function createDatabase(
 
       promise.then(() => (finished = true)).catch(() => (finished = true))
 
-      while (!finished && pool.totalCount | pool.idleCount | pool.waitingCount) {
+      while (!finished && (pool.totalCount || pool.idleCount || pool.waitingCount)) {
         if (pool.totalCount) {
           logger.log('Draining connections', {
             totalCount: pool.totalCount,
