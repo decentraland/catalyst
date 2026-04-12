@@ -175,13 +175,13 @@ export async function getNumberOfActiveEntitiesInTimeRange(
 export async function saveProcessedSnapshot(
   database: DatabaseClient,
   processedSnapshotHash: string,
-  processTimestampSecs: number
+  processTimestampMs: number
 ): Promise<void> {
   const query = SQL`
   INSERT INTO processed_snapshots
   (hash, process_time)
   VALUES
-  (${processedSnapshotHash}, to_timestamp(${processTimestampSecs} / 1000.0))
+  (${processedSnapshotHash}, to_timestamp(${processTimestampMs} / 1000.0))
   RETURNING hash
   `
   await database.queryWithValues(query, 'save_processed_snapshot')
