@@ -190,6 +190,7 @@ export async function createItemChecker(logs: ILoggerComponent, provider: HTTPPr
       } else if (urn.type === 'blockchain-collection-v1-item' || urn.type === 'blockchain-collection-v2-item') {
         if (!urn.contractAddress) {
           logger.warn(`No contract address found for item: ${item}`)
+          result.set(item, false)
         } else if (!urn.tokenId) {
           logger.warn(`No tokenId found for item: ${item})`)
           result.set(item, true) // old deployment, let it pass

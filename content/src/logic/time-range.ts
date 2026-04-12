@@ -61,9 +61,10 @@ export const MS_PER_YEAR = 12 * MS_PER_MONTH
  */
 export function isTimeRangeCoveredBy(timerange: TimeRange, timeRanges: TimeRange[]) {
   if (timeRanges.length == 0) return false
-  const minTimestamp = timeRanges[0].initTimestamp
-  let currentMaxTimestamp = timeRanges[0].endTimestamp
-  for (const t of timeRanges) {
+  const sorted = [...timeRanges].sort((a, b) => a.initTimestamp - b.initTimestamp)
+  const minTimestamp = sorted[0].initTimestamp
+  let currentMaxTimestamp = sorted[0].endTimestamp
+  for (const t of sorted) {
     if (t.initTimestamp > currentMaxTimestamp) {
       return false
     }
