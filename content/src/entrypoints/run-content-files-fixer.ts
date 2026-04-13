@@ -136,10 +136,17 @@ async function ensureFileExistsInStorage(
     env.getConfig(EnvironmentConfig.ETH_NETWORK) === 'mainnet' ? 'org' : 'zone'
   }/content/contents/${file}`
 
-  await fetcher
-    .fetch(url)
-    .then((data) => data.body)
-    .then((stream) => storage.storeStream(file, Readable.from(stream)))
-    .then(() => logger.info(`File ${file} downloaded and stored successfully`))
-    .catch((error: any) => logger.warn(`Problem downloading file ${file}. ${error.message}`))
+  try {
+    const data = await fetcher.fetch(url)
+    const stream = Readable.from(data.body)
+    try {
+      await storage.storeStream(file, stream)
+      logger.info(`File ${file} downloaded and stored successfully`)
+    } catch (error: any) {
+      stream.destroy()
+      throw error
+    }
+  } catch (error: any) {
+    logger.warn(`Problem downloading file ${file}. ${error.message}`)
+  }
 }
