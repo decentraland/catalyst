@@ -9,7 +9,7 @@ export async function getItemEntitiesIdsThatMatchCollectionUrnPrefix(
   const matchingString = `${collectionUrn}%`
   const query = SQL`SELECT entity_id FROM active_pointers as p WHERE p.pointer LIKE ${matchingString};`
 
-  const queryResult = (await database.queryWithValues<{ entity_id: string }>(query, 'filter_by_urn_prefix')).rows
+  const queryResult = (await database.query<{ entity_id: string }>(query, 'filter_by_urn_prefix')).rows
   const entityIds = queryResult.map((row) => row.entity_id)
 
   return entityIds
@@ -22,7 +22,7 @@ export async function getThirdPartyCollectionItemsEntityIdsThatMatchUrnPrefix(
   const matchingString = `${collectionUrn}%`
   const query = SQL`SELECT entity_id FROM active_third_party_collection_items_deployments_with_content WHERE pointer LIKE ${matchingString};`
   const queryResult = (
-    await database.queryWithValues<{ entity_id: string }>(query, 'filter_third_party_collection_items_by_urn_prefix')
+    await database.query<{ entity_id: string }>(query, 'filter_third_party_collection_items_by_urn_prefix')
   ).rows
   const entityIds = queryResult.map((row) => row.entity_id)
 
@@ -46,7 +46,7 @@ export async function updateActiveDeployments(
   value_list.forEach((v) => query.append(v))
   query.append(SQL` ON CONFLICT(pointer) DO UPDATE SET entity_id = ${entityId};`)
 
-  await database.queryWithValues(query)
+  await database.query(query)
 }
 
 export async function removeActiveDeployments(database: DatabaseClient, pointers: string[]): Promise<void> {
@@ -61,5 +61,5 @@ export async function removeActiveDeployments(database: DatabaseClient, pointers
   value_list.forEach((v) => query.append(v))
   query.append(`);`)
 
-  await database.queryWithValues(query)
+  await database.query(query)
 }

@@ -5,11 +5,12 @@ export const createDatabaseMockedComponent = (
 ): jest.Mocked<IDatabaseComponent> => {
   return {
     query: jest.fn(),
-    queryWithValues: jest.fn(),
     streamQuery: jest.fn(),
-    transaction: jest.fn(),
+    withTransaction: jest.fn(),
+    withAsyncContextTransaction: jest.fn().mockImplementation(async (fn) => fn()),
+    getPool: jest.fn(),
     start: jest.fn(),
     stop: jest.fn(),
     ...overrides
-  }
+  } as jest.Mocked<IDatabaseComponent>
 }

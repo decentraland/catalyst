@@ -75,10 +75,10 @@ export async function createFailedDeployments(
       if (isSnapshotFailedDeployment(failedDeployment)) {
         // only failed deployments from snapshots are persisted
         if (reportedFailedDeployment) {
-          await components.database.transaction(async (txDatabase) => {
-            await deleteFailedDeployment(txDatabase, failedDeployment.entityId)
-            await saveSnapshotFailedDeployment(txDatabase, failedDeployment)
-          }, 'tx_failed_deployments')
+          await components.database.withAsyncContextTransaction(async () => {
+            await deleteFailedDeployment(components.database, failedDeployment.entityId)
+            await saveSnapshotFailedDeployment(components.database, failedDeployment)
+          })
         } else {
           await saveSnapshotFailedDeployment(components.database, failedDeployment)
         }

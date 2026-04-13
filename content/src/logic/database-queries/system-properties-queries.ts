@@ -6,7 +6,7 @@ export async function getSystemProperty(
   key: string
 ): Promise<string | undefined> {
   const rows = (
-    await components.database.queryWithValues<{ value: string }>(
+    await components.database.query<{ value: string }>(
       SQL`SELECT value FROM system_properties WHERE key = ${key}`
     )
   ).rows
@@ -18,7 +18,7 @@ export async function setSystemProperty(
   key: string,
   value: string
 ): Promise<void> {
-  await components.database.queryWithValues(
+  await components.database.query(
     SQL`INSERT INTO system_properties (key, value) VALUES (${key}, ${value})
   ON CONFLICT ON CONSTRAINT system_properties_pkey
   DO UPDATE SET value = ${value}`

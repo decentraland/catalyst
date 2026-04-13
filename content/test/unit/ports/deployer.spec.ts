@@ -90,6 +90,9 @@ describe('Deployer', function () {
   it(`When an entity is successfully deployed, then the content is stored correctly`, async () => {
     jest.spyOn(failedDeploymentQueries, 'getSnapshotFailedDeployments').mockResolvedValue([])
     jest.spyOn(failedDeploymentQueries, 'deleteFailedDeployment').mockResolvedValue()
+    jest.spyOn(deploymentLogic, 'calculateOverwrites').mockResolvedValue({ overwrote: new Set(), overwrittenBy: null })
+    jest.spyOn(deploymentLogic, 'saveDeploymentAndContentFiles').mockResolvedValue(1)
+    jest.spyOn(deploymentQueries, 'setEntitiesAsOverwritten').mockResolvedValue()
     const service = await buildDeployer()
     const storageSpy = jest.spyOn(service.components.storage, 'storeStream')
 
@@ -191,8 +194,8 @@ describe('Deployer', function () {
   async function buildDeployer() {
     const clock = { now: Date.now }
     const database = createTestDatabaseComponent()
-    database.queryWithValues = () => Promise.resolve({ rows: [], rowCount: 0 } as any)
-    database.transaction = () => Promise.resolve()
+    database.query = () => Promise.resolve({ rows: [], rowCount: 0, notices: [] } as any)
+    database.withAsyncContextTransaction = (fn: () => Promise<any>) => fn()
     const env = new Environment()
     env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, 'inexistent')
     env.setConfig(EnvironmentConfig.DENYLIST_FILE_NAME, 'file')

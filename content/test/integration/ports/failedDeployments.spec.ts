@@ -87,9 +87,9 @@ describe('failed deployments - ', () => {
   })
 
   async function startComponentsWithBaseFailedDeployments(baseFailedDeployments: SnapshotFailedDeployment[]) {
-    await server.components.database.transaction(async (db) => {
+    await server.components.database.withAsyncContextTransaction(async () => {
       for (const failedDeployment of baseFailedDeployments) {
-        await saveSnapshotFailedDeployment(db, failedDeployment)
+        await saveSnapshotFailedDeployment(server.components.database, failedDeployment)
       }
     })
 

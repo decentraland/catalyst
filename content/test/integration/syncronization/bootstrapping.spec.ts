@@ -61,7 +61,7 @@ describe('Bootstrapping synchronization tests', function () {
     // once the bootstrap from snapshots finished, it should have processed the server1 snapshots.
     const server1Snapshots: Set<string> = new Set(
       (
-        await server1.components.database.queryWithValues<{ hash: string }>(SQL`SELECT DISTINCT hash from snapshots;`)
+        await server1.components.database.query<{ hash: string }>(SQL`SELECT DISTINCT hash from snapshots;`)
       ).rows.map((s) => s.hash)
     )
 
@@ -98,10 +98,10 @@ describe('Bootstrapping synchronization tests', function () {
     await startProgramAndWaitUntilBootstrapFinishes(server2)
 
     // now we assert the server 2 processed all the server 1 snapshots; it's in the db and the deployment inside were deployed
-    const server1snapshots = await server1.components.database.queryWithValues<{ hash: string }>(
+    const server1snapshots = await server1.components.database.query<{ hash: string }>(
       SQL`SELECT DISTINCT hash from snapshots ORDER BY hash;`
     )
-    const server2processedSnapshots = await server2.components.database.queryWithValues<{ hash: string }>(
+    const server2processedSnapshots = await server2.components.database.query<{ hash: string }>(
       SQL`SELECT DISTINCT hash from processed_snapshots ORDER BY hash;`
     )
     expect(server1snapshots.rows).toEqual(server2processedSnapshots.rows)
@@ -222,10 +222,10 @@ describe('Bootstrapping synchronization tests', function () {
     await startProgramAndWaitUntilBootstrapFinishes(server2)
 
     // now we assert the server 2 processed all the server 1 snapshots; it's in the db and the deployment inside were deployed
-    const server1snapshots = await server1.components.database.queryWithValues<{ hash: string }>(
+    const server1snapshots = await server1.components.database.query<{ hash: string }>(
       SQL`SELECT DISTINCT hash from snapshots ORDER BY hash;`
     )
-    const server2processedSnapshots = await server2.components.database.queryWithValues<{ hash: string }>(
+    const server2processedSnapshots = await server2.components.database.query<{ hash: string }>(
       SQL`SELECT DISTINCT hash from processed_snapshots ORDER BY hash;`
     )
     expect(server1snapshots.rows).toEqual(server2processedSnapshots.rows)

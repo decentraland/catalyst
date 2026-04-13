@@ -33,7 +33,7 @@ export interface HistoricalDeploymentsRow {
 }
 
 export async function deploymentExists(database: DatabaseClient, entityId: string): Promise<boolean> {
-  const result = await database.queryWithValues(
+  const result = await database.query(
     SQL`
     SELECT 1
     FROM deployments
@@ -58,8 +58,7 @@ export async function* streamAllEntityIdsInTimeRange(
         BETWEEN to_timestamp(${timeRange.initTimestamp} / 1000.0)
         AND to_timestamp(${timeRange.endTimestamp} / 1000.0)
     `,
-    { batchSize: 10000 },
-    'stream_entity_ids_in_timerange'
+    { batchSize: 10000 }
   )) {
     yield row.entity_id
   }
@@ -193,7 +192,7 @@ export async function getHistoricalDeployments(
 ): Promise<HistoricalDeployment[]> {
   const query = getHistoricalDeploymentsQuery(offset, limit, filters, sortBy, lastId)
 
-  const historicalDeploymentsResponse = await database.queryWithValues(query, 'get_historical_deployments')
+  const historicalDeploymentsResponse = await database.query(query, 'get_historical_deployments')
 
   const historicalDeployments: HistoricalDeployment[] = historicalDeploymentsResponse.rows.map(
     (row: HistoricalDeploymentsRow): HistoricalDeployment => ({
@@ -241,7 +240,7 @@ export async function getActiveDeploymentsByContentHash(
   const query = SQL`SELECT deployment.entity_id FROM deployments as deployment INNER JOIN content_files ON content_files.deployment=deployment.id
     WHERE content_hash=${contentHash} AND deployment.deleter_deployment IS NULL;`
 
-  const queryResult = (await components.database.queryWithValues(query, 'active_deployments_by_hash')).rows
+  const queryResult = (await components.database.query(query, 'active_deployments_by_hash')).rows
 
   const entities = queryResult.map((deployment: { entity_id: string }) => deployment.entity_id)
 
@@ -252,7 +251,7 @@ export async function getEntityById(
   database: DatabaseClient,
   entityId: string
 ): Promise<{ entityId: string; localTimestamp: number } | undefined> {
-  const queryResult = await database.queryWithValues<{ entityId: string; localTimestamp: number }>(
+  const queryResult = await database.query<{ entityId: string; localTimestamp: number }>(
     SQL`
     SELECT
       entity_id AS "entityId",
@@ -286,7 +285,7 @@ export async function saveDeployment(
     auditInfo.authChain
   )}, ${overwrittenBy})
   RETURNING id`
-  const queryResult = await database.queryWithValues<{ id: number }>(query, 'save_deployment')
+  const queryResult = await database.query<{ id: number }>(query, 'save_deployment')
   return queryResult.rows[0].id
 }
 
@@ -308,7 +307,7 @@ export async function saveContentFiles(
     }
   }
 
-  await database.queryWithValues(query)
+  await database.query(query)
 }
 
 export async function getDeployments(
@@ -320,7 +319,7 @@ export async function getDeployments(
   const ids = Array.from(deploymentIds).map((id, idx) => (idx < deploymentIds.size - 1 ? SQL`${id},` : SQL`${id}`))
   ids.forEach((id) => query.append(id))
   query.append(`);`)
-  const queryResult = await database.queryWithValues<{ id: number; pointers: string[] }>(query, 'get_deployments')
+  const queryResult = await database.query<{ id: number; pointers: string[] }>(query, 'get_deployments')
   return queryResult.rows
 }
 
@@ -331,12 +330,12 @@ export async function setEntitiesAsOverwritten(
 ): Promise<void> {
   const ids = Array.from(allOverwritten.values())
   const query = SQL`UPDATE deployments SET deleter_deployment = ${overwrittenBy} WHERE id = ANY(${ids})`
-  await database.queryWithValues(query)
+  await database.query(query)
 }
 
 export async function calculateOverwrote(database: DatabaseClient, entity: Entity): Promise<DeploymentId[]> {
   return (
-    await database.queryWithValues<{ id: number }>(
+    await database.query<{ id: number }>(
       SQL`
           SELECT dep1.id
           FROM deployments AS dep1
@@ -368,12 +367,12 @@ export async function calculateOverwrittenByManyFast(
           AND (deployments.entity_timestamp > to_timestamp(${entity.timestamp} / 1000.0) OR (deployments.entity_timestamp = to_timestamp(${entity.timestamp} / 1000.0) AND deployments.entity_id > ${entity.id}))
         ORDER BY deployments.entity_timestamp, deployments.entity_id
         LIMIT 1`)
-  return (await database.queryWithValues<{ id: number }>(q)).rows
+  return (await database.query<{ id: number }>(q)).rows
 }
 
 export async function calculateOverwrittenBySlow(database: DatabaseClient, entity: Entity): Promise<{ id: number }[]> {
   return (
-    await database.queryWithValues<{ id: number }>(
+    await database.query<{ id: number }>(
       SQL`
     SELECT deployments.id
     FROM deployments

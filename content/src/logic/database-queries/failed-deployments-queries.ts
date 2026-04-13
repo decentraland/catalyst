@@ -16,11 +16,11 @@ export async function saveSnapshotFailedDeployment(
   )}, ${errorDescription}, ${failedDeployment.snapshotHash})
   RETURNING entity_id
   `
-  await database.queryWithValues(query, 'save_failed_deployment')
+  await database.query(query, 'save_failed_deployment')
 }
 
 export async function deleteFailedDeployment(database: DatabaseClient, entityId: string): Promise<void> {
-  await database.queryWithValues<{ count: string }>(
+  await database.query<{ count: string }>(
     SQL`DELETE FROM failed_deployments WHERE entity_id = ${entityId}`,
     'delete_failed_deployment'
   )
@@ -37,6 +37,6 @@ export async function getSnapshotFailedDeployments(database: DatabaseClient): Pr
       error_description AS "errorDescription",
       snapshot_hash AS "snapshotHash"
   FROM failed_deployments`
-  const queryResult = await database.queryWithValues<SnapshotFailedDeployment>(query, 'get_failed_deployments')
+  const queryResult = await database.query<SnapshotFailedDeployment>(query, 'get_failed_deployments')
   return queryResult.rows
 }

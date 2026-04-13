@@ -66,7 +66,7 @@ export class GarbageCollectionManager {
   // NOTE: remove old profile deployments and their images,
   // it will remove a max of ${PROFILE_CLEANUP_LIMIT}
   async gcStaleProfiles(oldProfileSince: Date): Promise<GCStaleProfilesResult> {
-    const result = await this.components.database.queryWithValues<{ id: string; content_hash: string }>(
+    const result = await this.components.database.query<{ id: string; content_hash: string }>(
       SQL`SELECT d.id, cf.content_hash
           FROM deployments d
           LEFT JOIN content_files cf on cf.deployment = d.id
@@ -99,7 +99,7 @@ export class GarbageCollectionManager {
       deploymentsSet.add(id)
     }
 
-    const hashesInUse = await this.components.database.queryWithValues<{ content_hash: string }>(
+    const hashesInUse = await this.components.database.query<{ content_hash: string }>(
       SQL`SELECT content_hash FROM content_files cf inner join deployments d on cf.deployment = d.id WHERE content_hash = ANY(${Array.from(
         hashesSet
       )}) AND d.entity_timestamp > ${oldProfileSince}`,
@@ -117,19 +117,19 @@ export class GarbageCollectionManager {
     await this.components.storage.delete(hashes)
 
     this.LOGGER.info(`Profile cleanup will remove ${hashes.length} from content_files`)
-    await this.components.database.queryWithValues(
+    await this.components.database.query(
       SQL`DELETE FROM content_files WHERE deployment = ANY(${deployments})`,
       'gc_old_profiles_delete_content_files'
     )
 
     this.LOGGER.info(`Profile cleanup will remove foreign keys for ${deployments.length} deployments`)
-    await this.components.database.queryWithValues(
+    await this.components.database.query(
       SQL`UPDATE deployments SET deleter_deployment = NULL WHERE deleter_deployment = ANY(${deployments})`,
       'gc_old_profiles_update_deployments'
     )
 
     this.LOGGER.info(`Profile cleanup will remove ${deployments.length} deployments`)
-    await this.components.database.queryWithValues(
+    await this.components.database.query(
       SQL`DELETE FROM deployments WHERE id = ANY(${deployments})`,
       'gc_old_profiles_delete_deployments'
     )
@@ -143,7 +143,7 @@ export class GarbageCollectionManager {
   async gcProfileActiveEntities(oldProfileSince: Date): Promise<Set<string>> {
     this.LOGGER.info('Running clear old profiles process')
 
-    const result = await this.components.database.queryWithValues<{ pointer: string }>(
+    const result = await this.components.database.query<{ pointer: string }>(
       SQL`DELETE FROM active_pointers ap
           USING deployments d
           WHERE d.entity_id = ap.entity_id

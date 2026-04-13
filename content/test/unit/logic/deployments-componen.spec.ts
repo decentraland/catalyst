@@ -17,15 +17,13 @@ import { DeploymentId } from '../../../src/types'
 
 let deployments: IDeploymentsComponent
 let database: jest.Mocked<IDatabaseComponent>
-let queryWithValuesMock: jest.Mocked<IDatabaseComponent>['queryWithValues']
-let infoMock: jest.MockedFn<ILoggerComponent.ILogger['info']>
 let queryMock: jest.Mocked<IDatabaseComponent>['query']
+let infoMock: jest.MockedFn<ILoggerComponent.ILogger['info']>
 
 beforeEach(() => {
   infoMock = jest.fn()
   queryMock = jest.fn()
-  queryWithValuesMock = jest.fn()
-  database = createDatabaseMockedComponent({ queryWithValues: queryWithValuesMock, query: queryMock })
+  database = createDatabaseMockedComponent({ query: queryMock })
   const logs = createLogsMockedComponent({ info: infoMock })
   deployments = createDeploymentsComponent({ database, logs })
 })
@@ -33,7 +31,7 @@ beforeEach(() => {
 describe('when getting the deployments for active third party collection items by entity ids', () => {
   describe('when the entity ids are not found', () => {
     beforeEach(() => {
-      queryWithValuesMock.mockResolvedValue({ rows: [], rowCount: 0 })
+      queryMock.mockResolvedValue({ rows: [], rowCount: 0, notices: [] })
     })
 
     it('should return an empty array', async () => {
@@ -79,9 +77,10 @@ describe('when getting the deployments for active third party collection items b
         })
       ]
 
-      queryWithValuesMock.mockResolvedValue({
+      queryMock.mockResolvedValue({
         rows: rowEntities,
-        rowCount: 2
+        rowCount: 2,
+        notices: []
       })
     })
 
@@ -97,7 +96,7 @@ describe('when getting the deployments for active third party collection items b
 
 describe('when updating the materialized views', () => {
   beforeEach(() => {
-    queryMock.mockResolvedValueOnce({ rows: [], rowCount: 0 })
+    queryMock.mockResolvedValueOnce({ rows: [], rowCount: 0, notices: [] })
   })
 
   it('should update the materialized views', async () => {

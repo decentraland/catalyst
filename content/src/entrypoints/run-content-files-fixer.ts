@@ -14,7 +14,7 @@ import { Readable } from 'stream'
 import { Environment, EnvironmentBuilder, EnvironmentConfig } from '../Environment'
 import { saveContentFiles } from '../logic/database-queries/deployments-queries'
 import { metricsDeclaration } from '../metrics'
-import { createDatabaseComponent } from '../ports/postgres'
+import { createPgComponent } from '@dcl/pg-component'
 import { AppComponents } from '../types'
 
 export type ContentFilesFixerComponents = Pick<AppComponents, 'database' | 'env' | 'fetcher' | 'logs' | 'storage'>
@@ -40,7 +40,16 @@ void Lifecycle.run({
     const metrics = createTestMetricsComponent(metricsDeclaration)
     const env = await new EnvironmentBuilder().withConfig(EnvironmentConfig.PG_QUERY_TIMEOUT, 300_000).build()
     const fs = createFsComponent()
-    const database = await createDatabaseComponent({ logs, env, metrics })
+    const pgConfig = createConfigComponent({
+      PG_COMPONENT_PSQL_HOST: env.getConfig<string>(EnvironmentConfig.PSQL_HOST) ?? 'localhost',
+      PG_COMPONENT_PSQL_PORT: String(env.getConfig<number>(EnvironmentConfig.PSQL_PORT) ?? 5432),
+      PG_COMPONENT_PSQL_DATABASE: env.getConfig<string>(EnvironmentConfig.PSQL_DATABASE) ?? 'content',
+      PG_COMPONENT_PSQL_USER: env.getConfig<string>(EnvironmentConfig.PSQL_USER) ?? 'postgres',
+      PG_COMPONENT_PSQL_PASSWORD: env.getConfig<string>(EnvironmentConfig.PSQL_PASSWORD) ?? '',
+      PG_COMPONENT_IDLE_TIMEOUT: String(env.getConfig<number>(EnvironmentConfig.PG_IDLE_TIMEOUT) ?? 30000),
+      PG_COMPONENT_QUERY_TIMEOUT: String(env.getConfig<number>(EnvironmentConfig.PG_QUERY_TIMEOUT) ?? 300000)
+    })
+    const database = await createPgComponent({ config: pgConfig, logs, metrics })
     const contentStorageFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
     const storage = await createFolderBasedFileSystemContentStorage({ fs, logs }, contentStorageFolder)
     env.logConfigValues(logs.getLogger('Environment'))
@@ -99,9 +108,9 @@ async function fixMissingProfilesContentFiles({ database, env, fetcher, logs, st
           await ensureFileExistsInStorage(env, logger, storage, fetcher, file.hash)
         }
 
-        await database.transaction(async (databaseClient) => {
-          await saveContentFiles(databaseClient, deployment.id, contentFiles)
-        }, 'save_content_files')
+        await database.withAsyncContextTransaction(async () => {
+          await saveContentFiles(database, deployment.id, contentFiles)
+        })
       } catch (e) {
         logger.warn(
           `Error processing deployment id ${deployment.id} for entity id ${

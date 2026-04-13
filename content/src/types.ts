@@ -16,7 +16,6 @@ import { HTTPProvider } from 'eth-connect'
 import qs from 'qs'
 import { Environment } from './Environment'
 import { metricsDeclaration } from './metrics'
-import { MigrationExecutor } from './migrations/migration-executor'
 import { ActiveEntities } from './ports/activeEntities'
 import { Clock } from './ports/clock'
 import { DAOComponent } from './ports/dao-servers-getter'
@@ -89,7 +88,6 @@ export type AppComponents = {
   deployRateLimiter: IDeployRateLimiterComponent
   storage: IContentStorageComponent
   authenticator: ContentAuthenticator
-  migrationManager: MigrationExecutor
   serverValidator: ServerValidator
   externalCalls: ExternalCalls
   validator: {
@@ -122,7 +120,6 @@ export type MaintenanceComponents = {
   database: IDatabaseComponent
   storage: IContentStorageComponent
   fs: IFileSystemComponent
-  migrationManager: MigrationExecutor
 }
 
 export type Timestamp = number

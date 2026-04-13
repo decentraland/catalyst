@@ -22,8 +22,7 @@ export async function* streamActiveDeploymentsInTimeRange(
     AND entity_timestamp BETWEEN to_timestamp(${timeRange.initTimestamp} / 1000.0) AND to_timestamp(${timeRange.endTimestamp} / 1000.0)
     ORDER BY entity_timestamp
     `,
-    { batchSize: 1000 },
-    'stream_active_deployments_in_timerange'
+    { batchSize: 1000 }
   )) {
     yield row
   }
@@ -46,7 +45,7 @@ export async function findSnapshotsStrictlyContainedInTimeRange(
   AND end_timestamp <= to_timestamp(${timerange.endTimestamp} / 1000.0)
   `
   return (
-    await database.queryWithValues<{
+    await database.query<{
       hash: string
       initTimestamp: number
       endTimestamp: number
@@ -83,11 +82,11 @@ export async function saveSnapshot(database: DatabaseClient, snapshotMetadata: S
   )
   RETURNING hash
   `
-  await database.queryWithValues(query, 'save_snapshot')
+  await database.query(query, 'save_snapshot')
 }
 
 export async function isOwnSnapshot(database: DatabaseClient, snapshotHash: string): Promise<boolean> {
-  const queryResult = await database.queryWithValues<{ hash: string }>(
+  const queryResult = await database.query<{ hash: string }>(
     SQL`SELECT hash from snapshots WHERE hash = ${snapshotHash}`,
     'has_snapshot'
   )
@@ -113,7 +112,7 @@ export async function getSnapshotHashesNotInTimeRange(
   hashes.forEach((hash) => query.append(hash))
   query.append(`);`)
 
-  const result = await database.queryWithValues<{ hash: string }>(query, 'get_snapshots')
+  const result = await database.query<{ hash: string }>(query, 'get_snapshots')
   return new Set(result.rows.map((row) => row.hash))
 }
 
@@ -133,7 +132,7 @@ export async function deleteSnapshotsInTimeRange(
   const hashes = snapshotHashesToDelete.map((h, i) => (i < snapshotHashesToDelete.length - 1 ? SQL`${h},` : SQL`${h}`))
   hashes.forEach((hash) => query.append(hash))
   query.append(`);`)
-  await database.queryWithValues(query, 'save_snapshot')
+  await database.query(query, 'save_snapshot')
 }
 
 /**
@@ -142,7 +141,7 @@ export async function deleteSnapshotsInTimeRange(
  * In this case, the snapshot should be recreated in order to include these entities.
  */
 export async function snapshotIsOutdated(database: DatabaseClient, snapshot: SnapshotMetadata): Promise<boolean> {
-  const result = await database.queryWithValues<{ numberOfEntities: number }>(
+  const result = await database.query<{ numberOfEntities: number }>(
     SQL`
   SELECT 1 FROM deployments
   WHERE deleter_deployment IS null
@@ -159,7 +158,7 @@ export async function getNumberOfActiveEntitiesInTimeRange(
   database: DatabaseClient,
   timeRange: TimeRange
 ): Promise<number> {
-  const result = await database.queryWithValues<{ numberOfEntities: number }>(
+  const result = await database.query<{ numberOfEntities: number }>(
     SQL`
   SELECT
     COUNT(*) AS "numberOfEntities"
@@ -184,7 +183,7 @@ export async function saveProcessedSnapshot(
   (${processedSnapshotHash}, to_timestamp(${processTimestampSecs} / 1000.0))
   RETURNING hash
   `
-  await database.queryWithValues(query, 'save_processed_snapshot')
+  await database.query(query, 'save_processed_snapshot')
 }
 
 export async function getProcessedSnapshots(
@@ -201,6 +200,6 @@ export async function getProcessedSnapshots(
   hashes.forEach((hash) => query.append(hash))
   query.append(`);`)
 
-  const result = await database.queryWithValues<{ hash: string }>(query, 'get_processed_snapshots')
+  const result = await database.query<{ hash: string }>(query, 'get_processed_snapshots')
   return new Set(result.rows.map((row) => row.hash))
 }

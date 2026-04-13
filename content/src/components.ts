@@ -14,7 +14,6 @@ import { L1Network } from '@dcl/catalyst-contracts'
 import { CURRENT_VERSION, CURRENT_COMMIT_HASH, Environment, EnvironmentConfig } from './Environment'
 import { splitByCommaTrimAndRemoveEmptyElements } from './logic/config-helpers'
 import { metricsDeclaration } from './metrics'
-import { createMigrationExecutor } from './migrations/migration-executor'
 import { createActiveEntitiesComponent } from './ports/activeEntities'
 import { createClock } from './ports/clock'
 import { createCustomDAOComponent, createDAOComponent } from './ports/dao-servers-getter'
@@ -23,7 +22,9 @@ import { createDeployRateLimiter } from './ports/deployRateLimiterComponent'
 import { createDeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
 import { createDeployer } from './ports/deployer'
 import { createFailedDeployments } from './ports/failedDeployments'
-import { createDatabaseComponent } from './ports/postgres'
+import { createPgComponent } from '@dcl/pg-component'
+import { createConfigComponent } from '@well-known-components/env-config-provider'
+import { join } from 'path'
 import { createProcessedSnapshotStorage } from './ports/processedSnapshotStorage'
 import { createSequentialTaskExecutor } from './ports/sequecuentialTaskExecutor'
 import { createSnapshotGenerator } from './ports/snapshotGenerator'
@@ -93,7 +94,27 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     }
   )
 
-  const database = await createDatabaseComponent({ logs, env, metrics })
+  const pgConfig = createConfigComponent({
+    PG_COMPONENT_PSQL_HOST: env.getConfig<string>(EnvironmentConfig.PSQL_HOST) ?? 'localhost',
+    PG_COMPONENT_PSQL_PORT: String(env.getConfig<number>(EnvironmentConfig.PSQL_PORT) ?? 5432),
+    PG_COMPONENT_PSQL_DATABASE: env.getConfig<string>(EnvironmentConfig.PSQL_DATABASE) ?? 'content',
+    PG_COMPONENT_PSQL_USER: env.getConfig<string>(EnvironmentConfig.PSQL_USER) ?? 'postgres',
+    PG_COMPONENT_PSQL_PASSWORD: env.getConfig<string>(EnvironmentConfig.PSQL_PASSWORD) ?? '',
+    PG_COMPONENT_IDLE_TIMEOUT: String(env.getConfig<number>(EnvironmentConfig.PG_IDLE_TIMEOUT) ?? 30000),
+    PG_COMPONENT_QUERY_TIMEOUT: String(env.getConfig<number>(EnvironmentConfig.PG_QUERY_TIMEOUT) ?? 60000),
+    PG_COMPONENT_STREAM_QUERY_TIMEOUT: String(env.getConfig<number>(EnvironmentConfig.PG_STREAM_QUERY_TIMEOUT) ?? 600000)
+  })
+  const database = await createPgComponent({ config: pgConfig, logs, metrics }, {
+    migration: {
+      migrationsTable: 'migrations',
+      dir: join(__dirname, 'migrations/scripts'),
+      direction: 'up' as const,
+      count: Infinity,
+      ignorePattern: '.*\\.map',
+      createSchema: true,
+      createMigrationsSchema: true
+    }
+  })
 
   const sequentialExecutor = createSequentialTaskExecutor({ metrics, logs })
 
@@ -333,8 +354,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     clock
   })
 
-  const migrationManager = createMigrationExecutor({ logs, env })
-
   env.logConfigValues(logs.getLogger('Environment'))
 
   const _server = await createServerComponent<GlobalContext>(
@@ -396,7 +415,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     pointerManager,
     storage,
     authenticator,
-    migrationManager,
     externalCalls,
     validator,
     serverValidator,
