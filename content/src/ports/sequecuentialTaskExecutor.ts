@@ -1,7 +1,7 @@
 // TODO: move this port to WKC repository
 
 import { ILoggerComponent, IMetricsComponent } from '@well-known-components/interfaces'
-import { validateMetricsDeclaration } from '@well-known-components/metrics'
+import { validateMetricsDeclaration } from '@dcl/metrics'
 import PQueue from 'p-queue'
 
 export type ISequentialTaskExecutorComponent = {
