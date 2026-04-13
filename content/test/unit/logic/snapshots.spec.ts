@@ -45,8 +45,8 @@ describe('generate snapshot', () => {
   })
 
   beforeEach(() => {
-    jest.spyOn(database, 'transaction').mockImplementation(async (f) => {
-      await f({ insideTx: true, ...database })
+    jest.spyOn(database, 'withAsyncContextTransaction').mockImplementation(async (f) => {
+      await f()
     })
   })
 
@@ -133,8 +133,8 @@ describe('generate snapshot in multiple', () => {
   })
 
   beforeEach(() => {
-    jest.spyOn(database, 'transaction').mockImplementation(async (f) => {
-      await f({ insideTx: true, ...database })
+    jest.spyOn(database, 'withAsyncContextTransaction').mockImplementation(async (f) => {
+      await f()
     })
     saveSpy = jest.spyOn(snapshotQueries, 'saveSnapshot').mockImplementation()
     deleteSpy = jest.spyOn(snapshotQueries, 'deleteSnapshotsInTimeRange').mockImplementation()

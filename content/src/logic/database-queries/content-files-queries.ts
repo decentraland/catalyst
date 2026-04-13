@@ -18,7 +18,7 @@ export async function getContentFiles(
   }
 
   const queryResult = (
-    await database.queryWithValues(
+    await database.query(
       SQL`SELECT deployment, key, content_hash FROM content_files WHERE deployment = ANY (${deploymentIds})`,
       'get_content_files'
     )
@@ -40,7 +40,7 @@ export async function findContentHashesNotBeingUsedAnymore(
   lastGarbageCollectionTimestamp: number
 ): Promise<string[]> {
   return (
-    await database.queryWithValues<{ content_hash: string }>(
+    await database.query<{ content_hash: string }>(
       SQL`
     SELECT content_files.content_hash
     FROM content_files

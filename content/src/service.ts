@@ -33,8 +33,7 @@ export async function main(program: Lifecycle.EntryPointParameters<AppComponents
 
   await migrateContentFolderStructure(components)
 
-  // first of all, run the migrations
-  await components.migrationManager.run()
+  // migrations are now run automatically by @dcl/pg-component during database.start()
 
   const router = await setupRouter(globalContext)
 

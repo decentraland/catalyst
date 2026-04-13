@@ -4,7 +4,7 @@ import { AppComponents } from '../../../src/types'
 describe('content files queries', () => {
   describe('getContentFiles', () => {
     const components: Pick<AppComponents, 'database'> = {
-      database: { queryWithValues: () => {} }
+      database: { query: () => {} }
     } as any
 
     const deploymentIds = [127, 255]
@@ -28,10 +28,11 @@ describe('content files queries', () => {
     ]
 
     beforeAll(() => {
-      jest.spyOn(components.database, 'queryWithValues').mockResolvedValue({
+      jest.spyOn(components.database, 'query').mockResolvedValue({
         rows: content_files_response,
-        rowCount: 2
-      })
+        rowCount: 2,
+        notices: []
+      } as any)
     })
 
     it('should return a map from deployment id to an array of content', async () => {

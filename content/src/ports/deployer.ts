@@ -19,7 +19,7 @@ import { calculateDeprecatedHashes, calculateIPFSHashes } from '../logic/hashing
 import { DELTA_POINTER_RESULT } from '../service/pointers/PointerManager'
 import { happenedBefore } from '../service/time/TimeSorting'
 import { AppComponents, EntityVersion } from '../types'
-import { DatabaseClient } from './postgres'
+import { IDatabaseComponent } from './postgres'
 
 export function isIPFSHash(hash: string): boolean {
   return IPFSv2.validate(hash)
@@ -100,7 +100,7 @@ export function createDeployer(
   }
 
   async function storeDeploymentInDatabase(
-    database: DatabaseClient,
+    database: IDatabaseComponent,
     entityId: string,
     entity: Entity,
     auditInfo: LocalDeploymentAuditInfo,
@@ -142,15 +142,15 @@ export function createDeployer(
       // Store the entity's content
       await storeEntityContent(hashes)
 
-      await components.database.transaction(async (database) => {
+      await components.database.withAsyncContextTransaction(async () => {
         // Calculate overwrites
-        const { overwrote, overwrittenBy } = await calculateOverwrites(database, entity)
+        const { overwrote, overwrittenBy } = await calculateOverwrites(components.database, entity)
 
         // Store the deployment
-        const deploymentId = await saveDeploymentAndContentFiles(database, entity, auditInfoComplete, overwrittenBy)
+        const deploymentId = await saveDeploymentAndContentFiles(components.database, entity, auditInfoComplete, overwrittenBy)
         // Modify active pointers
         const pointersFromEntity = await components.pointerManager.referenceEntityFromPointers(
-          database,
+          components.database,
           entity,
           overwrote,
           overwrittenBy !== null
@@ -168,17 +168,17 @@ export function createDeployer(
         // invalidate pointers (points to an entity that is no longer active)
         // this case happen when the entity is overwritten
         if (clearedPointers.length > 0) {
-          await components.activeEntities.clear(database, clearedPointers)
+          await components.activeEntities.clear(components.database, clearedPointers)
         }
 
         // update pointer (points to the new entity that is active)
         if (setPointers.length > 0) {
-          await components.activeEntities.update(database, setPointers, entity)
+          await components.activeEntities.update(components.database, setPointers, entity)
         }
 
         // Set who overwrote who
-        await setEntitiesAsOverwritten(database, overwrote, deploymentId)
-      }, 'tx_deploy_entity')
+        await setEntitiesAsOverwritten(components.database, overwrote, deploymentId)
+      })
     } else {
       logger.info(`Entity already deployed`, { entityId })
       auditInfoComplete.localTimestamp = deployedEntity.localTimestamp

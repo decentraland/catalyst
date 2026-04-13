@@ -169,7 +169,7 @@ describe('Integration - Garbage Collection', () => {
     })
 
     async function findDeploymentId(entityId: string): Promise<number> {
-      const result = await components.database.queryWithValues<{ id: number }>(
+      const result = await components.database.query<{ id: number }>(
         SQL`SELECT id FROM deployments WHERE entity_id = ${entityId}`,
         'find_deployment_id'
       )

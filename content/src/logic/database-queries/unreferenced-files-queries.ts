@@ -29,7 +29,7 @@ export async function* streamAllDistinctEntityIds(components: Pick<AppComponents
 
 export async function* getAllSnapshotHashes(components: Pick<AppComponents, 'database'>) {
   const { database } = components
-  const queryResult = await database.queryWithValues<{ hash: string }>(SNAPSHOT_HASHES_QUERY)
+  const queryResult = await database.query<{ hash: string }>(SNAPSHOT_HASHES_QUERY)
   for (const row of queryResult.rows) {
     yield row.hash
   }

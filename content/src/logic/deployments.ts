@@ -279,7 +279,7 @@ export async function getDeploymentsForActiveEntities(
       : SQL`dep1.entity_pointers && ${pointers!.map((p) => p.toLowerCase())}`
   )
 
-  const historicalDeploymentsResponse = await database.queryWithValues(query, 'get_active_entities')
+  const historicalDeploymentsResponse = await database.query(query, 'get_active_entities')
 
   const deploymentsResult: HistoricalDeployment[] = historicalDeploymentsResponse.rows.map(
     (row: HistoricalDeploymentsRow): HistoricalDeployment => buildHistoricalDeploymentsFromRow(row)
@@ -305,7 +305,7 @@ export const createDeploymentsComponent = (
       SELECT * FROM active_third_party_collection_items_deployments_with_content
       WHERE entity_id = ANY(${entityIds});
     `
-    const deployments = await database.queryWithValues<
+    const deployments = await database.query<
       HistoricalDeploymentsRow & { content_keys: string[]; content_hashes: string[] }
     >(query, 'get_deployments_for_active_third_party_collection_items_by_entity_ids')
     const contents = new Map<DeploymentId, DeploymentContent[]>(

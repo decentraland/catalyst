@@ -1,11 +1,8 @@
 import { createInMemoryStorage } from '@dcl/catalyst-storage'
 import { Authenticator } from '@dcl/crypto'
 import { Entity, EntityType, EthAddress } from '@dcl/schemas'
-import { IDatabase } from '@well-known-components/interfaces'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { HTTPProvider } from 'eth-connect'
-
-import { SQLStatement } from 'sql-template-strings'
 import { Deployment } from '../../../src/deployment-types'
 import { DEFAULT_ENTITIES_CACHE_SIZE, Environment, EnvironmentConfig } from '../../../src/Environment'
 import * as deployments from '../../../src/logic/deployments'
@@ -340,22 +337,19 @@ describe('activeEntities', () => {
 
   describe('when retrieving active entities by a URN prefix', () => {
     let activeEntities: ActiveEntities
-    let queryWithValuesMock: jest.Mock<
-      Promise<IDatabase.IQueryResult<any>>,
-      [sql: SQLStatement, durationQueryNameLabel?: string]
-    >
+    let queryMock: jest.Mock
     let getDeploymentsForActiveThirdPartyItemsByEntityIdsMock: jest.MockedFn<
       IDeploymentsComponent['getDeploymentsForActiveThirdPartyItemsByEntityIds']
     >
     let urn: string
 
     beforeEach(() => {
-      queryWithValuesMock = jest.fn()
+      queryMock = jest.fn()
       getDeploymentsForActiveThirdPartyItemsByEntityIdsMock = jest.fn()
       const env = new Environment()
       env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)
       activeEntities = createActiveEntitiesComponent({
-        database: createDatabaseMockedComponent({ queryWithValues: queryWithValuesMock }),
+        database: createDatabaseMockedComponent({ query: queryMock }),
         env,
         logs: createLogsMockedComponent(),
         metrics: createTestMetricsComponent(metricsDeclaration),
@@ -374,7 +368,7 @@ describe('activeEntities', () => {
 
       describe('and no entity ids are found with the URN prefix', () => {
         beforeEach(() => {
-          queryWithValuesMock.mockResolvedValueOnce({ rows: [], rowCount: 0 })
+          queryMock.mockResolvedValueOnce({ rows: [], rowCount: 0 })
         })
 
         it('should return an empty list', async () => {
@@ -389,7 +383,7 @@ describe('activeEntities', () => {
         beforeEach(() => {
           const deployments = [createDeploymentMock({ entityId: 'anEntityId' })]
           entities = mapDeploymentsToEntities(deployments)
-          queryWithValuesMock.mockResolvedValueOnce({
+          queryMock.mockResolvedValueOnce({
             rows: entities.map((e) => ({ entity_id: e.id })),
             rowCount: entities.length
           })
@@ -410,7 +404,7 @@ describe('activeEntities', () => {
 
       describe('and no entity ids are found with the URN prefix', () => {
         beforeEach(() => {
-          queryWithValuesMock.mockResolvedValueOnce({ rows: [], rowCount: 0 })
+          queryMock.mockResolvedValueOnce({ rows: [], rowCount: 0 })
         })
 
         it('should return an empty list', async () => {
@@ -427,7 +421,7 @@ describe('activeEntities', () => {
           sut.mockClear()
           deployments = [createDeploymentMock({ entityId: 'anEntityId' })]
           entities = mapDeploymentsToEntities(deployments)
-          queryWithValuesMock.mockResolvedValueOnce({
+          queryMock.mockResolvedValueOnce({
             rows: entities.map((e) => ({ entity_id: e.id })),
             rowCount: entities.length
           })
@@ -445,9 +439,9 @@ describe('activeEntities', () => {
 
 async function buildComponents() {
   const database = createDatabaseMockedComponent({
-    queryWithValues: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }),
-    query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }),
-    transaction: jest.fn().mockResolvedValue(undefined)
+    query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0, notices: [] }),
+    withTransaction: jest.fn().mockResolvedValue(undefined),
+    withAsyncContextTransaction: jest.fn().mockImplementation(async (fn: any) => fn())
   })
   const env = new Environment()
   env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, 'inexistent')

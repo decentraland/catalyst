@@ -8,9 +8,10 @@ import ms from 'ms'
 import { DEFAULT_DATABASE_CONFIG, Environment, EnvironmentBuilder, EnvironmentConfig } from '../../src/Environment'
 import { stopAllComponents } from '../../src/logic/components-lifecycle'
 import { metricsDeclaration } from '../../src/metrics'
-import { createMigrationExecutor } from '../../src/migrations/migration-executor'
+import { createPgComponent } from '@dcl/pg-component'
+import { join } from 'path'
 import { DAOComponent } from '../../src/ports/dao-servers-getter'
-import { IDatabaseComponent, createDatabaseComponent } from '../../src/ports/postgres'
+import { IDatabaseComponent } from '../../src/ports/postgres'
 import { AppComponents } from '../../src/types'
 import { MockedDAOClient } from '../helpers/service/synchronization/clients/MockedDAOClient'
 import { createNoOpDeployRateLimiter } from '../mocks/deploy-rate-limiter-mock'
@@ -52,7 +53,14 @@ export class E2ETestEnvironment {
         LOG_LEVEL: 'WARN'
       })
     })
-    this.database = await createDatabaseComponent({ logs: this.logs, env: this.sharedEnv, metrics })
+    const pgConfig = createConfigComponent({
+      PG_COMPONENT_PSQL_HOST: this.sharedEnv.getConfig<string>(EnvironmentConfig.PSQL_HOST) ?? 'localhost',
+      PG_COMPONENT_PSQL_PORT: String(this.sharedEnv.getConfig<number>(EnvironmentConfig.PSQL_PORT) ?? 5432),
+      PG_COMPONENT_PSQL_DATABASE: this.sharedEnv.getConfig<string>(EnvironmentConfig.PSQL_DATABASE) ?? 'content',
+      PG_COMPONENT_PSQL_USER: this.sharedEnv.getConfig<string>(EnvironmentConfig.PSQL_USER) ?? 'postgres',
+      PG_COMPONENT_PSQL_PASSWORD: this.sharedEnv.getConfig<string>(EnvironmentConfig.PSQL_PASSWORD) ?? ''
+    })
+    this.database = await createPgComponent({ config: pgConfig, logs: this.logs, metrics })
     if (this.database.start) {
       await this.database.start()
     }
@@ -107,9 +115,28 @@ export class E2ETestEnvironment {
   async getEnvForNewDatabase(): Promise<Environment> {
     const [dbName] = await this.createDatabases(1)
     const env = new Environment(this.sharedEnv).setConfig(EnvironmentConfig.PSQL_DATABASE, dbName)
-    const migrationManager = createMigrationExecutor({ logs: this.logs, env })
-    await migrationManager.run()
-    await stopAllComponents({ migrationManager })
+    // Migrations are now run automatically by @dcl/pg-component during database.start()
+    // Create a temporary pg component just to run migrations
+    const pgConfig = createConfigComponent({
+      PG_COMPONENT_PSQL_HOST: env.getConfig<string>(EnvironmentConfig.PSQL_HOST) ?? 'localhost',
+      PG_COMPONENT_PSQL_PORT: String(env.getConfig<number>(EnvironmentConfig.PSQL_PORT) ?? 5432),
+      PG_COMPONENT_PSQL_DATABASE: env.getConfig<string>(EnvironmentConfig.PSQL_DATABASE) ?? 'content',
+      PG_COMPONENT_PSQL_USER: env.getConfig<string>(EnvironmentConfig.PSQL_USER) ?? 'postgres',
+      PG_COMPONENT_PSQL_PASSWORD: env.getConfig<string>(EnvironmentConfig.PSQL_PASSWORD) ?? ''
+    })
+    const tempDb = await createPgComponent({ config: pgConfig, logs: this.logs }, {
+      migration: {
+        migrationsTable: 'migrations',
+        dir: join(__dirname, '../../src/migrations/scripts'),
+        direction: 'up' as const,
+        count: Infinity,
+        ignorePattern: '.*\\.map',
+        createSchema: true,
+        createMigrationsSchema: true
+      }
+    })
+    await tempDb.start()
+    await tempDb.stop()
     return env
   }
 

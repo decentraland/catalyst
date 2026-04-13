@@ -3,7 +3,7 @@ import { createTestMetricsComponent } from '@well-known-components/metrics'
 import * as failedDeploymentQueries from '../../../src/logic/database-queries/failed-deployments-queries'
 import { metricsDeclaration } from '../../../src/metrics'
 import { createFailedDeployments, FailureReason, SnapshotFailedDeployment } from '../../../src/ports/failedDeployments'
-import { createTestDatabaseComponent, DatabaseTransactionalClient } from '../../../src/ports/postgres'
+import { createTestDatabaseComponent } from '../../../src/ports/postgres'
 import { AppComponents } from '../../../src/types'
 
 describe('failed deployments', () => {
@@ -71,8 +71,9 @@ describe('failed deployments', () => {
     const saveSpy = jest.spyOn(failedDeploymentQueries, 'saveSnapshotFailedDeployment').mockImplementation()
     const deleteSpy = jest.spyOn(failedDeploymentQueries, 'deleteFailedDeployment').mockImplementation()
 
-    const txDb: DatabaseTransactionalClient = { insideTx: true, ...database }
-    const txSpy = jest.spyOn(database, 'transaction').mockImplementation((fnToRun) => fnToRun(txDb))
+    const txSpy = jest
+      .spyOn(database, 'withAsyncContextTransaction')
+      .mockImplementation((fnToRun: () => Promise<any>) => fnToRun())
     const components = { metrics, database }
     const failedDeployments = await createAndStartFailedDeploymentsWith(components, [aFailedDeployment])
     const newFailedDeploymentWithSameId = {
@@ -86,7 +87,7 @@ describe('failed deployments', () => {
     expect(failed).toHaveLength(1)
     expect(failed[0]).toEqual(newFailedDeploymentWithSameId)
     expect(failed[0].failureTimestamp).toEqual(aFailedDeployment.failureTimestamp + 10)
-    expect(saveSpy).toHaveBeenCalledWith(txDb, newFailedDeploymentWithSameId)
+    expect(saveSpy).toHaveBeenCalledWith(database, newFailedDeploymentWithSameId)
     expect(deleteSpy).toHaveBeenCalledWith(database, aFailedDeployment.entityId)
     expect(txSpy).toHaveBeenCalled()
   })
