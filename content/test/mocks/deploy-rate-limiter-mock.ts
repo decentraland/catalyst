@@ -2,9 +2,9 @@ import { IDeployRateLimiterComponent } from '../../src/ports/deployRateLimiterCo
 
 export function createNoOpDeployRateLimiter(): IDeployRateLimiterComponent {
   return {
-    newDeployment: () => {},
-    isRateLimited: () => false,
-    newUnchangedDeployment: () => {},
-    isUnchangedDeploymentRateLimited: () => false
+    newDeployment: async () => {},
+    isRateLimited: async () => false,
+    newUnchangedDeployment: async () => {},
+    isUnchangedDeploymentRateLimited: async () => false
   }
 }
