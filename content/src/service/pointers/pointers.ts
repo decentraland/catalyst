@@ -24,8 +24,8 @@ export async function getPointerChanges(
     options?.lastId
   )
 
-  deploymentsWithExtra = deploymentsWithExtra.filter((result) => !components.denylist.isDenylisted(result.entityId))
   const moreData: boolean = deploymentsWithExtra.length > curatedLimit
+  deploymentsWithExtra = deploymentsWithExtra.filter((result) => !components.denylist.isDenylisted(result.entityId))
   const deployments: PointerChangesSyncDeployment[] = deploymentsWithExtra.slice(0, curatedLimit)
 
   return {
