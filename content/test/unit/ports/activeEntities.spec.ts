@@ -2,7 +2,7 @@ import { createInMemoryStorage } from '@dcl/catalyst-storage'
 import { Authenticator } from '@dcl/crypto'
 import { Entity, EntityType, EthAddress } from '@dcl/schemas'
 import { IDatabase } from '@well-known-components/interfaces'
-import { createTestMetricsComponent } from '@well-known-components/metrics'
+import { createTestMetricsComponent } from '@dcl/metrics'
 import { HTTPProvider } from 'eth-connect'
 
 import { SQLStatement } from 'sql-template-strings'
