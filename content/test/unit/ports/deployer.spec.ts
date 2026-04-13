@@ -4,7 +4,7 @@ import { hashV1 } from '@dcl/hashing'
 import { Entity, EntityType, EthAddress } from '@dcl/schemas'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
 import { createLogComponent } from '@well-known-components/logger'
-import { createTestMetricsComponent } from '@well-known-components/metrics'
+import { createTestMetricsComponent } from '@dcl/metrics'
 import assert from 'assert'
 import { HTTPProvider } from 'eth-connect'
 
