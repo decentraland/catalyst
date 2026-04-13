@@ -1,56 +1,29 @@
 import { ContentItem, IContentStorageComponent } from '@dcl/catalyst-storage'
-import { Readable } from 'stream'
 import { HandlerContextWithPath } from '../../../src/types'
 import { getContentHandler } from '../../../src/controller/handlers/get-content-handler'
 import { getEntityImageHandler } from '../../../src/controller/handlers/get-entity-image-handler'
 import { getEntityThumbnailHandler } from '../../../src/controller/handlers/get-entity-thumbnail-handler'
+import { createContentItemMock } from '../../mocks/content-item-mock'
+import { createStorageComponentMock } from '../../mocks/storage-component-mock'
+import { createRequestMock } from '../../mocks/request-mock'
 
-function createMockContentItem(size: number = 100): ContentItem {
-  return {
-    size,
-    encoding: null,
-    contentSize: size,
-    asStream: jest.fn().mockResolvedValue(Readable.from(Buffer.alloc(size))),
-    asRawStream: jest.fn().mockResolvedValue(Readable.from(Buffer.alloc(size)))
-  }
-}
-
-function createMockStorage(overrides: Partial<IContentStorageComponent> = {}): IContentStorageComponent {
-  return {
-    storeStream: jest.fn(),
-    storeStreamAndCompress: jest.fn(),
-    delete: jest.fn(),
-    retrieve: jest.fn(),
-    fileInfo: jest.fn(),
-    fileInfoMultiple: jest.fn(),
-    exist: jest.fn(),
-    existMultiple: jest.fn(),
-    allFileIds: jest.fn(),
-    ...overrides
-  }
-}
-
-function createMockHeaders(entries: Record<string, string> = {}): Headers {
-  return {
-    get: jest.fn((key: string) => entries[key.toLowerCase()] ?? null)
-  } as unknown as Headers
-}
-
-describe('conditional request support', () => {
+describe('when handling conditional requests', () => {
   const hashId = 'QmSomeHash123'
   const etag = JSON.stringify(hashId)
+
   let contentItem: ContentItem
   let storage: IContentStorageComponent
 
   beforeEach(() => {
-    contentItem = createMockContentItem(500)
-    storage = createMockStorage({
+    contentItem = createContentItemMock(500)
+    storage = createStorageComponentMock({
+      exist: jest.fn().mockResolvedValue(true),
       fileInfo: jest.fn().mockResolvedValue({ size: 500, encoding: null, contentSize: 500 }),
       retrieve: jest.fn().mockResolvedValue(contentItem)
     })
   })
 
-  describe('getContentHandler', () => {
+  describe('when serving content by hash', () => {
     let context: HandlerContextWithPath<'storage', '/contents/:hashId'>
 
     describe('when the If-None-Match header matches the ETag', () => {
@@ -61,7 +34,7 @@ describe('conditional request support', () => {
           url: new URL('http://localhost/contents/' + hashId),
           request: {
             method: 'GET',
-            headers: createMockHeaders({ 'if-none-match': etag })
+            ...createRequestMock({ 'if-none-match': etag })
           }
         } as unknown as HandlerContextWithPath<'storage', '/contents/:hashId'>
       })
@@ -72,7 +45,7 @@ describe('conditional request support', () => {
         expect(response).not.toHaveProperty('body')
       })
 
-      it('should include headers in the 304 response', async () => {
+      it('should include ETag in the 304 response headers', async () => {
         const response = await getContentHandler(context)
         expect(response.headers).toBeDefined()
         expect(response.headers['ETag']).toBe(etag)
@@ -87,7 +60,7 @@ describe('conditional request support', () => {
           url: new URL('http://localhost/contents/' + hashId),
           request: {
             method: 'GET',
-            headers: createMockHeaders({ 'if-none-match': '"different-hash"' })
+            ...createRequestMock({ 'if-none-match': '"different-hash"' })
           }
         } as unknown as HandlerContextWithPath<'storage', '/contents/:hashId'>
       })
@@ -107,7 +80,7 @@ describe('conditional request support', () => {
           url: new URL('http://localhost/contents/' + hashId),
           request: {
             method: 'GET',
-            headers: createMockHeaders({})
+            ...createRequestMock()
           }
         } as unknown as HandlerContextWithPath<'storage', '/contents/:hashId'>
       })
@@ -120,8 +93,11 @@ describe('conditional request support', () => {
     })
   })
 
-  describe('getEntityImageHandler', () => {
-    let context: HandlerContextWithPath<'activeEntities' | 'database' | 'storage', '/entities/active/entity/:pointer/image'>
+  describe('when serving an entity image', () => {
+    let context: HandlerContextWithPath<
+      'activeEntities' | 'database' | 'storage',
+      '/entities/active/entity/:pointer/image'
+    >
 
     describe('when the If-None-Match header matches the ETag', () => {
       beforeEach(() => {
@@ -153,7 +129,7 @@ describe('conditional request support', () => {
           url: new URL('http://localhost/entities/active/entity/0x1/image'),
           request: {
             method: 'GET',
-            headers: createMockHeaders({ 'if-none-match': etag })
+            ...createRequestMock({ 'if-none-match': etag })
           }
         } as unknown as HandlerContextWithPath<
           'activeEntities' | 'database' | 'storage',
@@ -169,7 +145,7 @@ describe('conditional request support', () => {
     })
   })
 
-  describe('getEntityThumbnailHandler', () => {
+  describe('when serving an entity thumbnail', () => {
     let context: HandlerContextWithPath<
       'database' | 'activeEntities' | 'storage',
       '/entities/active/entity/:pointer/thumbnail'
@@ -205,7 +181,7 @@ describe('conditional request support', () => {
           url: new URL('http://localhost/entities/active/entity/0,0/thumbnail'),
           request: {
             method: 'GET',
-            headers: createMockHeaders({ 'if-none-match': etag })
+            ...createRequestMock({ 'if-none-match': etag })
           }
         } as unknown as HandlerContextWithPath<
           'database' | 'activeEntities' | 'storage',

@@ -1,4 +1,4 @@
-import { ContentItem, IContentStorageComponent } from '@dcl/catalyst-storage'
+import { ContentItem, FileInfo, IContentStorageComponent } from '@dcl/catalyst-storage'
 import { InvalidRequestError, Pagination } from '../types'
 import { FileTypeParser } from 'file-type'
 import { Readable } from 'stream'
@@ -132,14 +132,15 @@ export async function createContentFileHeaders(content: ContentItem, hashId: str
 export async function retrieveContentWithRange(
   storage: IContentStorageComponent,
   hash: string,
-  rangeHeader: string | null
+  rangeHeader: string | null,
+  preloadedFileInfo?: FileInfo
 ): Promise<
   | { content: ContentItem; status: 200; rangeHeaders?: undefined }
   | { content: ContentItem; status: 206; rangeHeaders: Record<string, string> }
   | { content?: undefined; status: 416; rangeHeaders: Record<string, string> }
   | undefined
 > {
-  const fileInfo = await storage.fileInfo(hash)
+  const fileInfo = preloadedFileInfo ?? (await storage.fileInfo(hash))
   if (!fileInfo) {
     return undefined
   }

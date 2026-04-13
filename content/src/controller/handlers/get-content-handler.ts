@@ -6,8 +6,8 @@ export async function getContentHandler(context: HandlerContextWithPath<'storage
   const shouldCalculateContentType = context.url.searchParams.has('includeMimeType')
   const hash = context.params.hashId
 
-  const exists = await context.components.storage.exist(hash)
-  if (!exists) {
+  const fileInfo = await context.components.storage.fileInfo(hash)
+  if (!fileInfo) {
     throw new NotFoundError(`No content found with hash ${hash}`)
   }
 
@@ -15,7 +15,7 @@ export async function getContentHandler(context: HandlerContextWithPath<'storage
   if (notModified) return notModified
 
   const rangeHeader = context.request.headers.get('range')
-  const result = await retrieveContentWithRange(context.components.storage, hash, rangeHeader)
+  const result = await retrieveContentWithRange(context.components.storage, hash, rangeHeader, fileInfo)
   if (!result) {
     throw new NotFoundError(`No content found with hash ${hash}`)
   }
