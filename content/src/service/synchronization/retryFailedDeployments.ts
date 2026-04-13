@@ -1,14 +1,16 @@
-import { IBaseComponent } from '@well-known-components/interfaces'
+import { createJobComponent } from '@dcl/job-component'
+import { IBaseComponent, START_COMPONENT, STOP_COMPONENT } from '@well-known-components/interfaces'
 import { EnvironmentConfig } from '../../Environment'
 import { retryFailedDeploymentExecution } from '../../logic/deployments'
 import { AppComponents } from '../../types'
-import { setTimeout } from 'timers/promises'
 
 export type IRetryFailedDeploymentsComponent = IBaseComponent & {
   schedule: () => Promise<void>
 }
 /**
  * This component schedules the retry of failed deployments.
+ * The job is not started automatically — it waits for `schedule()` to be called
+ * after sync bootstrap finishes.
  */
 export const createRetryFailedDeployments = (
   components: Pick<
@@ -27,29 +29,31 @@ export const createRetryFailedDeployments = (
 ): IRetryFailedDeploymentsComponent => {
   const retryDelay = components.env.getConfig<number>(EnvironmentConfig.RETRY_FAILED_DEPLOYMENTS_DELAY_TIME)
   const logger = components.logs.getLogger('RetryFailedDeployments')
-  let running = false
+
+  const job = createJobComponent(
+    { logs: components.logs },
+    async () => {
+      logger.debug('Executing retry failed deployments')
+      await retryFailedDeploymentExecution(components, logger)
+    },
+    retryDelay,
+    {
+      onError: (error: any) => {
+        logger.error(error)
+      }
+    }
+  )
+
   return {
     start: async () => {
-      running = true
       logger.debug('Starting retry failed deployments')
     },
     stop: async () => {
-      running = false
       logger.debug('Stopping retry failed deployments')
+      await job[STOP_COMPONENT]?.()
     },
     schedule: async () => {
-      while (running) {
-        await setTimeout(retryDelay, null)
-        if (!running) {
-          return
-        }
-        try {
-          logger.debug('Executing retry failed deployments')
-          await retryFailedDeploymentExecution(components, logger)
-        } catch (err: any) {
-          logger.error(err)
-        }
-      }
+      await job[START_COMPONENT]?.(undefined as any)
     }
   }
 }

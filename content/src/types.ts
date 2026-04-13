@@ -31,7 +31,7 @@ import { SnapshotGenerator } from './ports/snapshotGenerator'
 import { SynchronizationState } from './ports/synchronizationState'
 import { SystemProperties } from './ports/system-properties'
 import { ContentAuthenticator } from './service/auth/Authenticator'
-import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
+import { IGarbageCollectionComponent } from './service/garbage-collection/GarbageCollectionManager'
 import { PointerManager } from './service/pointers/PointerManager'
 import { IChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
 import { IContentClusterComponent } from './logic/cluster'
@@ -95,7 +95,7 @@ export type AppComponents = {
   validator: {
     validate: ValidateFn
   }
-  garbageCollectionManager: GarbageCollectionManager
+  garbageCollectionManager: IGarbageCollectionComponent
   systemProperties: SystemProperties
   daoClient: DAOComponent
   server: IHttpServerComponent<GlobalContext>

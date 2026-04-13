@@ -1,5 +1,6 @@
 import { IFileSystemComponent } from '@dcl/catalyst-storage'
-import { IBaseComponent } from '@well-known-components/interfaces'
+import { createJobComponent } from '@dcl/job-component'
+import { IBaseComponent, START_COMPONENT, STOP_COMPONENT } from '@well-known-components/interfaces'
 import { resolve } from 'path'
 import { createInterface } from 'readline'
 import { URL } from 'url'
@@ -76,7 +77,21 @@ export async function createDenylist(
       logger.error(err)
     }
   }
-  let reloadTimer: NodeJS.Timer | undefined = undefined
+
+  const reloadJob = createJobComponent(
+    { logs: components.logs },
+    async () => {
+      await loadDenylists()
+    },
+    120_000 /* two minutes */,
+    {
+      startupDelay: 120_000,
+      onError: (error: any) => {
+        logger.error(error)
+      }
+    }
+  )
+
   return {
     isDenylisted: (id: string): boolean => {
       const denied = deniedContentIdentifiers.has(id)
@@ -87,12 +102,10 @@ export async function createDenylist(
     },
     async start() {
       await loadDenylists()
-      reloadTimer = setInterval(() => loadDenylists().catch(logger.error), 120_000 /* two minutes */)
+      await reloadJob[START_COMPONENT]?.(undefined as any)
     },
     async stop() {
-      if (reloadTimer) {
-        clearInterval(reloadTimer)
-      }
+      await reloadJob[STOP_COMPONENT]?.()
     }
   }
 }
