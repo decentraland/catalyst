@@ -8,7 +8,6 @@ import { createFetchComponent } from '@well-known-components/fetch-component'
 import { createHttpTracerComponent } from '@well-known-components/http-tracer-component'
 import { createTracerComponent } from '@well-known-components/tracer-component'
 import { createServerComponent, instrumentHttpServerWithPromClientRegistry } from '@well-known-components/http-server'
-import { ILoggerComponent } from '@well-known-components/interfaces'
 import { createLogComponent } from '@well-known-components/logger'
 import { createMetricsComponent } from '@well-known-components/metrics'
 import { HTTPProvider } from 'eth-connect'
@@ -52,49 +51,12 @@ import { AppComponents, GlobalContext } from './types'
 import { createJobComponent } from '@dcl/job-component'
 import { createDeploymentsComponent } from './logic/deployments'
 
-/**
- * Wraps a logger component so that every log call automatically includes
- * the current traceId and spanId from the tracer when inside a trace span.
- * This allows correlating log lines with distributed traces.
- */
-function createTracedLogComponent(
-  baseLogs: ILoggerComponent,
-  tracer: ReturnType<typeof createTracerComponent>
-): ILoggerComponent {
-  return {
-    getLogger(loggerName: string): ILoggerComponent.ILogger {
-      const baseLogger = baseLogs.getLogger(loggerName)
-
-      function withTraceContext(extra?: Record<string, string | number>): Record<string, string | number> | undefined {
-        if (!tracer.isInsideOfTraceSpan()) return extra
-        const trace = tracer.getTrace()
-        return {
-          ...extra,
-          traceId: trace.traceId,
-          parentId: trace.parentId,
-          spanId: tracer.getSpanId()
-        }
-      }
-
-      return {
-        log: (message, extra?) => baseLogger.log(message, withTraceContext(extra)),
-        info: (message, extra?) => baseLogger.info(message, withTraceContext(extra)),
-        warn: (message, extra?) => baseLogger.warn(message, withTraceContext(extra)),
-        error: (error, extra?) => baseLogger.error(error, withTraceContext(extra)),
-        debug: (message, extra?) => baseLogger.debug(message, withTraceContext(extra))
-      }
-    }
-  }
-}
-
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
   const clock = createClock()
   const config = env
   const metrics = await createMetricsComponent(metricsDeclaration, { config })
-  const baseLogs = await createLogComponent({ config })
-
   const tracer = createTracerComponent()
-  const logs = createTracedLogComponent(baseLogs, tracer)
+  const logs = await createLogComponent({ config, tracer })
 
   const baseFetcher = createFetchComponent({
     defaultHeaders: {
@@ -416,9 +378,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   }
   metrics.observe('dcl_content_server_build_info', buildInfo, 1)
 
-  await instrumentHttpServerWithPromClientRegistry({ server, metrics, config, registry: metrics.registry! })
-
   createHttpTracerComponent({ server, tracer })
+
+  await instrumentHttpServerWithPromClientRegistry({ server, metrics, config, registry: metrics.registry! })
 
   return {
     env,
