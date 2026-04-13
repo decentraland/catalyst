@@ -1,4 +1,4 @@
-import { createTestMetricsComponent } from '@well-known-components/metrics'
+import { createTestMetricsComponent } from '@dcl/metrics'
 import { isEntityDeployed } from '../../../src/logic/deployments'
 import { metricsDeclaration } from '../../../src/metrics'
 import { DeployedEntitiesBloomFilter } from '../../../src/ports/deployedEntitiesBloomFilter'
