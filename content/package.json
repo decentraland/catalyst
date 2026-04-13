@@ -34,10 +34,10 @@
     "@dcl/urn-resolver": "^3.6.0",
     "@well-known-components/env-config-provider": "^1.2.0",
     "@well-known-components/fetch-component": "^2.0.2",
-    "@well-known-components/http-server": "^2.1.0",
+    "@dcl/http-server": "^1.0.1",
     "@well-known-components/interfaces": "^1.5.2",
     "@well-known-components/logger": "^3.1.3",
-    "@well-known-components/metrics": "^2.1.0",
+    "@dcl/metrics": "^1.0.1",
     "@well-known-components/multipart-wrapper": "^1.0.3",
     "@well-known-components/thegraph-component": "^1.6.0",
     "bloom-filters": "^3.0.4",
@@ -90,7 +90,7 @@
     "typescript": "^4.7.4"
   },
   "resolutions": {
-    "@well-known-components/http-server/path-to-regexp": "^6.2.1",
+    "@dcl/http-server/path-to-regexp": "^6.2.1",
     "express/path-to-regexp": "0.1.7"
   }
 }

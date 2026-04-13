@@ -8,7 +8,7 @@ import { createConfigComponent } from '@well-known-components/env-config-provide
 import { createFetchComponent } from '@well-known-components/fetch-component'
 import { IFetchComponent, ILoggerComponent, Lifecycle } from '@well-known-components/interfaces'
 import { createLogComponent } from '@well-known-components/logger'
-import { createTestMetricsComponent } from '@well-known-components/metrics'
+import { createTestMetricsComponent } from '@dcl/metrics'
 import path from 'path'
 import { Readable } from 'stream'
 import { Environment, EnvironmentBuilder, EnvironmentConfig } from '../Environment'
