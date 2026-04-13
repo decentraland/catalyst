@@ -31,7 +31,7 @@ import { createSnapshotStorage } from './ports/snapshotStorage'
 import { createSynchronizationState } from './ports/synchronizationState'
 import { createSystemProperties } from './ports/system-properties'
 import { ContentAuthenticator } from './service/auth/Authenticator'
-import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
+import { createGarbageCollectionComponent } from './service/garbage-collection/GarbageCollectionManager'
 import { PointerManager } from './service/pointers/PointerManager'
 import { ChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
 import { createContentCluster } from './logic/cluster'
@@ -218,7 +218,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     clock
   })
 
-  const garbageCollectionManager = new GarbageCollectionManager(
+  const garbageCollectionManager = createGarbageCollectionComponent(
     { clock, database, metrics, logs, storage, systemProperties, activeEntities },
     env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION),
     env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL)
