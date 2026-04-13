@@ -37,11 +37,6 @@ export async function getEntityImageHandler(
   const { content, status } = result
   const headers = await createContentFileHeaders(content, hash)
 
-  const ifNoneMatch = context.request.headers.get('if-none-match')
-  if (ifNoneMatch && ifNoneMatch === headers['ETag']) {
-    return { status: 304, headers }
-  }
-
   return {
     status,
     headers: {
