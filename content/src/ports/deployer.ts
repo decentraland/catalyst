@@ -230,11 +230,11 @@ export function createDeployer(
       areThereNewerEntities: (entity) => areThereNewerEntitiesOnPointers(entity),
       isEntityDeployedAlready: () => isEntityDeployedAlready,
       isNotFailedDeployment: (entity) => components.failedDeployments.findFailedDeployment(entity.id) === undefined,
-      isEntityRateLimited: (entity) =>
-        components.deployRateLimiter.isRateLimited(entity.type, entity.pointers) ||
+      isEntityRateLimited: async (entity) =>
+        (await components.deployRateLimiter.isRateLimited(entity.type, entity.pointers)) ||
         (entity.type === EntityType.PROFILE &&
           isContentUnchanged &&
-          components.deployRateLimiter.isUnchangedDeploymentRateLimited(entity.type, entity.pointers)),
+          (await components.deployRateLimiter.isUnchangedDeploymentRateLimited(entity.type, entity.pointers))),
       isRequestTtlBackwards: (entity) =>
         components.clock.now() - entity.timestamp >
         components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
@@ -385,14 +385,14 @@ export function createDeployer(
           // Only record in rate limiter for LOCAL deployments to prevent
           // synced/fix-attempt entities from polluting the cache
           if (context === DeploymentContext.LOCAL) {
-            components.deployRateLimiter.newDeployment(
+            await components.deployRateLimiter.newDeployment(
               entity.type,
               entity.pointers,
               storeResult.auditInfoComplete.localTimestamp
             )
 
             if (entity.type === EntityType.PROFILE && isContentUnchanged) {
-              components.deployRateLimiter.newUnchangedDeployment(
+              await components.deployRateLimiter.newUnchangedDeployment(
                 entity.type,
                 entity.pointers,
                 storeResult.auditInfoComplete.localTimestamp

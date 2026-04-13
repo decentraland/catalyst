@@ -391,6 +391,15 @@
     "@dcl/core-commons" "0.6.0"
     "@well-known-components/interfaces" "^1.5.2"
 
+"@dcl/memory-cache-component@^2.2.3":
+  version "2.2.3"
+  resolved "https://registry.yarnpkg.com/@dcl/memory-cache-component/-/memory-cache-component-2.2.3.tgz#9dcad8b2392a51e04c5c84dd22968b2c181f915e"
+  integrity sha512-J9oEUZKtJt+56knemw51J5TvRsYEPGzG8JN3+i3CPpepxGuGNbREfbiTp6HNr2jpJ3LKDxzABxl6wnSQ+fprqg==
+  dependencies:
+    "@dcl/core-commons" "0.6.0"
+    "@well-known-components/interfaces" "^1.5.1"
+    lru-cache "~11.2.2"
+
 "@dcl/schemas@^23.0.0":
   version "23.1.0"
   resolved "https://registry.npmjs.org/@dcl/schemas/-/schemas-23.1.0.tgz"
@@ -1718,7 +1727,7 @@
     "@types/node-fetch" "^2.5.12"
     typed-url-params "^1.0.1"
 
-"@well-known-components/interfaces@^1.4.2", "@well-known-components/interfaces@^1.4.3", "@well-known-components/interfaces@^1.5.2":
+"@well-known-components/interfaces@^1.4.2", "@well-known-components/interfaces@^1.4.3", "@well-known-components/interfaces@^1.5.1", "@well-known-components/interfaces@^1.5.2":
   version "1.5.2"
   resolved "https://registry.npmjs.org/@well-known-components/interfaces/-/interfaces-1.5.2.tgz"
   integrity sha512-TzKQblOci2Azczk1DZ4JL5aJW7hwq7kHrFMO4lCRMmW51bA71BtiZlq0WP72Dln067xTSoHQAU4WHCFJlGYvEQ==
@@ -2467,11 +2476,6 @@ cliui@^7.0.2:
     string-width "^4.2.0"
     strip-ansi "^6.0.0"
     wrap-ansi "^7.0.0"
-
-clone@2.x:
-  version "2.1.2"
-  resolved "https://registry.npmjs.org/clone/-/clone-2.1.2.tgz"
-  integrity sha512-3Pe/CF1Nn94hyhIYpjtiLhdCoEoz0DqQ+988E9gmeEdQZlojxnOb74wctFyuwWQHzqyf9X7C7MG8juUpqBJT8w==
 
 clone@^1.0.2:
   version "1.0.4"
@@ -4985,6 +4989,11 @@ lru-cache@^7.14.0:
   resolved "https://registry.npmjs.org/lru-cache/-/lru-cache-7.18.3.tgz"
   integrity sha512-jumlc0BIUrS3qJGgIkWZsyfAM7NCWiBcCDhnd+3NNM5KbBmLTgHVfWBcg6W+rLUsIpzpERPsvwUP7CckAQSOoA==
 
+lru-cache@~11.2.2:
+  version "11.2.7"
+  resolved "https://registry.yarnpkg.com/lru-cache/-/lru-cache-11.2.7.tgz#9127402617f34cd6767b96daee98c28e74458d35"
+  integrity sha512-aY/R+aEsRelme17KGQa/1ZSIpLpNYYrhcrepKTZgE+W3WM16YMCaPwOHLHsmopZHELU0Ojin1lPVxKR0MihncA==
+
 make-dir@^3.0.0, make-dir@^3.0.2:
   version "3.1.0"
   resolved "https://registry.npmjs.org/make-dir/-/make-dir-3.1.0.tgz"
@@ -5232,13 +5241,6 @@ node-addon-api@^6.1.0:
   version "6.1.0"
   resolved "https://registry.npmjs.org/node-addon-api/-/node-addon-api-6.1.0.tgz"
   integrity sha512-+eawOlIgy680F0kBzPUNFhMZGtJ1YmqM6l4+Crf4IkImjYrO/mqPwRMh352g23uIaQKFItcQ64I7KMaJxHgAVA==
-
-node-cache@^5.1.2:
-  version "5.1.2"
-  resolved "https://registry.npmjs.org/node-cache/-/node-cache-5.1.2.tgz"
-  integrity sha512-t1QzWwnk4sjLWaQAS8CHgOJ+RAfmHpxFWmc36IWTiWHQfs0w5JDMBS1b1ZxQteo0vVVuWJvIUKHDkkeK7vIGCg==
-  dependencies:
-    clone "2.x"
 
 node-fetch@2.6.7:
   version "2.6.7"
