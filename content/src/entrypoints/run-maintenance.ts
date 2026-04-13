@@ -2,7 +2,7 @@ import { createFolderBasedFileSystemContentStorage, createFsComponent } from '@d
 import { createConfigComponent } from '@well-known-components/env-config-provider'
 import { Lifecycle } from '@well-known-components/interfaces'
 import { createLogComponent } from '@well-known-components/logger'
-import { createTestMetricsComponent } from '@well-known-components/metrics'
+import { createTestMetricsComponent } from '@dcl/metrics'
 import path from 'path'
 import { EnvironmentBuilder, EnvironmentConfig } from '../Environment'
 import { deleteUnreferencedFiles } from '../logic/delete-unreferenced-files'
