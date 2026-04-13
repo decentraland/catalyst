@@ -18,7 +18,7 @@ export async function createDenylist(
   }
 ): Promise<Denylist & IBaseComponent> {
   const logger = components.logs.getLogger('Denylist')
-  const deniedContentIdentifiers = new Set()
+  let deniedContentIdentifiers = new Set<string>()
   const fileName = resolve(
     components.env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER),
     components.env.getConfig(EnvironmentConfig.DENYLIST_FILE_NAME)
@@ -39,12 +39,12 @@ export async function createDenylist(
   logger.info(`Location of the denylist file: ${fileName}`)
   logger.info(`Valid urls where to fetch denylisted items: ${denylistsUrls}`)
 
-  const processLines = async (lines: Iterable<string> | AsyncIterable<string>) => {
+  const processLines = async (targetSet: Set<string>, lines: Iterable<string> | AsyncIterable<string>) => {
     for await (const line of lines) {
       try {
         const cid = line.trim()
         if (!cid.startsWith('#') && cid.length > 0) {
-          deniedContentIdentifiers.add((line as string).trim())
+          targetSet.add((line as string).trim())
         }
       } catch (err: any) {
         logger.error(err)
@@ -54,12 +54,15 @@ export async function createDenylist(
 
   const loadDenylists = async () => {
     try {
+      const newDenied = new Set<string>()
+
       if (fileName && (await components.fs.existPath(fileName))) {
         const content = components.fs.createReadStream(fileName, { encoding: 'utf-8' })
 
         const lines = createInterface({ input: content, crlfDelay: Infinity })
 
-        await processLines(lines)
+        await processLines(newDenied, lines)
+        lines.close()
       }
 
       for (const url of denylistsUrls) {
@@ -67,16 +70,18 @@ export async function createDenylist(
           const response = await components.fetcher.fetch(url.toString())
           const content = await response.text()
           const lines = content ? content.split(/[\r\n]+/) : []
-          await processLines(lines)
+          await processLines(newDenied, lines)
         } catch (err: any) {
           logger.error(err)
         }
       }
+
+      deniedContentIdentifiers = newDenied
     } catch (err) {
       logger.error(err)
     }
   }
-  let reloadTimer: NodeJS.Timer | undefined = undefined
+  let reloadTimer: ReturnType<typeof setInterval> | undefined = undefined
   return {
     isDenylisted: (id: string): boolean => {
       const denied = deniedContentIdentifiers.has(id)
