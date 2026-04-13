@@ -1,7 +1,7 @@
 import { createConfigComponent } from '@well-known-components/env-config-provider'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { createLogComponent } from '@well-known-components/logger'
-import { createTestMetricsComponent } from '@well-known-components/metrics'
+import { createTestMetricsComponent } from '@dcl/metrics'
 import { Pool } from 'pg'
 import SQL from 'sql-template-strings'
 import { Environment } from '../../../src/Environment'
