@@ -378,6 +378,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   }
   metrics.observe('dcl_content_server_build_info', buildInfo, 1)
 
+  // Registers tracing middleware as a side effect (wraps each request in a trace span).
+  // Registered before metrics so trace context is available to the metrics layer.
   createHttpTracerComponent({ server, tracer })
 
   await instrumentHttpServerWithPromClientRegistry({ server, metrics, config, registry: metrics.registry! })
