@@ -39,7 +39,8 @@ describe('checkNotModified', () => {
   const hash = 'bafybeiasb5vpmaounyilfuxbd3lool'
   const expectedHeaders = {
     ETag: JSON.stringify(hash),
-    'Cache-Control': 'public,max-age=31536000,s-maxage=31536000,immutable'
+    'Cache-Control': 'public,max-age=31536000,s-maxage=31536000,immutable',
+    'Access-Control-Expose-Headers': 'ETag'
   }
 
   describe('when the If-None-Match header is not present', () => {

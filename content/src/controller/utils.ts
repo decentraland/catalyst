@@ -73,7 +73,7 @@ export function parseRangeHeader(
   return undefined
 }
 
-const NOT_MODIFIED_CACHE_CONTROL = 'public,max-age=31536000,s-maxage=31536000,immutable'
+const IMMUTABLE_CACHE_CONTROL = 'public,max-age=31536000,s-maxage=31536000,immutable'
 
 export function checkNotModified(
   request: { headers: { get(name: string): string | null } },
@@ -83,15 +83,21 @@ export function checkNotModified(
   const ifNoneMatch = request.headers.get('if-none-match')
   if (!ifNoneMatch) return undefined
 
+  const notModifiedHeaders = {
+    ETag: etag,
+    'Cache-Control': IMMUTABLE_CACHE_CONTROL,
+    'Access-Control-Expose-Headers': 'ETag'
+  }
+
   if (ifNoneMatch === '*') {
-    return { status: 304, headers: { ETag: etag, 'Cache-Control': NOT_MODIFIED_CACHE_CONTROL } }
+    return { status: 304, headers: notModifiedHeaders }
   }
 
   // RFC 9110 §13.1.2: weak comparison — strip W/ prefix for matching
   const tags = ifNoneMatch.split(',').map((t) => t.trim().replace(/^W\//, ''))
   const compareEtag = etag.replace(/^W\//, '')
   if (tags.includes(compareEtag)) {
-    return { status: 304, headers: { ETag: etag, 'Cache-Control': NOT_MODIFIED_CACHE_CONTROL } }
+    return { status: 304, headers: notModifiedHeaders }
   }
 }
 
@@ -108,7 +114,7 @@ export async function createContentFileHeaders(content: ContentItem, hashId: str
       ETag: JSON.stringify(hashId), // by spec, the ETag must be a double-quoted string
       'Access-Control-Expose-Headers': 'ETag, Content-Range, Accept-Ranges, Content-Length',
       'Accept-Ranges': 'bytes',
-      'Cache-Control': 'public,max-age=31536000,s-maxage=31536000,immutable'
+      'Cache-Control': IMMUTABLE_CACHE_CONTROL
     }
     if (content.encoding) {
       headers['Content-Encoding'] = content.encoding

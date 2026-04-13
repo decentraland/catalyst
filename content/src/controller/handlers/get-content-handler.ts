@@ -6,6 +6,11 @@ export async function getContentHandler(context: HandlerContextWithPath<'storage
   const shouldCalculateContentType = context.url.searchParams.has('includeMimeType')
   const hash = context.params.hashId
 
+  const exists = await context.components.storage.exist(hash)
+  if (!exists) {
+    throw new NotFoundError(`No content found with hash ${hash}`)
+  }
+
   const notModified = checkNotModified(context.request, hash)
   if (notModified) return notModified
 
