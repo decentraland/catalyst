@@ -1,7 +1,7 @@
 import { createFsComponent, IContentStorageComponent } from '@dcl/catalyst-storage'
 import { createConfigComponent } from "@well-known-components/env-config-provider"
 import { createLogComponent } from '@well-known-components/logger'
-import { createTestMetricsComponent } from '@well-known-components/metrics'
+import { createTestMetricsComponent } from '@dcl/metrics'
 import { Environment, EnvironmentConfig } from '../../../src/Environment'
 import { metricsDeclaration } from '../../../src/metrics'
 import { migrateContentFolderStructure } from '../../../src/migrations/ContentFolderMigrationManager'

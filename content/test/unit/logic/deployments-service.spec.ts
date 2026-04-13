@@ -1,5 +1,5 @@
 import { EntityType } from '@dcl/schemas'
-import { createTestMetricsComponent } from '@well-known-components/metrics'
+import { createTestMetricsComponent } from '@dcl/metrics'
 import { safe } from 'jest-extra-utils'
 import { Deployment, DeploymentOptions, PartialDeploymentHistory } from '../../../src/deployment-types'
 import { ContentFilesRow } from '../../../src/logic/database-queries/content-files-queries'
