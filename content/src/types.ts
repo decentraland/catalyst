@@ -11,6 +11,7 @@ import {
   ILoggerComponent,
   IMetricsComponent
 } from '@well-known-components/interfaces'
+import { createTracerComponent } from '@well-known-components/tracer-component'
 import { FormDataContext } from '@well-known-components/multipart-wrapper'
 import { HTTPProvider } from 'eth-connect'
 import qs from 'qs'
@@ -109,6 +110,7 @@ export type AppComponents = {
   clock: Clock
   snapshotStorage: ISnapshotStorageComponent
   l1Provider: HTTPProvider
+  tracer: ReturnType<typeof createTracerComponent>
 }
 
 export type GlobalContext = {

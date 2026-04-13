@@ -432,6 +432,15 @@
     "@well-known-components/metrics" "^2.0.0"
     p-queue "^6.6.2"
 
+"@dcl/traced-fetch-component@^1.0.2":
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@dcl/traced-fetch-component/-/traced-fetch-component-1.0.2.tgz#5be68ced806185632cbebf1e3303c8e96c0e35b8"
+  integrity sha512-ADo9itOEK0iisGHjb42vFEe9DWdJIj9jBna3zXeSnWkH+1p1Dw7F7lAkanBI0vZK3FlnrpVt5FtUR0KcmZNCLg==
+  dependencies:
+    "@dcl/core-commons" "0.6.0"
+    "@well-known-components/fetch-component" "^3.0.0"
+    "@well-known-components/interfaces" "^1.5.2"
+
 "@dcl/urn-resolver@^3.6.0":
   version "3.6.0"
   resolved "https://registry.npmjs.org/@dcl/urn-resolver/-/urn-resolver-3.6.0.tgz"
@@ -1695,6 +1704,14 @@
     "@well-known-components/interfaces" "^1.4.1"
     cross-fetch "^3.1.5"
 
+"@well-known-components/fetch-component@^3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@well-known-components/fetch-component/-/fetch-component-3.0.0.tgz#93921f0d18b1fc21f1f5540cc4ae035a0dabf55d"
+  integrity sha512-ycIaojkwLJvhpicdPsmsEzA9qPbV7voAjrRcVE7+n7UNctIQC8ppymapj0UQ3FFpdEWWVSzjoo33H0BW+sD8eg==
+  dependencies:
+    "@well-known-components/interfaces" "^1.4.1"
+    cross-fetch "^3.1.5"
+
 "@well-known-components/http-server@^2.1.0":
   version "2.1.0"
   resolved "https://registry.npmjs.org/@well-known-components/http-server/-/http-server-2.1.0.tgz"
@@ -1709,6 +1726,14 @@
     on-finished "^2.4.1"
     path-to-regexp "^6.2.1"
 
+"@well-known-components/http-tracer-component@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@well-known-components/http-tracer-component/-/http-tracer-component-1.1.0.tgz#cadbc14f488ff814fa10cfcac6ea10bd842bfd93"
+  integrity sha512-ubFU1fBrhFVmKWXFXrNzuO+nFafzaLwQ7uOQPOIwvTF0dOO0TptTwvRH4sA4hwciTPdMXYjZfQZGhb41cyd3ZA==
+  dependencies:
+    "@well-known-components/interfaces" "^1.2.0"
+    tslib "^2.5.0"
+
 "@well-known-components/interfaces@^1.1.1", "@well-known-components/interfaces@^1.1.3", "@well-known-components/interfaces@^1.3.0", "@well-known-components/interfaces@^1.4.0", "@well-known-components/interfaces@^1.4.1":
   version "1.4.3"
   resolved "https://registry.npmjs.org/@well-known-components/interfaces/-/interfaces-1.4.3.tgz"
@@ -1718,7 +1743,7 @@
     "@types/node-fetch" "^2.5.12"
     typed-url-params "^1.0.1"
 
-"@well-known-components/interfaces@^1.4.2", "@well-known-components/interfaces@^1.4.3", "@well-known-components/interfaces@^1.5.2":
+"@well-known-components/interfaces@^1.2.0", "@well-known-components/interfaces@^1.4.2", "@well-known-components/interfaces@^1.4.3", "@well-known-components/interfaces@^1.5.2":
   version "1.5.2"
   resolved "https://registry.npmjs.org/@well-known-components/interfaces/-/interfaces-1.5.2.tgz"
   integrity sha512-TzKQblOci2Azczk1DZ4JL5aJW7hwq7kHrFMO4lCRMmW51bA71BtiZlq0WP72Dln067xTSoHQAU4WHCFJlGYvEQ==
@@ -1760,6 +1785,14 @@
   integrity sha512-LfBszhAnYRoLtLFkCDxjYIFFTk9mWL9wMPUSSnM0l/r0k/X3859DXXe2CrWIu3CeGpXdWI29YHE14EKvaBs3sw==
   dependencies:
     "@well-known-components/interfaces" "^1.4.2"
+
+"@well-known-components/tracer-component@^1.2.0":
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/@well-known-components/tracer-component/-/tracer-component-1.2.0.tgz#fb849356546caa56477457f3d67649f8cefa0c06"
+  integrity sha512-yoXk/DhX6vy0mydkW+w0I1ekXZfIjCm3RFyxTgbx+LPYKF/OnDWstF4+SqozoRYo6wxsCbPmMmG7LIOM1tfBEQ==
+  dependencies:
+    "@well-known-components/interfaces" "^1.2.0"
+    tslib "^2.5.0"
 
 abab@^2.0.3, abab@^2.0.5:
   version "2.0.6"
@@ -6792,7 +6825,7 @@ tslib@^1.8.1:
   resolved "https://registry.npmjs.org/tslib/-/tslib-1.14.1.tgz"
   integrity sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg==
 
-tslib@^2.1.0:
+tslib@^2.1.0, tslib@^2.5.0:
   version "2.8.1"
   resolved "https://registry.npmjs.org/tslib/-/tslib-2.8.1.tgz"
   integrity sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==
