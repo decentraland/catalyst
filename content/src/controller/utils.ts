@@ -73,6 +73,28 @@ export function parseRangeHeader(
   return undefined
 }
 
+const NOT_MODIFIED_CACHE_CONTROL = 'public,max-age=31536000,s-maxage=31536000,immutable'
+
+export function checkNotModified(
+  request: { headers: { get(name: string): string | null } },
+  hash: string
+): { status: 304; headers: Record<string, string> } | undefined {
+  const etag = JSON.stringify(hash)
+  const ifNoneMatch = request.headers.get('if-none-match')
+  if (!ifNoneMatch) return undefined
+
+  if (ifNoneMatch === '*') {
+    return { status: 304, headers: { ETag: etag, 'Cache-Control': NOT_MODIFIED_CACHE_CONTROL } }
+  }
+
+  // RFC 9110 §13.1.2: weak comparison — strip W/ prefix for matching
+  const tags = ifNoneMatch.split(',').map((t) => t.trim().replace(/^W\//, ''))
+  const compareEtag = etag.replace(/^W\//, '')
+  if (tags.includes(compareEtag)) {
+    return { status: 304, headers: { ETag: etag, 'Cache-Control': NOT_MODIFIED_CACHE_CONTROL } }
+  }
+}
+
 export async function createContentFileHeaders(content: ContentItem, hashId: string): Promise<Record<string, string>> {
   const stream: Readable = await content.asRawStream()
   const fileTypeParser = new FileTypeParser()

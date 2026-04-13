@@ -1,6 +1,6 @@
 import { ContentItem, IContentStorageComponent } from '@dcl/catalyst-storage'
 import { Readable } from 'stream'
-import { parseRangeHeader, retrieveContentWithRange } from '../../../src/controller/utils'
+import { checkNotModified, parseRangeHeader, retrieveContentWithRange } from '../../../src/controller/utils'
 
 function createMockContentItem(size: number | null = 100, encoding: string | null = null): ContentItem {
   return {
@@ -26,6 +26,76 @@ function createMockStorage(overrides: Partial<IContentStorageComponent> = {}): I
     ...overrides
   }
 }
+
+function createMockRequest(ifNoneMatch: string | null): { headers: { get(name: string): string | null } } {
+  return {
+    headers: {
+      get: (name: string) => (name.toLowerCase() === 'if-none-match' ? ifNoneMatch : null)
+    }
+  }
+}
+
+describe('checkNotModified', () => {
+  const hash = 'bafybeiasb5vpmaounyilfuxbd3lool'
+  const expectedHeaders = {
+    ETag: JSON.stringify(hash),
+    'Cache-Control': 'public,max-age=31536000,s-maxage=31536000,immutable'
+  }
+
+  describe('when the If-None-Match header is not present', () => {
+    it('should return undefined', () => {
+      expect(checkNotModified(createMockRequest(null), hash)).toBeUndefined()
+    })
+  })
+
+  describe('when the If-None-Match header matches the ETag exactly', () => {
+    it('should return a 304 response', () => {
+      expect(checkNotModified(createMockRequest(JSON.stringify(hash)), hash)).toEqual({
+        status: 304,
+        headers: expectedHeaders
+      })
+    })
+  })
+
+  describe('when the If-None-Match header does not match the ETag', () => {
+    it('should return undefined', () => {
+      expect(checkNotModified(createMockRequest(JSON.stringify('other-hash')), hash)).toBeUndefined()
+    })
+  })
+
+  describe('when the If-None-Match header is the wildcard *', () => {
+    it('should return a 304 response', () => {
+      expect(checkNotModified(createMockRequest('*'), hash)).toEqual({
+        status: 304,
+        headers: expectedHeaders
+      })
+    })
+  })
+
+  describe('when the If-None-Match header contains multiple ETags', () => {
+    it('should return a 304 response when one matches', () => {
+      const multiValue = `"other-hash", ${JSON.stringify(hash)}, "another-hash"`
+      expect(checkNotModified(createMockRequest(multiValue), hash)).toEqual({
+        status: 304,
+        headers: expectedHeaders
+      })
+    })
+
+    it('should return undefined when none match', () => {
+      const multiValue = '"other-hash", "another-hash"'
+      expect(checkNotModified(createMockRequest(multiValue), hash)).toBeUndefined()
+    })
+  })
+
+  describe('when the If-None-Match header uses a weak ETag prefix', () => {
+    it('should return a 304 response using weak comparison', () => {
+      expect(checkNotModified(createMockRequest(`W/${JSON.stringify(hash)}`), hash)).toEqual({
+        status: 304,
+        headers: expectedHeaders
+      })
+    })
+  })
+})
 
 describe('parseRangeHeader', () => {
   describe('when the range header is null', () => {
