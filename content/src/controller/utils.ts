@@ -75,11 +75,16 @@ export function parseRangeHeader(
 
 const IMMUTABLE_CACHE_CONTROL = 'public,max-age=31536000,s-maxage=31536000,immutable'
 
+// RFC 7232: ETag must be a double-quoted string
+function toETag(hash: string): string {
+  return `"${hash}"`
+}
+
 export function checkNotModified(
   request: { headers: { get(name: string): string | null } },
   hash: string
 ): { status: 304; headers: Record<string, string> } | undefined {
-  const etag = JSON.stringify(hash)
+  const etag = toETag(hash)
   const ifNoneMatch = request.headers.get('if-none-match')
   if (!ifNoneMatch) return undefined
 
@@ -93,15 +98,16 @@ export function checkNotModified(
     return { status: 304, headers: notModifiedHeaders }
   }
 
-  // RFC 9110 §13.1.2: weak comparison — strip W/ prefix for matching
+  // RFC 9110 §13.1.2: weak comparison — strip W/ prefix on client-supplied tags
   const tags = ifNoneMatch.split(',').map((t) => t.trim().replace(/^W\//, ''))
-  const compareEtag = etag.replace(/^W\//, '')
-  if (tags.includes(compareEtag)) {
+  if (tags.includes(etag)) {
     return { status: 304, headers: notModifiedHeaders }
   }
+
+  return undefined
 }
 
-export async function createContentFileHeaders(content: ContentItem, hashId: string): Promise<Record<string, string>> {
+export async function createContentFileHeaders(content: ContentItem, hash: string): Promise<Record<string, string>> {
   const stream: Readable = await content.asRawStream()
   const fileTypeParser = new FileTypeParser()
   try {
@@ -111,7 +117,7 @@ export async function createContentFileHeaders(content: ContentItem, hashId: str
 
     const headers: Record<string, string> = {
       'Content-Type': mimeType,
-      ETag: JSON.stringify(hashId), // by spec, the ETag must be a double-quoted string
+      ETag: toETag(hash),
       'Access-Control-Expose-Headers': 'ETag, Content-Range, Accept-Ranges, Content-Length',
       'Accept-Ranges': 'bytes',
       'Cache-Control': IMMUTABLE_CACHE_CONTROL
