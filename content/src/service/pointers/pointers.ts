@@ -24,6 +24,9 @@ export async function getPointerChanges(
     options?.lastId
   )
 
+  // Note: moreData is checked before denylist filtering so pagination signals remain correct.
+  // This means returned pages may have fewer than curatedLimit items when denylisted entities
+  // are removed. Fixing that would require fetching additional rows, left as a future improvement.
   const moreData: boolean = deploymentsWithExtra.length > curatedLimit
   deploymentsWithExtra = deploymentsWithExtra.filter((result) => !components.denylist.isDenylisted(result.entityId))
   const deployments: PointerChangesSyncDeployment[] = deploymentsWithExtra.slice(0, curatedLimit)
