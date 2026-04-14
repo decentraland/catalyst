@@ -44,7 +44,7 @@ export async function createDenylist(
       try {
         const cid = line.trim()
         if (!cid.startsWith('#') && cid.length > 0) {
-          targetSet.add((line as string).trim())
+          targetSet.add(cid)
         }
       } catch (err: any) {
         logger.error(err)

@@ -158,6 +158,30 @@ describe('when creating a denylist', () => {
       await flushPromises()
       expect(denylist.isDenylisted('denied3')).toBe(true)
     })
+
+    it('should remove entries that are no longer in the denylist', async () => {
+      const logs = await setupLogs()
+      const fs = {
+        createReadStream: jest
+          .fn()
+          .mockReturnValueOnce(
+            Readable.from(`denied1
+            denied2`)
+          )
+          .mockReturnValueOnce(
+            Readable.from(`denied2`)
+          ),
+        existPath: jest.fn().mockResolvedValue(true)
+      }
+      denylist = await createDenylist({ env, logs, fs, fetcher })
+      await denylist.start!()
+      expect(denylist.isDenylisted('denied1')).toBe(true)
+      expect(denylist.isDenylisted('denied2')).toBe(true)
+      jest.advanceTimersByTime(120_000)
+      await flushPromises()
+      expect(denylist.isDenylisted('denied1')).toBe(false)
+      expect(denylist.isDenylisted('denied2')).toBe(true)
+    })
   })
 
   describe('when the denylist is stopped', () => {
