@@ -3,7 +3,10 @@ import { ValidateFn } from '@dcl/content-validator'
 import { EntityType, EthAddress } from '@dcl/schemas'
 import { createSynchronizer } from '@dcl/snapshots-fetcher'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
+import { createTracedFetcherComponent } from '@dcl/traced-fetch-component'
 import { createFetchComponent } from '@well-known-components/fetch-component'
+import { createHttpTracerComponent } from '@well-known-components/http-tracer-component'
+import { createTracerComponent } from '@well-known-components/tracer-component'
 import { createServerComponent, instrumentHttpServerWithPromClientRegistry } from '@dcl/http-server'
 import { createLogComponent } from '@well-known-components/logger'
 import { createMetricsComponent } from '@dcl/metrics'
@@ -52,15 +55,17 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const clock = createClock()
   const config = env
   const metrics = await createMetricsComponent(metricsDeclaration, { config })
-  const logs = await createLogComponent({ config })
+  const tracer = createTracerComponent()
+  const logs = await createLogComponent({ config, tracer })
 
-  const fetcher = createFetchComponent({
+  const baseFetcher = createFetchComponent({
     defaultHeaders: {
       'User-Agent': `content-server/${CURRENT_COMMIT_HASH} (+https://github.com/decentraland/catalyst)`,
       Origin: env.getConfig<string>(EnvironmentConfig.CONTENT_SERVER_ADDRESS)
     },
     defaultFetcherOptions: { timeout: ms(env.getConfig<string>(EnvironmentConfig.FETCH_REQUEST_TIMEOUT)) }
   })
+  const fetcher = await createTracedFetcherComponent({ tracer, fetchComponent: baseFetcher })
 
   const fs = createFsComponent()
   const denylist = await createDenylist({ env, logs, fs, fetcher })
@@ -373,6 +378,10 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   }
   metrics.observe('dcl_content_server_build_info', buildInfo, 1)
 
+  // Registers tracing middleware as a side effect (wraps each request in a trace span).
+  // Registered before metrics so trace context is available to the metrics layer.
+  createHttpTracerComponent({ server, tracer })
+
   await instrumentHttpServerWithPromClientRegistry({ server, metrics, config, registry: metrics.registry! })
 
   return {
@@ -415,6 +424,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     clock,
     snapshotStorage,
     config,
-    l1Provider
+    l1Provider,
+    tracer
   }
 }
