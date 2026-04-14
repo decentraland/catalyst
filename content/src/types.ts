@@ -9,7 +9,8 @@ import {
   IFetchComponent,
   IHttpServerComponent,
   ILoggerComponent,
-  IMetricsComponent
+  IMetricsComponent,
+  ITracerComponent
 } from '@well-known-components/interfaces'
 import { FormDataContext } from '@well-known-components/multipart-wrapper'
 import { HTTPProvider } from 'eth-connect'
@@ -109,6 +110,7 @@ export type AppComponents = {
   clock: Clock
   snapshotStorage: ISnapshotStorageComponent
   l1Provider: HTTPProvider
+  tracer: ITracerComponent
 }
 
 export type GlobalContext = {

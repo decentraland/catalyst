@@ -90,10 +90,14 @@ async function processFile(components: ContentFolderMigrationComponents, folder:
   const stream = components.fs.createReadStream(fileName)
 
   if (!stream) {
-    throw new Error(`Couldn\' t find the file ${file}`)
+    throw new Error(`Couldn't find the file ${file}`)
   }
 
-  await components.storage.storeStream(file, stream)
+  try {
+    await components.storage.storeStream(file, stream)
+  } finally {
+    stream.destroy()
+  }
 
   await components.fs.unlink(fileName)
 
