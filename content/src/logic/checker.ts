@@ -191,7 +191,7 @@ export async function createItemChecker(logs: ILoggerComponent, provider: HTTPPr
         if (!urn.contractAddress) {
           logger.warn(`No contract address found for item: ${item}`)
         } else if (!urn.tokenId) {
-          logger.warn(`No tokenId found for item: ${item})`)
+          logger.warn(`No tokenId found for item: ${item}`)
           result.set(item, true) // old deployment, let it pass
         } else {
           filteredItems.push({ contract: urn.contractAddress, nftId: urn.tokenId, item })
