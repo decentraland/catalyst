@@ -1,6 +1,6 @@
 import { HandlerContextWithPath, NotFoundError } from '../../types'
 import { findEntityByPointer, findImageHash } from '../../logic/entities'
-import { createContentFileHeaders, retrieveContentWithRange } from '../utils'
+import { checkNotModified, createContentFileHeaders, retrieveContentWithRange } from '../utils'
 
 // Method: GET or HEAD
 export async function getEntityImageHandler(
@@ -17,6 +17,9 @@ export async function getEntityImageHandler(
   if (!hash) {
     throw new NotFoundError('Entity has no image.')
   }
+
+  const notModified = checkNotModified(context.request, hash)
+  if (notModified) return notModified
 
   const rangeHeader = context.request.headers.get('range')
   const result = await retrieveContentWithRange(context.components.storage, hash, rangeHeader)

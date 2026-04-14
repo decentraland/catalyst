@@ -1,4 +1,4 @@
-import { ContentItem, IContentStorageComponent } from '@dcl/catalyst-storage'
+import { ContentItem, FileInfo, IContentStorageComponent } from '@dcl/catalyst-storage'
 import { InvalidRequestError, Pagination } from '../types'
 import { FileTypeParser } from 'file-type'
 import { Readable } from 'stream'
@@ -7,12 +7,16 @@ export function paginationObject(url: URL, maxPageSize: number = 1000): Paginati
   const pageSize = url.searchParams.has('pageSize') ? parseInt(url.searchParams.get('pageSize')!, 10) : 100
   const pageNum = url.searchParams.has('pageNum') ? parseInt(url.searchParams.get('pageNum')!, 10) : 1
 
-  if (pageSize > maxPageSize) {
-    throw new InvalidRequestError(`max allowed pageSize is ${maxPageSize}`)
+  if (isNaN(pageSize) || pageSize < 1) {
+    throw new InvalidRequestError(`pageSize must be a positive integer`)
   }
 
-  if (pageNum === 0) {
-    throw new InvalidRequestError(`pageNum starts from 1`)
+  if (isNaN(pageNum) || pageNum < 1) {
+    throw new InvalidRequestError(`pageNum must be a positive integer`)
+  }
+
+  if (pageSize > maxPageSize) {
+    throw new InvalidRequestError(`max allowed pageSize is ${maxPageSize}`)
   }
 
   const offset = (pageNum - 1) * pageSize
@@ -43,7 +47,7 @@ export function parseRangeHeader(
   rangeHeader: string | null,
   totalSize: number | null
 ): { type: 'range'; start: number; end: number } | { type: 'unsatisfiable' } | undefined {
-  if (!rangeHeader || totalSize === null) {
+  if (!rangeHeader || totalSize == null) {
     return undefined
   }
 
@@ -73,7 +77,41 @@ export function parseRangeHeader(
   return undefined
 }
 
-export async function createContentFileHeaders(content: ContentItem, hashId: string): Promise<Record<string, string>> {
+const IMMUTABLE_CACHE_CONTROL = 'public,max-age=31536000,s-maxage=31536000,immutable'
+
+// RFC 7232: ETag must be a double-quoted string
+export function toETag(hash: string): string {
+  return `"${hash}"`
+}
+
+export function checkNotModified(
+  request: { headers: { get(name: string): string | null } },
+  hash: string
+): { status: 304; headers: Record<string, string> } | undefined {
+  const etag = toETag(hash)
+  const ifNoneMatch = request.headers.get('if-none-match')
+  if (!ifNoneMatch) return undefined
+
+  const notModifiedHeaders = {
+    ETag: etag,
+    'Cache-Control': IMMUTABLE_CACHE_CONTROL,
+    'Access-Control-Expose-Headers': 'ETag'
+  }
+
+  if (ifNoneMatch === '*') {
+    return { status: 304, headers: notModifiedHeaders }
+  }
+
+  // RFC 9110 §13.1.2: weak comparison — strip W/ prefix on client-supplied tags
+  const tags = ifNoneMatch.split(',').map((t) => t.trim().replace(/^W\//, ''))
+  if (tags.includes(etag)) {
+    return { status: 304, headers: notModifiedHeaders }
+  }
+
+  return undefined
+}
+
+export async function createContentFileHeaders(content: ContentItem, hash: string): Promise<Record<string, string>> {
   const stream: Readable = await content.asRawStream()
   const fileTypeParser = new FileTypeParser()
   try {
@@ -83,10 +121,10 @@ export async function createContentFileHeaders(content: ContentItem, hashId: str
 
     const headers: Record<string, string> = {
       'Content-Type': mimeType,
-      ETag: JSON.stringify(hashId), // by spec, the ETag must be a double-quoted string
+      ETag: toETag(hash),
       'Access-Control-Expose-Headers': 'ETag, Content-Range, Accept-Ranges, Content-Length',
       'Accept-Ranges': 'bytes',
-      'Cache-Control': 'public,max-age=31536000,s-maxage=31536000,immutable'
+      'Cache-Control': IMMUTABLE_CACHE_CONTROL
     }
     if (content.encoding) {
       headers['Content-Encoding'] = content.encoding
@@ -104,14 +142,15 @@ export async function createContentFileHeaders(content: ContentItem, hashId: str
 export async function retrieveContentWithRange(
   storage: IContentStorageComponent,
   hash: string,
-  rangeHeader: string | null
+  rangeHeader: string | null,
+  preloadedFileInfo?: FileInfo
 ): Promise<
   | { content: ContentItem; status: 200; rangeHeaders?: undefined }
   | { content: ContentItem; status: 206; rangeHeaders: Record<string, string> }
   | { content?: undefined; status: 416; rangeHeaders: Record<string, string> }
   | undefined
 > {
-  const fileInfo = await storage.fileInfo(hash)
+  const fileInfo = preloadedFileInfo ?? (await storage.fileInfo(hash))
   if (!fileInfo) {
     return undefined
   }

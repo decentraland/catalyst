@@ -14,7 +14,7 @@ export function preventExecutionIfBoostrapping({
   ): Promise<{ status: number; body: Error } | IHttpServerComponent.IResponse> => {
     if (synchronizationState.getState() == State.BOOTSTRAPPING) {
       const errorBody: Error = {
-        error: 'Deployments are not allowed while the Catalyst is boostrapping'
+        error: 'Deployments are not allowed while the Catalyst is bootstrapping'
       }
       return {
         status: 503,
