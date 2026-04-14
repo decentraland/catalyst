@@ -117,22 +117,24 @@ export class GarbageCollectionManager {
     await this.components.storage.delete(hashes)
 
     this.LOGGER.info(`Profile cleanup will remove ${hashes.length} from content_files`)
-    await this.components.database.queryWithValues(
-      SQL`DELETE FROM content_files WHERE deployment = ANY(${deployments})`,
-      'gc_old_profiles_delete_content_files'
-    )
+    await this.components.database.transaction(async (database) => {
+      await database.queryWithValues(
+        SQL`DELETE FROM content_files WHERE deployment = ANY(${deployments})`,
+        'gc_old_profiles_delete_content_files'
+      )
 
-    this.LOGGER.info(`Profile cleanup will remove foreign keys for ${deployments.length} deployments`)
-    await this.components.database.queryWithValues(
-      SQL`UPDATE deployments SET deleter_deployment = NULL WHERE deleter_deployment = ANY(${deployments})`,
-      'gc_old_profiles_update_deployments'
-    )
+      this.LOGGER.info(`Profile cleanup will remove foreign keys for ${deployments.length} deployments`)
+      await database.queryWithValues(
+        SQL`UPDATE deployments SET deleter_deployment = NULL WHERE deleter_deployment = ANY(${deployments})`,
+        'gc_old_profiles_update_deployments'
+      )
 
-    this.LOGGER.info(`Profile cleanup will remove ${deployments.length} deployments`)
-    await this.components.database.queryWithValues(
-      SQL`DELETE FROM deployments WHERE id = ANY(${deployments})`,
-      'gc_old_profiles_delete_deployments'
-    )
+      this.LOGGER.info(`Profile cleanup will remove ${deployments.length} deployments`)
+      await database.queryWithValues(
+        SQL`DELETE FROM deployments WHERE id = ANY(${deployments})`,
+        'gc_old_profiles_delete_deployments'
+      )
+    }, 'gc_old_profiles')
 
     return {
       deletedHashes: hashesSet,
@@ -214,12 +216,9 @@ export class GarbageCollectionManager {
     })
   }
 
-  private waitUntilSyncFinishes(): Promise<void> {
-    return new Promise(async (resolve) => {
-      while (this.sweeping === true) {
-        await this.wait(1000)
-      }
-      resolve()
-    })
+  private async waitUntilSyncFinishes(): Promise<void> {
+    while (this.sweeping === true) {
+      await this.wait(1000)
+    }
   }
 }
