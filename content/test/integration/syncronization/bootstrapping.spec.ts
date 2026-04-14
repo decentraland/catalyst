@@ -245,12 +245,12 @@ describe('Bootstrapping synchronization tests', function () {
     expect(deployments).toHaveLength(0)
   })
 
-  it('when a server is boostrapping, it should not accept new deployments', async () => {
+  it('when a server is bootstrapping, it should not accept new deployments', async () => {
     jest.spyOn(server1.components.synchronizationState, 'getState').mockReturnValue(State.BOOTSTRAPPING)
     await server1.startProgram()
 
     await expect(deployEntityAtTimestamp(server1, 'p1', fakeNow() + 1)).rejects.toThrow(
-      '{"error":"Deployments are not allowed while the Catalyst is boostrapping"}'
+      '{"error":"Deployments are not allowed while the Catalyst is bootstrapping"}'
     )
   })
 

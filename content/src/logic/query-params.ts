@@ -11,7 +11,9 @@ export function qsGetArray(queryParams: QueryParams, paramName: string): string[
 }
 
 export function qsGetNumber(queryParams: QueryParams, paramName: string): number | undefined {
-  return queryParams[paramName] ? parseInt(queryParams[paramName] as string) : undefined
+  if (!queryParams[paramName]) return undefined
+  const num = parseInt(queryParams[paramName] as string, 10)
+  return isNaN(num) ? undefined : num
 }
 
 export function qsGetBoolean(queryParams: QueryParams, paramName: string): boolean | undefined {

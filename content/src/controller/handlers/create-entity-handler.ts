@@ -94,7 +94,11 @@ function requireString(val: string): string {
 
 function extractAuthChain(fields: Record<string, Field>): AuthLink[] | undefined {
   if (fields[`authChain`]) {
-    return JSON.parse(fields[`authChain`].value)
+    try {
+      return JSON.parse(fields[`authChain`].value)
+    } catch {
+      throw new InvalidRequestError('Invalid auth chain')
+    }
   }
 
   const ret: AuthChain = []
@@ -115,10 +119,18 @@ function extractAuthChain(fields: Record<string, Field>): AuthLink[] | undefined
 
   // fill all the authchain
   for (let i = 0; i <= biggestIndex; i++) {
+    const payloadField = fields[`authChain[${i}][payload]`]
+    const signatureField = fields[`authChain[${i}][signature]`]
+    const typeField = fields[`authChain[${i}][type]`]
+
+    if (!payloadField || !signatureField || !typeField) {
+      throw new InvalidRequestError(`Missing auth chain element at index ${i}`)
+    }
+
     ret.push({
-      payload: requireString(fields[`authChain[${i}][payload]`].value),
-      signature: requireString(fields[`authChain[${i}][signature]`].value),
-      type: requireString(fields[`authChain[${i}][type]`].value) as any
+      payload: requireString(payloadField.value),
+      signature: requireString(signatureField.value),
+      type: requireString(typeField.value) as any
     })
   }
 
