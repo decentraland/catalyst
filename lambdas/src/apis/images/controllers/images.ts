@@ -12,14 +12,8 @@ const LOGGER = log4js.getLogger('ImagesController')
 
 const validSizes = ['128', '256', '512']
 
-// CIDv0 (Qm + base58) and CIDv1 (bafy + base32) are strictly alphanumeric
-const CID_PATTERN = /^[a-zA-Z0-9]+$/
-
-function validateCid(cid: string) {
-  if (!CID_PATTERN.test(cid)) {
-    throw new ServiceError('Invalid CID')
-  }
-}
+// CIDv0 is 46 chars (Qm + base58), CIDv1 is ~59 chars (bafy + base32)
+const CID_PATTERN = /^[a-zA-Z0-9]{46,128}$/
 
 class ServiceError extends Error {
   statusCode: number
@@ -27,6 +21,12 @@ class ServiceError extends Error {
   constructor(message: string, code: number = 400) {
     super(message)
     this.statusCode = code
+  }
+}
+
+function validateCid(cid: string) {
+  if (!CID_PATTERN.test(cid)) {
+    throw new ServiceError('Invalid CID')
   }
 }
 
@@ -66,7 +66,7 @@ export async function getResizedImage(
     res.writeHead(200, {
       'Content-Type': 'application/octet-stream',
       'Content-Length': length,
-      ETag: cid,
+      ETag: `"${cid}"`,
       'Access-Control-Expose-Headers': '*',
       'Cache-Control': 'public, max-age=31536000, immutable'
     })
@@ -106,7 +106,8 @@ export async function getResizedImage(
       throw new ServiceError('Content not found in server', 404)
     } else {
       const body = await contentServerResponse.text()
-      throw new ServiceError(`Unexpected response from server: ${contentServerResponse.status} - ${body}`, 500)
+      LOGGER.error(`Unexpected response from content server for ${cid}: ${contentServerResponse.status} - ${body}`)
+      throw new ServiceError('Unexpected response from content server', 500)
     }
   }
 
