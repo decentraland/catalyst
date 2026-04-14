@@ -1,32 +1,88 @@
 import { ContentItem, IContentStorageComponent } from '@dcl/catalyst-storage'
-import { Readable } from 'stream'
-import { paginationObject, parseRangeHeader, retrieveContentWithRange } from '../../../src/controller/utils'
+import {
+  checkNotModified,
+  paginationObject,
+  parseRangeHeader,
+  retrieveContentWithRange,
+  toETag
+} from '../../../src/controller/utils'
 import { InvalidRequestError } from '../../../src/types'
+import { createContentItemMock } from '../../mocks/content-item-mock'
+import { createStorageComponentMock } from '../../mocks/storage-component-mock'
+import { createRequestMock } from '../../mocks/request-mock'
 
-function createMockContentItem(size: number | null = 100, encoding: string | null = null): ContentItem {
-  return {
-    size,
-    encoding,
-    contentSize: size,
-    asStream: jest.fn().mockResolvedValue(Readable.from(Buffer.alloc(size ?? 0))),
-    asRawStream: jest.fn().mockResolvedValue(Readable.from(Buffer.alloc(size ?? 0)))
-  }
-}
+describe('when checking for not modified', () => {
+  const hash = 'bafybeiasb5vpmaounyilfuxbd3lool'
 
-function createMockStorage(overrides: Partial<IContentStorageComponent> = {}): IContentStorageComponent {
-  return {
-    storeStream: jest.fn(),
-    storeStreamAndCompress: jest.fn(),
-    delete: jest.fn(),
-    retrieve: jest.fn(),
-    fileInfo: jest.fn(),
-    fileInfoMultiple: jest.fn(),
-    exist: jest.fn(),
-    existMultiple: jest.fn(),
-    allFileIds: jest.fn(),
-    ...overrides
-  }
-}
+  let expectedHeaders: Record<string, string>
+
+  beforeEach(() => {
+    expectedHeaders = {
+      ETag: toETag(hash),
+      'Cache-Control': 'public,max-age=31536000,s-maxage=31536000,immutable',
+      'Access-Control-Expose-Headers': 'ETag'
+    }
+  })
+
+  describe('when the If-None-Match header is not present', () => {
+    it('should return undefined', () => {
+      expect(checkNotModified(createRequestMock(), hash)).toBeUndefined()
+    })
+  })
+
+  describe('when the If-None-Match header matches the ETag exactly', () => {
+    it('should return a 304 response', () => {
+      expect(checkNotModified(createRequestMock({ 'If-None-Match': toETag(hash) }), hash)).toEqual({
+        status: 304,
+        headers: expectedHeaders
+      })
+    })
+  })
+
+  describe('when the If-None-Match header does not match the ETag', () => {
+    it('should return undefined', () => {
+      expect(
+        checkNotModified(createRequestMock({ 'If-None-Match': toETag('other-hash') }), hash)
+      ).toBeUndefined()
+    })
+  })
+
+  describe('when the If-None-Match header is the wildcard *', () => {
+    it('should return a 304 response', () => {
+      expect(checkNotModified(createRequestMock({ 'If-None-Match': '*' }), hash)).toEqual({
+        status: 304,
+        headers: expectedHeaders
+      })
+    })
+  })
+
+  describe('when the If-None-Match header contains multiple ETags', () => {
+    it('should return a 304 response when one matches', () => {
+      const multiValue = `"other-hash", ${toETag(hash)}, "another-hash"`
+      expect(checkNotModified(createRequestMock({ 'If-None-Match': multiValue }), hash)).toEqual({
+        status: 304,
+        headers: expectedHeaders
+      })
+    })
+
+    it('should return undefined when none match', () => {
+      expect(
+        checkNotModified(createRequestMock({ 'If-None-Match': '"other-hash", "another-hash"' }), hash)
+      ).toBeUndefined()
+    })
+  })
+
+  describe('when the If-None-Match header uses a weak ETag prefix', () => {
+    it('should return a 304 response using weak comparison', () => {
+      expect(
+        checkNotModified(createRequestMock({ 'If-None-Match': `W/${toETag(hash)}` }), hash)
+      ).toEqual({
+        status: 304,
+        headers: expectedHeaders
+      })
+    })
+  })
+})
 
 describe('paginationObject', () => {
   function urlWith(params: string): URL {
@@ -158,7 +214,7 @@ describe('parseRangeHeader', () => {
   })
 })
 
-describe('retrieveContentWithRange', () => {
+describe('when retrieving content with range', () => {
   let storage: IContentStorageComponent
 
   afterEach(() => {
@@ -167,7 +223,7 @@ describe('retrieveContentWithRange', () => {
 
   describe('when the file does not exist', () => {
     beforeEach(() => {
-      storage = createMockStorage({
+      storage = createStorageComponentMock({
         fileInfo: jest.fn().mockResolvedValue(undefined)
       })
     })
@@ -182,8 +238,8 @@ describe('retrieveContentWithRange', () => {
     let contentItem: ContentItem
 
     beforeEach(() => {
-      contentItem = createMockContentItem(500)
-      storage = createMockStorage({
+      contentItem = createContentItemMock(500)
+      storage = createStorageComponentMock({
         fileInfo: jest.fn().mockResolvedValue({ size: 500, encoding: null, contentSize: 500 }),
         retrieve: jest.fn().mockResolvedValue(contentItem)
       })
@@ -200,8 +256,8 @@ describe('retrieveContentWithRange', () => {
     let contentItem: ContentItem
 
     beforeEach(() => {
-      contentItem = createMockContentItem(100)
-      storage = createMockStorage({
+      contentItem = createContentItemMock(100)
+      storage = createStorageComponentMock({
         fileInfo: jest.fn().mockResolvedValue({ size: 500, encoding: null, contentSize: 500 }),
         retrieve: jest.fn().mockResolvedValue(contentItem)
       })
@@ -224,9 +280,9 @@ describe('retrieveContentWithRange', () => {
 
   describe('when the range header is valid and the retrieved content has a null size', () => {
     beforeEach(() => {
-      storage = createMockStorage({
+      storage = createStorageComponentMock({
         fileInfo: jest.fn().mockResolvedValue({ size: 500, encoding: null, contentSize: 500 }),
-        retrieve: jest.fn().mockResolvedValue(createMockContentItem(null))
+        retrieve: jest.fn().mockResolvedValue(createContentItemMock(null))
       })
     })
 
@@ -245,7 +301,7 @@ describe('retrieveContentWithRange', () => {
 
   describe('when the range is unsatisfiable', () => {
     beforeEach(() => {
-      storage = createMockStorage({
+      storage = createStorageComponentMock({
         fileInfo: jest.fn().mockResolvedValue({ size: 500, encoding: null, contentSize: 500 })
       })
     })
@@ -267,7 +323,7 @@ describe('retrieveContentWithRange', () => {
 
   describe('when storage.retrieve returns undefined', () => {
     beforeEach(() => {
-      storage = createMockStorage({
+      storage = createStorageComponentMock({
         fileInfo: jest.fn().mockResolvedValue({ size: 500, encoding: null, contentSize: 500 }),
         retrieve: jest.fn().mockResolvedValue(undefined)
       })
@@ -281,7 +337,7 @@ describe('retrieveContentWithRange', () => {
 
   describe('when storage.retrieve throws a RangeError', () => {
     beforeEach(() => {
-      storage = createMockStorage({
+      storage = createStorageComponentMock({
         fileInfo: jest.fn().mockResolvedValue({ size: 500, encoding: null, contentSize: 500 }),
         retrieve: jest.fn().mockRejectedValue(new RangeError('Invalid range: start=0, end=99'))
       })
@@ -303,9 +359,9 @@ describe('retrieveContentWithRange', () => {
 
   describe('when fileInfo returns contentSize different from size (gzip file)', () => {
     beforeEach(() => {
-      storage = createMockStorage({
+      storage = createStorageComponentMock({
         fileInfo: jest.fn().mockResolvedValue({ size: 300, encoding: 'gzip', contentSize: 1000 }),
-        retrieve: jest.fn().mockResolvedValue(createMockContentItem(100))
+        retrieve: jest.fn().mockResolvedValue(createContentItemMock(100))
       })
     })
 
@@ -330,9 +386,9 @@ describe('retrieveContentWithRange', () => {
 
   describe('when fileInfo returns contentSize as null (legacy gzip)', () => {
     beforeEach(() => {
-      storage = createMockStorage({
+      storage = createStorageComponentMock({
         fileInfo: jest.fn().mockResolvedValue({ size: 300, encoding: 'gzip', contentSize: null }),
-        retrieve: jest.fn().mockResolvedValue(createMockContentItem(100))
+        retrieve: jest.fn().mockResolvedValue(createContentItemMock(100))
       })
     })
 
@@ -352,7 +408,7 @@ describe('retrieveContentWithRange', () => {
 
     beforeEach(() => {
       thrownError = new Error('Storage failure')
-      storage = createMockStorage({
+      storage = createStorageComponentMock({
         fileInfo: jest.fn().mockResolvedValue({ size: 500, encoding: null, contentSize: 500 }),
         retrieve: jest.fn().mockRejectedValue(thrownError)
       })
