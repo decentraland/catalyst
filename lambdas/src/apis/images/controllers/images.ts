@@ -12,6 +12,15 @@ const LOGGER = log4js.getLogger('ImagesController')
 
 const validSizes = ['128', '256', '512']
 
+// CIDv0 (Qm + base58) and CIDv1 (bafy + base32) are strictly alphanumeric
+const CID_PATTERN = /^[a-zA-Z0-9]+$/
+
+function validateCid(cid: string) {
+  if (!CID_PATTERN.test(cid)) {
+    throw new ServiceError('Invalid CID')
+  }
+}
+
 class ServiceError extends Error {
   statusCode: number
 
@@ -49,6 +58,7 @@ export async function getResizedImage(
   try {
     const { cid, size } = req.params
 
+    validateCid(cid)
     validateSize(size)
 
     const [stream, length]: [NodeJS.ReadableStream, number] = await getStreamFor(cid, size)
