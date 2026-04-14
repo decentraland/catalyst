@@ -32,7 +32,9 @@ describe('ContentFolderMigrationManager', () => {
 
       expect(storeStreamSpy).toHaveBeenCalledTimes(10)
       expect(storeStreamSpy.mock.calls).toEqual(
-        expect.arrayContaining(files.map((file) => expect.arrayContaining([file, expect.any(String), file])))
+        expect.arrayContaining(
+          files.map((file) => [file, expect.objectContaining({ path: expect.stringContaining(file) })])
+        )
       )
     })
   })
@@ -53,7 +55,7 @@ async function runMigration(storage: IContentStorageComponent) {
 
   const fs = createFsComponent()
   fs.unlink = async () => { }
-  fs.createReadStream = jest.fn().mockImplementation((x) => x)
+  fs.createReadStream = jest.fn().mockImplementation((x) => ({ path: x, destroy: jest.fn() }))
   fs.stat = jest.fn().mockResolvedValue(({ isDirectory: () => false }))
   fs.opendir = jest.fn().mockImplementation(function* () {
     let current = 0
