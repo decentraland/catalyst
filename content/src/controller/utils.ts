@@ -43,7 +43,7 @@ export function parseRangeHeader(
   rangeHeader: string | null,
   totalSize: number | null
 ): { type: 'range'; start: number; end: number } | { type: 'unsatisfiable' } | undefined {
-  if (!rangeHeader || totalSize === null) {
+  if (!rangeHeader || totalSize == null) {
     return undefined
   }
 
@@ -76,7 +76,7 @@ export function parseRangeHeader(
 const IMMUTABLE_CACHE_CONTROL = 'public,max-age=31536000,s-maxage=31536000,immutable'
 
 // RFC 7232: ETag must be a double-quoted string
-function toETag(hash: string): string {
+export function toETag(hash: string): string {
   return `"${hash}"`
 }
 

@@ -1,5 +1,5 @@
 import { ContentItem, IContentStorageComponent } from '@dcl/catalyst-storage'
-import { checkNotModified, parseRangeHeader, retrieveContentWithRange } from '../../../src/controller/utils'
+import { checkNotModified, parseRangeHeader, retrieveContentWithRange, toETag } from '../../../src/controller/utils'
 import { createContentItemMock } from '../../mocks/content-item-mock'
 import { createStorageComponentMock } from '../../mocks/storage-component-mock'
 import { createRequestMock } from '../../mocks/request-mock'
@@ -11,7 +11,7 @@ describe('when checking for not modified', () => {
 
   beforeEach(() => {
     expectedHeaders = {
-      ETag: JSON.stringify(hash),
+      ETag: toETag(hash),
       'Cache-Control': 'public,max-age=31536000,s-maxage=31536000,immutable',
       'Access-Control-Expose-Headers': 'ETag'
     }
@@ -25,7 +25,7 @@ describe('when checking for not modified', () => {
 
   describe('when the If-None-Match header matches the ETag exactly', () => {
     it('should return a 304 response', () => {
-      expect(checkNotModified(createRequestMock({ 'If-None-Match': JSON.stringify(hash) }), hash)).toEqual({
+      expect(checkNotModified(createRequestMock({ 'If-None-Match': toETag(hash) }), hash)).toEqual({
         status: 304,
         headers: expectedHeaders
       })
@@ -35,7 +35,7 @@ describe('when checking for not modified', () => {
   describe('when the If-None-Match header does not match the ETag', () => {
     it('should return undefined', () => {
       expect(
-        checkNotModified(createRequestMock({ 'If-None-Match': JSON.stringify('other-hash') }), hash)
+        checkNotModified(createRequestMock({ 'If-None-Match': toETag('other-hash') }), hash)
       ).toBeUndefined()
     })
   })
@@ -51,7 +51,7 @@ describe('when checking for not modified', () => {
 
   describe('when the If-None-Match header contains multiple ETags', () => {
     it('should return a 304 response when one matches', () => {
-      const multiValue = `"other-hash", ${JSON.stringify(hash)}, "another-hash"`
+      const multiValue = `"other-hash", ${toETag(hash)}, "another-hash"`
       expect(checkNotModified(createRequestMock({ 'If-None-Match': multiValue }), hash)).toEqual({
         status: 304,
         headers: expectedHeaders
@@ -68,7 +68,7 @@ describe('when checking for not modified', () => {
   describe('when the If-None-Match header uses a weak ETag prefix', () => {
     it('should return a 304 response using weak comparison', () => {
       expect(
-        checkNotModified(createRequestMock({ 'If-None-Match': `W/${JSON.stringify(hash)}` }), hash)
+        checkNotModified(createRequestMock({ 'If-None-Match': `W/${toETag(hash)}` }), hash)
       ).toEqual({
         status: 304,
         headers: expectedHeaders

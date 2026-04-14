@@ -3,13 +3,14 @@ import { HandlerContextWithPath } from '../../../src/types'
 import { getContentHandler } from '../../../src/controller/handlers/get-content-handler'
 import { getEntityImageHandler } from '../../../src/controller/handlers/get-entity-image-handler'
 import { getEntityThumbnailHandler } from '../../../src/controller/handlers/get-entity-thumbnail-handler'
+import { toETag } from '../../../src/controller/utils'
 import { createContentItemMock } from '../../mocks/content-item-mock'
 import { createStorageComponentMock } from '../../mocks/storage-component-mock'
 import { createRequestMock } from '../../mocks/request-mock'
 
 describe('when handling conditional requests', () => {
   const hashId = 'QmSomeHash123'
-  const etag = JSON.stringify(hashId)
+  const etag = toETag(hashId)
 
   let contentItem: ContentItem
   let storage: IContentStorageComponent
@@ -49,6 +50,11 @@ describe('when handling conditional requests', () => {
         const response = await getContentHandler(context)
         expect(response.headers).toBeDefined()
         expect(response.headers['ETag']).toBe(etag)
+      })
+
+      it('should not call storage.retrieve', async () => {
+        await getContentHandler(context)
+        expect(storage.retrieve).not.toHaveBeenCalled()
       })
     })
 
@@ -142,6 +148,11 @@ describe('when handling conditional requests', () => {
         expect(response.status).toBe(304)
         expect(response).not.toHaveProperty('body')
       })
+
+      it('should not call storage.retrieve', async () => {
+        await getEntityImageHandler(context)
+        expect(storage.retrieve).not.toHaveBeenCalled()
+      })
     })
   })
 
@@ -193,6 +204,11 @@ describe('when handling conditional requests', () => {
         const response = await getEntityThumbnailHandler(context)
         expect(response.status).toBe(304)
         expect(response).not.toHaveProperty('body')
+      })
+
+      it('should not call storage.retrieve', async () => {
+        await getEntityThumbnailHandler(context)
+        expect(storage.retrieve).not.toHaveBeenCalled()
       })
     })
   })
