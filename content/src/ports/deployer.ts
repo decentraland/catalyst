@@ -229,7 +229,8 @@ export function createDeployer(
     const serverValidationResult = await components.serverValidator.validate(entity, context, {
       areThereNewerEntities: (entity) => areThereNewerEntitiesOnPointers(entity),
       isEntityDeployedAlready: () => isEntityDeployedAlready,
-      isNotFailedDeployment: (entity) => components.failedDeployments.findFailedDeployment(entity.id) === undefined,
+      isNotFailedDeployment: async (entity) =>
+        (await components.failedDeployments.findFailedDeployment(entity.id)) === undefined,
       isEntityRateLimited: (entity) =>
         components.deployRateLimiter.isRateLimited(entity.type, entity.pointers) ||
         (entity.type === EntityType.PROFILE &&

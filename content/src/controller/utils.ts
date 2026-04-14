@@ -7,12 +7,16 @@ export function paginationObject(url: URL, maxPageSize: number = 1000): Paginati
   const pageSize = url.searchParams.has('pageSize') ? parseInt(url.searchParams.get('pageSize')!, 10) : 100
   const pageNum = url.searchParams.has('pageNum') ? parseInt(url.searchParams.get('pageNum')!, 10) : 1
 
-  if (pageSize > maxPageSize) {
-    throw new InvalidRequestError(`max allowed pageSize is ${maxPageSize}`)
+  if (isNaN(pageSize) || pageSize < 1) {
+    throw new InvalidRequestError(`pageSize must be a positive integer`)
   }
 
-  if (pageNum === 0) {
-    throw new InvalidRequestError(`pageNum starts from 1`)
+  if (isNaN(pageNum) || pageNum < 1) {
+    throw new InvalidRequestError(`pageNum must be a positive integer`)
+  }
+
+  if (pageSize > maxPageSize) {
+    throw new InvalidRequestError(`max allowed pageSize is ${maxPageSize}`)
   }
 
   const offset = (pageNum - 1) * pageSize

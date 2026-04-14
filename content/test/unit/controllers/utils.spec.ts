@@ -1,5 +1,12 @@
 import { ContentItem, IContentStorageComponent } from '@dcl/catalyst-storage'
-import { checkNotModified, parseRangeHeader, retrieveContentWithRange, toETag } from '../../../src/controller/utils'
+import {
+  checkNotModified,
+  paginationObject,
+  parseRangeHeader,
+  retrieveContentWithRange,
+  toETag
+} from '../../../src/controller/utils'
+import { InvalidRequestError } from '../../../src/types'
 import { createContentItemMock } from '../../mocks/content-item-mock'
 import { createStorageComponentMock } from '../../mocks/storage-component-mock'
 import { createRequestMock } from '../../mocks/request-mock'
@@ -77,7 +84,69 @@ describe('when checking for not modified', () => {
   })
 })
 
-describe('when parsing a range header', () => {
+describe('paginationObject', () => {
+  function urlWith(params: string): URL {
+    return new URL(`https://example.com/path${params}`)
+  }
+
+  describe('when pageSize is a non-numeric string', () => {
+    it('should throw InvalidRequestError', () => {
+      expect(() => paginationObject(urlWith('?pageSize=abc'))).toThrow(InvalidRequestError)
+      expect(() => paginationObject(urlWith('?pageSize=abc'))).toThrow('pageSize must be a positive integer')
+    })
+  })
+
+  describe('when pageNum is a non-numeric string', () => {
+    it('should throw InvalidRequestError', () => {
+      expect(() => paginationObject(urlWith('?pageNum=abc'))).toThrow(InvalidRequestError)
+      expect(() => paginationObject(urlWith('?pageNum=abc'))).toThrow('pageNum must be a positive integer')
+    })
+  })
+
+  describe('when pageSize is negative', () => {
+    it('should throw InvalidRequestError', () => {
+      expect(() => paginationObject(urlWith('?pageSize=-5'))).toThrow(InvalidRequestError)
+      expect(() => paginationObject(urlWith('?pageSize=-5'))).toThrow('pageSize must be a positive integer')
+    })
+  })
+
+  describe('when pageNum is negative', () => {
+    it('should throw InvalidRequestError', () => {
+      expect(() => paginationObject(urlWith('?pageNum=-5'))).toThrow(InvalidRequestError)
+      expect(() => paginationObject(urlWith('?pageNum=-5'))).toThrow('pageNum must be a positive integer')
+    })
+  })
+
+  describe('when pageNum is zero', () => {
+    it('should throw InvalidRequestError', () => {
+      expect(() => paginationObject(urlWith('?pageNum=0'))).toThrow(InvalidRequestError)
+      expect(() => paginationObject(urlWith('?pageNum=0'))).toThrow('pageNum must be a positive integer')
+    })
+  })
+
+  describe('when pageSize is zero', () => {
+    it('should throw InvalidRequestError', () => {
+      expect(() => paginationObject(urlWith('?pageSize=0'))).toThrow(InvalidRequestError)
+      expect(() => paginationObject(urlWith('?pageSize=0'))).toThrow('pageSize must be a positive integer')
+    })
+  })
+
+  describe('when valid pagination params are provided', () => {
+    it('should return the correct pagination object', () => {
+      const result = paginationObject(urlWith('?pageSize=10&pageNum=3'))
+      expect(result).toEqual({ pageSize: 10, pageNum: 3, offset: 20, limit: 10 })
+    })
+  })
+
+  describe('when no params are provided', () => {
+    it('should return defaults', () => {
+      const result = paginationObject(urlWith(''))
+      expect(result).toEqual({ pageSize: 100, pageNum: 1, offset: 0, limit: 100 })
+    })
+  })
+})
+
+describe('parseRangeHeader', () => {
   describe('when the range header is null', () => {
     it('should return undefined', () => {
       expect(parseRangeHeader(null, 1000)).toBeUndefined()
