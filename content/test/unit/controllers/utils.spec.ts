@@ -1,6 +1,7 @@
 import { ContentItem, IContentStorageComponent } from '@dcl/catalyst-storage'
 import { Readable } from 'stream'
-import { parseRangeHeader, retrieveContentWithRange } from '../../../src/controller/utils'
+import { paginationObject, parseRangeHeader, retrieveContentWithRange } from '../../../src/controller/utils'
+import { InvalidRequestError } from '../../../src/types'
 
 function createMockContentItem(size: number | null = 100, encoding: string | null = null): ContentItem {
   return {
@@ -26,6 +27,68 @@ function createMockStorage(overrides: Partial<IContentStorageComponent> = {}): I
     ...overrides
   }
 }
+
+describe('paginationObject', () => {
+  function urlWith(params: string): URL {
+    return new URL(`https://example.com/path${params}`)
+  }
+
+  describe('when pageSize is a non-numeric string', () => {
+    it('should throw InvalidRequestError', () => {
+      expect(() => paginationObject(urlWith('?pageSize=abc'))).toThrow(InvalidRequestError)
+      expect(() => paginationObject(urlWith('?pageSize=abc'))).toThrow('pageSize must be a positive integer')
+    })
+  })
+
+  describe('when pageNum is a non-numeric string', () => {
+    it('should throw InvalidRequestError', () => {
+      expect(() => paginationObject(urlWith('?pageNum=abc'))).toThrow(InvalidRequestError)
+      expect(() => paginationObject(urlWith('?pageNum=abc'))).toThrow('pageNum must be a positive integer')
+    })
+  })
+
+  describe('when pageSize is negative', () => {
+    it('should throw InvalidRequestError', () => {
+      expect(() => paginationObject(urlWith('?pageSize=-5'))).toThrow(InvalidRequestError)
+      expect(() => paginationObject(urlWith('?pageSize=-5'))).toThrow('pageSize must be a positive integer')
+    })
+  })
+
+  describe('when pageNum is negative', () => {
+    it('should throw InvalidRequestError', () => {
+      expect(() => paginationObject(urlWith('?pageNum=-5'))).toThrow(InvalidRequestError)
+      expect(() => paginationObject(urlWith('?pageNum=-5'))).toThrow('pageNum must be a positive integer')
+    })
+  })
+
+  describe('when pageNum is zero', () => {
+    it('should throw InvalidRequestError', () => {
+      expect(() => paginationObject(urlWith('?pageNum=0'))).toThrow(InvalidRequestError)
+      expect(() => paginationObject(urlWith('?pageNum=0'))).toThrow('pageNum must be a positive integer')
+    })
+  })
+
+  describe('when pageSize is zero', () => {
+    it('should throw InvalidRequestError', () => {
+      expect(() => paginationObject(urlWith('?pageSize=0'))).toThrow(InvalidRequestError)
+      expect(() => paginationObject(urlWith('?pageSize=0'))).toThrow('pageSize must be a positive integer')
+    })
+  })
+
+  describe('when valid pagination params are provided', () => {
+    it('should return the correct pagination object', () => {
+      const result = paginationObject(urlWith('?pageSize=10&pageNum=3'))
+      expect(result).toEqual({ pageSize: 10, pageNum: 3, offset: 20, limit: 10 })
+    })
+  })
+
+  describe('when no params are provided', () => {
+    it('should return defaults', () => {
+      const result = paginationObject(urlWith(''))
+      expect(result).toEqual({ pageSize: 100, pageNum: 1, offset: 0, limit: 100 })
+    })
+  })
+})
 
 describe('parseRangeHeader', () => {
   describe('when the range header is null', () => {

@@ -2,6 +2,7 @@ import destroy from 'destroy'
 import { Request, Response } from 'express'
 import fs from 'fs'
 import { mkdir } from 'fs/promises'
+import path from 'path'
 import log4js from 'log4js'
 import fetch from 'node-fetch'
 import onFinished from 'on-finished'
@@ -12,12 +13,23 @@ const LOGGER = log4js.getLogger('ImagesController')
 
 const validSizes = ['128', '256', '512']
 
+// Format check: blocks dangerous characters (path separators, dots, etc.)
+// and enforces length bounds. Not a structural CID parser.
+// CIDv0 is 46 chars (Qm + base58), CIDv1 is ~59 chars (bafy + base32).
+const CID_PATTERN = /^[a-zA-Z0-9]{46,128}$/
+
 class ServiceError extends Error {
   statusCode: number
 
   constructor(message: string, code: number = 400) {
     super(message)
     this.statusCode = code
+  }
+}
+
+function validateCid(cid: string) {
+  if (!CID_PATTERN.test(cid)) {
+    throw new ServiceError('Invalid CID')
   }
 }
 
@@ -49,6 +61,7 @@ export async function getResizedImage(
   try {
     const { cid, size } = req.params
 
+    validateCid(cid)
     validateSize(size)
 
     const [stream, length]: [NodeJS.ReadableStream, number] = await getStreamFor(cid, size)
@@ -56,7 +69,7 @@ export async function getResizedImage(
     res.writeHead(200, {
       'Content-Type': 'application/octet-stream',
       'Content-Length': length,
-      ETag: cid,
+      ETag: `"${cid}"`,
       'Access-Control-Expose-Headers': '*',
       'Cache-Control': 'public, max-age=31536000, immutable'
     })
@@ -96,7 +109,8 @@ export async function getResizedImage(
       throw new ServiceError('Content not found in server', 404)
     } else {
       const body = await contentServerResponse.text()
-      throw new ServiceError(`Unexpected response from server: ${contentServerResponse.status} - ${body}`, 500)
+      LOGGER.error(`Unexpected response from content server for ${cid}: ${contentServerResponse.status} - ${body}`)
+      throw new ServiceError('Unexpected response from content server', 500)
     }
   }
 
@@ -121,6 +135,10 @@ export async function getResizedImage(
 
   async function getFilePath(rooStorageLocation: string, cid: string, size: string) {
     const storageLocation = await getStorageLocation(rooStorageLocation)
-    return `${storageLocation}/${cid}_${size}`
+    const filePath = path.resolve(storageLocation, `${cid}_${size}`)
+    if (!filePath.startsWith(storageLocation)) {
+      throw new ServiceError('Invalid CID')
+    }
+    return filePath
   }
 }

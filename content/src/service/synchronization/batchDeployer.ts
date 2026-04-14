@@ -56,7 +56,6 @@ export function createBatchDeployerComponent(
    * servers only. Local deployments using POST /entities _ARE NOT_ filtered by this function.
    */
 
-  const ignoreProfilesBefore = Date.now() - PROFILE_DURATION
   async function shouldRemoteEntityDeploymentBeIgnored(entity: DeployableEntity): Promise<boolean> {
     // ignore specific entity types using EnvironmentConfig.SYNC_IGNORED_ENTITY_TYPES
     if (syncOptions.ignoredTypes.has(entity.entityType)) {
@@ -64,7 +63,7 @@ export function createBatchDeployerComponent(
     }
 
     // ignore old profiles
-    if (entity.entityType === EntityType.PROFILE && entity.entityTimestamp < ignoreProfilesBefore) {
+    if (entity.entityType === EntityType.PROFILE && entity.entityTimestamp < Date.now() - PROFILE_DURATION) {
       return true
     }
 
