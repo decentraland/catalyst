@@ -1,6 +1,4 @@
 import { IFileSystemComponent } from '@dcl/catalyst-storage'
-import { createJobComponent } from '@dcl/job-component'
-import { IBaseComponent, START_COMPONENT, STOP_COMPONENT } from '@well-known-components/interfaces'
 import { resolve } from 'path'
 import { createInterface } from 'readline'
 import { URL } from 'url'
@@ -9,15 +7,14 @@ import { AppComponents } from '../types'
 
 export type Denylist = {
   isDenylisted: (id: string) => boolean
-  start?: () => Promise<void>
-  stop?: () => Promise<void>
+  reload: () => Promise<void>
 }
 
 export async function createDenylist(
   components: Pick<AppComponents, 'env' | 'logs' | 'fetcher'> & {
     fs: Pick<IFileSystemComponent, 'createReadStream' | 'existPath'>
   }
-): Promise<Denylist & IBaseComponent> {
+): Promise<Denylist> {
   const logger = components.logs.getLogger('Denylist')
   const deniedContentIdentifiers = new Set()
   const fileName = resolve(
@@ -78,20 +75,6 @@ export async function createDenylist(
     }
   }
 
-  const reloadJob = createJobComponent(
-    { logs: components.logs },
-    async () => {
-      await loadDenylists()
-    },
-    120_000 /* two minutes */,
-    {
-      startupDelay: 120_000,
-      onError: (error: any) => {
-        logger.error(error)
-      }
-    }
-  )
-
   return {
     isDenylisted: (id: string): boolean => {
       const denied = deniedContentIdentifiers.has(id)
@@ -100,12 +83,6 @@ export async function createDenylist(
       }
       return denied
     },
-    async start() {
-      await loadDenylists()
-      await reloadJob[START_COMPONENT]?.(undefined as any)
-    },
-    async stop() {
-      await reloadJob[STOP_COMPONENT]?.()
-    }
+    reload: loadDenylists
   }
 }

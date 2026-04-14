@@ -1,5 +1,3 @@
-import { createJobComponent } from '@dcl/job-component'
-import { IBaseComponent, START_COMPONENT, STOP_COMPONENT } from '@well-known-components/interfaces'
 import { findContentHashesNotBeingUsedAnymore } from '../../logic/database-queries/content-files-queries'
 import { SYSTEM_PROPERTIES } from '../../ports/system-properties'
 import { AppComponents, PROFILE_DURATION } from '../../types'
@@ -18,8 +16,9 @@ export type SweepResult = {
   gcStaleProfilesResult?: GCStaleProfilesResult
 }
 
-export type IGarbageCollectionComponent = IBaseComponent & {
-  getLastSweepResults(): SweepResult | undefined
+export type IGarbageCollectionComponent = {
+  performSweep: () => Promise<void>
+  getLastSweepResults: () => SweepResult | undefined
 }
 
 export function createGarbageCollectionComponent(
@@ -27,8 +26,7 @@ export function createGarbageCollectionComponent(
     AppComponents,
     'systemProperties' | 'metrics' | 'logs' | 'storage' | 'database' | 'clock' | 'activeEntities'
   >,
-  performGarbageCollection: boolean,
-  sweepInterval: number
+  performGarbageCollection: boolean
 ): IGarbageCollectionComponent {
   const logger = components.logs.getLogger('GarbageCollectionManager')
   let lastSweepResult: SweepResult | undefined = undefined
@@ -170,25 +168,8 @@ export function createGarbageCollectionComponent(
     }
   }
 
-  const job = createJobComponent(
-    { logs: components.logs },
-    performSweep,
-    sweepInterval,
-    {
-      onError: (error: any) => {
-        logger.error(`Failed to perform garbage collection.`)
-        logger.error(error)
-      }
-    }
-  )
-
   return {
-    async start() {
-      await job[START_COMPONENT]?.(undefined as any)
-    },
-    async stop() {
-      await job[STOP_COMPONENT]?.()
-    },
+    performSweep,
     getLastSweepResults(): SweepResult | undefined {
       return lastSweepResult
     }

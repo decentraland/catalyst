@@ -214,7 +214,7 @@ describe('Deployer', function () {
     )
     const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, clock })
     env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)
-    const denylist: Denylist = { isDenylisted: () => false }
+    const denylist: Denylist = { isDenylisted: () => false, reload: jest.fn() }
     const sequentialExecutor = createSequentialTaskExecutor({ logs, metrics })
     const deployments = createDeploymentsComponentMock()
     const activeEntities = createActiveEntitiesComponent({

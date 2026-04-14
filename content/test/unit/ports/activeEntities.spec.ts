@@ -359,7 +359,7 @@ describe('activeEntities', () => {
         env,
         logs: createLogsMockedComponent(),
         metrics: createTestMetricsComponent(metricsDeclaration),
-        denylist: { isDenylisted: () => false },
+        denylist: { isDenylisted: () => false, reload: jest.fn() },
         sequentialExecutor: createMockedSequentialTaskExecutorComponent(),
         deployments: createDeploymentsComponentMock({
           getDeploymentsForActiveThirdPartyItemsByEntityIds: getDeploymentsForActiveThirdPartyItemsByEntityIdsMock
@@ -466,7 +466,7 @@ async function buildComponents() {
   )
   const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, clock })
   env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)
-  const denylist: Denylist = { isDenylisted: () => false }
+  const denylist: Denylist = { isDenylisted: () => false, reload: jest.fn() }
   const sequentialExecutor = createMockedSequentialTaskExecutorComponent()
   const deployments = createDeploymentsComponentMock()
   const activeEntities = createActiveEntitiesComponent({

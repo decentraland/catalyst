@@ -15,7 +15,7 @@ describe('snapshot generator - ', () => {
     await startComponent(components.denylist as IBaseComponent, startOptions)
     await startComponent(components.staticConfigs as IBaseComponent, startOptions)
     jest.spyOn(components.clock, 'now').mockReturnValue(1577836800000 + MS_PER_DAY + 1)
-    await startComponent(components.snapshotGenerator, startOptions)
+    await components.snapshotGenerator.generateSnapshots()
     const snapshots = components.snapshotGenerator.getCurrentSnapshots()
     expect(snapshots).toEqual(
       expect.arrayContaining([

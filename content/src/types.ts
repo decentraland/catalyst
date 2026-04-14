@@ -80,6 +80,9 @@ export type AppComponents = {
   synchronizer: SynchronizerComponent
   deployments: IDeploymentsComponent
   materializedViewUpdateJob: IJobComponent
+  denylistReloadJob: IJobComponent
+  snapshotGenerationJob: IJobComponent
+  garbageCollectionJob: IJobComponent
   synchronizationState: SynchronizationState
   deployedEntitiesBloomFilter: DeployedEntitiesBloomFilter
   challengeSupervisor: IChallengeSupervisor

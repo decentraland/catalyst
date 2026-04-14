@@ -62,9 +62,6 @@ describe('Integration - Garbage Collection', () => {
     })
 
     it(`When garbage collection is on, then unused content is deleted`, async () => {
-      // Start garbage collection
-      await components.garbageCollectionManager.start()
-
       // Deploy E1
       await deployEntitiesCombo(components.deployer, E1)
 
@@ -73,6 +70,9 @@ describe('Integration - Garbage Collection', () => {
 
       // Deploy E2
       await deployEntitiesCombo(components.deployer, E2)
+
+      // Run garbage collection
+      await components.garbageCollectionManager.performSweep()
 
       // Assert only the shared content is still available
       await awaitUntil(() => assertReportedAsDeletedAre(onlyE1Content))
@@ -102,7 +102,7 @@ describe('Integration - Garbage Collection', () => {
       await deployEntitiesCombo(components.deployer, E1, E2)
 
       // Start garbage collection
-      await components.garbageCollectionManager.start()
+      await components.garbageCollectionManager.performSweep()
 
       // Assert only the shared content is still available
       await awaitUntil(() => assertReportedAsDeletedAre(onlyE1Content))
@@ -114,7 +114,7 @@ describe('Integration - Garbage Collection', () => {
       await deployEntitiesCombo(components.deployer, E1, E3)
 
       // Start garbage collection
-      await components.garbageCollectionManager.start()
+      await components.garbageCollectionManager.performSweep()
 
       // Wait a little
       await sleep(ms('4s'))
@@ -160,7 +160,7 @@ describe('Integration - Garbage Collection', () => {
       await deployEntitiesCombo(components.deployer, p2)
 
       // Start garbage collection
-      await components.garbageCollectionManager.start()
+      await components.garbageCollectionManager.performSweep()
 
       const results = components.garbageCollectionManager.getLastSweepResults()
       expect(results).toBeTruthy()
@@ -199,7 +199,7 @@ describe('Integration - Garbage Collection', () => {
       await deployEntitiesCombo(components.deployer, p2)
 
       // Start garbage collection
-      await components.garbageCollectionManager.start()
+      await components.garbageCollectionManager.performSweep()
 
       const results = components.garbageCollectionManager.getLastSweepResults()
       expect(results?.gcProfileActiveEntitiesResult).toContain(p1.entity.pointers[0])
@@ -235,7 +235,7 @@ describe('Integration - Garbage Collection', () => {
       await deployEntitiesCombo(components.deployer, p2)
 
       // Start garbage collection
-      await components.garbageCollectionManager.start()
+      await components.garbageCollectionManager.performSweep()
 
       const results = components.garbageCollectionManager.getLastSweepResults()
       expect(results?.gcProfileActiveEntitiesResult).toContain(p1.entity.pointers[0])
@@ -269,7 +269,7 @@ describe('Integration - Garbage Collection', () => {
       await deployEntitiesCombo(components.deployer, defaultProfile, regularProfile)
       const regularProfileDeploymentId = await findDeploymentId(regularProfile.entity.id)
 
-      await components.garbageCollectionManager.start()
+      await components.garbageCollectionManager.performSweep()
 
       const results = components.garbageCollectionManager.getLastSweepResults()
 
