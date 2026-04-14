@@ -2,6 +2,7 @@ import destroy from 'destroy'
 import { Request, Response } from 'express'
 import fs from 'fs'
 import { mkdir } from 'fs/promises'
+import path from 'path'
 import log4js from 'log4js'
 import fetch from 'node-fetch'
 import onFinished from 'on-finished'
@@ -12,7 +13,9 @@ const LOGGER = log4js.getLogger('ImagesController')
 
 const validSizes = ['128', '256', '512']
 
-// CIDv0 is 46 chars (Qm + base58), CIDv1 is ~59 chars (bafy + base32)
+// Format check: blocks dangerous characters (path separators, dots, etc.)
+// and enforces length bounds. Not a structural CID parser.
+// CIDv0 is 46 chars (Qm + base58), CIDv1 is ~59 chars (bafy + base32).
 const CID_PATTERN = /^[a-zA-Z0-9]{46,128}$/
 
 class ServiceError extends Error {
@@ -132,6 +135,10 @@ export async function getResizedImage(
 
   async function getFilePath(rooStorageLocation: string, cid: string, size: string) {
     const storageLocation = await getStorageLocation(rooStorageLocation)
-    return `${storageLocation}/${cid}_${size}`
+    const filePath = path.resolve(storageLocation, `${cid}_${size}`)
+    if (!filePath.startsWith(storageLocation)) {
+      throw new ServiceError('Invalid CID')
+    }
+    return filePath
   }
 }

@@ -137,9 +137,37 @@ describe('getResizedImage', () => {
     })
   })
 
-  describe('when the CID exceeds the maximum length', () => {
+  describe('when the CID is exactly 46 characters (minimum boundary)', () => {
     beforeEach(() => {
-      req.params = { cid: 'a'.repeat(200), size: '128' }
+      req.params = { cid: 'Q'.repeat(46), size: '128' }
+      jest.spyOn(fs.promises, 'stat').mockResolvedValue({ size: 100 } as fs.Stats)
+      jest.spyOn(fs, 'createReadStream').mockReturnValue(new PassThrough() as any)
+    })
+
+    it('should respond with 200', async () => {
+      await getResizedImage(fetcher, '/tmp/test-storage', req, res)
+
+      expect(writeHeadFn).toHaveBeenCalledWith(200, expect.anything())
+    })
+  })
+
+  describe('when the CID is exactly 128 characters (maximum boundary)', () => {
+    beforeEach(() => {
+      req.params = { cid: 'b'.repeat(128), size: '128' }
+      jest.spyOn(fs.promises, 'stat').mockResolvedValue({ size: 100 } as fs.Stats)
+      jest.spyOn(fs, 'createReadStream').mockReturnValue(new PassThrough() as any)
+    })
+
+    it('should respond with 200', async () => {
+      await getResizedImage(fetcher, '/tmp/test-storage', req, res)
+
+      expect(writeHeadFn).toHaveBeenCalledWith(200, expect.anything())
+    })
+  })
+
+  describe('when the CID is 45 characters (one below minimum)', () => {
+    beforeEach(() => {
+      req.params = { cid: 'Q'.repeat(45), size: '128' }
     })
 
     it('should respond with a 400 and an invalid CID error', async () => {
@@ -150,9 +178,9 @@ describe('getResizedImage', () => {
     })
   })
 
-  describe('when the CID is too short', () => {
+  describe('when the CID is 129 characters (one above maximum)', () => {
     beforeEach(() => {
-      req.params = { cid: 'Qmabc', size: '128' }
+      req.params = { cid: 'b'.repeat(129), size: '128' }
     })
 
     it('should respond with a 400 and an invalid CID error', async () => {
