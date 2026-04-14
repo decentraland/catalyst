@@ -142,11 +142,12 @@ async function ensureFileExistsInStorage(
     try {
       await storage.storeStream(file, stream)
       logger.info(`File ${file} downloaded and stored successfully`)
-    } catch (error: any) {
+    } catch (error: unknown) {
       stream.destroy()
       throw error
     }
-  } catch (error: any) {
-    logger.warn(`Problem downloading file ${file}. ${error.message}`)
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error)
+    logger.warn(`Problem downloading file ${file}. ${message}`)
   }
 }
