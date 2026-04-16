@@ -376,9 +376,12 @@ export class EnvironmentBuilder {
       EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL,
       () => process.env.GARBAGE_COLLECTION_INTERVAL ?? ms('6h')
     )
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PROFILE_DURATION, () =>
-      process.env.PROFILE_DURATION ? ms(process.env.PROFILE_DURATION) : ms('1 year')
-    )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PROFILE_DURATION, () => {
+      if (!process.env.PROFILE_DURATION) return ms('1 year')
+      const value = ms(process.env.PROFILE_DURATION)
+      if (value === undefined) throw new Error(`Invalid PROFILE_DURATION value: "${process.env.PROFILE_DURATION}"`)
+      return value
+    })
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PG_IDLE_TIMEOUT, () =>
       process.env.PG_IDLE_TIMEOUT ? ms(process.env.PG_IDLE_TIMEOUT) : ms('30s')
