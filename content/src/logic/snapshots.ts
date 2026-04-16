@@ -174,5 +174,5 @@ function getReasonForMetric(props: {
   } else if (props.isOutdated) {
     return 'is_outdated'
   }
-  return 'unkown'
+  return 'unknown'
 }

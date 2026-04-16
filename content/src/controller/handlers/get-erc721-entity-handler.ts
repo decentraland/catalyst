@@ -27,7 +27,7 @@ export async function getERC721EntityHandler(
   }
 
   if (!entity.metadata.rarity) {
-    throw new Error('Wearable is not standard.')
+    throw new InvalidRequestError('Wearable is not standard.')
   }
 
   return {

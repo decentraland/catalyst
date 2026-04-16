@@ -64,7 +64,12 @@ export class TestProgram {
 
   async deployEntity(deployData: DeploymentData, fix: boolean = false) {
     this.logger.info('Deploying entity ' + deployData.entityId)
-    const returnValue = await ((await this.client.deploy(deployData)) as any).json()
+    const response = (await this.client.deploy(deployData)) as any
+    const returnValue = await response.json()
+
+    if (!response.ok) {
+      throw new Error(JSON.stringify(returnValue))
+    }
 
     if (isInvalidDeployment(returnValue)) {
       throw new Error(returnValue.errors.join(','))
