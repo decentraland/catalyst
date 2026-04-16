@@ -143,6 +143,7 @@ export enum EnvironmentConfig {
   PG_STREAM_QUERY_TIMEOUT,
   GARBAGE_COLLECTION,
   GARBAGE_COLLECTION_INTERVAL,
+  PROFILE_DURATION,
   SNAPSHOT_FREQUENCY_IN_MILLISECONDS,
   CUSTOM_DAO,
   DISABLE_SYNCHRONIZATION,
@@ -374,6 +375,11 @@ export class EnvironmentBuilder {
       env,
       EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL,
       () => process.env.GARBAGE_COLLECTION_INTERVAL ?? ms('6h')
+    )
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.PROFILE_DURATION,
+      () => process.env.PROFILE_DURATION ? ms(process.env.PROFILE_DURATION) : ms('1 year')
     )
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PG_IDLE_TIMEOUT, () =>
