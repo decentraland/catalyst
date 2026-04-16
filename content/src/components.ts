@@ -226,7 +226,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const garbageCollectionManager = new GarbageCollectionManager(
     { clock, database, metrics, logs, storage, systemProperties, activeEntities },
     env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION),
-    env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL)
+    env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL),
+    env.getConfig(EnvironmentConfig.PROFILE_DURATION)
   )
 
   const downloadQueue = createJobQueue({
@@ -261,7 +262,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
         autoStart: true,
         concurrency: 10,
         timeout: 100000
-      }
+      },
+      profileDuration: env.getConfig(EnvironmentConfig.PROFILE_DURATION)
     }
   )
 

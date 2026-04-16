@@ -1,5 +1,5 @@
 import { createBatchDeployerComponent } from '../../../../src/service/synchronization/batchDeployer'
-import { PROFILE_DURATION } from '../../../../src/types'
+import ms from 'ms'
 import * as deployments from '../../../../src/logic/deployments'
 import * as deployRemote from '../../../../src/service/synchronization/deployRemoteEntity'
 
@@ -74,12 +74,13 @@ describe('createBatchDeployerComponent', () => {
         const creationTime = Date.now()
         // Profile timestamp is just under PROFILE_DURATION ago at creation time
         // (i.e. it's still "new" when the component is created)
-        const profileTimestamp = creationTime - PROFILE_DURATION + 60_000
+        const profileTimestamp = creationTime - ms('1 year') + 60_000
 
         const components = createMockComponents()
         const batchDeployer = createBatchDeployerComponent(components, {
           ignoredTypes: new Set(),
-          queueOptions: { autoStart: true, concurrency: 1, timeout: 10000 }
+          queueOptions: { autoStart: true, concurrency: 1, timeout: 10000 },
+          profileDuration: ms('1 year')
         })
 
         // Advance time so the profile is now older than PROFILE_DURATION
@@ -110,7 +111,8 @@ describe('createBatchDeployerComponent', () => {
         const components = createMockComponents()
         const batchDeployer = createBatchDeployerComponent(components, {
           ignoredTypes: new Set(),
-          queueOptions: { autoStart: true, concurrency: 1, timeout: 10000 }
+          queueOptions: { autoStart: true, concurrency: 1, timeout: 10000 },
+          profileDuration: ms('1 year')
         })
 
         const recentTimestamp = Date.now() - 60_000
