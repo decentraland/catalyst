@@ -5,7 +5,7 @@ import ms from 'ms'
 import SQL from 'sql-template-strings'
 import { EnvironmentBuilder, EnvironmentConfig } from '../../../../src/Environment'
 import { stopAllComponents } from '../../../../src/logic/components-lifecycle'
-import { AppComponents, PROFILE_DURATION } from '../../../../src/types'
+import { AppComponents } from '../../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { setupTestEnvironment } from '../../E2ETestEnvironment'
 import {
@@ -135,7 +135,7 @@ describe('Integration - Garbage Collection', () => {
 
   describe('Old profiles', () => {
     it('No matter GC status, it should collect old profiles active entities', async () => {
-      const timestamp = Date.now() - PROFILE_DURATION * 2
+      const timestamp = Date.now() - ms('2 years')
       const p1 = await buildDeployData(['0x000000000'], {
         type: EntityType.PROFILE,
         contentPaths: [
@@ -177,7 +177,7 @@ describe('Integration - Garbage Collection', () => {
     }
 
     it('removing stale profile should remove deployment and files', async () => {
-      const timestamp = Date.now() - PROFILE_DURATION * 2
+      const timestamp = Date.now() - ms('2 years')
       const p1 = await buildDeployData(['0x000000000'], {
         type: EntityType.PROFILE,
         contentPaths: [
@@ -209,7 +209,7 @@ describe('Integration - Garbage Collection', () => {
     })
 
     it('if an older and newer profile share files, the files should not be deleted', async () => {
-      const timestamp = Date.now() - PROFILE_DURATION * 2
+      const timestamp = Date.now() - ms('2 years')
       const p1 = await buildDeployData(['0x000000000'], {
         type: EntityType.PROFILE,
         contentPaths: [
@@ -245,7 +245,7 @@ describe('Integration - Garbage Collection', () => {
     })
 
     it('should not garbage collect default profiles even when they are old', async () => {
-      const timestamp = Date.now() - PROFILE_DURATION * 2
+      const timestamp = Date.now() - ms('2 years')
       const defaultProfile = await buildDeployData(['default123'], {
         type: EntityType.PROFILE,
         contentPaths: [
