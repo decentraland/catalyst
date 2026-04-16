@@ -44,6 +44,41 @@ it('time range should not be covered by others', () => {
   expect(isTimeRangeCoveredBy(weeklyTimeRangeToBeCovered, dailyTimeRanges)).toBeFalsy()
 })
 
+it('time range should be covered by unsorted ranges', () => {
+  const weeklyTimeRangeToBeCovered: TimeRange = {
+    initTimestamp: 1640995200000,
+    endTimestamp: 1641600000000
+  }
+  const dailyTimeRangesReversed: TimeRange[] = [
+    { initTimestamp: 1641513600000, endTimestamp: 1641600000000 },
+    { initTimestamp: 1641427200000, endTimestamp: 1641513600000 },
+    { initTimestamp: 1641340800000, endTimestamp: 1641427200000 },
+    { initTimestamp: 1641254400000, endTimestamp: 1641340800000 },
+    { initTimestamp: 1641168000000, endTimestamp: 1641254400000 },
+    { initTimestamp: 1641081600000, endTimestamp: 1641168000000 },
+    { initTimestamp: 1640995200000, endTimestamp: 1641081600000 },
+  ]
+  expect(isTimeRangeCoveredBy(weeklyTimeRangeToBeCovered, dailyTimeRangesReversed)).toBeTruthy()
+})
+
+it('time range should be covered by unsorted overlapping ranges', () => {
+  const timeRangeToBeCovered: TimeRange = { initTimestamp: 5, endTimestamp: 20 }
+  const unsortedRanges: TimeRange[] = [
+    { initTimestamp: 15, endTimestamp: 25 },
+    { initTimestamp: 1, endTimestamp: 16 }
+  ]
+  expect(isTimeRangeCoveredBy(timeRangeToBeCovered, unsortedRanges)).toBeTruthy()
+})
+
+it('time range should not be covered by unsorted ranges with a gap', () => {
+  const timeRangeToBeCovered: TimeRange = { initTimestamp: 0, endTimestamp: 100 }
+  const unsortedRanges: TimeRange[] = [
+    { initTimestamp: 60, endTimestamp: 100 },
+    { initTimestamp: 0, endTimestamp: 40 }
+  ]
+  expect(isTimeRangeCoveredBy(timeRangeToBeCovered, unsortedRanges)).toBeFalsy()
+})
+
 it('time range should not be covered by others when there is a gap', () => {
   const weeklyTimeRangeToBeCovered: TimeRange = {
     initTimestamp: 1640995200000, // 2022-01-01 00:00:00 GMT

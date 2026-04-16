@@ -45,7 +45,7 @@ export async function getEntitiesHandler(
   // Validate fields are correct or empty
   let enumFields: EntityField[] | undefined = undefined
   if (fields) {
-    enumFields = fields.split(',').map((f) => (<any>EntityField)[f.toUpperCase().trim()])
+    enumFields = fields.split(',').map((f) => (<any>EntityField)[f.toUpperCase().trim()]).filter((f) => f !== undefined)
   }
 
   // Calculate and mask entities
