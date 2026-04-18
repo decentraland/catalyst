@@ -28,10 +28,11 @@ export async function deployEntityFromRemoteServer(
   entityType: string,
   authChain: AuthChain,
   servers: string[],
-  context: DeploymentContext
+  context: DeploymentContext,
+  attestationAuthChains?: AuthChain[]
 ): Promise<void> {
   await downloadFullEntity(components, entityId, entityType, servers)
-  await deployDownloadedEntity(components, entityId, entityType, { authChain }, context)
+  await deployDownloadedEntity(components, entityId, entityType, { authChain, attestationAuthChains }, context)
 }
 
 async function downloadFullEntity(
