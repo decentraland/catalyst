@@ -149,7 +149,7 @@ function generateDeploymentCacheMap(
 
   for (const entityType of Object.values(EntityType)) {
     // The default is used in case a new entity type is created and it doesn't have a custom config
-    const ttl: number = configPerEntityType.get(entityType)?.ttl ?? rateLimitConfig.defaultTtl
+    const ttl: number = configPerEntityType.get(entityType)?.ttl ?? toSeconds(rateLimitConfig.defaultTtl)
     const maxSize: number = configPerEntityType.get(entityType)?.max ?? rateLimitConfig.defaultMax
 
     deploymentCacheMap.set(entityType, {

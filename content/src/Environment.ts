@@ -238,7 +238,7 @@ export class EnvironmentBuilder {
       () => process.env.ADDITIONAL_DECENTRALAND_ADDRESS
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DEPLOYMENTS_DEFAULT_RATE_LIMIT_TTL, () =>
-      Math.floor(ms((process.env.DEPLOYMENTS_DEFAULT_RATE_LIMIT_TTL ?? '1m') as string) / 1000)
+      ms((process.env.DEPLOYMENTS_DEFAULT_RATE_LIMIT_TTL ?? '1m') as string)
     )
     this.registerConfigIfNotAlreadySet(
       env,

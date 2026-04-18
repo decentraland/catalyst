@@ -2,7 +2,7 @@ import { MigrationBuilder } from 'node-pg-migrate'
 import { deleteFailedDeployments } from '../Helper'
 
 export async function up(pgm: MigrationBuilder): Promise<void> {
-  deleteFailedDeployments(
+  await deleteFailedDeployments(
     pgm,
     'QmTBPcZLFQf1rZpZg2T8nMDwWRoqeftRdvkaexgAECaqHp',
     'QmXibTSJ6wBpXiG3gc2RND9Z6k75AssvHrwpdCVZNjVGbt',
