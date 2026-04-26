@@ -2,7 +2,8 @@ import { bufferToStream } from '@dcl/catalyst-storage/dist/content-item'
 import { AuthChain, Authenticator } from '@dcl/crypto'
 import { Entity, EntityType, IPFSv2 } from '@dcl/schemas'
 import { isDeepStrictEqual } from 'util'
-import { EnvironmentConfig } from '../Environment'
+import { getEntityById, setEntitiesAsOverwritten } from '../../adapters/deployments-repository'
+import { EnvironmentConfig } from '../../Environment'
 import {
   AuditInfo,
   DeploymentContext,
@@ -11,15 +12,15 @@ import {
   InvalidResult,
   LocalDeploymentAuditInfo,
   isInvalidDeployment
-} from '../deployment-types'
-import { getEntityById, setEntitiesAsOverwritten } from '../adapters/deployments-repository'
-import { calculateOverwrites, getDeployments, saveDeploymentAndContentFiles } from '../logic/deployments'
-import { getEntityFromBuffer } from '../logic/entity-parser'
-import { calculateDeprecatedHashes, calculateIPFSHashes } from '../logic/hashing'
-import { DELTA_POINTER_RESULT } from '../logic/pointer-manager'
-import { happenedBefore } from '../service/time/TimeSorting'
-import { AppComponents, EntityVersion } from '../types'
-import { DatabaseClient } from './postgres'
+} from '../../deployment-types'
+import { DatabaseClient } from '../../ports/postgres'
+import { happenedBefore } from '../../service/time/TimeSorting'
+import { AppComponents, EntityVersion } from '../../types'
+import { calculateOverwrites, getDeployments, saveDeploymentAndContentFiles } from '../deployments'
+import { getEntityFromBuffer } from '../entity-parser'
+import { calculateDeprecatedHashes, calculateIPFSHashes } from '../hashing'
+import { DELTA_POINTER_RESULT } from '../pointer-manager'
+import { IDeploymentService } from './types'
 
 export function isIPFSHash(hash: string): boolean {
   return IPFSv2.validate(hash)
@@ -50,21 +51,13 @@ export async function hashFiles(files: DeploymentFiles, entityId: string): Promi
   }
 }
 
-export interface Deployer {
-  deployEntity(
-    files: DeploymentFiles,
-    entityId: string,
-    auditInfo: LocalDeploymentAuditInfo,
-    context: DeploymentContext
-  ): Promise<DeploymentResult>
-}
-
-export function createDeployer(
+export function createDeploymentService(
   components: Pick<
     AppComponents,
     | 'metrics'
     | 'storage'
     | 'pointerManager'
+    | 'pointerLockManager'
     | 'failedDeployments'
     | 'deployRateLimiter'
     | 'validator'
@@ -77,10 +70,9 @@ export function createDeployer(
     | 'activeEntities'
     | 'denylist'
   >
-): Deployer {
+): IDeploymentService {
   const logger = components.logs.getLogger('deployer')
   const LEGACY_CONTENT_MIGRATION_TIMESTAMP: Date = new Date(1582167600000) // DCL Launch Day
-  const pointersBeingDeployed: Map<EntityType, Set<string>> = new Map()
 
   function calculateIfLegacy(entity: Entity, authChain: AuthChain, context: DeploymentContext): DeploymentContext {
     if (isLegacyEntityV2(entity, authChain, context)) {
@@ -294,9 +286,16 @@ export function createDeployer(
         return InvalidResult({ errors: ['There was a problem parsing the entity'] })
       }
 
-      // Validate that the entity's pointers are not currently being modified
-      const pointersCurrentlyBeingDeployed = pointersBeingDeployed.get(entity.type) ?? new Set()
-      const overlappingPointers = entity.pointers.filter((pointer) => pointersCurrentlyBeingDeployed.has(pointer))
+      // Reject entities without pointers up front (before claiming any pointer locks)
+      if (!entity.pointers || entity.pointers.length == 0)
+        return InvalidResult({
+          errors: [`The entity does not have any pointer.`]
+        })
+
+      // Try to claim the pointers for this in-flight deploy. If any of them are
+      // already being deployed by a concurrent caller, fail fast without acquiring
+      // any locks.
+      const overlappingPointers = components.pointerLockManager.tryAcquire(entity.type, entity.pointers)
       if (overlappingPointers.length > 0) {
         return InvalidResult({
           errors: [
@@ -304,15 +303,6 @@ export function createDeployer(
           ]
         })
       }
-
-      // Update the current list of pointers being deployed
-      if (!entity.pointers || entity.pointers.length == 0)
-        return InvalidResult({
-          errors: [`The entity does not have any pointer.`]
-        })
-
-      entity.pointers.forEach((pointer) => pointersCurrentlyBeingDeployed.add(pointer))
-      pointersBeingDeployed.set(entity.type, pointersCurrentlyBeingDeployed)
 
       const contextToDeploy: DeploymentContext = calculateIfLegacy(entity, auditInfo.authChain, context)
 
@@ -417,10 +407,7 @@ export function createDeployer(
           errors: [`There was an error deploying the entity`]
         })
       } finally {
-        // Remove the updated pointer from the list of current being deployed
-        const pointersCurrentlyBeingDeployed = pointersBeingDeployed.get(entity.type)
-        if (pointersCurrentlyBeingDeployed)
-          entity.pointers.forEach((pointer) => pointersCurrentlyBeingDeployed.delete(pointer))
+        components.pointerLockManager.release(entity.type, entity.pointers)
       }
     }
   }
