@@ -1,4 +1,4 @@
-import { ISequentialTaskExecutorComponent } from '../../src/adapters/sequential-task-executor'
+import { ISequentialTaskExecutorComponent } from '../../src/logic/sequential-task-executor'
 
 export const createMockedSequentialTaskExecutorComponent = (
   overrides: Partial<jest.Mocked<ISequentialTaskExecutorComponent>> = {}
