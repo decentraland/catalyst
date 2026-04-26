@@ -4,7 +4,7 @@ import { Deployment } from '../../../src/deployment-types'
 import {
   findSnapshotsStrictlyContainedInTimeRange,
   getProcessedSnapshots
-} from '../../../src/logic/database-queries/snapshots-queries'
+} from '../../../src/adapters/snapshots-repository'
 import { getDeployments } from '../../../src/logic/deployments'
 import * as timeRangeLogic from '../../../src/logic/time-range'
 import { assertDeploymentsAreReported, buildDeployment } from '../E2EAssertions'

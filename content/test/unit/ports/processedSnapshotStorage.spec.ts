@@ -1,7 +1,7 @@
 import { createConfigComponent } from '@well-known-components/env-config-provider'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { createLogComponent } from '@well-known-components/logger'
-import * as snapshotQueries from '../../../src/logic/database-queries/snapshots-queries'
+import * as snapshotQueries from '../../../src/adapters/snapshots-repository'
 import { createTestDatabaseComponent } from '../../../src/ports/postgres'
 import { createProcessedSnapshotStorage } from '../../../src/ports/processedSnapshotStorage'
 

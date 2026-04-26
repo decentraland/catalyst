@@ -1,7 +1,10 @@
 import { SnapshotSyncDeployment } from '@dcl/schemas'
 import { SnapshotMetadata, TimeRange } from '@dcl/snapshots-fetcher/dist/types'
 import SQL from 'sql-template-strings'
-import { DatabaseClient } from 'src/ports/postgres'
+import { DatabaseClient } from '../../ports/postgres'
+import { ISnapshotsRepository } from './types'
+
+const SNAPSHOT_HASHES_QUERY = SQL`SELECT DISTINCT hash FROM snapshots;`
 
 export async function* streamActiveDeploymentsInTimeRange(
   database: DatabaseClient,
@@ -203,4 +206,27 @@ export async function getProcessedSnapshots(
 
   const result = await database.queryWithValues<{ hash: string }>(query, 'get_processed_snapshots')
   return new Set(result.rows.map((row) => row.hash))
+}
+
+export async function* getAllSnapshotHashes(database: DatabaseClient): AsyncIterable<string> {
+  const queryResult = await database.queryWithValues<{ hash: string }>(SNAPSHOT_HASHES_QUERY)
+  for (const row of queryResult.rows) {
+    yield row.hash
+  }
+}
+
+export function createSnapshotsRepository(): ISnapshotsRepository {
+  return {
+    streamActiveDeploymentsInTimeRange,
+    findSnapshotsStrictlyContainedInTimeRange,
+    saveSnapshot,
+    isOwnSnapshot,
+    getSnapshotHashesNotInTimeRange,
+    deleteSnapshotsInTimeRange,
+    snapshotIsOutdated,
+    getNumberOfActiveEntitiesInTimeRange,
+    saveProcessedSnapshot,
+    getProcessedSnapshots,
+    getAllSnapshotHashes
+  }
 }

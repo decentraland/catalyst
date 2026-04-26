@@ -1,6 +1,7 @@
 import SQL from 'sql-template-strings'
-import { DatabaseClient } from 'src/ports/postgres'
+import { DatabaseClient } from '../../ports/postgres'
 import { SnapshotFailedDeployment } from '../../ports/failedDeployments'
+import { IFailedDeploymentsRepository } from './types'
 
 export async function saveSnapshotFailedDeployment(
   database: DatabaseClient,
@@ -39,4 +40,12 @@ export async function getSnapshotFailedDeployments(database: DatabaseClient): Pr
   FROM failed_deployments`
   const queryResult = await database.queryWithValues<SnapshotFailedDeployment>(query, 'get_failed_deployments')
   return queryResult.rows
+}
+
+export function createFailedDeploymentsRepository(): IFailedDeploymentsRepository {
+  return {
+    saveSnapshotFailedDeployment,
+    deleteFailedDeployment,
+    getSnapshotFailedDeployments
+  }
 }

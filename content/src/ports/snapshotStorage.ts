@@ -1,4 +1,4 @@
-import { isOwnSnapshot } from '../logic/database-queries/snapshots-queries'
+import { isOwnSnapshot } from '../adapters/snapshots-repository'
 import { AppComponents } from '../types'
 
 export function createSnapshotStorage(components: Pick<AppComponents, 'database'>) {

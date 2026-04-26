@@ -4,7 +4,7 @@ import {
   deleteFailedDeployment,
   getSnapshotFailedDeployments,
   saveSnapshotFailedDeployment
-} from '../logic/database-queries/failed-deployments-queries'
+} from '../adapters/failed-deployments-repository'
 import { AppComponents } from '../types'
 
 export enum FailureReason {
