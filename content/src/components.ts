@@ -1,57 +1,104 @@
+// =============================================================================
+// External libraries
+// =============================================================================
 import { createFolderBasedFileSystemContentStorage, createFsComponent } from '@dcl/catalyst-storage'
+import { L1Network } from '@dcl/catalyst-contracts'
+import { createServerComponent, instrumentHttpServerWithPromClientRegistry } from '@dcl/http-server'
+import { createJobComponent } from '@dcl/job-component'
+import { createMetricsComponent } from '@dcl/metrics'
 import { EntityType, EthAddress } from '@dcl/schemas'
 import { createSynchronizer } from '@dcl/snapshots-fetcher'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { createTracedFetcherComponent } from '@dcl/traced-fetch-component'
 import { createFetchComponent } from '@well-known-components/fetch-component'
 import { createHttpTracerComponent } from '@well-known-components/http-tracer-component'
-import { createTracerComponent } from '@well-known-components/tracer-component'
-import { createServerComponent, instrumentHttpServerWithPromClientRegistry } from '@dcl/http-server'
 import { createLogComponent } from '@well-known-components/logger'
-import { createMetricsComponent } from '@dcl/metrics'
+import { createTracerComponent } from '@well-known-components/tracer-component'
 import { HTTPProvider } from 'eth-connect'
 import ms from 'ms'
 import path from 'path'
-import { L1Network } from '@dcl/catalyst-contracts'
-import { CURRENT_VERSION, CURRENT_COMMIT_HASH, Environment, EnvironmentConfig } from './Environment'
-import { splitByCommaTrimAndRemoveEmptyElements } from './logic/config-helpers'
+
+// =============================================================================
+// Infrastructure / config
+// =============================================================================
+import { CURRENT_COMMIT_HASH, CURRENT_VERSION, Environment, EnvironmentConfig } from './Environment'
 import { metricsDeclaration } from './metrics'
 import { createMigrationExecutor } from './migrations/migration-executor'
+
+// =============================================================================
+// Adapters — repositories (per-domain SQL)
+// =============================================================================
 import { createActiveEntitiesRepository } from './adapters/active-entities-repository'
-import { createActiveEntitiesComponent } from './logic/active-entities'
 import { createContentFilesRepository } from './adapters/content-files-repository'
-import { createCustomDAOComponent, createDAOComponent } from './adapters/dao-client'
 import { createDeploymentsRepository } from './adapters/deployments-repository'
 import { createFailedDeploymentsRepository } from './adapters/failed-deployments-repository'
 import { createPointersRepository } from './adapters/pointers-repository'
 import { createSnapshotsRepository } from './adapters/snapshots-repository'
+
+// =============================================================================
+// Adapters — external integrations & primitives
+// =============================================================================
+import { createContentValidator } from './adapters/content-validator'
+import { createCustomDAOComponent, createDAOComponent } from './adapters/dao-client'
 import { createDenylist } from './adapters/denylist'
 import { createDeployRateLimiter } from './adapters/deploy-rate-limiter'
 import { createDeployedEntitiesBloomFilter } from './adapters/deployed-entities-bloom-filter'
+import { createSequentialTaskExecutor } from './adapters/sequential-task-executor'
+import { createSynchronizationState } from './adapters/synchronization-state'
+import { createSystemProperties } from './adapters/system-properties'
+
+// =============================================================================
+// Logic components
+// =============================================================================
+import { createActiveEntitiesComponent } from './logic/active-entities'
+import { createAuthenticator } from './logic/authenticator'
+import { createBatchDeployerComponent } from './logic/batch-deployer'
+import { ChallengeSupervisor } from './logic/challenge-supervisor'
+import { splitByCommaTrimAndRemoveEmptyElements } from './logic/config-helpers'
+import { createDeploymentsComponent } from './logic/deployments'
 import { createDeploymentService } from './logic/deployment-service'
+import { GarbageCollectionManager } from './logic/garbage-collection'
+import { createContentCluster } from './logic/peer-cluster'
+import { PointerManager } from './logic/pointer-manager'
 import { createPointerLockManager } from './logic/pointer-lock-manager'
+import { createRetryFailedDeployments } from './logic/retry-failed-deployments'
+import { createServerValidator } from './logic/server-validator'
+
+// =============================================================================
+// Ports (legacy folder; pending future relocation)
+// =============================================================================
 import { createFailedDeployments } from './ports/failedDeployments'
 import { createDatabaseComponent } from './ports/postgres'
 import { createProcessedSnapshotStorage } from './ports/processedSnapshotStorage'
-import { createSequentialTaskExecutor } from './adapters/sequential-task-executor'
 import { createSnapshotGenerator } from './ports/snapshotGenerator'
 import { createSnapshotStorage } from './ports/snapshotStorage'
-import { createSynchronizationState } from './adapters/synchronization-state'
-import { createSystemProperties } from './adapters/system-properties'
-import { GarbageCollectionManager } from './logic/garbage-collection'
-import { PointerManager } from './logic/pointer-manager'
-import { ChallengeSupervisor } from './logic/challenge-supervisor'
-import { createContentCluster } from './logic/peer-cluster'
-import { createBatchDeployerComponent } from './logic/batch-deployer'
-import { createRetryFailedDeployments } from './logic/retry-failed-deployments'
-import { createContentValidator } from './adapters/content-validator'
-import { createAuthenticator } from './logic/authenticator'
-import { createServerValidator } from './logic/server-validator'
-import { AppComponents, GlobalContext } from './types'
-import { createJobComponent } from '@dcl/job-component'
-import { createDeploymentsComponent } from './logic/deployments'
 
+// =============================================================================
+// Types
+// =============================================================================
+import { AppComponents, GlobalContext } from './types'
+
+/**
+ * Wires up every component the content server needs. The order below is also
+ * the rough dependency order: each block depends only on what came before it.
+ *
+ * Sections:
+ *   1. Bootstrap primitives (config, metrics, tracer, logs, fetch, fs)
+ *   2. Static config + filesystem layout
+ *   3. Blockchain providers (L1/L2)
+ *   4. Database + per-domain repositories
+ *   5. Stateful adapters (denylist, sequential executor, system properties, ...)
+ *   6. Storage + DAO client + authenticator
+ *   7. Domain logic (cluster, pointer manager, validators, active entities, ...)
+ *   8. Deploy pipeline (deployment-service + lock manager + bloom filter)
+ *   9. Background workers (GC, batch deployer, snapshot generator, retry)
+ *   10. Synchronizer + sync state
+ *   11. HTTP server
+ */
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
+  // ---------------------------------------------------------------------------
+  // 1. Bootstrap primitives
+  // ---------------------------------------------------------------------------
   const config = env
   const metrics = await createMetricsComponent(metricsDeclaration, { config })
   const tracer = createTracerComponent()
@@ -67,6 +114,10 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const fetcher = await createTracedFetcherComponent({ tracer, fetchComponent: baseFetcher })
 
   const fs = createFsComponent()
+
+  // ---------------------------------------------------------------------------
+  // 2. Static config + filesystem layout
+  // ---------------------------------------------------------------------------
   const denylist = await createDenylist({ env, logs, fs, fetcher })
   const contentStorageFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
   const tmpDownloadFolder = path.join(contentStorageFolder, '_tmp')
@@ -76,26 +127,26 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     tmpDownloadFolder
   }
 
+  // ---------------------------------------------------------------------------
+  // 3. Blockchain providers
+  // ---------------------------------------------------------------------------
   const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK)
-
   const l1HttpProviderUrl: string = env.getConfig(EnvironmentConfig.L1_HTTP_PROVIDER_URL)
   const l2HttpProviderUrl: string = env.getConfig(EnvironmentConfig.L2_HTTP_PROVIDER_URL)
-
   const l2Network = ethNetwork === 'mainnet' ? 'polygon' : 'amoy'
 
   const l1Provider = new HTTPProvider(
     l1HttpProviderUrl || `https://rpc.decentraland.org/${encodeURIComponent(ethNetwork)}?project=catalyst-content`,
-    {
-      fetch: fetcher.fetch
-    }
+    { fetch: fetcher.fetch }
   )
   const l2Provider = new HTTPProvider(
     l2HttpProviderUrl || `https://rpc.decentraland.org/${encodeURIComponent(l2Network)}?project=catalyst-content`,
-    {
-      fetch: fetcher.fetch
-    }
+    { fetch: fetcher.fetch }
   )
 
+  // ---------------------------------------------------------------------------
+  // 4. Database + per-domain repositories
+  // ---------------------------------------------------------------------------
   const database = await createDatabaseComponent({ logs, env, metrics })
 
   const activeEntitiesRepository = createActiveEntitiesRepository()
@@ -105,12 +156,16 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const pointersRepository = createPointersRepository()
   const snapshotsRepository = createSnapshotsRepository()
 
+  // ---------------------------------------------------------------------------
+  // 5. Stateful adapters
+  // ---------------------------------------------------------------------------
   const sequentialExecutor = createSequentialTaskExecutor({ metrics, logs })
-
   const systemProperties = createSystemProperties({ database })
-
   const challengeSupervisor = new ChallengeSupervisor()
 
+  // ---------------------------------------------------------------------------
+  // 6. Storage + DAO client + authenticator
+  // ---------------------------------------------------------------------------
   const contentFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
   const storage = await createFolderBasedFileSystemContentStorage({ fs, logs }, contentFolder, {
     decompressCacheTTL: env.getConfig(EnvironmentConfig.STORAGE_DECOMPRESS_CACHE_TTL),
@@ -132,16 +187,14 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     : [env.getConfig(EnvironmentConfig.DECENTRALAND_ADDRESS)]
   const authenticator = createAuthenticator(l1Provider, decentralandAddresses as EthAddress[])
 
+  // ---------------------------------------------------------------------------
+  // 7. Domain logic
+  // ---------------------------------------------------------------------------
   const contentCluster = createContentCluster(
-    {
-      daoClient,
-      logs,
-      env
-    },
+    { daoClient, logs, env },
     env.getConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL)
   )
 
-  // TODO: this should be in the src/logic folder. It is not a component
   const pointerManager = new PointerManager()
 
   const failedDeployments = await createFailedDeployments({ metrics, database })
@@ -185,6 +238,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     deployments
   })
 
+  // ---------------------------------------------------------------------------
+  // 8. Deploy pipeline
+  // ---------------------------------------------------------------------------
   const pointerLockManager = createPointerLockManager()
 
   const deployer = createDeploymentService({
@@ -205,6 +261,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     denylist
   })
 
+  // ---------------------------------------------------------------------------
+  // 9. Background workers
+  // ---------------------------------------------------------------------------
   const garbageCollectionManager = new GarbageCollectionManager(
     { database, metrics, logs, storage, systemProperties, activeEntities },
     env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION),
@@ -232,7 +291,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       metrics,
       deployer,
       staticConfigs,
-      deployedEntitiesBloomFilter: deployedEntitiesBloomFilter,
+      deployedEntitiesBloomFilter,
       storage,
       failedDeployments
     },
@@ -252,11 +311,12 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     { logs },
     deployments.updateMaterializedViews,
     1000 * 60 * 60 * 24, // 24 hours
-    {
-      startupDelay: 10 * 60 * 1000 // 10 minutes
-    }
+    { startupDelay: 10 * 60 * 1000 /* 10 minutes */ }
   )
 
+  // ---------------------------------------------------------------------------
+  // 10. Synchronizer + sync state
+  // ---------------------------------------------------------------------------
   const synchronizer = await createSynchronizer(
     {
       logs,
@@ -322,6 +382,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   env.logConfigValues(logs.getLogger('Environment'))
 
+  // ---------------------------------------------------------------------------
+  // 11. HTTP server
+  // ---------------------------------------------------------------------------
   const _server = await createServerComponent<GlobalContext>(
     { config, logs },
     {
@@ -364,52 +427,55 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   await instrumentHttpServerWithPromClientRegistry({ server, metrics, config, registry: metrics.registry! })
 
+  // ---------------------------------------------------------------------------
+  // Return
+  // ---------------------------------------------------------------------------
   return {
-    env,
-    materializedViewUpdateJob,
-    database,
-    contentFilesRepository,
-    deploymentsRepository,
-    failedDeploymentsRepository,
-    activeEntitiesRepository,
-    pointersRepository,
-    snapshotsRepository,
-    deployer,
-    pointerLockManager,
-    metrics,
-    fetcher,
-    logs,
-    staticConfigs,
-    batchDeployer,
-    downloadQueue,
-    deployedEntitiesBloomFilter,
-    synchronizer,
-    synchronizationState,
-    challengeSupervisor,
-    contentCluster,
-    failedDeployments,
-    deployRateLimiter,
-    pointerManager,
-    storage,
-    authenticator,
-    migrationManager,
-    validator,
-    serverValidator,
-    garbageCollectionManager,
-    systemProperties,
-    daoClient,
-    server,
-    retryFailedDeployments,
-    deployments,
     activeEntities,
-    sequentialExecutor,
-    denylist,
-    fs,
-    snapshotGenerator,
-    processedSnapshotStorage,
-    snapshotStorage,
+    activeEntitiesRepository,
+    authenticator,
+    batchDeployer,
+    challengeSupervisor,
     config,
+    contentCluster,
+    contentFilesRepository,
+    daoClient,
+    database,
+    denylist,
+    deployedEntitiesBloomFilter,
+    deployer,
+    deployments,
+    deploymentsRepository,
+    deployRateLimiter,
+    downloadQueue,
+    env,
+    failedDeployments,
+    failedDeploymentsRepository,
+    fetcher,
+    fs,
+    garbageCollectionManager,
     l1Provider,
-    tracer
+    logs,
+    materializedViewUpdateJob,
+    metrics,
+    migrationManager,
+    pointerLockManager,
+    pointerManager,
+    pointersRepository,
+    processedSnapshotStorage,
+    retryFailedDeployments,
+    sequentialExecutor,
+    server,
+    serverValidator,
+    snapshotGenerator,
+    snapshotsRepository,
+    snapshotStorage,
+    staticConfigs,
+    storage,
+    synchronizationState,
+    synchronizer,
+    systemProperties,
+    tracer,
+    validator
   }
 }
