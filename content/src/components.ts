@@ -43,7 +43,6 @@ import { createCustomDAOComponent, createDAOComponent } from './adapters/dao-cli
 import { createDenylist } from './adapters/denylist'
 import { createDeployRateLimiter } from './adapters/deploy-rate-limiter'
 import { createDeployedEntitiesBloomFilter } from './adapters/deployed-entities-bloom-filter'
-import { createSequentialTaskExecutor } from './adapters/sequential-task-executor'
 import { createSynchronizationState } from './adapters/synchronization-state'
 import { createSystemProperties } from './adapters/system-properties'
 
@@ -62,6 +61,7 @@ import { createContentCluster } from './logic/peer-cluster'
 import { PointerManager } from './logic/pointer-manager'
 import { createPointerLockManager } from './logic/pointer-lock-manager'
 import { createRetryFailedDeployments } from './logic/retry-failed-deployments'
+import { createSequentialTaskExecutor } from './logic/sequential-task-executor'
 import { createServerValidator } from './logic/server-validator'
 
 // =============================================================================
