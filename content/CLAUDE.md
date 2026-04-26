@@ -28,4 +28,4 @@ Every component lives in its own folder with these files:
 
 ## Refactor in progress
 
-The plan tracking the migration from the legacy `ports/` + `service/` layout to `adapters/` + `logic/` is at `~/.claude/plans/i-want-to-do-glistening-whistle.md`. New code should be written in the WKC layout from the start; existing code is being moved phase-by-phase.
+The codebase is migrating from a legacy `ports/` + `service/` layout to the WKC `adapters/` + `logic/` layout. New code should be written in the WKC layout from the start; existing code is being moved phase-by-phase.
