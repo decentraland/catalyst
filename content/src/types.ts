@@ -179,19 +179,7 @@ export type QueryParams = qs.ParsedQs
 
 export type AnyObject = Record<string, unknown>
 
-export class InvalidRequestError extends Error {
-  constructor(message: string) {
-    super(message)
-    Error.captureStackTrace(this, this.constructor)
-  }
-}
-
-export class NotFoundError extends Error {
-  constructor(message: string) {
-    super(message)
-    Error.captureStackTrace(this, this.constructor)
-  }
-}
+export { BaseDomainError, InvalidRequestError, NotFoundError } from './errors'
 
 export enum DeploymentField {
   CONTENT = 'content',

@@ -5,7 +5,7 @@ import {
   parseRangeHeader,
   retrieveContentWithRange,
   toETag
-} from '../../../src/controller/utils'
+} from '../../../src/controllers/utils'
 import { InvalidRequestError } from '../../../src/types'
 import { createContentItemMock } from '../../mocks/content-item-mock'
 import { createStorageComponentMock } from '../../mocks/storage-component-mock'

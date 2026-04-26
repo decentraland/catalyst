@@ -2,7 +2,7 @@ import { IHttpServerComponent, ILoggerComponent } from '@well-known-components/i
 import { AppComponents } from '../types'
 import { State } from '../adapters/synchronization-state'
 import { Error } from '@dcl/catalyst-api-specs/lib/client'
-import { InvalidRequestError, NotFoundError } from '../types'
+import { BaseDomainError } from '../errors'
 import { Middleware } from '@dcl/http-server/dist/middleware'
 
 export function preventExecutionIfBoostrapping({
@@ -27,18 +27,12 @@ export function preventExecutionIfBoostrapping({
 }
 
 function handleError(logger: ILoggerComponent.ILogger, error: any): { status: number; body: Error } {
-  if (error instanceof InvalidRequestError) {
+  // Typed domain errors carry their own canonical status. Subclasses of
+  // BaseDomainError (InvalidRequestError, NotFoundError, and any future
+  // per-component error class) get mapped automatically.
+  if (error instanceof BaseDomainError && typeof error.httpStatus === 'number') {
     return {
-      status: 400,
-      body: {
-        error: error.message
-      }
-    }
-  }
-
-  if (error instanceof NotFoundError) {
-    return {
-      status: 404,
+      status: error.httpStatus,
       body: {
         error: error.message
       }
