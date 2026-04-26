@@ -7,6 +7,7 @@ export async function updateActiveDeployments(
   pointers: string[],
   entityId: string
 ): Promise<void> {
+  if (pointers.length === 0) return
   const value_list = pointers.map((p, i) => {
     if (i < pointers.length - 1) {
       return SQL`(${p}, ${entityId}),`
@@ -23,6 +24,7 @@ export async function updateActiveDeployments(
 }
 
 export async function removeActiveDeployments(database: DatabaseClient, pointers: string[]): Promise<void> {
+  if (pointers.length === 0) return
   const value_list = pointers.map((p, i) => {
     if (i < pointers.length - 1) {
       return SQL`${p},`

@@ -10,7 +10,7 @@ export type PointerChangesFilters = Pick<DeploymentFilters, 'from' | 'to' | 'ent
 
 export type DeploymentPointerChanges = {
   pointerChanges: PointerChangesSyncDeployment[]
-  filters: Omit<PointerChangesFilters, 'entityType'>
+  filters: PointerChangesFilters
   pagination: {
     offset: number
     limit: number
