@@ -1,6 +1,6 @@
 import { I18N, BodyShape, Emote, StandardProps, Wearable, WearableRepresentation, Entity } from '@dcl/schemas'
-import { Environment, EnvironmentConfig } from '../Environment'
-import { findImageHash, findThumbnailHash } from './entities'
+import { Environment, EnvironmentConfig } from '../../Environment'
+import { findImageHash, findThumbnailHash } from '../entities'
 
 type ERC721StandardTrait = {
   trait_type: string
