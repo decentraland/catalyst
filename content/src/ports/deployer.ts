@@ -76,7 +76,6 @@ export function createDeployer(
     | 'env'
     | 'activeEntities'
     | 'denylist'
-    | 'clock'
   >
 ): Deployer {
   const logger = components.logs.getLogger('deployer')
@@ -133,7 +132,7 @@ export function createDeployer(
     const auditInfoComplete: AuditInfo = {
       ...auditInfo,
       version: EntityVersion.V3,
-      localTimestamp: components.clock.now()
+      localTimestamp: Date.now()
     }
 
     if (!isEntityAlreadyDeployed) {
@@ -237,8 +236,7 @@ export function createDeployer(
           isContentUnchanged &&
           components.deployRateLimiter.isUnchangedDeploymentRateLimited(entity.type, entity.pointers)),
       isRequestTtlBackwards: (entity) =>
-        components.clock.now() - entity.timestamp >
-        components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
+        Date.now() - entity.timestamp > components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
     })
 
     // If there is an error in the server side validation, we won't run protocol validations
@@ -270,7 +268,7 @@ export function createDeployer(
         logger.debug(`Entity was already deployed`, {
           entityId,
           deployedTimestamp: deployedEntity.localTimestamp,
-          delta: components.clock.now() - deployedEntity.localTimestamp
+          delta: Date.now() - deployedEntity.localTimestamp
         })
         return deployedEntity.localTimestamp
       }
@@ -412,7 +410,7 @@ export function createDeployer(
         }
 
         // TODO: review this
-        return storeResult.auditInfoComplete.localTimestamp || components.clock.now()
+        return storeResult.auditInfoComplete.localTimestamp || Date.now()
       } catch (error) {
         logger.error(`There was an error deploying the entity: ${error}`, { entityId })
         return InvalidResult({

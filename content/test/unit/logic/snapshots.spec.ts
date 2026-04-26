@@ -103,7 +103,6 @@ describe('generate snapshot in multiple', () => {
   const metrics = createTestMetricsComponent(metricsDeclaration)
   const staticConfigs = { contentStorageFolder: '', tmpDownloadFolder: '' }
   const denylist: Denylist = { isDenylisted: jest.fn() }
-  const clock = { now: Date.now }
   const storage: IContentStorageComponent = {
     storeStream: jest.fn(),
     storeStreamAndCompress: jest.fn(),
@@ -142,7 +141,7 @@ describe('generate snapshot in multiple', () => {
     jest.spyOn(snapshotQueries, 'getSnapshotHashesNotInTimeRange').mockResolvedValue(new Set())
     jest.spyOn(snapshotQueries, 'snapshotIsOutdated').mockResolvedValue(false)
     generationTimestamp = Date.now()
-    jest.spyOn(clock, 'now').mockReturnValue(generationTimestamp)
+    jest.spyOn(Date, 'now').mockReturnValue(generationTimestamp)
   })
 
   afterEach(() => {
@@ -161,7 +160,7 @@ describe('generate snapshot in multiple', () => {
     mockCreateFileWriterMockWith('filePath', expectedHash)
 
     const snapshots = await generateSnapshotsInMultipleTimeRanges(
-      { database, fs, metrics, logs, staticConfigs, storage, denylist, clock },
+      { database, fs, metrics, logs, staticConfigs, storage, denylist },
       oneYearRange
     )
     expect(snapshots).toHaveLength(1)
@@ -200,7 +199,7 @@ describe('generate snapshot in multiple', () => {
     }
 
     const snapshots = await generateSnapshotsInMultipleTimeRanges(
-      { database, fs, metrics, logs, staticConfigs, storage, denylist, clock },
+      { database, fs, metrics, logs, staticConfigs, storage, denylist },
       oneYearRange
     )
     expect(snapshots).toHaveLength(1)
@@ -244,7 +243,7 @@ describe('generate snapshot in multiple', () => {
     }
 
     const snapshots = await generateSnapshotsInMultipleTimeRanges(
-      { database, fs, metrics, logs, staticConfigs, storage, denylist, clock },
+      { database, fs, metrics, logs, staticConfigs, storage, denylist },
       oneYearRange
     )
     expect(snapshots).toHaveLength(1)
@@ -275,7 +274,7 @@ describe('generate snapshot in multiple', () => {
     mockCreateFileWriterMockWith('filePath', expectedHash)
 
     await generateSnapshotsInMultipleTimeRanges(
-      { database, fs, metrics, logs, staticConfigs, storage, denylist, clock },
+      { database, fs, metrics, logs, staticConfigs, storage, denylist },
       oneYearRange
     )
     expect(storage.delete).toBeCalledWith(expect.arrayContaining(['h1']))
@@ -299,7 +298,7 @@ describe('generate snapshot in multiple', () => {
     mockCreateFileWriterMockWith('filePath', expectedHash)
 
     await generateSnapshotsInMultipleTimeRanges(
-      { database, fs, metrics, logs, staticConfigs, storage, denylist, clock },
+      { database, fs, metrics, logs, staticConfigs, storage, denylist },
       oneYearRange
     )
     expect(storage.delete).toBeCalledWith(expect.arrayContaining(['h1', 'h2']))
@@ -328,7 +327,7 @@ describe('generate snapshot in multiple', () => {
     mockCreateFileWriterMockWith('filePath', expectedHash)
 
     const snapshots = await generateSnapshotsInMultipleTimeRanges(
-      { database, fs, metrics, logs, staticConfigs, storage, denylist, clock },
+      { database, fs, metrics, logs, staticConfigs, storage, denylist },
       oneYearRange
     )
     expect(snapshots).toHaveLength(1)
@@ -362,7 +361,7 @@ describe('generate snapshot in multiple', () => {
     mockCreateFileWriterMockWith('filePath', expectedHash)
 
     const snapshots = await generateSnapshotsInMultipleTimeRanges(
-      { database, fs, metrics, logs, staticConfigs, storage, denylist, clock },
+      { database, fs, metrics, logs, staticConfigs, storage, denylist },
       oneYearRange
     )
     expect(snapshots).toHaveLength(1)
@@ -394,7 +393,7 @@ describe('generate snapshot in multiple', () => {
     mockCreateFileWriterMockWith('filePath', expectedHash)
 
     const snapshots = await generateSnapshotsInMultipleTimeRanges(
-      { database, fs, metrics, logs, staticConfigs, storage, denylist, clock },
+      { database, fs, metrics, logs, staticConfigs, storage, denylist },
       oneYearRange
     )
     expect(snapshots).toHaveLength(1)
@@ -429,7 +428,7 @@ describe('generate snapshot in multiple', () => {
     const expectedHash = 'hash'
     mockCreateFileWriterMockWith('filePath', expectedHash)
     const snapshots = await generateSnapshotsInMultipleTimeRanges(
-      { database, fs, metrics, logs, staticConfigs, storage, denylist, clock },
+      { database, fs, metrics, logs, staticConfigs, storage, denylist },
       oneYearOneMonthOneWeekOneDay
     )
     const baseSnapshot = { hash: expectedHash, numberOfEntities: 0, replacedSnapshotHashes: [], generationTimestamp }
@@ -478,7 +477,7 @@ describe('generate snapshot in multiple', () => {
     ])
     jest.spyOn(snapshotQueries, 'getSnapshotHashesNotInTimeRange').mockResolvedValue(new Set([expectedHash]))
     await generateSnapshotsInMultipleTimeRanges(
-      { database, fs, metrics, logs, staticConfigs, storage, denylist, clock },
+      { database, fs, metrics, logs, staticConfigs, storage, denylist },
       oneYearTimeRange
     )
     expect(storage.delete).toBeCalledWith([])

@@ -22,7 +22,7 @@ describe('snapshot generator - ', () => {
 
   testCaseWithComponents(getTestEnv, 'should generate snapshot the first time', async (components) => {
     await startSnapshotNeededComponents(components)
-    const clockSpy = jest.spyOn(components.clock, 'now')
+    const clockSpy = jest.spyOn(Date, 'now')
     const divideTimeSpy = jest.spyOn(timeRangeLogic, 'divideTimeInYearsMonthsWeeksAndDays')
 
     const timeRange = timeRangeOfDaysFromInitialTimestamp(1)
@@ -42,7 +42,7 @@ describe('snapshot generator - ', () => {
     'should generate the second snapshot but not recreate the first one',
     async (components) => {
       await startSnapshotNeededComponents(components)
-      const clockSpy = jest.spyOn(components.clock, 'now')
+      const clockSpy = jest.spyOn(Date, 'now')
       await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(1))
       const snapshots = await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(2))
 
@@ -58,7 +58,7 @@ describe('snapshot generator - ', () => {
     'should generate seven daily snapshots once time each and do not create weekly one yet',
     async (components) => {
       await startSnapshotNeededComponents(components)
-      const clockSpy = jest.spyOn(components.clock, 'now')
+      const clockSpy = jest.spyOn(Date, 'now')
       await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(1))
       await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(2))
       await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(3))
@@ -88,7 +88,7 @@ describe('snapshot generator - ', () => {
     'should generate a weekly snapshot replacing seven daily snapshots and a daily one, at the 8th day',
     async (components) => {
       await startSnapshotNeededComponents(components)
-      const clockSpy = jest.spyOn(components.clock, 'now')
+      const clockSpy = jest.spyOn(Date, 'now')
       await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(1))
       await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(2))
       await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(3))
@@ -140,7 +140,7 @@ describe('snapshot generator - ', () => {
     'should generate a weekly snapshot and do not replace the daily ones if they are not 7, at the 8th day',
     async (components) => {
       await startSnapshotNeededComponents(components)
-      const clockSpy = jest.spyOn(components.clock, 'now')
+      const clockSpy = jest.spyOn(Date, 'now')
       await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(1))
       await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(2))
       await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(3))
@@ -445,7 +445,7 @@ async function startComponent(component: IBaseComponent, startOptions: IBaseComp
 async function startSnapshotNeededComponents(
   components: Pick<
     AppComponents,
-    'database' | 'fs' | 'metrics' | 'storage' | 'logs' | 'denylist' | 'staticConfigs' | 'clock'
+    'database' | 'fs' | 'metrics' | 'storage' | 'logs' | 'denylist' | 'staticConfigs'
   >
 ) {
   const startOptions = { started: jest.fn(), live: jest.fn(), getComponents: jest.fn() }
@@ -459,12 +459,12 @@ async function startSnapshotNeededComponents(
 }
 
 async function deployAnEntityAtTimestamp(
-  components: Pick<AppComponents, 'deployer' | 'clock'>,
+  components: Pick<AppComponents, 'deployer'>,
   pointer: string,
   entityTimestamp: number,
   localTimestamp?: number
 ) {
-  jest.spyOn(components.clock, 'now').mockReturnValue(localTimestamp ?? entityTimestamp)
+  jest.spyOn(Date, 'now').mockReturnValue(localTimestamp ?? entityTimestamp)
   const anEntity: EntityCombo = await buildDeployData([pointer], {
     type: EntityType.PROFILE,
     timestamp: entityTimestamp,

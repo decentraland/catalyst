@@ -57,10 +57,7 @@ export async function generateAndStoreSnapshot(
 }
 
 export async function generateSnapshotsInMultipleTimeRanges(
-  components: Pick<
-    AppComponents,
-    'database' | 'fs' | 'metrics' | 'storage' | 'logs' | 'denylist' | 'staticConfigs' | 'clock' | 'storage'
-  >,
+  components: Pick<AppComponents, 'database' | 'fs' | 'metrics' | 'storage' | 'logs' | 'denylist' | 'staticConfigs'>,
   timeRangeToDivide: TimeRange
 ): Promise<SnapshotMetadata[]> {
   const logger = components.logs.getLogger('snapshot-generation')
@@ -127,7 +124,7 @@ export async function generateSnapshotsInMultipleTimeRanges(
           timeRange,
           replacedSnapshotHashes,
           numberOfEntities,
-          generationTimestamp: components.clock.now()
+          generationTimestamp: Date.now()
         }
         const snapshotHashesUsedInOtherTimeRanges = await getSnapshotHashesNotInTimeRange(
           txDatabase,

@@ -31,7 +31,6 @@ export function createBatchDeployerComponent(
     | 'deployedEntitiesBloomFilter'
     | 'storage'
     | 'failedDeployments'
-    | 'clock'
   >,
   syncOptions: {
     ignoredTypes: Set<string>
@@ -180,7 +179,7 @@ export function createBatchDeployerComponent(
                   reason: FailureReason.DEPLOYMENT_ERROR,
                   authChain: entity.authChain,
                   errorDescription,
-                  failureTimestamp: components.clock.now(),
+                  failureTimestamp: Date.now(),
                   snapshotHash: entity.snapshotHash
                 })
                 wasEntityProcessed = true

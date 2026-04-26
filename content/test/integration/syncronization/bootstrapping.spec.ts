@@ -41,8 +41,8 @@ describe('Bootstrapping synchronization tests', function () {
     const now = Date.now()
     baseTimestamp = 0
     fakeNow = () => Date.now() - now + initialTimestamp + baseTimestamp
-    jest.spyOn(server1.components.clock, 'now').mockImplementation(fakeNow)
-    jest.spyOn(server2.components.clock, 'now').mockImplementation(fakeNow)
+    jest.spyOn(Date, 'now').mockImplementation(fakeNow)
+    jest.spyOn(Date, 'now').mockImplementation(fakeNow)
     jest.spyOn(server1.components.validator, 'validate').mockResolvedValue({ ok: true })
     jest.spyOn(server2.components.validator, 'validate').mockResolvedValue({ ok: true })
     jest.spyOn(server1.components.synchronizationState, 'getState').mockReturnValue(State.SYNCING)

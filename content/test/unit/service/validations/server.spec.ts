@@ -30,7 +30,6 @@ describe('createServerValidator', () => {
           failedDeployments: {
             removeFailedDeployment: jest.fn()
           } as any,
-          clock: { now: () => Date.now() }
         })
 
         result = await validator.validate(entity, DeploymentContext.FIX_ATTEMPT, {
@@ -58,7 +57,6 @@ describe('createServerValidator', () => {
           failedDeployments: {
             removeFailedDeployment: jest.fn()
           } as any,
-          clock: { now: () => Date.now() }
         })
 
         result = await validator.validate(entity, DeploymentContext.FIX_ATTEMPT, {
@@ -83,7 +81,6 @@ describe('createServerValidator', () => {
           failedDeployments: {
             removeFailedDeployment: jest.fn()
           } as any,
-          clock: { now: () => Date.now() }
         })
 
         result = await validator.validate(entity, DeploymentContext.FIX_ATTEMPT, {
@@ -113,7 +110,6 @@ describe('createServerValidator', () => {
           failedDeployments: {
             removeFailedDeployment
           } as any,
-          clock: { now: () => Date.now() }
         })
 
         result = await validator.validate(entity, DeploymentContext.FIX_ATTEMPT, {

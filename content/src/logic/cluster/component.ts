@@ -30,7 +30,7 @@ function getAllOtherAddressesOnDAO(
 }
 
 export function createContentCluster(
-  components: Pick<AppComponents, 'logs' | 'daoClient' | 'env' | 'clock'>,
+  components: Pick<AppComponents, 'logs' | 'daoClient' | 'env'>,
   timeBetweenSyncs: number
 ): IContentClusterComponent {
   const logger: ILoggerComponent.ILogger = components.logs.getLogger('ContentCluster')
@@ -70,7 +70,7 @@ export function createContentCluster(
         }
       }
 
-      timeOfLastSync = components.clock.now()
+      timeOfLastSync = Date.now()
 
       for (const cb of syncFinishedEventCallbacks) {
         cb(serverClients)

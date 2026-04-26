@@ -45,7 +45,7 @@ describe('when creating a content cluster component', () => {
       env.setConfig(EnvironmentConfig.CONTENT_SERVER_ADDRESS, localAddress)
       const logs = await setupLogs()
       const daoClient = createDaoClient([localAddress, remoteAddress1])
-      const cluster = createContentCluster({ daoClient, logs, env, clock: { now: Date.now } }, 1000)
+      const cluster = createContentCluster({ daoClient, logs, env }, 1000)
 
       expect(cluster.getAllServersInCluster()).toEqual([])
     })
@@ -55,7 +55,7 @@ describe('when creating a content cluster component', () => {
       env.setConfig(EnvironmentConfig.CONTENT_SERVER_ADDRESS, localAddress)
       const logs = await setupLogs()
       const daoClient = createDaoClient([localAddress])
-      const cluster = createContentCluster({ daoClient, logs, env, clock: { now: Date.now } }, 1000)
+      const cluster = createContentCluster({ daoClient, logs, env }, 1000)
 
       expect(cluster.getStatus()).toEqual({ lastSyncWithDAO: 0 })
     })
@@ -67,7 +67,7 @@ describe('when creating a content cluster component', () => {
       env.setConfig(EnvironmentConfig.CONTENT_SERVER_ADDRESS, localAddress)
       const logs = await setupLogs()
       const daoClient = createDaoClient([localAddress, remoteAddress1, remoteAddress2])
-      const cluster = createContentCluster({ daoClient, logs, env, clock: { now: Date.now } }, 1000)
+      const cluster = createContentCluster({ daoClient, logs, env }, 1000)
 
       await cluster.start!({} as any)
       await cluster.stop!()
@@ -80,7 +80,7 @@ describe('when creating a content cluster component', () => {
       env.setConfig(EnvironmentConfig.CONTENT_SERVER_ADDRESS, localAddress)
       const logs = await setupLogs()
       const daoClient = createDaoClient([localAddress, remoteAddress1, remoteAddress2])
-      const cluster = createContentCluster({ daoClient, logs, env, clock: { now: Date.now } }, 1000)
+      const cluster = createContentCluster({ daoClient, logs, env }, 1000)
 
       await cluster.start!({} as any)
       await cluster.stop!()
@@ -96,7 +96,7 @@ describe('when creating a content cluster component', () => {
       env.setConfig(EnvironmentConfig.CONTENT_SERVER_ADDRESS, 'HTTP://LOCAL-SERVER/')
       const logs = await setupLogs()
       const daoClient = createDaoClient([localAddress, remoteAddress1])
-      const cluster = createContentCluster({ daoClient, logs, env, clock: { now: Date.now } }, 1000)
+      const cluster = createContentCluster({ daoClient, logs, env }, 1000)
 
       await cluster.start!({} as any)
       await cluster.stop!()
@@ -111,8 +111,8 @@ describe('when creating a content cluster component', () => {
       env.setConfig(EnvironmentConfig.CONTENT_SERVER_ADDRESS, localAddress)
       const logs = await setupLogs()
       const daoClient = createDaoClient([localAddress, remoteAddress1])
-      const clock = { now: jest.fn().mockReturnValue(5000) }
-      const cluster = createContentCluster({ daoClient, logs, env, clock }, 1000)
+      jest.spyOn(Date, 'now').mockReturnValue(5000)
+      const cluster = createContentCluster({ daoClient, logs, env }, 1000)
 
       await cluster.start!({} as any)
       await cluster.stop!()
@@ -125,7 +125,7 @@ describe('when creating a content cluster component', () => {
       env.setConfig(EnvironmentConfig.CONTENT_SERVER_ADDRESS, localAddress)
       const logs = await setupLogs()
       const daoClient = createDaoClient([localAddress, remoteAddress1])
-      const cluster = createContentCluster({ daoClient, logs, env, clock: { now: Date.now } }, 1000)
+      const cluster = createContentCluster({ daoClient, logs, env }, 1000)
       const cb1 = jest.fn()
       const cb2 = jest.fn()
       cluster.onSyncFinished(cb1)
@@ -159,7 +159,7 @@ describe('when creating a content cluster component', () => {
       })
       const daoClient: DAOComponent = { getAllContentServers: mockGetAll, getAllServers: jest.fn() }
 
-      cluster = createContentCluster({ daoClient, logs, env, clock: { now: Date.now } }, 10)
+      cluster = createContentCluster({ daoClient, logs, env }, 10)
       ;(sleep as jest.Mock).mockResolvedValue(undefined)
 
       const secondSync = new Promise<void>((resolve) => {
@@ -195,7 +195,7 @@ describe('when creating a content cluster component', () => {
       })
       const daoClient: DAOComponent = { getAllContentServers: mockGetAll, getAllServers: jest.fn() }
 
-      cluster = createContentCluster({ daoClient, logs, env, clock: { now: Date.now } }, 10)
+      cluster = createContentCluster({ daoClient, logs, env }, 10)
       ;(sleep as jest.Mock).mockResolvedValue(undefined)
 
       const secondSync = new Promise<void>((resolve) => {
@@ -221,7 +221,7 @@ describe('when creating a content cluster component', () => {
       env.setConfig(EnvironmentConfig.CONTENT_SERVER_ADDRESS, localAddress)
       const logs = await setupLogs()
       const daoClient = createDaoClient([])
-      const cluster = createContentCluster({ daoClient, logs, env, clock: { now: Date.now } }, 1000)
+      const cluster = createContentCluster({ daoClient, logs, env }, 1000)
 
       await expect(cluster.start!({} as any)).resolves.not.toThrow()
       await cluster.stop!()
@@ -238,7 +238,7 @@ describe('when creating a content cluster component', () => {
         getAllContentServers: jest.fn().mockRejectedValue(new Error('network error')),
         getAllServers: jest.fn()
       }
-      const cluster = createContentCluster({ daoClient, logs, env, clock: { now: Date.now } }, 1000)
+      const cluster = createContentCluster({ daoClient, logs, env }, 1000)
 
       await expect(cluster.start!({} as any)).resolves.not.toThrow()
       await cluster.stop!()

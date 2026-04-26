@@ -7,7 +7,6 @@ import { createProcessedSnapshotStorage } from '../../../src/ports/processedSnap
 
 describe('processed snapshot storage', () => {
   const database = createTestDatabaseComponent()
-  const clock = { now: Date.now }
 
   let logs: ILoggerComponent
 
@@ -21,7 +20,7 @@ describe('processed snapshot storage', () => {
 
   describe('processedFrom', () => {
     it('should return the result from they query when the hashes are not in cache', async () => {
-      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, clock, logs })
+      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs })
       const processedSnapshot = 'someHash'
       jest.spyOn(snapshotQueries, 'getProcessedSnapshots').mockResolvedValue(new Set([processedSnapshot]))
 
@@ -31,7 +30,7 @@ describe('processed snapshot storage', () => {
     })
 
     it('should cache the processed snapshots', async () => {
-      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, clock, logs })
+      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs })
       const processedSnapshot = 'someHash'
       const dbQuerySpy = jest
         .spyOn(snapshotQueries, 'getProcessedSnapshots')
@@ -46,7 +45,7 @@ describe('processed snapshot storage', () => {
     })
 
     it('should query the db if not ALL the snapshots are in the cache', async () => {
-      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, clock, logs })
+      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs })
       const processedSnapshot = 'someHash'
       const dbQuerySpy = jest
         .spyOn(snapshotQueries, 'getProcessedSnapshots')
@@ -63,7 +62,7 @@ describe('processed snapshot storage', () => {
     })
 
     it('should not query the db if ALL the snapshots are in the cache', async () => {
-      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, clock, logs })
+      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs })
       const processedSnapshot = 'someHash'
       const anotherProcessedSnapshot = 'anotherHash'
       const otherProcessedSnapshot = 'otherHash'
@@ -88,11 +87,11 @@ describe('processed snapshot storage', () => {
 
   describe('markSnapshotAsProcessed', () => {
     it('should save the snapshot and set the current process time', async () => {
-      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, clock, logs })
+      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs })
       const processedSnapshot = 'someHash'
       const saveProcessedSnapshotSpy = jest.spyOn(snapshotQueries, 'saveProcessedSnapshot').mockResolvedValue()
       const expectedProcessTime = Date.now()
-      jest.spyOn(clock, 'now').mockReturnValue(expectedProcessTime)
+      jest.spyOn(Date, 'now').mockReturnValue(expectedProcessTime)
 
       await processedSnapshotStorage.markSnapshotAsProcessed(processedSnapshot)
 
@@ -100,7 +99,7 @@ describe('processed snapshot storage', () => {
     })
 
     it('should cache the processed snapshot when saving a snapshot', async () => {
-      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, clock, logs })
+      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs })
       const processedSnapshot = 'someHash'
       jest.spyOn(snapshotQueries, 'saveProcessedSnapshot').mockResolvedValue()
 

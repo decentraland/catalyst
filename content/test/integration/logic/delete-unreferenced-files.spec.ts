@@ -88,7 +88,7 @@ describe('Delete unreferenced files - ', () => {
 
   testCaseWithComponents(getTestEnv, 'should not delete snapshot file', async (components) => {
     // the clock is mocked so only one snapshot is created
-    jest.spyOn(components.clock, 'now').mockReturnValue(1577836800000 + MS_PER_DAY)
+    jest.spyOn(Date, 'now').mockReturnValue(1577836800000 + MS_PER_DAY)
     await startSnapshotNeededComponents(components)
 
     const snapshots = components.snapshotGenerator.getCurrentSnapshots()

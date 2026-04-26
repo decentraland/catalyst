@@ -99,7 +99,7 @@ describe('precessed snapshot storage', () => {
       const processedSnapshot = 'someHash'
       const saveProcessedSnapshotSpy = jest.spyOn(snapshotQueries, 'saveProcessedSnapshot').mockResolvedValue()
       const expectedProcessTime = Date.now()
-      jest.spyOn(components.clock, 'now').mockReturnValue(expectedProcessTime)
+      jest.spyOn(Date, 'now').mockReturnValue(expectedProcessTime)
 
       await components.processedSnapshotStorage.markSnapshotAsProcessed(processedSnapshot)
 

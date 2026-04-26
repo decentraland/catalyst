@@ -5,7 +5,7 @@ import { AppComponents } from '../types'
 export type ProcessedSnapshotsStorageComponent = IProcessedSnapshotStorageComponent & { reset: () => void }
 
 export function createProcessedSnapshotStorage(
-  components: Pick<AppComponents, 'database' | 'clock' | 'logs'>
+  components: Pick<AppComponents, 'database' | 'logs'>
 ): ProcessedSnapshotsStorageComponent {
   const logger = components.logs.getLogger('processed-snapshot-storage')
   const processedSnapshotsCache = new Set<string>()
@@ -24,7 +24,7 @@ export function createProcessedSnapshotStorage(
       return processedSnapshots
     },
     async markSnapshotAsProcessed(snapshotHash: string) {
-      await saveProcessedSnapshot(components.database, snapshotHash, components.clock.now())
+      await saveProcessedSnapshot(components.database, snapshotHash, Date.now())
       processedSnapshotsCache.add(snapshotHash)
       logger.info(`Processed Snapshot saved`, { snapshotHash })
     },

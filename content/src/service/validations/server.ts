@@ -22,18 +22,14 @@ interface ServiceCalls {
 }
 
 const REQUEST_TTL_FORWARDS: number = ms('15m')
-function isRequestTtlForwards(components: Pick<AppComponents, 'clock'>, entity: Entity): boolean | Promise<boolean> {
-  return components.clock.now() - entity.timestamp < -REQUEST_TTL_FORWARDS
+function isRequestTtlForwards(entity: Entity): boolean | Promise<boolean> {
+  return Date.now() - entity.timestamp < -REQUEST_TTL_FORWARDS
 }
 
 /**
  * Checks when context is DeploymentContext.LOCAL
  */
-const localChecks = async (
-  entity: Entity,
-  serviceCalls: ServiceCalls,
-  components: Pick<AppComponents, 'clock'>
-): Promise<string | undefined> => {
+const localChecks = async (entity: Entity, serviceCalls: ServiceCalls): Promise<string | undefined> => {
   /** Validate that there are no newer deployments on the entity's pointers */
   if (await serviceCalls.areThereNewerEntities(entity))
     return `There is a newer entity pointed by one or more of the pointers you provided (entityId=${
@@ -56,7 +52,7 @@ const localChecks = async (
     } pointers=${entity.pointers.join(',')}).`
 
   /** Validate that the deployment is not too far in the future */
-  if (isRequestTtlForwards(components, entity))
+  if (isRequestTtlForwards(entity))
     return `The request is too far in the future, please submit it again with a new timestamp (entityId=${
       entity.id
     } pointers=${entity.pointers.join(',')}).`
@@ -76,9 +72,7 @@ export const IGNORING_FIX_ERROR = 'Ignoring fix for failed deployment since ther
 /**
  * Server side validations for current deploying entity for LOCAL and FIX_ATTEMPT contexts
  */
-export const createServerValidator = (
-  components: Pick<AppComponents, 'failedDeployments' | 'clock'>
-): ServerValidator => ({
+export const createServerValidator = (components: Pick<AppComponents, 'failedDeployments'>): ServerValidator => ({
   validate: async (entity, context, serviceCalls) => {
     // these contexts doesn't validate anything in this side
     if (context === DeploymentContext.SYNCED || context === DeploymentContext.SYNCED_LEGACY_ENTITY) {
@@ -86,7 +80,7 @@ export const createServerValidator = (
     }
 
     if (context === DeploymentContext.LOCAL) {
-      const error = await localChecks(entity, serviceCalls, components)
+      const error = await localChecks(entity, serviceCalls)
       if (error) {
         return { ok: false, message: error }
       }

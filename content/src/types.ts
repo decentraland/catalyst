@@ -19,7 +19,6 @@ import { Environment } from './Environment'
 import { metricsDeclaration } from './metrics'
 import { MigrationExecutor } from './migrations/migration-executor'
 import { ActiveEntities } from './ports/activeEntities'
-import { Clock } from './adapters/clock'
 import { DAOComponent } from './adapters/dao-client'
 import { Denylist } from './adapters/denylist'
 import { IDeployRateLimiterComponent } from './adapters/deploy-rate-limiter'
@@ -107,7 +106,6 @@ export type AppComponents = {
   fs: IFileSystemComponent
   snapshotGenerator: SnapshotGenerator
   processedSnapshotStorage: ProcessedSnapshotsStorageComponent
-  clock: Clock
   snapshotStorage: ISnapshotStorageComponent
   l1Provider: HTTPProvider
   tracer: ITracerComponent
