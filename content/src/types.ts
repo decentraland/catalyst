@@ -39,7 +39,7 @@ import { ISequentialTaskExecutorComponent } from './adapters/sequential-task-exe
 import { SnapshotGenerator } from './ports/snapshotGenerator'
 import { SynchronizationState } from './adapters/synchronization-state'
 import { SystemProperties } from './adapters/system-properties'
-import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
+import { GarbageCollectionManager } from './logic/garbage-collection'
 import { PointerManager } from './logic/pointer-manager'
 import { IChallengeSupervisor } from './logic/challenge-supervisor'
 import { IContentClusterComponent } from './logic/peer-cluster'

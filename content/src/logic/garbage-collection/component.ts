@@ -1,21 +1,11 @@
 import { ILoggerComponent } from '@well-known-components/interfaces'
+import SQL from 'sql-template-strings'
 import { findContentHashesNotBeingUsedAnymore } from '../../adapters/content-files-repository'
 import { SYSTEM_PROPERTIES } from '../../adapters/system-properties'
 import { AppComponents, PROFILE_DURATION } from '../../types'
-import SQL from 'sql-template-strings'
+import { GCStaleProfilesResult, SweepResult } from './types'
 
 const PROFILE_CLEANUP_LIMIT = 10000
-
-export type GCStaleProfilesResult = {
-  deletedHashes: Set<string>
-  deletedDeployments: Set<string>
-}
-
-export type SweepResult = {
-  gcProfileActiveEntitiesResult?: Set<string>
-  gcUnusedHashResult?: Set<string>
-  gcStaleProfilesResult?: GCStaleProfilesResult
-}
 
 export class GarbageCollectionManager {
   private LOGGER: ILoggerComponent.ILogger
