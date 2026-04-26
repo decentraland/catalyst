@@ -1,12 +1,9 @@
-import { IBaseComponent } from '@well-known-components/interfaces'
-import { EnvironmentConfig } from '../../Environment'
-import { retryFailedDeploymentExecution } from '../../logic/deployments'
-import { AppComponents } from '../../types'
 import { setTimeout } from 'timers/promises'
+import { EnvironmentConfig } from '../../Environment'
+import { AppComponents } from '../../types'
+import { retryFailedDeploymentExecution } from '../deployments'
+import { IRetryFailedDeploymentsComponent } from './types'
 
-export type IRetryFailedDeploymentsComponent = IBaseComponent & {
-  schedule: () => Promise<void>
-}
 /**
  * This component schedules the retry of failed deployments.
  */

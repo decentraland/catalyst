@@ -4,7 +4,7 @@ import { createConfigComponent } from '@well-known-components/env-config-provide
 import { createLogComponent } from '@well-known-components/logger'
 import { Environment, EnvironmentConfig } from '../../../src/Environment'
 import { DAOComponent } from '../../../src/adapters/dao-client'
-import { createContentCluster, IContentClusterComponent } from '../../../src/logic/cluster'
+import { createContentCluster, IContentClusterComponent } from '../../../src/logic/peer-cluster'
 
 jest.mock('@dcl/snapshots-fetcher/dist/utils', () => ({
   ...jest.requireActual('@dcl/snapshots-fetcher/dist/utils'),

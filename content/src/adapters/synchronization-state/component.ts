@@ -1,13 +1,5 @@
-import { AppComponents } from '../types'
-
-export enum State {
-  BOOTSTRAPPING = 'Bootstrapping',
-  SYNCING = 'Syncing'
-}
-export interface SynchronizationState {
-  getState: () => State
-  toSyncing: () => void
-}
+import { AppComponents } from '../../types'
+import { State, SynchronizationState } from './types'
 
 export function createSynchronizationState(components: Pick<AppComponents, 'logs' | 'metrics'>): SynchronizationState {
   let state = State.BOOTSTRAPPING

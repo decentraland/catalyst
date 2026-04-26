@@ -1,9 +1,5 @@
 import { v4 as uuidv4 } from 'uuid'
-
-export type IChallengeSupervisor = {
-  getChallengeText(): string
-  isChallengeOk(text: string): boolean
-}
+import { IChallengeSupervisor } from './types'
 
 /**
  * This class will handle the challenge. The idea is for each server to figure out their identity on the DAO by themselves, so they will

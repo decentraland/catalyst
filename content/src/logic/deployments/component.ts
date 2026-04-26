@@ -23,7 +23,7 @@ import {
 } from '../../deployment-types'
 import { FailedDeployment } from '../../ports/failedDeployments'
 import { DatabaseClient, DatabaseTransactionalClient } from '../../ports/postgres'
-import { deployEntityFromRemoteServer } from '../../service/synchronization/deployRemoteEntity'
+import { deployEntityFromRemoteServer } from '../../logic/sync-orchestrator'
 import { IGNORING_FIX_ERROR } from '../server-validator'
 import { AppComponents, DeploymentId, EntityVersion } from '../../types'
 import { DeploymentPointerChanges, IDeploymentsComponent } from './types'
