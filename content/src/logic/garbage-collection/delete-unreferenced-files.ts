@@ -1,10 +1,10 @@
 import * as bf from 'bloom-filters'
 import PQueue from 'p-queue'
-import { streamAllDistinctContentFileHashes } from '../adapters/content-files-repository'
-import { streamAllDistinctEntityIds } from '../adapters/deployments-repository'
-import { getAllSnapshotHashes } from '../adapters/snapshots-repository'
-import { runLoggingPerformance } from '../instrument'
-import { AppComponents } from '../types'
+import { streamAllDistinctContentFileHashes } from '../../adapters/content-files-repository'
+import { streamAllDistinctEntityIds } from '../../adapters/deployments-repository'
+import { getAllSnapshotHashes } from '../../adapters/snapshots-repository'
+import { runLoggingPerformance } from '../../instrument'
+import { AppComponents } from '../../types'
 
 export async function deleteUnreferencedFiles(
   components: Pick<AppComponents, 'logs' | 'database' | 'storage' | 'fs'>
