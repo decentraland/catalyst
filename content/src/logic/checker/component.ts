@@ -14,6 +14,10 @@ type CollectionItem = {
   item: string
 }
 
+// TODO: convert these factories to the WKC `Pick<AppComponents, ...>` signature.
+// They currently take positional args (provider, network, logs) for historical reasons; the
+// folder layout matches the WKC component shape but the factory signatures don't yet.
+
 export async function createL1Checker(provider: HTTPProvider, network: 'mainnet' | 'sepolia'): Promise<L1Checker> {
   const contracts = l1Contracts[network]
 

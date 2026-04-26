@@ -88,7 +88,9 @@ describe('snapshot generator - ', () => {
       await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(5))
       await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(6))
       await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(7))
+      const before = Date.now()
       const snapshots = await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(8))
+      const after = Date.now()
 
       const weeklySnapshot = snapshots[0]
       expect(weeklySnapshot).toEqual({
@@ -106,6 +108,8 @@ describe('snapshot generator - ', () => {
         ],
         generationTimestamp: expect.any(Number)
       })
+      expect(weeklySnapshot.generationTimestamp).toBeGreaterThanOrEqual(before)
+      expect(weeklySnapshot.generationTimestamp).toBeLessThanOrEqual(after)
       // daily snapshot
       expect(snapshots[1]).toEqual({
         hash: emptySnapshot.hash,
@@ -117,6 +121,8 @@ describe('snapshot generator - ', () => {
         replacedSnapshotHashes: [],
         generationTimestamp: expect.any(Number)
       })
+      expect(snapshots[1].generationTimestamp).toBeGreaterThanOrEqual(before)
+      expect(snapshots[1].generationTimestamp).toBeLessThanOrEqual(after)
     }
   )
 
@@ -131,7 +137,9 @@ describe('snapshot generator - ', () => {
       await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(4))
       await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(5))
       // now we supose the server is down for a few days, so 6th and 7th daily snapshots are not generated
+      const before = Date.now()
       const snapshots = await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(8))
+      const after = Date.now()
 
       const weeklySnapshot = snapshots[0]
       expect(weeklySnapshot).toEqual({
@@ -141,6 +149,8 @@ describe('snapshot generator - ', () => {
         replacedSnapshotHashes: [],
         generationTimestamp: expect.any(Number)
       })
+      expect(weeklySnapshot.generationTimestamp).toBeGreaterThanOrEqual(before)
+      expect(weeklySnapshot.generationTimestamp).toBeLessThanOrEqual(after)
       // daily snapshot
       expect(snapshots[1]).toEqual({
         hash: emptySnapshot.hash,
@@ -152,6 +162,8 @@ describe('snapshot generator - ', () => {
         replacedSnapshotHashes: [],
         generationTimestamp: expect.any(Number)
       })
+      expect(snapshots[1].generationTimestamp).toBeGreaterThanOrEqual(before)
+      expect(snapshots[1].generationTimestamp).toBeLessThanOrEqual(after)
     }
   )
 
