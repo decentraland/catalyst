@@ -30,7 +30,7 @@ import { createDeployedEntitiesBloomFilter } from '../../../src/ports/deployedEn
 import { createDeployer } from '../../../src/ports/deployer'
 import { createFailedDeployments } from '../../../src/ports/failedDeployments'
 import { createTestDatabaseComponent } from '../../../src/ports/postgres'
-import { createSequentialTaskExecutor } from '../../../src/adapters/sequential-task-executor'
+import { createSequentialTaskExecutor } from '../../../src/logic/sequential-task-executor'
 import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
 import { DELTA_POINTER_RESULT } from '../../../src/service/pointers/PointerManager'
 import { EntityVersion } from '../../../src/types'

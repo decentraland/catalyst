@@ -26,7 +26,7 @@ import { DeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter
 import { Deployer } from './ports/deployer'
 import { IFailedDeploymentsComponent } from './ports/failedDeployments'
 import { IDatabaseComponent } from './ports/postgres'
-import { ISequentialTaskExecutorComponent } from './adapters/sequential-task-executor'
+import { ISequentialTaskExecutorComponent } from './logic/sequential-task-executor'
 import { SnapshotGenerator } from './ports/snapshotGenerator'
 import { SynchronizationState } from './ports/synchronizationState'
 import { SystemProperties } from './adapters/system-properties'
