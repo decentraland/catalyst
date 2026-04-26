@@ -1,8 +1,6 @@
 export {
   createPointersRepository,
   getItemEntitiesIdsThatMatchCollectionUrnPrefix,
-  getThirdPartyCollectionItemsEntityIdsThatMatchUrnPrefix,
-  updateActiveDeployments,
-  removeActiveDeployments
+  getThirdPartyCollectionItemsEntityIdsThatMatchUrnPrefix
 } from './component'
 export type { IPointersRepository } from './types'
