@@ -38,7 +38,7 @@ export const SYSTEM_PROPERTIES = {
       return `${value}`
     },
     fromString(value: string) {
-      return parseInt(value)
+      return parseInt(value, 10)
     }
   }
 }
