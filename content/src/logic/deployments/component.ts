@@ -1,20 +1,7 @@
 import { Entity, EntityType } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import SQL, { SQLStatement } from 'sql-template-strings'
-import {
-  AuditInfo,
-  Deployment,
-  DeploymentContent,
-  DeploymentContext,
-  DeploymentOptions,
-  PartialDeploymentHistory
-} from '../deployment-types'
-import { FailedDeployment } from '../ports/failedDeployments'
-import { DatabaseClient, DatabaseTransactionalClient } from '../ports/postgres'
-import { deployEntityFromRemoteServer } from '../service/synchronization/deployRemoteEntity'
-import { IGNORING_FIX_ERROR } from '../service/validations/server'
-import { AppComponents, DeploymentId, EntityVersion } from '../types'
-import { getContentFiles, saveContentFiles } from '../adapters/content-files-repository'
+import { getContentFiles, saveContentFiles } from '../../adapters/content-files-repository'
 import {
   calculateOverwrittenByManyFast,
   calculateOverwrittenBySlow,
@@ -24,7 +11,21 @@ import {
   HistoricalDeployment,
   HistoricalDeploymentsRow,
   saveDeployment
-} from '../adapters/deployments-repository'
+} from '../../adapters/deployments-repository'
+import {
+  AuditInfo,
+  Deployment,
+  DeploymentContent,
+  DeploymentContext,
+  DeploymentOptions,
+  PartialDeploymentHistory
+} from '../../deployment-types'
+import { FailedDeployment } from '../../ports/failedDeployments'
+import { DatabaseClient, DatabaseTransactionalClient } from '../../ports/postgres'
+import { deployEntityFromRemoteServer } from '../../service/synchronization/deployRemoteEntity'
+import { IGNORING_FIX_ERROR } from '../../service/validations/server'
+import { AppComponents, DeploymentId, EntityVersion } from '../../types'
+import { IDeploymentsComponent } from './types'
 
 export async function isEntityDeployed(
   database: DatabaseClient,
@@ -286,11 +287,6 @@ export async function getDeploymentsForActiveEntities(
   const deploymentIds = deploymentsResult.map(({ deploymentId }) => deploymentId)
   const content = await getContentFiles(database, deploymentIds)
   return deploymentsResult.map((result) => buildDeploymentFromHistoricalDeployment(result, content))
-}
-
-export interface IDeploymentsComponent {
-  getDeploymentsForActiveThirdPartyItemsByEntityIds(entityIds: string[]): Promise<Deployment[]>
-  updateMaterializedViews(): Promise<void>
 }
 
 export const createDeploymentsComponent = (

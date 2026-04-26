@@ -1,12 +1,12 @@
 import { ItemChecker, L1Checker, L2Checker } from '@dcl/content-validator'
-import { inputBlockNumberFormatter, inputCallFormatter } from './formatters'
 import { ContractFactory, HTTPProvider, RequestManager, RPCSendableMessage, toData } from 'eth-connect'
 import { checkerAbi, l1Contracts, l2Contracts } from '@dcl/catalyst-contracts'
 import { code } from '@dcl/catalyst-contracts/dist/checkerByteCode'
 import { parseUrn } from '@dcl/urn-resolver'
 import { EthAddress } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
-import { sendBatch } from './contract-helpers'
+import { sendBatch } from '../contract-helpers'
+import { inputBlockNumberFormatter, inputCallFormatter } from '../formatters'
 
 type CollectionItem = {
   contract: string
