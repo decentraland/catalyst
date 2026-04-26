@@ -1,5 +1,5 @@
 import { ILoggerComponent } from '@well-known-components/interfaces'
-import { HistoricalDeploymentsRow } from '../../src/logic/database-queries/deployments-queries'
+import { HistoricalDeploymentsRow } from '../../src/adapters/deployments-repository'
 import { EntityType } from '@dcl/schemas'
 
 export function createLogsMockedComponent({

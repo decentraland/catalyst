@@ -12,7 +12,7 @@ import {
   LocalDeploymentAuditInfo,
   isInvalidDeployment
 } from '../deployment-types'
-import { getEntityById, setEntitiesAsOverwritten } from '../logic/database-queries/deployments-queries'
+import { getEntityById, setEntitiesAsOverwritten } from '../adapters/deployments-repository'
 import { calculateOverwrites, getDeployments, saveDeploymentAndContentFiles } from '../logic/deployments'
 import { getEntityFromBuffer } from '../logic/entity-parser'
 import { calculateDeprecatedHashes, calculateIPFSHashes } from '../logic/hashing'

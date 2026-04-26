@@ -2,7 +2,7 @@ import { TimeRange } from '@dcl/snapshots-fetcher/dist/types'
 import { IBaseComponent } from '@well-known-components/interfaces'
 import * as bf from 'bloom-filters'
 import future from 'fp-future'
-import { streamAllEntityIdsInTimeRange } from '../logic/database-queries/deployments-queries'
+import { streamAllEntityIdsInTimeRange } from '../adapters/deployments-repository'
 import { joinOverlappedTimeRanges } from '../logic/time-range'
 import { AppComponents } from '../types'
 

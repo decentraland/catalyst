@@ -6,7 +6,7 @@ import {
   getThirdPartyCollectionItemsEntityIdsThatMatchUrnPrefix,
   removeActiveDeployments,
   updateActiveDeployments
-} from '../logic/database-queries/pointers-queries'
+} from '../adapters/pointers-repository'
 import { getDeploymentsForActiveEntities, mapDeploymentsToEntities } from '../logic/deployments'
 import { AppComponents } from '../types'
 import { DatabaseClient } from './postgres'

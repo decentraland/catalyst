@@ -1,6 +1,6 @@
 import { EntityType } from '@dcl/schemas'
 import { createTestMetricsComponent } from '@dcl/metrics'
-import * as failedDeploymentQueries from '../../../src/logic/database-queries/failed-deployments-queries'
+import * as failedDeploymentQueries from '../../../src/adapters/failed-deployments-repository'
 import { metricsDeclaration } from '../../../src/metrics'
 import { createFailedDeployments, FailureReason, SnapshotFailedDeployment } from '../../../src/ports/failedDeployments'
 import { createTestDatabaseComponent, DatabaseTransactionalClient } from '../../../src/ports/postgres'

@@ -14,7 +14,7 @@ import { DatabaseClient, DatabaseTransactionalClient } from '../ports/postgres'
 import { deployEntityFromRemoteServer } from '../service/synchronization/deployRemoteEntity'
 import { IGNORING_FIX_ERROR } from '../service/validations/server'
 import { AppComponents, DeploymentId, EntityVersion } from '../types'
-import { getContentFiles } from './database-queries/content-files-queries'
+import { getContentFiles, saveContentFiles } from '../adapters/content-files-repository'
 import {
   calculateOverwrittenByManyFast,
   calculateOverwrittenBySlow,
@@ -23,9 +23,8 @@ import {
   getHistoricalDeployments,
   HistoricalDeployment,
   HistoricalDeploymentsRow,
-  saveContentFiles,
   saveDeployment
-} from './database-queries/deployments-queries'
+} from '../adapters/deployments-repository'
 
 export async function isEntityDeployed(
   database: DatabaseClient,

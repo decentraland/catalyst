@@ -1,12 +1,10 @@
 import * as bf from 'bloom-filters'
 import PQueue from 'p-queue'
+import { streamAllDistinctContentFileHashes } from '../adapters/content-files-repository'
+import { streamAllDistinctEntityIds } from '../adapters/deployments-repository'
+import { getAllSnapshotHashes } from '../adapters/snapshots-repository'
 import { runLoggingPerformance } from '../instrument'
 import { AppComponents } from '../types'
-import {
-  getAllSnapshotHashes,
-  streamAllDistinctContentFileHashes,
-  streamAllDistinctEntityIds
-} from './database-queries/unreferenced-files-queries'
 
 export async function deleteUnreferencedFiles(
   components: Pick<AppComponents, 'logs' | 'database' | 'storage' | 'fs'>
@@ -27,19 +25,19 @@ export async function deleteUnreferencedFiles(
     const totalEntityIds = await runLoggingPerformance(
       logger,
       'add stream of entity ids to bloom filter',
-      async () => await addAllToBloomFilter(streamAllDistinctEntityIds(components))
+      async () => await addAllToBloomFilter(streamAllDistinctEntityIds(components.database))
     )
 
     const totalContentFileHashes = await runLoggingPerformance(
       logger,
       'add of stream content file hashes to bloom filter',
-      async () => await addAllToBloomFilter(streamAllDistinctContentFileHashes(components))
+      async () => await addAllToBloomFilter(streamAllDistinctContentFileHashes(components.database))
     )
 
     const totalSnapshotHashes = await runLoggingPerformance(
       logger,
       'add of stream snapshot hashes to bloom filter',
-      async () => await addAllToBloomFilter(getAllSnapshotHashes(components))
+      async () => await addAllToBloomFilter(getAllSnapshotHashes(components.database))
     )
     logger.info(
       `Created bloom filter with ${totalEntityIds} entity ids, ${totalContentFileHashes} content hashes and ${totalSnapshotHashes} snapshot hashes.`
