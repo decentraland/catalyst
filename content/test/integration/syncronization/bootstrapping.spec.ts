@@ -11,7 +11,7 @@ import { assertDeploymentsAreReported, buildDeployment } from '../E2EAssertions'
 import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
 import { startProgramAndWaitUntilBootstrapFinishes, TestProgram } from '../TestProgram'
-import { State } from '../../../src/ports/synchronizationState'
+import { State } from '../../../src/adapters/synchronization-state'
 
 // Captured at module load time, before any beforeEach installs a Date.now spy.
 // fakeNow uses this to read real elapsed time without re-entering its own mock

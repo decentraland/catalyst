@@ -1,7 +1,7 @@
 import { DeploymentToValidate, ValidationResponse } from '@dcl/content-validator'
 import { ServerValidator } from 'src/logic/server-validator'
 import { AppComponents } from '../../../../src/types'
-import { State } from '../../../../src/ports/synchronizationState'
+import { State } from '../../../../src/adapters/synchronization-state'
 
 export class NoOpValidator {
   async validate(_d: DeploymentToValidate): Promise<ValidationResponse> {
