@@ -1,5 +1,5 @@
 import { IHttpServerComponent, Lifecycle } from '@well-known-components/interfaces'
-import { setupRouter } from './controller/routes'
+import { setupRouter } from './controllers/routes'
 import { EnvironmentConfig } from './Environment'
 import { startSynchronization } from './logic/sync-orchestrator'
 import { migrateContentFolderStructure } from './migrations/ContentFolderMigrationManager'
