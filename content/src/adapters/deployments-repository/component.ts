@@ -8,7 +8,7 @@ import { DatabaseClient, DatabaseTransactionalClient } from '../../ports/postgre
 import { DeploymentId } from '../../types'
 import { HistoricalDeployment, HistoricalDeploymentsRow, IDeploymentsRepository } from './types'
 
-const ENTITY_FILE_HASHES_QUERY = SQL`SELECT DISTINCT entity_id FROM deployments;`
+const ALL_ENTITY_IDS_QUERY = SQL`SELECT DISTINCT entity_id FROM deployments;`
 
 export async function deploymentExists(database: DatabaseClient, entityId: string): Promise<boolean> {
   const result = await database.queryWithValues(
@@ -44,7 +44,7 @@ export async function* streamAllEntityIdsInTimeRange(
 }
 
 export async function* streamAllDistinctEntityIds(database: DatabaseClient): AsyncIterable<string> {
-  for await (const row of database.streamQuery<{ entity_id: string }>(ENTITY_FILE_HASHES_QUERY, {
+  for await (const row of database.streamQuery<{ entity_id: string }>(ALL_ENTITY_IDS_QUERY, {
     batchSize: 10000
   })) {
     yield row.entity_id
