@@ -3,7 +3,7 @@ import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
 import { createLogComponent } from '@well-known-components/logger'
 import { Environment, EnvironmentConfig } from '../../../src/Environment'
-import { DAOComponent } from '../../../src/ports/dao-servers-getter'
+import { DAOComponent } from '../../../src/adapters/dao-client'
 import { createContentCluster, IContentClusterComponent } from '../../../src/logic/cluster'
 
 jest.mock('@dcl/snapshots-fetcher/dist/utils', () => ({

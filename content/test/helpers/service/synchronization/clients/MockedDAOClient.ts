@@ -1,6 +1,6 @@
 import { CatalystServerInfo } from '@dcl/catalyst-contracts'
 import { EthAddress } from '@dcl/crypto'
-import { DAOComponent } from '../../../../../src/ports/dao-servers-getter'
+import { DAOComponent } from '../../../../../src/adapters/dao-client'
 
 export class MockedDAOClient implements DAOComponent {
   private readonly serversByAddress: Map<string, CatalystServerInfo>

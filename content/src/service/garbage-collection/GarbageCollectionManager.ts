@@ -1,6 +1,6 @@
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { findContentHashesNotBeingUsedAnymore } from '../../logic/database-queries/content-files-queries'
-import { SYSTEM_PROPERTIES } from '../../ports/system-properties'
+import { SYSTEM_PROPERTIES } from '../../adapters/system-properties'
 import { AppComponents, PROFILE_DURATION } from '../../types'
 import SQL from 'sql-template-strings'
 

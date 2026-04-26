@@ -4,7 +4,7 @@ import { metricDeclarations as loggerMetricDeclarations } from '@well-known-comp
 import { validateMetricsDeclaration } from '@dcl/metrics'
 import { getDefaultHttpMetrics } from '@dcl/http-server'
 import { metricDeclarations as theGraphMetricDeclarations } from '@well-known-components/thegraph-component'
-import { sequentialJobMetrics } from './ports/sequecuentialTaskExecutor'
+import { sequentialJobMetrics } from './adapters/sequential-task-executor'
 
 export const metricsDeclaration = validateMetricsDeclaration({
   ...getDefaultHttpMetrics(),

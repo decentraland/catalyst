@@ -9,7 +9,7 @@ import { DEFAULT_DATABASE_CONFIG, Environment, EnvironmentBuilder, EnvironmentCo
 import { stopAllComponents } from '../../src/logic/components-lifecycle'
 import { metricsDeclaration } from '../../src/metrics'
 import { createMigrationExecutor } from '../../src/migrations/migration-executor'
-import { DAOComponent } from '../../src/ports/dao-servers-getter'
+import { DAOComponent } from '../../src/adapters/dao-client'
 import { IDatabaseComponent, createDatabaseComponent } from '../../src/ports/postgres'
 import { AppComponents } from '../../src/types'
 import { MockedDAOClient } from '../helpers/service/synchronization/clients/MockedDAOClient'

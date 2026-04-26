@@ -1,7 +1,7 @@
 import { EntityType } from '@dcl/schemas'
 import LeakDetector from 'jest-leak-detector'
 import { DeploymentContext } from '../../../../src/deployment-types'
-import { createDeployRateLimiter } from '../../../../src/ports/deployRateLimiterComponent'
+import { createDeployRateLimiter } from '../../../../src/adapters/deploy-rate-limiter'
 import { makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { buildDeployData, buildDeployDataAfterEntity, EntityCombo } from '../../E2ETestUtils'
 import { TestProgram } from '../../TestProgram'

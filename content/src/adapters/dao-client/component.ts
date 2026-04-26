@@ -8,12 +8,8 @@ import {
   L1Network
 } from '@dcl/catalyst-contracts'
 import RequestManager, { ContractFactory } from 'eth-connect'
-import { AppComponents } from '../types'
-
-export interface DAOComponent {
-  getAllContentServers(): Promise<CatalystServerInfo[]>
-  getAllServers(): Promise<CatalystServerInfo[]>
-}
+import { AppComponents } from '../../types'
+import { DAOComponent } from './types'
 
 export async function createDAOComponent(
   components: Pick<AppComponents, 'l1Provider'>,

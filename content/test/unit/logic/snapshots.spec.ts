@@ -9,9 +9,9 @@ import * as snapshotQueries from '../../../src/logic/database-queries/snapshots-
 import { generateAndStoreSnapshot, generateSnapshotsInMultipleTimeRanges } from '../../../src/logic/snapshots'
 import * as tr from '../../../src/logic/time-range'
 import { metricsDeclaration } from '../../../src/metrics'
-import { Denylist } from '../../../src/ports/denylist'
-import * as fileWriter from '../../../src/ports/fileWriter'
-import { IFile } from '../../../src/ports/fileWriter'
+import { Denylist } from '../../../src/adapters/denylist'
+import * as fileWriter from '../../../src/adapters/content-file-writer'
+import { IFile } from '../../../src/adapters/content-file-writer'
 import { createTestDatabaseComponent } from '../../../src/ports/postgres'
 
 describe('generate snapshot', () => {

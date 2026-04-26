@@ -1,6 +1,6 @@
 import { SnapshotMetadata, TimeRange } from '@dcl/snapshots-fetcher/dist/types'
 import { DatabaseClient } from 'src/ports/postgres'
-import { createFileWriter, IFile } from '../ports/fileWriter'
+import { createFileWriter, IFile } from '../adapters/content-file-writer'
 import { AppComponents } from '../types'
 import {
   deleteSnapshotsInTimeRange,
