@@ -16,7 +16,7 @@ import { getEntityById, setEntitiesAsOverwritten } from '../adapters/deployments
 import { calculateOverwrites, getDeployments, saveDeploymentAndContentFiles } from '../logic/deployments'
 import { getEntityFromBuffer } from '../logic/entity-parser'
 import { calculateDeprecatedHashes, calculateIPFSHashes } from '../logic/hashing'
-import { DELTA_POINTER_RESULT } from '../service/pointers/PointerManager'
+import { DELTA_POINTER_RESULT } from '../logic/pointer-manager'
 import { happenedBefore } from '../service/time/TimeSorting'
 import { AppComponents, EntityVersion } from '../types'
 import { DatabaseClient } from './postgres'

@@ -2,15 +2,10 @@ import { TimeRange } from '@dcl/snapshots-fetcher/dist/types'
 import { IBaseComponent } from '@well-known-components/interfaces'
 import * as bf from 'bloom-filters'
 import future from 'fp-future'
-import { streamAllEntityIdsInTimeRange } from '../adapters/deployments-repository'
-import { joinOverlappedTimeRanges } from '../logic/time-range'
-import { AppComponents } from '../types'
-
-export type DeployedEntitiesBloomFilter = {
-  add(entityId: string): void
-  isProbablyDeployed(entityId: string, entityTimestamp: number): Promise<boolean>
-  addAllInTimeRange(timeRange: TimeRange): Promise<void>
-}
+import { streamAllEntityIdsInTimeRange } from '../deployments-repository'
+import { joinOverlappedTimeRanges } from '../../logic/time-range'
+import { AppComponents } from '../../types'
+import { DeployedEntitiesBloomFilter } from './types'
 
 export function createDeployedEntitiesBloomFilter(
   components: Pick<AppComponents, 'database' | 'logs'>

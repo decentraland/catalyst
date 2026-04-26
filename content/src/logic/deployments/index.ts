@@ -11,6 +11,7 @@ export {
   buildHistoricalDeploymentsFromRow,
   getDeployments,
   getDeploymentsForActiveEntities,
+  getPointerChanges,
   createDeploymentsComponent
 } from './component'
-export type { IDeploymentsComponent } from './types'
+export type { IDeploymentsComponent, DeploymentPointerChanges, PointerChangesFilters } from './types'
