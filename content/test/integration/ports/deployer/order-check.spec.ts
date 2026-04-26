@@ -1,6 +1,6 @@
 import { getDeployments } from '../../../../src/logic/deployments'
 import { AppComponents } from '../../../../src/types'
-import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
+import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/logic/server-validator/NoOpValidator'
 import { buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo, EntityCombo } from '../../E2ETestUtils'
 import { createDefaultServer } from '../../simpleTestEnvironment'
 import { TestProgram } from '../../TestProgram'

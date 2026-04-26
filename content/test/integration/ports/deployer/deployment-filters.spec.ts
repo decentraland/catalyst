@@ -9,7 +9,7 @@ import {
 } from '../../../../src/deployment-types'
 import { getDeployments } from '../../../../src/logic/deployments'
 import { AppComponents } from '../../../../src/types'
-import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
+import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/logic/server-validator/NoOpValidator'
 import { buildDeployData, buildDeployDataAfterEntity, EntityCombo } from '../../E2ETestUtils'
 import { TestProgram } from '../../TestProgram'
 import LeakDetector from 'jest-leak-detector'
