@@ -2,24 +2,7 @@ import { Entity } from '@dcl/schemas'
 import ms from 'ms'
 import { DeploymentContext } from '../../deployment-types'
 import { AppComponents } from '../../types'
-
-type EntityCheck = (entity: Entity) => boolean | Promise<boolean>
-
-export interface ServerValidator {
-  validate(
-    entity: Entity,
-    context: DeploymentContext,
-    serviceCalls: ServiceCalls
-  ): Promise<{ ok: true } | { ok: false; message: string }>
-}
-
-interface ServiceCalls {
-  areThereNewerEntities: EntityCheck
-  isEntityDeployedAlready: EntityCheck
-  isNotFailedDeployment: EntityCheck
-  isEntityRateLimited: EntityCheck
-  isRequestTtlBackwards: EntityCheck
-}
+import { ServerValidator, ServiceCalls } from './types'
 
 const REQUEST_TTL_FORWARDS: number = ms('15m')
 function isRequestTtlForwards(entity: Entity): boolean | Promise<boolean> {

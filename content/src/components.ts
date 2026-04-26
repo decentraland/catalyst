@@ -1,5 +1,4 @@
 import { createFolderBasedFileSystemContentStorage, createFsComponent } from '@dcl/catalyst-storage'
-import { ValidateFn } from '@dcl/content-validator'
 import { EntityType, EthAddress } from '@dcl/schemas'
 import { createSynchronizer } from '@dcl/snapshots-fetcher'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
@@ -37,20 +36,15 @@ import { createSnapshotGenerator } from './ports/snapshotGenerator'
 import { createSnapshotStorage } from './ports/snapshotStorage'
 import { createSynchronizationState } from './ports/synchronizationState'
 import { createSystemProperties } from './adapters/system-properties'
-import { ContentAuthenticator } from './service/auth/Authenticator'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { PointerManager } from './service/pointers/PointerManager'
 import { ChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
 import { createContentCluster } from './logic/cluster'
 import { createBatchDeployerComponent } from './service/synchronization/batchDeployer'
 import { createRetryFailedDeployments } from './service/synchronization/retryFailedDeployments'
-import { createServerValidator } from './service/validations/server'
-import {
-  createExternalCalls,
-  createIgnoreBlockchainValidator,
-  createOnChainValidator,
-  createSubgraphValidator
-} from './service/validations/validator'
+import { createContentValidator } from './adapters/content-validator'
+import { createAuthenticator } from './logic/authenticator'
+import { createServerValidator } from './logic/server-validator'
 import { AppComponents, GlobalContext } from './types'
 import { createJobComponent } from '@dcl/job-component'
 import { createDeploymentsComponent } from './logic/deployments'
@@ -84,7 +78,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const l1HttpProviderUrl: string = env.getConfig(EnvironmentConfig.L1_HTTP_PROVIDER_URL)
   const l2HttpProviderUrl: string = env.getConfig(EnvironmentConfig.L2_HTTP_PROVIDER_URL)
-  const useOnChainValidator = !!(l1HttpProviderUrl && l2HttpProviderUrl)
 
   const l2Network = ethNetwork === 'mainnet' ? 'polygon' : 'amoy'
 
@@ -134,7 +127,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
         env.getConfig(EnvironmentConfig.ADDITIONAL_DECENTRALAND_ADDRESS)
       ]
     : [env.getConfig(EnvironmentConfig.DECENTRALAND_ADDRESS)]
-  const authenticator = new ContentAuthenticator(l1Provider, decentralandAddresses as EthAddress[])
+  const authenticator = createAuthenticator(l1Provider, decentralandAddresses as EthAddress[])
 
   const contentCluster = createContentCluster(
     {
@@ -163,41 +156,17 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     }
   )
 
-  const externalCalls = await createExternalCalls({
+  const validator = await createContentValidator({
     storage,
     authenticator,
     env,
-    logs
+    logs,
+    metrics,
+    config,
+    fetcher,
+    l1Provider,
+    l2Provider
   })
-
-  const ignoreBlockChainAccess = env.getConfig(EnvironmentConfig.IGNORE_BLOCKCHAIN_ACCESS_CHECKS) === 'true'
-
-  let validate: ValidateFn
-  if (ignoreBlockChainAccess) {
-    validate = await createIgnoreBlockchainValidator({ logs, externalCalls })
-  } else if (useOnChainValidator) {
-    validate = await createOnChainValidator(
-      {
-        env,
-        metrics,
-        externalCalls,
-        logs
-      },
-      l1Provider,
-      l2Provider
-    )
-  } else {
-    validate = await createSubgraphValidator({
-      env,
-      metrics,
-      fetcher,
-      config,
-      externalCalls,
-      logs
-    })
-  }
-
-  const validator = { validate }
 
   const serverValidator = createServerValidator({ failedDeployments })
 
@@ -416,7 +385,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     storage,
     authenticator,
     migrationManager,
-    externalCalls,
     validator,
     serverValidator,
     garbageCollectionManager,
