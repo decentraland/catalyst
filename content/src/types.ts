@@ -1,5 +1,7 @@
 import { IContentStorageComponent, IFileSystemComponent } from '@dcl/catalyst-storage'
-import { ExternalCalls, ValidateFn } from '@dcl/content-validator'
+import { IContentValidator } from './adapters/content-validator'
+import { IAuthenticator } from './logic/authenticator'
+import { ServerValidator } from './logic/server-validator'
 import { EntityType, SyncDeployment } from '@dcl/schemas'
 import { IDeployerComponent, SynchronizerComponent } from '@dcl/snapshots-fetcher'
 import { IJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
@@ -35,13 +37,11 @@ import { ISequentialTaskExecutorComponent } from './adapters/sequential-task-exe
 import { SnapshotGenerator } from './ports/snapshotGenerator'
 import { SynchronizationState } from './ports/synchronizationState'
 import { SystemProperties } from './adapters/system-properties'
-import { ContentAuthenticator } from './service/auth/Authenticator'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { PointerManager } from './service/pointers/PointerManager'
 import { IChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
 import { IContentClusterComponent } from './logic/cluster'
 import { IRetryFailedDeploymentsComponent } from './service/synchronization/retryFailedDeployments'
-import { ServerValidator } from './service/validations/server'
 import { ProcessedSnapshotsStorageComponent } from './ports/processedSnapshotStorage'
 import ms from 'ms'
 import { IDeploymentsComponent } from './logic/deployments'
@@ -98,13 +98,10 @@ export type AppComponents = {
   failedDeployments: IFailedDeploymentsComponent
   deployRateLimiter: IDeployRateLimiterComponent
   storage: IContentStorageComponent
-  authenticator: ContentAuthenticator
+  authenticator: IAuthenticator
   migrationManager: MigrationExecutor
   serverValidator: ServerValidator
-  externalCalls: ExternalCalls
-  validator: {
-    validate: ValidateFn
-  }
+  validator: IContentValidator
   garbageCollectionManager: GarbageCollectionManager
   systemProperties: SystemProperties
   daoClient: DAOComponent
