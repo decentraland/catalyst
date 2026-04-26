@@ -8,7 +8,7 @@ import { createTestMetricsComponent } from '@dcl/metrics'
 import assert from 'assert'
 import { HTTPProvider } from 'eth-connect'
 
-import { isEntityContentUnchanged } from '../../../src/ports/deployer'
+import { isEntityContentUnchanged } from '../../../src/logic/deployment-service'
 import { DEFAULT_ENTITIES_CACHE_SIZE, Environment, EnvironmentConfig } from '../../../src/Environment'
 import {
   Deployment,
@@ -27,7 +27,8 @@ import { createActiveEntitiesComponent } from '../../../src/logic/active-entitie
 import { Denylist } from '../../../src/adapters/denylist'
 import { createNoOpDeployRateLimiter } from '../../mocks/deploy-rate-limiter-mock'
 import { createDeployedEntitiesBloomFilter } from '../../../src/adapters/deployed-entities-bloom-filter'
-import { createDeployer } from '../../../src/ports/deployer'
+import { createDeploymentService } from '../../../src/logic/deployment-service'
+import { createPointerLockManager } from '../../../src/logic/pointer-lock-manager'
 import { createFailedDeployments } from '../../../src/ports/failedDeployments'
 import { createTestDatabaseComponent } from '../../../src/ports/postgres'
 import { createSequentialTaskExecutor } from '../../../src/adapters/sequential-task-executor'
@@ -226,9 +227,11 @@ describe('Deployer', function () {
       deployments
     })
     await failedDeployments.start()
+    const pointerLockManager = createPointerLockManager()
     const deployerComponents = {
       env,
       pointerManager,
+      pointerLockManager,
       failedDeployments,
       deployRateLimiter,
       storage,
@@ -242,7 +245,7 @@ describe('Deployer', function () {
       activeEntities,
       denylist
     }
-    const deployer = createDeployer(deployerComponents)
+    const deployer = createDeploymentService(deployerComponents)
     return {
       ...deployer,
       components: deployerComponents

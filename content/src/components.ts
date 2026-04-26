@@ -28,7 +28,8 @@ import { createSnapshotsRepository } from './adapters/snapshots-repository'
 import { createDenylist } from './adapters/denylist'
 import { createDeployRateLimiter } from './adapters/deploy-rate-limiter'
 import { createDeployedEntitiesBloomFilter } from './adapters/deployed-entities-bloom-filter'
-import { createDeployer } from './ports/deployer'
+import { createDeploymentService } from './logic/deployment-service'
+import { createPointerLockManager } from './logic/pointer-lock-manager'
 import { createFailedDeployments } from './ports/failedDeployments'
 import { createDatabaseComponent } from './ports/postgres'
 import { createProcessedSnapshotStorage } from './ports/processedSnapshotStorage'
@@ -184,12 +185,15 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     deployments
   })
 
-  const deployer = createDeployer({
+  const pointerLockManager = createPointerLockManager()
+
+  const deployer = createDeploymentService({
     metrics,
     storage,
     failedDeployments,
     deployRateLimiter,
     pointerManager,
+    pointerLockManager,
     validator,
     serverValidator,
     env,
@@ -371,6 +375,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     pointersRepository,
     snapshotsRepository,
     deployer,
+    pointerLockManager,
     metrics,
     fetcher,
     logs,
