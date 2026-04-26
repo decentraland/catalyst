@@ -17,7 +17,8 @@ import { CURRENT_VERSION, CURRENT_COMMIT_HASH, Environment, EnvironmentConfig } 
 import { splitByCommaTrimAndRemoveEmptyElements } from './logic/config-helpers'
 import { metricsDeclaration } from './metrics'
 import { createMigrationExecutor } from './migrations/migration-executor'
-import { createActiveEntitiesComponent } from './ports/activeEntities'
+import { createActiveEntitiesRepository } from './adapters/active-entities-repository'
+import { createActiveEntitiesComponent } from './logic/active-entities'
 import { createContentFilesRepository } from './adapters/content-files-repository'
 import { createCustomDAOComponent, createDAOComponent } from './adapters/dao-client'
 import { createDeploymentsRepository } from './adapters/deployments-repository'
@@ -26,7 +27,7 @@ import { createPointersRepository } from './adapters/pointers-repository'
 import { createSnapshotsRepository } from './adapters/snapshots-repository'
 import { createDenylist } from './adapters/denylist'
 import { createDeployRateLimiter } from './adapters/deploy-rate-limiter'
-import { createDeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
+import { createDeployedEntitiesBloomFilter } from './adapters/deployed-entities-bloom-filter'
 import { createDeployer } from './ports/deployer'
 import { createFailedDeployments } from './ports/failedDeployments'
 import { createDatabaseComponent } from './ports/postgres'
@@ -37,7 +38,7 @@ import { createSnapshotStorage } from './ports/snapshotStorage'
 import { createSynchronizationState } from './ports/synchronizationState'
 import { createSystemProperties } from './adapters/system-properties'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
-import { PointerManager } from './service/pointers/PointerManager'
+import { PointerManager } from './logic/pointer-manager'
 import { ChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
 import { createContentCluster } from './logic/cluster'
 import { createBatchDeployerComponent } from './service/synchronization/batchDeployer'
@@ -96,6 +97,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const database = await createDatabaseComponent({ logs, env, metrics })
 
+  const activeEntitiesRepository = createActiveEntitiesRepository()
   const contentFilesRepository = createContentFilesRepository()
   const deploymentsRepository = createDeploymentsRepository()
   const failedDeploymentsRepository = createFailedDeploymentsRepository()
@@ -365,6 +367,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     contentFilesRepository,
     deploymentsRepository,
     failedDeploymentsRepository,
+    activeEntitiesRepository,
     pointersRepository,
     snapshotsRepository,
     deployer,

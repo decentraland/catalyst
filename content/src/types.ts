@@ -20,7 +20,8 @@ import qs from 'qs'
 import { Environment } from './Environment'
 import { metricsDeclaration } from './metrics'
 import { MigrationExecutor } from './migrations/migration-executor'
-import { ActiveEntities } from './ports/activeEntities'
+import { IActiveEntitiesRepository } from './adapters/active-entities-repository'
+import { ActiveEntities } from './logic/active-entities'
 import { IContentFilesRepository } from './adapters/content-files-repository'
 import { DAOComponent } from './adapters/dao-client'
 import { Denylist } from './adapters/denylist'
@@ -29,7 +30,7 @@ import { IDeployRateLimiterComponent } from './adapters/deploy-rate-limiter'
 import { IFailedDeploymentsRepository } from './adapters/failed-deployments-repository'
 import { IPointersRepository } from './adapters/pointers-repository'
 import { ISnapshotsRepository } from './adapters/snapshots-repository'
-import { DeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
+import { DeployedEntitiesBloomFilter } from './adapters/deployed-entities-bloom-filter'
 import { Deployer } from './ports/deployer'
 import { IFailedDeploymentsComponent } from './ports/failedDeployments'
 import { IDatabaseComponent } from './ports/postgres'
@@ -38,7 +39,7 @@ import { SnapshotGenerator } from './ports/snapshotGenerator'
 import { SynchronizationState } from './ports/synchronizationState'
 import { SystemProperties } from './adapters/system-properties'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
-import { PointerManager } from './service/pointers/PointerManager'
+import { PointerManager } from './logic/pointer-manager'
 import { IChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
 import { IContentClusterComponent } from './logic/cluster'
 import { IRetryFailedDeploymentsComponent } from './service/synchronization/retryFailedDeployments'
@@ -75,6 +76,7 @@ export type AppComponents = {
   downloadQueue: IJobQueue
   logs: ILoggerComponent
   database: IDatabaseComponent
+  activeEntitiesRepository: IActiveEntitiesRepository
   contentFilesRepository: IContentFilesRepository
   deploymentsRepository: IDeploymentsRepository
   failedDeploymentsRepository: IFailedDeploymentsRepository
