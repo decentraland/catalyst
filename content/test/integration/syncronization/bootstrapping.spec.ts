@@ -13,6 +13,11 @@ import { buildDeployData } from '../E2ETestUtils'
 import { startProgramAndWaitUntilBootstrapFinishes, TestProgram } from '../TestProgram'
 import { State } from '../../../src/ports/synchronizationState'
 
+// Captured at module load time, before any beforeEach installs a Date.now spy.
+// fakeNow uses this to read real elapsed time without re-entering its own mock
+// (which would recurse, since Date.now in this suite is replaced by fakeNow).
+const realDateNow = Date.now.bind(Date)
+
 describe('Bootstrapping synchronization tests', function () {
   const getTestEnv = setupTestEnvironment()
   let server1: TestProgram, server2: TestProgram
@@ -38,10 +43,9 @@ describe('Bootstrapping synchronization tests', function () {
   beforeEach(async () => {
     ;[server1, server2] = await getTestEnv().configServer().andBuildMany(2)
 
-    const now = Date.now()
+    const now = realDateNow()
     baseTimestamp = 0
-    fakeNow = () => Date.now() - now + initialTimestamp + baseTimestamp
-    jest.spyOn(Date, 'now').mockImplementation(fakeNow)
+    fakeNow = () => realDateNow() - now + initialTimestamp + baseTimestamp
     jest.spyOn(Date, 'now').mockImplementation(fakeNow)
     jest.spyOn(server1.components.validator, 'validate').mockResolvedValue({ ok: true })
     jest.spyOn(server2.components.validator, 'validate').mockResolvedValue({ ok: true })
