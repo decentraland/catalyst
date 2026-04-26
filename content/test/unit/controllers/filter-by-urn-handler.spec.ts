@@ -1,5 +1,5 @@
 import { createMockedActiveEntitiesComponent } from '../../mocks/active-entities-component-mock'
-import { getEntitiesByCollectionPointerPrefixHandler } from '../../../src/controller/handlers/filter-by-urn-handler'
+import { getEntitiesByCollectionPointerPrefixHandler } from '../../../src/controllers/handlers/filter-by-urn-handler'
 import { HandlerContextWithPath, InvalidRequestError } from '../../../src/types'
 import { ActiveEntities } from '../../../src/logic/active-entities'
 import { createMockedEntity } from '../../mocks/entity-mock'
