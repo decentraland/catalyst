@@ -1,6 +1,6 @@
 import { I18N, BodyShape, Emote, StandardProps, Wearable, WearableRepresentation, Entity } from '@dcl/schemas'
-import { Environment, EnvironmentConfig } from '../Environment'
-import { findImageHash, findThumbnailHash } from './entities'
+import { Environment, EnvironmentConfig } from '../../Environment'
+import { findImageHash, findThumbnailHash } from '../entities'
 
 type ERC721StandardTrait = {
   trait_type: string
@@ -54,7 +54,7 @@ function getItemData(itemMetadata: Wearable | Emote): ItemData {
   return (itemMetadata as Emote).emoteDataADR74 ?? (itemMetadata as Wearable).data
 }
 
-export function formatERC21Entity(env: Environment, urn: string, entity: Entity, emission: string | undefined) {
+export function formatERC721Entity(env: Environment, urn: string, entity: Entity, emission: string | undefined) {
   const baseUrl = env.getConfig<string>(EnvironmentConfig.CONTENT_SERVER_ADDRESS)
 
   const itemMetadata: (Wearable | Emote) & StandardProps = entity.metadata

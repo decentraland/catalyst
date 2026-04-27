@@ -4,13 +4,8 @@ import path from 'path'
 import RequestManager, { ContractFactory, HTTPProvider, toData } from 'eth-connect'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { ContractAddress } from '@dcl/schemas'
-import { erc1155Abi, erc721Abi, sendSingle } from './contract-helpers'
-
-export enum ContractType {
-  ERC721 = 'erc721',
-  ERC1155 = 'erc1155',
-  UNKNOWN = 'unknown'
-}
+import { erc1155Abi, erc721Abi, sendSingle } from '../contract-helpers'
+import { ContractType, ThirdPartyContractRegistry } from './types'
 
 export function loadCacheFile(file: string): Record<string, ContractType> {
   try {
@@ -27,13 +22,6 @@ export function loadCacheFile(file: string): Record<string, ContractType> {
 export function saveCacheFile(file: string, data: any): void {
   const jsonData = JSON.stringify(data, null, 2)
   fs.writeFileSync(file, jsonData, 'utf-8')
-}
-
-export type ThirdPartyContractRegistry = {
-  isErc721(contractAddress: ContractAddress): boolean
-  isErc1155(contractAddress: ContractAddress): boolean
-  isUnknown(contractAddress: ContractAddress): boolean
-  ensureContractsKnown(contractAddresses: ContractAddress[]): Promise<void>
 }
 
 export async function createThirdPartyContractRegistry(

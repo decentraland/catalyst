@@ -1,18 +1,22 @@
 import { ItemChecker, L1Checker, L2Checker } from '@dcl/content-validator'
-import { inputBlockNumberFormatter, inputCallFormatter } from './formatters'
 import { ContractFactory, HTTPProvider, RequestManager, RPCSendableMessage, toData } from 'eth-connect'
 import { checkerAbi, l1Contracts, l2Contracts } from '@dcl/catalyst-contracts'
 import { code } from '@dcl/catalyst-contracts/dist/checkerByteCode'
 import { parseUrn } from '@dcl/urn-resolver'
 import { EthAddress } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
-import { sendBatch } from './contract-helpers'
+import { sendBatch } from '../contract-helpers'
+import { inputBlockNumberFormatter, inputCallFormatter } from '../formatters'
 
 type CollectionItem = {
   contract: string
   nftId: string
   item: string
 }
+
+// TODO: convert these factories to the WKC `Pick<AppComponents, ...>` signature.
+// They currently take positional args (provider, network, logs) for historical reasons; the
+// folder layout matches the WKC component shape but the factory signatures don't yet.
 
 export async function createL1Checker(provider: HTTPProvider, network: 'mainnet' | 'sepolia'): Promise<L1Checker> {
   const contracts = l1Contracts[network]

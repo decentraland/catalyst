@@ -2,8 +2,8 @@ import { ThirdPartyItemChecker } from '@dcl/content-validator'
 import RequestManager, { ContractFactory, HTTPProvider, RPCSendableMessage, toData } from 'eth-connect'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { BlockchainCollectionThirdPartyItem, parseUrn } from '@dcl/urn-resolver'
-import { ContractType, ThirdPartyContractRegistry } from './third-party-contract-registry'
-import { erc1155Abi, erc721Abi, sendBatch } from './contract-helpers'
+import { erc1155Abi, erc721Abi, sendBatch } from '../contract-helpers'
+import { ContractType, ThirdPartyContractRegistry } from '../third-party-contract-registry'
 
 type TempData = {
   urn: string

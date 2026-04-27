@@ -1,7 +1,5 @@
 import { SnapshotMetadata, TimeRange } from '@dcl/snapshots-fetcher/dist/types'
-import { DatabaseClient } from 'src/ports/postgres'
-import { createFileWriter, IFile } from '../adapters/content-file-writer'
-import { AppComponents } from '../types'
+import { createFileWriter, IFile } from '../../adapters/content-file-writer'
 import {
   deleteSnapshotsInTimeRange,
   findSnapshotsStrictlyContainedInTimeRange,
@@ -10,13 +8,15 @@ import {
   saveSnapshot,
   snapshotIsOutdated,
   streamActiveDeploymentsInTimeRange
-} from '../adapters/snapshots-repository'
+} from '../../adapters/snapshots-repository'
+import { DatabaseClient } from '../../ports/postgres'
+import { AppComponents } from '../../types'
 import {
   divideTimeInYearsMonthsWeeksAndDays,
   intervalSizeLabel,
   isTimeRangeCoveredBy,
   MS_PER_MONTH
-} from './time-range'
+} from '../time-range'
 
 export async function generateAndStoreSnapshot(
   components: Pick<AppComponents, 'fs' | 'metrics' | 'storage' | 'logs' | 'denylist' | 'staticConfigs'>,
