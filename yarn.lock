@@ -335,15 +335,14 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@^7.1.5":
-  version "7.1.5"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-7.1.5.tgz#746babee0349bd9740e155e741a6fb8a434d51a6"
-  integrity sha512-6tHaap+mOnbqoR3SnSPN/VoNk9L3wiNmJ9vQS5jc7OcofzNx8pZceKHzdvG3vt2ILyUGAFYTZDfz9Pa/VTm9MA==
+"@dcl/content-validator@https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/feat/spring-bones-metadata/dcl-content-validator-7.2.1-25001437621.commit-b4ca51a.tgz":
+  version "7.2.1-25001437621.commit-b4ca51a"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl/content-validator/branch/feat/spring-bones-metadata/dcl-content-validator-7.2.1-25001437621.commit-b4ca51a.tgz#7c37422303b2cb6cf98440ef52f577bd58692852"
   dependencies:
     "@dcl/block-indexer" "^1.1.2"
     "@dcl/content-hash-tree" "^1.1.4"
     "@dcl/hashing" "^3.0.4"
-    "@dcl/schemas" "^26.1.0"
+    "@dcl/schemas" "https://sdk-team-cdn.decentraland.org/@dcl/schemas/branch/feat/spring-bones-metadata/dcl-schemas-26.1.1-24994305798.commit-9523ab7.tgz"
     "@dcl/urn-resolver" "^3.6.0"
     "@well-known-components/interfaces" "^1.4.3"
     "@well-known-components/thegraph-component" "^1.6.0"
@@ -430,6 +429,15 @@
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
     ajv-keywords "^5.1.0"
+
+"@dcl/schemas@https://sdk-team-cdn.decentraland.org/@dcl/schemas/branch/feat/spring-bones-metadata/dcl-schemas-26.1.1-24994305798.commit-9523ab7.tgz":
+  version "26.1.1-24994305798.commit-9523ab7"
+  resolved "https://sdk-team-cdn.decentraland.org/@dcl/schemas/branch/feat/spring-bones-metadata/dcl-schemas-26.1.1-24994305798.commit-9523ab7.tgz#a5b162d71d688cc2c35420d1a4c25fb54f7f3229"
+  dependencies:
+    ajv "^8.11.0"
+    ajv-errors "^3.0.0"
+    ajv-keywords "^5.1.0"
+    mitt "^3.0.1"
 
 "@dcl/snapshots-fetcher@9.2.3":
   version "9.2.3"
