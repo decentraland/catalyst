@@ -2,7 +2,7 @@ import { createLogComponent } from '@well-known-components/logger'
 import { resolve } from 'path'
 import { Readable } from 'stream'
 import { Environment, EnvironmentConfig } from '../../../src/Environment'
-import { createDenylist, Denylist } from '../../../src/ports/denylist'
+import { createDenylist, Denylist } from '../../../src/adapters/denylist'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
 import { stopAllComponents } from '../../../src/logic/components-lifecycle'
 

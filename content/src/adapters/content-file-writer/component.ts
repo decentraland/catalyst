@@ -2,15 +2,8 @@ import { hashV1 } from '@dcl/hashing'
 import { checkFileExists } from '@dcl/snapshots-fetcher/dist/utils'
 import crypto from 'crypto'
 import path from 'path'
-import { AppComponents } from '../types'
-
-export type IFile = {
-  filePath: string
-  appendDebounced: (buffer: string) => Promise<void>
-  close: () => Promise<void>
-  delete: () => Promise<void>
-  store: () => Promise<string>
-}
+import { AppComponents } from '../../types'
+import { IFile } from './types'
 
 export async function createFileWriter(
   components: Pick<AppComponents, 'logs' | 'staticConfigs' | 'fs' | 'storage'>,

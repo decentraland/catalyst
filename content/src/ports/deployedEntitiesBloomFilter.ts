@@ -13,7 +13,7 @@ export type DeployedEntitiesBloomFilter = {
 }
 
 export function createDeployedEntitiesBloomFilter(
-  components: Pick<AppComponents, 'database' | 'logs' | 'clock'>
+  components: Pick<AppComponents, 'database' | 'logs'>
 ): DeployedEntitiesBloomFilter & IBaseComponent {
   const logger = components.logs.getLogger('deployedEntitiesBloomFilter')
 
@@ -42,7 +42,7 @@ export function createDeployedEntitiesBloomFilter(
     if (isTimeRangeLoaded(timeRange)) {
       return
     }
-    const start = components.clock.now()
+    const start = Date.now()
     const interval = `[${new Date(timeRange.initTimestamp).toISOString()}, ${new Date(
       timeRange.endTimestamp
     ).toISOString()}]`
@@ -54,7 +54,7 @@ export function createDeployedEntitiesBloomFilter(
     }
     logger.info(`Bloom filter loaded in.`, {
       interval,
-      timeMs: components.clock.now() - start,
+      timeMs: Date.now() - start,
       elements
     })
     addTimeRangeLoaded(timeRange)
@@ -78,10 +78,10 @@ export function createDeployedEntitiesBloomFilter(
       return true
     },
     async start() {
-      const twentyMinutesAgo = components.clock.now() - 1000 * 60 * 15
-      await addAllInTimeRange({ initTimestamp: twentyMinutesAgo, endTimestamp: components.clock.now() })
+      const twentyMinutesAgo = Date.now() - 1000 * 60 * 15
+      await addAllInTimeRange({ initTimestamp: twentyMinutesAgo, endTimestamp: Date.now() })
       initialized.resolve()
-      startedTimestamp = components.clock.now()
+      startedTimestamp = Date.now()
     },
     addAllInTimeRange
   }

@@ -3,14 +3,9 @@ import { IBaseComponent } from '@well-known-components/interfaces'
 import { resolve } from 'path'
 import { createInterface } from 'readline'
 import { URL } from 'url'
-import { EnvironmentConfig } from '../Environment'
-import { AppComponents } from '../types'
-
-export type Denylist = {
-  isDenylisted: (id: string) => boolean
-  start?: () => Promise<void>
-  stop?: () => Promise<void>
-}
+import { EnvironmentConfig } from '../../Environment'
+import { AppComponents } from '../../types'
+import { Denylist } from './types'
 
 export async function createDenylist(
   components: Pick<AppComponents, 'env' | 'logs' | 'fetcher'> & {

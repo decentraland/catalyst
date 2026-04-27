@@ -47,8 +47,7 @@ function createMockComponents() {
       getAllFailedDeployments: jest.fn(),
       removeFailedDeployment: jest.fn(),
       start: jest.fn()
-    },
-    clock: { now: () => Date.now() }
+    }
   } as any
 }
 

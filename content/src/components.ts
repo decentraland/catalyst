@@ -19,20 +19,19 @@ import { splitByCommaTrimAndRemoveEmptyElements } from './logic/config-helpers'
 import { metricsDeclaration } from './metrics'
 import { createMigrationExecutor } from './migrations/migration-executor'
 import { createActiveEntitiesComponent } from './ports/activeEntities'
-import { createClock } from './ports/clock'
-import { createCustomDAOComponent, createDAOComponent } from './ports/dao-servers-getter'
-import { createDenylist } from './ports/denylist'
-import { createDeployRateLimiter } from './ports/deployRateLimiterComponent'
+import { createCustomDAOComponent, createDAOComponent } from './adapters/dao-client'
+import { createDenylist } from './adapters/denylist'
+import { createDeployRateLimiter } from './adapters/deploy-rate-limiter'
 import { createDeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
 import { createDeployer } from './ports/deployer'
 import { createFailedDeployments } from './ports/failedDeployments'
 import { createDatabaseComponent } from './ports/postgres'
 import { createProcessedSnapshotStorage } from './ports/processedSnapshotStorage'
-import { createSequentialTaskExecutor } from './ports/sequecuentialTaskExecutor'
+import { createSequentialTaskExecutor } from './logic/sequential-task-executor'
 import { createSnapshotGenerator } from './ports/snapshotGenerator'
 import { createSnapshotStorage } from './ports/snapshotStorage'
 import { createSynchronizationState } from './ports/synchronizationState'
-import { createSystemProperties } from './ports/system-properties'
+import { createSystemProperties } from './adapters/system-properties'
 import { ContentAuthenticator } from './service/auth/Authenticator'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { PointerManager } from './service/pointers/PointerManager'
@@ -52,7 +51,6 @@ import { createJobComponent } from '@dcl/job-component'
 import { createDeploymentsComponent } from './logic/deployments'
 
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
-  const clock = createClock()
   const config = env
   const metrics = await createMetricsComponent(metricsDeclaration, { config })
   const tracer = createTracerComponent()
@@ -131,8 +129,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     {
       daoClient,
       logs,
-      env,
-      clock
+      env
     },
     env.getConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL)
   )
@@ -191,9 +188,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const validator = { validate }
 
-  const serverValidator = createServerValidator({ failedDeployments, clock })
+  const serverValidator = createServerValidator({ failedDeployments })
 
-  const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, clock })
+  const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs })
   const deployments = createDeploymentsComponent({ database, logs })
   const activeEntities = createActiveEntitiesComponent({
     database,
@@ -219,12 +216,11 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     database,
     deployedEntitiesBloomFilter,
     activeEntities,
-    denylist,
-    clock
+    denylist
   })
 
   const garbageCollectionManager = new GarbageCollectionManager(
-    { clock, database, metrics, logs, storage, systemProperties, activeEntities },
+    { database, metrics, logs, storage, systemProperties, activeEntities },
     env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION),
     env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL)
   )
@@ -239,7 +235,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     env.getConfig<string>(EnvironmentConfig.SYNC_IGNORED_ENTITY_TYPES)
   )
 
-  const processedSnapshotStorage = createProcessedSnapshotStorage({ database, clock, logs })
+  const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs })
 
   const batchDeployer = createBatchDeployerComponent(
     {
@@ -252,8 +248,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       staticConfigs,
       deployedEntitiesBloomFilter: deployedEntitiesBloomFilter,
       storage,
-      failedDeployments,
-      clock
+      failedDeployments
     },
     {
       ignoredTypes: new Set(ignoredTypes),
@@ -334,8 +329,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     staticConfigs,
     storage,
     database,
-    denylist,
-    clock
+    denylist
   })
 
   const migrationManager = createMigrationExecutor({ logs, env })
@@ -421,7 +415,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     fs,
     snapshotGenerator,
     processedSnapshotStorage,
-    clock,
     snapshotStorage,
     config,
     l1Provider,

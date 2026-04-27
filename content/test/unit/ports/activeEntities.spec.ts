@@ -11,8 +11,7 @@ import { DEFAULT_ENTITIES_CACHE_SIZE, Environment, EnvironmentConfig } from '../
 import * as deployments from '../../../src/logic/deployments'
 import { metricsDeclaration } from '../../../src/metrics'
 import { ActiveEntities, createActiveEntitiesComponent } from '../../../src/ports/activeEntities'
-import { createClock } from '../../../src/ports/clock'
-import { Denylist } from '../../../src/ports/denylist'
+import { Denylist } from '../../../src/adapters/denylist'
 import { createDeployedEntitiesBloomFilter } from '../../../src/ports/deployedEntitiesBloomFilter'
 import { createNoOpDeployRateLimiter } from '../../mocks/deploy-rate-limiter-mock'
 import { createFailedDeployments } from '../../../src/ports/failedDeployments'
@@ -21,7 +20,7 @@ import { EntityVersion } from '../../../src/types'
 import { NoOpServerValidator, NoOpValidator } from '../../helpers/service/validations/NoOpValidator'
 import { createDeploymentsComponentMock } from '../../mocks/deployments-component-mock'
 import { NoOpPointerManager } from '../service/pointers/NoOpPointerManager'
-import { createMockedSequentialTaskExecutorComponent } from '../../mocks/sequential-task-executor-componen-mock'
+import { createMockedSequentialTaskExecutorComponent } from '../../mocks/sequential-task-executor-component-mock'
 import { createDatabaseMockedComponent } from '../../mocks/database-component-mock'
 import { createLogsMockedComponent } from '../../mocks/logger-component-mock'
 import { IDeploymentsComponent } from '../../../src/logic/deployments'
@@ -452,7 +451,6 @@ async function buildComponents() {
   const env = new Environment()
   env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, 'inexistent')
   env.setConfig(EnvironmentConfig.DENYLIST_FILE_NAME, 'file')
-  const clock = createClock()
   const serverValidator = new NoOpServerValidator()
   const logs = createLogsMockedComponent()
   const deployRateLimiter = createNoOpDeployRateLimiter()
@@ -464,7 +462,7 @@ async function buildComponents() {
     new HTTPProvider('https://rpc.decentraland.org/mainnet?project=catalyst-ci'),
     [DECENTRALAND_ADDRESS]
   )
-  const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, clock })
+  const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs })
   env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)
   const denylist: Denylist = { isDenylisted: () => false }
   const sequentialExecutor = createMockedSequentialTaskExecutorComponent()
@@ -483,7 +481,6 @@ async function buildComponents() {
     env,
     pointerManager,
     failedDeployments,
-    clock,
     deployRateLimiter,
     storage,
     validator: new NoOpValidator(),

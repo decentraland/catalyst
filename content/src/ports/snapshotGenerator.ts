@@ -9,10 +9,7 @@ export type SnapshotGenerator = IBaseComponent & {
 }
 
 export function createSnapshotGenerator(
-  components: Pick<
-    AppComponents,
-    'database' | 'fs' | 'metrics' | 'storage' | 'logs' | 'denylist' | 'staticConfigs' | 'clock'
-  >
+  components: Pick<AppComponents, 'database' | 'fs' | 'metrics' | 'storage' | 'logs' | 'denylist' | 'staticConfigs'>
 ): SnapshotGenerator {
   const logger = components.logs.getLogger('snapshot-generator')
   const generationInterval = ms('6h')
@@ -28,7 +25,7 @@ export function createSnapshotGenerator(
       currentSnapshots = await generateSnapshotsInMultipleTimeRanges(components, {
         // IT IS IMPORTANT THIS TIMESTAMP NEVER CHANGES; IF IT DOES, THE WHOLE SNAPSHOTS SET WILL BE REGENERATED.
         initTimestamp: 1577836800000,
-        endTimestamp: components.clock.now()
+        endTimestamp: Date.now()
       })
     } catch (error) {
       logger.error(`Failed generating snapshots`)

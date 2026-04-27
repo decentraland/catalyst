@@ -1,15 +1,7 @@
-// TODO: move this port to WKC repository
-
 import { ILoggerComponent, IMetricsComponent } from '@well-known-components/interfaces'
 import { validateMetricsDeclaration } from '@dcl/metrics'
 import PQueue from 'p-queue'
-
-export type ISequentialTaskExecutorComponent = {
-  /**
-   * Runs sequential jobs with a max concurrency of 1 per jobName.
-   */
-  run<T>(jobName: string, fn: () => Promise<T>): Promise<T>
-}
+import { ISequentialTaskExecutorComponent } from './types'
 
 type SequentialTaskComponents = {
   metrics: IMetricsComponent<keyof typeof sequentialJobMetrics>

@@ -19,18 +19,17 @@ import { Environment } from './Environment'
 import { metricsDeclaration } from './metrics'
 import { MigrationExecutor } from './migrations/migration-executor'
 import { ActiveEntities } from './ports/activeEntities'
-import { Clock } from './ports/clock'
-import { DAOComponent } from './ports/dao-servers-getter'
-import { Denylist } from './ports/denylist'
-import { IDeployRateLimiterComponent } from './ports/deployRateLimiterComponent'
+import { DAOComponent } from './adapters/dao-client'
+import { Denylist } from './adapters/denylist'
+import { IDeployRateLimiterComponent } from './adapters/deploy-rate-limiter'
 import { DeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
 import { Deployer } from './ports/deployer'
 import { IFailedDeploymentsComponent } from './ports/failedDeployments'
 import { IDatabaseComponent } from './ports/postgres'
-import { ISequentialTaskExecutorComponent } from './ports/sequecuentialTaskExecutor'
+import { ISequentialTaskExecutorComponent } from './logic/sequential-task-executor'
 import { SnapshotGenerator } from './ports/snapshotGenerator'
 import { SynchronizationState } from './ports/synchronizationState'
-import { SystemProperties } from './ports/system-properties'
+import { SystemProperties } from './adapters/system-properties'
 import { ContentAuthenticator } from './service/auth/Authenticator'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { PointerManager } from './service/pointers/PointerManager'
@@ -107,7 +106,6 @@ export type AppComponents = {
   fs: IFileSystemComponent
   snapshotGenerator: SnapshotGenerator
   processedSnapshotStorage: ProcessedSnapshotsStorageComponent
-  clock: Clock
   snapshotStorage: ISnapshotStorageComponent
   l1Provider: HTTPProvider
   tracer: ITracerComponent

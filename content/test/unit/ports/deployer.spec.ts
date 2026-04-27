@@ -24,13 +24,13 @@ import * as deploymentLogic from '../../../src/logic/deployments'
 import * as deployments from '../../../src/logic/deployments'
 import { metricsDeclaration } from '../../../src/metrics'
 import { createActiveEntitiesComponent } from '../../../src/ports/activeEntities'
-import { Denylist } from '../../../src/ports/denylist'
+import { Denylist } from '../../../src/adapters/denylist'
 import { createNoOpDeployRateLimiter } from '../../mocks/deploy-rate-limiter-mock'
 import { createDeployedEntitiesBloomFilter } from '../../../src/ports/deployedEntitiesBloomFilter'
 import { createDeployer } from '../../../src/ports/deployer'
 import { createFailedDeployments } from '../../../src/ports/failedDeployments'
 import { createTestDatabaseComponent } from '../../../src/ports/postgres'
-import { createSequentialTaskExecutor } from '../../../src/ports/sequecuentialTaskExecutor'
+import { createSequentialTaskExecutor } from '../../../src/logic/sequential-task-executor'
 import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
 import { DELTA_POINTER_RESULT } from '../../../src/service/pointers/PointerManager'
 import { EntityVersion } from '../../../src/types'
@@ -189,7 +189,6 @@ describe('Deployer', function () {
   })
 
   async function buildDeployer() {
-    const clock = { now: Date.now }
     const database = createTestDatabaseComponent()
     database.queryWithValues = () => Promise.resolve({ rows: [], rowCount: 0 } as any)
     database.transaction = () => Promise.resolve()
@@ -212,7 +211,7 @@ describe('Deployer', function () {
       new HTTPProvider('https://rpc.decentraland.org/mainnet?project=catalyst-ci'),
       [DECENTRALAND_ADDRESS]
     )
-    const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, clock })
+    const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs })
     env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)
     const denylist: Denylist = { isDenylisted: () => false }
     const sequentialExecutor = createSequentialTaskExecutor({ logs, metrics })
@@ -241,8 +240,7 @@ describe('Deployer', function () {
       database,
       deployedEntitiesBloomFilter: deployedEntitiesBloomFilter,
       activeEntities,
-      denylist,
-      clock
+      denylist
     }
     const deployer = createDeployer(deployerComponents)
     return {
