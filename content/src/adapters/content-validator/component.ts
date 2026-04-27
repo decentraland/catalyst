@@ -23,15 +23,24 @@ import { createOnChainClient } from '@dcl/content-validator/dist/validations/acc
 import { createSubgraphAccessCheckValidateFns } from '@dcl/content-validator/dist/validations/access/subgraph'
 import { createTheGraphClient } from '@dcl/content-validator/dist/validations/access/subgraph/the-graph-client'
 import { Authenticator } from '@dcl/crypto'
+import { hashV0, hashV1 } from '@dcl/hashing'
 import { createSubgraphComponent } from '@well-known-components/thegraph-component'
 import RequestManager, { HTTPProvider } from 'eth-connect'
+import { Readable } from 'stream'
 import { EnvironmentConfig } from '../../Environment'
 import { createItemChecker, createL1Checker, createL2Checker } from '../../logic/checker'
-import { AppComponents } from '../../types'
-import { createThirdPartyItemChecker } from '../../logic/third-party-item-checker'
 import { createThirdPartyContractRegistry } from '../../logic/third-party-contract-registry'
-import { hashV0, hashV1 } from '@dcl/hashing'
-import { Readable } from 'stream'
+import { createThirdPartyItemChecker } from '../../logic/third-party-item-checker'
+import { AppComponents } from '../../types'
+import { IContentValidator } from './types'
+
+type ContentValidatorDeps = Pick<
+  AppComponents,
+  'storage' | 'authenticator' | 'env' | 'logs' | 'metrics' | 'config' | 'fetcher'
+> & {
+  l1Provider: HTTPProvider
+  l2Provider: HTTPProvider
+}
 
 const createEthereumProvider = (httpProvider: HTTPProvider): EthereumProvider => {
   const reqMan = new RequestManager(httpProvider)
@@ -45,8 +54,8 @@ const createEthereumProvider = (httpProvider: HTTPProvider): EthereumProvider =>
   }
 }
 
-export async function createExternalCalls(
-  components: Pick<AppComponents, 'storage' | 'authenticator' | 'env' | 'logs'>
+async function createExternalCallsBag(
+  components: Pick<AppComponents, 'storage' | 'authenticator'>
 ): Promise<ExternalCalls> {
   async function calculateFilesHashes(
     files: Map<string, Uint8Array>
@@ -82,11 +91,11 @@ export async function createExternalCalls(
   }
 }
 
-export async function createIgnoreBlockchainValidator(
-  components: Pick<AppComponents, 'logs' | 'externalCalls'>
+async function createIgnoreBlockchainAccessValidateFn(
+  components: Pick<AppComponents, 'logs'>,
+  externalCalls: ExternalCalls
 ): Promise<ValidateFn> {
-  const { logs, externalCalls } = components
-
+  const { logs } = components
   return createValidator({
     logs,
     externalCalls,
@@ -94,12 +103,13 @@ export async function createIgnoreBlockchainValidator(
   })
 }
 
-export async function createOnChainValidator(
-  components: Pick<AppComponents, 'env' | 'metrics' | 'externalCalls' | 'logs'>,
+async function createOnChainValidateFn(
+  components: Pick<AppComponents, 'env' | 'metrics' | 'logs'>,
+  externalCalls: ExternalCalls,
   l1Provider: HTTPProvider,
   l2Provider: HTTPProvider
 ): Promise<ValidateFn> {
-  const { env, metrics, logs, externalCalls } = components
+  const { env, metrics, logs } = components
   const logger = logs.getLogger('OnChainValidator')
   const l1Network: 'mainnet' | 'sepolia' = env.getConfig(EnvironmentConfig.ETH_NETWORK)
   const l2Network = l1Network === 'mainnet' ? 'polygon' : 'amoy'
@@ -183,47 +193,39 @@ export async function createOnChainValidator(
   })
 }
 
-export async function createSubgraphValidator(
-  components: Pick<AppComponents, 'env' | 'metrics' | 'config' | 'externalCalls' | 'logs' | 'fetcher'>
+async function createSubgraphValidateFn(
+  components: Pick<AppComponents, 'env' | 'metrics' | 'config' | 'logs' | 'fetcher'>,
+  externalCalls: ExternalCalls
 ): Promise<ValidateFn> {
-  const { logs, config, externalCalls } = components
-  const baseComponents = { config, fetch: components.fetcher, metrics: components.metrics, logs: components.logs }
+  const { logs, config, env, metrics, fetcher } = components
+  const baseComponents = { config, fetch: fetcher, metrics, logs }
   const subGraphs = {
     L1: {
       landManager: await createSubgraphComponent(
         baseComponents,
-        components.env.getConfig(EnvironmentConfig.LAND_MANAGER_SUBGRAPH_URL)
+        env.getConfig(EnvironmentConfig.LAND_MANAGER_SUBGRAPH_URL)
       ),
-      blocks: await createSubgraphComponent(
-        baseComponents,
-        components.env.getConfig(EnvironmentConfig.BLOCKS_L1_SUBGRAPH_URL)
-      ),
+      blocks: await createSubgraphComponent(baseComponents, env.getConfig(EnvironmentConfig.BLOCKS_L1_SUBGRAPH_URL)),
       collections: await createSubgraphComponent(
         baseComponents,
-        components.env.getConfig(EnvironmentConfig.COLLECTIONS_L1_SUBGRAPH_URL)
+        env.getConfig(EnvironmentConfig.COLLECTIONS_L1_SUBGRAPH_URL)
       ),
-      ensOwner: await createSubgraphComponent(
-        baseComponents,
-        components.env.getConfig(EnvironmentConfig.ENS_OWNER_PROVIDER_URL)
-      )
+      ensOwner: await createSubgraphComponent(baseComponents, env.getConfig(EnvironmentConfig.ENS_OWNER_PROVIDER_URL))
     },
     L2: {
-      blocks: await createSubgraphComponent(
-        baseComponents,
-        components.env.getConfig(EnvironmentConfig.BLOCKS_L2_SUBGRAPH_URL)
-      ),
+      blocks: await createSubgraphComponent(baseComponents, env.getConfig(EnvironmentConfig.BLOCKS_L2_SUBGRAPH_URL)),
       collections: await createSubgraphComponent(
         baseComponents,
-        components.env.getConfig(EnvironmentConfig.COLLECTIONS_L2_SUBGRAPH_URL)
+        env.getConfig(EnvironmentConfig.COLLECTIONS_L2_SUBGRAPH_URL)
       ),
       thirdPartyRegistry: await createSubgraphComponent(
         baseComponents,
-        components.env.getConfig(EnvironmentConfig.THIRD_PARTY_REGISTRY_L2_SUBGRAPH_URL)
+        env.getConfig(EnvironmentConfig.THIRD_PARTY_REGISTRY_L2_SUBGRAPH_URL)
       )
     }
   }
 
-  const network: 'mainnet' | 'sepolia' = components.env.getConfig(EnvironmentConfig.ETH_NETWORK)
+  const network: 'mainnet' | 'sepolia' = env.getConfig(EnvironmentConfig.ETH_NETWORK)
   const contracts = l1Contracts[network]
   const tokenAddresses: TokenAddresses = {
     land: contracts.land,
@@ -243,4 +245,33 @@ export async function createSubgraphValidator(
     externalCalls,
     accessValidateFn: createAccessValidateFn({ externalCalls }, validateFns)
   })
+}
+
+/**
+ * Wraps `@dcl/content-validator` and selects the access-check strategy at construction time
+ * based on env config:
+ *  - `IGNORE_BLOCKCHAIN_ACCESS_CHECKS=true`     -> skip blockchain access checks
+ *  - `L1_HTTP_PROVIDER_URL` and `L2_HTTP_PROVIDER_URL` set -> on-chain checker
+ *  - otherwise                                  -> subgraph (TheGraph) checker
+ */
+export async function createContentValidator(components: ContentValidatorDeps): Promise<IContentValidator> {
+  const { env, l1Provider, l2Provider } = components
+
+  const externalCalls = await createExternalCallsBag(components)
+
+  const ignoreBlockchainAccess = env.getConfig(EnvironmentConfig.IGNORE_BLOCKCHAIN_ACCESS_CHECKS) === 'true'
+  const l1HttpProviderUrl: string | undefined = env.getConfig(EnvironmentConfig.L1_HTTP_PROVIDER_URL)
+  const l2HttpProviderUrl: string | undefined = env.getConfig(EnvironmentConfig.L2_HTTP_PROVIDER_URL)
+  const useOnChainValidator = !!(l1HttpProviderUrl && l2HttpProviderUrl)
+
+  let validate: ValidateFn
+  if (ignoreBlockchainAccess) {
+    validate = await createIgnoreBlockchainAccessValidateFn(components, externalCalls)
+  } else if (useOnChainValidator) {
+    validate = await createOnChainValidateFn(components, externalCalls, l1Provider, l2Provider)
+  } else {
+    validate = await createSubgraphValidateFn(components, externalCalls)
+  }
+
+  return { validate }
 }

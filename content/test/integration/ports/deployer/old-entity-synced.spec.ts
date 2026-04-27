@@ -1,7 +1,7 @@
 import { AuthLinkType, Entity, EntityType } from '@dcl/schemas'
 import { AuditInfo, DeploymentContext, DeploymentResult } from '../../../../src/deployment-types'
 import { AppComponents } from '../../../../src/types'
-import { makeNoopServerValidator } from '../../../helpers/service/validations/NoOpValidator'
+import { makeNoopServerValidator } from '../../../helpers/logic/server-validator/NoOpValidator'
 import { EntityCombo } from '../../E2ETestUtils'
 import { getIntegrationResourcePathFor } from '../../resources/get-resource-path'
 import { TestProgram } from '../../TestProgram'

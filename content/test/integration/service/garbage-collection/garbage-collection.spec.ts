@@ -6,7 +6,7 @@ import SQL from 'sql-template-strings'
 import { EnvironmentBuilder, EnvironmentConfig } from '../../../../src/Environment'
 import { stopAllComponents } from '../../../../src/logic/components-lifecycle'
 import { AppComponents, PROFILE_DURATION } from '../../../../src/types'
-import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
+import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/logic/server-validator/NoOpValidator'
 import { setupTestEnvironment } from '../../E2ETestEnvironment'
 import {
   awaitUntil,

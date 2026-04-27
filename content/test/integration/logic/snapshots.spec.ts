@@ -5,7 +5,7 @@ import * as snapshotQueries from '../../../src/adapters/snapshots-repository'
 import { generateSnapshotsInMultipleTimeRanges } from '../../../src/logic/snapshots'
 import * as timeRangeLogic from '../../../src/logic/time-range'
 import { AppComponents } from '../../../src/types'
-import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
+import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import { setupTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
 import { buildDeployData, EntityCombo } from '../E2ETestUtils'
 

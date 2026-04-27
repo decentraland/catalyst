@@ -15,9 +15,9 @@ import { Denylist } from '../../../src/adapters/denylist'
 import { createDeployedEntitiesBloomFilter } from '../../../src/ports/deployedEntitiesBloomFilter'
 import { createNoOpDeployRateLimiter } from '../../mocks/deploy-rate-limiter-mock'
 import { createFailedDeployments } from '../../../src/ports/failedDeployments'
-import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
+import { createAuthenticator } from '../../../src/logic/authenticator'
 import { EntityVersion } from '../../../src/types'
-import { NoOpServerValidator, NoOpValidator } from '../../helpers/service/validations/NoOpValidator'
+import { NoOpServerValidator, NoOpValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import { createDeploymentsComponentMock } from '../../mocks/deployments-component-mock'
 import { NoOpPointerManager } from '../service/pointers/NoOpPointerManager'
 import { createMockedSequentialTaskExecutorComponent } from '../../mocks/sequential-task-executor-component-mock'
@@ -458,7 +458,7 @@ async function buildComponents() {
   const failedDeployments = await createFailedDeployments({ metrics, database })
   const storage = createInMemoryStorage()
   const pointerManager = NoOpPointerManager.build()
-  const authenticator = new ContentAuthenticator(
+  const authenticator = createAuthenticator(
     new HTTPProvider('https://rpc.decentraland.org/mainnet?project=catalyst-ci'),
     [DECENTRALAND_ADDRESS]
   )

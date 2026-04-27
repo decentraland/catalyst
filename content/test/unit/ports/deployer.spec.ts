@@ -31,11 +31,11 @@ import { createDeployer } from '../../../src/ports/deployer'
 import { createFailedDeployments } from '../../../src/ports/failedDeployments'
 import { createTestDatabaseComponent } from '../../../src/ports/postgres'
 import { createSequentialTaskExecutor } from '../../../src/logic/sequential-task-executor'
-import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
+import { createAuthenticator } from '../../../src/logic/authenticator'
 import { DELTA_POINTER_RESULT } from '../../../src/service/pointers/PointerManager'
 import { EntityVersion } from '../../../src/types'
 import { buildEntityAndFile } from '../../helpers/entity-tests-helper'
-import { NoOpServerValidator, NoOpValidator } from '../../helpers/service/validations/NoOpValidator'
+import { NoOpServerValidator, NoOpValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import { NoOpPointerManager } from '../service/pointers/NoOpPointerManager'
 import { createDeploymentsComponentMock } from '../../mocks/deployments-component-mock'
 
@@ -207,7 +207,7 @@ describe('Deployer', function () {
     const failedDeployments = await createFailedDeployments({ metrics, database })
     const storage = createInMemoryStorage()
     const pointerManager = NoOpPointerManager.build()
-    const authenticator = new ContentAuthenticator(
+    const authenticator = createAuthenticator(
       new HTTPProvider('https://rpc.decentraland.org/mainnet?project=catalyst-ci'),
       [DECENTRALAND_ADDRESS]
     )

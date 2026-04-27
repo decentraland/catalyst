@@ -8,7 +8,7 @@ import { deleteUnreferencedFiles } from '../../../src/logic/delete-unreferenced-
 import { MS_PER_DAY } from '../../../src/logic/time-range'
 import { hashFiles } from '../../../src/ports/deployer'
 import { AppComponents } from '../../../src/types'
-import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
+import { makeNoopValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import { setupTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
 import { getIntegrationResourcePathFor } from '../resources/get-resource-path'

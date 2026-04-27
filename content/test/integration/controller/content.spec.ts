@@ -1,5 +1,5 @@
 import fetch from 'node-fetch'
-import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
+import { makeNoopValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import { buildDeployData, EntityCombo } from '../E2ETestUtils'
 import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
 import { createDefaultServer, resetServer } from '../simpleTestEnvironment'

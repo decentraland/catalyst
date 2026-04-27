@@ -1,5 +1,5 @@
 import * as loggerComponent from '@well-known-components/logger'
-import { makeNoopDeploymentValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
+import { makeNoopDeploymentValidator, makeNoopValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import {
   assertDeploymentsAreReported,
   assertEntitiesAreActiveOnServer,
