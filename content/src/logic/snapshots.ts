@@ -10,7 +10,7 @@ import {
   saveSnapshot,
   snapshotIsOutdated,
   streamActiveDeploymentsInTimeRange
-} from './database-queries/snapshots-queries'
+} from '../adapters/snapshots-repository'
 import {
   divideTimeInYearsMonthsWeeksAndDays,
   intervalSizeLabel,

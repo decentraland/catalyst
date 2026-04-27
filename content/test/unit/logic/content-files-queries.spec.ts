@@ -1,4 +1,4 @@
-import { ContentFilesRow, getContentFiles } from '../../../src/logic/database-queries/content-files-queries'
+import { ContentFilesRow, getContentFiles } from '../../../src/adapters/content-files-repository'
 import { AppComponents } from '../../../src/types'
 
 describe('content files queries', () => {

@@ -1,5 +1,5 @@
-import * as snapshotQueries from '../../../src/logic/database-queries/snapshots-queries'
-import { saveProcessedSnapshot } from '../../../src/logic/database-queries/snapshots-queries'
+import * as snapshotQueries from '../../../src/adapters/snapshots-repository'
+import { saveProcessedSnapshot } from '../../../src/adapters/snapshots-repository'
 
 import { TestProgram } from '../TestProgram'
 import LeakDetector from 'jest-leak-detector'

@@ -19,9 +19,14 @@ import { Environment } from './Environment'
 import { metricsDeclaration } from './metrics'
 import { MigrationExecutor } from './migrations/migration-executor'
 import { ActiveEntities } from './ports/activeEntities'
+import { IContentFilesRepository } from './adapters/content-files-repository'
 import { DAOComponent } from './adapters/dao-client'
 import { Denylist } from './adapters/denylist'
+import { IDeploymentsRepository } from './adapters/deployments-repository'
 import { IDeployRateLimiterComponent } from './adapters/deploy-rate-limiter'
+import { IFailedDeploymentsRepository } from './adapters/failed-deployments-repository'
+import { IPointersRepository } from './adapters/pointers-repository'
+import { ISnapshotsRepository } from './adapters/snapshots-repository'
 import { DeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
 import { Deployer } from './ports/deployer'
 import { IFailedDeploymentsComponent } from './ports/failedDeployments'
@@ -70,6 +75,11 @@ export type AppComponents = {
   downloadQueue: IJobQueue
   logs: ILoggerComponent
   database: IDatabaseComponent
+  contentFilesRepository: IContentFilesRepository
+  deploymentsRepository: IDeploymentsRepository
+  failedDeploymentsRepository: IFailedDeploymentsRepository
+  pointersRepository: IPointersRepository
+  snapshotsRepository: ISnapshotsRepository
   config: IConfigComponent
   deployer: Deployer
   staticConfigs: {

@@ -1,13 +1,11 @@
+import { ContentMapping } from '@dcl/schemas'
 import SQL from 'sql-template-strings'
-import { DatabaseClient } from 'src/ports/postgres'
+import { DatabaseClient } from '../../ports/postgres'
 import { DeploymentContent } from '../../deployment-types'
 import { DeploymentId } from '../../types'
+import { ContentFilesRow, IContentFilesRepository } from './types'
 
-export interface ContentFilesRow {
-  deployment: number
-  key: string
-  content_hash: string
-}
+const CONTENT_FILE_HASHES_QUERY = SQL`SELECT DISTINCT content_hash FROM content_files;`
 
 export async function getContentFiles(
   database: DatabaseClient,
@@ -35,6 +33,27 @@ export async function getContentFiles(
   return result
 }
 
+export async function saveContentFiles(
+  database: DatabaseClient,
+  deploymentId: DeploymentId,
+  content: ContentMapping[]
+): Promise<void> {
+  if (content.length === 0) {
+    return
+  }
+
+  const query = SQL`INSERT INTO content_files (deployment, key, content_hash) VALUES `
+  for (let i = 0; i < content.length; ++i) {
+    const item = content[i]
+    query.append(SQL` (${deploymentId}, ${item.file}, ${item.hash})`)
+    if (i < content.length - 1) {
+      query.append(SQL`, `)
+    }
+  }
+
+  await database.queryWithValues(query)
+}
+
 export async function findContentHashesNotBeingUsedAnymore(
   database: DatabaseClient,
   lastGarbageCollectionTimestamp: number
@@ -53,4 +72,21 @@ export async function findContentHashesNotBeingUsedAnymore(
       'garbage_collection'
     )
   ).rows.map((row) => row.content_hash)
+}
+
+export async function* streamAllDistinctContentFileHashes(database: DatabaseClient): AsyncIterable<string> {
+  for await (const row of database.streamQuery<{ content_hash: string }>(CONTENT_FILE_HASHES_QUERY, {
+    batchSize: 10000
+  })) {
+    yield row.content_hash
+  }
+}
+
+export function createContentFilesRepository(): IContentFilesRepository {
+  return {
+    getContentFiles,
+    saveContentFiles,
+    findContentHashesNotBeingUsedAnymore,
+    streamAllDistinctContentFileHashes
+  }
 }

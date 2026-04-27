@@ -1,7 +1,7 @@
 import { EntityType } from '@dcl/schemas'
 import { IBaseComponent } from '@well-known-components/interfaces'
 import { DeploymentContext } from '../../../src/deployment-types'
-import * as snapshotQueries from '../../../src/logic/database-queries/snapshots-queries'
+import * as snapshotQueries from '../../../src/adapters/snapshots-repository'
 import { generateSnapshotsInMultipleTimeRanges } from '../../../src/logic/snapshots'
 import * as timeRangeLogic from '../../../src/logic/time-range'
 import { AppComponents } from '../../../src/types'

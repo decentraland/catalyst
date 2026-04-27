@@ -1,6 +1,6 @@
-import { HistoricalDeployment } from '../../../../src/logic/database-queries/deployments-queries'
+import { HistoricalDeployment } from '../../../../src/adapters/deployments-repository'
 import { getPointerChanges } from '../../../../src/service/pointers/pointers'
-import * as deploymentsQueries from '../../../../src/logic/database-queries/deployments-queries'
+import * as deploymentsQueries from '../../../../src/adapters/deployments-repository'
 import { Denylist } from '../../../../src/adapters/denylist'
 
 function buildDeployment(entityId: string, overrides: Partial<HistoricalDeployment> = {}): HistoricalDeployment {

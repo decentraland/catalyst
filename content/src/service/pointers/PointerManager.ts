@@ -1,5 +1,5 @@
 import { Entity } from '@dcl/schemas'
-import { getDeployments } from '../../logic/database-queries/deployments-queries'
+import { getDeployments } from '../../adapters/deployments-repository'
 import { DatabaseClient } from '../../ports/postgres'
 import { DeploymentId } from '../../types'
 

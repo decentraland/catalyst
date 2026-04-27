@@ -1,5 +1,5 @@
 import { IProcessedSnapshotStorageComponent } from '@dcl/snapshots-fetcher/dist/types'
-import { getProcessedSnapshots, saveProcessedSnapshot } from '../logic/database-queries/snapshots-queries'
+import { getProcessedSnapshots, saveProcessedSnapshot } from '../adapters/snapshots-repository'
 import { AppComponents } from '../types'
 
 export type ProcessedSnapshotsStorageComponent = IProcessedSnapshotStorageComponent & { reset: () => void }

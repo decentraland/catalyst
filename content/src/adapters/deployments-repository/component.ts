@@ -1,36 +1,14 @@
-import { AuthChain, Authenticator } from '@dcl/crypto'
-import { ContentMapping, Entity, EntityType, SnapshotSyncDeployment } from '@dcl/schemas'
+import { Authenticator } from '@dcl/crypto'
+import { Entity } from '@dcl/schemas'
 import { TimeRange } from '@dcl/snapshots-fetcher/dist/types'
 import pg from 'pg'
 import SQL, { SQLStatement } from 'sql-template-strings'
-import { DatabaseClient, DatabaseTransactionalClient } from 'src/ports/postgres'
 import { AuditInfo, DeploymentFilters, DeploymentSorting, SortingField, SortingOrder } from '../../deployment-types'
-import { AppComponents, DeploymentId } from '../../types'
+import { DatabaseClient, DatabaseTransactionalClient } from '../../ports/postgres'
+import { DeploymentId } from '../../types'
+import { HistoricalDeployment, HistoricalDeploymentsRow, IDeploymentsRepository } from './types'
 
-export type HistoricalDeployment = SnapshotSyncDeployment & {
-  deploymentId: number
-  localTimestamp: number
-  metadata: any
-  deployerAddress: string
-  version: string
-  overwrittenBy?: string
-}
-
-export interface HistoricalDeploymentsRow {
-  id: number
-  deployer_address: string
-  version: string
-  entity_type: EntityType
-  entity_id: string
-  entity_metadata: any
-  entity_timestamp: number
-  entity_pointers: string[]
-  local_timestamp: number
-  auth_chain: AuthChain
-  deleter_deployment: number
-
-  overwritten_by?: string
-}
+const ALL_ENTITY_IDS_QUERY = SQL`SELECT DISTINCT entity_id FROM deployments;`
 
 export async function deploymentExists(database: DatabaseClient, entityId: string): Promise<boolean> {
   const result = await database.queryWithValues(
@@ -61,6 +39,14 @@ export async function* streamAllEntityIdsInTimeRange(
     { batchSize: 10000 },
     'stream_entity_ids_in_timerange'
   )) {
+    yield row.entity_id
+  }
+}
+
+export async function* streamAllDistinctEntityIds(database: DatabaseClient): AsyncIterable<string> {
+  for await (const row of database.streamQuery<{ entity_id: string }>(ALL_ENTITY_IDS_QUERY, {
+    batchSize: 10000
+  })) {
     yield row.entity_id
   }
 }
@@ -235,17 +221,15 @@ export function createOrClause(
 }
 
 export async function getActiveDeploymentsByContentHash(
-  components: Pick<AppComponents, 'database'>,
+  database: DatabaseClient,
   contentHash: string
 ): Promise<string[]> {
   const query = SQL`SELECT deployment.entity_id FROM deployments as deployment INNER JOIN content_files ON content_files.deployment=deployment.id
     WHERE content_hash=${contentHash} AND deployment.deleter_deployment IS NULL;`
 
-  const queryResult = (await components.database.queryWithValues(query, 'active_deployments_by_hash')).rows
+  const queryResult = (await database.queryWithValues(query, 'active_deployments_by_hash')).rows
 
-  const entities = queryResult.map((deployment: { entity_id: string }) => deployment.entity_id)
-
-  return entities
+  return queryResult.map((deployment: { entity_id: string }) => deployment.entity_id)
 }
 
 export async function getEntityById(
@@ -288,27 +272,6 @@ export async function saveDeployment(
   RETURNING id`
   const queryResult = await database.queryWithValues<{ id: number }>(query, 'save_deployment')
   return queryResult.rows[0].id
-}
-
-export async function saveContentFiles(
-  database: DatabaseClient,
-  deploymentId: DeploymentId,
-  content: ContentMapping[]
-): Promise<void> {
-  if (content.length === 0) {
-    return
-  }
-
-  const query = SQL`INSERT INTO content_files (deployment, key, content_hash) VALUES `
-  for (let i = 0; i < content.length; ++i) {
-    const item = content[i]
-    query.append(SQL` (${deploymentId}, ${item.file}, ${item.hash})`)
-    if (i < content.length - 1) {
-      query.append(SQL`, `)
-    }
-  }
-
-  await database.queryWithValues(query)
 }
 
 export async function getDeployments(
@@ -384,4 +347,22 @@ export async function calculateOverwrittenBySlow(database: DatabaseClient, entit
     LIMIT 1`
     )
   ).rows
+}
+
+export function createDeploymentsRepository(): IDeploymentsRepository {
+  return {
+    deploymentExists,
+    streamAllEntityIdsInTimeRange,
+    streamAllDistinctEntityIds,
+    getHistoricalDeployments,
+    getActiveDeploymentsByContentHash,
+    getEntityById,
+    saveDeployment,
+    getDeployments,
+    setEntitiesAsOverwritten,
+    calculateOverwrote,
+    calculateOverwrittenByManyFast,
+    calculateOverwrittenBySlow,
+    getHistoricalDeploymentsQuery
+  }
 }

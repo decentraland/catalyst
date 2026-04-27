@@ -1,5 +1,5 @@
 import { EntityType } from '@dcl/schemas'
-import { saveSnapshotFailedDeployment } from '../../../src/logic/database-queries/failed-deployments-queries'
+import { saveSnapshotFailedDeployment } from '../../../src/adapters/failed-deployments-repository'
 import {
   createFailedDeployments,
   FailedDeployment,

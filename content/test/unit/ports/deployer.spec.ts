@@ -17,9 +17,9 @@ import {
   LocalDeploymentAuditInfo,
   isInvalidDeployment
 } from '../../../src/deployment-types'
-import * as deploymentQueries from '../../../src/logic/database-queries/deployments-queries'
-import * as failedDeploymentQueries from '../../../src/logic/database-queries/failed-deployments-queries'
-import * as pointers from '../../../src/logic/database-queries/pointers-queries'
+import * as deploymentQueries from '../../../src/adapters/deployments-repository'
+import * as failedDeploymentQueries from '../../../src/adapters/failed-deployments-repository'
+import * as pointers from '../../../src/adapters/pointers-repository'
 import * as deploymentLogic from '../../../src/logic/deployments'
 import * as deployments from '../../../src/logic/deployments'
 import { metricsDeclaration } from '../../../src/metrics'

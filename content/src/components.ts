@@ -19,7 +19,12 @@ import { splitByCommaTrimAndRemoveEmptyElements } from './logic/config-helpers'
 import { metricsDeclaration } from './metrics'
 import { createMigrationExecutor } from './migrations/migration-executor'
 import { createActiveEntitiesComponent } from './ports/activeEntities'
+import { createContentFilesRepository } from './adapters/content-files-repository'
 import { createCustomDAOComponent, createDAOComponent } from './adapters/dao-client'
+import { createDeploymentsRepository } from './adapters/deployments-repository'
+import { createFailedDeploymentsRepository } from './adapters/failed-deployments-repository'
+import { createPointersRepository } from './adapters/pointers-repository'
+import { createSnapshotsRepository } from './adapters/snapshots-repository'
 import { createDenylist } from './adapters/denylist'
 import { createDeployRateLimiter } from './adapters/deploy-rate-limiter'
 import { createDeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
@@ -97,6 +102,12 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   )
 
   const database = await createDatabaseComponent({ logs, env, metrics })
+
+  const contentFilesRepository = createContentFilesRepository()
+  const deploymentsRepository = createDeploymentsRepository()
+  const failedDeploymentsRepository = createFailedDeploymentsRepository()
+  const pointersRepository = createPointersRepository()
+  const snapshotsRepository = createSnapshotsRepository()
 
   const sequentialExecutor = createSequentialTaskExecutor({ metrics, logs })
 
@@ -382,6 +393,11 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     env,
     materializedViewUpdateJob,
     database,
+    contentFilesRepository,
+    deploymentsRepository,
+    failedDeploymentsRepository,
+    pointersRepository,
+    snapshotsRepository,
     deployer,
     metrics,
     fetcher,
