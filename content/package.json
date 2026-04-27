@@ -26,7 +26,7 @@
     "@dcl/catalyst-storage": "4.5.1",
     "@dcl/content-validator": "^7.2.0",
     "@dcl/crypto": "^3.4.5",
-    "@dcl/hashing": "^3.0.4",
+    "@dcl/hashing": "1.1.0",
     "@dcl/http-server": "^1.0.1",
     "@dcl/job-component": "^0.2.7",
     "@dcl/metrics": "^1.0.1",
