@@ -8,7 +8,7 @@ const DEFAULT_STORAGE_ROOT_FOLDER = 'storage'
 const DEFAULT_HTTP_SERVER_PORT = 6969
 const DEFAULT_HTTP_SERVER_HOST = '0.0.0.0'
 const DEFAULT_DENYLIST_FILE_NAME = 'denylist.txt'
-const DEFAULT_DENYLIST_URLS = 'https://config.decentraland.org/denylist'
+const DEFAULT_DENYLIST_URLS = 'https://asset-bundle-registry.decentraland.org/denylist'
 const DECENTRALAND_ADDRESS: EthAddress = '0x1337e0507eb4ab47e08a179573ed4533d9e22a7b'
 
 const DEFAULT_FOLDER_MIGRATION_MAX_CONCURRENCY = 1000

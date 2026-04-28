@@ -60,9 +60,12 @@ export async function createDenylist(
       for (const url of denylistsUrls) {
         try {
           const response = await components.fetcher.fetch(url.toString())
-          const content = await response.text()
-          const lines = content ? content.split(/[\r\n]+/) : []
-          await processLines(lines)
+          const entries: { entity_id: string }[] = await response.json()
+          for (const entry of entries) {
+            if (entry.entity_id) {
+              deniedContentIdentifiers.add(entry.entity_id)
+            }
+          }
         } catch (err: any) {
           logger.error(err)
         }
