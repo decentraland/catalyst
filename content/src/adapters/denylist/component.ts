@@ -60,8 +60,12 @@ export async function createDenylist(
       for (const url of denylistsUrls) {
         try {
           const response = await components.fetcher.fetch(url.toString())
-          const entries: { entity_id: string }[] = await response.json()
-          await processLines(entries.map((entry) => entry.entity_id).filter(Boolean))
+          const body = await response.json()
+          if (!Array.isArray(body)) {
+            logger.error(`Unexpected denylist response from ${url}: expected array, got ${typeof body}`)
+            continue
+          }
+          await processLines((body as { entity_id: string }[]).map((entry) => entry.entity_id).filter(Boolean))
         } catch (err: any) {
           logger.error(err)
         }

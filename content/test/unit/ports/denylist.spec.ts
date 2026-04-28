@@ -83,6 +83,23 @@ describe('when creating a denylist', () => {
       expect(fetcher.fetch).toBeCalledWith('https://asset-bundle-registry.decentraland.org/denylist')
     })
 
+    it('should not add any items when the url returns a non-array response', async () => {
+      const logs = await setupLogs()
+      const fs = {
+        createReadStream: jest.fn(),
+        existPath: jest.fn().mockResolvedValue(false)
+      }
+      env.setConfig(EnvironmentConfig.DENYLIST_URLS, 'https://asset-bundle-registry.decentraland.org/denylist')
+      const fetcher = {
+        fetch: jest.fn().mockResolvedValue({
+          json: () => Promise.resolve({ entity_id: 'denied3' })
+        } as Partial<Response>)
+      }
+      denylist = await createDenylist({ env, logs, fs, fetcher })
+      await denylist.start!()
+      expect(denylist.isDenylisted('denied3')).toBe(false)
+    })
+
     it('should create it without using the invalid url', async () => {
       const logs = await setupLogs()
       const fs = {
