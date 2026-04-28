@@ -1,5 +1,5 @@
 import { HistoricalDeployment } from '../../../../src/adapters/deployments-repository'
-import { getPointerChanges } from '../../../../src/service/pointers/pointers'
+import { getPointerChanges } from '../../../../src/logic/deployments'
 import * as deploymentsQueries from '../../../../src/adapters/deployments-repository'
 import { Denylist } from '../../../../src/adapters/denylist'
 

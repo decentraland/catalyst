@@ -1,7 +1,7 @@
 import { Entity } from '@dcl/schemas'
 import { getDeployments } from '../../adapters/deployments-repository'
 import { DatabaseClient } from '../../ports/postgres'
-import { DeploymentId } from '../../types'
+import { DELTA_POINTER_RESULT, DeploymentResult } from './types'
 
 /**
  * Manage all pointer data
@@ -53,11 +53,4 @@ export class PointerManager {
 
     return result
   }
-}
-
-export type DeploymentResult = Map<string, { before: DeploymentId | undefined; after: DELTA_POINTER_RESULT }>
-
-export enum DELTA_POINTER_RESULT {
-  SET = 'set',
-  CLEARED = 'cleared'
 }

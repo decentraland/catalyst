@@ -1,4 +1,4 @@
-import { Entity, EntityType } from '@dcl/schemas'
+import { Entity, EntityType, PointerChangesSyncDeployment } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import SQL, { SQLStatement } from 'sql-template-strings'
 import { getContentFiles, saveContentFiles } from '../../adapters/content-files-repository'
@@ -18,14 +18,15 @@ import {
   DeploymentContent,
   DeploymentContext,
   DeploymentOptions,
-  PartialDeploymentHistory
+  PartialDeploymentHistory,
+  PointerChangesOptions
 } from '../../deployment-types'
 import { FailedDeployment } from '../../ports/failedDeployments'
 import { DatabaseClient, DatabaseTransactionalClient } from '../../ports/postgres'
 import { deployEntityFromRemoteServer } from '../../service/synchronization/deployRemoteEntity'
 import { IGNORING_FIX_ERROR } from '../server-validator'
 import { AppComponents, DeploymentId, EntityVersion } from '../../types'
-import { IDeploymentsComponent } from './types'
+import { DeploymentPointerChanges, IDeploymentsComponent } from './types'
 
 export async function isEntityDeployed(
   database: DatabaseClient,
@@ -287,6 +288,43 @@ export async function getDeploymentsForActiveEntities(
   const deploymentIds = deploymentsResult.map(({ deploymentId }) => deploymentId)
   const content = await getContentFiles(database, deploymentIds)
   return deploymentsResult.map((result) => buildDeploymentFromHistoricalDeployment(result, content))
+}
+
+export async function getPointerChanges(
+  components: Pick<AppComponents, 'denylist' | 'metrics'>,
+  database: DatabaseClient,
+  options?: PointerChangesOptions
+): Promise<DeploymentPointerChanges> {
+  const curatedOffset = options?.offset && options?.offset >= 0 ? options?.offset : 0
+  const curatedLimit =
+    options?.limit && options?.limit > 0 && options?.limit <= MAX_HISTORY_LIMIT ? options?.limit : MAX_HISTORY_LIMIT
+  let deploymentsWithExtra: HistoricalDeployment[] = await getHistoricalDeployments(
+    database,
+    curatedOffset,
+    curatedLimit + 1,
+    options?.filters,
+    options?.sortBy,
+    options?.lastId
+  )
+
+  // Note: moreData is checked before denylist filtering so pagination signals remain correct.
+  // This means returned pages may have fewer than curatedLimit items when denylisted entities
+  // are removed. Fixing that would require fetching additional rows, left as a future improvement.
+  const moreData: boolean = deploymentsWithExtra.length > curatedLimit
+  deploymentsWithExtra = deploymentsWithExtra.filter((result) => !components.denylist.isDenylisted(result.entityId))
+  const deployments: PointerChangesSyncDeployment[] = deploymentsWithExtra.slice(0, curatedLimit)
+
+  return {
+    pointerChanges: deployments,
+    filters: {
+      ...options?.filters
+    },
+    pagination: {
+      offset: curatedOffset,
+      limit: curatedLimit,
+      moreData
+    }
+  }
 }
 
 export const createDeploymentsComponent = (

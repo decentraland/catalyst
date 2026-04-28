@@ -1,5 +1,5 @@
 import { anything, instance, mock, when } from 'ts-mockito'
-import { PointerManager } from '../../../../src/service/pointers/PointerManager'
+import { PointerManager } from '../../../../src/logic/pointer-manager'
 
 export class NoOpPointerManager {
   static build(): PointerManager {
