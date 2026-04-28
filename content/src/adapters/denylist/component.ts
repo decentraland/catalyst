@@ -61,11 +61,7 @@ export async function createDenylist(
         try {
           const response = await components.fetcher.fetch(url.toString())
           const entries: { entity_id: string }[] = await response.json()
-          for (const entry of entries) {
-            if (entry.entity_id) {
-              deniedContentIdentifiers.add(entry.entity_id)
-            }
-          }
+          await processLines(entries.map((entry) => entry.entity_id).filter(Boolean))
         } catch (err: any) {
           logger.error(err)
         }
