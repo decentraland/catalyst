@@ -60,7 +60,7 @@
     "pg-query-stream": "^4.2.3",
     "qs": "^6.11.1",
     "sql-template-strings": "^2.2.2",
-    "uuid": "8.3.2"
+    "uuid": "14.0.0"
   },
   "devDependencies": {
     "@types/destroy": "1.0.0",
