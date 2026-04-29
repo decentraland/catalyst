@@ -5,7 +5,8 @@ export async function retry<T>(
   execution: () => Promise<T>,
   attempts: number,
   description: string,
-  waitTime: string = '1s'
+  waitTime: string = '1s',
+  log: (msg: string) => void = console.info
 ): Promise<T> {
   const timeInMs = ms(waitTime)
   while (attempts > 0) {
@@ -16,7 +17,7 @@ export async function retry<T>(
     } catch (error) {
       attempts--
       if (attempts > 0) {
-        console.info(`Failed to ${description}. Still have ${attempts} attempt/s left. Will try again in ${waitTime}`)
+        log(`Failed to ${description}. Still have ${attempts} attempt/s left. Will try again in ${waitTime}`)
         await setTimeout(timeInMs, null)
       } else {
         throw error
