@@ -38,7 +38,7 @@ export type ActiveEntities = IBaseComponent & {
    *  - undefined if there is no cached result
    * Note: testing purposes
    */
-  getCachedEntity(idOrPointer: string | string): string | NotActiveEntity | undefined
+  getCachedEntity(idOrPointer: string): string | NotActiveEntity | undefined
   /**
    * Reset internal state
    * Note: testing purposes

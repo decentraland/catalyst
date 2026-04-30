@@ -12,7 +12,6 @@ import { OffChainWearablesManager } from './apis/collections/off-chain/OffChainW
 import { initializeCollectionsRoutes } from './apis/collections/routes'
 import { initializeContentV2Routes } from './apis/content-v2/routes'
 import { initializeCryptoRoutes } from './apis/crypto/routes'
-import { initializeImagesRoutes } from './apis/images/routes'
 import { EmotesOwnership } from './apis/profiles/EmotesOwnership'
 import { EnsOwnership } from './apis/profiles/EnsOwnership'
 import { WearablesOwnership } from './apis/profiles/WearablesOwnership'
@@ -112,12 +111,6 @@ export class Server {
 
     // DCL-Crypto API implementation
     this.app.use('/crypto', initializeCryptoRoutes(express.Router(), env.getBean(Bean.ETHEREUM_PROVIDER)))
-
-    // Images API for resizing contents
-    this.app.use(
-      '/images',
-      initializeImagesRoutes(express.Router(), fetcher, env.getConfig(EnvironmentConfig.LAMBDAS_STORAGE_LOCATION))
-    )
 
     // DAO Collections access API
     this.app.use(

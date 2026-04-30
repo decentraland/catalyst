@@ -287,7 +287,7 @@ export function createDeploymentService(
       }
 
       // Reject entities without pointers up front (before claiming any pointer locks)
-      if (!entity.pointers || entity.pointers.length == 0)
+      if (entity.pointers.length === 0)
         return InvalidResult({
           errors: [`The entity does not have any pointer.`]
         })
@@ -304,23 +304,27 @@ export function createDeploymentService(
         })
       }
 
-      const contextToDeploy: DeploymentContext = calculateIfLegacy(entity, auditInfo.authChain, context)
-
-      // Check if the entity content is unchanged from the currently active entity.
-      // Only relevant for profiles, which have unchanged content rate limiting.
-      let isContentUnchanged = false
-      if (context === DeploymentContext.LOCAL && entity.type === EntityType.PROFILE) {
-        try {
-          const activeEntities = await components.activeEntities.withPointers(components.database, entity.pointers)
-          if (activeEntities.length > 0) {
-            isContentUnchanged = isEntityContentUnchanged(entity, activeEntities[0])
-          }
-        } catch (error) {
-          logger.warn(`Failed to check if entity content is unchanged, assuming changed`, { entityId })
-        }
-      }
-
+      // Wrap the entire post-acquire body in try/finally so a synchronous throw
+      // in calculateIfLegacy or the unchanged-content probe still releases the
+      // pointer lock. Without this guard, an unexpected exception between
+      // tryAcquire and the await below would orphan the lock until process restart.
       try {
+        const contextToDeploy: DeploymentContext = calculateIfLegacy(entity, auditInfo.authChain, context)
+
+        // Check if the entity content is unchanged from the currently active entity.
+        // Only relevant for profiles, which have unchanged content rate limiting.
+        let isContentUnchanged = false
+        if (context === DeploymentContext.LOCAL && entity.type === EntityType.PROFILE) {
+          try {
+            const activeEntities = await components.activeEntities.withPointers(components.database, entity.pointers)
+            if (activeEntities.length > 0) {
+              isContentUnchanged = isEntityContentUnchanged(entity, activeEntities[0])
+            }
+          } catch (error) {
+            logger.warn(`Failed to check if entity content is unchanged, assuming changed`, { entityId })
+          }
+        }
+
         logger.info(`Deploying entity`, {
           entityId,
           pointers: entity.pointers.join(' ')
