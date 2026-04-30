@@ -1,6 +1,6 @@
 import { IHttpServerComponent, ILoggerComponent } from '@well-known-components/interfaces'
 import { AppComponents } from '../types'
-import { State } from '../ports/synchronizationState'
+import { State } from '../adapters/synchronization-state'
 import { Error } from '@dcl/catalyst-api-specs/lib/client'
 import { InvalidRequestError, NotFoundError } from '../types'
 import { Middleware } from '@dcl/http-server/dist/middleware'

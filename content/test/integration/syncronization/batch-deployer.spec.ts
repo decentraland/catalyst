@@ -1,6 +1,6 @@
 import { EnvironmentBuilder, EnvironmentConfig } from '../../../src/Environment'
 import * as deployments from '../../../src/logic/deployments'
-import * as deployRemote from '../../../src/service/synchronization/deployRemoteEntity'
+import * as deployRemote from '../../../src/logic/sync-orchestrator'
 import ms from 'ms'
 
 describe('batch deployer - ', () => {

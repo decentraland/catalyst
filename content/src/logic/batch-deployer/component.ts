@@ -1,14 +1,14 @@
 import { IDeployerComponent } from '@dcl/snapshots-fetcher'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { DeployableEntity, TimeRange } from '@dcl/snapshots-fetcher/dist/types'
+import { EntityType } from '@dcl/schemas'
 import { IBaseComponent } from '@well-known-components/interfaces'
 import { DeploymentContext } from '../../deployment-types'
-import { isEntityDeployed } from '../../logic/deployments'
-import { joinOverlappedTimeRanges } from '../../logic/time-range'
 import { FailureReason } from '../../ports/failedDeployments'
 import { AppComponents, CannonicalEntityDeployment, PROFILE_DURATION } from '../../types'
-import { deployEntityFromRemoteServer } from './deployRemoteEntity'
-import { EntityType } from '@dcl/schemas'
+import { isEntityDeployed } from '../deployments'
+import { deployEntityFromRemoteServer } from '../sync-orchestrator'
+import { joinOverlappedTimeRanges } from '../time-range'
 
 /**
  * An IDeployerComponent parallelizes deployments with a JobQueue.
