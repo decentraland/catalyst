@@ -4,8 +4,7 @@ import { asEnumValue, fromCamelCaseToSnakeCase } from '../utils'
 import { qsGetArray, qsGetBoolean, qsGetNumber, qsParser, toQueryParams } from '../../logic/query-params'
 import { HandlerContextWithPath, InvalidRequestError, parseEntityType } from '../../types'
 import { SortingField, SortingOrder } from '../../deployment-types'
-import { PointerChangesFilters } from '../../logic/deployments'
-import { getPointerChanges } from '../../logic/deployments'
+import { getPointerChanges, PointerChangesFilters } from '../../logic/deployments'
 
 // Method: GET
 // Query String: ?from={timestamp}&to={timestamp}&offset={number}&limit={number}&entityType={entityType}&includeAuthChain={boolean}
