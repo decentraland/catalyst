@@ -1,6 +1,6 @@
 import { EntityType } from '@dcl/schemas'
 import { getDeployments } from '../../../../src/logic/deployments'
-import { Deployer } from '../../../../src/ports/deployer'
+import { Deployer } from '../../../../src/logic/deployment-service'
 import { AppComponents } from '../../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/logic/server-validator/NoOpValidator'
 import { buildDeployData, deployEntitiesCombo, EntityCombo } from '../../E2ETestUtils'

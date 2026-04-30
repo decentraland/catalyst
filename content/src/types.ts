@@ -31,7 +31,8 @@ import { IFailedDeploymentsRepository } from './adapters/failed-deployments-repo
 import { IPointersRepository } from './adapters/pointers-repository'
 import { ISnapshotsRepository } from './adapters/snapshots-repository'
 import { DeployedEntitiesBloomFilter } from './adapters/deployed-entities-bloom-filter'
-import { Deployer } from './ports/deployer'
+import { Deployer } from './logic/deployment-service'
+import { IPointerLockManager } from './adapters/pointer-lock-manager'
 import { IFailedDeploymentsComponent } from './ports/failedDeployments'
 import { IDatabaseComponent } from './ports/postgres'
 import { ISequentialTaskExecutorComponent } from './logic/sequential-task-executor'
@@ -84,6 +85,7 @@ export type AppComponents = {
   snapshotsRepository: ISnapshotsRepository
   config: IConfigComponent
   deployer: Deployer
+  pointerLockManager: IPointerLockManager
   staticConfigs: {
     contentStorageFolder: string
     tmpDownloadFolder: string
