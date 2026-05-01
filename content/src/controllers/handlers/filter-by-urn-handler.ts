@@ -1,6 +1,7 @@
 import { DecentralandAssetIdentifier, parseUrn } from '@dcl/urn-resolver'
 import { paginationObject } from '../utils'
-import { HandlerContextWithPath, InvalidRequestError } from '../../types'
+import { HandlerContextWithPath } from '../../types'
+import { InvalidRequestError } from '../errors'
 import { GetEntitiesByPointerPrefix200 } from '@dcl/catalyst-api-specs/lib/client'
 
 // Method: GET

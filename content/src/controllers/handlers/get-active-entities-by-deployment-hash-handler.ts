@@ -1,4 +1,5 @@
-import { HandlerContextWithPath, NotFoundError } from '../../types'
+import { HandlerContextWithPath } from '../../types'
+import { NotFoundError } from '../errors'
 import { getActiveDeploymentsByContentHash } from '../../adapters/deployments-repository'
 
 // TODO: it's a bit annoying but our current openapi->ts generation tool doesn't generate a type for string[]

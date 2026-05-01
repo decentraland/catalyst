@@ -1,5 +1,6 @@
 import { Erc721 } from '@dcl/catalyst-api-specs/lib/client'
-import { HandlerContextWithPath, InvalidRequestError, NotFoundError } from '../../types'
+import { HandlerContextWithPath } from '../../types'
+import { InvalidRequestError, NotFoundError } from '../errors'
 import { buildUrn, formatERC721Entity } from '../../logic/erc721'
 import { findEntityByPointer } from '../../logic/entities'
 import { getURNProtocol } from '@dcl/schemas'

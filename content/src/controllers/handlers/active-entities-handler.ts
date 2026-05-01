@@ -1,5 +1,6 @@
 import { Entity } from '@dcl/catalyst-api-specs/lib/client'
-import { HandlerContextWithPath, InvalidRequestError } from '../../types'
+import { HandlerContextWithPath } from '../../types'
+import { InvalidRequestError } from '../errors'
 import Joi from 'joi'
 
 const schema = Joi.alternatives().try(
