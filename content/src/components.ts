@@ -2,7 +2,7 @@
 // External libraries
 // =============================================================================
 import { createFolderBasedFileSystemContentStorage, createFsComponent } from '@dcl/catalyst-storage'
-import { L1Network } from '@dcl/catalyst-contracts'
+import type { L1Network } from '@dcl/catalyst-contracts'
 import { createServerComponent, instrumentHttpServerWithPromClientRegistry } from '@dcl/http-server'
 import { createJobComponent } from '@dcl/job-component'
 import { createMetricsComponent } from '@dcl/metrics'
@@ -84,10 +84,10 @@ import { AppComponents, GlobalContext } from './types'
  *
  * Sections:
  *   1. Bootstrap primitives (config, metrics, tracer, logs, fetch, fs)
- *   2. Static config + filesystem layout
+ *   2. Static config + filesystem layout (denylist, content/tmp folders)
  *   3. Blockchain providers (L1/L2)
  *   4. Database + per-domain repositories
- *   5. Stateful adapters (denylist, sequential executor, system properties, ...)
+ *   5. Stateful adapters (sequential executor, system properties, challenge supervisor)
  *   6. Storage + DAO client + authenticator
  *   7. Domain logic (cluster, pointer manager, validators, active entities, ...)
  *   8. Deploy pipeline (deployment-service + lock manager + bloom filter)
