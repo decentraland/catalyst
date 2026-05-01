@@ -1,6 +1,7 @@
 import { Erc721 } from '@dcl/catalyst-api-specs/lib/client'
-import { HandlerContextWithPath, InvalidRequestError, NotFoundError } from '../../types'
-import { buildUrn, formatERC21Entity } from '../../logic/erc721'
+import { HandlerContextWithPath } from '../../types'
+import { InvalidRequestError, NotFoundError } from '../errors'
+import { buildUrn, formatERC721Entity } from '../../logic/erc721'
 import { findEntityByPointer } from '../../logic/entities'
 import { getURNProtocol } from '@dcl/schemas'
 
@@ -32,6 +33,6 @@ export async function getERC721EntityHandler(
 
   return {
     status: 200,
-    body: formatERC21Entity(env, pointer, entity, emission)
+    body: formatERC721Entity(env, pointer, entity, emission)
   }
 }

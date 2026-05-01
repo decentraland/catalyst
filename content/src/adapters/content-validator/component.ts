@@ -54,7 +54,7 @@ const createEthereumProvider = (httpProvider: HTTPProvider): EthereumProvider =>
   }
 }
 
-async function buildExternalCalls(
+async function createExternalCallsBag(
   components: Pick<AppComponents, 'storage' | 'authenticator'>
 ): Promise<ExternalCalls> {
   async function calculateFilesHashes(
@@ -91,7 +91,7 @@ async function buildExternalCalls(
   }
 }
 
-async function buildIgnoreBlockchainAccessValidateFn(
+async function createIgnoreBlockchainAccessValidateFn(
   components: Pick<AppComponents, 'logs'>,
   externalCalls: ExternalCalls
 ): Promise<ValidateFn> {
@@ -103,7 +103,7 @@ async function buildIgnoreBlockchainAccessValidateFn(
   })
 }
 
-async function buildOnChainValidateFn(
+async function createOnChainValidateFn(
   components: Pick<AppComponents, 'env' | 'metrics' | 'logs'>,
   externalCalls: ExternalCalls,
   l1Provider: HTTPProvider,
@@ -193,7 +193,7 @@ async function buildOnChainValidateFn(
   })
 }
 
-async function buildSubgraphValidateFn(
+async function createSubgraphValidateFn(
   components: Pick<AppComponents, 'env' | 'metrics' | 'config' | 'logs' | 'fetcher'>,
   externalCalls: ExternalCalls
 ): Promise<ValidateFn> {
@@ -257,7 +257,7 @@ async function buildSubgraphValidateFn(
 export async function createContentValidator(components: ContentValidatorDeps): Promise<IContentValidator> {
   const { env, l1Provider, l2Provider } = components
 
-  const externalCalls = await buildExternalCalls(components)
+  const externalCalls = await createExternalCallsBag(components)
 
   const ignoreBlockchainAccess = env.getConfig(EnvironmentConfig.IGNORE_BLOCKCHAIN_ACCESS_CHECKS) === 'true'
   const l1HttpProviderUrl: string | undefined = env.getConfig(EnvironmentConfig.L1_HTTP_PROVIDER_URL)
@@ -266,11 +266,11 @@ export async function createContentValidator(components: ContentValidatorDeps): 
 
   let validate: ValidateFn
   if (ignoreBlockchainAccess) {
-    validate = await buildIgnoreBlockchainAccessValidateFn(components, externalCalls)
+    validate = await createIgnoreBlockchainAccessValidateFn(components, externalCalls)
   } else if (useOnChainValidator) {
-    validate = await buildOnChainValidateFn(components, externalCalls, l1Provider, l2Provider)
+    validate = await createOnChainValidateFn(components, externalCalls, l1Provider, l2Provider)
   } else {
-    validate = await buildSubgraphValidateFn(components, externalCalls)
+    validate = await createSubgraphValidateFn(components, externalCalls)
   }
 
   return { validate }

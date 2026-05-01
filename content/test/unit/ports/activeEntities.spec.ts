@@ -17,7 +17,7 @@ import { createNoOpDeployRateLimiter } from '../../mocks/deploy-rate-limiter-moc
 import { createFailedDeployments } from '../../../src/ports/failedDeployments'
 import { createAuthenticator } from '../../../src/logic/authenticator'
 import { EntityVersion } from '../../../src/types'
-import { NoOpServerValidator, NoOpValidator } from '../../helpers/service/validations/NoOpValidator'
+import { NoOpServerValidator, NoOpValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import { createDeploymentsComponentMock } from '../../mocks/deployments-component-mock'
 import { NoOpPointerManager } from '../service/pointers/NoOpPointerManager'
 import { createMockedSequentialTaskExecutorComponent } from '../../mocks/sequential-task-executor-component-mock'

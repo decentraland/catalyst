@@ -8,8 +8,8 @@ export interface IPointerLockManager {
    */
   tryAcquire(entityType: EntityType, pointers: string[]): string[]
   /**
-   * Release a previously-acquired set of pointers. Safe to call even if the caller
-   * acquired only some of the pointers (e.g. failure mid-acquire).
+   * Release all pointers previously acquired by a successful `tryAcquire` call.
+   * Calling with pointers not in the in-flight set is a no-op (idempotent).
    */
   release(entityType: EntityType, pointers: string[]): void
 }

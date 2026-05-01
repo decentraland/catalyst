@@ -2,7 +2,7 @@
 // External libraries
 // =============================================================================
 import { createFolderBasedFileSystemContentStorage, createFsComponent } from '@dcl/catalyst-storage'
-import { L1Network } from '@dcl/catalyst-contracts'
+import type { L1Network } from '@dcl/catalyst-contracts'
 import { createServerComponent, instrumentHttpServerWithPromClientRegistry } from '@dcl/http-server'
 import { createJobComponent } from '@dcl/job-component'
 import { createMetricsComponent } from '@dcl/metrics'
@@ -43,6 +43,7 @@ import { createCustomDAOComponent, createDAOComponent } from './adapters/dao-cli
 import { createDenylist } from './adapters/denylist'
 import { createDeployRateLimiter } from './adapters/deploy-rate-limiter'
 import { createDeployedEntitiesBloomFilter } from './adapters/deployed-entities-bloom-filter'
+import { createPointerLockManager } from './adapters/pointer-lock-manager'
 import { createSynchronizationState } from './adapters/synchronization-state'
 import { createSystemProperties } from './adapters/system-properties'
 
@@ -59,7 +60,6 @@ import { createDeploymentService } from './logic/deployment-service'
 import { GarbageCollectionManager } from './logic/garbage-collection'
 import { createContentCluster } from './logic/peer-cluster'
 import { PointerManager } from './logic/pointer-manager'
-import { createPointerLockManager } from './logic/pointer-lock-manager'
 import { createRetryFailedDeployments } from './logic/retry-failed-deployments'
 import { createSequentialTaskExecutor } from './logic/sequential-task-executor'
 import { createServerValidator } from './logic/server-validator'
@@ -84,10 +84,10 @@ import { AppComponents, GlobalContext } from './types'
  *
  * Sections:
  *   1. Bootstrap primitives (config, metrics, tracer, logs, fetch, fs)
- *   2. Static config + filesystem layout
+ *   2. Static config + filesystem layout (denylist, content/tmp folders)
  *   3. Blockchain providers (L1/L2)
  *   4. Database + per-domain repositories
- *   5. Stateful adapters (denylist, sequential executor, system properties, ...)
+ *   5. Stateful adapters (sequential executor, system properties, challenge supervisor)
  *   6. Storage + DAO client + authenticator
  *   7. Domain logic (cluster, pointer manager, validators, active entities, ...)
  *   8. Deploy pipeline (deployment-service + lock manager + bloom filter)

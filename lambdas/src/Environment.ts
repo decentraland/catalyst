@@ -29,7 +29,6 @@ const DEFAULT_MAX_SYNCHRONIZATION_TIME = '15m'
 const DEFAULT_MAX_DEPLOYMENT_OBTENTION_TIME = '3s'
 
 const DEFAULT_INTERNAL_COMMS_SERVER_URL: string = `http://comms-server:9000`
-const DEFAULT_LAMBDAS_STORAGE_LOCATION = 'lambdas-storage'
 
 export class Environment {
   private configs: Map<EnvironmentConfig, any> = new Map()
@@ -91,7 +90,6 @@ export const enum EnvironmentConfig {
   USE_COMPRESSION_MIDDLEWARE,
   LOG_LEVEL,
   ETH_NETWORK,
-  LAMBDAS_STORAGE_LOCATION,
   PROFILE_NAMES_CACHE_MAX,
   PROFILE_NAMES_CACHE_TIMEOUT,
   PROFILE_WEARABLES_CACHE_MAX,
@@ -200,11 +198,6 @@ export class EnvironmentBuilder {
       env,
       EnvironmentConfig.ETH_NETWORK,
       () => process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
-    )
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.LAMBDAS_STORAGE_LOCATION,
-      () => process.env.LAMBDAS_STORAGE_LOCATION ?? DEFAULT_LAMBDAS_STORAGE_LOCATION
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PROFILE_NAMES_CACHE_MAX, () =>
       parseInt(process.env.PROFILE_NAMES_CACHE_MAX ?? '20000')

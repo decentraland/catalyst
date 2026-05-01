@@ -1,4 +1,5 @@
-import { HandlerContextWithPath, NotFoundError } from '../../types'
+import { HandlerContextWithPath } from '../../types'
+import { NotFoundError } from '../errors'
 import { checkNotModified, createContentFileHeaders, retrieveContentWithRange } from '../utils'
 
 // Method: GET or HEAD
