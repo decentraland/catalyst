@@ -1,7 +1,7 @@
-import { createBatchDeployerComponent } from '../../../../src/logic/batch-deployer'
-import { PROFILE_DURATION } from '../../../../src/types'
-import * as deployments from '../../../../src/logic/deployments'
-import * as deployRemote from '../../../../src/logic/sync-orchestrator'
+import { createBatchDeployerComponent } from '../../../src/logic/batch-deployer'
+import { PROFILE_DURATION } from '../../../src/types'
+import * as deployments from '../../../src/logic/deployments'
+import * as deployRemote from '../../../src/logic/sync-orchestrator'
 
 function createMockComponents() {
   return {

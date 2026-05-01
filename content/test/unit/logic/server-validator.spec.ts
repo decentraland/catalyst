@@ -1,6 +1,6 @@
 import { Entity, EntityType } from '@dcl/schemas'
-import { DeploymentContext } from '../../../../src/deployment-types'
-import { createServerValidator, IGNORING_FIX_ERROR } from '../../../../src/logic/server-validator'
+import { DeploymentContext } from '../../../src/deployment-types'
+import { createServerValidator, IGNORING_FIX_ERROR } from '../../../src/logic/server-validator'
 
 describe('createServerValidator', () => {
   describe('when the context is FIX_ATTEMPT', () => {
