@@ -2,7 +2,7 @@ import { IHttpServerComponent, ILoggerComponent } from '@well-known-components/i
 import { AppComponents } from '../types'
 import { State } from '../adapters/synchronization-state'
 import { Error } from '@dcl/catalyst-api-specs/lib/client'
-import { InvalidRequestError, NotFoundError } from '../types'
+import { InvalidRequestError, NotFoundError } from './errors'
 import { Middleware } from '@dcl/http-server/dist/middleware'
 
 export function preventExecutionIfBoostrapping({
@@ -27,22 +27,15 @@ export function preventExecutionIfBoostrapping({
 }
 
 function handleError(logger: ILoggerComponent.ILogger, error: any): { status: number; body: Error } {
+  // Handlers throw HTTP-shaped errors (defined in `./errors.ts`) when they
+  // want to surface a specific status. Add a new branch when a new HTTP error
+  // class is introduced. Anything else is treated as an unexpected failure
+  // and surfaces as 500 to avoid leaking internal details.
   if (error instanceof InvalidRequestError) {
-    return {
-      status: 400,
-      body: {
-        error: error.message
-      }
-    }
+    return { status: 400, body: { error: error.message } }
   }
-
   if (error instanceof NotFoundError) {
-    return {
-      status: 404,
-      body: {
-        error: error.message
-      }
-    }
+    return { status: 404, body: { error: error.message } }
   }
 
   logger.error(error)

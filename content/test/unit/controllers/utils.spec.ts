@@ -6,7 +6,7 @@ import {
   retrieveContentWithRange,
   toETag
 } from '../../../src/controllers/utils'
-import { InvalidRequestError } from '../../../src/types'
+import { InvalidRequestError } from '../../../src/controllers/errors'
 import { createContentItemMock } from '../../mocks/content-item-mock'
 import { createStorageComponentMock } from '../../mocks/storage-component-mock'
 import { createRequestMock } from '../../mocks/request-mock'

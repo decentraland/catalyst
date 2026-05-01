@@ -1,4 +1,5 @@
-import { HandlerContextWithPath, NotFoundError } from '../../types'
+import { HandlerContextWithPath } from '../../types'
+import { NotFoundError } from '../errors'
 import { findEntityByPointer, findImageHash } from '../../logic/entities'
 import { checkNotModified, createContentFileHeaders, retrieveContentWithRange } from '../utils'
 
