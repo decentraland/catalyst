@@ -179,6 +179,7 @@ export type QueryParams = qs.ParsedQs
 
 export type AnyObject = Record<string, unknown>
 
+// transitional re-export; new code should import from './errors' directly
 export { BaseDomainError, InvalidRequestError, NotFoundError } from './errors'
 
 export enum DeploymentField {
