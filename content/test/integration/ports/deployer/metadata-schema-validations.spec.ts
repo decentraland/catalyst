@@ -1,7 +1,7 @@
 import { EntityType } from '@dcl/schemas'
 import { AuditInfo, DeploymentContext, DeploymentResult, InvalidResult } from '../../../../src/deployment-types'
 import { AppComponents, EntityVersion } from '../../../../src/types'
-import { makeNoopServerValidator } from '../../../helpers/service/validations/NoOpValidator'
+import { makeNoopServerValidator } from '../../../helpers/logic/server-validator/NoOpValidator'
 import { EntityCombo, buildDeployData, createIdentity } from '../../E2ETestUtils'
 import { TestProgram } from '../../TestProgram'
 import LeakDetector from 'jest-leak-detector'

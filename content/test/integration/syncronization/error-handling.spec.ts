@@ -6,7 +6,7 @@ import {
   makeNoopDeploymentValidator,
   makeNoopServerValidator,
   makeNoopValidator
-} from '../../helpers/service/validations/NoOpValidator'
+} from '../../helpers/logic/server-validator/NoOpValidator'
 import {
   assertDeploymentFailed,
   assertDeploymentsAreReported,

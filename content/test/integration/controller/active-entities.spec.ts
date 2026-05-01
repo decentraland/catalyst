@@ -1,7 +1,7 @@
 import { Entity, EntityType } from '@dcl/schemas'
 import fetch from 'node-fetch'
 import * as deployments from '../../../src/logic/deployments'
-import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
+import { makeNoopValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import { buildDeployData } from '../E2ETestUtils'
 import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
 import { TestProgram } from '../TestProgram'

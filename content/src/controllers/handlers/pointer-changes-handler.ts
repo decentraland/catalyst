@@ -2,10 +2,10 @@ import { PointerChanges } from '@dcl/catalyst-api-specs/lib/client'
 import { EntityType, PointerChangesSyncDeployment } from '@dcl/schemas'
 import { asEnumValue, fromCamelCaseToSnakeCase } from '../utils'
 import { qsGetArray, qsGetBoolean, qsGetNumber, qsParser, toQueryParams } from '../../logic/query-params'
-import { HandlerContextWithPath, InvalidRequestError, parseEntityType } from '../../types'
+import { HandlerContextWithPath, parseEntityType } from '../../types'
+import { InvalidRequestError } from '../errors'
 import { SortingField, SortingOrder } from '../../deployment-types'
-import { PointerChangesFilters } from '../../logic/deployments'
-import { getPointerChanges } from '../../logic/deployments'
+import { getPointerChanges, PointerChangesFilters } from '../../logic/deployments'
 
 // Method: GET
 // Query String: ?from={timestamp}&to={timestamp}&offset={number}&limit={number}&entityType={entityType}&includeAuthChain={boolean}

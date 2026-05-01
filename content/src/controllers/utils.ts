@@ -1,5 +1,6 @@
 import { ContentItem, FileInfo, IContentStorageComponent } from '@dcl/catalyst-storage'
-import { InvalidRequestError, Pagination } from '../types'
+import { Pagination } from '../types'
+import { InvalidRequestError } from './errors'
 import { FileTypeParser } from 'file-type'
 import { Readable } from 'stream'
 
