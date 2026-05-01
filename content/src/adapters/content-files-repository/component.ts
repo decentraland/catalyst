@@ -1,6 +1,6 @@
 import { ContentMapping } from '@dcl/schemas'
 import SQL from 'sql-template-strings'
-import { DatabaseClient } from '../../ports/postgres'
+import { DatabaseClient } from '../../adapters/database'
 import { DeploymentContent } from '../../deployment-types'
 import { DeploymentId } from '../../types'
 import { ContentFilesRow, IContentFilesRepository } from './types'

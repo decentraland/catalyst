@@ -7,7 +7,7 @@ import {
   getThirdPartyCollectionItemsEntityIdsThatMatchUrnPrefix
 } from '../../adapters/pointers-repository'
 import { EnvironmentConfig } from '../../Environment'
-import { DatabaseClient } from '../../ports/postgres'
+import { DatabaseClient } from '../../adapters/database'
 import { AppComponents } from '../../types'
 import { getDeploymentsForActiveEntities, mapDeploymentsToEntities } from '../deployments'
 import { ActiveEntities, isEntityPresent, isPointingToEntity, NotActiveEntity } from './types'

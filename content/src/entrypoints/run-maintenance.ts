@@ -9,7 +9,7 @@ import { deleteUnreferencedFiles } from '../logic/garbage-collection'
 import { metricsDeclaration } from '../metrics'
 import { migrateContentFolderStructure } from '../migrations/ContentFolderMigrationManager'
 import { createMigrationExecutor } from '../migrations/migration-executor'
-import { createDatabaseComponent } from '../ports/postgres'
+import { createDatabaseComponent } from '../adapters/database'
 import { MaintenanceComponents } from '../types'
 
 void Lifecycle.run({

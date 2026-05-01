@@ -40,10 +40,13 @@ import { createSnapshotsRepository } from './adapters/snapshots-repository'
 // =============================================================================
 import { createContentValidator } from './adapters/content-validator'
 import { createCustomDAOComponent, createDAOComponent } from './adapters/dao-client'
+import { createDatabaseComponent } from './adapters/database'
 import { createDenylist } from './adapters/denylist'
 import { createDeployRateLimiter } from './adapters/deploy-rate-limiter'
 import { createDeployedEntitiesBloomFilter } from './adapters/deployed-entities-bloom-filter'
 import { createPointerLockManager } from './adapters/pointer-lock-manager'
+import { createSnapshotGenerator } from './adapters/snapshot-generator'
+import { createSnapshotStorage } from './adapters/snapshot-storage'
 import { createSynchronizationState } from './adapters/synchronization-state'
 import { createSystemProperties } from './adapters/system-properties'
 
@@ -65,13 +68,10 @@ import { createSequentialTaskExecutor } from './logic/sequential-task-executor'
 import { createServerValidator } from './logic/server-validator'
 
 // =============================================================================
-// Ports (legacy folder; pending future relocation)
+// Ports (legacy folder; pending future relocation alongside @dcl/memory-cache-component bump)
 // =============================================================================
 import { createFailedDeployments } from './ports/failedDeployments'
-import { createDatabaseComponent } from './ports/postgres'
 import { createProcessedSnapshotStorage } from './ports/processedSnapshotStorage'
-import { createSnapshotGenerator } from './ports/snapshotGenerator'
-import { createSnapshotStorage } from './ports/snapshotStorage'
 
 // =============================================================================
 // Types

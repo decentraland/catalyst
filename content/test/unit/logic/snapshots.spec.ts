@@ -12,7 +12,7 @@ import { metricsDeclaration } from '../../../src/metrics'
 import { Denylist } from '../../../src/adapters/denylist'
 import * as fileWriter from '../../../src/adapters/content-file-writer'
 import { IFile } from '../../../src/adapters/content-file-writer'
-import { createTestDatabaseComponent } from '../../../src/ports/postgres'
+import { createTestDatabaseComponent } from '../../mocks/database-component-mock'
 
 describe('generate snapshot', () => {
   const database = createTestDatabaseComponent()

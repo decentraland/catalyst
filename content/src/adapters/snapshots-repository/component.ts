@@ -1,7 +1,7 @@
 import { SnapshotSyncDeployment } from '@dcl/schemas'
 import { SnapshotMetadata, TimeRange } from '@dcl/snapshots-fetcher/dist/types'
 import SQL from 'sql-template-strings'
-import { DatabaseClient } from '../../ports/postgres'
+import { DatabaseClient } from '../../adapters/database'
 import { ISnapshotsRepository } from './types'
 
 const SNAPSHOT_HASHES_QUERY = SQL`SELECT DISTINCT hash FROM snapshots;`

@@ -1,5 +1,5 @@
 import { Entity } from '@dcl/schemas'
-import { IDatabaseComponent } from 'src/ports/postgres'
+import { IDatabaseComponent } from 'src/adapters/database'
 import { ActiveEntities } from '../logic/active-entities'
 
 export async function findEntityByPointer(

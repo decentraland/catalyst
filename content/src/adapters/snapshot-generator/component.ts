@@ -1,12 +1,8 @@
 import { SnapshotMetadata } from '@dcl/snapshots-fetcher/dist/types'
-import { IBaseComponent } from '@well-known-components/interfaces'
 import ms from 'ms'
-import { generateSnapshotsInMultipleTimeRanges } from '../logic/snapshots'
-import { AppComponents } from '../types'
-
-export type SnapshotGenerator = IBaseComponent & {
-  getCurrentSnapshots(): SnapshotMetadata[] | undefined
-}
+import { generateSnapshotsInMultipleTimeRanges } from '../../logic/snapshots'
+import { AppComponents } from '../../types'
+import { SnapshotGenerator } from './types'
 
 export function createSnapshotGenerator(
   components: Pick<AppComponents, 'database' | 'fs' | 'metrics' | 'storage' | 'logs' | 'denylist' | 'staticConfigs'>

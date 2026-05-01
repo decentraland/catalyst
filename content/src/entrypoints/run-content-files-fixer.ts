@@ -14,7 +14,7 @@ import { Readable } from 'stream'
 import { Environment, EnvironmentBuilder, EnvironmentConfig } from '../Environment'
 import { saveContentFiles } from '../adapters/content-files-repository'
 import { metricsDeclaration } from '../metrics'
-import { createDatabaseComponent } from '../ports/postgres'
+import { createDatabaseComponent } from '../adapters/database'
 import { AppComponents } from '../types'
 
 export type ContentFilesFixerComponents = Pick<AppComponents, 'database' | 'env' | 'fetcher' | 'logs' | 'storage'>

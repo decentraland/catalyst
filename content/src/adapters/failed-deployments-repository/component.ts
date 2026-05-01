@@ -1,5 +1,5 @@
 import SQL from 'sql-template-strings'
-import { DatabaseClient } from '../../ports/postgres'
+import { DatabaseClient } from '../../adapters/database'
 import { SnapshotFailedDeployment } from '../../ports/failedDeployments'
 import { IFailedDeploymentsRepository } from './types'
 

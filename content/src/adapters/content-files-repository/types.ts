@@ -1,4 +1,4 @@
-import { DatabaseClient } from '../../ports/postgres'
+import { DatabaseClient } from '../../adapters/database'
 import { DeploymentContent } from '../../deployment-types'
 import { ContentMapping } from '@dcl/schemas'
 import { DeploymentId } from '../../types'

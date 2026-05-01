@@ -2,7 +2,7 @@ import { createTestMetricsComponent } from '@dcl/metrics'
 import { isEntityDeployed } from '../../../src/logic/deployments'
 import { metricsDeclaration } from '../../../src/metrics'
 import { DeployedEntitiesBloomFilter } from '../../../src/adapters/deployed-entities-bloom-filter'
-import { createTestDatabaseComponent } from '../../../src/ports/postgres'
+import { createTestDatabaseComponent } from '../../mocks/database-component-mock'
 
 const metrics = createTestMetricsComponent(metricsDeclaration)
 

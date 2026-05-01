@@ -13,7 +13,7 @@ import {
   LocalDeploymentAuditInfo,
   isInvalidDeployment
 } from '../../deployment-types'
-import { DatabaseClient } from '../../ports/postgres'
+import { DatabaseClient } from '../../adapters/database'
 import { happenedBefore } from '../../service/time/TimeSorting'
 import { AppComponents, EntityVersion } from '../../types'
 import { calculateOverwrites, getDeployments, saveDeploymentAndContentFiles } from '../deployments'
