@@ -1,6 +1,6 @@
 import SQL from 'sql-template-strings'
 import { DatabaseClient } from '../../adapters/database'
-import { SnapshotFailedDeployment } from '../../ports/failedDeployments'
+import { SnapshotFailedDeployment } from '../failed-deployments-cache'
 import { IFailedDeploymentsRepository } from './types'
 
 export async function saveSnapshotFailedDeployment(

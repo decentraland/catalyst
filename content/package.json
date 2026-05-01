@@ -29,6 +29,7 @@
     "@dcl/hashing": "1.2.0",
     "@dcl/http-server": "^1.0.1",
     "@dcl/job-component": "^0.2.7",
+    "@dcl/memory-cache-component": "^2.3.0",
     "@dcl/metrics": "^1.0.1",
     "@dcl/schemas": "^26.2.0",
     "@dcl/snapshots-fetcher": "9.2.3",

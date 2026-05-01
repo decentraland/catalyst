@@ -4,7 +4,7 @@ import { DeployableEntity, TimeRange } from '@dcl/snapshots-fetcher/dist/types'
 import { EntityType } from '@dcl/schemas'
 import { IBaseComponent } from '@well-known-components/interfaces'
 import { DeploymentContext } from '../../deployment-types'
-import { FailureReason } from '../../ports/failedDeployments'
+import { FailureReason } from '../../adapters/failed-deployments-cache'
 import { AppComponents, CannonicalEntityDeployment, PROFILE_DURATION } from '../../types'
 import { isEntityDeployed } from '../deployments'
 import { deployEntityFromRemoteServer } from '../sync-orchestrator'
@@ -31,6 +31,7 @@ export function createBatchDeployerComponent(
     | 'deployedEntitiesBloomFilter'
     | 'storage'
     | 'failedDeployments'
+    | 'failedDeploymentsReporter'
   >,
   syncOptions: {
     ignoredTypes: Set<string>
@@ -173,7 +174,7 @@ export function createBatchDeployerComponent(
                   reason: errorDescription
                 })
                 // failed deployments are automatically rescheduled
-                await components.failedDeployments.reportFailure({
+                await components.failedDeploymentsReporter.reportFailure({
                   entityType: entity.entityType as any,
                   entityId: entity.entityId,
                   reason: FailureReason.DEPLOYMENT_ERROR,

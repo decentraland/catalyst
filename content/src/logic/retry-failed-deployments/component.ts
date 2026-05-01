@@ -19,6 +19,7 @@ export const createRetryFailedDeployments = (
     | 'deployer'
     | 'contentCluster'
     | 'failedDeployments'
+    | 'failedDeploymentsReporter'
     | 'storage'
   >
 ): IRetryFailedDeploymentsComponent => {

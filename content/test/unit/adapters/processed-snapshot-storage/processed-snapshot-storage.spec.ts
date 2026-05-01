@@ -1,9 +1,9 @@
 import { createConfigComponent } from '@well-known-components/env-config-provider'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { createLogComponent } from '@well-known-components/logger'
-import * as snapshotQueries from '../../../src/adapters/snapshots-repository'
-import { createTestDatabaseComponent } from '../../mocks/database-component-mock'
-import { createProcessedSnapshotStorage } from '../../../src/ports/processedSnapshotStorage'
+import * as snapshotQueries from '../../../../src/adapters/snapshots-repository'
+import { createTestDatabaseComponent } from '../../../mocks/database-component-mock'
+import { createProcessedSnapshotStorage } from '../../../../src/adapters/processed-snapshot-storage'
 
 describe('processed snapshot storage', () => {
   const database = createTestDatabaseComponent()

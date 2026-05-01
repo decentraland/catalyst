@@ -29,7 +29,7 @@ import { createNoOpDeployRateLimiter } from '../../mocks/deploy-rate-limiter-moc
 import { createDeployedEntitiesBloomFilter } from '../../../src/adapters/deployed-entities-bloom-filter'
 import { createDeploymentService } from '../../../src/logic/deployment-service'
 import { createPointerLockManager } from '../../../src/adapters/pointer-lock-manager'
-import { createFailedDeployments } from '../../../src/ports/failedDeployments'
+import { createFailedDeployments } from '../../../src/adapters/failed-deployments-cache'
 import { createTestDatabaseComponent } from '../../mocks/database-component-mock'
 import { createSequentialTaskExecutor } from '../../../src/logic/sequential-task-executor'
 import { createAuthenticator } from '../../../src/logic/authenticator'

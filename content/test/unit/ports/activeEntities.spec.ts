@@ -14,7 +14,7 @@ import { ActiveEntities, createActiveEntitiesComponent } from '../../../src/logi
 import { Denylist } from '../../../src/adapters/denylist'
 import { createDeployedEntitiesBloomFilter } from '../../../src/adapters/deployed-entities-bloom-filter'
 import { createNoOpDeployRateLimiter } from '../../mocks/deploy-rate-limiter-mock'
-import { createFailedDeployments } from '../../../src/ports/failedDeployments'
+import { createFailedDeployments } from '../../../src/adapters/failed-deployments-cache'
 import { createAuthenticator } from '../../../src/logic/authenticator'
 import { EntityVersion } from '../../../src/types'
 import { NoOpServerValidator, NoOpValidator } from '../../helpers/logic/server-validator/NoOpValidator'

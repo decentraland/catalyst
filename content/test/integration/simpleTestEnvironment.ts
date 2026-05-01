@@ -61,10 +61,10 @@ export async function clearDatabase(server: TestProgram): Promise<void> {
   )
 }
 
-export function resetServer(server: TestProgram): Promise<void> {
+export async function resetServer(server: TestProgram): Promise<void> {
   server.components.activeEntities.reset()
-  server.components.processedSnapshotStorage.reset()
-  return clearDatabase(server)
+  await server.components.processedSnapshotStorage.reset()
+  await clearDatabase(server)
 }
 
 async function createServer(

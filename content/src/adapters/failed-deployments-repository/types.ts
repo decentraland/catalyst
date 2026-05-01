@@ -1,5 +1,5 @@
 import { DatabaseClient } from '../../adapters/database'
-import { SnapshotFailedDeployment } from '../../ports/failedDeployments'
+import { SnapshotFailedDeployment } from '../failed-deployments-cache'
 
 export interface IFailedDeploymentsRepository {
   saveSnapshotFailedDeployment(db: DatabaseClient, failedDeployment: SnapshotFailedDeployment): Promise<void>

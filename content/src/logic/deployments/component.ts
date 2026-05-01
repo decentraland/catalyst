@@ -21,7 +21,7 @@ import {
   PartialDeploymentHistory,
   PointerChangesOptions
 } from '../../deployment-types'
-import { FailedDeployment } from '../../ports/failedDeployments'
+import { FailedDeployment } from '../../adapters/failed-deployments-cache'
 import { DatabaseClient, DatabaseTransactionalClient } from '../../adapters/database'
 import { deployEntityFromRemoteServer } from '../sync-orchestrator'
 import { IGNORING_FIX_ERROR } from '../server-validator'
@@ -62,6 +62,7 @@ export async function retryFailedDeploymentExecution(
     | 'deployer'
     | 'contentCluster'
     | 'failedDeployments'
+    | 'failedDeploymentsReporter'
     | 'storage'
   >,
   logger?: ILoggerComponent.ILogger
@@ -94,7 +95,7 @@ export async function retryFailedDeploymentExecution(
         const errorDescription = error.message + ''
 
         if (!errorDescription.includes(IGNORING_FIX_ERROR)) {
-          await components.failedDeployments.reportFailure({ ...failedDeployment, errorDescription })
+          await components.failedDeploymentsReporter.reportFailure({ ...failedDeployment, errorDescription })
         }
 
         logs.error(`Failed to fix deployment of entity`, { entityId, entityType, errorDescription })
