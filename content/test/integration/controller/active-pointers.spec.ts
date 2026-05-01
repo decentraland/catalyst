@@ -1,7 +1,7 @@
 import { createFsComponent } from '@dcl/catalyst-storage'
 import fetch from 'node-fetch'
 import { stopAllComponents } from '../../../src/logic/components-lifecycle'
-import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
+import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
 import { TestProgram } from '../TestProgram'
 import FormData = require('form-data')

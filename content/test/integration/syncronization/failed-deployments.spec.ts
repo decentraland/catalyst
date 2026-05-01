@@ -8,7 +8,7 @@ import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { awaitUntil, buildDeployData, buildDeployDataAfterEntity, createIdentity } from '../E2ETestUtils'
 import { TestProgram, startProgramAndWaitUntilBootstrapFinishes } from '../TestProgram'
 import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
-import { makeNoopDeploymentValidator } from '../../helpers/service/validations/NoOpValidator'
+import { makeNoopDeploymentValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 
 describe('Errors during sync', () => {
   const getTestEnv = setupTestEnvironment()

@@ -1,7 +1,7 @@
 import { createFetchComponent } from '@well-known-components/fetch-component'
 import { DeploymentField } from '../../../src/types'
 import { Deployment } from '../../../src/deployment-types'
-import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
+import { makeNoopValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import { buildDeployData } from '../E2ETestUtils'
 import { createDefaultServer } from '../simpleTestEnvironment'
 import { TestProgram } from '../TestProgram'

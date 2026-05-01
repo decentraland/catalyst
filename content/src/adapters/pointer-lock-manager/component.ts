@@ -29,6 +29,9 @@ export function createPointerLockManager(): IPointerLockManager {
       for (const pointer of pointers) {
         inFlight.delete(pointer)
       }
+      if (inFlight.size === 0) {
+        pointersBeingDeployed.delete(entityType)
+      }
     }
   }
 }
