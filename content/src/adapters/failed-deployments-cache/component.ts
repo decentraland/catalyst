@@ -5,6 +5,11 @@ import { FailedDeployment, IFailedDeploymentsComponent } from './types'
 
 const FAILED_DEPLOYMENTS_METRIC = 'dcl_content_server_failed_deployments'
 
+// All deployments live as fields under a single hash so getAllFailedDeployments is one
+// cache call (Object.values of the hash) instead of keys() + N gets, and write/remove
+// stay O(1) per call.
+const FAILED_DEPLOYMENTS_HASH = 'failed-deployments'
+
 export async function createFailedDeployments(
   components: Pick<AppComponents, 'metrics' | 'database'>
 ): Promise<IFailedDeploymentsComponent> {
@@ -16,35 +21,36 @@ export async function createFailedDeployments(
   const cache = createInMemoryCacheComponent({ max: 1_000_000, ttl: 0 })
 
   async function observeSize(): Promise<void> {
-    const keys = await cache.keys()
-    metrics.observe(FAILED_DEPLOYMENTS_METRIC, {}, keys.length)
+    const all = await cache.getAllHashFields<FailedDeployment>(FAILED_DEPLOYMENTS_HASH)
+    metrics.observe(FAILED_DEPLOYMENTS_METRIC, {}, Object.keys(all).length)
   }
 
   return {
     async start() {
       const failedDeployments = await getSnapshotFailedDeployments(database)
-      await Promise.all(failedDeployments.map((deployment) => cache.set(deployment.entityId, deployment)))
+      for (const deployment of failedDeployments) {
+        await cache.setInHash(FAILED_DEPLOYMENTS_HASH, deployment.entityId, deployment)
+      }
       await observeSize()
     },
     async getAllFailedDeployments() {
-      const keys = await cache.keys()
-      const values = await Promise.all(keys.map((key) => cache.get<FailedDeployment>(key)))
-      return values.filter((value): value is FailedDeployment => value !== null)
+      const all = await cache.getAllHashFields<FailedDeployment>(FAILED_DEPLOYMENTS_HASH)
+      return Object.values(all)
     },
     async findFailedDeployment(entityId: string) {
-      const result = await cache.get<FailedDeployment>(entityId)
+      const result = await cache.getFromHash<FailedDeployment>(FAILED_DEPLOYMENTS_HASH, entityId)
       return result ?? undefined
     },
     async removeFailedDeployment(entityId: string) {
-      const found = await cache.get<FailedDeployment>(entityId)
+      const found = await cache.getFromHash<FailedDeployment>(FAILED_DEPLOYMENTS_HASH, entityId)
       if (found) {
         await deleteFailedDeployment(database, entityId)
-        await cache.remove(entityId)
+        await cache.removeFromHash(FAILED_DEPLOYMENTS_HASH, entityId)
         await observeSize()
       }
     },
     async cacheFailedDeployment(deployment: FailedDeployment) {
-      await cache.set(deployment.entityId, deployment)
+      await cache.setInHash(FAILED_DEPLOYMENTS_HASH, deployment.entityId, deployment)
       await observeSize()
     }
   }

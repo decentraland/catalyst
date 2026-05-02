@@ -3,6 +3,12 @@ import { getProcessedSnapshots, saveProcessedSnapshot } from '../snapshots-repos
 import { AppComponents } from '../../types'
 import { ProcessedSnapshotsStorageComponent } from './types'
 
+// All processed-snapshot hashes live as fields under a single cache hash so the
+// "all cached?" check is one cache call (then a sync `in`-check), and reset() drops
+// the entire hash with a single remove(). Cache misses still fall through to the
+// repository, so default LRU/TTL semantics on the underlying entry are fine.
+const PROCESSED_SNAPSHOTS_HASH = 'processed-snapshots'
+
 export function createProcessedSnapshotStorage(
   components: Pick<AppComponents, 'database' | 'logs'>
 ): ProcessedSnapshotsStorageComponent {
@@ -12,24 +18,25 @@ export function createProcessedSnapshotStorage(
 
   return {
     async filterProcessedSnapshotsFrom(snapshotHashes: string[]) {
-      const cacheHits = await Promise.all(snapshotHashes.map((h) => cache.get<true>(h)))
-      const allCached = cacheHits.every((hit) => hit !== null)
+      const cached = await cache.getAllHashFields<true>(PROCESSED_SNAPSHOTS_HASH)
+      const allCached = snapshotHashes.every((hash) => hash in cached)
       if (allCached) {
         return new Set(snapshotHashes)
       }
 
       const processedSnapshots = await getProcessedSnapshots(database, snapshotHashes)
-      await Promise.all(Array.from(processedSnapshots).map((hash) => cache.set(hash, true)))
+      for (const hash of processedSnapshots) {
+        await cache.setInHash(PROCESSED_SNAPSHOTS_HASH, hash, true)
+      }
       return processedSnapshots
     },
     async markSnapshotAsProcessed(snapshotHash: string) {
       await saveProcessedSnapshot(database, snapshotHash, Date.now())
-      await cache.set(snapshotHash, true)
+      await cache.setInHash(PROCESSED_SNAPSHOTS_HASH, snapshotHash, true)
       logger.info(`Processed Snapshot saved`, { snapshotHash })
     },
     async reset() {
-      const keys = await cache.keys()
-      await Promise.all(keys.map((key) => cache.remove(key)))
+      await cache.remove(PROCESSED_SNAPSHOTS_HASH)
     }
   }
 }
