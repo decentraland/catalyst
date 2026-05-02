@@ -1,6 +1,6 @@
 import { Entity } from '@dcl/schemas'
-import { IDatabaseComponent } from 'src/adapters/database'
-import { ActiveEntities } from '../logic/active-entities'
+import { IDatabaseComponent } from '../adapters/database'
+import { ActiveEntities } from './active-entities'
 
 export async function findEntityByPointer(
   database: IDatabaseComponent,

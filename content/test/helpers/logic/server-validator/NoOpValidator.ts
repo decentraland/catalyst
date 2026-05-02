@@ -1,5 +1,5 @@
 import { DeploymentToValidate, ValidationResponse } from '@dcl/content-validator'
-import { ServerValidator } from 'src/logic/server-validator'
+import { ServerValidator } from '../../../../src/logic/server-validator'
 import { AppComponents } from '../../../../src/types'
 import { State } from '../../../../src/adapters/synchronization-state'
 
