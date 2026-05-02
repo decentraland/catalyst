@@ -194,8 +194,12 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const pointerManager = new PointerManager()
 
-  const failedDeployments = await createFailedDeployments({ metrics, database })
-  const failedDeploymentsReporter = createFailedDeploymentsReporter({ database, failedDeployments })
+  const failedDeployments = await createFailedDeployments({ metrics, database, failedDeploymentsRepository })
+  const failedDeploymentsReporter = createFailedDeploymentsReporter({
+    database,
+    failedDeployments,
+    failedDeploymentsRepository
+  })
 
   const deployRateLimiter = createDeployRateLimiter(
     { logs, metrics },

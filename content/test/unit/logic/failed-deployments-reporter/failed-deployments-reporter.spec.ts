@@ -1,11 +1,11 @@
 import { EntityType } from '@dcl/schemas'
-import * as failedDeploymentQueries from '../../../../src/adapters/failed-deployments-repository'
 import {
   FailedDeployment,
   FailureReason,
   IFailedDeploymentsComponent,
   SnapshotFailedDeployment
 } from '../../../../src/adapters/failed-deployments-cache'
+import { IFailedDeploymentsRepository } from '../../../../src/adapters/failed-deployments-repository'
 import { DatabaseTransactionalClient, IDatabaseComponent } from '../../../../src/adapters/database'
 import { createFailedDeploymentsReporter } from '../../../../src/logic/failed-deployments-reporter'
 import { createDatabaseMockedComponent } from '../../../mocks/database-component-mock'
@@ -13,9 +13,8 @@ import { createDatabaseMockedComponent } from '../../../mocks/database-component
 describe('when the reporter is asked to report a failure', () => {
   let database: jest.Mocked<IDatabaseComponent>
   let failedDeployments: jest.Mocked<IFailedDeploymentsComponent>
+  let failedDeploymentsRepository: jest.Mocked<IFailedDeploymentsRepository>
   let baseSnapshotDeployment: SnapshotFailedDeployment
-  let saveSpy: jest.SpyInstance
-  let deleteSpy: jest.SpyInstance
 
   beforeEach(() => {
     database = createDatabaseMockedComponent()
@@ -26,6 +25,11 @@ describe('when the reporter is asked to report a failure', () => {
       removeFailedDeployment: jest.fn(),
       cacheFailedDeployment: jest.fn()
     }
+    failedDeploymentsRepository = {
+      saveSnapshotFailedDeployment: jest.fn(),
+      deleteFailedDeployment: jest.fn(),
+      getSnapshotFailedDeployments: jest.fn()
+    }
     baseSnapshotDeployment = {
       entityType: EntityType.PROFILE,
       entityId: 'entity-id',
@@ -35,8 +39,6 @@ describe('when the reporter is asked to report a failure', () => {
       errorDescription: 'some-error',
       snapshotHash: 'snapshot-hash'
     }
-    saveSpy = jest.spyOn(failedDeploymentQueries, 'saveSnapshotFailedDeployment').mockResolvedValue()
-    deleteSpy = jest.spyOn(failedDeploymentQueries, 'deleteFailedDeployment').mockResolvedValue()
   })
 
   afterEach(() => {
@@ -54,7 +56,11 @@ describe('when the reporter is asked to report a failure', () => {
         txClient = { insideTx: true, ...database } as DatabaseTransactionalClient
         database.transaction.mockImplementation((fn) => fn(txClient))
 
-        const reporter = createFailedDeploymentsReporter({ database, failedDeployments })
+        const reporter = createFailedDeploymentsReporter({
+          database,
+          failedDeployments,
+          failedDeploymentsRepository
+        })
         await reporter.reportFailure(reReportedDeployment)
       })
 
@@ -63,11 +69,17 @@ describe('when the reporter is asked to report a failure', () => {
       })
 
       it('should delete the previous row inside the transaction', () => {
-        expect(deleteSpy).toHaveBeenCalledWith(txClient, reReportedDeployment.entityId)
+        expect(failedDeploymentsRepository.deleteFailedDeployment).toHaveBeenCalledWith(
+          txClient,
+          reReportedDeployment.entityId
+        )
       })
 
       it('should save the new row inside the transaction', () => {
-        expect(saveSpy).toHaveBeenCalledWith(txClient, reReportedDeployment)
+        expect(failedDeploymentsRepository.saveSnapshotFailedDeployment).toHaveBeenCalledWith(
+          txClient,
+          reReportedDeployment
+        )
       })
 
       it('should write through to the cache after persistence succeeds', () => {
@@ -79,7 +91,11 @@ describe('when the reporter is asked to report a failure', () => {
       beforeEach(async () => {
         failedDeployments.findFailedDeployment.mockResolvedValueOnce(undefined)
 
-        const reporter = createFailedDeploymentsReporter({ database, failedDeployments })
+        const reporter = createFailedDeploymentsReporter({
+          database,
+          failedDeployments,
+          failedDeploymentsRepository
+        })
         await reporter.reportFailure(baseSnapshotDeployment)
       })
 
@@ -88,11 +104,14 @@ describe('when the reporter is asked to report a failure', () => {
       })
 
       it('should save the row using the pool client', () => {
-        expect(saveSpy).toHaveBeenCalledWith(database, baseSnapshotDeployment)
+        expect(failedDeploymentsRepository.saveSnapshotFailedDeployment).toHaveBeenCalledWith(
+          database,
+          baseSnapshotDeployment
+        )
       })
 
       it('should not call delete on the repository', () => {
-        expect(deleteSpy).not.toHaveBeenCalled()
+        expect(failedDeploymentsRepository.deleteFailedDeployment).not.toHaveBeenCalled()
       })
 
       it('should write through to the cache after persistence succeeds', () => {
@@ -114,7 +133,11 @@ describe('when the reporter is asked to report a failure', () => {
         errorDescription: 'some-error'
       }
 
-      const reporter = createFailedDeploymentsReporter({ database, failedDeployments })
+      const reporter = createFailedDeploymentsReporter({
+        database,
+        failedDeployments,
+        failedDeploymentsRepository
+      })
       await reporter.reportFailure(nonSnapshotDeployment)
     })
 
@@ -123,8 +146,8 @@ describe('when the reporter is asked to report a failure', () => {
     })
 
     it('should not call the repository (non-snapshot failures are not persisted)', () => {
-      expect(saveSpy).not.toHaveBeenCalled()
-      expect(deleteSpy).not.toHaveBeenCalled()
+      expect(failedDeploymentsRepository.saveSnapshotFailedDeployment).not.toHaveBeenCalled()
+      expect(failedDeploymentsRepository.deleteFailedDeployment).not.toHaveBeenCalled()
     })
 
     it('should still write through to the cache', () => {

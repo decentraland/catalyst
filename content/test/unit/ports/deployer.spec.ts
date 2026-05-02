@@ -18,7 +18,7 @@ import {
   isInvalidDeployment
 } from '../../../src/deployment-types'
 import * as deploymentQueries from '../../../src/adapters/deployments-repository'
-import * as failedDeploymentQueries from '../../../src/adapters/failed-deployments-repository'
+import { createFailedDeploymentsRepository } from '../../../src/adapters/failed-deployments-repository'
 import * as pointers from '../../../src/adapters/active-entities-repository'
 import * as deploymentLogic from '../../../src/logic/deployments'
 import * as deployments from '../../../src/logic/deployments'
@@ -72,8 +72,6 @@ describe('Deployer', function () {
   })
 
   it(`When no file matches the given entity id, then deployment fails`, async () => {
-    jest.spyOn(failedDeploymentQueries, 'getSnapshotFailedDeployments').mockResolvedValue([])
-    jest.spyOn(failedDeploymentQueries, 'deleteFailedDeployment').mockResolvedValue()
     const service = await buildDeployer()
     const deploymentResult = await service.deployEntity(
       [randomFile],
@@ -89,8 +87,6 @@ describe('Deployer', function () {
   })
 
   it(`When an entity is successfully deployed, then the content is stored correctly`, async () => {
-    jest.spyOn(failedDeploymentQueries, 'getSnapshotFailedDeployments').mockResolvedValue([])
-    jest.spyOn(failedDeploymentQueries, 'deleteFailedDeployment').mockResolvedValue()
     const service = await buildDeployer()
     const storageSpy = jest.spyOn(service.components.storage, 'storeStream')
 
@@ -205,7 +201,8 @@ describe('Deployer', function () {
     })
     const deployRateLimiter = createNoOpDeployRateLimiter()
     const metrics = createTestMetricsComponent(metricsDeclaration)
-    const failedDeployments = await createFailedDeployments({ metrics, database })
+    const failedDeploymentsRepository = createFailedDeploymentsRepository()
+    const failedDeployments = await createFailedDeployments({ metrics, database, failedDeploymentsRepository })
     const storage = createInMemoryStorage()
     const pointerManager = NoOpPointerManager.build()
     const authenticator = createAuthenticator(

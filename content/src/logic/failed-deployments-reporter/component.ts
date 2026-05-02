@@ -1,12 +1,11 @@
 import { isSnapshotFailedDeployment } from '../../adapters/failed-deployments-cache'
-import { deleteFailedDeployment, saveSnapshotFailedDeployment } from '../../adapters/failed-deployments-repository'
 import { AppComponents } from '../../types'
 import { IFailedDeploymentsReporter } from './types'
 
 export function createFailedDeploymentsReporter(
-  components: Pick<AppComponents, 'database' | 'failedDeployments'>
+  components: Pick<AppComponents, 'database' | 'failedDeployments' | 'failedDeploymentsRepository'>
 ): IFailedDeploymentsReporter {
-  const { database, failedDeployments } = components
+  const { database, failedDeployments, failedDeploymentsRepository } = components
 
   return {
     async reportFailure(deployment) {
@@ -16,11 +15,11 @@ export function createFailedDeploymentsReporter(
         const reported = await failedDeployments.findFailedDeployment(deployment.entityId)
         if (reported) {
           await database.transaction(async (txDatabase) => {
-            await deleteFailedDeployment(txDatabase, deployment.entityId)
-            await saveSnapshotFailedDeployment(txDatabase, deployment)
+            await failedDeploymentsRepository.deleteFailedDeployment(txDatabase, deployment.entityId)
+            await failedDeploymentsRepository.saveSnapshotFailedDeployment(txDatabase, deployment)
           }, 'tx_failed_deployments')
         } else {
-          await saveSnapshotFailedDeployment(database, deployment)
+          await failedDeploymentsRepository.saveSnapshotFailedDeployment(database, deployment)
         }
       }
       await failedDeployments.cacheFailedDeployment(deployment)

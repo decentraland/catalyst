@@ -15,6 +15,7 @@ import { Denylist } from '../../../src/adapters/denylist'
 import { createDeployedEntitiesBloomFilter } from '../../../src/adapters/deployed-entities-bloom-filter'
 import { createNoOpDeployRateLimiter } from '../../mocks/deploy-rate-limiter-mock'
 import { createFailedDeployments } from '../../../src/adapters/failed-deployments-cache'
+import { createFailedDeploymentsRepository } from '../../../src/adapters/failed-deployments-repository'
 import { createAuthenticator } from '../../../src/logic/authenticator'
 import { EntityVersion } from '../../../src/types'
 import { NoOpServerValidator, NoOpValidator } from '../../helpers/logic/server-validator/NoOpValidator'
@@ -455,7 +456,8 @@ async function buildComponents() {
   const logs = createLogsMockedComponent()
   const deployRateLimiter = createNoOpDeployRateLimiter()
   const metrics = createTestMetricsComponent(metricsDeclaration)
-  const failedDeployments = await createFailedDeployments({ metrics, database })
+  const failedDeploymentsRepository = createFailedDeploymentsRepository()
+  const failedDeployments = await createFailedDeployments({ metrics, database, failedDeploymentsRepository })
   const storage = createInMemoryStorage()
   const pointerManager = NoOpPointerManager.build()
   const authenticator = createAuthenticator(

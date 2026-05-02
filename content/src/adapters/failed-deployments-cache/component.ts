@@ -1,5 +1,4 @@
 import { createInMemoryCacheComponent } from '@dcl/memory-cache-component'
-import { deleteFailedDeployment, getSnapshotFailedDeployments } from '../failed-deployments-repository'
 import { AppComponents } from '../../types'
 import { FailedDeployment, IFailedDeploymentsComponent } from './types'
 
@@ -11,9 +10,9 @@ const FAILED_DEPLOYMENTS_METRIC = 'dcl_content_server_failed_deployments'
 const FAILED_DEPLOYMENTS_HASH = 'failed-deployments'
 
 export async function createFailedDeployments(
-  components: Pick<AppComponents, 'metrics' | 'database'>
+  components: Pick<AppComponents, 'metrics' | 'database' | 'failedDeploymentsRepository'>
 ): Promise<IFailedDeploymentsComponent> {
-  const { metrics, database } = components
+  const { metrics, database, failedDeploymentsRepository } = components
 
   // No TTL: the cache mirrors the failed_deployments table for the lifetime of the process,
   // and is enumerated by getAllFailedDeployments. Implicit eviction would silently drop entries
@@ -27,7 +26,7 @@ export async function createFailedDeployments(
 
   return {
     async start() {
-      const failedDeployments = await getSnapshotFailedDeployments(database)
+      const failedDeployments = await failedDeploymentsRepository.getSnapshotFailedDeployments(database)
       for (const deployment of failedDeployments) {
         await cache.setInHash(FAILED_DEPLOYMENTS_HASH, deployment.entityId, deployment)
       }
@@ -44,7 +43,7 @@ export async function createFailedDeployments(
     async removeFailedDeployment(entityId: string) {
       const found = await cache.getFromHash<FailedDeployment>(FAILED_DEPLOYMENTS_HASH, entityId)
       if (found) {
-        await deleteFailedDeployment(database, entityId)
+        await failedDeploymentsRepository.deleteFailedDeployment(database, entityId)
         await cache.removeFromHash(FAILED_DEPLOYMENTS_HASH, entityId)
         await observeSize()
       }

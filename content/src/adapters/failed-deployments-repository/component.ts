@@ -3,7 +3,7 @@ import { DatabaseClient } from '../../adapters/database'
 import { SnapshotFailedDeployment } from '../failed-deployments-cache'
 import { IFailedDeploymentsRepository } from './types'
 
-export async function saveSnapshotFailedDeployment(
+async function saveSnapshotFailedDeployment(
   database: DatabaseClient,
   failedDeployment: SnapshotFailedDeployment
 ): Promise<void> {
@@ -20,14 +20,14 @@ export async function saveSnapshotFailedDeployment(
   await database.queryWithValues(query, 'save_failed_deployment')
 }
 
-export async function deleteFailedDeployment(database: DatabaseClient, entityId: string): Promise<void> {
+async function deleteFailedDeployment(database: DatabaseClient, entityId: string): Promise<void> {
   await database.queryWithValues<{ count: string }>(
     SQL`DELETE FROM failed_deployments WHERE entity_id = ${entityId}`,
     'delete_failed_deployment'
   )
 }
 
-export async function getSnapshotFailedDeployments(database: DatabaseClient): Promise<SnapshotFailedDeployment[]> {
+async function getSnapshotFailedDeployments(database: DatabaseClient): Promise<SnapshotFailedDeployment[]> {
   const query = SQL`
   SELECT
       entity_id AS "entityId",

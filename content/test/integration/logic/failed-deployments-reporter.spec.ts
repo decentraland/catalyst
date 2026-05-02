@@ -1,6 +1,5 @@
 import { EntityType } from '@dcl/schemas'
 import LeakDetector from 'jest-leak-detector'
-import { saveSnapshotFailedDeployment } from '../../../src/adapters/failed-deployments-repository'
 import {
   createFailedDeployments,
   FailureReason,
@@ -47,7 +46,11 @@ describe('when reporting a failure end-to-end against a real database', () => {
     beforeEach(async () => {
       newDeployment = { ...baseDeployment, entityId: 'fresh-entity' }
       const cache = await startCacheWith(server, [baseDeployment])
-      const reporter = createFailedDeploymentsReporter({ database: server.components.database, failedDeployments: cache })
+      const reporter = createFailedDeploymentsReporter({
+        database: server.components.database,
+        failedDeployments: cache,
+        failedDeploymentsRepository: server.components.failedDeploymentsRepository
+      })
       await reporter.reportFailure(newDeployment)
       reReadCache = await startCacheWith(server, [])
     })
@@ -65,7 +68,11 @@ describe('when reporting a failure end-to-end against a real database', () => {
     beforeEach(async () => {
       updatedDeployment = { ...baseDeployment, failureTimestamp: baseDeployment.failureTimestamp + 10 }
       const cache = await startCacheWith(server, [baseDeployment])
-      const reporter = createFailedDeploymentsReporter({ database: server.components.database, failedDeployments: cache })
+      const reporter = createFailedDeploymentsReporter({
+        database: server.components.database,
+        failedDeployments: cache,
+        failedDeploymentsRepository: server.components.failedDeploymentsRepository
+      })
       await reporter.reportFailure(updatedDeployment)
       reReadCache = await startCacheWith(server, [])
     })
@@ -84,7 +91,7 @@ async function startCacheWith(
 ): Promise<IFailedDeploymentsComponent> {
   await server.components.database.transaction(async (db) => {
     for (const deployment of base) {
-      await saveSnapshotFailedDeployment(db, deployment)
+      await server.components.failedDeploymentsRepository.saveSnapshotFailedDeployment(db, deployment)
     }
   })
   const cache = await createFailedDeployments(server.components)

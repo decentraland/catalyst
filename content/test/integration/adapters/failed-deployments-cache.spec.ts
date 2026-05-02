@@ -1,6 +1,5 @@
 import { EntityType } from '@dcl/schemas'
 import LeakDetector from 'jest-leak-detector'
-import { saveSnapshotFailedDeployment } from '../../../src/adapters/failed-deployments-repository'
 import {
   createFailedDeployments,
   FailureReason,
@@ -89,7 +88,7 @@ async function startCacheWith(
 ): Promise<IFailedDeploymentsComponent> {
   await server.components.database.transaction(async (db) => {
     for (const deployment of base) {
-      await saveSnapshotFailedDeployment(db, deployment)
+      await server.components.failedDeploymentsRepository.saveSnapshotFailedDeployment(db, deployment)
     }
   })
   const cache = await createFailedDeployments(server.components)
