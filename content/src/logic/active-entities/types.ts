@@ -1,6 +1,6 @@
 import { Entity } from '@dcl/schemas'
 import { IBaseComponent } from '@well-known-components/interfaces'
-import { DatabaseClient } from '../../ports/postgres'
+import { DatabaseClient } from '../../adapters/database'
 
 export const BASE_AVATARS_COLLECTION_ID = 'urn:decentraland:off-chain:base-avatars'
 export const BASE_EMOTES_COLLECTION_ID = 'urn:decentraland:off-chain:base-emotes'

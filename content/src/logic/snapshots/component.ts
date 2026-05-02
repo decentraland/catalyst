@@ -9,7 +9,7 @@ import {
   snapshotIsOutdated,
   streamActiveDeploymentsInTimeRange
 } from '../../adapters/snapshots-repository'
-import { DatabaseClient } from '../../ports/postgres'
+import { DatabaseClient } from '../../adapters/database'
 import { AppComponents } from '../../types'
 import {
   divideTimeInYearsMonthsWeeksAndDays,

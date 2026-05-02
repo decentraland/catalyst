@@ -1,5 +1,5 @@
 import SQL from 'sql-template-strings'
-import { DatabaseClient } from '../../ports/postgres'
+import { DatabaseClient } from '../../adapters/database'
 import { IActiveEntitiesRepository } from './types'
 
 export async function updateActiveDeployments(

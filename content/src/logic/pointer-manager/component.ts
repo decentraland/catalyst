@@ -1,6 +1,6 @@
 import { Entity } from '@dcl/schemas'
 import { getDeployments } from '../../adapters/deployments-repository'
-import { DatabaseClient } from '../../ports/postgres'
+import { DatabaseClient } from '../../adapters/database'
 import { DELTA_POINTER_RESULT, DeploymentResult } from './types'
 
 /**

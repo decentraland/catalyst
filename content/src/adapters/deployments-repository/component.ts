@@ -4,7 +4,7 @@ import { TimeRange } from '@dcl/snapshots-fetcher/dist/types'
 import pg from 'pg'
 import SQL, { SQLStatement } from 'sql-template-strings'
 import { AuditInfo, DeploymentFilters, DeploymentSorting, SortingField, SortingOrder } from '../../deployment-types'
-import { DatabaseClient, DatabaseTransactionalClient } from '../../ports/postgres'
+import { DatabaseClient, DatabaseTransactionalClient } from '../../adapters/database'
 import { DeploymentId } from '../../types'
 import { HistoricalDeployment, HistoricalDeploymentsRow, IDeploymentsRepository } from './types'
 

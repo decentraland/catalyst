@@ -2,7 +2,7 @@ import { createConfigComponent } from '@well-known-components/env-config-provide
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { createLogComponent } from '@well-known-components/logger'
 import * as snapshotQueries from '../../../src/adapters/snapshots-repository'
-import { createTestDatabaseComponent } from '../../../src/ports/postgres'
+import { createTestDatabaseComponent } from '../../mocks/database-component-mock'
 import { createProcessedSnapshotStorage } from '../../../src/ports/processedSnapshotStorage'
 
 describe('processed snapshot storage', () => {

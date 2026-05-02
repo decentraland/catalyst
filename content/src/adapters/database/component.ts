@@ -1,52 +1,11 @@
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
-import { IBaseComponent, IDatabase } from '@well-known-components/interfaces'
+import { IDatabase } from '@well-known-components/interfaces'
 import { Client, ClientConfig, Pool, PoolClient, PoolConfig } from 'pg'
 import QueryStream from 'pg-query-stream'
 import { SQLStatement } from 'sql-template-strings'
-import { EnvironmentConfig } from '../Environment'
-import { AppComponents } from '../types'
-
-export type DatabaseClient = Omit<IDatabaseComponent, 'transaction'>
-
-export type DatabaseTransactionalClient = DatabaseClient & {
-  insideTx: true
-}
-
-export interface IDatabaseComponent extends IDatabase, IBaseComponent {
-  queryWithValues<T extends Record<string, any>>(
-    sql: SQLStatement,
-    durationQueryNameLabel?: string
-  ): Promise<IDatabase.IQueryResult<T>>
-  streamQuery<T = any>(
-    sql: SQLStatement,
-    config?: { batchSize?: number },
-    durationQueryNameLabel?: string
-  ): AsyncGenerator<T>
-  transaction(
-    functionToRunWithinTransaction: (client: DatabaseTransactionalClient) => Promise<void>,
-    durationQueryNameLabel?: string
-  ): Promise<void>
-  start?(): Promise<void>
-}
-
-export function createTestDatabaseComponent(): IDatabaseComponent {
-  return {
-    async query() {
-      throw new Error('query Not implemented')
-    },
-    async queryWithValues() {
-      throw new Error('queryWithValues Not implemented')
-    },
-    async *streamQuery() {
-      throw new Error('streamQuery Not implemented')
-    },
-    async transaction() {
-      throw new Error('transactionQuery Not implemented')
-    },
-    async start() {},
-    async stop() {}
-  }
-}
+import { EnvironmentConfig } from '../../Environment'
+import { AppComponents } from '../../types'
+import { DatabaseTransactionalClient, IDatabaseComponent } from './types'
 
 export async function createDatabaseComponent(
   components: Pick<AppComponents, 'logs' | 'env' | 'metrics'>,

@@ -3,7 +3,7 @@ import { Entity, EntityType, SnapshotSyncDeployment } from '@dcl/schemas'
 import { TimeRange } from '@dcl/snapshots-fetcher/dist/types'
 import { SQLStatement } from 'sql-template-strings'
 import { AuditInfo, DeploymentFilters, DeploymentSorting } from '../../deployment-types'
-import { DatabaseClient, DatabaseTransactionalClient } from '../../ports/postgres'
+import { DatabaseClient, DatabaseTransactionalClient } from '../../adapters/database'
 import { DeploymentId } from '../../types'
 
 export type HistoricalDeployment = SnapshotSyncDeployment & {

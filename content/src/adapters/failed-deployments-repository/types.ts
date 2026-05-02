@@ -1,4 +1,4 @@
-import { DatabaseClient } from '../../ports/postgres'
+import { DatabaseClient } from '../../adapters/database'
 import { SnapshotFailedDeployment } from '../../ports/failedDeployments'
 
 export interface IFailedDeploymentsRepository {

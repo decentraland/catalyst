@@ -5,7 +5,7 @@ import { DEFAULT_DATABASE_CONFIG, Environment, EnvironmentBuilder, EnvironmentCo
 import { stopAllComponents } from '../../src/logic/components-lifecycle'
 import { metricsDeclaration } from '../../src/metrics'
 import { createMigrationExecutor } from '../../src/migrations/migration-executor'
-import { createDatabaseComponent } from '../../src/ports/postgres'
+import { createDatabaseComponent } from '../../src/adapters/database'
 import { MockedDAOClient } from '../helpers/service/synchronization/clients/MockedDAOClient'
 import { random } from 'faker'
 import { createNoOpDeployRateLimiter } from '../mocks/deploy-rate-limiter-mock'

@@ -5,7 +5,7 @@ import {
   createDeploymentsComponent,
   IDeploymentsComponent
 } from '../../../src/logic/deployments'
-import { IDatabaseComponent } from '../../../src/ports/postgres'
+import { IDatabaseComponent } from '../../../src/adapters/database'
 import { createDatabaseMockedComponent } from '../../mocks/database-component-mock'
 import {
   createHistoricalDeploymentRowWithContentMock,

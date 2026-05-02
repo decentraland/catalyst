@@ -1,6 +1,6 @@
 import { SnapshotSyncDeployment } from '@dcl/schemas'
 import { SnapshotMetadata, TimeRange } from '@dcl/snapshots-fetcher/dist/types'
-import { DatabaseClient } from '../../ports/postgres'
+import { DatabaseClient } from '../../adapters/database'
 
 export interface ISnapshotsRepository {
   streamActiveDeploymentsInTimeRange(db: DatabaseClient, timeRange: TimeRange): AsyncIterable<SnapshotSyncDeployment>

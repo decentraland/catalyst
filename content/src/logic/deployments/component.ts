@@ -22,7 +22,7 @@ import {
   PointerChangesOptions
 } from '../../deployment-types'
 import { FailedDeployment } from '../../ports/failedDeployments'
-import { DatabaseClient, DatabaseTransactionalClient } from '../../ports/postgres'
+import { DatabaseClient, DatabaseTransactionalClient } from '../../adapters/database'
 import { deployEntityFromRemoteServer } from '../sync-orchestrator'
 import { IGNORING_FIX_ERROR } from '../server-validator'
 import { AppComponents, DeploymentId, EntityVersion } from '../../types'

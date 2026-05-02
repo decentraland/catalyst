@@ -30,7 +30,7 @@ import { createDeployedEntitiesBloomFilter } from '../../../src/adapters/deploye
 import { createDeploymentService } from '../../../src/logic/deployment-service'
 import { createPointerLockManager } from '../../../src/adapters/pointer-lock-manager'
 import { createFailedDeployments } from '../../../src/ports/failedDeployments'
-import { createTestDatabaseComponent } from '../../../src/ports/postgres'
+import { createTestDatabaseComponent } from '../../mocks/database-component-mock'
 import { createSequentialTaskExecutor } from '../../../src/logic/sequential-task-executor'
 import { createAuthenticator } from '../../../src/logic/authenticator'
 import { DELTA_POINTER_RESULT } from '../../../src/logic/pointer-manager'

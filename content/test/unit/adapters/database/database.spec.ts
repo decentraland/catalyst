@@ -4,9 +4,9 @@ import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@dcl/metrics'
 import { Pool } from 'pg'
 import SQL from 'sql-template-strings'
-import { Environment } from '../../../src/Environment'
-import { metricsDeclaration } from '../../../src/metrics'
-import { createDatabase } from '../../../src/ports/postgres'
+import { Environment } from '../../../../src/Environment'
+import { metricsDeclaration } from '../../../../src/metrics'
+import { createDatabase } from '../../../../src/adapters/database'
 
 const metrics = createTestMetricsComponent(metricsDeclaration)
 const env = new Environment()

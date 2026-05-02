@@ -1,4 +1,4 @@
-import { DatabaseClient } from '../../ports/postgres'
+import { DatabaseClient } from '../../adapters/database'
 
 export interface IActiveEntitiesRepository {
   /**
