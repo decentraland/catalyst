@@ -10,6 +10,9 @@ import { metricsDeclaration } from '../metrics'
 import { migrateContentFolderStructure } from '../migrations/ContentFolderMigrationManager'
 import { createMigrationExecutor } from '../migrations/migration-executor'
 import { createDatabaseComponent } from '../adapters/database'
+import { createContentFilesRepository } from '../adapters/content-files-repository'
+import { createDeploymentsRepository } from '../adapters/deployments-repository'
+import { createSnapshotsRepository } from '../adapters/snapshots-repository'
 import { MaintenanceComponents } from '../types'
 
 void Lifecycle.run({
@@ -41,7 +44,21 @@ void Lifecycle.run({
     // This must run with a FolderBasedFileSystem implementation of IContentStorageComponent
     const storage = await createFolderBasedFileSystemContentStorage({ fs, logs }, contentStorageFolder)
     const migrationManager = createMigrationExecutor({ logs, env })
+    const contentFilesRepository = createContentFilesRepository()
+    const deploymentsRepository = createDeploymentsRepository()
+    const snapshotsRepository = createSnapshotsRepository()
     env.logConfigValues(logs.getLogger('Environment'))
-    return { logs, metrics, env, database, migrationManager, fs, storage }
+    return {
+      logs,
+      metrics,
+      env,
+      database,
+      migrationManager,
+      fs,
+      storage,
+      contentFilesRepository,
+      deploymentsRepository,
+      snapshotsRepository
+    }
   }
 })

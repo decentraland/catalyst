@@ -54,7 +54,7 @@ describe('Integration - Order Check', () => {
     })
   })
 
-  async function assertCommitsWhereDoneCorrectly(components: Pick<AppComponents, 'database' | 'denylist' | 'metrics'>) {
+  async function assertCommitsWhereDoneCorrectly(components: Pick<AppComponents, 'database' | 'denylist' | 'metrics' | 'contentFilesRepository' | 'deploymentsRepository'>) {
     // Assert only E5 is active
     const activeEntities = await getActiveDeployments(components)
     expect(activeEntities.length).toEqual(1)
@@ -62,7 +62,7 @@ describe('Integration - Order Check', () => {
     expect(activeEntity.entityId).toEqual(E5.entity.id)
   }
 
-  async function getActiveDeployments(components: Pick<AppComponents, 'database' | 'denylist' | 'metrics'>) {
+  async function getActiveDeployments(components: Pick<AppComponents, 'database' | 'denylist' | 'metrics' | 'contentFilesRepository' | 'deploymentsRepository'>) {
     const { deployments } = await getDeployments(components, components.database, {
       filters: {
         onlyCurrentlyPointed: true

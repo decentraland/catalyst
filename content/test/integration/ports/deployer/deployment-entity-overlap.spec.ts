@@ -141,7 +141,7 @@ describe('Integration - Deployment with Entity Overlaps', () => {
   })
 
   async function assertDeploymentsAre(
-    components: Pick<AppComponents, 'database' | 'denylist' | 'metrics'>,
+    components: Pick<AppComponents, 'database' | 'denylist' | 'metrics' | 'contentFilesRepository' | 'deploymentsRepository'>,
     ...expectedEntities: EntityCombo[]
   ) {
     const actualDeployments = await getDeployments(components, components.database, {

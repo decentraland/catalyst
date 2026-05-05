@@ -1,13 +1,13 @@
 import * as bf from 'bloom-filters'
 import PQueue from 'p-queue'
-import { streamAllDistinctContentFileHashes } from '../../adapters/content-files-repository'
-import { streamAllDistinctEntityIds } from '../../adapters/deployments-repository'
-import { getAllSnapshotHashes } from '../../adapters/snapshots-repository'
 import { runLoggingPerformance } from '../../instrument'
 import { AppComponents } from '../../types'
 
 export async function deleteUnreferencedFiles(
-  components: Pick<AppComponents, 'logs' | 'database' | 'storage' | 'fs'>
+  components: Pick<
+    AppComponents,
+    'logs' | 'database' | 'storage' | 'fs' | 'contentFilesRepository' | 'deploymentsRepository' | 'snapshotsRepository'
+  >
 ): Promise<void> {
   const logger = components.logs.getLogger('UnreferencedFilesDeleter')
   const referencedHashesBloom = bf.BloomFilter.create(15_000_000, 0.001)
@@ -25,19 +25,23 @@ export async function deleteUnreferencedFiles(
     const totalEntityIds = await runLoggingPerformance(
       logger,
       'add stream of entity ids to bloom filter',
-      async () => await addAllToBloomFilter(streamAllDistinctEntityIds(components.database))
+      async () =>
+        await addAllToBloomFilter(components.deploymentsRepository.streamAllDistinctEntityIds(components.database))
     )
 
     const totalContentFileHashes = await runLoggingPerformance(
       logger,
       'add of stream content file hashes to bloom filter',
-      async () => await addAllToBloomFilter(streamAllDistinctContentFileHashes(components.database))
+      async () =>
+        await addAllToBloomFilter(
+          components.contentFilesRepository.streamAllDistinctContentFileHashes(components.database)
+        )
     )
 
     const totalSnapshotHashes = await runLoggingPerformance(
       logger,
       'add of stream snapshot hashes to bloom filter',
-      async () => await addAllToBloomFilter(getAllSnapshotHashes(components.database))
+      async () => await addAllToBloomFilter(components.snapshotsRepository.getAllSnapshotHashes(components.database))
     )
     logger.info(
       `Created bloom filter with ${totalEntityIds} entity ids, ${totalContentFileHashes} content hashes and ${totalSnapshotHashes} snapshot hashes.`

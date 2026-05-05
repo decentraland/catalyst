@@ -1,10 +1,6 @@
 import * as loggerComponent from '@well-known-components/logger'
 import SQL from 'sql-template-strings'
 import { Deployment } from '../../../src/deployment-types'
-import {
-  findSnapshotsStrictlyContainedInTimeRange,
-  getProcessedSnapshots
-} from '../../../src/adapters/snapshots-repository'
 import { getDeployments } from '../../../src/logic/deployments'
 import * as timeRangeLogic from '../../../src/logic/time-range'
 import { assertDeploymentsAreReported, buildDeployment } from '../E2EAssertions'
@@ -69,7 +65,7 @@ describe('Bootstrapping synchronization tests', function () {
       ).rows.map((s) => s.hash)
     )
 
-    const server2ProcessedSnapshots = await getProcessedSnapshots(
+    const server2ProcessedSnapshots = await server2.components.snapshotsRepository.getProcessedSnapshots(
       server2.components.database,
       Array.from(server1Snapshots)
     )
@@ -144,10 +140,13 @@ describe('Bootstrapping synchronization tests', function () {
     )
     jest.spyOn(server2.components.snapshotStorage, 'has').mockResolvedValue(false)
     await startProgramAndWaitUntilBootstrapFinishes(server2)
-    const sevenDaysSnapshots = await findSnapshotsStrictlyContainedInTimeRange(server1.components.database, {
-      initTimestamp: initialTimestamp,
-      endTimestamp: fakeNow()
-    })
+    const sevenDaysSnapshots = await server1.components.snapshotsRepository.findSnapshotsStrictlyContainedInTimeRange(
+      server1.components.database,
+      {
+        initTimestamp: initialTimestamp,
+        endTimestamp: fakeNow()
+      }
+    )
     expect(sevenDaysSnapshots).toHaveLength(7)
     expect(markSnapshotAsProcessedSpy).toBeCalledTimes(3)
     for (const snapshotHash of sevenDaysSnapshots.map((s) => s.hash)) {
@@ -182,10 +181,13 @@ describe('Bootstrapping synchronization tests', function () {
     ).onSyncFinished()
     await server2.components.downloadQueue.onIdle()
     await server2.components.batchDeployer.onIdle()
-    const eightDaysSnapshots = await findSnapshotsStrictlyContainedInTimeRange(server1.components.database, {
-      initTimestamp: initialTimestamp,
-      endTimestamp: fakeNow()
-    })
+    const eightDaysSnapshots = await server1.components.snapshotsRepository.findSnapshotsStrictlyContainedInTimeRange(
+      server1.components.database,
+      {
+        initTimestamp: initialTimestamp,
+        endTimestamp: fakeNow()
+      }
+    )
     expect(eightDaysSnapshots).toHaveLength(2)
     const oldSnapshots = new Set(sevenDaysSnapshots)
     for (const newSnapshotHash of eightDaysSnapshots) {

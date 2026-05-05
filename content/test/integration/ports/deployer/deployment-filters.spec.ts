@@ -108,7 +108,7 @@ describe('Integration - Deployment Filters', () => {
   })
 
   async function assertDeploymentsWithFilterAre(
-    components: Pick<AppComponents, 'database' | 'denylist' | 'metrics'>,
+    components: Pick<AppComponents, 'database' | 'denylist' | 'metrics' | 'contentFilesRepository' | 'deploymentsRepository'>,
     filter: DeploymentFilters,
     ...expectedEntities: EntityCombo[]
   ) {

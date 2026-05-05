@@ -1,13 +1,14 @@
-import { isOwnSnapshot } from '../snapshots-repository'
 import { AppComponents } from '../../types'
 import { SnapshotStorage } from './types'
 
-export function createSnapshotStorage(components: Pick<AppComponents, 'database'>): SnapshotStorage {
-  const { database } = components
+export function createSnapshotStorage(
+  components: Pick<AppComponents, 'database' | 'snapshotsRepository'>
+): SnapshotStorage {
+  const { database, snapshotsRepository } = components
 
   return {
     async has(snapshotHash: string) {
-      return isOwnSnapshot(database, snapshotHash)
+      return snapshotsRepository.isOwnSnapshot(database, snapshotHash)
     }
   }
 }

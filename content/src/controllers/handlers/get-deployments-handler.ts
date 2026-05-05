@@ -14,7 +14,10 @@ export const DEFAULT_FIELDS_ON_DEPLOYMENTS: DeploymentField[] = [
 // Method: GET
 // Query String: ?from={timestamp}&toLocalTimestamp={timestamp}&entityType={entityType}&entityId={entityId}&onlyCurrentlyPointed={boolean}
 export async function getDeploymentsHandler(
-  context: HandlerContextWithPath<'database' | 'denylist' | 'metrics' | 'sequentialExecutor', '/deployments'>
+  context: HandlerContextWithPath<
+    'database' | 'denylist' | 'metrics' | 'sequentialExecutor' | 'deploymentsRepository' | 'contentFilesRepository',
+    '/deployments'
+  >
 ) {
   const queryParams = qsParser(context.url.searchParams)
   const entityTypes: (EntityType | undefined)[] = qsGetArray(queryParams, 'entityType').map((type) =>

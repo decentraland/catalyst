@@ -1,6 +1,5 @@
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import SQL from 'sql-template-strings'
-import { findContentHashesNotBeingUsedAnymore } from '../../adapters/content-files-repository'
 import { SYSTEM_PROPERTIES } from '../../adapters/system-properties'
 import { AppComponents, PROFILE_DURATION } from '../../types'
 import { GCStaleProfilesResult, SweepResult } from './types'
@@ -18,7 +17,7 @@ export class GarbageCollectionManager {
   constructor(
     private readonly components: Pick<
       AppComponents,
-      'systemProperties' | 'metrics' | 'logs' | 'storage' | 'database' | 'activeEntities'
+      'systemProperties' | 'metrics' | 'logs' | 'storage' | 'database' | 'activeEntities' | 'contentFilesRepository'
     >,
     private readonly performGarbageCollection: boolean,
     private readonly sweepInterval: number
@@ -44,7 +43,10 @@ export class GarbageCollectionManager {
    * If they are not being used, then we will delete them.
    */
   async gcUnusedHashes(): Promise<Set<string>> {
-    const hashes = await findContentHashesNotBeingUsedAnymore(this.components.database, this.lastTimeOfCollection)
+    const hashes = await this.components.contentFilesRepository.findContentHashesNotBeingUsedAnymore(
+      this.components.database,
+      this.lastTimeOfCollection
+    )
 
     this.components.metrics.increment('dcl_content_garbage_collection_items_total', {}, hashes.length)
 

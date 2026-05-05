@@ -27,13 +27,14 @@ import { DAOComponent } from './adapters/dao-client'
 import { Denylist } from './adapters/denylist'
 import { IDeploymentsRepository } from './adapters/deployments-repository'
 import { IDeployRateLimiterComponent } from './adapters/deploy-rate-limiter'
+import { IFailedDeploymentsReporter } from './logic/failed-deployments-reporter'
 import { IFailedDeploymentsRepository } from './adapters/failed-deployments-repository'
 import { IPointersRepository } from './adapters/pointers-repository'
 import { ISnapshotsRepository } from './adapters/snapshots-repository'
 import { DeployedEntitiesBloomFilter } from './adapters/deployed-entities-bloom-filter'
 import { Deployer } from './logic/deployment-service'
 import { IPointerLockManager } from './adapters/pointer-lock-manager'
-import { IFailedDeploymentsComponent } from './ports/failedDeployments'
+import { IFailedDeploymentsComponent } from './adapters/failed-deployments-cache'
 import { IDatabaseComponent } from './adapters/database'
 import { ISequentialTaskExecutorComponent } from './logic/sequential-task-executor'
 import { SnapshotGenerator } from './adapters/snapshot-generator'
@@ -44,7 +45,7 @@ import { PointerManager } from './logic/pointer-manager'
 import { IChallengeSupervisor } from './logic/challenge-supervisor'
 import { IContentClusterComponent } from './logic/peer-cluster'
 import { IRetryFailedDeploymentsComponent } from './logic/retry-failed-deployments'
-import { ProcessedSnapshotsStorageComponent } from './ports/processedSnapshotStorage'
+import { ProcessedSnapshotsStorageComponent } from './adapters/processed-snapshot-storage'
 import ms from 'ms'
 import { IDeploymentsComponent } from './logic/deployments'
 import { IJobComponent } from '@dcl/job-component'
@@ -100,6 +101,7 @@ export type AppComponents = {
   contentCluster: IContentClusterComponent
   pointerManager: PointerManager
   failedDeployments: IFailedDeploymentsComponent
+  failedDeploymentsReporter: IFailedDeploymentsReporter
   deployRateLimiter: IDeployRateLimiterComponent
   storage: IContentStorageComponent
   authenticator: IAuthenticator
@@ -134,6 +136,9 @@ export type MaintenanceComponents = {
   storage: IContentStorageComponent
   fs: IFileSystemComponent
   migrationManager: MigrationExecutor
+  contentFilesRepository: IContentFilesRepository
+  deploymentsRepository: IDeploymentsRepository
+  snapshotsRepository: ISnapshotsRepository
 }
 
 export type Timestamp = number

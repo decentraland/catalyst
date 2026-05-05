@@ -1,14 +1,5 @@
 import { SnapshotMetadata, TimeRange } from '@dcl/snapshots-fetcher/dist/types'
 import { createFileWriter, IFile } from '../../adapters/content-file-writer'
-import {
-  deleteSnapshotsInTimeRange,
-  findSnapshotsStrictlyContainedInTimeRange,
-  getNumberOfActiveEntitiesInTimeRange,
-  getSnapshotHashesNotInTimeRange,
-  saveSnapshot,
-  snapshotIsOutdated,
-  streamActiveDeploymentsInTimeRange
-} from '../../adapters/snapshots-repository'
 import { DatabaseClient } from '../../adapters/database'
 import { AppComponents } from '../../types'
 import {
@@ -19,7 +10,10 @@ import {
 } from '../time-range'
 
 export async function generateAndStoreSnapshot(
-  components: Pick<AppComponents, 'fs' | 'metrics' | 'storage' | 'logs' | 'denylist' | 'staticConfigs'>,
+  components: Pick<
+    AppComponents,
+    'fs' | 'metrics' | 'storage' | 'logs' | 'denylist' | 'staticConfigs' | 'snapshotsRepository'
+  >,
   database: DatabaseClient,
   timeRange: TimeRange,
   reason?: string
@@ -37,7 +31,10 @@ export async function generateAndStoreSnapshot(
     fileWriter = await createFileWriter(components, 'tmp-all-entities-snapshot')
     // this header is necessary to later differentiate between binary formats and non-binary formats
     await fileWriter.appendDebounced('### Decentraland json snapshot\n')
-    for await (const snapshotElem of streamActiveDeploymentsInTimeRange(database, timeRange)) {
+    for await (const snapshotElem of components.snapshotsRepository.streamActiveDeploymentsInTimeRange(
+      database,
+      timeRange
+    )) {
       const stringifiedElement = JSON.stringify(snapshotElem) + '\n'
       await fileWriter.appendDebounced(stringifiedElement)
       numberOfEntities++
@@ -57,14 +54,20 @@ export async function generateAndStoreSnapshot(
 }
 
 export async function generateSnapshotsInMultipleTimeRanges(
-  components: Pick<AppComponents, 'database' | 'fs' | 'metrics' | 'storage' | 'logs' | 'denylist' | 'staticConfigs'>,
+  components: Pick<
+    AppComponents,
+    'database' | 'fs' | 'metrics' | 'storage' | 'logs' | 'denylist' | 'staticConfigs' | 'snapshotsRepository'
+  >,
   timeRangeToDivide: TimeRange
 ): Promise<SnapshotMetadata[]> {
   const logger = components.logs.getLogger('snapshot-generation')
   const snapshotMetadatas: SnapshotMetadata[] = []
   const timeRangeDivision = divideTimeInYearsMonthsWeeksAndDays(timeRangeToDivide)
   for (const timeRange of timeRangeDivision.intervals) {
-    const savedSnapshots = await findSnapshotsStrictlyContainedInTimeRange(components.database, timeRange)
+    const savedSnapshots = await components.snapshotsRepository.findSnapshotsStrictlyContainedInTimeRange(
+      components.database,
+      timeRange
+    )
 
     const isTimeRangeCoveredByOtherSnapshots = isTimeRangeCoveredBy(
       timeRange,
@@ -77,10 +80,14 @@ export async function generateSnapshotsInMultipleTimeRanges(
       savedSnapshots.length == 1 &&
       // If snapshot is 1 month old, we recompile it if there are inactive entities
       savedSnapshots[0].generationTimestamp < Date.now() - MS_PER_MONTH &&
-      (await getNumberOfActiveEntitiesInTimeRange(components.database, savedSnapshots[0].timeRange)) <
-        savedSnapshots[0].numberOfEntities
+      (await components.snapshotsRepository.getNumberOfActiveEntitiesInTimeRange(
+        components.database,
+        savedSnapshots[0].timeRange
+      )) < savedSnapshots[0].numberOfEntities
 
-    const isOutdated = savedSnapshots.length == 1 && (await snapshotIsOutdated(components.database, savedSnapshots[0]))
+    const isOutdated =
+      savedSnapshots.length == 1 &&
+      (await components.snapshotsRepository.snapshotIsOutdated(components.database, savedSnapshots[0]))
 
     const shouldGenerateNewSnapshot =
       !isTimeRangeCoveredByOtherSnapshots ||
@@ -126,17 +133,18 @@ export async function generateSnapshotsInMultipleTimeRanges(
           numberOfEntities,
           generationTimestamp: Date.now()
         }
-        const snapshotHashesUsedInOtherTimeRanges = await getSnapshotHashesNotInTimeRange(
-          txDatabase,
-          savedSnapshotHashes,
-          timeRange
-        )
+        const snapshotHashesUsedInOtherTimeRanges =
+          await components.snapshotsRepository.getSnapshotHashesNotInTimeRange(
+            txDatabase,
+            savedSnapshotHashes,
+            timeRange
+          )
         const snapshotHashesToDeleteInStorage = savedSnapshotHashes.filter(
           (hash) => !snapshotHashesUsedInOtherTimeRanges.has(hash) && hash != newSnapshot.hash
         )
         // The order is important, the snapshot to save could have the same hash of one of the ones to be deleted
-        await deleteSnapshotsInTimeRange(txDatabase, savedSnapshotHashes, timeRange)
-        await saveSnapshot(txDatabase, newSnapshot)
+        await components.snapshotsRepository.deleteSnapshotsInTimeRange(txDatabase, savedSnapshotHashes, timeRange)
+        await components.snapshotsRepository.saveSnapshot(txDatabase, newSnapshot)
         logger.info(`Snapshots to delete: ${JSON.stringify(Array.from(snapshotHashesToDeleteInStorage))}`)
         await components.storage.delete(snapshotHashesToDeleteInStorage)
         snapshotMetadatas.push(newSnapshot)

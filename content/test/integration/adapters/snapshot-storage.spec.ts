@@ -1,4 +1,3 @@
-import * as snapshotQueries from '../../../src/adapters/snapshots-repository'
 import { TestProgram } from '../TestProgram'
 import LeakDetector from 'jest-leak-detector'
 import { createDefaultServer } from '../simpleTestEnvironment'
@@ -21,7 +20,7 @@ describe('snapshot storage', () => {
   it('should return true if the snapshot is stored', async () => {
     const { components } = server
     const snapshotHash = 'snapshotHash'
-    await snapshotQueries.saveSnapshot(components.database, {
+    await components.snapshotsRepository.saveSnapshot(components.database, {
       hash: snapshotHash,
       timeRange: { initTimestamp: 0, endTimestamp: 1 },
       numberOfEntities: 0,

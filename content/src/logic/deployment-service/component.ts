@@ -2,7 +2,6 @@ import { bufferToStream } from '@dcl/catalyst-storage/dist/content-item'
 import { AuthChain, Authenticator } from '@dcl/crypto'
 import { Entity, EntityType, IPFSv2 } from '@dcl/schemas'
 import { isDeepStrictEqual } from 'util'
-import { getEntityById, setEntitiesAsOverwritten } from '../../adapters/deployments-repository'
 import { EnvironmentConfig } from '../../Environment'
 import {
   AuditInfo,
@@ -69,6 +68,8 @@ export function createDeploymentService(
     | 'env'
     | 'activeEntities'
     | 'denylist'
+    | 'deploymentsRepository'
+    | 'contentFilesRepository'
   >
 ): IDeploymentService {
   const logger = components.logs.getLogger('deployer')
@@ -99,7 +100,7 @@ export function createDeploymentService(
     context: DeploymentContext,
     isContentUnchanged: boolean
   ): Promise<InvalidResult | { auditInfoComplete: AuditInfo; wasEntityDeployed: boolean }> {
-    const deployedEntity = await getEntityById(database, entityId)
+    const deployedEntity = await components.deploymentsRepository.getEntityById(database, entityId)
     const isEntityAlreadyDeployed = !!deployedEntity
 
     const validationResult = await validateDeployment(
@@ -135,12 +136,19 @@ export function createDeploymentService(
 
       await components.database.transaction(async (database) => {
         // Calculate overwrites
-        const { overwrote, overwrittenBy } = await calculateOverwrites(database, entity)
+        const { overwrote, overwrittenBy } = await calculateOverwrites(components, database, entity)
 
         // Store the deployment
-        const deploymentId = await saveDeploymentAndContentFiles(database, entity, auditInfoComplete, overwrittenBy)
+        const deploymentId = await saveDeploymentAndContentFiles(
+          components,
+          database,
+          entity,
+          auditInfoComplete,
+          overwrittenBy
+        )
         // Modify active pointers
         const pointersFromEntity = await components.pointerManager.referenceEntityFromPointers(
+          components.deploymentsRepository,
           database,
           entity,
           overwrote,
@@ -168,7 +176,7 @@ export function createDeploymentService(
         }
 
         // Set who overwrote who
-        await setEntitiesAsOverwritten(database, overwrote, deploymentId)
+        await components.deploymentsRepository.setEntitiesAsOverwritten(database, overwrote, deploymentId)
       }, 'tx_deploy_entity')
     } else {
       logger.info(`Entity already deployed`, { entityId })
@@ -254,7 +262,7 @@ export function createDeploymentService(
       auditInfo: LocalDeploymentAuditInfo,
       context: DeploymentContext
     ): Promise<DeploymentResult> {
-      const deployedEntity = await getEntityById(components.database, entityId)
+      const deployedEntity = await components.deploymentsRepository.getEntityById(components.database, entityId)
       // entity deployments are idempotent operations
       if (deployedEntity) {
         logger.debug(`Entity was already deployed`, {

@@ -10,7 +10,10 @@ import { getPointerChanges, PointerChangesFilters } from '../../logic/deployment
 // Method: GET
 // Query String: ?from={timestamp}&to={timestamp}&offset={number}&limit={number}&entityType={entityType}&includeAuthChain={boolean}
 export async function getPointerChangesHandler(
-  context: HandlerContextWithPath<'database' | 'denylist' | 'sequentialExecutor' | 'metrics', '/pointer-changes'>
+  context: HandlerContextWithPath<
+    'database' | 'denylist' | 'sequentialExecutor' | 'metrics' | 'deploymentsRepository',
+    '/pointer-changes'
+  >
 ): Promise<{ status: 200; body: Required<PointerChanges> }> {
   const queryParams = qsParser(context.url.searchParams)
 

@@ -44,7 +44,9 @@ import { createDatabaseComponent } from './adapters/database'
 import { createDenylist } from './adapters/denylist'
 import { createDeployRateLimiter } from './adapters/deploy-rate-limiter'
 import { createDeployedEntitiesBloomFilter } from './adapters/deployed-entities-bloom-filter'
+import { createFailedDeployments } from './adapters/failed-deployments-cache'
 import { createPointerLockManager } from './adapters/pointer-lock-manager'
+import { createProcessedSnapshotStorage } from './adapters/processed-snapshot-storage'
 import { createSnapshotGenerator } from './adapters/snapshot-generator'
 import { createSnapshotStorage } from './adapters/snapshot-storage'
 import { createSynchronizationState } from './adapters/synchronization-state'
@@ -60,18 +62,13 @@ import { ChallengeSupervisor } from './logic/challenge-supervisor'
 import { splitByCommaTrimAndRemoveEmptyElements } from './logic/config-helpers'
 import { createDeploymentsComponent } from './logic/deployments'
 import { createDeploymentService } from './logic/deployment-service'
+import { createFailedDeploymentsReporter } from './logic/failed-deployments-reporter'
 import { GarbageCollectionManager } from './logic/garbage-collection'
 import { createContentCluster } from './logic/peer-cluster'
 import { PointerManager } from './logic/pointer-manager'
 import { createRetryFailedDeployments } from './logic/retry-failed-deployments'
 import { createSequentialTaskExecutor } from './logic/sequential-task-executor'
 import { createServerValidator } from './logic/server-validator'
-
-// =============================================================================
-// Ports (legacy folder; pending future relocation alongside @dcl/memory-cache-component bump)
-// =============================================================================
-import { createFailedDeployments } from './ports/failedDeployments'
-import { createProcessedSnapshotStorage } from './ports/processedSnapshotStorage'
 
 // =============================================================================
 // Types
@@ -197,7 +194,12 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const pointerManager = new PointerManager()
 
-  const failedDeployments = await createFailedDeployments({ metrics, database })
+  const failedDeployments = await createFailedDeployments({ metrics, database, failedDeploymentsRepository })
+  const failedDeploymentsReporter = createFailedDeploymentsReporter({
+    database,
+    failedDeployments,
+    failedDeploymentsRepository
+  })
 
   const deployRateLimiter = createDeployRateLimiter(
     { logs, metrics },
@@ -226,7 +228,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const serverValidator = createServerValidator({ failedDeployments })
 
-  const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs })
+  const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, deploymentsRepository })
   const deployments = createDeploymentsComponent({ database, logs })
   const activeEntities = createActiveEntitiesComponent({
     database,
@@ -235,7 +237,10 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     metrics,
     denylist,
     sequentialExecutor,
-    deployments
+    deployments,
+    pointersRepository,
+    activeEntitiesRepository,
+    contentFilesRepository
   })
 
   // ---------------------------------------------------------------------------
@@ -258,14 +263,16 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     database,
     deployedEntitiesBloomFilter,
     activeEntities,
-    denylist
+    denylist,
+    deploymentsRepository,
+    contentFilesRepository
   })
 
   // ---------------------------------------------------------------------------
   // 9. Background workers
   // ---------------------------------------------------------------------------
   const garbageCollectionManager = new GarbageCollectionManager(
-    { database, metrics, logs, storage, systemProperties, activeEntities },
+    { database, metrics, logs, storage, systemProperties, activeEntities, contentFilesRepository },
     env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION),
     env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL)
   )
@@ -280,7 +287,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     env.getConfig<string>(EnvironmentConfig.SYNC_IGNORED_ENTITY_TYPES)
   )
 
-  const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs })
+  const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs, snapshotsRepository })
 
   const batchDeployer = createBatchDeployerComponent(
     {
@@ -293,7 +300,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       staticConfigs,
       deployedEntitiesBloomFilter,
       storage,
-      failedDeployments
+      failedDeployments,
+      failedDeploymentsReporter,
+      deploymentsRepository
     },
     {
       ignoredTypes: new Set(ignoredTypes),
@@ -305,7 +314,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     }
   )
 
-  const snapshotStorage = createSnapshotStorage({ database })
+  const snapshotStorage = createSnapshotStorage({ database, snapshotsRepository })
 
   const materializedViewUpdateJob = createJobComponent(
     { logs },
@@ -365,6 +374,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     deployer,
     contentCluster,
     failedDeployments,
+    failedDeploymentsReporter,
     storage
   })
 
@@ -375,7 +385,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     staticConfigs,
     storage,
     database,
-    denylist
+    denylist,
+    snapshotsRepository
   })
 
   const migrationManager = createMigrationExecutor({ logs, env })
@@ -450,6 +461,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     downloadQueue,
     env,
     failedDeployments,
+    failedDeploymentsReporter,
     failedDeploymentsRepository,
     fetcher,
     fs,

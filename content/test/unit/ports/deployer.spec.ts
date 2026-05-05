@@ -17,9 +17,11 @@ import {
   LocalDeploymentAuditInfo,
   isInvalidDeployment
 } from '../../../src/deployment-types'
-import * as deploymentQueries from '../../../src/adapters/deployments-repository'
-import * as failedDeploymentQueries from '../../../src/adapters/failed-deployments-repository'
-import * as pointers from '../../../src/adapters/active-entities-repository'
+import { createFailedDeploymentsRepository } from '../../../src/adapters/failed-deployments-repository'
+import { createPointersRepository } from '../../../src/adapters/pointers-repository'
+import { createActiveEntitiesRepository } from '../../../src/adapters/active-entities-repository'
+import { createContentFilesRepository } from '../../../src/adapters/content-files-repository'
+import { createDeploymentsRepository } from '../../../src/adapters/deployments-repository'
 import * as deploymentLogic from '../../../src/logic/deployments'
 import * as deployments from '../../../src/logic/deployments'
 import { metricsDeclaration } from '../../../src/metrics'
@@ -29,7 +31,7 @@ import { createNoOpDeployRateLimiter } from '../../mocks/deploy-rate-limiter-moc
 import { createDeployedEntitiesBloomFilter } from '../../../src/adapters/deployed-entities-bloom-filter'
 import { createDeploymentService } from '../../../src/logic/deployment-service'
 import { createPointerLockManager } from '../../../src/adapters/pointer-lock-manager'
-import { createFailedDeployments } from '../../../src/ports/failedDeployments'
+import { createFailedDeployments } from '../../../src/adapters/failed-deployments-cache'
 import { createTestDatabaseComponent } from '../../mocks/database-component-mock'
 import { createSequentialTaskExecutor } from '../../../src/logic/sequential-task-executor'
 import { createAuthenticator } from '../../../src/logic/authenticator'
@@ -64,7 +66,6 @@ describe('Deployer', function () {
       { metadata: 'metadata' }
     )
 
-    jest.spyOn(pointers, 'updateActiveDeployments').mockImplementation(() => Promise.resolve())
   })
 
   afterAll(() => {
@@ -72,8 +73,6 @@ describe('Deployer', function () {
   })
 
   it(`When no file matches the given entity id, then deployment fails`, async () => {
-    jest.spyOn(failedDeploymentQueries, 'getSnapshotFailedDeployments').mockResolvedValue([])
-    jest.spyOn(failedDeploymentQueries, 'deleteFailedDeployment').mockResolvedValue()
     const service = await buildDeployer()
     const deploymentResult = await service.deployEntity(
       [randomFile],
@@ -89,8 +88,6 @@ describe('Deployer', function () {
   })
 
   it(`When an entity is successfully deployed, then the content is stored correctly`, async () => {
-    jest.spyOn(failedDeploymentQueries, 'getSnapshotFailedDeployments').mockResolvedValue([])
-    jest.spyOn(failedDeploymentQueries, 'deleteFailedDeployment').mockResolvedValue()
     const service = await buildDeployer()
     const storageSpy = jest.spyOn(service.components.storage, 'storeStream')
 
@@ -117,7 +114,7 @@ describe('Deployer', function () {
 
   it(`When a file is already uploaded, then don't try to upload it again`, async () => {
     const service = await buildDeployer()
-    jest.spyOn(deploymentQueries, 'getEntityById').mockResolvedValue(undefined)
+    jest.spyOn(service.components.deploymentsRepository, 'getEntityById').mockResolvedValue(undefined)
 
     // Consider the random file as already uploaded, but not the entity file
     jest
@@ -128,7 +125,7 @@ describe('Deployer', function () {
       console.dir([...args])
       return 123
     })
-    jest.spyOn(deploymentQueries, 'setEntitiesAsOverwritten').mockResolvedValue()
+    jest.spyOn(service.components.deploymentsRepository, 'setEntitiesAsOverwritten').mockResolvedValue()
 
     await service.deployEntity([entityFile, randomFile], entity.id, auditInfo, DeploymentContext.LOCAL)
 
@@ -145,7 +142,7 @@ describe('Deployer', function () {
     // Call the first time
     await service.components.activeEntities.withPointers(service.components.database, POINTERS)
 
-    expect(serviceSpy).toHaveBeenCalledWith(expect.anything(), undefined, POINTERS)
+    expect(serviceSpy).toHaveBeenCalledWith(expect.anything(), expect.anything(), undefined, POINTERS)
 
     // Reset spy and call again
     serviceSpy.mockClear()
@@ -169,11 +166,11 @@ describe('Deployer', function () {
       .mockImplementation(() => Promise.resolve([fakeDeployment()]))
 
     jest.spyOn(deploymentLogic, 'saveDeploymentAndContentFiles').mockImplementation(() => Promise.resolve(1))
-    jest.spyOn(deploymentQueries, 'setEntitiesAsOverwritten').mockImplementation(() => Promise.resolve())
+    jest.spyOn(service.components.deploymentsRepository, 'setEntitiesAsOverwritten').mockImplementation(() => Promise.resolve())
 
     // Call the first time
     await service.components.activeEntities.withPointers(service.components.database, POINTERS)
-    expect(serviceSpy).toHaveBeenCalledWith(expect.anything(), undefined, POINTERS)
+    expect(serviceSpy).toHaveBeenCalledWith(expect.anything(), expect.anything(), undefined, POINTERS)
 
     // Make deployment that should update the cache
     await service.deployEntity([entityFile, randomFile], entity.id, auditInfo, DeploymentContext.LOCAL)
@@ -205,18 +202,23 @@ describe('Deployer', function () {
     })
     const deployRateLimiter = createNoOpDeployRateLimiter()
     const metrics = createTestMetricsComponent(metricsDeclaration)
-    const failedDeployments = await createFailedDeployments({ metrics, database })
+    const failedDeploymentsRepository = createFailedDeploymentsRepository()
+    const failedDeployments = await createFailedDeployments({ metrics, database, failedDeploymentsRepository })
     const storage = createInMemoryStorage()
     const pointerManager = NoOpPointerManager.build()
     const authenticator = createAuthenticator(
       new HTTPProvider('https://rpc.decentraland.org/mainnet?project=catalyst-ci'),
       [DECENTRALAND_ADDRESS]
     )
-    const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs })
+    const deploymentsRepository = createDeploymentsRepository()
+    const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, deploymentsRepository })
     env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)
     const denylist: Denylist = { isDenylisted: () => false }
     const sequentialExecutor = createSequentialTaskExecutor({ logs, metrics })
     const deployments = createDeploymentsComponentMock()
+    const pointersRepository = createPointersRepository()
+    const activeEntitiesRepository = createActiveEntitiesRepository()
+    const contentFilesRepository = createContentFilesRepository()
     const activeEntities = createActiveEntitiesComponent({
       database,
       logs,
@@ -224,7 +226,10 @@ describe('Deployer', function () {
       metrics,
       denylist,
       sequentialExecutor,
-      deployments
+      deployments,
+      pointersRepository,
+      activeEntitiesRepository,
+      contentFilesRepository
     })
     await failedDeployments.start()
     const pointerLockManager = createPointerLockManager()
@@ -243,7 +248,9 @@ describe('Deployer', function () {
       database,
       deployedEntitiesBloomFilter: deployedEntitiesBloomFilter,
       activeEntities,
-      denylist
+      denylist,
+      contentFilesRepository,
+      deploymentsRepository
     }
     const deployer = createDeploymentService(deployerComponents)
     return {

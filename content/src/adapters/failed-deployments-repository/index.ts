@@ -1,7 +1,2 @@
-export {
-  createFailedDeploymentsRepository,
-  saveSnapshotFailedDeployment,
-  deleteFailedDeployment,
-  getSnapshotFailedDeployments
-} from './component'
+export { createFailedDeploymentsRepository } from './component'
 export type { IFailedDeploymentsRepository } from './types'
