@@ -5,7 +5,7 @@ import { ILoggerComponent } from '@well-known-components/interfaces'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@dcl/metrics'
 import { stopAllComponents } from '../../../src/logic/components-lifecycle'
-import * as snapshotQueries from '../../../src/adapters/snapshots-repository'
+import { ISnapshotsRepository } from '../../../src/adapters/snapshots-repository'
 import { generateAndStoreSnapshot, generateSnapshotsInMultipleTimeRanges } from '../../../src/logic/snapshots'
 import * as tr from '../../../src/logic/time-range'
 import { metricsDeclaration } from '../../../src/metrics'
@@ -13,6 +13,35 @@ import { Denylist } from '../../../src/adapters/denylist'
 import * as fileWriter from '../../../src/adapters/content-file-writer'
 import { IFile } from '../../../src/adapters/content-file-writer'
 import { createTestDatabaseComponent } from '../../mocks/database-component-mock'
+
+function createSnapshotsRepositoryMock(): jest.Mocked<ISnapshotsRepository> {
+  return {
+    streamActiveDeploymentsInTimeRange: jest.fn(),
+    findSnapshotsStrictlyContainedInTimeRange: jest.fn(),
+    saveSnapshot: jest.fn(),
+    isOwnSnapshot: jest.fn(),
+    getSnapshotHashesNotInTimeRange: jest.fn().mockResolvedValue(new Set()),
+    deleteSnapshotsInTimeRange: jest.fn(),
+    snapshotIsOutdated: jest.fn().mockResolvedValue(false),
+    getNumberOfActiveEntitiesInTimeRange: jest.fn(),
+    saveProcessedSnapshot: jest.fn(),
+    getProcessedSnapshots: jest.fn(),
+    getAllSnapshotHashes: jest.fn()
+  }
+}
+
+function mockStreamedActiveEntitiesWith(
+  snapshotsRepository: jest.Mocked<ISnapshotsRepository>,
+  entities: SnapshotSyncDeployment[]
+) {
+  snapshotsRepository.streamActiveDeploymentsInTimeRange.mockImplementation(async function* gen() {
+    for (const entity of entities) {
+      yield entity
+    }
+    return
+  })
+  return snapshotsRepository.streamActiveDeploymentsInTimeRange
+}
 
 describe('generate snapshot', () => {
   const database = createTestDatabaseComponent()
@@ -39,6 +68,7 @@ describe('generate snapshot', () => {
     fileInfoMultiple: jest.fn()
   }
   let logs: ILoggerComponent
+  let snapshotsRepository: jest.Mocked<ISnapshotsRepository>
 
   beforeAll(async () => {
     logs = await createLogComponent({ config: createConfigComponent({ LOG_LEVEL: 'DEBUG' }) })
@@ -48,6 +78,7 @@ describe('generate snapshot', () => {
     jest.spyOn(database, 'transaction').mockImplementation(async (f) => {
       await f({ insideTx: true, ...database })
     })
+    snapshotsRepository = createSnapshotsRepositoryMock()
   })
 
   afterAll(() => {
@@ -56,31 +87,43 @@ describe('generate snapshot', () => {
   })
 
   it('should stream active entities with given time range', async () => {
-    const streamSpy = mockStreamedActiveEntitiesWith([])
+    const streamSpy = mockStreamedActiveEntitiesWith(snapshotsRepository, [])
     mockCreateFileWriterMockWith('filePath', 'hash')
     const expectedTimeRange = { initTimestamp: 1, endTimestamp: 2 }
 
-    await generateAndStoreSnapshot({ fs, metrics, logs, staticConfigs, storage, denylist }, database, expectedTimeRange)
+    await generateAndStoreSnapshot(
+      { fs, metrics, logs, staticConfigs, storage, denylist, snapshotsRepository },
+      database,
+      expectedTimeRange
+    )
     expect(streamSpy).toBeCalledWith(expect.anything(), expectedTimeRange)
   })
 
   it('should append snapshot header to tmp file', async () => {
-    mockStreamedActiveEntitiesWith([])
+    mockStreamedActiveEntitiesWith(snapshotsRepository, [])
     const fileWriterMock = mockCreateFileWriterMockWith('filePath', 'hash')
-    await generateAndStoreSnapshot({ fs, metrics, logs, staticConfigs, storage, denylist }, database, aTimeRange)
+    await generateAndStoreSnapshot(
+      { fs, metrics, logs, staticConfigs, storage, denylist, snapshotsRepository },
+      database,
+      aTimeRange
+    )
     expect(fileWriterMock.appendDebounced).toBeCalledWith('### Decentraland json snapshot\n')
     expect(fileWriterMock.appendDebounced).toBeCalledTimes(1)
   })
 
   it('should close tmp file after streaming all active entities', async () => {
-    mockStreamedActiveEntitiesWith([])
+    mockStreamedActiveEntitiesWith(snapshotsRepository, [])
     const fileWriterMock = mockCreateFileWriterMockWith('filePath', 'hash')
-    await generateAndStoreSnapshot({ fs, metrics, logs, staticConfigs, storage, denylist }, database, aTimeRange)
+    await generateAndStoreSnapshot(
+      { fs, metrics, logs, staticConfigs, storage, denylist, snapshotsRepository },
+      database,
+      aTimeRange
+    )
     expect(fileWriterMock.close).toBeCalledTimes(1)
   })
 
   it('should return snapshot hash and total number of entities', async () => {
-    mockStreamedActiveEntitiesWith([
+    mockStreamedActiveEntitiesWith(snapshotsRepository, [
       { entityId: 'id1', entityType: 't1', pointers: ['p1'], entityTimestamp: 0, authChain: [] },
       { entityId: 'id2', entityType: 't2', pointers: ['p2'], entityTimestamp: 1, authChain: [] },
       { entityId: 'id3', entityType: 't3', pointers: ['p3'], entityTimestamp: 2, authChain: [] }
@@ -88,7 +131,7 @@ describe('generate snapshot', () => {
     const expectedSnapshotHash = 'aHash'
     mockCreateFileWriterMockWith('filePath', expectedSnapshotHash)
     const { hash, numberOfEntities } = await generateAndStoreSnapshot(
-      { fs, metrics, logs, staticConfigs, storage, denylist },
+      { fs, metrics, logs, staticConfigs, storage, denylist, snapshotsRepository },
       database,
       aTimeRange
     )
@@ -121,10 +164,7 @@ describe('generate snapshot in multiple', () => {
     fileInfoMultiple: jest.fn()
   }
   let logs: ILoggerComponent
-  const saveFn = snapshotQueries.saveSnapshot
-  const deleteFn = snapshotQueries.deleteSnapshotsInTimeRange
-  let saveSpy: jest.SpyInstance<ReturnType<typeof saveFn>, Parameters<typeof saveFn>>
-  let deleteSpy: jest.SpyInstance<ReturnType<typeof deleteFn>, Parameters<typeof deleteFn>>
+  let snapshotsRepository: jest.Mocked<ISnapshotsRepository>
   let generationTimestamp: number
 
   beforeAll(async () => {
@@ -135,11 +175,12 @@ describe('generate snapshot in multiple', () => {
     jest.spyOn(database, 'transaction').mockImplementation(async (f) => {
       await f({ insideTx: true, ...database })
     })
-    saveSpy = jest.spyOn(snapshotQueries, 'saveSnapshot').mockImplementation()
-    deleteSpy = jest.spyOn(snapshotQueries, 'deleteSnapshotsInTimeRange').mockImplementation()
-    jest.spyOn(snapshotQueries, 'getNumberOfActiveEntitiesInTimeRange').mockImplementation()
-    jest.spyOn(snapshotQueries, 'getSnapshotHashesNotInTimeRange').mockResolvedValue(new Set())
-    jest.spyOn(snapshotQueries, 'snapshotIsOutdated').mockResolvedValue(false)
+    snapshotsRepository = createSnapshotsRepositoryMock()
+    snapshotsRepository.saveSnapshot.mockResolvedValue()
+    snapshotsRepository.deleteSnapshotsInTimeRange.mockResolvedValue()
+    snapshotsRepository.getNumberOfActiveEntitiesInTimeRange.mockResolvedValue(0)
+    snapshotsRepository.getSnapshotHashesNotInTimeRange.mockResolvedValue(new Set())
+    snapshotsRepository.snapshotIsOutdated.mockResolvedValue(false)
     generationTimestamp = Date.now()
     jest.spyOn(Date, 'now').mockReturnValue(generationTimestamp)
   })
@@ -149,9 +190,9 @@ describe('generate snapshot in multiple', () => {
   })
 
   it('should generate snapshot for time range when there are no saved snapshots for that time range', async () => {
-    mockStreamedActiveEntitiesWith([])
+    mockStreamedActiveEntitiesWith(snapshotsRepository, [])
     const oneYearRange = { initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR }
-    jest.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([])
+    snapshotsRepository.findSnapshotsStrictlyContainedInTimeRange.mockResolvedValue([])
     jest.spyOn(tr, 'divideTimeInYearsMonthsWeeksAndDays').mockReturnValue({
       intervals: [oneYearRange],
       remainder: { initTimestamp: tr.MS_PER_YEAR, endTimestamp: tr.MS_PER_YEAR }
@@ -160,7 +201,7 @@ describe('generate snapshot in multiple', () => {
     mockCreateFileWriterMockWith('filePath', expectedHash)
 
     const snapshots = await generateSnapshotsInMultipleTimeRanges(
-      { database, fs, metrics, logs, staticConfigs, storage, denylist },
+      { database, fs, metrics, logs, staticConfigs, storage, denylist, snapshotsRepository },
       oneYearRange
     )
     expect(snapshots).toHaveLength(1)
@@ -174,11 +215,11 @@ describe('generate snapshot in multiple', () => {
   })
 
   it('should generate snapshot when there are multiple snapshots that cover the interval', async () => {
-    mockStreamedActiveEntitiesWith([])
+    mockStreamedActiveEntitiesWith(snapshotsRepository, [])
     const oneYearRange = { initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR }
     const firstHalfYear = { initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR / 2 }
     const secondHalfYear = { initTimestamp: tr.MS_PER_YEAR / 2, endTimestamp: tr.MS_PER_YEAR }
-    jest.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([
+    snapshotsRepository.findSnapshotsStrictlyContainedInTimeRange.mockResolvedValue([
       { hash: 'h1', numberOfEntities: 1, replacedSnapshotHashes: [], timeRange: firstHalfYear, generationTimestamp },
       { hash: 'h2', numberOfEntities: 2, replacedSnapshotHashes: [], timeRange: secondHalfYear, generationTimestamp }
     ])
@@ -199,20 +240,24 @@ describe('generate snapshot in multiple', () => {
     }
 
     const snapshots = await generateSnapshotsInMultipleTimeRanges(
-      { database, fs, metrics, logs, staticConfigs, storage, denylist },
+      { database, fs, metrics, logs, staticConfigs, storage, denylist, snapshotsRepository },
       oneYearRange
     )
     expect(snapshots).toHaveLength(1)
     expect(snapshots[0]).toEqual(expectedSnapshot)
     expect(storage.delete).toBeCalledWith(expect.arrayContaining(expectedReplacedHashes))
-    expect(deleteSpy).toBeCalledWith(expect.anything(), expect.arrayContaining(expectedReplacedHashes), oneYearRange)
-    expect(saveSpy).toBeCalledWith(expect.anything(), expectedSnapshot)
+    expect(snapshotsRepository.deleteSnapshotsInTimeRange).toBeCalledWith(
+      expect.anything(),
+      expect.arrayContaining(expectedReplacedHashes),
+      oneYearRange
+    )
+    expect(snapshotsRepository.saveSnapshot).toBeCalledWith(expect.anything(), expectedSnapshot)
   })
 
   it('should re-generate snapshot when there the current snapshot is not in storage', async () => {
-    mockStreamedActiveEntitiesWith([])
+    mockStreamedActiveEntitiesWith(snapshotsRepository, [])
     const oneYearRange = { initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR }
-    jest.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([
+    snapshotsRepository.findSnapshotsStrictlyContainedInTimeRange.mockResolvedValue([
       {
         hash: 'snapshotNotInStorage',
         numberOfEntities: 1,
@@ -243,21 +288,25 @@ describe('generate snapshot in multiple', () => {
     }
 
     const snapshots = await generateSnapshotsInMultipleTimeRanges(
-      { database, fs, metrics, logs, staticConfigs, storage, denylist },
+      { database, fs, metrics, logs, staticConfigs, storage, denylist, snapshotsRepository },
       oneYearRange
     )
     expect(snapshots).toHaveLength(1)
     expect(snapshots[0]).toEqual(expectedSnapshot)
     expect(storage.delete).toBeCalledWith(expect.arrayContaining(expectedReplacedHashes))
-    expect(deleteSpy).toBeCalledWith(expect.anything(), expect.arrayContaining(expectedReplacedHashes), oneYearRange)
-    expect(saveSpy).toBeCalledWith(expect.anything(), expectedSnapshot)
+    expect(snapshotsRepository.deleteSnapshotsInTimeRange).toBeCalledWith(
+      expect.anything(),
+      expect.arrayContaining(expectedReplacedHashes),
+      oneYearRange
+    )
+    expect(snapshotsRepository.saveSnapshot).toBeCalledWith(expect.anything(), expectedSnapshot)
   })
 
   it('should delete old snapshots within the interval of the new snapshot generated', async () => {
-    mockStreamedActiveEntitiesWith([])
+    mockStreamedActiveEntitiesWith(snapshotsRepository, [])
     const oneYearRange = { initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR }
     const timeRangeWithinTheYear = { initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR / 2 }
-    jest.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([
+    snapshotsRepository.findSnapshotsStrictlyContainedInTimeRange.mockResolvedValue([
       {
         hash: 'h1',
         numberOfEntities: 1,
@@ -274,19 +323,23 @@ describe('generate snapshot in multiple', () => {
     mockCreateFileWriterMockWith('filePath', expectedHash)
 
     await generateSnapshotsInMultipleTimeRanges(
-      { database, fs, metrics, logs, staticConfigs, storage, denylist },
+      { database, fs, metrics, logs, staticConfigs, storage, denylist, snapshotsRepository },
       oneYearRange
     )
     expect(storage.delete).toBeCalledWith(expect.arrayContaining(['h1']))
-    expect(deleteSpy).toBeCalledWith(expect.anything(), expect.arrayContaining(['h1']), oneYearRange)
+    expect(snapshotsRepository.deleteSnapshotsInTimeRange).toBeCalledWith(
+      expect.anything(),
+      expect.arrayContaining(['h1']),
+      oneYearRange
+    )
   })
 
   it('should delete snapshots when they are replaced', async () => {
-    mockStreamedActiveEntitiesWith([])
+    mockStreamedActiveEntitiesWith(snapshotsRepository, [])
     const oneYearRange = { initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR }
     const firstHalfYear = { initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR / 2 }
     const secondHalfYear = { initTimestamp: tr.MS_PER_YEAR / 2, endTimestamp: tr.MS_PER_YEAR }
-    jest.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([
+    snapshotsRepository.findSnapshotsStrictlyContainedInTimeRange.mockResolvedValue([
       { hash: 'h1', numberOfEntities: 1, replacedSnapshotHashes: [], timeRange: firstHalfYear, generationTimestamp },
       { hash: 'h2', numberOfEntities: 2, replacedSnapshotHashes: [], timeRange: secondHalfYear, generationTimestamp }
     ])
@@ -298,15 +351,19 @@ describe('generate snapshot in multiple', () => {
     mockCreateFileWriterMockWith('filePath', expectedHash)
 
     await generateSnapshotsInMultipleTimeRanges(
-      { database, fs, metrics, logs, staticConfigs, storage, denylist },
+      { database, fs, metrics, logs, staticConfigs, storage, denylist, snapshotsRepository },
       oneYearRange
     )
     expect(storage.delete).toBeCalledWith(expect.arrayContaining(['h1', 'h2']))
-    expect(deleteSpy).toBeCalledWith(expect.anything(), expect.arrayContaining(['h1', 'h2']), oneYearRange)
+    expect(snapshotsRepository.deleteSnapshotsInTimeRange).toBeCalledWith(
+      expect.anything(),
+      expect.arrayContaining(['h1', 'h2']),
+      oneYearRange
+    )
   })
 
   it('should replace snapshots when they cover the time range', async () => {
-    mockStreamedActiveEntitiesWith([
+    mockStreamedActiveEntitiesWith(snapshotsRepository, [
       { entityId: 'id1', entityType: 't1', pointers: ['p1'], entityTimestamp: 0, authChain: [] },
       { entityId: 'id2', entityType: 't2', pointers: ['p2'], entityTimestamp: 1, authChain: [] },
       { entityId: 'id3', entityType: 't3', pointers: ['p3'], entityTimestamp: 2, authChain: [] }
@@ -314,7 +371,7 @@ describe('generate snapshot in multiple', () => {
     const oneYearRange = { initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR }
     const firstHalfYear = { initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR / 2 }
     const secondHalfYear = { initTimestamp: tr.MS_PER_YEAR / 2, endTimestamp: tr.MS_PER_YEAR }
-    jest.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([
+    snapshotsRepository.findSnapshotsStrictlyContainedInTimeRange.mockResolvedValue([
       // These two snapshots cover the whole year.
       { hash: 'h1', numberOfEntities: 1, replacedSnapshotHashes: [], timeRange: firstHalfYear, generationTimestamp },
       { hash: 'h2', numberOfEntities: 2, replacedSnapshotHashes: [], timeRange: secondHalfYear, generationTimestamp }
@@ -327,7 +384,7 @@ describe('generate snapshot in multiple', () => {
     mockCreateFileWriterMockWith('filePath', expectedHash)
 
     const snapshots = await generateSnapshotsInMultipleTimeRanges(
-      { database, fs, metrics, logs, staticConfigs, storage, denylist },
+      { database, fs, metrics, logs, staticConfigs, storage, denylist, snapshotsRepository },
       oneYearRange
     )
     expect(snapshots).toHaveLength(1)
@@ -341,18 +398,16 @@ describe('generate snapshot in multiple', () => {
   })
 
   it('should not replace snapshots when they do not cover the time range', async () => {
-    mockStreamedActiveEntitiesWith([
+    mockStreamedActiveEntitiesWith(snapshotsRepository, [
       { entityId: 'id1', entityType: 't1', pointers: ['p1'], entityTimestamp: 0, authChain: [] },
       { entityId: 'id2', entityType: 't2', pointers: ['p2'], entityTimestamp: 1, authChain: [] },
       { entityId: 'id3', entityType: 't3', pointers: ['p3'], entityTimestamp: 2, authChain: [] }
     ])
     const oneYearRange = { initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR }
     const firstHalfYear = { initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR / 2 }
-    jest
-      .spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange')
-      .mockResolvedValue([
-        { hash: 'h1', numberOfEntities: 1, replacedSnapshotHashes: [], timeRange: firstHalfYear, generationTimestamp }
-      ])
+    snapshotsRepository.findSnapshotsStrictlyContainedInTimeRange.mockResolvedValue([
+      { hash: 'h1', numberOfEntities: 1, replacedSnapshotHashes: [], timeRange: firstHalfYear, generationTimestamp }
+    ])
     jest.spyOn(tr, 'divideTimeInYearsMonthsWeeksAndDays').mockReturnValue({
       intervals: [oneYearRange],
       remainder: { initTimestamp: tr.MS_PER_YEAR, endTimestamp: tr.MS_PER_YEAR }
@@ -361,7 +416,7 @@ describe('generate snapshot in multiple', () => {
     mockCreateFileWriterMockWith('filePath', expectedHash)
 
     const snapshots = await generateSnapshotsInMultipleTimeRanges(
-      { database, fs, metrics, logs, staticConfigs, storage, denylist },
+      { database, fs, metrics, logs, staticConfigs, storage, denylist, snapshotsRepository },
       oneYearRange
     )
     expect(snapshots).toHaveLength(1)
@@ -375,7 +430,7 @@ describe('generate snapshot in multiple', () => {
   })
 
   it('should not generate snapshot when there is a single snapshot that covers the interval', async () => {
-    mockStreamedActiveEntitiesWith([])
+    mockStreamedActiveEntitiesWith(snapshotsRepository, [])
     const oneYearRange = { initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR }
     const expectedSnapshot = {
       hash: 'h1',
@@ -384,7 +439,7 @@ describe('generate snapshot in multiple', () => {
       timeRange: oneYearRange,
       generationTimestamp
     }
-    jest.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([expectedSnapshot])
+    snapshotsRepository.findSnapshotsStrictlyContainedInTimeRange.mockResolvedValue([expectedSnapshot])
     jest.spyOn(tr, 'divideTimeInYearsMonthsWeeksAndDays').mockReturnValue({
       intervals: [oneYearRange],
       remainder: { initTimestamp: tr.MS_PER_YEAR, endTimestamp: tr.MS_PER_YEAR }
@@ -393,7 +448,7 @@ describe('generate snapshot in multiple', () => {
     mockCreateFileWriterMockWith('filePath', expectedHash)
 
     const snapshots = await generateSnapshotsInMultipleTimeRanges(
-      { database, fs, metrics, logs, staticConfigs, storage, denylist },
+      { database, fs, metrics, logs, staticConfigs, storage, denylist, snapshotsRepository },
       oneYearRange
     )
     expect(snapshots).toHaveLength(1)
@@ -401,12 +456,12 @@ describe('generate snapshot in multiple', () => {
   })
 
   it('should generate snapshots for per each timespan', async () => {
-    mockStreamedActiveEntitiesWith([])
+    mockStreamedActiveEntitiesWith(snapshotsRepository, [])
     const oneYearOneMonthOneWeekOneDay = {
       initTimestamp: 0,
       endTimestamp: tr.MS_PER_YEAR + tr.MS_PER_MONTH + tr.MS_PER_WEEK + tr.MS_PER_DAY
     }
-    jest.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([])
+    snapshotsRepository.findSnapshotsStrictlyContainedInTimeRange.mockResolvedValue([])
     jest.spyOn(tr, 'divideTimeInYearsMonthsWeeksAndDays').mockReturnValue({
       intervals: [
         { initTimestamp: 0, endTimestamp: tr.MS_PER_YEAR },
@@ -428,7 +483,7 @@ describe('generate snapshot in multiple', () => {
     const expectedHash = 'hash'
     mockCreateFileWriterMockWith('filePath', expectedHash)
     const snapshots = await generateSnapshotsInMultipleTimeRanges(
-      { database, fs, metrics, logs, staticConfigs, storage, denylist },
+      { database, fs, metrics, logs, staticConfigs, storage, denylist, snapshotsRepository },
       oneYearOneMonthOneWeekOneDay
     )
     const baseSnapshot = { hash: expectedHash, numberOfEntities: 0, replacedSnapshotHashes: [], generationTimestamp }
@@ -456,7 +511,7 @@ describe('generate snapshot in multiple', () => {
   })
 
   it('should not delete from storage snapshot in other timerange that has the same hash of one of those being replaced', async () => {
-    mockStreamedActiveEntitiesWith([])
+    mockStreamedActiveEntitiesWith(snapshotsRepository, [])
     const oneYearTimeRange = {
       initTimestamp: 0,
       endTimestamp: tr.MS_PER_YEAR + tr.MS_PER_MONTH
@@ -467,7 +522,7 @@ describe('generate snapshot in multiple', () => {
     })
     const expectedHash = 'hash'
     mockCreateFileWriterMockWith('filePath', expectedHash)
-    jest.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([
+    snapshotsRepository.findSnapshotsStrictlyContainedInTimeRange.mockResolvedValue([
       {
         hash: expectedHash,
         timeRange: { initTimestamp: 0, endTimestamp: tr.MS_PER_MONTH },
@@ -475,9 +530,9 @@ describe('generate snapshot in multiple', () => {
         generationTimestamp
       }
     ])
-    jest.spyOn(snapshotQueries, 'getSnapshotHashesNotInTimeRange').mockResolvedValue(new Set([expectedHash]))
+    snapshotsRepository.getSnapshotHashesNotInTimeRange.mockResolvedValue(new Set([expectedHash]))
     await generateSnapshotsInMultipleTimeRanges(
-      { database, fs, metrics, logs, staticConfigs, storage, denylist },
+      { database, fs, metrics, logs, staticConfigs, storage, denylist, snapshotsRepository },
       oneYearTimeRange
     )
     expect(storage.delete).toBeCalledWith([])
@@ -494,13 +549,4 @@ function mockCreateFileWriterMockWith(filePath: string, storedHash: string): IFi
   }
   jest.spyOn(fileWriter, 'createFileWriter').mockResolvedValue(fileWriterMock)
   return fileWriterMock
-}
-
-function mockStreamedActiveEntitiesWith(entities: SnapshotSyncDeployment[]) {
-  return jest.spyOn(snapshotQueries, 'streamActiveDeploymentsInTimeRange').mockImplementation(async function* gen() {
-    for (const entity of entities) {
-      yield entity
-    }
-    return
-  })
 }

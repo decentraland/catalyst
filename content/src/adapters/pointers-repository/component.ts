@@ -2,7 +2,7 @@ import SQL from 'sql-template-strings'
 import { DatabaseClient } from '../../adapters/database'
 import { IPointersRepository } from './types'
 
-export async function getItemEntitiesIdsThatMatchCollectionUrnPrefix(
+async function getItemEntitiesIdsThatMatchCollectionUrnPrefix(
   database: DatabaseClient,
   collectionUrn: string
 ): Promise<string[]> {
@@ -14,7 +14,7 @@ export async function getItemEntitiesIdsThatMatchCollectionUrnPrefix(
   return queryResult.map((row) => row.entity_id)
 }
 
-export async function getThirdPartyCollectionItemsEntityIdsThatMatchUrnPrefix(
+async function getThirdPartyCollectionItemsEntityIdsThatMatchUrnPrefix(
   database: DatabaseClient,
   collectionUrn: string
 ): Promise<string[]> {

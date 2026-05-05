@@ -1,5 +1,4 @@
 import { createInMemoryCacheComponent } from '@dcl/memory-cache-component'
-import { getProcessedSnapshots, saveProcessedSnapshot } from '../snapshots-repository'
 import { AppComponents } from '../../types'
 import { ProcessedSnapshotsStorageComponent } from './types'
 
@@ -10,9 +9,9 @@ import { ProcessedSnapshotsStorageComponent } from './types'
 const PROCESSED_SNAPSHOTS_HASH = 'processed-snapshots'
 
 export function createProcessedSnapshotStorage(
-  components: Pick<AppComponents, 'database' | 'logs'>
+  components: Pick<AppComponents, 'database' | 'logs' | 'snapshotsRepository'>
 ): ProcessedSnapshotsStorageComponent {
-  const { database, logs } = components
+  const { database, logs, snapshotsRepository } = components
   const logger = logs.getLogger('processed-snapshot-storage')
   const cache = createInMemoryCacheComponent()
 
@@ -24,14 +23,14 @@ export function createProcessedSnapshotStorage(
         return new Set(snapshotHashes)
       }
 
-      const processedSnapshots = await getProcessedSnapshots(database, snapshotHashes)
+      const processedSnapshots = await snapshotsRepository.getProcessedSnapshots(database, snapshotHashes)
       for (const hash of processedSnapshots) {
         await cache.setInHash(PROCESSED_SNAPSHOTS_HASH, hash, true)
       }
       return processedSnapshots
     },
     async markSnapshotAsProcessed(snapshotHash: string) {
-      await saveProcessedSnapshot(database, snapshotHash, Date.now())
+      await snapshotsRepository.saveProcessedSnapshot(database, snapshotHash, Date.now())
       await cache.setInHash(PROCESSED_SNAPSHOTS_HASH, snapshotHash, true)
       logger.info(`Processed Snapshot saved`, { snapshotHash })
     },

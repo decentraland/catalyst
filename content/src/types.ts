@@ -136,6 +136,9 @@ export type MaintenanceComponents = {
   storage: IContentStorageComponent
   fs: IFileSystemComponent
   migrationManager: MigrationExecutor
+  contentFilesRepository: IContentFilesRepository
+  deploymentsRepository: IDeploymentsRepository
+  snapshotsRepository: ISnapshotsRepository
 }
 
 export type Timestamp = number

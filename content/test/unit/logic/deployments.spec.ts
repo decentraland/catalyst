@@ -2,6 +2,7 @@ import { createTestMetricsComponent } from '@dcl/metrics'
 import { isEntityDeployed } from '../../../src/logic/deployments'
 import { metricsDeclaration } from '../../../src/metrics'
 import { DeployedEntitiesBloomFilter } from '../../../src/adapters/deployed-entities-bloom-filter'
+import { createDeploymentsRepository } from '../../../src/adapters/deployments-repository'
 import { createTestDatabaseComponent } from '../../mocks/database-component-mock'
 
 const metrics = createTestMetricsComponent(metricsDeclaration)
@@ -16,6 +17,8 @@ describe('isEntityDeployed', () => {
             metrics,
             database,
             deployedEntitiesBloomFilter
+        ,
+            deploymentsRepository: createDeploymentsRepository()
         }
         await isEntityDeployed(components.database, components, 'id', 1)
         expect(components.database.queryWithValues).toBeCalled()
@@ -30,6 +33,8 @@ describe('isEntityDeployed', () => {
             metrics,
             database,
             deployedEntitiesBloomFilter
+        ,
+            deploymentsRepository: createDeploymentsRepository()
         }
         await isEntityDeployed(components.database, components, 'id', 1)
         expect(components.database.queryWithValues).not.toBeCalled()
@@ -43,6 +48,8 @@ describe('isEntityDeployed', () => {
             metrics,
             database,
             deployedEntitiesBloomFilter
+        ,
+            deploymentsRepository: createDeploymentsRepository()
         }
         const isDeployed = await isEntityDeployed(components.database, components, 'id', 1)
         expect(isDeployed).toBeTruthy()
@@ -56,6 +63,8 @@ describe('isEntityDeployed', () => {
             metrics,
             database,
             deployedEntitiesBloomFilter
+        ,
+            deploymentsRepository: createDeploymentsRepository()
         }
         const isDeployed = await isEntityDeployed(components.database, components, 'id', 1)
         expect(isDeployed).toBeFalsy()
@@ -70,6 +79,8 @@ describe('isEntityDeployed', () => {
             metrics,
             database,
             deployedEntitiesBloomFilter: deployedEntitiesBloomFilter
+        ,
+            deploymentsRepository: createDeploymentsRepository()
         }
         await isEntityDeployed(components.database, components, 'id', 1)
         expect(metricsSpy).toBeCalledWith('dcl_deployed_entities_bloom_filter_checks_total', { hit: 'true' })
@@ -84,6 +95,8 @@ describe('isEntityDeployed', () => {
             metrics,
             database,
             deployedEntitiesBloomFilter
+        ,
+            deploymentsRepository: createDeploymentsRepository()
         }
         await isEntityDeployed(components.database, components, 'another-id', 1)
         expect(metricsSpy).toBeCalledWith('dcl_deployed_entities_bloom_filter_checks_total', { hit: 'true' })
@@ -98,6 +111,8 @@ describe('isEntityDeployed', () => {
             metrics,
             database,
             deployedEntitiesBloomFilter
+        ,
+            deploymentsRepository: createDeploymentsRepository()
         }
         await isEntityDeployed(components.database, components, 'id', 1)
         expect(metricsSpy).toBeCalledWith('dcl_deployed_entities_bloom_filter_checks_total', { hit: 'false' })

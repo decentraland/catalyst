@@ -1,8 +1,9 @@
-import { ContentFilesRow, getContentFiles } from '../../../src/adapters/content-files-repository'
+import { ContentFilesRow, createContentFilesRepository } from '../../../src/adapters/content-files-repository'
 import { AppComponents } from '../../../src/types'
 
 describe('content files queries', () => {
   describe('getContentFiles', () => {
+    const repository = createContentFilesRepository()
     const components: Pick<AppComponents, 'database'> = {
       database: { queryWithValues: () => {} }
     } as any
@@ -35,7 +36,7 @@ describe('content files queries', () => {
     })
 
     it('should return a map from deployment id to an array of content', async () => {
-      const result = await getContentFiles(components.database, deploymentIds)
+      const result = await repository.getContentFiles(components.database, deploymentIds)
       expect(result).toMatchObject(
         new Map([
           [

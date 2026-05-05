@@ -2,13 +2,12 @@ import { TimeRange } from '@dcl/snapshots-fetcher/dist/types'
 import { IBaseComponent } from '@well-known-components/interfaces'
 import * as bf from 'bloom-filters'
 import future from 'fp-future'
-import { streamAllEntityIdsInTimeRange } from '../deployments-repository'
 import { joinOverlappedTimeRanges } from '../../logic/time-range'
 import { AppComponents } from '../../types'
 import { DeployedEntitiesBloomFilter } from './types'
 
 export function createDeployedEntitiesBloomFilter(
-  components: Pick<AppComponents, 'database' | 'logs'>
+  components: Pick<AppComponents, 'database' | 'logs' | 'deploymentsRepository'>
 ): DeployedEntitiesBloomFilter & IBaseComponent {
   const logger = components.logs.getLogger('deployedEntitiesBloomFilter')
 
@@ -43,7 +42,10 @@ export function createDeployedEntitiesBloomFilter(
     ).toISOString()}]`
     logger.info(`Loading bloom filter.`, { interval })
     let elements = 0
-    for await (const entityId of streamAllEntityIdsInTimeRange(components.database, timeRange)) {
+    for await (const entityId of components.deploymentsRepository.streamAllEntityIdsInTimeRange(
+      components.database,
+      timeRange
+    )) {
       elements++
       deploymentsBloomFilter.add(entityId)
     }

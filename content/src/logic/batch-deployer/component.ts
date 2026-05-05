@@ -32,6 +32,7 @@ export function createBatchDeployerComponent(
     | 'storage'
     | 'failedDeployments'
     | 'failedDeploymentsReporter'
+    | 'deploymentsRepository'
   >,
   syncOptions: {
     ignoredTypes: Set<string>

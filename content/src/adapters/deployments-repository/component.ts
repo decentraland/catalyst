@@ -10,7 +10,7 @@ import { HistoricalDeployment, HistoricalDeploymentsRow, IDeploymentsRepository 
 
 const ALL_ENTITY_IDS_QUERY = SQL`SELECT DISTINCT entity_id FROM deployments;`
 
-export async function deploymentExists(database: DatabaseClient, entityId: string): Promise<boolean> {
+async function deploymentExists(database: DatabaseClient, entityId: string): Promise<boolean> {
   const result = await database.queryWithValues(
     SQL`
     SELECT 1
@@ -23,10 +23,7 @@ export async function deploymentExists(database: DatabaseClient, entityId: strin
   return result.rowCount > 0
 }
 
-export async function* streamAllEntityIdsInTimeRange(
-  database: DatabaseClient,
-  timeRange: TimeRange
-): AsyncIterable<string> {
+async function* streamAllEntityIdsInTimeRange(database: DatabaseClient, timeRange: TimeRange): AsyncIterable<string> {
   for await (const row of database.streamQuery(
     SQL`
       SELECT
@@ -43,7 +40,7 @@ export async function* streamAllEntityIdsInTimeRange(
   }
 }
 
-export async function* streamAllDistinctEntityIds(database: DatabaseClient): AsyncIterable<string> {
+async function* streamAllDistinctEntityIds(database: DatabaseClient): AsyncIterable<string> {
   for await (const row of database.streamQuery<{ entity_id: string }>(ALL_ENTITY_IDS_QUERY, {
     batchSize: 10000
   })) {
@@ -169,7 +166,7 @@ function configureSortWhereClause(
   }
 }
 
-export async function getHistoricalDeployments(
+async function getHistoricalDeployments(
   database: DatabaseClient,
   offset: number,
   limit: number,
@@ -220,10 +217,7 @@ export function createOrClause(
   return SQL`(`.append(equalWithEntityIdComparison).append(' OR ').append(timestampComparison).append(')')
 }
 
-export async function getActiveDeploymentsByContentHash(
-  database: DatabaseClient,
-  contentHash: string
-): Promise<string[]> {
+async function getActiveDeploymentsByContentHash(database: DatabaseClient, contentHash: string): Promise<string[]> {
   const query = SQL`SELECT deployment.entity_id FROM deployments as deployment INNER JOIN content_files ON content_files.deployment=deployment.id
     WHERE content_hash=${contentHash} AND deployment.deleter_deployment IS NULL;`
 
@@ -232,7 +226,7 @@ export async function getActiveDeploymentsByContentHash(
   return queryResult.map((deployment: { entity_id: string }) => deployment.entity_id)
 }
 
-export async function getEntityById(
+async function getEntityById(
   database: DatabaseClient,
   entityId: string
 ): Promise<{ entityId: string; localTimestamp: number } | undefined> {
@@ -253,7 +247,7 @@ export async function getEntityById(
   return undefined
 }
 
-export async function saveDeployment(
+async function saveDeployment(
   database: DatabaseClient,
   entity: Entity,
   auditInfo: AuditInfo,
@@ -274,7 +268,7 @@ export async function saveDeployment(
   return queryResult.rows[0].id
 }
 
-export async function getDeployments(
+async function getDeployments(
   database: DatabaseClient,
   deploymentIds: Set<number>
 ): Promise<{ id: number; pointers: string[] }[]> {
@@ -287,7 +281,7 @@ export async function getDeployments(
   return queryResult.rows
 }
 
-export async function setEntitiesAsOverwritten(
+async function setEntitiesAsOverwritten(
   database: DatabaseTransactionalClient,
   allOverwritten: Set<DeploymentId>,
   overwrittenBy: DeploymentId
@@ -297,7 +291,7 @@ export async function setEntitiesAsOverwritten(
   await database.queryWithValues(query)
 }
 
-export async function calculateOverwrote(database: DatabaseClient, entity: Entity): Promise<DeploymentId[]> {
+async function calculateOverwrote(database: DatabaseClient, entity: Entity): Promise<DeploymentId[]> {
   return (
     await database.queryWithValues<{ id: number }>(
       SQL`
@@ -313,10 +307,7 @@ export async function calculateOverwrote(database: DatabaseClient, entity: Entit
   ).rows.map((row) => row.id)
 }
 
-export async function calculateOverwrittenByManyFast(
-  database: DatabaseClient,
-  entity: Entity
-): Promise<{ id: number }[]> {
+async function calculateOverwrittenByManyFast(database: DatabaseClient, entity: Entity): Promise<{ id: number }[]> {
   const q = SQL`
   SELECT deployments.id
   FROM active_pointers as ap
@@ -334,7 +325,7 @@ export async function calculateOverwrittenByManyFast(
   return (await database.queryWithValues<{ id: number }>(q)).rows
 }
 
-export async function calculateOverwrittenBySlow(database: DatabaseClient, entity: Entity): Promise<{ id: number }[]> {
+async function calculateOverwrittenBySlow(database: DatabaseClient, entity: Entity): Promise<{ id: number }[]> {
   return (
     await database.queryWithValues<{ id: number }>(
       SQL`
@@ -362,7 +353,6 @@ export function createDeploymentsRepository(): IDeploymentsRepository {
     setEntitiesAsOverwritten,
     calculateOverwrote,
     calculateOverwrittenByManyFast,
-    calculateOverwrittenBySlow,
-    getHistoricalDeploymentsQuery
+    calculateOverwrittenBySlow
   }
 }

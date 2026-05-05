@@ -228,7 +228,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const serverValidator = createServerValidator({ failedDeployments })
 
-  const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs })
+  const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, deploymentsRepository })
   const deployments = createDeploymentsComponent({ database, logs })
   const activeEntities = createActiveEntitiesComponent({
     database,
@@ -237,7 +237,10 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     metrics,
     denylist,
     sequentialExecutor,
-    deployments
+    deployments,
+    pointersRepository,
+    activeEntitiesRepository,
+    contentFilesRepository
   })
 
   // ---------------------------------------------------------------------------
@@ -260,14 +263,16 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     database,
     deployedEntitiesBloomFilter,
     activeEntities,
-    denylist
+    denylist,
+    deploymentsRepository,
+    contentFilesRepository
   })
 
   // ---------------------------------------------------------------------------
   // 9. Background workers
   // ---------------------------------------------------------------------------
   const garbageCollectionManager = new GarbageCollectionManager(
-    { database, metrics, logs, storage, systemProperties, activeEntities },
+    { database, metrics, logs, storage, systemProperties, activeEntities, contentFilesRepository },
     env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION),
     env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL)
   )
@@ -282,7 +287,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     env.getConfig<string>(EnvironmentConfig.SYNC_IGNORED_ENTITY_TYPES)
   )
 
-  const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs })
+  const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs, snapshotsRepository })
 
   const batchDeployer = createBatchDeployerComponent(
     {
@@ -296,7 +301,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       deployedEntitiesBloomFilter,
       storage,
       failedDeployments,
-      failedDeploymentsReporter
+      failedDeploymentsReporter,
+      deploymentsRepository
     },
     {
       ignoredTypes: new Set(ignoredTypes),
@@ -308,7 +314,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     }
   )
 
-  const snapshotStorage = createSnapshotStorage({ database })
+  const snapshotStorage = createSnapshotStorage({ database, snapshotsRepository })
 
   const materializedViewUpdateJob = createJobComponent(
     { logs },
@@ -379,7 +385,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     staticConfigs,
     storage,
     database,
-    denylist
+    denylist,
+    snapshotsRepository
   })
 
   const migrationManager = createMigrationExecutor({ logs, env })

@@ -1,17 +1,7 @@
 import { Entity, EntityType, PointerChangesSyncDeployment } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import SQL, { SQLStatement } from 'sql-template-strings'
-import { getContentFiles, saveContentFiles } from '../../adapters/content-files-repository'
-import {
-  calculateOverwrittenByManyFast,
-  calculateOverwrittenBySlow,
-  calculateOverwrote,
-  deploymentExists,
-  getHistoricalDeployments,
-  HistoricalDeployment,
-  HistoricalDeploymentsRow,
-  saveDeployment
-} from '../../adapters/deployments-repository'
+import { HistoricalDeployment, HistoricalDeploymentsRow } from '../../adapters/deployments-repository'
 import {
   AuditInfo,
   Deployment,
@@ -30,15 +20,15 @@ import { DeploymentPointerChanges, IDeploymentsComponent } from './types'
 
 export async function isEntityDeployed(
   database: DatabaseClient,
-  components: Pick<AppComponents, 'deployedEntitiesBloomFilter' | 'metrics'>,
+  components: Pick<AppComponents, 'deployedEntitiesBloomFilter' | 'metrics' | 'deploymentsRepository'>,
   entityId: string,
   entityTimestamp: number
 ): Promise<boolean> {
   // this condition should be carefully handled:
   // 1) it first uses the bloom filter to know wheter or not an entity may exist or definitely don't exist (.check)
-  // 2) then it checks against the DB (deploymentExists)
+  // 2) then it checks against the DB (deploymentsRepository.deploymentExists)
   if (await components.deployedEntitiesBloomFilter.isProbablyDeployed(entityId, entityTimestamp)) {
-    if (await deploymentExists(database, entityId)) {
+    if (await components.deploymentsRepository.deploymentExists(database, entityId)) {
       components.metrics.increment('dcl_deployed_entities_bloom_filter_checks_total', { hit: 'true' })
       return true
     } else {
@@ -120,29 +110,31 @@ export function mapDeploymentsToEntities(deployments: Deployment[]): Entity[] {
 }
 
 export async function saveDeploymentAndContentFiles(
+  components: Pick<AppComponents, 'deploymentsRepository' | 'contentFilesRepository'>,
   database: DatabaseTransactionalClient,
   entity: Entity,
   auditInfo: AuditInfo,
   overwrittenBy: DeploymentId | null
 ) {
-  const deploymentId = await saveDeployment(database, entity, auditInfo, overwrittenBy)
+  const deploymentId = await components.deploymentsRepository.saveDeployment(database, entity, auditInfo, overwrittenBy)
   if (entity.content) {
-    await saveContentFiles(database, deploymentId, entity.content)
+    await components.contentFilesRepository.saveContentFiles(database, deploymentId, entity.content)
   }
   return deploymentId
 }
 
 export async function calculateOverwrites(
+  components: Pick<AppComponents, 'deploymentsRepository'>,
   database: DatabaseClient,
   entity: Entity
 ): Promise<{ overwrote: Set<DeploymentId>; overwrittenBy: DeploymentId | null }> {
-  const overwrote = await calculateOverwrote(database, entity)
+  const overwrote = await components.deploymentsRepository.calculateOverwrote(database, entity)
 
-  let overwrittenByMany = await calculateOverwrittenByManyFast(database, entity)
+  let overwrittenByMany = await components.deploymentsRepository.calculateOverwrittenByManyFast(database, entity)
 
   if (overwrittenByMany.length === 0 && entity.type === 'scene') {
     // Scene overwrite determination can be tricky. If none was detected use this other query (slower but safer)
-    overwrittenByMany = await calculateOverwrittenBySlow(database, entity)
+    overwrittenByMany = await components.deploymentsRepository.calculateOverwrittenBySlow(database, entity)
   }
 
   let overwrittenBy: DeploymentId | null = null
@@ -203,14 +195,14 @@ export function buildHistoricalDeploymentsFromRow(row: HistoricalDeploymentsRow)
 }
 
 export async function getDeployments(
-  components: Pick<AppComponents, 'denylist' | 'metrics'>,
+  components: Pick<AppComponents, 'denylist' | 'metrics' | 'deploymentsRepository' | 'contentFilesRepository'>,
   database: DatabaseClient,
   options?: DeploymentOptions
 ): Promise<PartialDeploymentHistory<Deployment>> {
   const curatedOffset = getCuratedOffset(options)
   const curatedLimit = getCuratedLimit(options)
 
-  const deploymentsWithExtra = await getHistoricalDeployments(
+  const deploymentsWithExtra = await components.deploymentsRepository.getHistoricalDeployments(
     database,
     curatedOffset,
     curatedLimit + 1,
@@ -225,7 +217,7 @@ export async function getDeployments(
 
   const deploymentIds = deploymentsResult.map(({ deploymentId }) => deploymentId)
 
-  const content = await getContentFiles(database, deploymentIds)
+  const content = await components.contentFilesRepository.getContentFiles(database, deploymentIds)
 
   if (!options?.includeDenylisted) {
     deploymentsResult = deploymentsResult.filter((result) => !components.denylist.isDenylisted(result.entityId))
@@ -250,6 +242,7 @@ export async function getDeployments(
 }
 
 export async function getDeploymentsForActiveEntities(
+  components: Pick<AppComponents, 'contentFilesRepository'>,
   database: DatabaseClient,
   entityIds?: string[],
   pointers?: string[]
@@ -287,19 +280,19 @@ export async function getDeploymentsForActiveEntities(
     (row: HistoricalDeploymentsRow): HistoricalDeployment => buildHistoricalDeploymentsFromRow(row)
   )
   const deploymentIds = deploymentsResult.map(({ deploymentId }) => deploymentId)
-  const content = await getContentFiles(database, deploymentIds)
+  const content = await components.contentFilesRepository.getContentFiles(database, deploymentIds)
   return deploymentsResult.map((result) => buildDeploymentFromHistoricalDeployment(result, content))
 }
 
 export async function getPointerChanges(
-  components: Pick<AppComponents, 'denylist' | 'metrics'>,
+  components: Pick<AppComponents, 'denylist' | 'metrics' | 'deploymentsRepository'>,
   database: DatabaseClient,
   options?: PointerChangesOptions
 ): Promise<DeploymentPointerChanges> {
   const curatedOffset = options?.offset && options?.offset >= 0 ? options?.offset : 0
   const curatedLimit =
     options?.limit && options?.limit > 0 && options?.limit <= MAX_HISTORY_LIMIT ? options?.limit : MAX_HISTORY_LIMIT
-  let deploymentsWithExtra: HistoricalDeployment[] = await getHistoricalDeployments(
+  let deploymentsWithExtra: HistoricalDeployment[] = await components.deploymentsRepository.getHistoricalDeployments(
     database,
     curatedOffset,
     curatedLimit + 1,

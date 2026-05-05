@@ -1,7 +1,6 @@
 import { EntityType } from '@dcl/schemas'
 import { IBaseComponent } from '@well-known-components/interfaces'
 import { DeploymentContext } from '../../../src/deployment-types'
-import * as snapshotQueries from '../../../src/adapters/snapshots-repository'
 import { generateSnapshotsInMultipleTimeRanges } from '../../../src/logic/snapshots'
 import * as timeRangeLogic from '../../../src/logic/time-range'
 import { AppComponents } from '../../../src/types'
@@ -284,7 +283,7 @@ describe('snapshot generator - ', () => {
 
       await deployAnEntityAtTimestamp(components, '0x00000', daysAfterInitialTimestamp(0) + 1)
 
-      jest.spyOn(snapshotQueries, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([
+      jest.spyOn(components.snapshotsRepository, 'findSnapshotsStrictlyContainedInTimeRange').mockResolvedValue([
         {
           hash: 'h1',
           replacedSnapshotHashes: [],
@@ -295,9 +294,9 @@ describe('snapshot generator - ', () => {
       ])
 
       // the re-generation is forced
-      jest.spyOn(snapshotQueries, 'snapshotIsOutdated').mockResolvedValue(true)
+      jest.spyOn(components.snapshotsRepository, 'snapshotIsOutdated').mockResolvedValue(true)
       const snapshotsNotInTimeRangeSpy = jest
-        .spyOn(snapshotQueries, 'getSnapshotHashesNotInTimeRange')
+        .spyOn(components.snapshotsRepository, 'getSnapshotHashesNotInTimeRange')
         .mockResolvedValue(new Set(['h1']))
 
       // snapshot is generated and assert is correctly stored
@@ -331,7 +330,7 @@ describe('snapshot generator - ', () => {
       //  - The last the daily snapshot, has a different snapshot hash as it has one deployment.
       await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(15))
       // expect first week snapshot to be present
-      const snapshots = await snapshotQueries.findSnapshotsStrictlyContainedInTimeRange(
+      const snapshots = await components.snapshotsRepository.findSnapshotsStrictlyContainedInTimeRange(
         components.database,
         timeRangeOfDaysFromInitialTimestamp(15)
       )
@@ -357,7 +356,7 @@ describe('snapshot generator - ', () => {
         numberOfEntities: 0,
         generationTimestamp: firstDayTimeRange.endTimestamp + 1
       }
-      await snapshotQueries.saveSnapshot(components.database, oldSnapshot)
+      await components.snapshotsRepository.saveSnapshot(components.database, oldSnapshot)
 
       jest.spyOn(components.storage, 'existMultiple').mockImplementation(async (hashes) => {
         const e = new Map()

@@ -5,7 +5,10 @@ import { AppComponents } from '../../types'
 import { SnapshotGenerator } from './types'
 
 export function createSnapshotGenerator(
-  components: Pick<AppComponents, 'database' | 'fs' | 'metrics' | 'storage' | 'logs' | 'denylist' | 'staticConfigs'>
+  components: Pick<
+    AppComponents,
+    'database' | 'fs' | 'metrics' | 'storage' | 'logs' | 'denylist' | 'staticConfigs' | 'snapshotsRepository'
+  >
 ): SnapshotGenerator {
   const logger = components.logs.getLogger('snapshot-generator')
   const generationInterval = ms('6h')

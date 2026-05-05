@@ -1,11 +1,6 @@
 import { Entity, EntityType } from '@dcl/schemas'
 import { parseUrn } from '@dcl/urn-resolver'
 import LRU from 'lru-cache'
-import { removeActiveDeployments, updateActiveDeployments } from '../../adapters/active-entities-repository'
-import {
-  getItemEntitiesIdsThatMatchCollectionUrnPrefix,
-  getThirdPartyCollectionItemsEntityIdsThatMatchUrnPrefix
-} from '../../adapters/pointers-repository'
 import { EnvironmentConfig } from '../../Environment'
 import { DatabaseClient } from '../../adapters/database'
 import { AppComponents } from '../../types'
@@ -21,7 +16,16 @@ import { ActiveEntities, isEntityPresent, isPointingToEntity, NotActiveEntity } 
 export function createActiveEntitiesComponent(
   components: Pick<
     AppComponents,
-    'database' | 'env' | 'logs' | 'metrics' | 'denylist' | 'sequentialExecutor' | 'deployments'
+    | 'database'
+    | 'env'
+    | 'logs'
+    | 'metrics'
+    | 'denylist'
+    | 'sequentialExecutor'
+    | 'deployments'
+    | 'pointersRepository'
+    | 'activeEntitiesRepository'
+    | 'contentFilesRepository'
   >
 ): ActiveEntities {
   const logger = components.logs.getLogger('ActiveEntities')
@@ -33,14 +37,20 @@ export function createActiveEntitiesComponent(
     ttl: 1000 * 60 * 60 * 24, // 24 hours
     max: components.env.getConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE), //TODO
     fetchMethod: async (collectionUrn: string) =>
-      getItemEntitiesIdsThatMatchCollectionUrnPrefix(components.database, collectionUrn.toLowerCase())
+      components.pointersRepository.getItemEntitiesIdsThatMatchCollectionUrnPrefix(
+        components.database,
+        collectionUrn.toLowerCase()
+      )
   })
 
   const thirdPartyItemsEntityIdsByPrefixCache = new LRU<string, string[]>({
     ttl: 1000 * 60 * 60 * 24, // 24 hours
     max: components.env.getConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE), //TODO
     fetchMethod: async (thirdPartyUrn: string) =>
-      getThirdPartyCollectionItemsEntityIdsThatMatchUrnPrefix(components.database, thirdPartyUrn.toLowerCase())
+      components.pointersRepository.getThirdPartyCollectionItemsEntityIdsThatMatchUrnPrefix(
+        components.database,
+        thirdPartyUrn.toLowerCase()
+      )
   })
 
   const normalizePointerCacheKey = (pointer: string) => pointer.toLowerCase()
@@ -112,10 +122,10 @@ export function createActiveEntitiesComponent(
       cache.set(entity.id, entity)
       components.metrics.increment('dcl_entities_cache_storage_size', { entity_type: entity.type })
       // Store in the db the new entity pointed by pointers
-      await updateActiveDeployments(database, pointers, entity.id)
+      await components.activeEntitiesRepository.updateActiveDeployments(database, pointers, entity.id)
     } else {
       // Remove the row from active_pointers table
-      await removeActiveDeployments(database, pointers)
+      await components.activeEntitiesRepository.removeActiveDeployments(database, pointers)
     }
   }
 
@@ -169,7 +179,7 @@ export function createActiveEntitiesComponent(
       pointers?: string[]
     }
   ): Promise<Entity[]> {
-    const deployments = await getDeploymentsForActiveEntities(database, entityIds, pointers)
+    const deployments = await getDeploymentsForActiveEntities(components, database, entityIds, pointers)
     for (const deployment of deployments) {
       reportCacheAccess(deployment.entityType, 'miss')
     }

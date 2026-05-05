@@ -12,12 +12,15 @@ import { createTestMetricsComponent } from '@dcl/metrics'
 import path from 'path'
 import { Readable } from 'stream'
 import { Environment, EnvironmentBuilder, EnvironmentConfig } from '../Environment'
-import { saveContentFiles } from '../adapters/content-files-repository'
+import { createContentFilesRepository } from '../adapters/content-files-repository'
 import { metricsDeclaration } from '../metrics'
 import { createDatabaseComponent } from '../adapters/database'
 import { AppComponents } from '../types'
 
-export type ContentFilesFixerComponents = Pick<AppComponents, 'database' | 'env' | 'fetcher' | 'logs' | 'storage'>
+export type ContentFilesFixerComponents = Pick<
+  AppComponents,
+  'database' | 'env' | 'fetcher' | 'logs' | 'storage' | 'contentFilesRepository'
+>
 
 void Lifecycle.run({
   async main(program: Lifecycle.EntryPointParameters<ContentFilesFixerComponents>): Promise<void> {
@@ -43,12 +46,20 @@ void Lifecycle.run({
     const database = await createDatabaseComponent({ logs, env, metrics })
     const contentStorageFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
     const storage = await createFolderBasedFileSystemContentStorage({ fs, logs }, contentStorageFolder)
+    const contentFilesRepository = createContentFilesRepository()
     env.logConfigValues(logs.getLogger('Environment'))
-    return { logs, env, fetcher, database, fs, storage }
+    return { logs, env, fetcher, database, fs, storage, contentFilesRepository }
   }
 })
 
-async function fixMissingProfilesContentFiles({ database, env, fetcher, logs, storage }: ContentFilesFixerComponents) {
+async function fixMissingProfilesContentFiles({
+  database,
+  env,
+  fetcher,
+  logs,
+  storage,
+  contentFilesRepository
+}: ContentFilesFixerComponents) {
   const logger = logs.getLogger('FixMissingFilesHelper')
 
   const start = Date.now()
@@ -100,7 +111,7 @@ async function fixMissingProfilesContentFiles({ database, env, fetcher, logs, st
         }
 
         await database.transaction(async (databaseClient) => {
-          await saveContentFiles(databaseClient, deployment.id, contentFiles)
+          await contentFilesRepository.saveContentFiles(databaseClient, deployment.id, contentFiles)
         }, 'save_content_files')
       } catch (e) {
         logger.warn(

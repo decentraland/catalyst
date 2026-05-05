@@ -42,28 +42,28 @@ describe('Integration - Same Timestamp Check', () => {
   })
 
   it(`When oldest is deployed first, the active is the newest`, async () => {
-    const { deployer, database, denylist, metrics } = server.components
+    const { deployer, database, denylist, metrics, contentFilesRepository, deploymentsRepository } = server.components
 
     // Deploy the entities
     await deployEntitiesCombo(deployer, oldestEntity)
     await deployEntitiesCombo(deployer, newestEntity)
 
     // Assert newest entity is active
-    await assertIsActive({ database, denylist, metrics }, newestEntity)
+    await assertIsActive({ database, denylist, metrics, contentFilesRepository, deploymentsRepository }, newestEntity)
   })
 
   it(`When newest is deployed first, the active is the newest`, async () => {
-    const { deployer, database, denylist, metrics } = server.components
+    const { deployer, database, denylist, metrics, contentFilesRepository, deploymentsRepository } = server.components
     // Deploy the entities
     await deployEntitiesCombo(deployer, newestEntity)
     await deployEntitiesCombo(deployer, oldestEntity)
 
     // Assert newest entity is active
-    await assertIsActive({ database, denylist, metrics }, newestEntity)
+    await assertIsActive({ database, denylist, metrics, contentFilesRepository, deploymentsRepository }, newestEntity)
   })
 
   async function assertIsActive(
-    components: Pick<AppComponents, 'database' | 'denylist' | 'metrics'>,
+    components: Pick<AppComponents, 'database' | 'denylist' | 'metrics' | 'contentFilesRepository' | 'deploymentsRepository'>,
     entityCombo: EntityCombo
   ) {
     const { deployments } = await getDeployments(components, components.database, {

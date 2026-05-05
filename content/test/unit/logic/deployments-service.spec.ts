@@ -2,15 +2,19 @@ import { EntityType } from '@dcl/schemas'
 import { createTestMetricsComponent } from '@dcl/metrics'
 import { safe } from 'jest-extra-utils'
 import { Deployment, DeploymentOptions, PartialDeploymentHistory } from '../../../src/deployment-types'
-import { ContentFilesRow } from '../../../src/adapters/content-files-repository'
-import { HistoricalDeploymentsRow, MigrationDataRow } from '../../../src/adapters/deployments-repository'
+import { ContentFilesRow, createContentFilesRepository } from '../../../src/adapters/content-files-repository'
+import {
+  createDeploymentsRepository,
+  HistoricalDeploymentsRow,
+  MigrationDataRow
+} from '../../../src/adapters/deployments-repository'
 import { getCuratedLimit, getCuratedOffset, getDeployments, MAX_HISTORY_LIMIT } from '../../../src/logic/deployments'
 import { metricsDeclaration } from '../../../src/metrics'
 import { AppComponents } from '../../../src/types'
 
 describe('deployments service', () => {
   describe('getDeployments', () => {
-    let components: Pick<AppComponents, 'database' | 'denylist' | 'metrics'>
+    let components: Pick<AppComponents, 'database' | 'denylist' | 'metrics' | 'contentFilesRepository' | 'deploymentsRepository'>
     let result: PartialDeploymentHistory<Deployment>
 
     const deploymentIds = [127, 255]
@@ -80,7 +84,9 @@ describe('deployments service', () => {
         components = {
           database: safe({ queryWithValues: () => {} }),
           denylist: { isDenylisted: () => false },
-          metrics: createTestMetricsComponent(metricsDeclaration)
+          metrics: createTestMetricsComponent(metricsDeclaration),
+          contentFilesRepository: createContentFilesRepository(),
+          deploymentsRepository: createDeploymentsRepository()
         }
         jest
           .spyOn(components.database, 'queryWithValues')
@@ -109,7 +115,9 @@ describe('deployments service', () => {
         components = {
           database: safe({ queryWithValues: () => {} }),
           denylist: { isDenylisted: () => false },
-          metrics: createTestMetricsComponent(metricsDeclaration)
+          metrics: createTestMetricsComponent(metricsDeclaration),
+          contentFilesRepository: createContentFilesRepository(),
+          deploymentsRepository: createDeploymentsRepository()
         }
         jest
           .spyOn(components.database, 'queryWithValues')
@@ -138,7 +146,9 @@ describe('deployments service', () => {
         components = {
           database: safe({ queryWithValues: () => {} }),
           denylist: { isDenylisted: () => false },
-          metrics: createTestMetricsComponent(metricsDeclaration)
+          metrics: createTestMetricsComponent(metricsDeclaration),
+          contentFilesRepository: createContentFilesRepository(),
+          deploymentsRepository: createDeploymentsRepository()
         }
         jest
           .spyOn(components.database, 'queryWithValues')

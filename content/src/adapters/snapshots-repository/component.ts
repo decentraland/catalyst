@@ -6,7 +6,7 @@ import { ISnapshotsRepository } from './types'
 
 const SNAPSHOT_HASHES_QUERY = SQL`SELECT DISTINCT hash FROM snapshots;`
 
-export async function* streamActiveDeploymentsInTimeRange(
+async function* streamActiveDeploymentsInTimeRange(
   database: DatabaseClient,
   timeRange: TimeRange
 ): AsyncIterable<SnapshotSyncDeployment> {
@@ -32,7 +32,7 @@ export async function* streamActiveDeploymentsInTimeRange(
   }
 }
 
-export async function findSnapshotsStrictlyContainedInTimeRange(
+async function findSnapshotsStrictlyContainedInTimeRange(
   database: DatabaseClient,
   timerange: TimeRange
 ): Promise<SnapshotMetadata[]> {
@@ -71,7 +71,7 @@ export async function findSnapshotsStrictlyContainedInTimeRange(
   })
 }
 
-export async function saveSnapshot(database: DatabaseClient, snapshotMetadata: SnapshotMetadata): Promise<void> {
+async function saveSnapshot(database: DatabaseClient, snapshotMetadata: SnapshotMetadata): Promise<void> {
   const query = SQL`
   INSERT INTO snapshots
   (hash, init_timestamp, end_timestamp, replaced_hashes, number_of_entities, generation_time)
@@ -89,7 +89,7 @@ export async function saveSnapshot(database: DatabaseClient, snapshotMetadata: S
   await database.queryWithValues(query, 'save_snapshot')
 }
 
-export async function isOwnSnapshot(database: DatabaseClient, snapshotHash: string): Promise<boolean> {
+async function isOwnSnapshot(database: DatabaseClient, snapshotHash: string): Promise<boolean> {
   const queryResult = await database.queryWithValues<{ hash: string }>(
     SQL`SELECT hash from snapshots WHERE hash = ${snapshotHash}`,
     'has_snapshot'
@@ -97,7 +97,7 @@ export async function isOwnSnapshot(database: DatabaseClient, snapshotHash: stri
   return queryResult.rowCount > 0
 }
 
-export async function getSnapshotHashesNotInTimeRange(
+async function getSnapshotHashesNotInTimeRange(
   database: DatabaseClient,
   snapshotHashes: string[],
   timeRange: TimeRange
@@ -120,7 +120,7 @@ export async function getSnapshotHashesNotInTimeRange(
   return new Set(result.rows.map((row) => row.hash))
 }
 
-export async function deleteSnapshotsInTimeRange(
+async function deleteSnapshotsInTimeRange(
   database: DatabaseClient,
   snapshotHashesToDelete: string[],
   timeRange: TimeRange
@@ -144,7 +144,7 @@ export async function deleteSnapshotsInTimeRange(
  * they were not included because they were deployed after the generation timestamp of the snapshot.
  * In this case, the snapshot should be recreated in order to include these entities.
  */
-export async function snapshotIsOutdated(database: DatabaseClient, snapshot: SnapshotMetadata): Promise<boolean> {
+async function snapshotIsOutdated(database: DatabaseClient, snapshot: SnapshotMetadata): Promise<boolean> {
   const result = await database.queryWithValues<{ numberOfEntities: number }>(
     SQL`
   SELECT 1 FROM deployments
@@ -158,10 +158,7 @@ export async function snapshotIsOutdated(database: DatabaseClient, snapshot: Sna
   return result.rowCount > 0
 }
 
-export async function getNumberOfActiveEntitiesInTimeRange(
-  database: DatabaseClient,
-  timeRange: TimeRange
-): Promise<number> {
+async function getNumberOfActiveEntitiesInTimeRange(database: DatabaseClient, timeRange: TimeRange): Promise<number> {
   const result = await database.queryWithValues<{ numberOfEntities: number }>(
     SQL`
   SELECT
@@ -175,7 +172,7 @@ export async function getNumberOfActiveEntitiesInTimeRange(
   return result.rows[0].numberOfEntities
 }
 
-export async function saveProcessedSnapshot(
+async function saveProcessedSnapshot(
   database: DatabaseClient,
   processedSnapshotHash: string,
   processTimestampMs: number
@@ -190,7 +187,7 @@ export async function saveProcessedSnapshot(
   await database.queryWithValues(query, 'save_processed_snapshot')
 }
 
-export async function getProcessedSnapshots(
+async function getProcessedSnapshots(
   database: DatabaseClient,
   processedSnapshotHashes: string[]
 ): Promise<Set<string>> {
@@ -208,7 +205,7 @@ export async function getProcessedSnapshots(
   return new Set(result.rows.map((row) => row.hash))
 }
 
-export async function* getAllSnapshotHashes(database: DatabaseClient): AsyncIterable<string> {
+async function* getAllSnapshotHashes(database: DatabaseClient): AsyncIterable<string> {
   const queryResult = await database.queryWithValues<{ hash: string }>(SNAPSHOT_HASHES_QUERY)
   for (const row of queryResult.rows) {
     yield row.hash

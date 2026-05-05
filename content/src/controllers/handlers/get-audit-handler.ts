@@ -6,7 +6,10 @@ import { AuditInfo } from '../../deployment-types'
 
 // Method: GET
 export async function getEntityAuditInformationHandler(
-  context: HandlerContextWithPath<'database' | 'denylist' | 'metrics', '/audit/:type/:entityId'>
+  context: HandlerContextWithPath<
+    'database' | 'denylist' | 'metrics' | 'deploymentsRepository' | 'contentFilesRepository',
+    '/audit/:type/:entityId'
+  >
 ): Promise<{ status: 200; body: AuditResponse }> {
   const type = parseEntityType(context.params.type)
   const entityId = context.params.entityId

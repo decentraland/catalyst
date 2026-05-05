@@ -2,11 +2,7 @@ import SQL from 'sql-template-strings'
 import { DatabaseClient } from '../../adapters/database'
 import { IActiveEntitiesRepository } from './types'
 
-export async function updateActiveDeployments(
-  database: DatabaseClient,
-  pointers: string[],
-  entityId: string
-): Promise<void> {
+async function updateActiveDeployments(database: DatabaseClient, pointers: string[], entityId: string): Promise<void> {
   if (pointers.length === 0) return
   const value_list = pointers.map((p, i) => {
     if (i < pointers.length - 1) {
@@ -23,7 +19,7 @@ export async function updateActiveDeployments(
   await database.queryWithValues(query)
 }
 
-export async function removeActiveDeployments(database: DatabaseClient, pointers: string[]): Promise<void> {
+async function removeActiveDeployments(database: DatabaseClient, pointers: string[]): Promise<void> {
   if (pointers.length === 0) return
   const value_list = pointers.map((p, i) => {
     if (i < pointers.length - 1) {
