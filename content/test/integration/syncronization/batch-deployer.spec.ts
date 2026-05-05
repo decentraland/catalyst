@@ -1,6 +1,6 @@
 import { EnvironmentBuilder, EnvironmentConfig } from '../../../src/Environment'
 import * as deployments from '../../../src/logic/deployments'
-import * as deployRemote from '../../../src/service/synchronization/deployRemoteEntity'
+import * as deployRemote from '../../../src/logic/sync-orchestrator'
 import ms from 'ms'
 
 describe('batch deployer - ', () => {
@@ -183,7 +183,7 @@ describe('batch deployer - ', () => {
       })
 
     jest.spyOn(deployments, 'isEntityDeployed').mockResolvedValue(false)
-    const reportFailureSpy = jest.spyOn(components.failedDeployments, 'reportFailure').mockResolvedValue()
+    const reportFailureSpy = jest.spyOn(components.failedDeploymentsReporter, 'reportFailure').mockResolvedValue()
 
     const markedAsDeployed = new Set()
     await components.batchDeployer.scheduleEntityDeployment(

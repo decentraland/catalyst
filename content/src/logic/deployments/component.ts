@@ -1,0 +1,363 @@
+import { Entity, EntityType, PointerChangesSyncDeployment } from '@dcl/schemas'
+import { ILoggerComponent } from '@well-known-components/interfaces'
+import SQL, { SQLStatement } from 'sql-template-strings'
+import { HistoricalDeployment, HistoricalDeploymentsRow } from '../../adapters/deployments-repository'
+import {
+  AuditInfo,
+  Deployment,
+  DeploymentContent,
+  DeploymentContext,
+  DeploymentOptions,
+  PartialDeploymentHistory,
+  PointerChangesOptions
+} from '../../deployment-types'
+import { FailedDeployment } from '../../adapters/failed-deployments-cache'
+import { DatabaseClient, DatabaseTransactionalClient } from '../../adapters/database'
+import { deployEntityFromRemoteServer } from '../sync-orchestrator'
+import { IGNORING_FIX_ERROR } from '../server-validator'
+import { AppComponents, DeploymentId, EntityVersion } from '../../types'
+import { DeploymentPointerChanges, IDeploymentsComponent } from './types'
+
+export async function isEntityDeployed(
+  database: DatabaseClient,
+  components: Pick<AppComponents, 'deployedEntitiesBloomFilter' | 'metrics' | 'deploymentsRepository'>,
+  entityId: string,
+  entityTimestamp: number
+): Promise<boolean> {
+  // this condition should be carefully handled:
+  // 1) it first uses the bloom filter to know wheter or not an entity may exist or definitely don't exist (.check)
+  // 2) then it checks against the DB (deploymentsRepository.deploymentExists)
+  if (await components.deployedEntitiesBloomFilter.isProbablyDeployed(entityId, entityTimestamp)) {
+    if (await components.deploymentsRepository.deploymentExists(database, entityId)) {
+      components.metrics.increment('dcl_deployed_entities_bloom_filter_checks_total', { hit: 'true' })
+      return true
+    } else {
+      components.metrics.increment('dcl_deployed_entities_bloom_filter_checks_total', { hit: 'false' })
+      return false
+    }
+  } else {
+    components.metrics.increment('dcl_deployed_entities_bloom_filter_checks_total', { hit: 'true' })
+    return false
+  }
+}
+
+export async function retryFailedDeploymentExecution(
+  components: Pick<
+    AppComponents,
+    | 'metrics'
+    | 'staticConfigs'
+    | 'fetcher'
+    | 'downloadQueue'
+    | 'logs'
+    | 'deployer'
+    | 'contentCluster'
+    | 'failedDeployments'
+    | 'failedDeploymentsReporter'
+    | 'storage'
+  >,
+  logger?: ILoggerComponent.ILogger
+): Promise<void> {
+  const logs = logger || components.logs.getLogger('retryFailedDeploymentExecution')
+  // Get Failed Deployments from local storage
+  const failedDeployments: FailedDeployment[] = await components.failedDeployments.getAllFailedDeployments()
+
+  // TODO: there may be chances that failed deployments are not part of all catalyst in cluster
+  const contentServersUrls = components.contentCluster.getAllServersInCluster()
+
+  // TODO: Implement an exponential backoff for retrying
+  for (const failedDeployment of failedDeployments) {
+    // Build Deployment from other servers
+    const { entityId, entityType, authChain } = failedDeployment
+
+    if (authChain) {
+      logs.debug(`Will retry to deploy entity`, { entityId, entityType })
+      try {
+        await deployEntityFromRemoteServer(
+          components,
+          entityId,
+          entityType,
+          authChain,
+          contentServersUrls,
+          DeploymentContext.FIX_ATTEMPT
+        )
+      } catch (error) {
+        // it failed again, override failed deployment error description
+        const errorDescription = error.message + ''
+
+        if (!errorDescription.includes(IGNORING_FIX_ERROR)) {
+          await components.failedDeploymentsReporter.reportFailure({ ...failedDeployment, errorDescription })
+        }
+
+        logs.error(`Failed to fix deployment of entity`, { entityId, entityType, errorDescription })
+        logs.error(error)
+      }
+    } else {
+      logs.info(`Can't retry failed deployment. Because it lacks of authChain`, { entityId, entityType })
+    }
+  }
+}
+
+export function mapDeploymentsToEntities(deployments: Deployment[]): Entity[] {
+  return deployments.map(({ entityVersion, entityId, entityType, pointers, entityTimestamp, content, metadata }) => ({
+    version: entityVersion,
+    id: entityId,
+    type: entityType,
+    pointers,
+    timestamp: entityTimestamp,
+    content: content?.map(({ key, hash }) => ({ file: key, hash })) || [],
+    metadata
+  }))
+}
+
+export async function saveDeploymentAndContentFiles(
+  components: Pick<AppComponents, 'deploymentsRepository' | 'contentFilesRepository'>,
+  database: DatabaseTransactionalClient,
+  entity: Entity,
+  auditInfo: AuditInfo,
+  overwrittenBy: DeploymentId | null
+) {
+  const deploymentId = await components.deploymentsRepository.saveDeployment(database, entity, auditInfo, overwrittenBy)
+  if (entity.content) {
+    await components.contentFilesRepository.saveContentFiles(database, deploymentId, entity.content)
+  }
+  return deploymentId
+}
+
+export async function calculateOverwrites(
+  components: Pick<AppComponents, 'deploymentsRepository'>,
+  database: DatabaseClient,
+  entity: Entity
+): Promise<{ overwrote: Set<DeploymentId>; overwrittenBy: DeploymentId | null }> {
+  const overwrote = await components.deploymentsRepository.calculateOverwrote(database, entity)
+
+  let overwrittenByMany = await components.deploymentsRepository.calculateOverwrittenByManyFast(database, entity)
+
+  if (overwrittenByMany.length === 0 && entity.type === 'scene') {
+    // Scene overwrite determination can be tricky. If none was detected use this other query (slower but safer)
+    overwrittenByMany = await components.deploymentsRepository.calculateOverwrittenBySlow(database, entity)
+  }
+
+  let overwrittenBy: DeploymentId | null = null
+  if (overwrittenByMany.length > 0) {
+    overwrittenBy = overwrittenByMany[0].id
+  }
+  return {
+    overwrote: new Set(overwrote),
+    overwrittenBy
+  }
+}
+
+export const MAX_HISTORY_LIMIT = 500
+
+export function getCuratedOffset(options?: DeploymentOptions): number {
+  return options?.offset && options.offset >= 0 ? options.offset : 0
+}
+export function getCuratedLimit(options?: DeploymentOptions): number {
+  return options?.limit && options.limit > 0 && options.limit <= MAX_HISTORY_LIMIT ? options.limit : MAX_HISTORY_LIMIT
+}
+
+export function buildDeploymentFromHistoricalDeployment(
+  historicalDeployment: HistoricalDeployment,
+  content: Map<DeploymentId, DeploymentContent[]>
+): Deployment {
+  return {
+    entityVersion: historicalDeployment.version as EntityVersion,
+    entityType: historicalDeployment.entityType as EntityType,
+    entityId: historicalDeployment.entityId,
+    pointers: historicalDeployment.pointers,
+    entityTimestamp: historicalDeployment.entityTimestamp,
+    content: content.get(historicalDeployment.deploymentId) || [],
+    metadata: historicalDeployment.metadata,
+    deployedBy: historicalDeployment.deployerAddress,
+    auditInfo: {
+      version: historicalDeployment.version as EntityVersion,
+      authChain: historicalDeployment.authChain,
+      localTimestamp: historicalDeployment.localTimestamp,
+      overwrittenBy: historicalDeployment.overwrittenBy
+    }
+  }
+}
+
+export function buildHistoricalDeploymentsFromRow(row: HistoricalDeploymentsRow): HistoricalDeployment {
+  return {
+    deploymentId: row.id,
+    entityType: row.entity_type,
+    entityId: row.entity_id,
+    pointers: row.entity_pointers,
+    entityTimestamp: row.entity_timestamp,
+    metadata: row.entity_metadata ? row.entity_metadata.v : undefined,
+    deployerAddress: row.deployer_address,
+    version: row.version,
+    authChain: row.auth_chain,
+    localTimestamp: row.local_timestamp,
+    overwrittenBy: row.overwritten_by ?? undefined
+  }
+}
+
+export async function getDeployments(
+  components: Pick<AppComponents, 'denylist' | 'metrics' | 'deploymentsRepository' | 'contentFilesRepository'>,
+  database: DatabaseClient,
+  options?: DeploymentOptions
+): Promise<PartialDeploymentHistory<Deployment>> {
+  const curatedOffset = getCuratedOffset(options)
+  const curatedLimit = getCuratedLimit(options)
+
+  const deploymentsWithExtra = await components.deploymentsRepository.getHistoricalDeployments(
+    database,
+    curatedOffset,
+    curatedLimit + 1,
+    options?.filters,
+    options?.sortBy,
+    options?.lastId
+  )
+
+  const moreData = deploymentsWithExtra.length > curatedLimit
+
+  let deploymentsResult = deploymentsWithExtra.slice(0, curatedLimit)
+
+  const deploymentIds = deploymentsResult.map(({ deploymentId }) => deploymentId)
+
+  const content = await components.contentFilesRepository.getContentFiles(database, deploymentIds)
+
+  if (!options?.includeDenylisted) {
+    deploymentsResult = deploymentsResult.filter((result) => !components.denylist.isDenylisted(result.entityId))
+  }
+
+  const deployments: Deployment[] = deploymentsResult.map((result) =>
+    buildDeploymentFromHistoricalDeployment(result, content)
+  )
+
+  return {
+    deployments,
+    filters: {
+      ...options?.filters
+    },
+    pagination: {
+      offset: curatedOffset,
+      limit: curatedLimit,
+      moreData: moreData,
+      lastId: options?.lastId
+    }
+  }
+}
+
+export async function getDeploymentsForActiveEntities(
+  components: Pick<AppComponents, 'contentFilesRepository'>,
+  database: DatabaseClient,
+  entityIds?: string[],
+  pointers?: string[]
+): Promise<Deployment[]> {
+  // Generate the select according the info needed
+  const bothPresent = entityIds && entityIds.length > 0 && pointers && pointers.length > 0
+  const nonePresent = !entityIds && !pointers
+  if (bothPresent || nonePresent) {
+    throw Error('in getDeploymentsForActiveEntities ids or pointers must be present, but not both')
+  }
+
+  const query: SQLStatement = SQL`
+      SELECT
+          dep1.id,
+          dep1.entity_type,
+          dep1.entity_id,
+          dep1.entity_pointers,
+          date_part('epoch', dep1.entity_timestamp) * 1000 AS entity_timestamp,
+          dep1.entity_metadata,
+          dep1.deployer_address,
+          dep1.version,
+          dep1.auth_chain,
+          date_part('epoch', dep1.local_timestamp) * 1000 AS local_timestamp
+      FROM deployments AS dep1
+      WHERE dep1.deleter_deployment IS NULL
+        AND `.append(
+    entityIds
+      ? SQL`dep1.entity_id = ANY (${entityIds})`
+      : SQL`dep1.entity_pointers && ${pointers!.map((p) => p.toLowerCase())}`
+  )
+
+  const historicalDeploymentsResponse = await database.queryWithValues(query, 'get_active_entities')
+
+  const deploymentsResult: HistoricalDeployment[] = historicalDeploymentsResponse.rows.map(
+    (row: HistoricalDeploymentsRow): HistoricalDeployment => buildHistoricalDeploymentsFromRow(row)
+  )
+  const deploymentIds = deploymentsResult.map(({ deploymentId }) => deploymentId)
+  const content = await components.contentFilesRepository.getContentFiles(database, deploymentIds)
+  return deploymentsResult.map((result) => buildDeploymentFromHistoricalDeployment(result, content))
+}
+
+export async function getPointerChanges(
+  components: Pick<AppComponents, 'denylist' | 'metrics' | 'deploymentsRepository'>,
+  database: DatabaseClient,
+  options?: PointerChangesOptions
+): Promise<DeploymentPointerChanges> {
+  const curatedOffset = options?.offset && options?.offset >= 0 ? options?.offset : 0
+  const curatedLimit =
+    options?.limit && options?.limit > 0 && options?.limit <= MAX_HISTORY_LIMIT ? options?.limit : MAX_HISTORY_LIMIT
+  let deploymentsWithExtra: HistoricalDeployment[] = await components.deploymentsRepository.getHistoricalDeployments(
+    database,
+    curatedOffset,
+    curatedLimit + 1,
+    options?.filters,
+    options?.sortBy,
+    options?.lastId
+  )
+
+  // Note: moreData is checked before denylist filtering so pagination signals remain correct.
+  // This means returned pages may have fewer than curatedLimit items when denylisted entities
+  // are removed. Fixing that would require fetching additional rows, left as a future improvement.
+  const moreData: boolean = deploymentsWithExtra.length > curatedLimit
+  deploymentsWithExtra = deploymentsWithExtra.filter((result) => !components.denylist.isDenylisted(result.entityId))
+  const deployments: PointerChangesSyncDeployment[] = deploymentsWithExtra.slice(0, curatedLimit)
+
+  return {
+    pointerChanges: deployments,
+    filters: {
+      ...options?.filters
+    },
+    pagination: {
+      offset: curatedOffset,
+      limit: curatedLimit,
+      moreData
+    }
+  }
+}
+
+export const createDeploymentsComponent = (
+  components: Pick<AppComponents, 'database' | 'logs'>
+): IDeploymentsComponent => {
+  const { database, logs } = components
+  const logger = logs.getLogger('deployments-component')
+
+  async function getDeploymentsForActiveThirdPartyItemsByEntityIds(entityIds: string[]): Promise<Deployment[]> {
+    const query = SQL`
+      SELECT * FROM active_third_party_collection_items_deployments_with_content
+      WHERE entity_id = ANY(${entityIds});
+    `
+    const deployments = await database.queryWithValues<
+      HistoricalDeploymentsRow & { content_keys: string[]; content_hashes: string[] }
+    >(query, 'get_deployments_for_active_third_party_collection_items_by_entity_ids')
+    const contents = new Map<DeploymentId, DeploymentContent[]>(
+      deployments.rows.map((row) => [
+        row.id,
+        row.content_keys.map((content_key, index) => ({ key: content_key, hash: row.content_hashes[index] }))
+      ])
+    )
+
+    return deployments.rows.map(
+      (row: HistoricalDeploymentsRow & { content_keys: string[]; content_hashes: string[] }): Deployment =>
+        buildDeploymentFromHistoricalDeployment(buildHistoricalDeploymentsFromRow(row), contents)
+    )
+  }
+
+  async function updateMaterializedViews(): Promise<void> {
+    logger.info('Updating active third party collection items deployments with content materialized view')
+    await database.query(
+      'REFRESH MATERIALIZED VIEW CONCURRENTLY active_third_party_collection_items_deployments_with_content'
+    )
+    logger.info('Active third party collection items deployments with content materialized view updated')
+  }
+
+  return {
+    getDeploymentsForActiveThirdPartyItemsByEntityIds,
+    updateMaterializedViews
+  }
+}

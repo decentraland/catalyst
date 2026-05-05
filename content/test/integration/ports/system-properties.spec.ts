@@ -1,4 +1,4 @@
-import { createSystemProperties, SYSTEM_PROPERTIES } from '../../../src/ports/system-properties'
+import { createSystemProperties, SYSTEM_PROPERTIES } from '../../../src/adapters/system-properties'
 import { TestProgram } from '../TestProgram'
 import LeakDetector from 'jest-leak-detector'
 import { createDefaultServer } from '../simpleTestEnvironment'

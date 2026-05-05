@@ -2,7 +2,7 @@ import { createLogComponent } from '@well-known-components/logger'
 import { resolve } from 'path'
 import { Readable } from 'stream'
 import { Environment, EnvironmentConfig } from '../../../src/Environment'
-import { createDenylist, Denylist } from '../../../src/ports/denylist'
+import { createDenylist, Denylist } from '../../../src/adapters/denylist'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
 
 async function setupLogs() {
@@ -61,15 +61,34 @@ describe('when creating a denylist', () => {
         createReadStream: jest.fn().mockReturnValue(Readable.from(`denied1\n denied2`)),
         existPath: jest.fn().mockResolvedValue(false)
       }
-      env.setConfig(EnvironmentConfig.DENYLIST_URLS, 'https://config.decentraland.org/denylist')
+      env.setConfig(EnvironmentConfig.DENYLIST_URLS, 'https://asset-bundle-registry.decentraland.org/denylist')
       const fetcher = {
-        fetch: jest.fn().mockResolvedValue({ text: () => Promise.resolve(`denied3\ndenied4`) } as Partial<Response>)
+        fetch: jest.fn().mockResolvedValue({
+          json: () => Promise.resolve([{ entity_id: 'denied3' }, { entity_id: 'denied4' }])
+        } as Partial<Response>)
       }
       const denylist = await createDenylist({ env, logs, fs, fetcher })
       await denylist.reload()
       expect(['denied3', 'denied4'].every((line) => denylist.isDenylisted(line))).toBe(true)
       expect(['denied1', 'denied2'].every((line) => denylist.isDenylisted(line))).toBe(false)
-      expect(fetcher.fetch).toBeCalledWith('https://config.decentraland.org/denylist')
+      expect(fetcher.fetch).toBeCalledWith('https://asset-bundle-registry.decentraland.org/denylist')
+    })
+
+    it('should not add any items when the url returns a non-array response', async () => {
+      const logs = await setupLogs()
+      const fs = {
+        createReadStream: jest.fn(),
+        existPath: jest.fn().mockResolvedValue(false)
+      }
+      env.setConfig(EnvironmentConfig.DENYLIST_URLS, 'https://asset-bundle-registry.decentraland.org/denylist')
+      const fetcher = {
+        fetch: jest.fn().mockResolvedValue({
+          json: () => Promise.resolve({ entity_id: 'denied3' })
+        } as Partial<Response>)
+      }
+      denylist = await createDenylist({ env, logs, fs, fetcher })
+      await denylist.reload()
+      expect(denylist.isDenylisted('denied3')).toBe(false)
     })
 
     it('should create it without using the invalid url', async () => {
@@ -78,13 +97,15 @@ describe('when creating a denylist', () => {
         createReadStream: jest.fn(),
         existPath: jest.fn().mockResolvedValue(false)
       }
-      env.setConfig(EnvironmentConfig.DENYLIST_URLS, 'https://config.decentraland.org/denylist invalidUrl')
+      env.setConfig(EnvironmentConfig.DENYLIST_URLS, 'https://asset-bundle-registry.decentraland.org/denylist invalidUrl')
       const fetcher = {
-        fetch: jest.fn().mockResolvedValue({ text: () => Promise.resolve(`denied3\ndenied4`) } as Partial<Response>)
+        fetch: jest.fn().mockResolvedValue({
+          json: () => Promise.resolve([{ entity_id: 'denied3' }, { entity_id: 'denied4' }])
+        } as Partial<Response>)
       }
       denylist = await createDenylist({ env, logs, fs, fetcher })
       await denylist.reload()
-      expect(fetcher.fetch).toBeCalledWith('https://config.decentraland.org/denylist')
+      expect(fetcher.fetch).toBeCalledWith('https://asset-bundle-registry.decentraland.org/denylist')
       expect(fetcher.fetch).not.toBeCalledWith('invalidUrl')
     })
   })
@@ -95,15 +116,17 @@ describe('when creating a denylist', () => {
         createReadStream: jest.fn().mockReturnValue(Readable.from(`denied1\n denied2`)),
         existPath: jest.fn().mockResolvedValue(true)
       }
-      env.setConfig(EnvironmentConfig.DENYLIST_URLS, 'https://config.decentraland.org/denylist')
+      env.setConfig(EnvironmentConfig.DENYLIST_URLS, 'https://asset-bundle-registry.decentraland.org/denylist')
       const fetcher = {
-        fetch: jest.fn().mockResolvedValue({ text: () => Promise.resolve(`denied3\ndenied4`) } as Partial<Response>)
+        fetch: jest.fn().mockResolvedValue({
+          json: () => Promise.resolve([{ entity_id: 'denied3' }, { entity_id: 'denied4' }])
+        } as Partial<Response>)
       }
       denylist = await createDenylist({ env, logs, fs, fetcher })
       await denylist.reload()
 
       expect(['denied1', 'denied2', 'denied3', 'denied4'].every((line) => denylist!.isDenylisted(line))).toBe(true)
-      expect(fetcher.fetch).toBeCalledWith('https://config.decentraland.org/denylist')
+      expect(fetcher.fetch).toBeCalledWith('https://asset-bundle-registry.decentraland.org/denylist')
     })
 
     it('should create it with no denied content other than the specified in the denylists', async () => {
@@ -112,14 +135,16 @@ describe('when creating a denylist', () => {
         createReadStream: jest.fn().mockReturnValue(Readable.from(`denied1\n denied2`)),
         existPath: jest.fn().mockResolvedValue(true)
       }
-      env.setConfig(EnvironmentConfig.DENYLIST_URLS, 'https://config.decentraland.org/denylist')
+      env.setConfig(EnvironmentConfig.DENYLIST_URLS, 'https://asset-bundle-registry.decentraland.org/denylist')
       const fetcher = {
-        fetch: jest.fn().mockResolvedValue({ text: () => Promise.resolve(`denied3\ndenied4`) } as Partial<Response>)
+        fetch: jest.fn().mockResolvedValue({
+          json: () => Promise.resolve([{ entity_id: 'denied3' }, { entity_id: 'denied4' }])
+        } as Partial<Response>)
       }
       denylist = await createDenylist({ env, logs, fs, fetcher })
       await denylist.reload()
       expect(['otherDenied1', 'otherDenied2'].every((line) => denylist!.isDenylisted(line))).toBe(false)
-      expect(fetcher.fetch).toBeCalledWith('https://config.decentraland.org/denylist')
+      expect(fetcher.fetch).toBeCalledWith('https://asset-bundle-registry.decentraland.org/denylist')
     })
   })
 

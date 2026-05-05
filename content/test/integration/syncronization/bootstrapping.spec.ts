@@ -1,17 +1,18 @@
 import * as loggerComponent from '@well-known-components/logger'
 import SQL from 'sql-template-strings'
 import { Deployment } from '../../../src/deployment-types'
-import {
-  findSnapshotsStrictlyContainedInTimeRange,
-  getProcessedSnapshots
-} from '../../../src/logic/database-queries/snapshots-queries'
 import { getDeployments } from '../../../src/logic/deployments'
 import * as timeRangeLogic from '../../../src/logic/time-range'
 import { assertDeploymentsAreReported, buildDeployment } from '../E2EAssertions'
 import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
 import { startProgramAndWaitUntilBootstrapFinishes, TestProgram } from '../TestProgram'
-import { State } from '../../../src/ports/synchronizationState'
+import { State } from '../../../src/adapters/synchronization-state'
+
+// Captured at module load time, before any beforeEach installs a Date.now spy.
+// fakeNow uses this to read real elapsed time without re-entering its own mock
+// (which would recurse, since Date.now in this suite is replaced by fakeNow).
+const realDateNow = Date.now.bind(Date)
 
 describe('Bootstrapping synchronization tests', function () {
   const getTestEnv = setupTestEnvironment()
@@ -38,11 +39,10 @@ describe('Bootstrapping synchronization tests', function () {
   beforeEach(async () => {
     ;[server1, server2] = await getTestEnv().configServer().andBuildMany(2)
 
-    const now = Date.now()
+    const now = realDateNow()
     baseTimestamp = 0
-    fakeNow = () => Date.now() - now + initialTimestamp + baseTimestamp
-    jest.spyOn(server1.components.clock, 'now').mockImplementation(fakeNow)
-    jest.spyOn(server2.components.clock, 'now').mockImplementation(fakeNow)
+    fakeNow = () => realDateNow() - now + initialTimestamp + baseTimestamp
+    jest.spyOn(Date, 'now').mockImplementation(fakeNow)
     jest.spyOn(server1.components.validator, 'validate').mockResolvedValue({ ok: true })
     jest.spyOn(server2.components.validator, 'validate').mockResolvedValue({ ok: true })
     jest.spyOn(server1.components.synchronizationState, 'getState').mockReturnValue(State.SYNCING)
@@ -65,7 +65,7 @@ describe('Bootstrapping synchronization tests', function () {
       ).rows.map((s) => s.hash)
     )
 
-    const server2ProcessedSnapshots = await getProcessedSnapshots(
+    const server2ProcessedSnapshots = await server2.components.snapshotsRepository.getProcessedSnapshots(
       server2.components.database,
       Array.from(server1Snapshots)
     )
@@ -127,10 +127,13 @@ describe('Bootstrapping synchronization tests', function () {
     )
     jest.spyOn(server2.components.snapshotStorage, 'has').mockResolvedValue(false)
     await startProgramAndWaitUntilBootstrapFinishes(server2)
-    const sevenDaysSnapshots = await findSnapshotsStrictlyContainedInTimeRange(server1.components.database, {
-      initTimestamp: initialTimestamp,
-      endTimestamp: fakeNow()
-    })
+    const sevenDaysSnapshots = await server1.components.snapshotsRepository.findSnapshotsStrictlyContainedInTimeRange(
+      server1.components.database,
+      {
+        initTimestamp: initialTimestamp,
+        endTimestamp: fakeNow()
+      }
+    )
     expect(sevenDaysSnapshots).toHaveLength(7)
     expect(markSnapshotAsProcessedSpy).toBeCalledTimes(3)
     for (const snapshotHash of sevenDaysSnapshots.map((s) => s.hash)) {
@@ -159,10 +162,13 @@ describe('Bootstrapping synchronization tests', function () {
     ).onSyncFinished()
     await server2.components.downloadQueue.onIdle()
     await server2.components.batchDeployer.onIdle()
-    const eightDaysSnapshots = await findSnapshotsStrictlyContainedInTimeRange(server1.components.database, {
-      initTimestamp: initialTimestamp,
-      endTimestamp: fakeNow()
-    })
+    const eightDaysSnapshots = await server1.components.snapshotsRepository.findSnapshotsStrictlyContainedInTimeRange(
+      server1.components.database,
+      {
+        initTimestamp: initialTimestamp,
+        endTimestamp: fakeNow()
+      }
+    )
     expect(eightDaysSnapshots).toHaveLength(2)
     const oldSnapshots = new Set(sevenDaysSnapshots)
     for (const newSnapshotHash of eightDaysSnapshots) {
@@ -219,12 +225,12 @@ describe('Bootstrapping synchronization tests', function () {
     expect(deployments).toHaveLength(0)
   })
 
-  it('when a server is boostrapping, it should not accept new deployments', async () => {
+  it('when a server is bootstrapping, it should not accept new deployments', async () => {
     jest.spyOn(server1.components.synchronizationState, 'getState').mockReturnValue(State.BOOTSTRAPPING)
     await server1.startProgram()
 
     await expect(deployEntityAtTimestamp(server1, 'p1', fakeNow() + 1)).rejects.toThrow(
-      '{"error":"Deployments are not allowed while the Catalyst is boostrapping"}'
+      '{"error":"Deployments are not allowed while the Catalyst is bootstrapping"}'
     )
   })
 

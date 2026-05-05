@@ -7,7 +7,7 @@ import path from 'path'
 import { DeploymentContext, DeploymentResult, isInvalidDeployment } from '../../src/deployment-types'
 import { retry } from '../../src/helpers/RetryHelper'
 import { getEntityFromBuffer } from '../../src/logic/entity-parser'
-import { Deployer } from '../../src/ports/deployer'
+import { Deployer } from '../../src/logic/deployment-service'
 
 export async function buildDeployDataAfterEntity(
   afterEntity: { timestamp: number } | { entity: { timestamp: number } },

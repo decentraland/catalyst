@@ -17,3 +17,6 @@ storage/**
 serverStorage.json
 .vscode
 .cursor/rules
+.claude
+.agents
+skills-lock.json

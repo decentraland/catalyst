@@ -6,8 +6,8 @@ import fetch from 'node-fetch'
 import { EnvironmentConfig } from '../../src/Environment'
 import { AuditInfo, Deployment, DeploymentOptions, isInvalidDeployment } from '../../src/deployment-types'
 import { getDeployments } from '../../src/logic/deployments'
-import * as synchronization from '../../src/logic/synchronization'
-import { FailedDeployment } from '../../src/ports/failedDeployments'
+import * as synchronization from '../../src/logic/sync-orchestrator'
+import { FailedDeployment } from '../../src/adapters/failed-deployments-cache'
 import { main } from '../../src/service'
 import { AppComponents } from '../../src/types'
 import { deleteFolderRecursive } from './E2ETestUtils'
@@ -64,7 +64,12 @@ export class TestProgram {
 
   async deployEntity(deployData: DeploymentData, fix: boolean = false) {
     this.logger.info('Deploying entity ' + deployData.entityId)
-    const returnValue = await ((await this.client.deploy(deployData)) as any).json()
+    const response = (await this.client.deploy(deployData)) as any
+    const returnValue = await response.json()
+
+    if (!response.ok) {
+      throw new Error(JSON.stringify(returnValue))
+    }
 
     if (isInvalidDeployment(returnValue)) {
       throw new Error(returnValue.errors.join(','))

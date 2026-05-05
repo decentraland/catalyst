@@ -5,13 +5,13 @@ import {
   createDeploymentsComponent,
   IDeploymentsComponent
 } from '../../../src/logic/deployments'
-import { IDatabaseComponent } from '../../../src/ports/postgres'
+import { IDatabaseComponent } from '../../../src/adapters/database'
 import { createDatabaseMockedComponent } from '../../mocks/database-component-mock'
 import {
   createHistoricalDeploymentRowWithContentMock,
   createLogsMockedComponent
 } from '../../mocks/logger-component-mock'
-import { HistoricalDeploymentsRow } from '../../../src/logic/database-queries/deployments-queries'
+import { HistoricalDeploymentsRow } from '../../../src/adapters/deployments-repository'
 import { DeploymentContent } from '../../../src/deployment-types'
 import { DeploymentId } from '../../../src/types'
 
