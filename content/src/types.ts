@@ -189,6 +189,3 @@ export enum DeploymentField {
   METADATA = 'metadata',
   AUDIT_INFO = 'auditInfo'
 }
-
-// PROFILE_DURATION is now configurable via the PROFILE_DURATION env var (default: 1 year).
-// Use env.getConfig(EnvironmentConfig.PROFILE_DURATION) instead of this constant.
