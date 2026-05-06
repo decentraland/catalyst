@@ -279,7 +279,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   // ---------------------------------------------------------------------------
   const garbageCollectionManager = createGarbageCollectionComponent(
     { database, metrics, logs, storage, systemProperties, activeEntities, contentFilesRepository },
-    env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION)
+    env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION),
+    env.getConfig(EnvironmentConfig.PROFILE_DURATION)
   )
 
   const garbageCollectionJob = createJobComponent(
@@ -321,7 +322,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
         autoStart: true,
         concurrency: 10,
         timeout: 100000
-      }
+      },
+      profileDuration: env.getConfig(EnvironmentConfig.PROFILE_DURATION)
     }
   )
 

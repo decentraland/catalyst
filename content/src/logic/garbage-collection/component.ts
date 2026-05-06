@@ -1,6 +1,6 @@
 import SQL from 'sql-template-strings'
 import { SYSTEM_PROPERTIES } from '../../adapters/system-properties'
-import { AppComponents, PROFILE_DURATION } from '../../types'
+import { AppComponents } from '../../types'
 import { GCStaleProfilesResult, IGarbageCollectionComponent, SweepResult } from './types'
 
 const PROFILE_CLEANUP_LIMIT = 10000
@@ -10,7 +10,8 @@ export function createGarbageCollectionComponent(
     AppComponents,
     'systemProperties' | 'metrics' | 'logs' | 'storage' | 'database' | 'activeEntities' | 'contentFilesRepository'
   >,
-  performGarbageCollection: boolean
+  performGarbageCollection: boolean,
+  profileDuration: number
 ): IGarbageCollectionComponent {
   const logger = components.logs.getLogger('GarbageCollectionManager')
   let lastSweepResult: SweepResult | undefined = undefined
@@ -137,11 +138,17 @@ export function createGarbageCollectionComponent(
     const lastCollectionTime = await components.systemProperties.get(SYSTEM_PROPERTIES.lastGarbageCollectionTime)
     lastTimeOfCollection = lastCollectionTime ?? 0
 
-    const oldProfileSince = new Date(Date.now() - PROFILE_DURATION)
+    const oldProfileSince = new Date(Date.now() - profileDuration)
     lastSweepResult = {}
 
-    const gcProfileActiveEntitiesResult = await gcProfileActiveEntities(oldProfileSince)
-    lastSweepResult.gcProfileActiveEntitiesResult = gcProfileActiveEntitiesResult
+    try {
+      const gcProfileActiveEntitiesResult = await gcProfileActiveEntities(oldProfileSince)
+      lastSweepResult.gcProfileActiveEntitiesResult = gcProfileActiveEntitiesResult
+    } catch (error) {
+      logger.error(`Failed to perform old profiles cleanup`)
+      logger.error(error as Error)
+      return
+    }
 
     if (!performGarbageCollection) {
       return

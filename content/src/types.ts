@@ -46,7 +46,6 @@ import { IChallengeSupervisor } from './logic/challenge-supervisor'
 import { IContentClusterComponent } from './logic/peer-cluster'
 import { IRetryFailedDeploymentsComponent } from './logic/retry-failed-deployments'
 import { ProcessedSnapshotsStorageComponent } from './adapters/processed-snapshot-storage'
-import ms from 'ms'
 import { IDeploymentsComponent } from './logic/deployments'
 import { IJobComponent } from '@dcl/job-component'
 
@@ -194,4 +193,5 @@ export enum DeploymentField {
   AUDIT_INFO = 'auditInfo'
 }
 
-export const PROFILE_DURATION = ms('1 year')
+// PROFILE_DURATION is now configurable via the PROFILE_DURATION env var (default: 1 year).
+// Use env.getConfig(EnvironmentConfig.PROFILE_DURATION) instead of this constant.

@@ -5,7 +5,7 @@ import { EntityType } from '@dcl/schemas'
 import { IBaseComponent } from '@well-known-components/interfaces'
 import { DeploymentContext } from '../../deployment-types'
 import { FailureReason } from '../../adapters/failed-deployments-cache'
-import { AppComponents, CannonicalEntityDeployment, PROFILE_DURATION } from '../../types'
+import { AppComponents, CannonicalEntityDeployment } from '../../types'
 import { isEntityDeployed } from '../deployments'
 import { deployEntityFromRemoteServer } from '../sync-orchestrator'
 import { joinOverlappedTimeRanges } from '../time-range'
@@ -37,6 +37,7 @@ export function createBatchDeployerComponent(
   syncOptions: {
     ignoredTypes: Set<string>
     queueOptions: createJobQueue.Options
+    profileDuration: number
   }
 ): IDeployerComponent & IBaseComponent {
   const logs = components.logs.getLogger('DeployerComponent')
@@ -64,7 +65,7 @@ export function createBatchDeployerComponent(
     }
 
     // ignore old profiles
-    if (entity.entityType === EntityType.PROFILE && entity.entityTimestamp < Date.now() - PROFILE_DURATION) {
+    if (entity.entityType === EntityType.PROFILE && entity.entityTimestamp < Date.now() - syncOptions.profileDuration) {
       return true
     }
 
