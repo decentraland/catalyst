@@ -286,7 +286,10 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const garbageCollectionJob = createJobComponent(
     { logs },
     garbageCollectionManager.performSweep,
-    env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL)
+    env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL),
+    {
+      onError: (err) => logs.getLogger('GarbageCollectionJob').error(err as Error)
+    }
   )
 
   const downloadQueue = createJobQueue({
@@ -377,6 +380,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const synchronizationState = createSynchronizationState({ logs, metrics })
 
+  // Built but intentionally NOT included in the returned components map: the WKC
+  // framework auto-starts every IJobComponent it finds there. The scheduler below
+  // owns this job and starts it manually after sync bootstrap finishes.
   const retryFailedDeploymentsJob = createJobComponent(
     { logs },
     async () => {
@@ -396,7 +402,10 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
         logs.getLogger('RetryFailedDeployments')
       )
     },
-    env.getConfig<number>(EnvironmentConfig.RETRY_FAILED_DEPLOYMENTS_DELAY_TIME)
+    env.getConfig<number>(EnvironmentConfig.RETRY_FAILED_DEPLOYMENTS_DELAY_TIME),
+    {
+      onError: (err) => logs.getLogger('RetryFailedDeploymentsJob').error(err as Error)
+    }
   )
 
   const retryFailedDeployments = createRetryFailedDeploymentsScheduler(retryFailedDeploymentsJob)
@@ -413,7 +422,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   })
 
   const snapshotGenerationJob = createJobComponent({ logs }, snapshotGenerator.generateSnapshots, ms('6h'), {
-    startupDelay: 0
+    startupDelay: 0,
+    onError: (err) => logs.getLogger('SnapshotGenerationJob').error(err as Error)
   })
 
   const migrationManager = createMigrationExecutor({ logs, env })
