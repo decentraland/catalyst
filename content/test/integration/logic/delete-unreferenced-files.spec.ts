@@ -147,7 +147,9 @@ async function startSnapshotNeededComponents(
   await startComponent(components.fs as IBaseComponent, startOptions)
   await startComponent(components.storage as IBaseComponent, startOptions)
   await startComponent(components.logs as IBaseComponent, startOptions)
-  await startComponent(components.snapshotGenerator as IBaseComponent, startOptions)
+  // The snapshot generator no longer has a START_COMPONENT hook — scheduling
+  // moved to a job component in components.ts. Trigger the initial run directly.
+  await components.snapshotGenerator.generateSnapshots()
 }
 
 async function startComponent(component: IBaseComponent, startOptions: IBaseComponent.ComponentStartOptions) {

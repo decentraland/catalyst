@@ -1,65 +1,43 @@
-import { ILoggerComponent } from '@well-known-components/interfaces'
 import SQL from 'sql-template-strings'
 import { SYSTEM_PROPERTIES } from '../../adapters/system-properties'
 import { AppComponents } from '../../types'
-import { GCStaleProfilesResult, SweepResult } from './types'
+import { GCStaleProfilesResult, IGarbageCollectionComponent, SweepResult } from './types'
 
 const PROFILE_CLEANUP_LIMIT = 10000
 
-export class GarbageCollectionManager {
-  private LOGGER: ILoggerComponent.ILogger
-  private lastSweepResult: SweepResult | undefined = undefined
-  private lastTimeOfCollection: number
-  private nextGarbageCollectionTimeout: NodeJS.Timeout
-  private stopping = false
-  private sweeping = false
-
-  constructor(
-    private readonly components: Pick<
-      AppComponents,
-      'systemProperties' | 'metrics' | 'logs' | 'storage' | 'database' | 'activeEntities' | 'contentFilesRepository'
-    >,
-    private readonly performGarbageCollection: boolean,
-    private readonly sweepInterval: number,
-    private readonly profileDuration: number
-  ) {
-    this.LOGGER = components.logs.getLogger('GarbageCollectionManager')
-  }
-
-  async start(): Promise<void> {
-    this.stopping = false
-    const lastCollectionTime = await this.components.systemProperties.get(SYSTEM_PROPERTIES.lastGarbageCollectionTime)
-    this.lastTimeOfCollection = lastCollectionTime ?? 0
-    await this.performSweep()
-  }
-
-  async stop(): Promise<void> {
-    this.stopping = true
-    clearTimeout(this.nextGarbageCollectionTimeout)
-    await this.waitUntilSyncFinishes()
-  }
+export function createGarbageCollectionComponent(
+  components: Pick<
+    AppComponents,
+    'systemProperties' | 'metrics' | 'logs' | 'storage' | 'database' | 'activeEntities' | 'contentFilesRepository'
+  >,
+  performGarbageCollection: boolean,
+  profileDuration: number
+): IGarbageCollectionComponent {
+  const logger = components.logs.getLogger('GarbageCollectionManager')
+  let lastSweepResult: SweepResult | undefined = undefined
+  let lastTimeOfCollection = 0
 
   /**
    * When it is time, we will calculate the hashes of all the overwritten deployments, and check if they are not being used by another deployment.
    * If they are not being used, then we will delete them.
    */
-  async gcUnusedHashes(): Promise<Set<string>> {
-    const hashes = await this.components.contentFilesRepository.findContentHashesNotBeingUsedAnymore(
-      this.components.database,
-      this.lastTimeOfCollection
+  async function gcUnusedHashes(): Promise<Set<string>> {
+    const hashes = await components.contentFilesRepository.findContentHashesNotBeingUsedAnymore(
+      components.database,
+      lastTimeOfCollection
     )
 
-    this.components.metrics.increment('dcl_content_garbage_collection_items_total', {}, hashes.length)
+    components.metrics.increment('dcl_content_garbage_collection_items_total', {}, hashes.length)
 
-    this.LOGGER.debug(`Hashes to delete are: (${hashes.join(',')})`)
-    await this.components.storage.delete(hashes)
+    logger.debug(`Hashes to delete are: (${hashes.join(',')})`)
+    await components.storage.delete(hashes)
     return new Set<string>(hashes)
   }
 
   // NOTE: remove old profile deployments and their images,
   // it will remove a max of ${PROFILE_CLEANUP_LIMIT}
-  async gcStaleProfiles(oldProfileSince: Date): Promise<GCStaleProfilesResult> {
-    const result = await this.components.database.queryWithValues<{ id: string; content_hash: string }>(
+  async function gcStaleProfiles(oldProfileSince: Date): Promise<GCStaleProfilesResult> {
+    const result = await components.database.queryWithValues<{ id: string; content_hash: string }>(
       SQL`SELECT d.id, cf.content_hash
           FROM deployments d
           LEFT JOIN content_files cf on cf.deployment = d.id
@@ -75,7 +53,7 @@ export class GarbageCollectionManager {
     )
 
     if (result.rowCount === 0) {
-      this.LOGGER.info(`Profile cleanup: no profiles to remove`)
+      logger.info(`Profile cleanup: no profiles to remove`)
       return {
         deletedHashes: new Set<string>(),
         deletedDeployments: new Set<string>()
@@ -92,7 +70,7 @@ export class GarbageCollectionManager {
       deploymentsSet.add(id)
     }
 
-    const hashesInUse = await this.components.database.queryWithValues<{ content_hash: string }>(
+    const hashesInUse = await components.database.queryWithValues<{ content_hash: string }>(
       SQL`SELECT content_hash FROM content_files cf inner join deployments d on cf.deployment = d.id WHERE content_hash = ANY(${Array.from(
         hashesSet
       )}) AND d.entity_timestamp > ${oldProfileSince}`,
@@ -106,23 +84,23 @@ export class GarbageCollectionManager {
     const hashes = Array.from(hashesSet)
     const deployments = Array.from(deploymentsSet)
 
-    this.LOGGER.info(`Profile cleanup will remove ${hashes.length} files`)
-    await this.components.storage.delete(hashes)
+    logger.info(`Profile cleanup will remove ${hashes.length} files`)
+    await components.storage.delete(hashes)
 
-    this.LOGGER.info(`Profile cleanup will remove ${hashes.length} from content_files`)
-    await this.components.database.transaction(async (database) => {
+    logger.info(`Profile cleanup will remove ${hashes.length} from content_files`)
+    await components.database.transaction(async (database) => {
       await database.queryWithValues(
         SQL`DELETE FROM content_files WHERE deployment = ANY(${deployments})`,
         'gc_old_profiles_delete_content_files'
       )
 
-      this.LOGGER.info(`Profile cleanup will remove foreign keys for ${deployments.length} deployments`)
+      logger.info(`Profile cleanup will remove foreign keys for ${deployments.length} deployments`)
       await database.queryWithValues(
         SQL`UPDATE deployments SET deleter_deployment = NULL WHERE deleter_deployment = ANY(${deployments})`,
         'gc_old_profiles_update_deployments'
       )
 
-      this.LOGGER.info(`Profile cleanup will remove ${deployments.length} deployments`)
+      logger.info(`Profile cleanup will remove ${deployments.length} deployments`)
       await database.queryWithValues(
         SQL`DELETE FROM deployments WHERE id = ANY(${deployments})`,
         'gc_old_profiles_delete_deployments'
@@ -135,10 +113,10 @@ export class GarbageCollectionManager {
     }
   }
 
-  async gcProfileActiveEntities(oldProfileSince: Date): Promise<Set<string>> {
-    this.LOGGER.info('Running clear old profiles process')
+  async function gcProfileActiveEntities(oldProfileSince: Date): Promise<Set<string>> {
+    logger.info('Running clear old profiles process')
 
-    const result = await this.components.database.queryWithValues<{ pointer: string }>(
+    const result = await components.database.queryWithValues<{ pointer: string }>(
       SQL`DELETE FROM active_pointers ap
           USING deployments d
           WHERE d.entity_id = ap.entity_id
@@ -150,68 +128,50 @@ export class GarbageCollectionManager {
     )
 
     const pointers = result.rows.map((r) => r.pointer)
-    this.LOGGER.info(`Clear old profiles process: ${pointers.length} active pointers deleted`)
-    await this.components.activeEntities.clearPointers(pointers)
+    logger.info(`Clear old profiles process: ${pointers.length} active pointers deleted`)
+    await components.activeEntities.clearPointers(pointers)
 
     return new Set(pointers)
   }
 
-  async performSweep() {
-    const oldProfileSince = new Date(Date.now() - this.profileDuration)
-    this.lastSweepResult = {}
+  async function performSweep() {
+    const lastCollectionTime = await components.systemProperties.get(SYSTEM_PROPERTIES.lastGarbageCollectionTime)
+    lastTimeOfCollection = lastCollectionTime ?? 0
+
+    const oldProfileSince = new Date(Date.now() - profileDuration)
+    lastSweepResult = {}
+
     try {
-      const gcProfileActiveEntitiesResult = await this.gcProfileActiveEntities(oldProfileSince)
-      this.lastSweepResult.gcProfileActiveEntitiesResult = gcProfileActiveEntitiesResult
+      const gcProfileActiveEntitiesResult = await gcProfileActiveEntities(oldProfileSince)
+      lastSweepResult.gcProfileActiveEntitiesResult = gcProfileActiveEntitiesResult
     } catch (error) {
-      this.LOGGER.error(`Failed to perform old profiles cleanup`)
-      this.LOGGER.error(error)
-      if (!this.stopping) {
-        this.nextGarbageCollectionTimeout = setTimeout(() => this.performSweep(), this.sweepInterval)
-      }
+      logger.error(`Failed to perform old profiles cleanup`)
+      logger.error(error as Error)
       return
     }
 
-    if (!this.performGarbageCollection) {
+    if (!performGarbageCollection) {
       return
     }
 
     const newTimeOfCollection: number = Date.now()
-    this.sweeping = true
-    const { end: endTimer } = this.components.metrics.startTimer('dcl_content_garbage_collection_time')
+    const { end: endTimer } = components.metrics.startTimer('dcl_content_garbage_collection_time')
     try {
-      this.lastSweepResult.gcUnusedHashResult = await this.gcUnusedHashes()
-      this.lastSweepResult.gcStaleProfilesResult = await this.gcStaleProfiles(oldProfileSince)
+      lastSweepResult.gcUnusedHashResult = await gcUnusedHashes()
+      lastSweepResult.gcStaleProfilesResult = await gcStaleProfiles(oldProfileSince)
 
-      await this.components.systemProperties.set(SYSTEM_PROPERTIES.lastGarbageCollectionTime, newTimeOfCollection)
+      await components.systemProperties.set(SYSTEM_PROPERTIES.lastGarbageCollectionTime, newTimeOfCollection)
 
-      this.lastTimeOfCollection = newTimeOfCollection
-    } catch (error) {
-      this.LOGGER.error(`Failed to perform garbage collection.`)
-      this.LOGGER.error(error)
+      lastTimeOfCollection = newTimeOfCollection
     } finally {
-      if (!this.stopping) {
-        this.nextGarbageCollectionTimeout = setTimeout(() => this.performSweep(), this.sweepInterval)
-      }
-      this.sweeping = false
       endTimer()
     }
   }
 
-  getLastSweepResults(): SweepResult | undefined {
-    return this.lastSweepResult
-  }
-
-  private wait(ms: number): Promise<void> {
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
-        resolve()
-      }, ms)
-    })
-  }
-
-  private async waitUntilSyncFinishes(): Promise<void> {
-    while (this.sweeping === true) {
-      await this.wait(1000)
+  return {
+    performSweep,
+    getLastSweepResults(): SweepResult | undefined {
+      return lastSweepResult
     }
   }
 }

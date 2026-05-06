@@ -83,7 +83,7 @@ describe('deployments service', () => {
       beforeAll(() => {
         components = {
           database: safe({ queryWithValues: () => {} }),
-          denylist: { isDenylisted: () => false },
+          denylist: { isDenylisted: () => false, reload: jest.fn() },
           metrics: createTestMetricsComponent(metricsDeclaration),
           contentFilesRepository: createContentFilesRepository(),
           deploymentsRepository: createDeploymentsRepository()
@@ -114,7 +114,7 @@ describe('deployments service', () => {
       beforeAll(() => {
         components = {
           database: safe({ queryWithValues: () => {} }),
-          denylist: { isDenylisted: () => false },
+          denylist: { isDenylisted: () => false, reload: jest.fn() },
           metrics: createTestMetricsComponent(metricsDeclaration),
           contentFilesRepository: createContentFilesRepository(),
           deploymentsRepository: createDeploymentsRepository()
@@ -145,7 +145,7 @@ describe('deployments service', () => {
       beforeAll(() => {
         components = {
           database: safe({ queryWithValues: () => {} }),
-          denylist: { isDenylisted: () => false },
+          denylist: { isDenylisted: () => false, reload: jest.fn() },
           metrics: createTestMetricsComponent(metricsDeclaration),
           contentFilesRepository: createContentFilesRepository(),
           deploymentsRepository: createDeploymentsRepository()

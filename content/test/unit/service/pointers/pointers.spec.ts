@@ -25,7 +25,7 @@ describe('getPointerChanges', () => {
   let getHistoricalDeploymentsSpy: jest.MockedFunction<IDeploymentsRepository['getHistoricalDeployments']>
 
   beforeEach(() => {
-    denylist = { isDenylisted: jest.fn().mockReturnValue(false) }
+    denylist = { isDenylisted: jest.fn().mockReturnValue(false), reload: jest.fn() }
     database = { queryWithValues: jest.fn() }
     getHistoricalDeploymentsSpy = jest.fn()
     deploymentsRepository = {

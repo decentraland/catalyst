@@ -1,5 +1,4 @@
 import { SnapshotMetadata } from '@dcl/snapshots-fetcher/dist/types'
-import ms from 'ms'
 import { generateSnapshotsInMultipleTimeRanges } from '../../logic/snapshots'
 import { AppComponents } from '../../types'
 import { SnapshotGenerator } from './types'
@@ -10,44 +9,15 @@ export function createSnapshotGenerator(
     'database' | 'fs' | 'metrics' | 'storage' | 'logs' | 'denylist' | 'staticConfigs' | 'snapshotsRepository'
   >
 ): SnapshotGenerator {
-  const logger = components.logs.getLogger('snapshot-generator')
-  const generationInterval = ms('6h')
-  let isRunningGeneration = false
-  let isStopped = false
-  let runningGeneration: Promise<void> = Promise.resolve()
-  let nextGenerationTimeout: NodeJS.Timeout
-  let currentSnapshots: SnapshotMetadata[]
+  let currentSnapshots: SnapshotMetadata[] | undefined
 
-  async function runGenerationAndScheduleNext() {
-    isRunningGeneration = true
-    try {
+  return {
+    async generateSnapshots() {
       currentSnapshots = await generateSnapshotsInMultipleTimeRanges(components, {
         // IT IS IMPORTANT THIS TIMESTAMP NEVER CHANGES; IF IT DOES, THE WHOLE SNAPSHOTS SET WILL BE REGENERATED.
         initTimestamp: 1577836800000,
         endTimestamp: Date.now()
       })
-    } catch (error) {
-      logger.error(`Failed generating snapshots`)
-      logger.error(error)
-    } finally {
-      isRunningGeneration = false
-      nextGenerationTimeout = setTimeout(() => runGenerationAndScheduleNext(), generationInterval)
-    }
-  }
-
-  return {
-    async start(): Promise<void> {
-      runningGeneration = runGenerationAndScheduleNext()
-      await runningGeneration
-    },
-    async stop(): Promise<void> {
-      if (isStopped) return
-      if (isRunningGeneration) {
-        await runningGeneration
-      }
-      isStopped = true
-      clearTimeout(nextGenerationTimeout)
-      return Promise.resolve()
     },
     getCurrentSnapshots(): SnapshotMetadata[] | undefined {
       return currentSnapshots

@@ -60,13 +60,13 @@ import { createAuthenticator } from './logic/authenticator'
 import { createBatchDeployerComponent } from './logic/batch-deployer'
 import { ChallengeSupervisor } from './logic/challenge-supervisor'
 import { splitByCommaTrimAndRemoveEmptyElements } from './logic/config-helpers'
-import { createDeploymentsComponent } from './logic/deployments'
+import { createDeploymentsComponent, retryFailedDeploymentExecution } from './logic/deployments'
 import { createDeploymentService } from './logic/deployment-service'
 import { createFailedDeploymentsReporter } from './logic/failed-deployments-reporter'
-import { GarbageCollectionManager } from './logic/garbage-collection'
+import { createGarbageCollectionComponent } from './logic/garbage-collection'
 import { createContentCluster } from './logic/peer-cluster'
 import { PointerManager } from './logic/pointer-manager'
-import { createRetryFailedDeployments } from './logic/retry-failed-deployments'
+import { createRetryFailedDeploymentsScheduler } from './logic/retry-failed-deployments'
 import { createSequentialTaskExecutor } from './logic/sequential-task-executor'
 import { createServerValidator } from './logic/server-validator'
 
@@ -116,6 +116,12 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   // 2. Static config + filesystem layout
   // ---------------------------------------------------------------------------
   const denylist = await createDenylist({ env, logs, fs, fetcher })
+  await denylist.reload()
+
+  const denylistReloadJob = createJobComponent({ logs }, denylist.reload, 120_000, {
+    startupDelay: 120_000
+  })
+
   const contentStorageFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
   const tmpDownloadFolder = path.join(contentStorageFolder, '_tmp')
   await fs.mkdir(tmpDownloadFolder, { recursive: true })
@@ -271,11 +277,19 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   // ---------------------------------------------------------------------------
   // 9. Background workers
   // ---------------------------------------------------------------------------
-  const garbageCollectionManager = new GarbageCollectionManager(
+  const garbageCollectionManager = createGarbageCollectionComponent(
     { database, metrics, logs, storage, systemProperties, activeEntities, contentFilesRepository },
     env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION),
-    env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL),
     env.getConfig(EnvironmentConfig.PROFILE_DURATION)
+  )
+
+  const garbageCollectionJob = createJobComponent(
+    { logs },
+    garbageCollectionManager.performSweep,
+    env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL),
+    {
+      onError: (err) => logs.getLogger('GarbageCollectionJob').error(err as Error)
+    }
   )
 
   const downloadQueue = createJobQueue({
@@ -366,19 +380,35 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const synchronizationState = createSynchronizationState({ logs, metrics })
 
-  const retryFailedDeployments = createRetryFailedDeployments({
-    env,
-    metrics,
-    staticConfigs,
-    fetcher,
-    downloadQueue,
-    logs,
-    deployer,
-    contentCluster,
-    failedDeployments,
-    failedDeploymentsReporter,
-    storage
-  })
+  // Built but intentionally NOT included in the returned components map: the WKC
+  // framework auto-starts every IJobComponent it finds there. The scheduler below
+  // owns this job and starts it manually after sync bootstrap finishes.
+  const retryFailedDeploymentsJob = createJobComponent(
+    { logs },
+    async () => {
+      await retryFailedDeploymentExecution(
+        {
+          metrics,
+          staticConfigs,
+          fetcher,
+          downloadQueue,
+          logs,
+          deployer,
+          contentCluster,
+          failedDeployments,
+          failedDeploymentsReporter,
+          storage
+        },
+        logs.getLogger('RetryFailedDeployments')
+      )
+    },
+    env.getConfig<number>(EnvironmentConfig.RETRY_FAILED_DEPLOYMENTS_DELAY_TIME),
+    {
+      onError: (err) => logs.getLogger('RetryFailedDeploymentsJob').error(err as Error)
+    }
+  )
+
+  const retryFailedDeployments = createRetryFailedDeploymentsScheduler(retryFailedDeploymentsJob)
 
   const snapshotGenerator = createSnapshotGenerator({
     logs,
@@ -389,6 +419,11 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     database,
     denylist,
     snapshotsRepository
+  })
+
+  const snapshotGenerationJob = createJobComponent({ logs }, snapshotGenerator.generateSnapshots, ms('6h'), {
+    startupDelay: 0,
+    onError: (err) => logs.getLogger('SnapshotGenerationJob').error(err as Error)
   })
 
   const migrationManager = createMigrationExecutor({ logs, env })
@@ -455,6 +490,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     daoClient,
     database,
     denylist,
+    denylistReloadJob,
     deployedEntitiesBloomFilter,
     deployer,
     deployments,
@@ -467,6 +503,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     failedDeploymentsRepository,
     fetcher,
     fs,
+    garbageCollectionJob,
     garbageCollectionManager,
     l1Provider,
     logs,
@@ -481,6 +518,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     sequentialExecutor,
     server,
     serverValidator,
+    snapshotGenerationJob,
     snapshotGenerator,
     snapshotsRepository,
     snapshotStorage,

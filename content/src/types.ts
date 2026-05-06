@@ -40,7 +40,7 @@ import { ISequentialTaskExecutorComponent } from './logic/sequential-task-execut
 import { SnapshotGenerator } from './adapters/snapshot-generator'
 import { SynchronizationState } from './adapters/synchronization-state'
 import { SystemProperties } from './adapters/system-properties'
-import { GarbageCollectionManager } from './logic/garbage-collection'
+import { IGarbageCollectionComponent } from './logic/garbage-collection'
 import { PointerManager } from './logic/pointer-manager'
 import { IChallengeSupervisor } from './logic/challenge-supervisor'
 import { IContentClusterComponent } from './logic/peer-cluster'
@@ -94,6 +94,9 @@ export type AppComponents = {
   synchronizer: SynchronizerComponent
   deployments: IDeploymentsComponent
   materializedViewUpdateJob: IJobComponent
+  denylistReloadJob: IJobComponent
+  snapshotGenerationJob: IJobComponent
+  garbageCollectionJob: IJobComponent
   synchronizationState: SynchronizationState
   deployedEntitiesBloomFilter: DeployedEntitiesBloomFilter
   challengeSupervisor: IChallengeSupervisor
@@ -107,7 +110,7 @@ export type AppComponents = {
   migrationManager: MigrationExecutor
   serverValidator: ServerValidator
   validator: IContentValidator
-  garbageCollectionManager: GarbageCollectionManager
+  garbageCollectionManager: IGarbageCollectionComponent
   systemProperties: SystemProperties
   daoClient: DAOComponent
   server: IHttpServerComponent<GlobalContext>

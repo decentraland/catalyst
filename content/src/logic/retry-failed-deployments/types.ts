@@ -1,5 +1,4 @@
-import { IBaseComponent } from '@well-known-components/interfaces'
-
-export type IRetryFailedDeploymentsComponent = IBaseComponent & {
+export type IRetryFailedDeploymentsComponent = {
   schedule: () => Promise<void>
+  stop: () => Promise<void>
 }

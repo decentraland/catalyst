@@ -1,5 +1,4 @@
 import { IFileSystemComponent } from '@dcl/catalyst-storage'
-import { IBaseComponent } from '@well-known-components/interfaces'
 import { resolve } from 'path'
 import { createInterface } from 'readline'
 import { URL } from 'url'
@@ -11,7 +10,7 @@ export async function createDenylist(
   components: Pick<AppComponents, 'env' | 'logs' | 'fetcher'> & {
     fs: Pick<IFileSystemComponent, 'createReadStream' | 'existPath'>
   }
-): Promise<Denylist & IBaseComponent> {
+): Promise<Denylist> {
   const logger = components.logs.getLogger('Denylist')
   const deniedContentIdentifiers = new Set()
   const fileName = resolve(
@@ -74,7 +73,7 @@ export async function createDenylist(
       logger.error(err)
     }
   }
-  let reloadTimer: NodeJS.Timer | undefined = undefined
+
   return {
     isDenylisted: (id: string): boolean => {
       const denied = deniedContentIdentifiers.has(id)
@@ -83,14 +82,6 @@ export async function createDenylist(
       }
       return denied
     },
-    async start() {
-      await loadDenylists()
-      reloadTimer = setInterval(() => loadDenylists().catch(logger.error), 120_000 /* two minutes */)
-    },
-    async stop() {
-      if (reloadTimer) {
-        clearInterval(reloadTimer)
-      }
-    }
+    reload: loadDenylists
   }
 }

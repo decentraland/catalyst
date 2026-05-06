@@ -48,7 +48,7 @@ describe('generate snapshot', () => {
   const fs = createFsComponent()
   const metrics = createTestMetricsComponent(metricsDeclaration)
   const staticConfigs = { contentStorageFolder: '', tmpDownloadFolder: '' }
-  const denylist: Denylist = { isDenylisted: jest.fn() }
+  const denylist: Denylist = { isDenylisted: jest.fn(), reload: jest.fn() }
   const aTimeRange = { initTimestamp: 1, endTimestamp: 2 }
   const storage: IContentStorageComponent = {
     storeStream: jest.fn(),
@@ -145,7 +145,7 @@ describe('generate snapshot in multiple', () => {
   const fs = createFsComponent()
   const metrics = createTestMetricsComponent(metricsDeclaration)
   const staticConfigs = { contentStorageFolder: '', tmpDownloadFolder: '' }
-  const denylist: Denylist = { isDenylisted: jest.fn() }
+  const denylist: Denylist = { isDenylisted: jest.fn(), reload: jest.fn() }
   const storage: IContentStorageComponent = {
     storeStream: jest.fn(),
     storeStreamAndCompress: jest.fn(),

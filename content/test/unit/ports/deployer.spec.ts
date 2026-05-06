@@ -213,7 +213,7 @@ describe('Deployer', function () {
     const deploymentsRepository = createDeploymentsRepository()
     const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, deploymentsRepository })
     env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)
-    const denylist: Denylist = { isDenylisted: () => false }
+    const denylist: Denylist = { isDenylisted: () => false, reload: jest.fn() }
     const sequentialExecutor = createSequentialTaskExecutor({ logs, metrics })
     const deployments = createDeploymentsComponentMock()
     const pointersRepository = createPointersRepository()

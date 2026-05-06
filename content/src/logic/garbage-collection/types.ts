@@ -8,3 +8,8 @@ export type SweepResult = {
   gcUnusedHashResult?: Set<string>
   gcStaleProfilesResult?: GCStaleProfilesResult
 }
+
+export type IGarbageCollectionComponent = {
+  performSweep: () => Promise<void>
+  getLastSweepResults: () => SweepResult | undefined
+}
