@@ -1,17 +1,14 @@
-import * as snapshotQueries from '../../../src/logic/database-queries/snapshots-queries'
-import { saveProcessedSnapshot } from '../../../src/logic/database-queries/snapshots-queries'
-
 import { TestProgram } from '../TestProgram'
 import LeakDetector from 'jest-leak-detector'
 import { createDefaultServer, resetServer } from '../simpleTestEnvironment'
 
 describe('precessed snapshot storage', () => {
   let server: TestProgram
-  let dbQuerySpy
+  let dbQuerySpy: jest.SpyInstance
 
   beforeAll(async () => {
-    dbQuerySpy = jest.spyOn(snapshotQueries, 'getProcessedSnapshots')
     server = await createDefaultServer()
+    dbQuerySpy = jest.spyOn(server.components.snapshotsRepository, 'getProcessedSnapshots')
   })
 
   beforeEach(async () => {
@@ -31,7 +28,7 @@ describe('precessed snapshot storage', () => {
     it('should return the result from the query when the hashes are not in cache', async () => {
       const { components } = server
       const processedSnapshot = 'someHash'
-      await saveProcessedSnapshot(components.database, processedSnapshot, Date.now())
+      await components.snapshotsRepository.saveProcessedSnapshot(components.database, processedSnapshot, Date.now())
 
       expect(await components.processedSnapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot])).toEqual(
         new Set([processedSnapshot])
@@ -41,7 +38,7 @@ describe('precessed snapshot storage', () => {
     it('should cache the processed snapshots', async () => {
       const { components } = server
       const processedSnapshot = 'someHash'
-      await saveProcessedSnapshot(components.database, processedSnapshot, Date.now())
+      await components.snapshotsRepository.saveProcessedSnapshot(components.database, processedSnapshot, Date.now())
 
       await components.processedSnapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot])
       expect(dbQuerySpy).toBeCalledTimes(1)
@@ -54,7 +51,7 @@ describe('precessed snapshot storage', () => {
     it('should query the db if not ALL the snapshots are in the cache', async () => {
       const { components } = server
       const processedSnapshot = 'someHash'
-      await saveProcessedSnapshot(components.database, processedSnapshot, Date.now())
+      await components.snapshotsRepository.saveProcessedSnapshot(components.database, processedSnapshot, Date.now())
 
       await components.processedSnapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot])
       // now the snapshot 'processedSnapshot' is cached
@@ -72,9 +69,17 @@ describe('precessed snapshot storage', () => {
       const anotherProcessedSnapshot = 'anotherHash'
       const otherProcessedSnapshot = 'otherHash'
 
-      await saveProcessedSnapshot(components.database, processedSnapshot, Date.now())
-      await saveProcessedSnapshot(components.database, anotherProcessedSnapshot, Date.now())
-      await saveProcessedSnapshot(components.database, otherProcessedSnapshot, Date.now())
+      await components.snapshotsRepository.saveProcessedSnapshot(components.database, processedSnapshot, Date.now())
+      await components.snapshotsRepository.saveProcessedSnapshot(
+        components.database,
+        anotherProcessedSnapshot,
+        Date.now()
+      )
+      await components.snapshotsRepository.saveProcessedSnapshot(
+        components.database,
+        otherProcessedSnapshot,
+        Date.now()
+      )
 
       await components.processedSnapshotStorage.filterProcessedSnapshotsFrom([
         processedSnapshot,
@@ -97,9 +102,11 @@ describe('precessed snapshot storage', () => {
     it('should save the snapshot and set the current process time', async () => {
       const { components } = server
       const processedSnapshot = 'someHash'
-      const saveProcessedSnapshotSpy = jest.spyOn(snapshotQueries, 'saveProcessedSnapshot').mockResolvedValue()
+      const saveProcessedSnapshotSpy = jest
+        .spyOn(components.snapshotsRepository, 'saveProcessedSnapshot')
+        .mockResolvedValue()
       const expectedProcessTime = Date.now()
-      jest.spyOn(components.clock, 'now').mockReturnValue(expectedProcessTime)
+      jest.spyOn(Date, 'now').mockReturnValue(expectedProcessTime)
 
       await components.processedSnapshotStorage.markSnapshotAsProcessed(processedSnapshot)
 

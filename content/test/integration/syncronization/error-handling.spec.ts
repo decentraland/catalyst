@@ -1,12 +1,12 @@
 import { Entity } from '@dcl/schemas'
 import ms from 'ms'
 import { EnvironmentConfig } from '../../../src/Environment'
-import { FailedDeployment, FailureReason } from '../../../src/ports/failedDeployments'
+import { FailedDeployment, FailureReason } from '../../../src/adapters/failed-deployments-cache'
 import {
   makeNoopDeploymentValidator,
   makeNoopServerValidator,
   makeNoopValidator
-} from '../../helpers/service/validations/NoOpValidator'
+} from '../../helpers/logic/server-validator/NoOpValidator'
 import {
   assertDeploymentFailed,
   assertDeploymentsAreReported,

@@ -10,18 +10,22 @@ import { Deployment } from '../../../src/deployment-types'
 import { DEFAULT_ENTITIES_CACHE_SIZE, Environment, EnvironmentConfig } from '../../../src/Environment'
 import * as deployments from '../../../src/logic/deployments'
 import { metricsDeclaration } from '../../../src/metrics'
-import { ActiveEntities, createActiveEntitiesComponent } from '../../../src/ports/activeEntities'
-import { createClock } from '../../../src/ports/clock'
-import { Denylist } from '../../../src/ports/denylist'
-import { createDeployedEntitiesBloomFilter } from '../../../src/ports/deployedEntitiesBloomFilter'
+import { ActiveEntities, createActiveEntitiesComponent } from '../../../src/logic/active-entities'
+import { Denylist } from '../../../src/adapters/denylist'
+import { createDeployedEntitiesBloomFilter } from '../../../src/adapters/deployed-entities-bloom-filter'
 import { createNoOpDeployRateLimiter } from '../../mocks/deploy-rate-limiter-mock'
-import { createFailedDeployments } from '../../../src/ports/failedDeployments'
-import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
+import { createFailedDeployments } from '../../../src/adapters/failed-deployments-cache'
+import { createFailedDeploymentsRepository } from '../../../src/adapters/failed-deployments-repository'
+import { createPointersRepository } from '../../../src/adapters/pointers-repository'
+import { createActiveEntitiesRepository } from '../../../src/adapters/active-entities-repository'
+import { createContentFilesRepository } from '../../../src/adapters/content-files-repository'
+import { createDeploymentsRepository } from '../../../src/adapters/deployments-repository'
+import { createAuthenticator } from '../../../src/logic/authenticator'
 import { EntityVersion } from '../../../src/types'
-import { NoOpServerValidator, NoOpValidator } from '../../helpers/service/validations/NoOpValidator'
+import { NoOpServerValidator, NoOpValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import { createDeploymentsComponentMock } from '../../mocks/deployments-component-mock'
 import { NoOpPointerManager } from '../service/pointers/NoOpPointerManager'
-import { createMockedSequentialTaskExecutorComponent } from '../../mocks/sequential-task-executor-componen-mock'
+import { createMockedSequentialTaskExecutorComponent } from '../../mocks/sequential-task-executor-component-mock'
 import { createDatabaseMockedComponent } from '../../mocks/database-component-mock'
 import { createLogsMockedComponent } from '../../mocks/logger-component-mock'
 import { IDeploymentsComponent } from '../../../src/logic/deployments'
@@ -72,7 +76,7 @@ describe('activeEntities', () => {
         components.database,
         pointersToUseByCases.lowercase
       )
-      expect(sut).toHaveBeenCalledWith(expect.anything(), undefined, pointersToUseByCases.lowercase)
+      expect(sut).toHaveBeenCalledWith(expect.anything(), expect.anything(), undefined, pointersToUseByCases.lowercase)
 
       sut.mockClear()
 
@@ -93,7 +97,7 @@ describe('activeEntities', () => {
         components.database,
         pointersToUseByCases.lowercase
       )
-      expect(sut).toHaveBeenCalledWith(expect.anything(), undefined, pointersToUseByCases.lowercase)
+      expect(sut).toHaveBeenCalledWith(expect.anything(), expect.anything(), undefined, pointersToUseByCases.lowercase)
 
       sut.mockClear()
 
@@ -114,7 +118,7 @@ describe('activeEntities', () => {
         components.database,
         pointersToUseByCases.lowercase
       )
-      expect(sut).toHaveBeenCalledWith(expect.anything(), undefined, pointersToUseByCases.lowercase)
+      expect(sut).toHaveBeenCalledWith(expect.anything(), expect.anything(), undefined, pointersToUseByCases.lowercase)
 
       sut.mockClear()
 
@@ -135,7 +139,7 @@ describe('activeEntities', () => {
         components.database,
         pointersToUseByCases.uppercase
       )
-      expect(sut).toHaveBeenCalledWith(expect.anything(), undefined, pointersToUseByCases.uppercase)
+      expect(sut).toHaveBeenCalledWith(expect.anything(), expect.anything(), undefined, pointersToUseByCases.uppercase)
 
       sut.mockClear()
 
@@ -156,7 +160,7 @@ describe('activeEntities', () => {
         components.database,
         pointersToUseByCases.lowercase
       )
-      expect(sut).toHaveBeenCalledWith(expect.anything(), undefined, pointersToUseByCases.lowercase)
+      expect(sut).toHaveBeenCalledWith(expect.anything(), expect.anything(), undefined, pointersToUseByCases.lowercase)
 
       sut.mockClear()
 
@@ -184,7 +188,7 @@ describe('activeEntities', () => {
         components.database,
         pointersToUseByCases.uppercase
       )
-      expect(sut).toHaveBeenCalledWith(expect.anything(), undefined, pointersToUseByCases.uppercase)
+      expect(sut).toHaveBeenCalledWith(expect.anything(), expect.anything(), undefined, pointersToUseByCases.uppercase)
 
       sut.mockClear()
 
@@ -211,7 +215,7 @@ describe('activeEntities', () => {
       // Call the first time
       await components.activeEntities.withPointers(components.database, pointersToUseByCases.lowercase)
       // When a pointer is asked the first time, then the database is reached
-      expect(sut).toHaveBeenCalledWith(expect.anything(), undefined, pointersToUseByCases.lowercase)
+      expect(sut).toHaveBeenCalledWith(expect.anything(), expect.anything(), undefined, pointersToUseByCases.lowercase)
 
       // Reset spy and call again
       sut.mockClear()
@@ -241,7 +245,7 @@ describe('activeEntities', () => {
       sut.mockImplementation(() => Promise.resolve([{ ...fakeDeployment, entityId: idsToUseByCases.lowercase[0] }]))
 
       const firstResult = await components.activeEntities.withIds(components.database, idsToUseByCases.lowercase)
-      expect(sut).toHaveBeenCalledWith(expect.anything(), idsToUseByCases.lowercase, undefined)
+      expect(sut).toHaveBeenCalledWith(expect.anything(), expect.anything(), idsToUseByCases.lowercase, undefined)
 
       sut.mockClear()
 
@@ -256,7 +260,7 @@ describe('activeEntities', () => {
       sut.mockImplementationOnce(() => Promise.resolve([{ ...fakeDeployment, entityId: idsToUseByCases.lowercase[0] }]))
 
       const firstResult = await components.activeEntities.withIds(components.database, idsToUseByCases.lowercase)
-      expect(sut).toHaveBeenCalledWith(expect.anything(), idsToUseByCases.lowercase, undefined)
+      expect(sut).toHaveBeenCalledWith(expect.anything(), expect.anything(), idsToUseByCases.lowercase, undefined)
 
       sut.mockClear()
       sut.mockImplementationOnce(() =>
@@ -266,7 +270,7 @@ describe('activeEntities', () => {
       )
 
       const secondResult = await components.activeEntities.withIds(components.database, idsToUseByCases.uppercase)
-      expect(sut).toHaveBeenCalledWith(expect.anything(), idsToUseByCases.uppercase, undefined)
+      expect(sut).toHaveBeenCalledWith(expect.anything(), expect.anything(), idsToUseByCases.uppercase, undefined)
       expect(secondResult).not.toMatchObject(firstResult)
       expect(secondResult[0].id).toEqual(idsToUseByCases.uppercase[0])
 
@@ -282,7 +286,7 @@ describe('activeEntities', () => {
       sut.mockImplementationOnce(() => Promise.resolve([{ ...fakeDeployment, entityId: idsToUseByCases.lowercase[0] }]))
 
       const firstResult = await components.activeEntities.withIds(components.database, idsToUseByCases.lowercase)
-      expect(sut).toHaveBeenCalledWith(expect.anything(), idsToUseByCases.lowercase, undefined)
+      expect(sut).toHaveBeenCalledWith(expect.anything(), expect.anything(), idsToUseByCases.lowercase, undefined)
 
       sut.mockClear()
       sut.mockImplementationOnce(() =>
@@ -292,7 +296,7 @@ describe('activeEntities', () => {
       )
 
       const secondResult = await components.activeEntities.withIds(components.database, idsToUseByCases.uppercase)
-      expect(sut).toHaveBeenCalledWith(expect.anything(), idsToUseByCases.uppercase, undefined)
+      expect(sut).toHaveBeenCalledWith(expect.anything(), expect.anything(), idsToUseByCases.uppercase, undefined)
       expect(secondResult).not.toMatchObject(firstResult)
       expect(secondResult[0].id).toEqual(idsToUseByCases.uppercase[0])
 
@@ -312,7 +316,7 @@ describe('activeEntities', () => {
       sut.mockImplementationOnce(() => Promise.resolve([{ ...fakeDeployment, entityId: idsToUseByCases.lowercase[0] }]))
 
       const firstResult = await components.activeEntities.withIds(components.database, idsToUseByCases.lowercase)
-      expect(sut).toHaveBeenCalledWith(expect.anything(), idsToUseByCases.lowercase, undefined)
+      expect(sut).toHaveBeenCalledWith(expect.anything(), expect.anything(), idsToUseByCases.lowercase, undefined)
 
       sut.mockClear()
       sut.mockImplementationOnce(() =>
@@ -322,7 +326,7 @@ describe('activeEntities', () => {
       )
 
       const secondResult = await components.activeEntities.withIds(components.database, idsToUseByCases.uppercase)
-      expect(sut).toHaveBeenCalledWith(expect.anything(), idsToUseByCases.uppercase, undefined)
+      expect(sut).toHaveBeenCalledWith(expect.anything(), expect.anything(), idsToUseByCases.uppercase, undefined)
       expect(secondResult).not.toMatchObject(firstResult)
       expect(secondResult[0].id).toEqual(idsToUseByCases.uppercase[0])
 
@@ -363,7 +367,10 @@ describe('activeEntities', () => {
         sequentialExecutor: createMockedSequentialTaskExecutorComponent(),
         deployments: createDeploymentsComponentMock({
           getDeploymentsForActiveThirdPartyItemsByEntityIds: getDeploymentsForActiveThirdPartyItemsByEntityIdsMock
-        })
+        }),
+        pointersRepository: createPointersRepository(),
+        activeEntitiesRepository: createActiveEntitiesRepository(),
+        contentFilesRepository: createContentFilesRepository()
       })
     })
 
@@ -452,23 +459,31 @@ async function buildComponents() {
   const env = new Environment()
   env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, 'inexistent')
   env.setConfig(EnvironmentConfig.DENYLIST_FILE_NAME, 'file')
-  const clock = createClock()
   const serverValidator = new NoOpServerValidator()
   const logs = createLogsMockedComponent()
   const deployRateLimiter = createNoOpDeployRateLimiter()
   const metrics = createTestMetricsComponent(metricsDeclaration)
-  const failedDeployments = await createFailedDeployments({ metrics, database })
+  const failedDeploymentsRepository = createFailedDeploymentsRepository()
+  const failedDeployments = await createFailedDeployments({ metrics, database, failedDeploymentsRepository })
   const storage = createInMemoryStorage()
   const pointerManager = NoOpPointerManager.build()
-  const authenticator = new ContentAuthenticator(
+  const authenticator = createAuthenticator(
     new HTTPProvider('https://rpc.decentraland.org/mainnet?project=catalyst-ci'),
     [DECENTRALAND_ADDRESS]
   )
-  const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, clock })
+  const deploymentsRepository = createDeploymentsRepository()
+  const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({
+    database,
+    logs,
+    deploymentsRepository
+  })
   env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)
   const denylist: Denylist = { isDenylisted: () => false }
   const sequentialExecutor = createMockedSequentialTaskExecutorComponent()
   const deployments = createDeploymentsComponentMock()
+  const pointersRepository = createPointersRepository()
+  const activeEntitiesRepository = createActiveEntitiesRepository()
+  const contentFilesRepository = createContentFilesRepository()
   const activeEntities = createActiveEntitiesComponent({
     database,
     logs,
@@ -476,14 +491,16 @@ async function buildComponents() {
     metrics,
     denylist,
     sequentialExecutor,
-    deployments
+    deployments,
+    pointersRepository,
+    activeEntitiesRepository,
+    contentFilesRepository
   })
 
   return {
     env,
     pointerManager,
     failedDeployments,
-    clock,
     deployRateLimiter,
     storage,
     validator: new NoOpValidator(),

@@ -1,4 +1,4 @@
-import { ActiveEntities } from '../../src/ports/activeEntities'
+import { ActiveEntities } from '../../src/logic/active-entities'
 
 export function createMockedActiveEntitiesComponent(
   overrides: Partial<jest.Mocked<ActiveEntities>> = {}

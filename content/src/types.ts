@@ -1,5 +1,7 @@
 import { IContentStorageComponent, IFileSystemComponent } from '@dcl/catalyst-storage'
-import { ExternalCalls, ValidateFn } from '@dcl/content-validator'
+import { IContentValidator } from './adapters/content-validator'
+import { IAuthenticator } from './logic/authenticator'
+import { ServerValidator } from './logic/server-validator'
 import { EntityType, SyncDeployment } from '@dcl/schemas'
 import { IDeployerComponent, SynchronizerComponent } from '@dcl/snapshots-fetcher'
 import { IJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
@@ -18,27 +20,32 @@ import qs from 'qs'
 import { Environment } from './Environment'
 import { metricsDeclaration } from './metrics'
 import { MigrationExecutor } from './migrations/migration-executor'
-import { ActiveEntities } from './ports/activeEntities'
-import { Clock } from './ports/clock'
-import { DAOComponent } from './ports/dao-servers-getter'
-import { Denylist } from './ports/denylist'
-import { IDeployRateLimiterComponent } from './ports/deployRateLimiterComponent'
-import { DeployedEntitiesBloomFilter } from './ports/deployedEntitiesBloomFilter'
-import { Deployer } from './ports/deployer'
-import { IFailedDeploymentsComponent } from './ports/failedDeployments'
-import { IDatabaseComponent } from './ports/postgres'
-import { ISequentialTaskExecutorComponent } from './ports/sequecuentialTaskExecutor'
-import { SnapshotGenerator } from './ports/snapshotGenerator'
-import { SynchronizationState } from './ports/synchronizationState'
-import { SystemProperties } from './ports/system-properties'
-import { ContentAuthenticator } from './service/auth/Authenticator'
-import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
-import { PointerManager } from './service/pointers/PointerManager'
-import { IChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
-import { IContentClusterComponent } from './logic/cluster'
-import { IRetryFailedDeploymentsComponent } from './service/synchronization/retryFailedDeployments'
-import { ServerValidator } from './service/validations/server'
-import { ProcessedSnapshotsStorageComponent } from './ports/processedSnapshotStorage'
+import { IActiveEntitiesRepository } from './adapters/active-entities-repository'
+import { ActiveEntities } from './logic/active-entities'
+import { IContentFilesRepository } from './adapters/content-files-repository'
+import { DAOComponent } from './adapters/dao-client'
+import { Denylist } from './adapters/denylist'
+import { IDeploymentsRepository } from './adapters/deployments-repository'
+import { IDeployRateLimiterComponent } from './adapters/deploy-rate-limiter'
+import { IFailedDeploymentsReporter } from './logic/failed-deployments-reporter'
+import { IFailedDeploymentsRepository } from './adapters/failed-deployments-repository'
+import { IPointersRepository } from './adapters/pointers-repository'
+import { ISnapshotsRepository } from './adapters/snapshots-repository'
+import { DeployedEntitiesBloomFilter } from './adapters/deployed-entities-bloom-filter'
+import { Deployer } from './logic/deployment-service'
+import { IPointerLockManager } from './adapters/pointer-lock-manager'
+import { IFailedDeploymentsComponent } from './adapters/failed-deployments-cache'
+import { IDatabaseComponent } from './adapters/database'
+import { ISequentialTaskExecutorComponent } from './logic/sequential-task-executor'
+import { SnapshotGenerator } from './adapters/snapshot-generator'
+import { SynchronizationState } from './adapters/synchronization-state'
+import { SystemProperties } from './adapters/system-properties'
+import { GarbageCollectionManager } from './logic/garbage-collection'
+import { PointerManager } from './logic/pointer-manager'
+import { IChallengeSupervisor } from './logic/challenge-supervisor'
+import { IContentClusterComponent } from './logic/peer-cluster'
+import { IRetryFailedDeploymentsComponent } from './logic/retry-failed-deployments'
+import { ProcessedSnapshotsStorageComponent } from './adapters/processed-snapshot-storage'
 import { IDeploymentsComponent } from './logic/deployments'
 import { IJobComponent } from '@dcl/job-component'
 
@@ -70,8 +77,15 @@ export type AppComponents = {
   downloadQueue: IJobQueue
   logs: ILoggerComponent
   database: IDatabaseComponent
+  activeEntitiesRepository: IActiveEntitiesRepository
+  contentFilesRepository: IContentFilesRepository
+  deploymentsRepository: IDeploymentsRepository
+  failedDeploymentsRepository: IFailedDeploymentsRepository
+  pointersRepository: IPointersRepository
+  snapshotsRepository: ISnapshotsRepository
   config: IConfigComponent
   deployer: Deployer
+  pointerLockManager: IPointerLockManager
   staticConfigs: {
     contentStorageFolder: string
     tmpDownloadFolder: string
@@ -86,15 +100,13 @@ export type AppComponents = {
   contentCluster: IContentClusterComponent
   pointerManager: PointerManager
   failedDeployments: IFailedDeploymentsComponent
+  failedDeploymentsReporter: IFailedDeploymentsReporter
   deployRateLimiter: IDeployRateLimiterComponent
   storage: IContentStorageComponent
-  authenticator: ContentAuthenticator
+  authenticator: IAuthenticator
   migrationManager: MigrationExecutor
   serverValidator: ServerValidator
-  externalCalls: ExternalCalls
-  validator: {
-    validate: ValidateFn
-  }
+  validator: IContentValidator
   garbageCollectionManager: GarbageCollectionManager
   systemProperties: SystemProperties
   daoClient: DAOComponent
@@ -106,7 +118,6 @@ export type AppComponents = {
   fs: IFileSystemComponent
   snapshotGenerator: SnapshotGenerator
   processedSnapshotStorage: ProcessedSnapshotsStorageComponent
-  clock: Clock
   snapshotStorage: ISnapshotStorageComponent
   l1Provider: HTTPProvider
   tracer: ITracerComponent
@@ -124,6 +135,9 @@ export type MaintenanceComponents = {
   storage: IContentStorageComponent
   fs: IFileSystemComponent
   migrationManager: MigrationExecutor
+  contentFilesRepository: IContentFilesRepository
+  deploymentsRepository: IDeploymentsRepository
+  snapshotsRepository: ISnapshotsRepository
 }
 
 export type Timestamp = number
@@ -168,20 +182,6 @@ export type Pagination = {
 export type QueryParams = qs.ParsedQs
 
 export type AnyObject = Record<string, unknown>
-
-export class InvalidRequestError extends Error {
-  constructor(message: string) {
-    super(message)
-    Error.captureStackTrace(this, this.constructor)
-  }
-}
-
-export class NotFoundError extends Error {
-  constructor(message: string) {
-    super(message)
-    Error.captureStackTrace(this, this.constructor)
-  }
-}
 
 export enum DeploymentField {
   CONTENT = 'content',

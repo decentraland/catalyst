@@ -4,11 +4,11 @@ import { mkdirSync, mkdtempSync, rmSync } from 'fs'
 import os from 'os'
 import path from 'path'
 import { EnvironmentConfig } from '../../../src/Environment'
-import { deleteUnreferencedFiles } from '../../../src/logic/delete-unreferenced-files'
+import { deleteUnreferencedFiles } from '../../../src/logic/garbage-collection'
 import { MS_PER_DAY } from '../../../src/logic/time-range'
-import { hashFiles } from '../../../src/ports/deployer'
+import { hashFiles } from '../../../src/logic/deployment-service'
 import { AppComponents } from '../../../src/types'
-import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
+import { makeNoopValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import { setupTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
 import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
@@ -88,7 +88,7 @@ describe('Delete unreferenced files - ', () => {
 
   testCaseWithComponents(getTestEnv, 'should not delete snapshot file', async (components) => {
     // the clock is mocked so only one snapshot is created
-    jest.spyOn(components.clock, 'now').mockReturnValue(1577836800000 + MS_PER_DAY)
+    jest.spyOn(Date, 'now').mockReturnValue(1577836800000 + MS_PER_DAY)
     await startSnapshotNeededComponents(components)
 
     const snapshots = components.snapshotGenerator.getCurrentSnapshots()

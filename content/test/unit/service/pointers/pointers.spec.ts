@@ -1,7 +1,6 @@
-import { HistoricalDeployment } from '../../../../src/logic/database-queries/deployments-queries'
-import { getPointerChanges } from '../../../../src/service/pointers/pointers'
-import * as deploymentsQueries from '../../../../src/logic/database-queries/deployments-queries'
-import { Denylist } from '../../../../src/ports/denylist'
+import { HistoricalDeployment, IDeploymentsRepository } from '../../../../src/adapters/deployments-repository'
+import { getPointerChanges } from '../../../../src/logic/deployments'
+import { Denylist } from '../../../../src/adapters/denylist'
 
 function buildDeployment(entityId: string, overrides: Partial<HistoricalDeployment> = {}): HistoricalDeployment {
   return {
@@ -22,12 +21,27 @@ function buildDeployment(entityId: string, overrides: Partial<HistoricalDeployme
 describe('getPointerChanges', () => {
   let denylist: Denylist
   let database: { queryWithValues: jest.Mock }
-  let getHistoricalDeploymentsSpy: jest.SpyInstance
+  let deploymentsRepository: jest.Mocked<IDeploymentsRepository>
+  let getHistoricalDeploymentsSpy: jest.MockedFunction<IDeploymentsRepository['getHistoricalDeployments']>
 
   beforeEach(() => {
     denylist = { isDenylisted: jest.fn().mockReturnValue(false) }
     database = { queryWithValues: jest.fn() }
-    getHistoricalDeploymentsSpy = jest.spyOn(deploymentsQueries, 'getHistoricalDeployments')
+    getHistoricalDeploymentsSpy = jest.fn()
+    deploymentsRepository = {
+      deploymentExists: jest.fn(),
+      streamAllEntityIdsInTimeRange: jest.fn(),
+      streamAllDistinctEntityIds: jest.fn(),
+      getHistoricalDeployments: getHistoricalDeploymentsSpy,
+      getActiveDeploymentsByContentHash: jest.fn(),
+      getEntityById: jest.fn(),
+      saveDeployment: jest.fn(),
+      getDeployments: jest.fn(),
+      setEntitiesAsOverwritten: jest.fn(),
+      calculateOverwrote: jest.fn(),
+      calculateOverwrittenByManyFast: jest.fn(),
+      calculateOverwrittenBySlow: jest.fn()
+    }
   })
 
   afterEach(() => {
@@ -53,7 +67,7 @@ describe('getPointerChanges', () => {
         )
 
         result = await getPointerChanges(
-          { denylist, metrics: { increment: jest.fn() } as any },
+          { denylist, metrics: { increment: jest.fn() } as any, deploymentsRepository },
           database as any,
           { limit }
         )
@@ -83,7 +97,7 @@ describe('getPointerChanges', () => {
       getHistoricalDeploymentsSpy.mockResolvedValueOnce(deployments)
 
       result = await getPointerChanges(
-        { denylist, metrics: { increment: jest.fn() } as any },
+        { denylist, metrics: { increment: jest.fn() } as any, deploymentsRepository },
         database as any,
         { limit }
       )
