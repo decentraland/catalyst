@@ -1,7 +1,7 @@
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import SQL from 'sql-template-strings'
 import { SYSTEM_PROPERTIES } from '../../adapters/system-properties'
-import { AppComponents, PROFILE_DURATION } from '../../types'
+import { AppComponents } from '../../types'
 import { GCStaleProfilesResult, SweepResult } from './types'
 
 const PROFILE_CLEANUP_LIMIT = 10000
@@ -20,7 +20,8 @@ export class GarbageCollectionManager {
       'systemProperties' | 'metrics' | 'logs' | 'storage' | 'database' | 'activeEntities' | 'contentFilesRepository'
     >,
     private readonly performGarbageCollection: boolean,
-    private readonly sweepInterval: number
+    private readonly sweepInterval: number,
+    private readonly profileDuration: number
   ) {
     this.LOGGER = components.logs.getLogger('GarbageCollectionManager')
   }
@@ -156,7 +157,7 @@ export class GarbageCollectionManager {
   }
 
   async performSweep() {
-    const oldProfileSince = new Date(Date.now() - PROFILE_DURATION)
+    const oldProfileSince = new Date(Date.now() - this.profileDuration)
     this.lastSweepResult = {}
     try {
       const gcProfileActiveEntitiesResult = await this.gcProfileActiveEntities(oldProfileSince)
