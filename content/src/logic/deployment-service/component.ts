@@ -413,10 +413,12 @@ export function createDeploymentService(
 
         // TODO: review this
         return storeResult.auditInfoComplete.localTimestamp || Date.now()
-      } catch (error) {
+      } catch (error: any) {
         logger.error(`There was an error deploying the entity: ${error}`, { entityId })
+        const name = error?.name ?? 'Error'
+        const message = error?.message ?? 'unknown error'
         return InvalidResult({
-          errors: [`There was an error deploying the entity`]
+          errors: [`There was an error deploying the entity: ${name}: ${message}`]
         })
       } finally {
         components.pointerLockManager.release(entity.type, entity.pointers)
