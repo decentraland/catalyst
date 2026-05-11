@@ -1,6 +1,8 @@
 import { ContentItem, IContentStorageComponent } from '@dcl/catalyst-storage'
+import { Readable } from 'stream'
 import {
   checkNotModified,
+  observeContentBodySize,
   paginationObject,
   parseRangeHeader,
   retrieveContentWithRange,
@@ -416,6 +418,151 @@ describe('when retrieving content with range', () => {
 
     it('should rethrow the error', async () => {
       await expect(retrieveContentWithRange(storage, 'some-hash', 'bytes=0-99')).rejects.toThrow(thrownError)
+    })
+  })
+})
+
+describe('when observing content body size', () => {
+  const hash = 'bafybeiasb5vpmaounyilfuxbd3lool'
+  let metrics: { increment: jest.Mock }
+  let logger: { warn: jest.Mock; info: jest.Mock; debug: jest.Mock; error: jest.Mock; log: jest.Mock }
+  let logs: { getLogger: jest.Mock }
+  let components: any
+
+  // Drain a Readable to completion and resolve with the total bytes.
+  const drain = (s: Readable): Promise<number> =>
+    new Promise((resolve, reject) => {
+      let total = 0
+      s.on('data', (chunk: Buffer) => {
+        total += chunk.length
+      })
+      s.on('end', () => resolve(total))
+      s.on('close', () => resolve(total))
+      s.on('error', reject)
+    })
+
+  beforeEach(() => {
+    metrics = { increment: jest.fn() }
+    logger = {
+      warn: jest.fn(),
+      info: jest.fn(),
+      debug: jest.fn(),
+      error: jest.fn(),
+      log: jest.fn()
+    }
+    logs = { getLogger: jest.fn().mockReturnValue(logger) }
+    components = { metrics, logs }
+  })
+
+  afterEach(() => {
+    jest.clearAllMocks()
+  })
+
+  describe('and the expected size is null', () => {
+    let source: Readable
+
+    beforeEach(() => {
+      source = Readable.from(Buffer.alloc(100))
+    })
+
+    it('should return the source stream unchanged without instrumenting it', async () => {
+      const result = observeContentBodySize(source, null, hash, components)
+      expect(result).toBe(source)
+      await drain(result)
+      expect(metrics.increment).not.toHaveBeenCalled()
+      expect(logger.warn).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('and the body matches the expected size', () => {
+    let observed: Readable
+
+    beforeEach(async () => {
+      const source = Readable.from(Buffer.alloc(100))
+      observed = observeContentBodySize(source, 100, hash, components)
+      await drain(observed)
+    })
+
+    it('should not increment the short-response metric', () => {
+      expect(metrics.increment).not.toHaveBeenCalled()
+    })
+
+    it('should not emit a warning log', () => {
+      expect(logger.warn).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('and the body is shorter than the expected size', () => {
+    let observed: Readable
+
+    beforeEach(async () => {
+      // 50 bytes streamed against a 100-byte declaration — the truncation case
+      const source = Readable.from(Buffer.alloc(50))
+      observed = observeContentBodySize(source, 100, hash, components)
+      await drain(observed)
+    })
+
+    it('should increment the short-response metric with reason=truncated', () => {
+      expect(metrics.increment).toHaveBeenCalledWith('dcl_content_short_response_total', {
+        reason: 'truncated'
+      })
+    })
+
+    it('should emit exactly one warning log including the observed and expected sizes', () => {
+      expect(logger.warn).toHaveBeenCalledTimes(1)
+      const [, payload] = logger.warn.mock.calls[0]
+      expect(payload).toMatchObject({ hash, expectedSize: 100, observed: 50, reason: 'truncated' })
+    })
+  })
+
+  describe('and the body is longer than the expected size', () => {
+    let observed: Readable
+
+    beforeEach(async () => {
+      // Same mismatch direction is also worth flagging — points at a storage
+      // miscount or a doubled-write
+      const source = Readable.from(Buffer.alloc(150))
+      observed = observeContentBodySize(source, 100, hash, components)
+      await drain(observed)
+    })
+
+    it('should still increment the short-response metric (the metric tracks "size mismatch", not strictly under)', () => {
+      expect(metrics.increment).toHaveBeenCalledWith('dcl_content_short_response_total', {
+        reason: 'truncated'
+      })
+    })
+  })
+
+  describe('and the source stream errors mid-transfer', () => {
+    let observed: Readable
+    let drainError: unknown
+
+    beforeEach(async () => {
+      // Custom Readable that emits 30 bytes then errors — exactly the
+      // "storage backend gave up partway" case the metric should catch
+      const source = new Readable({
+        read() {
+          this.push(Buffer.alloc(30))
+          this.destroy(new Error('upstream connection reset'))
+        }
+      })
+      observed = observeContentBodySize(source, 100, hash, components)
+      try {
+        await drain(observed)
+      } catch (err) {
+        drainError = err
+      }
+    })
+
+    it('should increment the short-response metric with reason=error', () => {
+      expect(metrics.increment).toHaveBeenCalledWith('dcl_content_short_response_total', {
+        reason: 'error'
+      })
+    })
+
+    it('should propagate the source error to the wrapped stream rather than swallowing it', () => {
+      expect(drainError).toBeInstanceOf(Error)
+      expect((drainError as Error).message).toBe('upstream connection reset')
     })
   })
 })

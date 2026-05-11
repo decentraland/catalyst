@@ -1,12 +1,12 @@
 import { HandlerContextWithPath } from '../../types'
 import { NotFoundError } from '../errors'
 import { findEntityByPointer, findThumbnailHash } from '../../logic/entities'
-import { checkNotModified, createContentFileHeaders, retrieveContentWithRange } from '../utils'
+import { checkNotModified, createContentFileHeaders, observeContentBodySize, retrieveContentWithRange } from '../utils'
 
 // Method: GET or HEAD
 export async function getEntityThumbnailHandler(
   context: HandlerContextWithPath<
-    'database' | 'activeEntities' | 'storage',
+    'database' | 'activeEntities' | 'storage' | 'metrics' | 'logs',
     '/entities/active/entity/:pointer/thumbnail'
   >
 ) {
@@ -41,12 +41,17 @@ export async function getEntityThumbnailHandler(
   const { content, status } = result
   const headers = await createContentFileHeaders(content, hash)
 
+  const body =
+    context.request.method.toUpperCase() === 'GET'
+      ? observeContentBodySize(await content.asRawStream(), content.size, hash, context.components)
+      : undefined
+
   return {
     status,
     headers: {
       ...headers,
       ...result.rangeHeaders
     },
-    body: context.request.method.toUpperCase() === 'GET' ? await content.asRawStream() : undefined
+    body
   }
 }

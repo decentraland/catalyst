@@ -19,6 +19,12 @@ export const metricsDeclaration = validateMetricsDeclaration({
     labelNames: ['entity_type', 'deployment_context']
   },
 
+  dcl_content_short_response_total: {
+    help: 'Total content responses where the actual streamed body size did not match the size declared in the storage layer (truncated or partial bodies).',
+    type: 'counter',
+    labelNames: ['reason']
+  },
+
   db_queued_queries_count: {
     help: 'Total number of queries that went through the queue since the service started',
     type: 'counter',
