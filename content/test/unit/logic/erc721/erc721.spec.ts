@@ -107,7 +107,7 @@ describe('when formatting an ERC-721 entity', () => {
     })
   })
 
-describe('and the entity has no image/thumbnail metadata', () => {
+  describe('and the entity has no image/thumbnail metadata', () => {
     it('should leave the image and thumbnail fields undefined', () => {
       const noImageEntity: Entity = {
         ...entity,
