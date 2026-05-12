@@ -24,7 +24,7 @@ import { createAuthenticator } from '../../../src/logic/authenticator'
 import { EntityVersion } from '../../../src/types'
 import { NoOpServerValidator, NoOpValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import { createDeploymentsComponentMock } from '../../mocks/deployments-component-mock'
-import { NoOpPointerManager } from '../service/pointers/NoOpPointerManager'
+import { createNoOpPointerManager } from '../../mocks/pointer-manager-component-mock'
 import { createMockedSequentialTaskExecutorComponent } from '../../mocks/sequential-task-executor-component-mock'
 import { createDatabaseMockedComponent } from '../../mocks/database-component-mock'
 import { createLogsMockedComponent } from '../../mocks/logger-component-mock'
@@ -466,7 +466,7 @@ async function buildComponents() {
   const failedDeploymentsRepository = createFailedDeploymentsRepository()
   const failedDeployments = await createFailedDeployments({ metrics, database, failedDeploymentsRepository })
   const storage = createInMemoryStorage()
-  const pointerManager = NoOpPointerManager.build()
+  const pointerManager = createNoOpPointerManager()
   const authenticator = createAuthenticator(
     new HTTPProvider('https://rpc.decentraland.org/mainnet?project=catalyst-ci'),
     [DECENTRALAND_ADDRESS]

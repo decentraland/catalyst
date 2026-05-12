@@ -1,2 +1,2 @@
-export { ChallengeSupervisor } from './component'
+export { createChallengeSupervisor } from './component'
 export type { IChallengeSupervisor } from './types'

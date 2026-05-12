@@ -39,7 +39,7 @@ import { DELTA_POINTER_RESULT } from '../../../src/logic/pointer-manager'
 import { EntityVersion } from '../../../src/types'
 import { buildEntityAndFile } from '../../helpers/entity-tests-helper'
 import { NoOpServerValidator, NoOpValidator } from '../../helpers/logic/server-validator/NoOpValidator'
-import { NoOpPointerManager } from '../service/pointers/NoOpPointerManager'
+import { createNoOpPointerManager } from '../../mocks/pointer-manager-component-mock'
 import { createDeploymentsComponentMock } from '../../mocks/deployments-component-mock'
 
 export const DECENTRALAND_ADDRESS: EthAddress = '0x1337e0507eb4ab47e08a179573ed4533d9e22a7b'
@@ -205,7 +205,7 @@ describe('Deployer', function () {
     const failedDeploymentsRepository = createFailedDeploymentsRepository()
     const failedDeployments = await createFailedDeployments({ metrics, database, failedDeploymentsRepository })
     const storage = createInMemoryStorage()
-    const pointerManager = NoOpPointerManager.build()
+    const pointerManager = createNoOpPointerManager()
     const authenticator = createAuthenticator(
       new HTTPProvider('https://rpc.decentraland.org/mainnet?project=catalyst-ci'),
       [DECENTRALAND_ADDRESS]

@@ -58,14 +58,14 @@ import { createSystemProperties } from './adapters/system-properties'
 import { createActiveEntitiesComponent } from './logic/active-entities'
 import { createAuthenticator } from './logic/authenticator'
 import { createBatchDeployerComponent } from './logic/batch-deployer'
-import { ChallengeSupervisor } from './logic/challenge-supervisor'
+import { createChallengeSupervisor } from './logic/challenge-supervisor'
 import { splitByCommaTrimAndRemoveEmptyElements } from './logic/config-helpers'
 import { createDeploymentsComponent, retryFailedDeploymentExecution } from './logic/deployments'
 import { createDeploymentService } from './logic/deployment-service'
 import { createFailedDeploymentsReporter } from './logic/failed-deployments-reporter'
 import { createGarbageCollectionComponent } from './logic/garbage-collection'
 import { createContentCluster } from './logic/peer-cluster'
-import { PointerManager } from './logic/pointer-manager'
+import { createPointerManager } from './logic/pointer-manager'
 import { createRetryFailedDeploymentsScheduler } from './logic/retry-failed-deployments'
 import { createSequentialTaskExecutor } from './logic/sequential-task-executor'
 import { createServerValidator } from './logic/server-validator'
@@ -164,7 +164,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   // ---------------------------------------------------------------------------
   const sequentialExecutor = createSequentialTaskExecutor({ metrics, logs })
   const systemProperties = createSystemProperties({ database })
-  const challengeSupervisor = new ChallengeSupervisor()
+  const challengeSupervisor = createChallengeSupervisor()
 
   // ---------------------------------------------------------------------------
   // 6. Storage + DAO client + authenticator
@@ -198,7 +198,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     env.getConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL)
   )
 
-  const pointerManager = new PointerManager()
+  const pointerManager = createPointerManager({ deploymentsRepository })
 
   const failedDeployments = await createFailedDeployments({ metrics, database, failedDeploymentsRepository })
   const failedDeploymentsReporter = createFailedDeploymentsReporter({
