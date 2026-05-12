@@ -1,1 +1,2 @@
-export { calculateIPFSHashes, calculateDeprecatedHashes } from './component'
+export { createHashing } from './component'
+export type { IHashing } from './types'

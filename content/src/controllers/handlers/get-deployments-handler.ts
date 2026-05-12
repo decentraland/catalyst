@@ -1,6 +1,6 @@
 import { EntityType } from '@dcl/schemas'
 import { asEnumValue, fromCamelCaseToSnakeCase } from '../utils'
-import { qsGetArray, qsGetBoolean, qsGetNumber, qsParser, toQueryParams } from '../../logic/query-params'
+import { IQueryParams } from '../../logic/query-params'
 import { Deployment, DeploymentBase, DeploymentOptions, SortingField, SortingOrder } from '../../deployment-types'
 import { DeploymentField, HandlerContextWithPath, parseEntityType } from '../../types'
 import { InvalidRequestError } from '../errors'
@@ -15,30 +15,37 @@ export const DEFAULT_FIELDS_ON_DEPLOYMENTS: DeploymentField[] = [
 // Query String: ?from={timestamp}&toLocalTimestamp={timestamp}&entityType={entityType}&entityId={entityId}&onlyCurrentlyPointed={boolean}
 export async function getDeploymentsHandler(
   context: HandlerContextWithPath<
-    'database' | 'denylist' | 'metrics' | 'sequentialExecutor' | 'deploymentsRepository' | 'contentFilesRepository',
+    | 'database'
+    | 'denylist'
+    | 'metrics'
+    | 'sequentialExecutor'
+    | 'deploymentsRepository'
+    | 'contentFilesRepository'
+    | 'queryParams',
     '/deployments'
   >
 ) {
-  const queryParams = qsParser(context.url.searchParams)
-  const entityTypes: (EntityType | undefined)[] = qsGetArray(queryParams, 'entityType').map((type) =>
-    parseEntityType(type)
-  )
-  const entityIds = qsGetArray(queryParams, 'entityId')
-  const onlyCurrentlyPointed: boolean | undefined = qsGetBoolean(queryParams, 'onlyCurrentlyPointed')
-  const pointers = qsGetArray(queryParams, 'pointer').map((pointer) => pointer.toLowerCase())
-  const offset: number | undefined = qsGetNumber(queryParams, 'offset')
-  const limit: number | undefined = qsGetNumber(queryParams, 'limit')
-  const fields: string | null = queryParams.fields as string
-  const sortingFieldParam: string | null = queryParams.sortingField as string
+  const { queryParams } = context.components
+  const parsedParams = queryParams.qsParser(context.url.searchParams)
+  const entityTypes: (EntityType | undefined)[] = queryParams
+    .qsGetArray(parsedParams, 'entityType')
+    .map((type) => parseEntityType(type))
+  const entityIds = queryParams.qsGetArray(parsedParams, 'entityId')
+  const onlyCurrentlyPointed: boolean | undefined = queryParams.qsGetBoolean(parsedParams, 'onlyCurrentlyPointed')
+  const pointers = queryParams.qsGetArray(parsedParams, 'pointer').map((pointer) => pointer.toLowerCase())
+  const offset: number | undefined = queryParams.qsGetNumber(parsedParams, 'offset')
+  const limit: number | undefined = queryParams.qsGetNumber(parsedParams, 'limit')
+  const fields: string | null = parsedParams.fields as string
+  const sortingFieldParam: string | null = parsedParams.sortingField as string
   const snake_case_sortingField = sortingFieldParam ? fromCamelCaseToSnakeCase(sortingFieldParam) : undefined
   const sortingField: SortingField | undefined | 'unknown' = asEnumValue(SortingField, snake_case_sortingField)
   const sortingOrder: SortingOrder | undefined | 'unknown' = asEnumValue(
     SortingOrder,
-    (queryParams.sortingOrder as string) || undefined
+    (parsedParams.sortingOrder as string) || undefined
   )
-  const lastId: string | undefined = (queryParams.lastId as string)?.toLowerCase()
-  const from = qsGetNumber(queryParams, 'from')
-  const to = qsGetNumber(queryParams, 'to')
+  const lastId: string | undefined = (parsedParams.lastId as string)?.toLowerCase()
+  const from = queryParams.qsGetNumber(parsedParams, 'from')
+  const to = queryParams.qsGetNumber(parsedParams, 'to')
 
   if (entityTypes && entityTypes.some((type) => !type)) {
     return {
@@ -107,7 +114,7 @@ export async function getDeploymentsHandler(
 
   if (deployments.length > 0 && pagination.moreData) {
     const lastDeployment = deployments[deployments.length - 1]
-    pagination.next = calculateNextRelativePath(deploymentOptions, lastDeployment)
+    pagination.next = calculateNextRelativePath(queryParams, deploymentOptions, lastDeployment)
   }
 
   return {
@@ -135,7 +142,11 @@ function deployment2ControllerEntity<T extends DeploymentBase>(deployment: Deplo
   return result
 }
 
-function calculateNextRelativePath(options: DeploymentOptions, lastDeployment: Deployment): string {
+function calculateNextRelativePath(
+  queryParams: IQueryParams,
+  options: DeploymentOptions,
+  lastDeployment: Deployment
+): string {
   const nextFilters = Object.assign({}, options?.filters)
 
   const field = options?.sortBy?.field ?? SortingField.LOCAL_TIMESTAMP
@@ -157,7 +168,7 @@ function calculateNextRelativePath(options: DeploymentOptions, lastDeployment: D
 
   const fields = !options.fields || options.fields === DEFAULT_FIELDS_ON_DEPLOYMENTS ? '' : options.fields.join(',')
 
-  const nextQueryParams = toQueryParams({
+  const nextQueryParams = queryParams.toQueryParams({
     ...nextFilters,
     fields,
     sortingField: field,

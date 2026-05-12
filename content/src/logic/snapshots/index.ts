@@ -1,1 +1,2 @@
-export { generateAndStoreSnapshot, generateSnapshotsInMultipleTimeRanges } from './component'
+export { createSnapshots } from './component'
+export type { ISnapshots } from './types'

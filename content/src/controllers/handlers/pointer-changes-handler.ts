@@ -1,7 +1,7 @@
 import { PointerChanges } from '@dcl/catalyst-api-specs/lib/client'
 import { EntityType, PointerChangesSyncDeployment } from '@dcl/schemas'
 import { asEnumValue, fromCamelCaseToSnakeCase } from '../utils'
-import { qsGetArray, qsGetBoolean, qsGetNumber, qsParser, toQueryParams } from '../../logic/query-params'
+import { IQueryParams } from '../../logic/query-params'
 import { HandlerContextWithPath, parseEntityType } from '../../types'
 import { InvalidRequestError } from '../errors'
 import { SortingField, SortingOrder } from '../../deployment-types'
@@ -11,29 +11,30 @@ import { getPointerChanges, PointerChangesFilters } from '../../logic/deployment
 // Query String: ?from={timestamp}&to={timestamp}&offset={number}&limit={number}&entityType={entityType}&includeAuthChain={boolean}
 export async function getPointerChangesHandler(
   context: HandlerContextWithPath<
-    'database' | 'denylist' | 'sequentialExecutor' | 'metrics' | 'deploymentsRepository',
+    'database' | 'denylist' | 'sequentialExecutor' | 'metrics' | 'deploymentsRepository' | 'queryParams',
     '/pointer-changes'
   >
 ): Promise<{ status: 200; body: Required<PointerChanges> }> {
-  const queryParams = qsParser(context.url.searchParams)
+  const { queryParams } = context.components
+  const parsedParams = queryParams.qsParser(context.url.searchParams)
 
-  const entityTypes: (EntityType | undefined)[] = qsGetArray(queryParams, 'entityType').map((type) =>
-    parseEntityType(type)
-  )
+  const entityTypes: (EntityType | undefined)[] = queryParams
+    .qsGetArray(parsedParams, 'entityType')
+    .map((type) => parseEntityType(type))
 
-  const from: number | undefined = qsGetNumber(queryParams, 'from')
-  const to: number | undefined = qsGetNumber(queryParams, 'to')
-  const offset: number | undefined = qsGetNumber(queryParams, 'offset')
-  const limit: number | undefined = qsGetNumber(queryParams, 'limit')
-  const lastId: string | undefined = (queryParams.lastId as string)?.toLowerCase()
-  const includeAuthChain = qsGetBoolean(queryParams, 'includeAuthChain') ?? false
+  const from: number | undefined = queryParams.qsGetNumber(parsedParams, 'from')
+  const to: number | undefined = queryParams.qsGetNumber(parsedParams, 'to')
+  const offset: number | undefined = queryParams.qsGetNumber(parsedParams, 'offset')
+  const limit: number | undefined = queryParams.qsGetNumber(parsedParams, 'limit')
+  const lastId: string | undefined = (parsedParams.lastId as string)?.toLowerCase()
+  const includeAuthChain = queryParams.qsGetBoolean(parsedParams, 'includeAuthChain') ?? false
 
-  const sortingFieldParam: string | undefined = queryParams.sortingField as string
+  const sortingFieldParam: string | undefined = parsedParams.sortingField as string
   const snake_case_sortingField = sortingFieldParam ? fromCamelCaseToSnakeCase(sortingFieldParam) : undefined
   const sortingField: SortingField | undefined | 'unknown' = asEnumValue(SortingField, snake_case_sortingField)
   const sortingOrder: SortingOrder | undefined | 'unknown' = asEnumValue(
     SortingOrder,
-    (queryParams.sortingOrder as string) || undefined
+    (parsedParams.sortingOrder as string) || undefined
   )
 
   // Validate type is valid
@@ -83,7 +84,7 @@ export async function getPointerChangesHandler(
 
   if (pointerChanges.length > 0 && pagination.moreData) {
     const lastPointerChange = pointerChanges[pointerChanges.length - 1]
-    pagination.next = calculateNextRelativePathForPointer(lastPointerChange, pagination.limit, filters)
+    pagination.next = calculateNextRelativePathForPointer(queryParams, lastPointerChange, pagination.limit, filters)
   }
 
   const response = { deltas: pointerChanges, filters, pagination }
@@ -94,6 +95,7 @@ export async function getPointerChangesHandler(
 }
 
 function calculateNextRelativePathForPointer(
+  queryParams: IQueryParams,
   lastPointerChange: PointerChangesSyncDeployment,
   limit: number,
   filters?: PointerChangesFilters
@@ -102,7 +104,7 @@ function calculateNextRelativePathForPointer(
   // It will always use toLocalTimestamp as this endpoint is always sorted with the default config: localTimestamp and DESC
   nextFilters.to = lastPointerChange.localTimestamp
 
-  const nextQueryParams = toQueryParams({
+  const nextQueryParams = queryParams.toQueryParams({
     ...nextFilters,
     limit: limit,
     lastId: lastPointerChange.entityId

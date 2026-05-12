@@ -47,6 +47,11 @@ import { IContentClusterComponent } from './logic/peer-cluster'
 import { IRetryFailedDeploymentsComponent } from './logic/retry-failed-deployments'
 import { ProcessedSnapshotsStorageComponent } from './adapters/processed-snapshot-storage'
 import { IDeploymentsComponent } from './logic/deployments'
+import { IHashing } from './logic/hashing'
+import { IQueryParams } from './logic/query-params'
+import { IEntityParser } from './logic/entity-parser'
+import { IErc721 } from './logic/erc721'
+import { ISnapshots } from './logic/snapshots'
 import { IJobComponent } from '@dcl/job-component'
 
 // Minimum amount of needed stuff to make the sync work
@@ -124,6 +129,11 @@ export type AppComponents = {
   snapshotStorage: ISnapshotStorageComponent
   l1Provider: HTTPProvider
   tracer: ITracerComponent
+  hashing: IHashing
+  queryParams: IQueryParams
+  entityParser: IEntityParser
+  erc721: IErc721
+  snapshots: ISnapshots
 }
 
 export type GlobalContext = {

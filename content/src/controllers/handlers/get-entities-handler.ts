@@ -1,6 +1,5 @@
 import { EntityContentItemReference } from '@dcl/hashing'
 import { Entity, EntityType } from '@dcl/schemas'
-import { qsGetArray, qsParser } from '../../logic/query-params'
 import { HandlerContextWithPath, parseEntityType } from '../../types'
 
 export enum EntityField {
@@ -16,15 +15,17 @@ export enum EntityField {
 // Method: GET
 // Query String: ?{filter}&fields={fieldList}
 export async function getEntitiesHandler(
-  context: HandlerContextWithPath<'activeEntities' | 'database', '/entities/:type'>
+  context: HandlerContextWithPath<'activeEntities' | 'database' | 'queryParams', '/entities/:type'>
 ) {
-  const { database, activeEntities } = context.components
+  const { database, activeEntities, queryParams } = context.components
   const type: EntityType = parseEntityType(context.params.type)
-  const queryParams = qsParser(context.url.searchParams)
+  const parsedParams = queryParams.qsParser(context.url.searchParams)
 
-  const pointers: string[] = qsGetArray(queryParams, 'pointer').map((pointer) => pointer.toLocaleLowerCase())
-  const ids: string[] = qsGetArray(queryParams, 'id')
-  const fields: string = queryParams.fields as string
+  const pointers: string[] = queryParams
+    .qsGetArray(parsedParams, 'pointer')
+    .map((pointer) => pointer.toLocaleLowerCase())
+  const ids: string[] = queryParams.qsGetArray(parsedParams, 'id')
+  const fields: string = parsedParams.fields as string
 
   // Validate type is valid
   if (!type) {

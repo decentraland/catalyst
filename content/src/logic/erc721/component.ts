@@ -1,6 +1,8 @@
 import { I18N, BodyShape, Emote, StandardProps, Wearable, WearableRepresentation, Entity } from '@dcl/schemas'
-import { Environment, EnvironmentConfig } from '../../Environment'
+import { EnvironmentConfig } from '../../Environment'
+import { AppComponents } from '../../types'
 import { findImageHash, findThumbnailHash } from '../entities'
+import { Erc721Entity, IErc721 } from './types'
 
 type ERC721StandardTrait = {
   trait_type: string
@@ -25,12 +27,56 @@ const RARITIES_EMISSIONS = {
   unique: 1
 }
 
-export function buildUrn(protocol: string, contract: string, option: string): string {
-  const version = contract.startsWith('0x') ? 'v2' : 'v1'
-  return `urn:decentraland:${protocol}:collections-${version}:${contract}:${option}`
+export function createErc721(components: Pick<AppComponents, 'env'>): IErc721 {
+  const { env } = components
+  const baseUrl = env.getConfig<string>(EnvironmentConfig.CONTENT_SERVER_ADDRESS)
+
+  return {
+    buildUrn(protocol: string, contract: string, option: string): string {
+      const version = contract.startsWith('0x') ? 'v2' : 'v1'
+      return `urn:decentraland:${protocol}:collections-${version}:${contract}:${option}`
+    },
+
+    formatERC721Entity(urn: string, entity: Entity, emission: string | undefined): Erc721Entity {
+      const itemMetadata: (Wearable | Emote) & StandardProps = entity.metadata
+      const name = preferEnglish(itemMetadata.i18n)
+      const totalEmission = RARITIES_EMISSIONS[itemMetadata.rarity]
+      const description = emission ? `DCL Wearable ${emission}/${totalEmission}` : ''
+
+      const imageHash = findImageHash(entity)
+      const thumbnailHash = findThumbnailHash(entity)
+      const itemData: ItemData = getItemData(itemMetadata)
+      const bodyShapeTraits = getBodyShapes(itemData.representations).reduce(
+        (bodyShapes: ERC721StandardTrait[], bodyShape) => {
+          bodyShapes.push({ trait_type: 'Body Shape', value: bodyShape })
+          return bodyShapes
+        },
+        []
+      )
+      const tagTraits = itemData.tags.reduce((tags: ERC721StandardTrait[], tag) => {
+        tags.push({ trait_type: 'Tag', value: tag })
+        return tags
+      }, [])
+
+      return {
+        id: urn,
+        name,
+        description,
+        language: 'en-US',
+        image: imageHash ? new URL(`contents/${imageHash}`, baseUrl).toString() : undefined,
+        thumbnail: thumbnailHash ? new URL(`contents/${thumbnailHash}`, baseUrl).toString() : undefined,
+        attributes: [
+          { trait_type: 'Rarity', value: itemMetadata.rarity },
+          { trait_type: 'Category', value: itemData.category },
+          ...tagTraits,
+          ...bodyShapeTraits
+        ]
+      }
+    }
+  }
 }
 
-/** We will prioritize the text in english. If not present, then we will choose the first one */
+/** Prioritize the english variant; otherwise return the first available. */
 function preferEnglish(i18ns: I18N[]): string | undefined {
   const i18nInEnglish = i18ns.filter((i18n) => i18n.code.toLowerCase() === 'en')[0]
   return (i18nInEnglish ?? i18ns[0])?.text
@@ -52,55 +98,4 @@ function getBodyShapes(representations: WearableRepresentation[]) {
 
 function getItemData(itemMetadata: Wearable | Emote): ItemData {
   return (itemMetadata as Emote).emoteDataADR74 ?? (itemMetadata as Wearable).data
-}
-
-export function formatERC721Entity(env: Environment, urn: string, entity: Entity, emission: string | undefined) {
-  const baseUrl = env.getConfig<string>(EnvironmentConfig.CONTENT_SERVER_ADDRESS)
-
-  const itemMetadata: (Wearable | Emote) & StandardProps = entity.metadata
-  const name = preferEnglish(itemMetadata.i18n)
-  const totalEmission = RARITIES_EMISSIONS[itemMetadata.rarity]
-  const description = emission ? `DCL Wearable ${emission}/${totalEmission}` : ''
-
-  const imageHash = findImageHash(entity)
-  const thumbnailHash = findThumbnailHash(entity)
-  const itemData: ItemData = getItemData(itemMetadata)
-  const bodyShapeTraits = getBodyShapes(itemData.representations).reduce(
-    (bodyShapes: ERC721StandardTrait[], bodyShape) => {
-      bodyShapes.push({
-        trait_type: 'Body Shape',
-        value: bodyShape
-      })
-      return bodyShapes
-    },
-    []
-  )
-  const tagTraits = itemData.tags.reduce((tags: ERC721StandardTrait[], tag) => {
-    tags.push({
-      trait_type: 'Tag',
-      value: tag
-    })
-    return tags
-  }, [])
-
-  return {
-    id: urn,
-    name,
-    description,
-    language: 'en-US',
-    image: imageHash ? new URL(`contents/${imageHash}`, baseUrl).toString() : undefined,
-    thumbnail: thumbnailHash ? new URL(`contents/${thumbnailHash}`, baseUrl).toString() : undefined,
-    attributes: [
-      {
-        trait_type: 'Rarity',
-        value: itemMetadata.rarity
-      },
-      {
-        trait_type: 'Category',
-        value: itemData.category
-      },
-      ...tagTraits,
-      ...bodyShapeTraits
-    ]
-  }
 }
