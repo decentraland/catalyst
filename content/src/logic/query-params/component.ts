@@ -1,28 +1,29 @@
 import qs from 'qs'
 import { QueryParams } from '../../types'
+import { IQueryParams } from './types'
 
-export function qsParser(rawQueryParams: URLSearchParams): QueryParams {
-  return qs.parse(rawQueryParams.toString(), { parseArrays: true })
-}
-
-export function qsGetArray(queryParams: QueryParams, paramName: string): string[] {
-  const parsedParam = (queryParams[paramName] as string[]) || []
-  return Array.isArray(parsedParam) ? parsedParam : [parsedParam]
-}
-
-export function qsGetNumber(queryParams: QueryParams, paramName: string): number | undefined {
-  if (!queryParams[paramName]) return undefined
-  const num = parseInt(queryParams[paramName] as string, 10)
-  return isNaN(num) ? undefined : num
-}
-
-export function qsGetBoolean(queryParams: QueryParams, paramName: string): boolean | undefined {
-  return queryParams[paramName] ? queryParams[paramName] === 'true' : undefined
-}
-
-export function toQueryParams(filters: Record<string, any>): string {
-  const entries = convertFiltersToQueryParams(filters)
-  return qs.stringify(Object.fromEntries(entries), { arrayFormat: 'repeat' })
+export function createQueryParams(): IQueryParams {
+  return {
+    qsParser(rawQueryParams: URLSearchParams): QueryParams {
+      return qs.parse(rawQueryParams.toString(), { parseArrays: true })
+    },
+    qsGetArray(queryParams: QueryParams, paramName: string): string[] {
+      const parsedParam = (queryParams[paramName] as string[]) || []
+      return Array.isArray(parsedParam) ? parsedParam : [parsedParam]
+    },
+    qsGetNumber(queryParams: QueryParams, paramName: string): number | undefined {
+      if (!queryParams[paramName]) return undefined
+      const num = parseInt(queryParams[paramName] as string, 10)
+      return isNaN(num) ? undefined : num
+    },
+    qsGetBoolean(queryParams: QueryParams, paramName: string): boolean | undefined {
+      return queryParams[paramName] ? queryParams[paramName] === 'true' : undefined
+    },
+    toQueryParams(filters: Record<string, any>): string {
+      const entries = convertFiltersToQueryParams(filters)
+      return qs.stringify(Object.fromEntries(entries), { arrayFormat: 'repeat' })
+    }
+  }
 }
 
 function convertFiltersToQueryParams(filters?: Record<string, any>): Map<string, string[]> {
@@ -34,7 +35,6 @@ function convertFiltersToQueryParams(filters?: Record<string, any>): Map<string,
     .map<[string, string[]]>(([name, value]) => {
       let newName = name
       let newValues: string[]
-      // Force coercion of number, boolean, or string into string
       if (Array.isArray(value)) {
         newName = name.endsWith('s') ? name.slice(0, -1) : newName
         newValues = [...value].filter(isValidQueryParamValue).map((_) => `${_}`)

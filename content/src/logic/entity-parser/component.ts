@@ -1,14 +1,26 @@
 import { EntityContentItemReference } from '@dcl/hashing'
 import { Entity, EntityType } from '@dcl/schemas'
 import { AnyObject } from '../../types'
+import { InvalidEntityError } from './errors'
+import { IEntityParser } from './types'
 
 const textDecoder = new TextDecoder()
+
+export function createEntityParser(): IEntityParser {
+  return {
+    parse(buffer: Uint8Array, id: string): Entity {
+      const entityAsObject = getObjectEntityFromBuffer(buffer)
+      validateObjectEntity(entityAsObject)
+      return parseEntityFromObject(entityAsObject, id)
+    }
+  }
+}
 
 function getObjectEntityFromBuffer(buffer: Uint8Array): AnyObject {
   try {
     return JSON.parse(textDecoder.decode(buffer))
   } catch (e) {
-    throw new Error(`Failed to parse the entity file. Please make sure that it is a valid json.`)
+    throw new InvalidEntityError('Failed to parse the entity file. Please make sure that it is a valid json.')
   }
 }
 
@@ -17,14 +29,14 @@ function parseContent(contents: any[]): EntityContentItemReference[] | undefined
 
   return contents.map(({ file, hash }) => {
     if (!file || !hash) {
-      throw new Error('Content must contain a file name and a file hash')
+      throw new InvalidEntityError('Content must contain a file name and a file hash')
     }
 
     if (
       !(typeof file === 'string' || file instanceof String) ||
       !(typeof hash === 'string' || hash instanceof String)
     ) {
-      throw new Error('Please make sure that all file names and a file hashes are valid strings')
+      throw new InvalidEntityError('Please make sure that all file names and a file hashes are valid strings')
     }
 
     return { file: file as string, hash: hash as string }
@@ -47,22 +59,19 @@ function validateObjectEntity(entityAsObject: AnyObject): void {
   const { type, pointers, timestamp, content } = entityAsObject
 
   if (!type || !(Object.values(EntityType) as string[]).includes(type as string))
-    throw new Error(`Please set a valid type. It must be one of ${Object.values(EntityType)}. We got '${type}'`)
+    throw new InvalidEntityError(
+      `Please set a valid type. It must be one of ${Object.values(EntityType)}. We got '${type}'`
+    )
 
   if (
     !pointers ||
     !Array.isArray(pointers) ||
     !pointers.every((pointer) => typeof pointer === 'string' || pointer instanceof String)
   )
-    throw new Error(`Please set valid pointers`)
+    throw new InvalidEntityError('Please set valid pointers')
 
-  if (!timestamp || typeof timestamp !== 'number') throw new Error(`Please set a valid timestamp. We got ${timestamp}`)
+  if (!timestamp || typeof timestamp !== 'number')
+    throw new InvalidEntityError(`Please set a valid timestamp. We got ${timestamp}`)
 
-  if (!!content && !Array.isArray(content)) throw new Error(`Expected an array as content`)
-}
-
-export function getEntityFromBuffer(buffer: Uint8Array, id: string): Entity {
-  const entityAsObject = getObjectEntityFromBuffer(buffer)
-  validateObjectEntity(entityAsObject)
-  return parseEntityFromObject(entityAsObject, id)
+  if (!!content && !Array.isArray(content)) throw new InvalidEntityError('Expected an array as content')
 }

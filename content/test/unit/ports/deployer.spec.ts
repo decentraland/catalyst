@@ -9,6 +9,8 @@ import assert from 'assert'
 import { HTTPProvider } from 'eth-connect'
 
 import { isEntityContentUnchanged } from '../../../src/logic/deployment-service'
+import { createHashing } from '../../../src/logic/hashing'
+import { createEntityParser } from '../../../src/logic/entity-parser'
 import { DEFAULT_ENTITIES_CACHE_SIZE, Environment, EnvironmentConfig } from '../../../src/Environment'
 import {
   Deployment,
@@ -250,7 +252,9 @@ describe('Deployer', function () {
       activeEntities,
       denylist,
       contentFilesRepository,
-      deploymentsRepository
+      deploymentsRepository,
+      hashing: createHashing(),
+      entityParser: createEntityParser()
     }
     const deployer = createDeploymentService(deployerComponents)
     return {

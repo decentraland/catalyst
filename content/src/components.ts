@@ -62,13 +62,18 @@ import { createChallengeSupervisor } from './logic/challenge-supervisor'
 import { splitByCommaTrimAndRemoveEmptyElements } from './logic/config-helpers'
 import { createDeploymentsComponent, retryFailedDeploymentExecution } from './logic/deployments'
 import { createDeploymentService } from './logic/deployment-service'
+import { createEntityParser } from './logic/entity-parser'
+import { createErc721 } from './logic/erc721'
 import { createFailedDeploymentsReporter } from './logic/failed-deployments-reporter'
 import { createGarbageCollectionComponent } from './logic/garbage-collection'
+import { createHashing } from './logic/hashing'
 import { createContentCluster } from './logic/peer-cluster'
 import { createPointerManager } from './logic/pointer-manager'
+import { createQueryParams } from './logic/query-params'
 import { createRetryFailedDeploymentsScheduler } from './logic/retry-failed-deployments'
 import { createSequentialTaskExecutor } from './logic/sequential-task-executor'
 import { createServerValidator } from './logic/server-validator'
+import { createSnapshots } from './logic/snapshots'
 
 // =============================================================================
 // Types
@@ -193,6 +198,12 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   // ---------------------------------------------------------------------------
   // 7. Domain logic
   // ---------------------------------------------------------------------------
+  // Stateless helpers — pure factories with no setup, declared first so any logic below can inject them.
+  const hashing = createHashing()
+  const queryParams = createQueryParams()
+  const entityParser = createEntityParser()
+  const erc721 = createErc721({ env })
+
   const contentCluster = createContentCluster(
     { daoClient, logs, env },
     env.getConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL)
@@ -271,7 +282,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     activeEntities,
     denylist,
     deploymentsRepository,
-    contentFilesRepository
+    contentFilesRepository,
+    hashing,
+    entityParser
   })
 
   // ---------------------------------------------------------------------------
@@ -410,7 +423,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const retryFailedDeployments = createRetryFailedDeploymentsScheduler(retryFailedDeploymentsJob)
 
-  const snapshotGenerator = createSnapshotGenerator({
+  const snapshots = createSnapshots({
     logs,
     fs,
     metrics,
@@ -420,6 +433,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     denylist,
     snapshotsRepository
   })
+
+  const snapshotGenerator = createSnapshotGenerator({ snapshots })
 
   const snapshotGenerationJob = createJobComponent({ logs }, snapshotGenerator.generateSnapshots, ms('6h'), {
     startupDelay: 0,
@@ -528,6 +543,11 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     synchronizer,
     systemProperties,
     tracer,
-    validator
+    validator,
+    hashing,
+    queryParams,
+    entityParser,
+    erc721,
+    snapshots
   }
 }

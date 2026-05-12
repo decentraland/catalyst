@@ -2,7 +2,9 @@ import { EntityType } from '@dcl/schemas'
 import { createFetchComponent } from '@well-known-components/fetch-component'
 import { DeploymentField } from '../../../src/types'
 import { DeploymentOptions, SortingField, SortingOrder } from '../../../src/deployment-types'
-import { toQueryParams } from '../../../src/logic/query-params'
+import { createQueryParams } from '../../../src/logic/query-params'
+
+const { toQueryParams } = createQueryParams()
 import { PointerChangesFilters } from '../../../src/logic/deployments'
 import { makeNoopValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import { buildDeployData, EntityCombo } from '../E2ETestUtils'

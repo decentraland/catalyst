@@ -16,8 +16,7 @@ import { DatabaseClient } from '../../adapters/database'
 import { happenedBefore } from '../../service/time/TimeSorting'
 import { AppComponents, EntityVersion } from '../../types'
 import { calculateOverwrites, getDeployments, saveDeploymentAndContentFiles } from '../deployments'
-import { getEntityFromBuffer } from '../entity-parser'
-import { calculateDeprecatedHashes, calculateIPFSHashes } from '../hashing'
+import { IHashing } from '../hashing'
 import { DELTA_POINTER_RESULT } from '../pointer-manager'
 import { IDeploymentService } from './types'
 
@@ -41,11 +40,17 @@ export function isEntityContentUnchanged(newEntity: Entity, activeEntity: Entity
  * They could come hashed because the denylist decorator might have already hashed them for its own validations. In order to avoid re-hashing
  * them in the service (because there might be hundreds of files), we will send the hash result.
  */
-export async function hashFiles(files: DeploymentFiles, entityId: string): Promise<Map<string, Uint8Array>> {
+export async function hashFiles(
+  hashing: IHashing,
+  files: DeploymentFiles,
+  entityId: string
+): Promise<Map<string, Uint8Array>> {
   if (files instanceof Map) {
     return files
   } else {
-    const hashEntries = isIPFSHash(entityId) ? await calculateIPFSHashes(files) : await calculateDeprecatedHashes(files)
+    const hashEntries = isIPFSHash(entityId)
+      ? await hashing.calculateIPFSHashes(files)
+      : await hashing.calculateDeprecatedHashes(files)
     return new Map(hashEntries.map(({ hash, file }) => [hash, file]))
   }
 }
@@ -70,6 +75,8 @@ export function createDeploymentService(
     | 'denylist'
     | 'deploymentsRepository'
     | 'contentFilesRepository'
+    | 'hashing'
+    | 'entityParser'
   >
 ): IDeploymentService {
   const logger = components.logs.getLogger('deployer')
@@ -273,7 +280,7 @@ export function createDeploymentService(
       }
 
       // Hash all files
-      const hashes: Map<string, Uint8Array> = await hashFiles(files, entityId)
+      const hashes: Map<string, Uint8Array> = await hashFiles(components.hashing, files, entityId)
 
       // Find entity file
       const entityFile = hashes.get(entityId)
@@ -284,7 +291,7 @@ export function createDeploymentService(
       // Parse entity file into an Entity
       let entity: Entity
       try {
-        entity = getEntityFromBuffer(entityFile, entityId)
+        entity = components.entityParser.parse(entityFile, entityId)
         if (!entity) {
           return InvalidResult({ errors: ['There was a problem parsing the entity, it was null'] })
         }

@@ -1,9 +1,9 @@
 import { ThirdPartyItemChecker } from '@dcl/content-validator'
 import RequestManager, { ContractFactory, HTTPProvider, RPCSendableMessage, toData } from 'eth-connect'
-import { ILoggerComponent } from '@well-known-components/interfaces'
 import { BlockchainCollectionThirdPartyItem, parseUrn } from '@dcl/urn-resolver'
 import { erc1155Abi, erc721Abi, sendBatch } from '../contract-helpers'
 import { ContractType, ThirdPartyContractRegistry } from '../third-party-contract-registry'
+import { AppComponents } from '../../types'
 
 type TempData = {
   urn: string
@@ -15,8 +15,15 @@ type TempData = {
 
 const EMPTY_MESSAGE = '0x'
 
+/**
+ * Build a ThirdPartyItemChecker bound to a specific chain (its `provider`) and
+ * the matching contract registry. There are typically two instances of this
+ * component — one for L1 and one for L2 — so the per-chain `provider` and
+ * `thirdPartyContractRegistry` are passed in positionally instead of via
+ * `AppComponents`.
+ */
 export async function createThirdPartyItemChecker(
-  logs: ILoggerComponent,
+  { logs }: Pick<AppComponents, 'logs'>,
   provider: HTTPProvider,
   thirdPartyContractRegistry: ThirdPartyContractRegistry
 ): Promise<ThirdPartyItemChecker> {

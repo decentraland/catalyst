@@ -32,7 +32,7 @@ describe('third party item checker', () => {
       ]
     ])
     registry = createThirdPartyContractRegistryMock()
-    thirdPartyItemChecker = await createThirdPartyItemChecker(logs, httpProvider, registry)
+    thirdPartyItemChecker = await createThirdPartyItemChecker({ logs }, httpProvider, registry)
   })
 
   it('correct validation of nfts', async () => {

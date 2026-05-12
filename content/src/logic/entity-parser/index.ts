@@ -1,1 +1,3 @@
-export { getEntityFromBuffer } from './component'
+export { createEntityParser } from './component'
+export { InvalidEntityError } from './errors'
+export type { IEntityParser } from './types'

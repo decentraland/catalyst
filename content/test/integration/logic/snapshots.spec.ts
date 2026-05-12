@@ -1,7 +1,7 @@
 import { EntityType } from '@dcl/schemas'
 import { IBaseComponent } from '@well-known-components/interfaces'
 import { DeploymentContext } from '../../../src/deployment-types'
-import { generateSnapshotsInMultipleTimeRanges } from '../../../src/logic/snapshots'
+
 import * as timeRangeLogic from '../../../src/logic/time-range'
 import { AppComponents } from '../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/logic/server-validator/NoOpValidator'
@@ -25,7 +25,7 @@ describe('snapshot generator - ', () => {
 
     const timeRange = timeRangeOfDaysFromInitialTimestamp(1)
 
-    const snapshots = await generateSnapshotsInMultipleTimeRanges(components, timeRange)
+    const snapshots = await components.snapshots.generateSnapshotsInMultipleTimeRanges(timeRange)
     expect(divideTimeSpy).toBeCalledWith(timeRange)
     expect(snapshots).toEqual(expect.arrayContaining([expect.objectContaining(emptySnapshot)]))
     if (snapshots) {
@@ -39,8 +39,8 @@ describe('snapshot generator - ', () => {
     'should generate the second snapshot but not recreate the first one',
     async (components) => {
       await startSnapshotNeededComponents(components)
-      await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(1))
-      const snapshots = await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(2))
+      await components.snapshots.generateSnapshotsInMultipleTimeRanges(timeRangeOfDaysFromInitialTimestamp(1))
+      const snapshots = await components.snapshots.generateSnapshotsInMultipleTimeRanges(timeRangeOfDaysFromInitialTimestamp(2))
 
       expect(snapshots).toEqual(
         expect.arrayContaining([expect.objectContaining(emptySnapshot), expect.objectContaining(emptySnapshot)])
@@ -53,13 +53,13 @@ describe('snapshot generator - ', () => {
     'should generate seven daily snapshots once time each and do not create weekly one yet',
     async (components) => {
       await startSnapshotNeededComponents(components)
-      await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(1))
-      await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(2))
-      await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(3))
-      await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(4))
-      await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(5))
-      await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(6))
-      const snapshots = await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(7))
+      await components.snapshots.generateSnapshotsInMultipleTimeRanges(timeRangeOfDaysFromInitialTimestamp(1))
+      await components.snapshots.generateSnapshotsInMultipleTimeRanges(timeRangeOfDaysFromInitialTimestamp(2))
+      await components.snapshots.generateSnapshotsInMultipleTimeRanges(timeRangeOfDaysFromInitialTimestamp(3))
+      await components.snapshots.generateSnapshotsInMultipleTimeRanges(timeRangeOfDaysFromInitialTimestamp(4))
+      await components.snapshots.generateSnapshotsInMultipleTimeRanges(timeRangeOfDaysFromInitialTimestamp(5))
+      await components.snapshots.generateSnapshotsInMultipleTimeRanges(timeRangeOfDaysFromInitialTimestamp(6))
+      const snapshots = await components.snapshots.generateSnapshotsInMultipleTimeRanges(timeRangeOfDaysFromInitialTimestamp(7))
 
       expect(snapshots).toEqual(
         expect.arrayContaining([
@@ -80,15 +80,15 @@ describe('snapshot generator - ', () => {
     'should generate a weekly snapshot replacing seven daily snapshots and a daily one, at the 8th day',
     async (components) => {
       await startSnapshotNeededComponents(components)
-      await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(1))
-      await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(2))
-      await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(3))
-      await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(4))
-      await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(5))
-      await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(6))
-      await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(7))
+      await components.snapshots.generateSnapshotsInMultipleTimeRanges(timeRangeOfDaysFromInitialTimestamp(1))
+      await components.snapshots.generateSnapshotsInMultipleTimeRanges(timeRangeOfDaysFromInitialTimestamp(2))
+      await components.snapshots.generateSnapshotsInMultipleTimeRanges(timeRangeOfDaysFromInitialTimestamp(3))
+      await components.snapshots.generateSnapshotsInMultipleTimeRanges(timeRangeOfDaysFromInitialTimestamp(4))
+      await components.snapshots.generateSnapshotsInMultipleTimeRanges(timeRangeOfDaysFromInitialTimestamp(5))
+      await components.snapshots.generateSnapshotsInMultipleTimeRanges(timeRangeOfDaysFromInitialTimestamp(6))
+      await components.snapshots.generateSnapshotsInMultipleTimeRanges(timeRangeOfDaysFromInitialTimestamp(7))
       const before = Date.now()
-      const snapshots = await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(8))
+      const snapshots = await components.snapshots.generateSnapshotsInMultipleTimeRanges(timeRangeOfDaysFromInitialTimestamp(8))
       const after = Date.now()
 
       const weeklySnapshot = snapshots[0]
@@ -130,14 +130,14 @@ describe('snapshot generator - ', () => {
     'should generate a weekly snapshot and do not replace the daily ones if they are not 7, at the 8th day',
     async (components) => {
       await startSnapshotNeededComponents(components)
-      await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(1))
-      await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(2))
-      await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(3))
-      await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(4))
-      await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(5))
+      await components.snapshots.generateSnapshotsInMultipleTimeRanges(timeRangeOfDaysFromInitialTimestamp(1))
+      await components.snapshots.generateSnapshotsInMultipleTimeRanges(timeRangeOfDaysFromInitialTimestamp(2))
+      await components.snapshots.generateSnapshotsInMultipleTimeRanges(timeRangeOfDaysFromInitialTimestamp(3))
+      await components.snapshots.generateSnapshotsInMultipleTimeRanges(timeRangeOfDaysFromInitialTimestamp(4))
+      await components.snapshots.generateSnapshotsInMultipleTimeRanges(timeRangeOfDaysFromInitialTimestamp(5))
       // now we supose the server is down for a few days, so 6th and 7th daily snapshots are not generated
       const before = Date.now()
-      const snapshots = await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(8))
+      const snapshots = await components.snapshots.generateSnapshotsInMultipleTimeRanges(timeRangeOfDaysFromInitialTimestamp(8))
       const after = Date.now()
 
       const weeklySnapshot = snapshots[0]
@@ -186,7 +186,7 @@ describe('snapshot generator - ', () => {
       // deploy entity for the 7nd snapshot
       await deployAnEntityAtTimestamp(components, '0x00007', daysAfterInitialTimestamp(6) + 1)
 
-      const snapshots = await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(7))
+      const snapshots = await components.snapshots.generateSnapshotsInMultipleTimeRanges(timeRangeOfDaysFromInitialTimestamp(7))
       expect(snapshots).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ numberOfEntities: 1 }),
@@ -221,7 +221,7 @@ describe('snapshot generator - ', () => {
       // deploy entity for the 7nd snapshot
       await deployAnEntityAtTimestamp(components, '0x00007', daysAfterInitialTimestamp(6) + 1)
 
-      const snapshots = await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(8))
+      const snapshots = await components.snapshots.generateSnapshotsInMultipleTimeRanges(timeRangeOfDaysFromInitialTimestamp(8))
       expect(snapshots).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ numberOfEntities: 4 }),
@@ -241,7 +241,7 @@ describe('snapshot generator - ', () => {
     // deploy entity for the 1st snapshot with the same pointer and overwrite the pointer
     await deployAnEntityAtTimestamp(components, '0x00000', daysAfterInitialTimestamp(0) + 1)
 
-    const snapshots = await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(1))
+    const snapshots = await components.snapshots.generateSnapshotsInMultipleTimeRanges(timeRangeOfDaysFromInitialTimestamp(1))
     expect(snapshots).toEqual(expect.arrayContaining([expect.objectContaining({ numberOfEntities: 1 })]))
   })
 
@@ -255,7 +255,7 @@ describe('snapshot generator - ', () => {
     const storeSpy = jest.spyOn(components.storage, 'storeStreamAndCompress')
 
     // snapshot is generated and assert is correctly stored
-    const snapshots = await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(1))
+    const snapshots = await components.snapshots.generateSnapshotsInMultipleTimeRanges(timeRangeOfDaysFromInitialTimestamp(1))
 
     expect(snapshots).toEqual(expect.arrayContaining([expect.objectContaining({ numberOfEntities: 1 })]))
     expect(storeSpy).toBeCalledWith(snapshots[0].hash, expect.anything())
@@ -267,7 +267,7 @@ describe('snapshot generator - ', () => {
     expect(await components.storage.exist(snapshots[0].hash)).toBeFalsy()
 
     // now the snapshot is re-generated and stored again
-    const snapshots2 = await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(1))
+    const snapshots2 = await components.snapshots.generateSnapshotsInMultipleTimeRanges(timeRangeOfDaysFromInitialTimestamp(1))
     expect(snapshots2).toEqual(expect.arrayContaining([expect.objectContaining({ numberOfEntities: 1 })]))
     expect(storeSpy).toBeCalledWith(snapshots2[0].hash, expect.anything())
     expect(await components.storage.exist(snapshots2[0].hash)).toBeTruthy()
@@ -300,7 +300,7 @@ describe('snapshot generator - ', () => {
         .mockResolvedValue(new Set(['h1']))
 
       // snapshot is generated and assert is correctly stored
-      const snapshots = await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(1))
+      const snapshots = await components.snapshots.generateSnapshotsInMultipleTimeRanges(timeRangeOfDaysFromInitialTimestamp(1))
 
       expect(snapshots).toEqual(expect.arrayContaining([expect.objectContaining({ numberOfEntities: 1 })]))
       expect(await components.storage.exist(snapshots[0].hash)).toBeTruthy()
@@ -320,7 +320,7 @@ describe('snapshot generator - ', () => {
       makeNoopValidator(components)
       await startSnapshotNeededComponents(components)
       // 14 empty days generates 1 weekly empty snapshots and 7 daily empty snapshot
-      await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(14))
+      await components.snapshots.generateSnapshotsInMultipleTimeRanges(timeRangeOfDaysFromInitialTimestamp(14))
 
       // deploy entity for the last daily snapshot
       await deployAnEntityAtTimestamp(components, '0x00000', daysAfterInitialTimestamp(14) + 1)
@@ -328,7 +328,7 @@ describe('snapshot generator - ', () => {
       //  - The first weekly snapshot is already created with no deployments.
       //  - The second weekly snapshot will replace the 7 daily ones, that are empty, so they have the same hash of the first weekly snapshot
       //  - The last the daily snapshot, has a different snapshot hash as it has one deployment.
-      await generateSnapshotsInMultipleTimeRanges(components, timeRangeOfDaysFromInitialTimestamp(15))
+      await components.snapshots.generateSnapshotsInMultipleTimeRanges(timeRangeOfDaysFromInitialTimestamp(15))
       // expect first week snapshot to be present
       const snapshots = await components.snapshotsRepository.findSnapshotsStrictlyContainedInTimeRange(
         components.database,
@@ -372,7 +372,7 @@ describe('snapshot generator - ', () => {
         daysAfterInitialTimestamp(0) + 1,
         oldSnapshot.generationTimestamp + 1
       )
-      const snapshots = await generateSnapshotsInMultipleTimeRanges(components, firstDayTimeRange)
+      const snapshots = await components.snapshots.generateSnapshotsInMultipleTimeRanges(firstDayTimeRange)
 
       expect(snapshots).toHaveLength(1)
       const snapshot = snapshots[0]
@@ -395,7 +395,7 @@ describe('snapshot generator - ', () => {
       const firstDayTimeRange = timeRangeOfDaysFromInitialTimestamp(1)
 
       await deployAnEntityAtTimestamp(components, '0x00000', daysAfterInitialTimestamp(0) + 1)
-      const snapshots = await generateSnapshotsInMultipleTimeRanges(components, firstDayTimeRange)
+      const snapshots = await components.snapshots.generateSnapshotsInMultipleTimeRanges(firstDayTimeRange)
       expect(snapshots).toEqual(
         expect.arrayContaining([expect.objectContaining({ numberOfEntities: 1, timeRange: firstDayTimeRange })])
       )
@@ -408,7 +408,7 @@ describe('snapshot generator - ', () => {
         daysAfterInitialTimestamp(2),
         daysAfterInitialTimestamp(30)
       )
-      const snapshots2 = await generateSnapshotsInMultipleTimeRanges(components, firstDayTimeRange)
+      const snapshots2 = await components.snapshots.generateSnapshotsInMultipleTimeRanges(firstDayTimeRange)
       expect(snapshots2).toEqual(
         expect.arrayContaining([expect.objectContaining({ numberOfEntities: 0, timeRange: firstDayTimeRange })])
       )

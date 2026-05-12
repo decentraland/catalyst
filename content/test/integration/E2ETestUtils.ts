@@ -6,8 +6,10 @@ import fs from 'fs'
 import path from 'path'
 import { DeploymentContext, DeploymentResult, isInvalidDeployment } from '../../src/deployment-types'
 import { retry } from '../../src/helpers/RetryHelper'
-import { getEntityFromBuffer } from '../../src/logic/entity-parser'
+import { createEntityParser } from '../../src/logic/entity-parser'
 import { Deployer } from '../../src/logic/deployment-service'
+
+const entityParser = createEntityParser()
 
 export async function buildDeployDataAfterEntity(
   afterEntity: { timestamp: number } | { entity: { timestamp: number } },
@@ -54,7 +56,7 @@ export async function buildDeployData(pointers: string[], options?: DeploymentOp
     throw new Error('Unexpected error: no content')
   }
 
-  const entity: Entity = getEntityFromBuffer(content, deploymentPreparationData.entityId)
+  const entity: Entity = entityParser.parse(content, deploymentPreparationData.entityId)
 
   const deployData: DeploymentData = {
     entityId: entity.id,

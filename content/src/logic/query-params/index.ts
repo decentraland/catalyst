@@ -1,1 +1,2 @@
-export { qsParser, qsGetArray, qsGetNumber, qsGetBoolean, toQueryParams } from './component'
+export { createQueryParams } from './component'
+export type { IQueryParams } from './types'

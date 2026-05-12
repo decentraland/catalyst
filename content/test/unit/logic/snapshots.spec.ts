@@ -6,7 +6,37 @@ import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@dcl/metrics'
 import { stopAllComponents } from '../../../src/logic/components-lifecycle'
 import { ISnapshotsRepository } from '../../../src/adapters/snapshots-repository'
-import { generateAndStoreSnapshot, generateSnapshotsInMultipleTimeRanges } from '../../../src/logic/snapshots'
+import { createSnapshots } from '../../../src/logic/snapshots'
+import { DatabaseClient } from '../../../src/adapters/database'
+import { TimeRange } from '@dcl/snapshots-fetcher/dist/types'
+import { AppComponents } from '../../../src/types'
+
+type SnapshotsDeps = Pick<
+  AppComponents,
+  'fs' | 'metrics' | 'storage' | 'logs' | 'denylist' | 'staticConfigs' | 'snapshotsRepository'
+> & { database?: AppComponents['database'] }
+
+function generateAndStoreSnapshot(
+  components: SnapshotsDeps,
+  db: DatabaseClient,
+  timeRange: TimeRange,
+  reason?: string
+) {
+  // `generateAndStoreSnapshot` only uses the per-call `db`; the factory's `database`
+  // dep is unused on this path, so the call-site db doubles as the factory dep too.
+  return createSnapshots({ ...components, database: components.database ?? (db as any) }).generateAndStoreSnapshot(
+    db,
+    timeRange,
+    reason
+  )
+}
+
+function generateSnapshotsInMultipleTimeRanges(
+  components: SnapshotsDeps & { database: AppComponents['database'] },
+  timeRange: TimeRange
+) {
+  return createSnapshots(components).generateSnapshotsInMultipleTimeRanges(timeRange)
+}
 import * as tr from '../../../src/logic/time-range'
 import { metricsDeclaration } from '../../../src/metrics'
 import { Denylist } from '../../../src/adapters/denylist'
