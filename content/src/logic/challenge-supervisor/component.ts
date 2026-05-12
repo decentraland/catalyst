@@ -2,21 +2,19 @@ import { v4 as uuidv4 } from 'uuid'
 import { IChallengeSupervisor } from './types'
 
 /**
- * This class will handle the challenge. The idea is for each server to figure out their identity on the DAO by themselves, so they will
- * generate a random challenge text, and then query each server for it. If the text matches, then they have found themselves.
+ * Handles the challenge protocol used so each server can figure out its own identity on the DAO.
+ * The server generates a random challenge text on startup and queries every DAO server for it.
+ * If a server replies with the matching text, it has found itself.
  */
-export class ChallengeSupervisor implements IChallengeSupervisor {
-  private readonly challengeText: string
+export function createChallengeSupervisor(): IChallengeSupervisor {
+  const challengeText = uuidv4()
 
-  constructor() {
-    this.challengeText = uuidv4()
-  }
-
-  getChallengeText(): string {
-    return this.challengeText
-  }
-
-  isChallengeOk(text: string) {
-    return this.challengeText === text
+  return {
+    getChallengeText(): string {
+      return challengeText
+    },
+    isChallengeOk(text: string): boolean {
+      return challengeText === text
+    }
   }
 }

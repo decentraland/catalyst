@@ -41,7 +41,7 @@ import { SnapshotGenerator } from './adapters/snapshot-generator'
 import { SynchronizationState } from './adapters/synchronization-state'
 import { SystemProperties } from './adapters/system-properties'
 import { IGarbageCollectionComponent } from './logic/garbage-collection'
-import { PointerManager } from './logic/pointer-manager'
+import { IPointerManager } from './logic/pointer-manager'
 import { IChallengeSupervisor } from './logic/challenge-supervisor'
 import { IContentClusterComponent } from './logic/peer-cluster'
 import { IRetryFailedDeploymentsComponent } from './logic/retry-failed-deployments'
@@ -101,7 +101,7 @@ export type AppComponents = {
   deployedEntitiesBloomFilter: DeployedEntitiesBloomFilter
   challengeSupervisor: IChallengeSupervisor
   contentCluster: IContentClusterComponent
-  pointerManager: PointerManager
+  pointerManager: IPointerManager
   failedDeployments: IFailedDeploymentsComponent
   failedDeploymentsReporter: IFailedDeploymentsReporter
   deployRateLimiter: IDeployRateLimiterComponent

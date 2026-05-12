@@ -148,7 +148,6 @@ export function createDeploymentService(
         )
         // Modify active pointers
         const pointersFromEntity = await components.pointerManager.referenceEntityFromPointers(
-          components.deploymentsRepository,
           database,
           entity,
           overwrote,

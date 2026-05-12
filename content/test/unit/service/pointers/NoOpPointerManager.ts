@@ -1,12 +1,9 @@
-import { anything, instance, mock, when } from 'ts-mockito'
-import { PointerManager } from '../../../../src/logic/pointer-manager'
+import { IPointerManager } from '../../../../src/logic/pointer-manager'
 
 export class NoOpPointerManager {
-  static build(): PointerManager {
-    const mockedManager: PointerManager = mock(PointerManager)
-    when(
-      mockedManager.referenceEntityFromPointers(anything(), anything(), anything(), anything(), anything())
-    ).thenResolve(new Map())
-    return instance(mockedManager)
+  static build(): IPointerManager {
+    return {
+      referenceEntityFromPointers: jest.fn().mockResolvedValue(new Map())
+    }
   }
 }
