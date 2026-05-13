@@ -33,12 +33,12 @@ describe('End 2 end - Error handling', () => {
     }
     server1 = await createDefaultServer(config)
     makeNoopValidator(server1.components)
-    makeNoopServerValidator(server1.components)
+    makeNoopServerValidator()
     makeNoopDeploymentValidator(server1.components)
 
     server2 = await createAdditionalServer(server1, 1201, config)
     makeNoopValidator(server2.components)
-    makeNoopServerValidator(server2.components)
+    makeNoopServerValidator()
     makeNoopDeploymentValidator(server2.components)
   })
 

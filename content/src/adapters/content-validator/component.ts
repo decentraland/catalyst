@@ -28,8 +28,8 @@ import { createSubgraphComponent } from '@well-known-components/thegraph-compone
 import RequestManager, { HTTPProvider } from 'eth-connect'
 import { Readable } from 'stream'
 import { EnvironmentConfig } from '../../Environment'
-import { createItemChecker, createL1Checker, createL2Checker } from '../../logic/checker'
-import { createThirdPartyItemChecker } from '../../logic/third-party-item-checker'
+import { createItemChecker, createL1Checker, createL2Checker } from './checker'
+import { createThirdPartyItemChecker } from './third-party-item-checker'
 import { AppComponents } from '../../types'
 import { IContentValidator } from './types'
 

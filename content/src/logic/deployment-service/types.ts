@@ -1,4 +1,5 @@
 import { DeploymentContext, DeploymentFiles, DeploymentResult, LocalDeploymentAuditInfo } from '../../deployment-types'
+import { IDeployRateLimiterComponent } from './rate-limiter'
 
 export interface IDeploymentService {
   deployEntity(
@@ -7,6 +8,14 @@ export interface IDeploymentService {
     auditInfo: LocalDeploymentAuditInfo,
     context: DeploymentContext
   ): Promise<DeploymentResult>
+
+  /**
+   * Test seam: swap the in-process rate limiter. Production code never calls this;
+   * test environments use it to install a no-op or a custom rate-limiter on a running
+   * server instance. After the deploy-rate-limiter fold there is no public
+   * `components.deployRateLimiter` to mutate.
+   */
+  setRateLimiter(rl: IDeployRateLimiterComponent): void
 }
 
 /**

@@ -13,7 +13,7 @@ describe('Integration - Deployment synced old entity', () => {
 
   beforeAll(async () => {
     server = await createDefaultServer()
-    makeNoopServerValidator(server.components)
+    makeNoopServerValidator()
   })
 
   afterAll(async () => {

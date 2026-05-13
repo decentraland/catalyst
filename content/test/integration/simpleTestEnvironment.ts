@@ -106,11 +106,11 @@ async function createServer(
   const domain = `http://127.0.0.1:${serverPort}`
   dao.add(domain)
   const server = new TestProgram(components)
-  server.components.daoClient = dao
-  // Override methods on the existing rate limiter object (not replace it)
-  // because the deployer captures its own reference to the original object
-  const noOp = createNoOpDeployRateLimiter()
-  Object.assign(server.components.deployRateLimiter, noOp)
+  server.components.contentCluster.setDAOSource(dao)
+  server.dao = dao
+  // Disable rate limiting in tests — after the deploy-rate-limiter fold the rate limiter
+  // is owned by the deployer's closure, so we install a no-op via the test seam.
+  server.components.deployer.setRateLimiter(createNoOpDeployRateLimiter())
   await server.startProgram()
   return server
 }
@@ -133,5 +133,5 @@ export async function createAdditionalServer(
 ): Promise<TestProgram> {
   const dbName = await createDB()
 
-  return createServer(defaultServer.components.daoClient as any, dbName, port, overrideConfigs)
+  return createServer(defaultServer.dao as MockedDAOClient, dbName, port, overrideConfigs)
 }

@@ -13,7 +13,6 @@ import { metricsDeclaration } from '../../../src/metrics'
 import { ActiveEntities, createActiveEntitiesComponent } from '../../../src/logic/active-entities'
 import { Denylist } from '../../../src/adapters/denylist'
 import { createDeployedEntitiesBloomFilter } from '../../../src/adapters/deployed-entities-bloom-filter'
-import { createNoOpDeployRateLimiter } from '../../mocks/deploy-rate-limiter-mock'
 import { createFailedDeployments } from '../../../src/adapters/failed-deployments'
 import { createPointersRepository } from '../../../src/adapters/pointers-repository'
 import { createActiveEntitiesRepository } from '../../../src/adapters/active-entities-repository'
@@ -21,9 +20,8 @@ import { createContentFilesRepository } from '../../../src/adapters/content-file
 import { createDeploymentsRepository } from '../../../src/adapters/deployments-repository'
 import { createCrypto } from '../../../src/logic/crypto'
 import { EntityVersion } from '../../../src/types'
-import { NoOpServerValidator, NoOpValidator } from '../../helpers/logic/server-validator/NoOpValidator'
+import { NoOpValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import { createDeploymentsComponentMock } from '../../mocks/deployments-component-mock'
-import { createNoOpPointerManager } from '../../mocks/pointer-manager-component-mock'
 import { createMockedSequentialTaskExecutorComponent } from '../../mocks/sequential-task-executor-component-mock'
 import { createDatabaseMockedComponent } from '../../mocks/database-component-mock'
 import { createLogsMockedComponent } from '../../mocks/logger-component-mock'
@@ -458,13 +456,10 @@ async function buildComponents() {
   const env = new Environment()
   env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, 'inexistent')
   env.setConfig(EnvironmentConfig.DENYLIST_FILE_NAME, 'file')
-  const serverValidator = new NoOpServerValidator()
   const logs = createLogsMockedComponent()
-  const deployRateLimiter = createNoOpDeployRateLimiter()
   const metrics = createTestMetricsComponent(metricsDeclaration)
   const failedDeployments = await createFailedDeployments({ metrics, database })
   const storage = createInMemoryStorage()
-  const pointerManager = createNoOpPointerManager()
   const crypto = createCrypto(
     new HTTPProvider('https://rpc.decentraland.org/mainnet?project=catalyst-ci'),
     [DECENTRALAND_ADDRESS]
@@ -497,12 +492,9 @@ async function buildComponents() {
 
   return {
     env,
-    pointerManager,
     failedDeployments,
-    deployRateLimiter,
     storage,
     validator: new NoOpValidator(),
-    serverValidator,
     metrics,
     logs,
     crypto,

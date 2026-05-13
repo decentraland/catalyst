@@ -23,7 +23,7 @@ describe('Integration - Order Check', () => {
   beforeAll(async () => {
     server = await createDefaultServer()
     makeNoopValidator(server.components)
-    makeNoopServerValidator(server.components)
+    makeNoopServerValidator()
   })
 
   afterAll(async () => {

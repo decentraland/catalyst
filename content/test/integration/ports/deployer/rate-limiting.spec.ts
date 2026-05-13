@@ -1,7 +1,7 @@
 import { EntityType } from '@dcl/schemas'
 import LeakDetector from 'jest-leak-detector'
 import { DeploymentContext } from '../../../../src/deployment-types'
-import { createDeployRateLimiter } from '../../../../src/adapters/deploy-rate-limiter'
+import { createDeployRateLimiter } from '../../../../src/logic/deployment-service'
 import { makeNoopValidator } from '../../../helpers/logic/server-validator/NoOpValidator'
 import { buildDeployData, buildDeployDataAfterEntity, EntityCombo } from '../../E2ETestUtils'
 import { TestProgram } from '../../TestProgram'
@@ -26,10 +26,9 @@ describe('Rate limiting E2E', () => {
   }
 
   /**
-   * Creates a real rate limiter with short TTLs and assigns its methods
-   * onto the shared rate limiter object. This works because the deployer
-   * captures a reference to the same object via Object.assign in the
-   * test environment setup.
+   * Builds a real rate limiter with short TTLs and installs it on the running deployer
+   * via the test seam (`deployer.setRateLimiter`). The default test setup installs a
+   * no-op rate limiter; this overrides it for rate-limit-specific tests.
    */
   function applyRealRateLimiter(): void {
     const realRateLimiter = createDeployRateLimiter(
@@ -49,7 +48,7 @@ describe('Rate limiting E2E', () => {
         entitiesConfigUnchangedTtl: new Map([[EntityType.PROFILE, UNCHANGED_TTL_MS]])
       }
     )
-    Object.assign(server.components.deployRateLimiter, realRateLimiter)
+    server.components.deployer.setRateLimiter(realRateLimiter)
   }
 
   beforeAll(async () => {

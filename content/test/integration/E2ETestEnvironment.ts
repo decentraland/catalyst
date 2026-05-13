@@ -9,7 +9,7 @@ import { DEFAULT_DATABASE_CONFIG, Environment, EnvironmentBuilder, EnvironmentCo
 import { stopAllComponents } from '../../src/logic/components-lifecycle'
 import { metricsDeclaration } from '../../src/metrics'
 import { createMigrationExecutor } from '../../src/migrations/migration-executor'
-import { DAOComponent } from '../../src/adapters/dao-client'
+import { DAOSource } from '../../src/logic/peer-cluster'
 import { IDatabaseComponent, createDatabaseComponent } from '../../src/adapters/database'
 import { AppComponents } from '../../src/types'
 import { MockedDAOClient } from '../helpers/service/synchronization/clients/MockedDAOClient'
@@ -153,7 +153,7 @@ export class ServerBuilder {
   constructor(
     private readonly testEnvCalls: TestEnvCalls,
     env: Environment,
-    public dao: DAOComponent
+    public dao: DAOSource
   ) {
     this.builder = new EnvironmentBuilder(env)
     this.storageBaseFolder = env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER) ?? 'storage'
@@ -189,16 +189,13 @@ export class ServerBuilder {
         .buildConfigAndComponents()
 
       if (this.dao) {
-        // mock DAO client
-        jest
-          .spyOn(components.daoClient, 'getAllContentServers')
-          .mockImplementation(() => this.dao.getAllContentServers())
-        jest.spyOn(components.daoClient, 'getAllServers').mockImplementation(() => this.dao.getAllServers())
+        // mock DAO source — installs the test DAO directly onto the peer cluster.
+        components.contentCluster.setDAOSource(this.dao)
       }
 
-      // Override methods on the existing rate limiter object (not replace it)
-      // because the deployer captures its own reference to the original object
-      Object.assign(components.deployRateLimiter, createNoOpDeployRateLimiter())
+      // Disable rate limiting in tests — after the deploy-rate-limiter fold the rate limiter
+      // is owned by the deployer's closure, so we install a no-op via the test seam.
+      components.deployer.setRateLimiter(createNoOpDeployRateLimiter())
       servers[i] = new TestProgram(components)
       this.testEnvCalls.registerServer(servers[i])
     }

@@ -1,4 +1,5 @@
 import { IBaseComponent } from '@well-known-components/interfaces'
+import { DAOSource } from './dao-source'
 
 export type IContentClusterComponent = IBaseComponent & {
   getAllServersInCluster(): string[]
@@ -10,4 +11,10 @@ export type IContentClusterComponent = IBaseComponent & {
    * DAO server and finds a matching value has located its own process.
    */
   getChallengeText(): string
+  /**
+   * Test seam: swap the DAO source after construction. Production code never calls this;
+   * integration test helpers use it to install a `MockedDAOClient` after the server has
+   * been built by `initComponentsWithEnv`.
+   */
+  setDAOSource(source: DAOSource): void
 }

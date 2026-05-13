@@ -5,6 +5,7 @@ import future from 'fp-future'
 import { v4 as uuidv4 } from 'uuid'
 import { EnvironmentConfig } from '../../Environment'
 import { AppComponents } from '../../types'
+import { DAOSource } from './dao-source'
 import { IContentClusterComponent } from './types'
 
 function shuffleArray<T>(arr: T[]): T[] {
@@ -31,10 +32,12 @@ function getAllOtherAddressesOnDAO(
 }
 
 export function createContentCluster(
-  components: Pick<AppComponents, 'logs' | 'daoClient' | 'env'>,
+  components: Pick<AppComponents, 'logs' | 'env'>,
+  initialDaoSource: DAOSource,
   timeBetweenSyncs: number
 ): IContentClusterComponent {
   const logger: ILoggerComponent.ILogger = components.logs.getLogger('ContentCluster')
+  let daoSource = initialDaoSource
 
   const serverClients: Set<string> = new Set()
   let timeOfLastSync: number = 0
@@ -49,7 +52,7 @@ export function createContentCluster(
 
   async function getContentServersFromDao(): Promise<string[]> {
     try {
-      const allServersInDAO = await components.daoClient.getAllContentServers()
+      const allServersInDAO = await daoSource.getAllContentServers()
 
       if (allServersInDAO.length == 0) {
         throw new Error('There are no servers.')
@@ -118,6 +121,10 @@ export function createContentCluster(
 
     getChallengeText(): string {
       return challengeText
+    },
+
+    setDAOSource(source: DAOSource) {
+      daoSource = source
     }
   }
 }

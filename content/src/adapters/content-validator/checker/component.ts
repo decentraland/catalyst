@@ -5,8 +5,8 @@ import { code } from '@dcl/catalyst-contracts/dist/checkerByteCode'
 import { parseUrn } from '@dcl/urn-resolver'
 import { EthAddress } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
-import { sendBatch } from '../contract-helpers'
-import { inputBlockNumberFormatter, inputCallFormatter } from '../formatters'
+import { sendBatch } from '../../../logic/contract-helpers'
+import { inputBlockNumberFormatter, inputCallFormatter } from '../../../logic/formatters'
 
 type CollectionItem = {
   contract: string

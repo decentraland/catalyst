@@ -1,2 +1,8 @@
 export { createDeploymentService, isIPFSHash, isEntityContentUnchanged, hashFiles } from './component'
+export { DELTA_POINTER_RESULT, referenceEntityFromPointers } from './pointer-bookkeeping'
+export type { PointerDeltaMap } from './pointer-bookkeeping'
+export { createDeployRateLimiter } from './rate-limiter'
+export type { DeploymentRateLimitConfig, IDeployRateLimiterComponent } from './rate-limiter'
+export { IGNORING_FIX_ERROR, validateForServer } from './server-validator'
+export type { ServiceCalls } from './server-validator'
 export type { IDeploymentService, Deployer } from './types'

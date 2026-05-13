@@ -1,4 +1,4 @@
-import { IDeployRateLimiterComponent } from '../../src/adapters/deploy-rate-limiter'
+import { IDeployRateLimiterComponent } from '../../src/logic/deployment-service'
 
 export function createNoOpDeployRateLimiter(): IDeployRateLimiterComponent {
   return {

@@ -19,7 +19,7 @@ describe('Integration - Same Timestamp Check', () => {
   beforeAll(async () => {
     server = await createDefaultServer()
     makeNoopValidator(server.components)
-    makeNoopServerValidator(server.components)
+    makeNoopServerValidator()
 
     const timestamp = Date.now()
     const e1 = await buildDeployData([P1], { type, timestamp, metadata: { a: 'metadata1' } })

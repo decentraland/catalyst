@@ -7,6 +7,7 @@ import { EnvironmentConfig } from '../../src/Environment'
 import { AuditInfo, Deployment, DeploymentOptions, isInvalidDeployment } from '../../src/deployment-types'
 import { getDeployments } from '../../src/logic/deployments'
 import { FailedDeployment } from '../../src/adapters/failed-deployments'
+import { DAOSource } from '../../src/logic/peer-cluster'
 import { main } from '../../src/service'
 import { AppComponents } from '../../src/types'
 import { deleteFolderRecursive } from './E2ETestUtils'
@@ -19,6 +20,8 @@ export class TestProgram {
   public shouldDeleteStorageAtStop = true
 
   public program?: Lifecycle.ComponentBasedProgram<AppComponents>
+  /** The mocked DAO source installed on this server's content cluster — set by test helpers, read by `createAdditionalServer` to share the same DAO across instances. */
+  public dao?: DAOSource
   private readonly client: ContentClient
   logger: ILoggerComponent.ILogger
 
