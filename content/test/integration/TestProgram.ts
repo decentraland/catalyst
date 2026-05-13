@@ -6,7 +6,6 @@ import fetch from 'node-fetch'
 import { EnvironmentConfig } from '../../src/Environment'
 import { AuditInfo, Deployment, DeploymentOptions, isInvalidDeployment } from '../../src/deployment-types'
 import { getDeployments } from '../../src/logic/deployments'
-import * as synchronization from '../../src/logic/sync-orchestrator'
 import { FailedDeployment } from '../../src/adapters/failed-deployments'
 import { main } from '../../src/service'
 import { AppComponents } from '../../src/types'
@@ -123,9 +122,12 @@ export class TestProgram {
 }
 
 export async function startProgramAndWaitUntilBootstrapFinishes(server: TestProgram) {
-  const startSyncOriginal = synchronization.startSynchronization
-  jest.spyOn(synchronization, 'startSynchronization').mockImplementation(async (...args) => {
-    const [a, b] = await startSyncOriginal(...args)
+  // Intercept syncOrchestrator.synchronize so the test can await the bootstrap-finished
+  // future before assertions run.
+  const orchestrator = server.components.syncOrchestrator
+  const synchronizeOriginal = orchestrator.synchronize.bind(orchestrator)
+  jest.spyOn(orchestrator, 'synchronize').mockImplementation(async () => {
+    const [a, b] = await synchronizeOriginal()
     await b
     return [a, b]
   })

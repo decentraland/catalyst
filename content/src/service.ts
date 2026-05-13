@@ -1,7 +1,6 @@
 import { IHttpServerComponent, Lifecycle } from '@well-known-components/interfaces'
 import { setupRouter } from './controllers/routes'
 import { EnvironmentConfig } from './Environment'
-import { startSynchronization } from './logic/sync-orchestrator'
 import { migrateContentFolderStructure } from './migrations/ContentFolderMigrationManager'
 import { AppComponents, GlobalContext } from './types'
 import path from 'path'
@@ -56,7 +55,7 @@ export async function main(program: Lifecycle.EntryPointParameters<AppComponents
   const disableSynchronization = components.env.getConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION)
 
   if (!disableSynchronization) {
-    await startSynchronization(components)
+    await components.syncOrchestrator.synchronize()
   } else {
     components.synchronizationState.toSyncing()
   }

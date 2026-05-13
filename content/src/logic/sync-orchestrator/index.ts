@@ -1,2 +1,2 @@
-export { startSynchronization } from './component'
-export { deployEntityFromRemoteServer, deployDownloadedEntity } from './deploy-remote-entity'
+export { createSyncOrchestrator } from './component'
+export type { ISyncOrchestrator, SyncJob } from './types'

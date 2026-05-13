@@ -1,5 +1,8 @@
+import * as bf from 'bloom-filters'
+import PQueue from 'p-queue'
 import SQL from 'sql-template-strings'
 import { SYSTEM_PROPERTIES } from '../../adapters/system-properties'
+import { runLoggingPerformance } from '../../instrument'
 import { AppComponents } from '../../types'
 import { GCStaleProfilesResult, IGarbageCollectionComponent, SweepResult } from './types'
 
@@ -8,7 +11,15 @@ const PROFILE_CLEANUP_LIMIT = 10000
 export function createGarbageCollectionComponent(
   components: Pick<
     AppComponents,
-    'systemProperties' | 'metrics' | 'logs' | 'storage' | 'database' | 'activeEntities' | 'contentFilesRepository'
+    | 'systemProperties'
+    | 'metrics'
+    | 'logs'
+    | 'storage'
+    | 'database'
+    | 'activeEntities'
+    | 'contentFilesRepository'
+    | 'deploymentsRepository'
+    | 'snapshotsRepository'
   >,
   performGarbageCollection: boolean,
   profileDuration: number
@@ -168,10 +179,69 @@ export function createGarbageCollectionComponent(
     }
   }
 
+  async function deleteUnreferencedFiles(): Promise<void> {
+    const unreferencedLogger = components.logs.getLogger('UnreferencedFilesDeleter')
+    const referencedHashesBloom = bf.BloomFilter.create(15_000_000, 0.001)
+
+    const addAllToBloomFilter = async (streamOfHashes: AsyncIterable<string>): Promise<number> => {
+      let totalAddedHashes = 0
+      for await (const hash of streamOfHashes) {
+        totalAddedHashes++
+        referencedHashesBloom.add(hash)
+      }
+      return totalAddedHashes
+    }
+
+    await runLoggingPerformance(unreferencedLogger, 'populate bloom filter', async () => {
+      const totalEntityIds = await runLoggingPerformance(
+        unreferencedLogger,
+        'add stream of entity ids to bloom filter',
+        async () =>
+          await addAllToBloomFilter(components.deploymentsRepository.streamAllDistinctEntityIds(components.database))
+      )
+
+      const totalContentFileHashes = await runLoggingPerformance(
+        unreferencedLogger,
+        'add of stream content file hashes to bloom filter',
+        async () =>
+          await addAllToBloomFilter(
+            components.contentFilesRepository.streamAllDistinctContentFileHashes(components.database)
+          )
+      )
+
+      const totalSnapshotHashes = await runLoggingPerformance(
+        unreferencedLogger,
+        'add of stream snapshot hashes to bloom filter',
+        async () => await addAllToBloomFilter(components.snapshotsRepository.getAllSnapshotHashes(components.database))
+      )
+      unreferencedLogger.info(
+        `Created bloom filter with ${totalEntityIds} entity ids, ${totalContentFileHashes} content hashes and ${totalSnapshotHashes} snapshot hashes.`
+      )
+    })
+
+    const queue = new PQueue({ concurrency: 1000 })
+    let numberOfDeletedFiles = 0
+    unreferencedLogger.info(`Deleting files...`)
+    for await (const storageFileId of components.storage.allFileIds()) {
+      if (!referencedHashesBloom.has(storageFileId)) {
+        await queue.add(async () => {
+          try {
+            await components.storage.delete([storageFileId])
+            numberOfDeletedFiles++
+          } catch (error) {
+            unreferencedLogger.error(error as Error, { storageFileId })
+          }
+        })
+      }
+    }
+    unreferencedLogger.info(`Deleted ${numberOfDeletedFiles} files`)
+  }
+
   return {
     performSweep,
     getLastSweepResults(): SweepResult | undefined {
       return lastSweepResult
-    }
+    },
+    deleteUnreferencedFiles
   }
 }

@@ -72,6 +72,7 @@ import { createRetryFailedDeploymentsScheduler } from './logic/retry-failed-depl
 import { createSequentialTaskExecutor } from './logic/sequential-task-executor'
 import { createServerValidator } from './logic/server-validator'
 import { createSnapshots } from './logic/snapshots'
+import { createSyncOrchestrator } from './logic/sync-orchestrator'
 
 // =============================================================================
 // Types
@@ -287,7 +288,17 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   // 9. Background workers
   // ---------------------------------------------------------------------------
   const garbageCollectionManager = createGarbageCollectionComponent(
-    { database, metrics, logs, storage, systemProperties, activeEntities, contentFilesRepository },
+    {
+      database,
+      metrics,
+      logs,
+      storage,
+      systemProperties,
+      activeEntities,
+      contentFilesRepository,
+      deploymentsRepository,
+      snapshotsRepository
+    },
     env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION),
     env.getConfig(EnvironmentConfig.PROFILE_DURATION)
   )
@@ -406,7 +417,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
           contentCluster,
           failedDeployments,
           failedDeploymentsReporter,
-          storage
+          storage,
+          batchDeployer
         },
         logs.getLogger('RetryFailedDeployments')
       )
@@ -418,6 +430,17 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   )
 
   const retryFailedDeployments = createRetryFailedDeploymentsScheduler(retryFailedDeploymentsJob)
+
+  const syncOrchestrator = createSyncOrchestrator({
+    logs,
+    contentCluster,
+    downloadQueue,
+    batchDeployer,
+    metrics,
+    retryFailedDeployments,
+    synchronizer,
+    synchronizationState
+  })
 
   const snapshots = createSnapshots({
     logs,
@@ -533,6 +556,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     storage,
     synchronizationState,
     synchronizer,
+    syncOrchestrator,
     systemProperties,
     tracer,
     validator,

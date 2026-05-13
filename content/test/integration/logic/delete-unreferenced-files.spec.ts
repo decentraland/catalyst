@@ -4,7 +4,7 @@ import { mkdirSync, mkdtempSync, rmSync } from 'fs'
 import os from 'os'
 import path from 'path'
 import { EnvironmentConfig } from '../../../src/Environment'
-import { deleteUnreferencedFiles } from '../../../src/logic/garbage-collection'
+
 import { MS_PER_DAY } from '../../../src/logic/time-range'
 import { hashFiles } from '../../../src/logic/deployment-service'
 import { AppComponents } from '../../../src/types'
@@ -26,7 +26,7 @@ describe('Delete unreferenced files - ', () => {
     const unreferencedFileHash = 'a-hash'
     await components.storage.storeStream(unreferencedFileHash, bufferToStream(fileContent))
     expect(await components.storage.exist(unreferencedFileHash)).toBeTruthy()
-    await deleteUnreferencedFiles(components)
+    await components.garbageCollectionManager.deleteUnreferencedFiles()
     expect(await components.storage.exist(unreferencedFileHash)).toBeFalsy()
   })
 
@@ -51,7 +51,7 @@ describe('Delete unreferenced files - ', () => {
     )
     const contentFileHashes = Array.from(contentsByHash.keys())
 
-    await deleteUnreferencedFiles(components)
+    await components.garbageCollectionManager.deleteUnreferencedFiles()
     // There should be only one file, the entity file. Because it was deployed with no content files associated
     expect(contentFileHashes.length).toBe(1)
     expect(await components.storage.exist(contentFileHashes[0])).toBeTruthy()
@@ -80,7 +80,7 @@ describe('Delete unreferenced files - ', () => {
     )
     const contentFileHashes = Array.from(contentsByHash.keys())
 
-    await deleteUnreferencedFiles(components)
+    await components.garbageCollectionManager.deleteUnreferencedFiles()
     // There should be two files, the entity file and its content file.
     expect(contentFileHashes.length).toBe(2)
     for (const usedHash of contentFileHashes) {
@@ -100,7 +100,7 @@ describe('Delete unreferenced files - ', () => {
     if (snapshots && snapshots.length > 0) {
       const { hash } = snapshots[0]
       expect(await components.storage.exist(hash)).toBeTruthy()
-      await deleteUnreferencedFiles(components)
+      await components.garbageCollectionManager.deleteUnreferencedFiles()
       expect(await components.storage.exist(hash)).toBeTruthy()
     } else {
       expect(true).toBeFalsy()
@@ -132,7 +132,7 @@ describe('Delete unreferenced files - ', () => {
     const unreferencedFileHash = 'a-hash'
     await components.storage.storeStream(unreferencedFileHash, bufferToStream(fileContent))
 
-    await deleteUnreferencedFiles(components)
+    await components.garbageCollectionManager.deleteUnreferencedFiles()
     // There should be two files, the entity file and its content file.
     expect(contentFileHashes.length).toBe(2)
     for (const usedHash of contentFileHashes) {

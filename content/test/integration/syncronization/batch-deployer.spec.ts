@@ -1,6 +1,5 @@
 import { EnvironmentBuilder, EnvironmentConfig } from '../../../src/Environment'
 import * as deployments from '../../../src/logic/deployments'
-import * as deployRemote from '../../../src/logic/sync-orchestrator'
 import ms from 'ms'
 
 describe('batch deployer - ', () => {
@@ -25,12 +24,12 @@ describe('batch deployer - ', () => {
     const components = await createComponents()
     const deployedEntitites = new Set()
     const deployEntityFromRemoteServerSpy = jest
-      .spyOn(deployRemote, 'deployEntityFromRemoteServer')
-      .mockImplementation(async (components, entityId, ...args) => {
+      .spyOn(components.batchDeployer, 'deployEntityFromRemoteServer')
+      .mockImplementation(async (entityId) => {
         deployedEntitites.add(entityId)
       })
 
-    jest.spyOn(deployments, 'isEntityDeployed').mockImplementation(async (components, entityId) => {
+    jest.spyOn(deployments, 'isEntityDeployed').mockImplementation(async (_db, _components, entityId) => {
       return deployedEntitites.has(entityId)
     })
 
@@ -64,12 +63,12 @@ describe('batch deployer - ', () => {
     const components = await createComponents()
     const deployedEntitites = new Set()
     const deployEntityFromRemoteServerSpy = jest
-      .spyOn(deployRemote, 'deployEntityFromRemoteServer')
-      .mockImplementation(async (components, entityId, ...args) => {
+      .spyOn(components.batchDeployer, 'deployEntityFromRemoteServer')
+      .mockImplementation(async (entityId) => {
         deployedEntitites.add(entityId)
       })
 
-    jest.spyOn(deployments, 'isEntityDeployed').mockImplementation(async (components, entityId) => {
+    jest.spyOn(deployments, 'isEntityDeployed').mockImplementation(async (_db, _components, entityId) => {
       return deployedEntitites.has(entityId)
     })
 
@@ -108,12 +107,12 @@ describe('batch deployer - ', () => {
     const components = await createComponents()
     const deployedEntitites = new Set()
     const deployEntityFromRemoteServerSpy = jest
-      .spyOn(deployRemote, 'deployEntityFromRemoteServer')
-      .mockImplementation(async (components, entityId, ...args) => {
+      .spyOn(components.batchDeployer, 'deployEntityFromRemoteServer')
+      .mockImplementation(async (entityId) => {
         deployedEntitites.add(entityId)
       })
 
-    jest.spyOn(deployments, 'isEntityDeployed').mockImplementation(async (components, entityId) => {
+    jest.spyOn(deployments, 'isEntityDeployed').mockImplementation(async (_db, _components, entityId) => {
       return deployedEntitites.has(entityId)
     })
 
@@ -150,7 +149,7 @@ describe('batch deployer - ', () => {
 
   it('markAsDeployed is called but not deployed for deployments that are already deployed', async () => {
     const components = await createComponents()
-    const deployEntityFromRemoteServerSpy = jest.spyOn(deployRemote, 'deployEntityFromRemoteServer')
+    const deployEntityFromRemoteServerSpy = jest.spyOn(components.batchDeployer, 'deployEntityFromRemoteServer')
 
     jest.spyOn(deployments, 'isEntityDeployed').mockResolvedValue(true)
 
@@ -177,7 +176,7 @@ describe('batch deployer - ', () => {
   it('when a deployment fails, it is reported as failed deployment and markAsDeployed is called', async () => {
     const components = await createComponents()
     const deployEntityFromRemoteServerSpy = jest
-      .spyOn(deployRemote, 'deployEntityFromRemoteServer')
+      .spyOn(components.batchDeployer, 'deployEntityFromRemoteServer')
       .mockImplementation(async () => {
         throw new Error('error deploying entity (test)')
       })
@@ -210,14 +209,14 @@ describe('batch deployer - ', () => {
     const components = await createComponents()
     const deployedEntitites = new Set()
     const deployEntityFromRemoteServerSpy = jest
-      .spyOn(deployRemote, 'deployEntityFromRemoteServer')
-      .mockImplementation(async (components, entityId, ...args) => {
+      .spyOn(components.batchDeployer, 'deployEntityFromRemoteServer')
+      .mockImplementation(async (entityId) => {
         deployedEntitites.add(entityId)
       })
 
     const isEntityDeployedSpy = jest
       .spyOn(deployments, 'isEntityDeployed')
-      .mockImplementation(async (components, entityId) => {
+      .mockImplementation(async (_db, _components, entityId) => {
         return deployedEntitites.has(entityId)
       })
 

@@ -1,14 +1,17 @@
-import { IDeployerComponent } from '@dcl/snapshots-fetcher'
+import { downloadEntityAndContentFiles } from '@dcl/snapshots-fetcher'
+import { streamToBuffer } from '@dcl/catalyst-storage/dist/content-item'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { DeployableEntity, TimeRange } from '@dcl/snapshots-fetcher/dist/types'
-import { EntityType } from '@dcl/schemas'
-import { IBaseComponent } from '@well-known-components/interfaces'
-import { DeploymentContext } from '../../deployment-types'
+import { AuthChain, EntityType } from '@dcl/schemas'
+import { DeploymentContext, isInvalidDeployment, LocalDeploymentAuditInfo } from '../../deployment-types'
 import { FailureReason } from '../../adapters/failed-deployments'
 import { AppComponents, CannonicalEntityDeployment } from '../../types'
 import { isEntityDeployed } from '../deployments'
-import { deployEntityFromRemoteServer } from '../sync-orchestrator'
 import { joinOverlappedTimeRanges } from '../time-range'
+import { IBatchDeployer } from './types'
+
+const REQUEST_MAX_RETRIES = 10
+const REQUEST_RETRY_WAIT_TIME = 1000
 
 /**
  * An IDeployerComponent parallelizes deployments with a JobQueue.
@@ -17,6 +20,11 @@ import { joinOverlappedTimeRanges } from '../time-range'
  * It assumes deployments can be received more than twice, every operation is assumed idempotent.
  * The deployments with different servers will count as one while they appear in the internal data structure (the map).
  * For every entityId, the servers are added to a mutable array that can and should be used to load balance the downloads.
+ *
+ * Also owns the per-entity remote-download-and-deploy flow (`deployEntityFromRemoteServer` /
+ * `deployDownloadedEntity`). The shared load-balancing `serverLru` lives in the factory
+ * closure so the state can't leak across multiple component instances (as it would when
+ * declared at module scope).
  */
 export function createBatchDeployerComponent(
   components: Pick<
@@ -39,10 +47,20 @@ export function createBatchDeployerComponent(
     queueOptions: createJobQueue.Options
     profileDuration: number
   }
-): IDeployerComponent & IBaseComponent {
+): IBatchDeployer {
   const logs = components.logs.getLogger('DeployerComponent')
 
   const parallelDeploymentJobs = createJobQueue(syncOptions.queueOptions)
+
+  // Returned component, captured by closures so internal calls to public methods route
+  // through the returned object. Otherwise `jest.spyOn(component, 'deployEntityFromRemoteServer')`
+  // would only intercept external callers (the property is overwritten on the returned
+  // object), missing the internal call site inside `handleDeploymentFromServers`. Assigned
+  // below once all inner functions are declared; only `handleDeploymentFromServers` reads it
+  // and that runs asynchronously after the factory returns, so the assignment is always
+  // visible by the time it's needed.
+  // eslint-disable-next-line prefer-const -- forward-referenced let; assigned at end of factory
+  let self: IBatchDeployer
 
   // accumulator of all deployments
   const deploymentsMap = new Map<
@@ -53,11 +71,77 @@ export function createBatchDeployerComponent(
   >()
   const successfulDeployments = new Set<string>()
 
+  // Per-instance load-balancing LRU for round-robin selection across mirror servers.
+  // Used by `deployEntityFromRemoteServer` to spread download requests across the catalyst
+  // cluster — previously a module-level Map shared by all callers; encapsulated here so
+  // tests get a fresh instance per component and the state can't drift between runs.
+  const serverLru = new Map<string, number>()
+
+  async function downloadFullEntity(entityId: string, entityType: string, servers: string[]): Promise<unknown> {
+    components.metrics.increment('dcl_pending_download_gauge', { entity_type: entityType })
+    try {
+      return await downloadEntityAndContentFiles(
+        components,
+        entityId,
+        servers,
+        serverLru,
+        components.staticConfigs.tmpDownloadFolder,
+        REQUEST_MAX_RETRIES,
+        REQUEST_RETRY_WAIT_TIME
+      )
+    } finally {
+      components.metrics.decrement('dcl_pending_download_gauge', { entity_type: entityType })
+    }
+  }
+
+  async function deployDownloadedEntity(
+    entityId: string,
+    entityType: string,
+    auditInfo: LocalDeploymentAuditInfo,
+    context: DeploymentContext
+  ): Promise<void> {
+    const deploymentTimeTimer = components.metrics.startTimer('dcl_deployment_time', { entity_type: entityType })
+
+    try {
+      const entityInStorage = await components.storage.retrieve(entityId)
+
+      if (!entityInStorage) throw new Error('Entity ' + entityId + ' cannot be retrieved from storage')
+
+      const entityFile = await streamToBuffer(await entityInStorage.asStream())
+
+      if (entityFile.length == 0) {
+        throw new Error('Trying to deploy empty entityFile')
+      }
+
+      const deploymentResult = await components.deployer.deployEntity([entityFile], entityId, auditInfo, context)
+      if (isInvalidDeployment(deploymentResult)) {
+        throw new Error(
+          `Errors deploying entity(${entityId}):\n${deploymentResult.errors.map(($) => ' - ' + $).join('\n')}`
+        )
+      }
+
+      deploymentTimeTimer.end({ failed: 'false' })
+    } catch (err: any) {
+      deploymentTimeTimer.end({ failed: 'true' })
+      throw err
+    }
+  }
+
+  async function deployEntityFromRemoteServer(
+    entityId: string,
+    entityType: string,
+    authChain: AuthChain,
+    servers: string[],
+    context: DeploymentContext
+  ): Promise<void> {
+    await downloadFullEntity(entityId, entityType, servers)
+    await deployDownloadedEntity(entityId, entityType, { authChain }, context)
+  }
+
   /**
    * This function is used to filter out (ignore) deployments coming from remote
    * servers only. Local deployments using POST /entities _ARE NOT_ filtered by this function.
    */
-
   async function shouldRemoteEntityDeploymentBeIgnored(entity: DeployableEntity): Promise<boolean> {
     // ignore specific entity types using EnvironmentConfig.SYNC_IGNORED_ENTITY_TYPES
     if (syncOptions.ignoredTypes.has(entity.entityType)) {
@@ -152,8 +236,7 @@ export function createBatchDeployerComponent(
             let elementInMap = deploymentsMap.get(entity.entityId)
             if (elementInMap) {
               try {
-                await deployEntityFromRemoteServer(
-                  components,
+                await self.deployEntityFromRemoteServer(
                   entity.entityId,
                   entity.entityType,
                   entity.authChain,
@@ -210,7 +293,7 @@ export function createBatchDeployerComponent(
     }
   }
 
-  return {
+  self = {
     async stop() {
       // stop will wait for the queue to end.
       return parallelDeploymentJobs.onIdle()
@@ -225,8 +308,11 @@ export function createBatchDeployerComponent(
       for (const timeRange of joinOverlappedTimeRanges(timeRanges)) {
         await components.deployedEntitiesBloomFilter.addAllInTimeRange(timeRange)
       }
-    }
+    },
+    deployEntityFromRemoteServer,
+    deployDownloadedEntity
   }
+  return self
 }
 
 export function priorityBasedOnEntityType(entityType: string) {
