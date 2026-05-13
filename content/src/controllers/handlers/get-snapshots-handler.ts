@@ -5,9 +5,9 @@ type Response = { status: 200; body: Snapshots } | { status: 503; body: Error }
 
 // Method: GET
 export async function getSnapshotsHandler(
-  context: HandlerContextWithPath<'snapshotGenerator', '/snapshots'>
+  context: HandlerContextWithPath<'snapshots', '/snapshots'>
 ): Promise<Response> {
-  const metadata = context.components.snapshotGenerator.getCurrentSnapshots()
+  const metadata = context.components.snapshots.getCurrentSnapshots()
   if (!metadata) {
     return {
       status: 503,

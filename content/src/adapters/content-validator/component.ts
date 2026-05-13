@@ -29,7 +29,6 @@ import RequestManager, { HTTPProvider } from 'eth-connect'
 import { Readable } from 'stream'
 import { EnvironmentConfig } from '../../Environment'
 import { createItemChecker, createL1Checker, createL2Checker } from '../../logic/checker'
-import { createThirdPartyContractRegistry } from '../../logic/third-party-contract-registry'
 import { createThirdPartyItemChecker } from '../../logic/third-party-item-checker'
 import { AppComponents } from '../../types'
 import { IContentValidator } from './types'
@@ -120,10 +119,8 @@ async function createOnChainValidateFn(
   const l2ItemChecker = await createItemChecker(logs, l2Provider)
 
   const storageRoot = env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER) as string
-  const l1ThirdPartyContractRegistry = await createThirdPartyContractRegistry(logs, l1Provider, l1Network, storageRoot)
-  const l2ThirdPartyContractRegistry = await createThirdPartyContractRegistry(logs, l2Provider, l2Network, storageRoot)
-  const l1ThirdPartyItemChecker = await createThirdPartyItemChecker({ logs }, l1Provider, l1ThirdPartyContractRegistry)
-  const l2ThirdPartyItemChecker = await createThirdPartyItemChecker({ logs }, l2Provider, l2ThirdPartyContractRegistry)
+  const l1ThirdPartyItemChecker = await createThirdPartyItemChecker({ logs }, l1Provider, l1Network, storageRoot)
+  const l2ThirdPartyItemChecker = await createThirdPartyItemChecker({ logs }, l2Provider, l2Network, storageRoot)
 
   const l1BlockSearch = createAvlBlockSearch({
     blockRepository: createBlockRepository({

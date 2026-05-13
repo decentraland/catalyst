@@ -11,7 +11,7 @@ import {
   PartialDeploymentHistory,
   PointerChangesOptions
 } from '../../deployment-types'
-import { FailedDeployment } from '../../adapters/failed-deployments-cache'
+import { FailedDeployment } from '../../adapters/failed-deployments'
 import { DatabaseClient, DatabaseTransactionalClient } from '../../adapters/database'
 import { deployEntityFromRemoteServer } from '../sync-orchestrator'
 import { IGNORING_FIX_ERROR } from '../server-validator'

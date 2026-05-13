@@ -417,6 +417,29 @@ describe('snapshot generator - ', () => {
     }
   )
 
+  testCaseWithComponents(getTestEnv, 'should generate and cache snapshots via runScheduledGeneration', async (components) => {
+    await startSnapshotNeededComponents(components)
+    jest.spyOn(Date, 'now').mockReturnValue(initialTimestamp + timeRangeLogic.MS_PER_DAY + 1)
+    await components.snapshots.runScheduledGeneration()
+    const cached = components.snapshots.getCurrentSnapshots()
+    expect(cached).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          timeRange: {
+            initTimestamp: initialTimestamp,
+            endTimestamp: initialTimestamp + timeRangeLogic.MS_PER_DAY
+          },
+          numberOfEntities: 0,
+          replacedSnapshotHashes: []
+        })
+      ])
+    )
+    if (cached) {
+      const exist = await components.storage.existMultiple(cached.map((s) => s.hash))
+      expect(Array.from(exist.values()).every((e) => e)).toBeTruthy()
+    }
+  })
+
   function timeRangeOfDaysFromInitialTimestamp(numberOfDays: number) {
     return {
       initTimestamp: initialTimestamp,

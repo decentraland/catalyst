@@ -143,7 +143,29 @@ export function createSnapshots(
     return snapshotMetadatas
   }
 
-  return { generateAndStoreSnapshot, generateSnapshotsInMultipleTimeRanges }
+  // Cache of the most recent scheduled-generation run. Status endpoints read from this;
+  // the underlying `generateSnapshotsInMultipleTimeRanges` streams the DB and is too
+  // expensive to invoke per request.
+  let currentSnapshots: SnapshotMetadata[] | undefined
+
+  async function runScheduledGeneration(): Promise<void> {
+    currentSnapshots = await generateSnapshotsInMultipleTimeRanges({
+      // IT IS IMPORTANT THIS TIMESTAMP NEVER CHANGES; IF IT DOES, THE WHOLE SNAPSHOTS SET WILL BE REGENERATED.
+      initTimestamp: 1577836800000,
+      endTimestamp: Date.now()
+    })
+  }
+
+  function getCurrentSnapshots(): SnapshotMetadata[] | undefined {
+    return currentSnapshots
+  }
+
+  return {
+    generateAndStoreSnapshot,
+    generateSnapshotsInMultipleTimeRanges,
+    runScheduledGeneration,
+    getCurrentSnapshots
+  }
 }
 
 function getReasonForMetric(props: {

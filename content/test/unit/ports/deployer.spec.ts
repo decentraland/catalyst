@@ -19,7 +19,6 @@ import {
   LocalDeploymentAuditInfo,
   isInvalidDeployment
 } from '../../../src/deployment-types'
-import { createFailedDeploymentsRepository } from '../../../src/adapters/failed-deployments-repository'
 import { createPointersRepository } from '../../../src/adapters/pointers-repository'
 import { createActiveEntitiesRepository } from '../../../src/adapters/active-entities-repository'
 import { createContentFilesRepository } from '../../../src/adapters/content-files-repository'
@@ -33,7 +32,7 @@ import { createNoOpDeployRateLimiter } from '../../mocks/deploy-rate-limiter-moc
 import { createDeployedEntitiesBloomFilter } from '../../../src/adapters/deployed-entities-bloom-filter'
 import { createDeploymentService } from '../../../src/logic/deployment-service'
 import { createPointerLockManager } from '../../../src/adapters/pointer-lock-manager'
-import { createFailedDeployments } from '../../../src/adapters/failed-deployments-cache'
+import { createFailedDeployments } from '../../../src/adapters/failed-deployments'
 import { createTestDatabaseComponent } from '../../mocks/database-component-mock'
 import { createSequentialTaskExecutor } from '../../../src/logic/sequential-task-executor'
 import { createAuthenticator } from '../../../src/logic/authenticator'
@@ -204,8 +203,7 @@ describe('Deployer', function () {
     })
     const deployRateLimiter = createNoOpDeployRateLimiter()
     const metrics = createTestMetricsComponent(metricsDeclaration)
-    const failedDeploymentsRepository = createFailedDeploymentsRepository()
-    const failedDeployments = await createFailedDeployments({ metrics, database, failedDeploymentsRepository })
+    const failedDeployments = await createFailedDeployments({ metrics, database })
     const storage = createInMemoryStorage()
     const pointerManager = createNoOpPointerManager()
     const authenticator = createAuthenticator(
