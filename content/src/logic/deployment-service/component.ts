@@ -18,11 +18,10 @@ import { AppComponents, EntityVersion } from '../../types'
 import { ICrypto } from '../crypto'
 import { calculateOverwrites, getDeployments, saveDeploymentAndContentFiles } from '../deployments'
 import * as pointerBookkeeping from './pointer-bookkeeping'
-import { DELTA_POINTER_RESULT } from './pointer-bookkeeping'
 import { createDeployRateLimiter, IDeployRateLimiterComponent } from './rate-limiter'
 import * as serverValidator from './server-validator'
 import ms from 'ms'
-import { IDeploymentService } from './types'
+import { TestableDeploymentService } from './types'
 
 export function isIPFSHash(hash: string): boolean {
   return IPFSv2.validate(hash)
@@ -77,12 +76,12 @@ export function createDeploymentService(
     | 'contentFilesRepository'
     | 'entities'
   >
-): IDeploymentService {
+): TestableDeploymentService {
   const logger = components.logs.getLogger('deployer')
   const LEGACY_CONTENT_MIGRATION_TIMESTAMP: Date = new Date(1582167600000) // DCL Launch Day
 
   // In-process deploy rate limiter. Defaults to a real instance built from env config;
-  // tests swap it via `setRateLimiter` (see IDeploymentService).
+  // tests swap it via `setRateLimiter` (see TestableDeploymentService).
   let rateLimiter: IDeployRateLimiterComponent = createDeployRateLimiter(
     { logs: components.logs, metrics: components.metrics },
     {
@@ -208,8 +207,9 @@ export function createDeploymentService(
         // Update pointers and active entities
         const { clearedPointers, setPointers } = Array.from(pointersFromEntity).reduce(
           (acc, current) => {
-            if (current[1].after === DELTA_POINTER_RESULT.CLEARED) acc.clearedPointers.push(current[0])
-            if (current[1].after === DELTA_POINTER_RESULT.SET) acc.setPointers.push(current[0])
+            if (current[1].after === pointerBookkeeping.DELTA_POINTER_RESULT.CLEARED)
+              acc.clearedPointers.push(current[0])
+            if (current[1].after === pointerBookkeeping.DELTA_POINTER_RESULT.SET) acc.setPointers.push(current[0])
             return acc
           },
           { clearedPointers: [] as string[], setPointers: [] as string[] }

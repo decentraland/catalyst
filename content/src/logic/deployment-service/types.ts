@@ -8,12 +8,18 @@ export interface IDeploymentService {
     auditInfo: LocalDeploymentAuditInfo,
     context: DeploymentContext
   ): Promise<DeploymentResult>
+}
 
+/**
+ * Subtype that exposes test-only seams. The factory returns this; `AppComponents.deployer`
+ * is typed as the narrower `IDeploymentService` so production code can't accidentally call
+ * the seams. Test helpers cast back to `TestableDeploymentService` to reach them.
+ */
+export interface TestableDeploymentService extends IDeploymentService {
   /**
-   * Test seam: swap the in-process rate limiter. Production code never calls this;
-   * test environments use it to install a no-op or a custom rate-limiter on a running
-   * server instance. After the deploy-rate-limiter fold there is no public
-   * `components.deployRateLimiter` to mutate.
+   * Test seam: swap the in-process rate limiter. Used by integration test helpers to
+   * install a no-op (or short-TTL) rate-limiter on a running server instance after
+   * `initComponentsWithEnv` has built the real one from env config.
    */
   setRateLimiter(rl: IDeployRateLimiterComponent): void
 }

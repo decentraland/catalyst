@@ -1,7 +1,7 @@
 import { EntityType } from '@dcl/schemas'
 import LeakDetector from 'jest-leak-detector'
 import { DeploymentContext } from '../../../../src/deployment-types'
-import { createDeployRateLimiter } from '../../../../src/logic/deployment-service'
+import { createDeployRateLimiter, TestableDeploymentService } from '../../../../src/logic/deployment-service'
 import { makeNoopValidator } from '../../../helpers/logic/server-validator/NoOpValidator'
 import { buildDeployData, buildDeployDataAfterEntity, EntityCombo } from '../../E2ETestUtils'
 import { TestProgram } from '../../TestProgram'
@@ -48,7 +48,7 @@ describe('Rate limiting E2E', () => {
         entitiesConfigUnchangedTtl: new Map([[EntityType.PROFILE, UNCHANGED_TTL_MS]])
       }
     )
-    server.components.deployer.setRateLimiter(realRateLimiter)
+    ;(server.components.deployer as TestableDeploymentService).setRateLimiter(realRateLimiter)
   }
 
   beforeAll(async () => {

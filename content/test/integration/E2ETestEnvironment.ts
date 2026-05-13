@@ -9,7 +9,8 @@ import { DEFAULT_DATABASE_CONFIG, Environment, EnvironmentBuilder, EnvironmentCo
 import { stopAllComponents } from '../../src/logic/components-lifecycle'
 import { metricsDeclaration } from '../../src/metrics'
 import { createMigrationExecutor } from '../../src/migrations/migration-executor'
-import { DAOSource } from '../../src/logic/peer-cluster'
+import { TestableDeploymentService } from '../../src/logic/deployment-service'
+import { DAOSource, TestableContentClusterComponent } from '../../src/logic/peer-cluster'
 import { IDatabaseComponent, createDatabaseComponent } from '../../src/adapters/database'
 import { AppComponents } from '../../src/types'
 import { MockedDAOClient } from '../helpers/service/synchronization/clients/MockedDAOClient'
@@ -188,14 +189,16 @@ export class ServerBuilder {
         .withConfig(EnvironmentConfig.PSQL_DATABASE, databaseNames[i])
         .buildConfigAndComponents()
 
+      // setDAOSource / setRateLimiter live on the Testable* subtypes, not on the narrow
+      // production interfaces exposed via AppComponents. Casts here are deliberate —
+      // they confine test-only seams to the test directory.
       if (this.dao) {
-        // mock DAO source — installs the test DAO directly onto the peer cluster.
-        components.contentCluster.setDAOSource(this.dao)
+        ;(components.contentCluster as TestableContentClusterComponent).setDAOSource(this.dao)
       }
 
       // Disable rate limiting in tests — after the deploy-rate-limiter fold the rate limiter
       // is owned by the deployer's closure, so we install a no-op via the test seam.
-      components.deployer.setRateLimiter(createNoOpDeployRateLimiter())
+      ;(components.deployer as TestableDeploymentService).setRateLimiter(createNoOpDeployRateLimiter())
       servers[i] = new TestProgram(components)
       this.testEnvCalls.registerServer(servers[i])
     }

@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { EnvironmentConfig } from '../../Environment'
 import { AppComponents } from '../../types'
 import { DAOSource } from './dao-source'
-import { IContentClusterComponent } from './types'
+import { TestableContentClusterComponent } from './types'
 
 function shuffleArray<T>(arr: T[]): T[] {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -35,7 +35,7 @@ export function createContentCluster(
   components: Pick<AppComponents, 'logs' | 'env'>,
   initialDaoSource: DAOSource,
   timeBetweenSyncs: number
-): IContentClusterComponent {
+): TestableContentClusterComponent {
   const logger: ILoggerComponent.ILogger = components.logs.getLogger('ContentCluster')
   let daoSource = initialDaoSource
 
