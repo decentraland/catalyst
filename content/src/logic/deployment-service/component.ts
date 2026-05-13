@@ -13,7 +13,7 @@ import {
   isInvalidDeployment
 } from '../../deployment-types'
 import { DatabaseClient } from '../../adapters/database'
-import { happenedBefore } from '../../service/time/TimeSorting'
+import { happenedBefore } from './time-sorting'
 import { AppComponents, EntityVersion } from '../../types'
 import { calculateOverwrites, getDeployments, saveDeploymentAndContentFiles } from '../deployments'
 import { IHashing } from '../hashing'
