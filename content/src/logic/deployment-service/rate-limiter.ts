@@ -3,7 +3,21 @@ import { EntityType } from '@dcl/schemas'
 import ms from 'ms'
 import NodeCache from 'node-cache'
 import { AppComponents } from '../../types'
-import { DeploymentRateLimitConfig, IDeployRateLimiterComponent } from './types'
+
+export type IDeployRateLimiterComponent = {
+  newDeployment(entityType: EntityType, pointers: string[], localTimestamp: number): void
+  isRateLimited(entityType: EntityType, pointers: string[]): boolean
+  newUnchangedDeployment(entityType: EntityType, pointers: string[], localTimestamp: number): void
+  isUnchangedDeploymentRateLimited(entityType: EntityType, pointers: string[]): boolean
+}
+
+export type DeploymentRateLimitConfig = {
+  defaultTtl: number
+  defaultMax: number
+  entitiesConfigTtl: Map<EntityType, number>
+  entitiesConfigMax: Map<EntityType, number>
+  entitiesConfigUnchangedTtl: Map<EntityType, number>
+}
 
 export function createDeployRateLimiter(
   components: Pick<AppComponents, 'logs' | 'metrics'>,

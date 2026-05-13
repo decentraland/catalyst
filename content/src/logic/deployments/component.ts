@@ -13,7 +13,7 @@ import {
 } from '../../deployment-types'
 import { FailedDeployment } from '../../adapters/failed-deployments'
 import { DatabaseClient, DatabaseTransactionalClient } from '../../adapters/database'
-import { IGNORING_FIX_ERROR } from '../server-validator'
+import { IGNORING_FIX_ERROR } from '../deployment-service'
 import { AppComponents, DeploymentId, EntityVersion } from '../../types'
 import { DeploymentPointerChanges, IDeploymentsComponent } from './types'
 

@@ -31,15 +31,17 @@ import { Denylist } from '../../../src/adapters/denylist'
 import { createNoOpDeployRateLimiter } from '../../mocks/deploy-rate-limiter-mock'
 import { createDeployedEntitiesBloomFilter } from '../../../src/adapters/deployed-entities-bloom-filter'
 import { createDeploymentService } from '../../../src/logic/deployment-service'
-import { createPointerLockManager } from '../../../src/adapters/pointer-lock-manager'
 import { createFailedDeployments } from '../../../src/adapters/failed-deployments'
 import { createTestDatabaseComponent } from '../../mocks/database-component-mock'
 import { createSequentialTaskExecutor } from '../../../src/logic/sequential-task-executor'
-import { DELTA_POINTER_RESULT } from '../../../src/logic/pointer-manager'
+import {
+  DELTA_POINTER_RESULT,
+  PointerDeltaMap
+} from '../../../src/logic/deployment-service'
+import * as pointerBookkeeping from '../../../src/logic/deployment-service/pointer-bookkeeping'
 import { EntityVersion } from '../../../src/types'
 import { buildEntityAndFile } from '../../helpers/entity-tests-helper'
-import { NoOpServerValidator, NoOpValidator } from '../../helpers/logic/server-validator/NoOpValidator'
-import { createNoOpPointerManager } from '../../mocks/pointer-manager-component-mock'
+import { NoOpValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import { createDeploymentsComponentMock } from '../../mocks/deployments-component-mock'
 
 export const DECENTRALAND_ADDRESS: EthAddress = '0x1337e0507eb4ab47e08a179573ed4533d9e22a7b'
@@ -152,12 +154,12 @@ describe('Deployer', function () {
 
   it(`When a pointer is affected by a deployment, then it is updated in the cache`, async () => {
     const service = await buildDeployer()
-    jest.spyOn(service.components.pointerManager, 'referenceEntityFromPointers').mockImplementation(() =>
+    jest.spyOn(pointerBookkeeping, 'referenceEntityFromPointers').mockImplementation(() =>
       Promise.resolve(
         new Map([
           [POINTERS[0], { before: undefined, after: DELTA_POINTER_RESULT.SET }],
           [POINTERS[1], { before: undefined, after: DELTA_POINTER_RESULT.SET }]
-        ])
+        ]) as PointerDeltaMap
       )
     )
 
@@ -194,17 +196,14 @@ describe('Deployer', function () {
     env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, 'inexistent')
     env.setConfig(EnvironmentConfig.DENYLIST_FILE_NAME, 'file')
 
-    const serverValidator = new NoOpServerValidator()
     const logs = await createLogComponent({
       config: createConfigComponent({
         LOG_LEVEL: 'DEBUG'
       })
     })
-    const deployRateLimiter = createNoOpDeployRateLimiter()
     const metrics = createTestMetricsComponent(metricsDeclaration)
     const failedDeployments = await createFailedDeployments({ metrics, database })
     const storage = createInMemoryStorage()
-    const pointerManager = createNoOpPointerManager()
     const crypto = createCrypto(
       new HTTPProvider('https://rpc.decentraland.org/mainnet?project=catalyst-ci'),
       [DECENTRALAND_ADDRESS]
@@ -231,16 +230,11 @@ describe('Deployer', function () {
       contentFilesRepository
     })
     await failedDeployments.start()
-    const pointerLockManager = createPointerLockManager()
     const deployerComponents = {
       env,
-      pointerManager,
-      pointerLockManager,
       failedDeployments,
-      deployRateLimiter,
       storage,
       validator: new NoOpValidator(),
-      serverValidator,
       metrics,
       logs,
       crypto,
@@ -253,6 +247,9 @@ describe('Deployer', function () {
       entities: createEntities({ env })
     }
     const deployer = createDeploymentService(deployerComponents)
+    // Disable rate limiting in unit tests — the deployer's own rate-limiter would
+    // otherwise rate-limit the repeated deploys these tests exercise.
+    deployer.setRateLimiter(createNoOpDeployRateLimiter())
     return {
       ...deployer,
       components: deployerComponents

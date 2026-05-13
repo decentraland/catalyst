@@ -6,7 +6,7 @@ import type { L1Network } from '@dcl/catalyst-contracts'
 import { createServerComponent, instrumentHttpServerWithPromClientRegistry } from '@dcl/http-server'
 import { createJobComponent } from '@dcl/job-component'
 import { createMetricsComponent } from '@dcl/metrics'
-import { EntityType, EthAddress } from '@dcl/schemas'
+import { EthAddress } from '@dcl/schemas'
 import { createSynchronizer } from '@dcl/snapshots-fetcher'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { createTracedFetcherComponent } from '@dcl/traced-fetch-component'
@@ -38,13 +38,10 @@ import { createSnapshotsRepository } from './adapters/snapshots-repository'
 // Adapters — external integrations & primitives
 // =============================================================================
 import { createContentValidator } from './adapters/content-validator'
-import { createCustomDAOComponent, createDAOComponent } from './adapters/dao-client'
 import { createDatabaseComponent } from './adapters/database'
 import { createDenylist } from './adapters/denylist'
-import { createDeployRateLimiter } from './adapters/deploy-rate-limiter'
 import { createDeployedEntitiesBloomFilter } from './adapters/deployed-entities-bloom-filter'
 import { createFailedDeployments } from './adapters/failed-deployments'
-import { createPointerLockManager } from './adapters/pointer-lock-manager'
 import { createSnapshotStorage } from './adapters/snapshot-storage'
 import { createSystemProperties } from './adapters/system-properties'
 
@@ -55,15 +52,13 @@ import { createActiveEntitiesComponent } from './logic/active-entities'
 import { createBatchDeployerComponent } from './logic/batch-deployer'
 import { splitByCommaTrimAndRemoveEmptyElements } from './logic/config-helpers'
 import { createCrypto } from './logic/crypto'
+import { createContentCluster, createCustomDAOSource, createDAOSource } from './logic/peer-cluster'
 import { createDeploymentsComponent, retryFailedDeploymentExecution } from './logic/deployments'
 import { createDeploymentService } from './logic/deployment-service'
 import { createEntities } from './logic/entities'
 import { createGarbageCollectionComponent } from './logic/garbage-collection'
-import { createContentCluster } from './logic/peer-cluster'
-import { createPointerManager } from './logic/pointer-manager'
 import { createQueryParams } from './logic/query-params'
 import { createSequentialTaskExecutor } from './logic/sequential-task-executor'
-import { createServerValidator } from './logic/server-validator'
 import { createSnapshots } from './logic/snapshots'
 import { createSyncOrchestrator } from './logic/sync-orchestrator'
 
@@ -172,10 +167,10 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   })
 
   const customDAO: string = env.getConfig(EnvironmentConfig.CUSTOM_DAO) ?? ''
-  const daoClient =
+  const daoSource =
     customDAO.trim().length === 0
-      ? await createDAOComponent({ l1Provider }, ethNetwork as L1Network)
-      : createCustomDAOComponent(customDAO)
+      ? await createDAOSource({ l1Provider }, ethNetwork as L1Network)
+      : createCustomDAOSource(customDAO)
 
   const decentralandAddresses = !!env.getConfig(EnvironmentConfig.ADDITIONAL_DECENTRALAND_ADDRESS)
     ? [
@@ -193,26 +188,12 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const entities = createEntities({ env })
 
   const contentCluster = createContentCluster(
-    { daoClient, logs, env },
+    { logs, env },
+    daoSource,
     env.getConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL)
   )
 
-  const pointerManager = createPointerManager({ deploymentsRepository })
-
   const failedDeployments = await createFailedDeployments({ metrics, database })
-
-  const deployRateLimiter = createDeployRateLimiter(
-    { logs, metrics },
-    {
-      defaultTtl: env.getConfig(EnvironmentConfig.DEPLOYMENTS_DEFAULT_RATE_LIMIT_TTL) ?? ms('1m'),
-      defaultMax: env.getConfig(EnvironmentConfig.DEPLOYMENTS_DEFAULT_RATE_LIMIT_MAX) ?? 300,
-      entitiesConfigTtl:
-        env.getConfig<Map<EntityType, number>>(EnvironmentConfig.DEPLOYMENT_RATE_LIMIT_TTL) ?? new Map(),
-      entitiesConfigMax:
-        env.getConfig<Map<EntityType, number>>(EnvironmentConfig.DEPLOYMENT_RATE_LIMIT_MAX) ?? new Map(),
-      entitiesConfigUnchangedTtl: new Map([[EntityType.PROFILE, ms('5m')]]) // ms, converted to seconds internally
-    }
-  )
 
   const validator = await createContentValidator({
     storage,
@@ -225,8 +206,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     l1Provider,
     l2Provider
   })
-
-  const serverValidator = createServerValidator({ failedDeployments })
 
   const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, deploymentsRepository })
   const deployments = createDeploymentsComponent({ database, logs })
@@ -246,17 +225,11 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   // ---------------------------------------------------------------------------
   // 8. Deploy pipeline
   // ---------------------------------------------------------------------------
-  const pointerLockManager = createPointerLockManager()
-
   const deployer = createDeploymentService({
     metrics,
     storage,
     failedDeployments,
-    deployRateLimiter,
-    pointerManager,
-    pointerLockManager,
     validator,
-    serverValidator,
     env,
     logs,
     crypto,
@@ -496,7 +469,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     contentCluster,
     contentFilesRepository,
     crypto,
-    daoClient,
     database,
     denylist,
     denylistReloadJob,
@@ -504,7 +476,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     deployer,
     deployments,
     deploymentsRepository,
-    deployRateLimiter,
     downloadQueue,
     env,
     failedDeployments,
@@ -517,12 +488,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     materializedViewUpdateJob,
     metrics,
     migrationManager,
-    pointerLockManager,
-    pointerManager,
     pointersRepository,
     sequentialExecutor,
     server,
-    serverValidator,
     snapshotGenerationJob,
     snapshotsRepository,
     snapshotStorage,

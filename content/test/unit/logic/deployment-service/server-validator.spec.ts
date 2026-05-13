@@ -1,8 +1,11 @@
 import { Entity, EntityType } from '@dcl/schemas'
-import { DeploymentContext } from '../../../src/deployment-types'
-import { createServerValidator, IGNORING_FIX_ERROR } from '../../../src/logic/server-validator'
+import { DeploymentContext } from '../../../../src/deployment-types'
+import {
+  IGNORING_FIX_ERROR,
+  validateForServer
+} from '../../../../src/logic/deployment-service/server-validator'
 
-describe('createServerValidator', () => {
+describe('validateForServer', () => {
   describe('when the context is FIX_ATTEMPT', () => {
     let entity: Entity
 
@@ -26,13 +29,9 @@ describe('createServerValidator', () => {
       let result: { ok: boolean; message?: string }
 
       beforeEach(async () => {
-        const validator = createServerValidator({
-          failedDeployments: {
-            removeFailedDeployment: jest.fn()
-          } as any,
-        })
+        const failedDeployments = { removeFailedDeployment: jest.fn() } as any
 
-        result = await validator.validate(entity, DeploymentContext.FIX_ATTEMPT, {
+        result = await validateForServer(failedDeployments, entity, DeploymentContext.FIX_ATTEMPT, {
           areThereNewerEntities: jest.fn().mockResolvedValueOnce(false),
           isEntityDeployedAlready: jest.fn().mockResolvedValueOnce(false),
           isNotFailedDeployment: jest.fn().mockResolvedValueOnce(true),
@@ -53,13 +52,9 @@ describe('createServerValidator', () => {
       let result: { ok: boolean; message?: string }
 
       beforeEach(async () => {
-        const validator = createServerValidator({
-          failedDeployments: {
-            removeFailedDeployment: jest.fn()
-          } as any,
-        })
+        const failedDeployments = { removeFailedDeployment: jest.fn() } as any
 
-        result = await validator.validate(entity, DeploymentContext.FIX_ATTEMPT, {
+        result = await validateForServer(failedDeployments, entity, DeploymentContext.FIX_ATTEMPT, {
           areThereNewerEntities: jest.fn().mockResolvedValueOnce(false),
           isEntityDeployedAlready: jest.fn().mockResolvedValueOnce(false),
           isNotFailedDeployment: jest.fn().mockResolvedValueOnce(false),
@@ -77,13 +72,9 @@ describe('createServerValidator', () => {
       let result: { ok: boolean; message?: string }
 
       beforeEach(async () => {
-        const validator = createServerValidator({
-          failedDeployments: {
-            removeFailedDeployment: jest.fn()
-          } as any,
-        })
+        const failedDeployments = { removeFailedDeployment: jest.fn() } as any
 
-        result = await validator.validate(entity, DeploymentContext.FIX_ATTEMPT, {
+        result = await validateForServer(failedDeployments, entity, DeploymentContext.FIX_ATTEMPT, {
           areThereNewerEntities: jest.fn().mockResolvedValueOnce(false),
           isEntityDeployedAlready: jest.fn().mockResolvedValueOnce(false),
           isNotFailedDeployment: async () => true,
@@ -106,13 +97,9 @@ describe('createServerValidator', () => {
 
       beforeEach(async () => {
         removeFailedDeployment = jest.fn().mockResolvedValueOnce(undefined)
-        const validator = createServerValidator({
-          failedDeployments: {
-            removeFailedDeployment
-          } as any,
-        })
+        const failedDeployments = { removeFailedDeployment } as any
 
-        result = await validator.validate(entity, DeploymentContext.FIX_ATTEMPT, {
+        result = await validateForServer(failedDeployments, entity, DeploymentContext.FIX_ATTEMPT, {
           areThereNewerEntities: jest.fn().mockResolvedValueOnce(true),
           isEntityDeployedAlready: jest.fn().mockResolvedValueOnce(false),
           isNotFailedDeployment: jest.fn().mockResolvedValueOnce(true),

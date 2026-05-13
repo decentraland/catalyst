@@ -29,7 +29,7 @@ describe('Integration - Create entities', () => {
   beforeAll(async () => {
     server = await createDefaultServer()
     makeNoopValidator(server.components)
-    makeNoopServerValidator(server.components)
+    makeNoopServerValidator()
   })
 
   beforeEach(() => resetServer(server))

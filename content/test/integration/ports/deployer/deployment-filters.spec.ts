@@ -27,7 +27,7 @@ describe('Integration - Deployment Filters', () => {
   beforeAll(async () => {
     server = await createDefaultServer()
     makeNoopValidator(server.components)
-    makeNoopServerValidator(server.components)
+    makeNoopServerValidator()
   })
 
   beforeEach(async () => {

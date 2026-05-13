@@ -170,7 +170,7 @@ describe('snapshot generator - ', () => {
     getTestEnv,
     'should put entities to the corresponding snapshot based on the deploy time (localTimestamp)',
     async (components) => {
-      makeNoopServerValidator(components)
+      makeNoopServerValidator()
       makeNoopValidator(components)
       await startSnapshotNeededComponents(components)
       // deploy entity for the 1st snapshot
@@ -205,7 +205,7 @@ describe('snapshot generator - ', () => {
     getTestEnv,
     'should include in the weekly snapshot the entities of the replaced snapshots',
     async (components) => {
-      makeNoopServerValidator(components)
+      makeNoopServerValidator()
       makeNoopValidator(components)
       await startSnapshotNeededComponents(components)
       // deploy entity for the 1st snapshot
@@ -232,7 +232,7 @@ describe('snapshot generator - ', () => {
   )
 
   testCaseWithComponents(getTestEnv, 'should not include inactive entities in snapshots', async (components) => {
-    makeNoopServerValidator(components)
+    makeNoopServerValidator()
     makeNoopValidator(components)
     await startSnapshotNeededComponents(components)
     // deploy entity for the 1st snapshot
@@ -246,7 +246,7 @@ describe('snapshot generator - ', () => {
   })
 
   testCaseWithComponents(getTestEnv, 'should recreate the snapshot if it is not stored', async (components) => {
-    makeNoopServerValidator(components)
+    makeNoopServerValidator()
     makeNoopValidator(components)
     await startSnapshotNeededComponents(components)
 
@@ -277,7 +277,7 @@ describe('snapshot generator - ', () => {
     getTestEnv,
     'should not delete replaced snapshot if it is used in another timerange',
     async (components) => {
-      makeNoopServerValidator(components)
+      makeNoopServerValidator()
       makeNoopValidator(components)
       await startSnapshotNeededComponents(components)
 
@@ -316,7 +316,7 @@ describe('snapshot generator - ', () => {
     getTestEnv,
     'should not delete from db nor storage a snapshot in other timerange that has the same hash of one of those being replaced',
     async (components) => {
-      makeNoopServerValidator(components)
+      makeNoopServerValidator()
       makeNoopValidator(components)
       await startSnapshotNeededComponents(components)
       // 14 empty days generates 1 weekly empty snapshots and 7 daily empty snapshot
@@ -344,7 +344,7 @@ describe('snapshot generator - ', () => {
     getTestEnv,
     'should re-generate snapshot if it is outdated (an entity for the time range was deployed after the generation timestamp of the snapshot)',
     async (components) => {
-      makeNoopServerValidator(components)
+      makeNoopServerValidator()
       makeNoopValidator(components)
       await startSnapshotNeededComponents(components)
 
@@ -388,7 +388,7 @@ describe('snapshot generator - ', () => {
     getTestEnv,
     'should re-generate snapshot if it has inactive entities and is older than a month (and replace the old one)',
     async (components) => {
-      makeNoopServerValidator(components)
+      makeNoopServerValidator()
       makeNoopValidator(components)
       await startSnapshotNeededComponents(components)
 

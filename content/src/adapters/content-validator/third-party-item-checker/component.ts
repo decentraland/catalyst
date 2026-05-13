@@ -5,8 +5,8 @@ import { ContractAddress } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import RequestManager, { ContractFactory, HTTPProvider, RPCSendableMessage, toData } from 'eth-connect'
 import { BlockchainCollectionThirdPartyItem, parseUrn } from '@dcl/urn-resolver'
-import { erc1155Abi, erc721Abi, sendBatch, sendSingle } from '../contract-helpers'
-import { AppComponents } from '../../types'
+import { erc1155Abi, erc721Abi, sendBatch, sendSingle } from '../../../logic/contract-helpers'
+import { AppComponents } from '../../../types'
 import { ContractType } from './types'
 
 type TempData = {

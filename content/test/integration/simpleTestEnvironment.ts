@@ -6,6 +6,8 @@ import { stopAllComponents } from '../../src/logic/components-lifecycle'
 import { metricsDeclaration } from '../../src/metrics'
 import { createMigrationExecutor } from '../../src/migrations/migration-executor'
 import { createDatabaseComponent } from '../../src/adapters/database'
+import { TestableDeploymentService } from '../../src/logic/deployment-service'
+import { TestableContentClusterComponent } from '../../src/logic/peer-cluster'
 import { MockedDAOClient } from '../helpers/service/synchronization/clients/MockedDAOClient'
 import { random } from 'faker'
 import { createNoOpDeployRateLimiter } from '../mocks/deploy-rate-limiter-mock'
@@ -106,11 +108,14 @@ async function createServer(
   const domain = `http://127.0.0.1:${serverPort}`
   dao.add(domain)
   const server = new TestProgram(components)
-  server.components.daoClient = dao
-  // Override methods on the existing rate limiter object (not replace it)
-  // because the deployer captures its own reference to the original object
-  const noOp = createNoOpDeployRateLimiter()
-  Object.assign(server.components.deployRateLimiter, noOp)
+  // setDAOSource / setRateLimiter live on the Testable* subtypes, not on the narrow
+  // production interfaces exposed via AppComponents. Casts here are deliberate — they
+  // confine test-only seams to the test directory.
+  ;(server.components.contentCluster as TestableContentClusterComponent).setDAOSource(dao)
+  server.dao = dao
+  // Disable rate limiting in tests — after the deploy-rate-limiter fold the rate limiter
+  // is owned by the deployer's closure, so we install a no-op via the test seam.
+  ;(server.components.deployer as TestableDeploymentService).setRateLimiter(createNoOpDeployRateLimiter())
   await server.startProgram()
   return server
 }
@@ -133,5 +138,11 @@ export async function createAdditionalServer(
 ): Promise<TestProgram> {
   const dbName = await createDB()
 
-  return createServer(defaultServer.components.daoClient as any, dbName, port, overrideConfigs)
+  // dao is set by createServer (and only by createServer). A caller that built a
+  // TestProgram by other means would land here with `undefined`, so surface that
+  // explicitly rather than via a downstream `.add` NPE.
+  if (!(defaultServer.dao instanceof MockedDAOClient)) {
+    throw new Error('createAdditionalServer requires defaultServer to have a MockedDAOClient installed via createServer')
+  }
+  return createServer(defaultServer.dao, dbName, port, overrideConfigs)
 }

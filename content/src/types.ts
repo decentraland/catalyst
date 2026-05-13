@@ -1,7 +1,6 @@
 import { IContentStorageComponent, IFileSystemComponent } from '@dcl/catalyst-storage'
 import { IContentValidator } from './adapters/content-validator'
 import { ICrypto } from './logic/crypto'
-import { ServerValidator } from './logic/server-validator'
 import { EntityType, SyncDeployment } from '@dcl/schemas'
 import { SynchronizerComponent } from '@dcl/snapshots-fetcher'
 import { IJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
@@ -22,21 +21,17 @@ import { MigrationExecutor } from './migrations/migration-executor'
 import { IActiveEntitiesRepository } from './adapters/active-entities-repository'
 import { ActiveEntities } from './logic/active-entities'
 import { IContentFilesRepository } from './adapters/content-files-repository'
-import { DAOComponent } from './adapters/dao-client'
 import { Denylist } from './adapters/denylist'
 import { IDeploymentsRepository } from './adapters/deployments-repository'
-import { IDeployRateLimiterComponent } from './adapters/deploy-rate-limiter'
 import { IPointersRepository } from './adapters/pointers-repository'
 import { ISnapshotsRepository } from './adapters/snapshots-repository'
 import { DeployedEntitiesBloomFilter } from './adapters/deployed-entities-bloom-filter'
 import { Deployer } from './logic/deployment-service'
-import { IPointerLockManager } from './adapters/pointer-lock-manager'
 import { IFailedDeploymentsComponent } from './adapters/failed-deployments'
 import { IDatabaseComponent } from './adapters/database'
 import { ISequentialTaskExecutorComponent } from './logic/sequential-task-executor'
 import { SystemProperties } from './adapters/system-properties'
 import { IGarbageCollectionComponent } from './logic/garbage-collection'
-import { IPointerManager } from './logic/pointer-manager'
 import { IContentClusterComponent } from './logic/peer-cluster'
 import { SnapshotStorage } from './adapters/snapshot-storage'
 import { IDeploymentsComponent } from './logic/deployments'
@@ -82,7 +77,6 @@ export type AppComponents = {
   snapshotsRepository: ISnapshotsRepository
   config: IConfigComponent
   deployer: Deployer
-  pointerLockManager: IPointerLockManager
   staticConfigs: {
     contentStorageFolder: string
     tmpDownloadFolder: string
@@ -96,17 +90,13 @@ export type AppComponents = {
   garbageCollectionJob: IJobComponent
   deployedEntitiesBloomFilter: DeployedEntitiesBloomFilter
   contentCluster: IContentClusterComponent
-  pointerManager: IPointerManager
   failedDeployments: IFailedDeploymentsComponent
-  deployRateLimiter: IDeployRateLimiterComponent
   storage: IContentStorageComponent
   crypto: ICrypto
   migrationManager: MigrationExecutor
-  serverValidator: ServerValidator
   validator: IContentValidator
   garbageCollectionManager: IGarbageCollectionComponent
   systemProperties: SystemProperties
-  daoClient: DAOComponent
   server: IHttpServerComponent<GlobalContext>
   activeEntities: ActiveEntities
   sequentialExecutor: ISequentialTaskExecutorComponent

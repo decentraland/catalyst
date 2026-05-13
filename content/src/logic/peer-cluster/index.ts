@@ -1,2 +1,4 @@
 export { createContentCluster } from './component'
-export type { IContentClusterComponent } from './types'
+export { createCustomDAOSource, createDAOSource } from './dao-source'
+export type { DAOSource } from './dao-source'
+export type { IContentClusterComponent, TestableContentClusterComponent } from './types'

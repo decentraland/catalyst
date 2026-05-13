@@ -37,7 +37,7 @@ describe('Integration - Garbage Collection', () => {
       .withConfig(EnvironmentConfig.GARBAGE_COLLECTION, 'true')
       .buildConfigAndComponents()
     makeNoopValidator(components)
-    makeNoopServerValidator(components)
+    makeNoopServerValidator()
   })
 
   afterEach(async () => {

@@ -26,7 +26,7 @@ describe('Integration - Deployment with Entity Overlaps', () => {
   beforeAll(async () => {
     server = await createDefaultServer()
     makeNoopValidator(server.components)
-    makeNoopServerValidator(server.components)
+    makeNoopServerValidator()
   })
 
   afterAll(async () => {
@@ -91,7 +91,7 @@ describe('Integration - Deployment with Entity Overlaps', () => {
           `The provided Eth Address does not have access to the following parcel: (${P2})`
         ]
       })
-    makeNoopServerValidator(components)
+    makeNoopServerValidator()
 
     const E2 = await buildDeployDataAfterEntity(E1, [P1, P2], {
       type: EntityType.SCENE,

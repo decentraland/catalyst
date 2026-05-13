@@ -9,6 +9,7 @@ import { awaitUntil, buildDeployData, buildDeployDataAfterEntity, createIdentity
 import { TestProgram, startProgramAndWaitUntilBootstrapFinishes } from '../TestProgram'
 import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
 import { makeNoopDeploymentValidator } from '../../helpers/logic/server-validator/NoOpValidator'
+import * as deploymentServiceServerValidator from '../../../src/logic/deployment-service/server-validator'
 
 describe('Errors during sync', () => {
   const getTestEnv = setupTestEnvironment()
@@ -35,13 +36,6 @@ describe('Errors during sync', () => {
       makeNoopDeploymentValidator(server1.components)
       makeNoopDeploymentValidator(server2.components)
 
-      serverValidatorStub2 = jest
-        .spyOn(server2.components.serverValidator, 'validate')
-        .mockResolvedValueOnce({ ok: false, message: 'anyError' })
-        .mockResolvedValueOnce({ ok: true })
-        .mockResolvedValueOnce({ ok: true })
-        .mockResolvedValueOnce({ ok: true })
-
       // Prepare entity to deploy
       const entityCombo = await buildDeployData(['0,0', '0,1'], {
         metadata: { a: 'metadata' },
@@ -51,9 +45,21 @@ describe('Errors during sync', () => {
       entity = entityCombo.entity
       deployData = entityCombo.deployData
 
-      // Deploy the entity
+      // Deploy the entity on server1 BEFORE installing the validator stub. After the
+      // server-validator fold, `validateForServer` lives at module scope and a spy on
+      // it would also intercept server1's local deploy. Deploying first means the spy
+      // only affects server2's incoming sync.
       await server1.deployEntity(deployData)
       await awaitUntil(() => assertEntitiesAreActiveOnServer(server1, entity))
+
+      // Make server2's first sync attempt fail so the test can exercise retry behavior;
+      // let subsequent attempts succeed.
+      serverValidatorStub2 = jest
+        .spyOn(deploymentServiceServerValidator, 'validateForServer')
+        .mockResolvedValueOnce({ ok: false, message: 'anyError' })
+        .mockResolvedValueOnce({ ok: true })
+        .mockResolvedValueOnce({ ok: true })
+        .mockResolvedValueOnce({ ok: true })
 
       // Start server2
       await startProgramAndWaitUntilBootstrapFinishes(server2)

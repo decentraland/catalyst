@@ -21,7 +21,7 @@ describe('Integration - Concurrent deployments', () => {
   beforeAll(async () => {
     server = await createDefaultServer()
     makeNoopValidator(server.components)
-    makeNoopServerValidator(server.components)
+    makeNoopServerValidator()
   })
 
   afterAll(async () => {

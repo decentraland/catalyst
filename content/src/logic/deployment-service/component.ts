@@ -17,8 +17,11 @@ import { happenedBefore } from './time-sorting'
 import { AppComponents, EntityVersion } from '../../types'
 import { ICrypto } from '../crypto'
 import { calculateOverwrites, getDeployments, saveDeploymentAndContentFiles } from '../deployments'
-import { DELTA_POINTER_RESULT } from '../pointer-manager'
-import { IDeploymentService } from './types'
+import * as pointerBookkeeping from './pointer-bookkeeping'
+import { createDeployRateLimiter, IDeployRateLimiterComponent } from './rate-limiter'
+import * as serverValidator from './server-validator'
+import ms from 'ms'
+import { TestableDeploymentService } from './types'
 
 export function isIPFSHash(hash: string): boolean {
   return IPFSv2.validate(hash)
@@ -60,12 +63,8 @@ export function createDeploymentService(
     AppComponents,
     | 'metrics'
     | 'storage'
-    | 'pointerManager'
-    | 'pointerLockManager'
     | 'failedDeployments'
-    | 'deployRateLimiter'
     | 'validator'
-    | 'serverValidator'
     | 'logs'
     | 'crypto'
     | 'database'
@@ -77,9 +76,53 @@ export function createDeploymentService(
     | 'contentFilesRepository'
     | 'entities'
   >
-): IDeploymentService {
+): TestableDeploymentService {
   const logger = components.logs.getLogger('deployer')
   const LEGACY_CONTENT_MIGRATION_TIMESTAMP: Date = new Date(1582167600000) // DCL Launch Day
+
+  // In-process deploy rate limiter. Defaults to a real instance built from env config;
+  // tests swap it via `setRateLimiter` (see TestableDeploymentService).
+  let rateLimiter: IDeployRateLimiterComponent = createDeployRateLimiter(
+    { logs: components.logs, metrics: components.metrics },
+    {
+      defaultTtl: components.env.getConfig(EnvironmentConfig.DEPLOYMENTS_DEFAULT_RATE_LIMIT_TTL) ?? ms('1m'),
+      defaultMax: components.env.getConfig(EnvironmentConfig.DEPLOYMENTS_DEFAULT_RATE_LIMIT_MAX) ?? 300,
+      entitiesConfigTtl:
+        components.env.getConfig<Map<EntityType, number>>(EnvironmentConfig.DEPLOYMENT_RATE_LIMIT_TTL) ?? new Map(),
+      entitiesConfigMax:
+        components.env.getConfig<Map<EntityType, number>>(EnvironmentConfig.DEPLOYMENT_RATE_LIMIT_MAX) ?? new Map(),
+      entitiesConfigUnchangedTtl: new Map([[EntityType.PROFILE, ms('5m')]]) // ms, converted to seconds internally
+    }
+  )
+
+  // In-memory concurrency gate ensuring a single deploy can hold a given pointer
+  // at a time. Pointers are partitioned by entity type — locks on the same pointer
+  // across different types are independent.
+  const pointersBeingDeployed: Map<EntityType, Set<string>> = new Map()
+
+  function tryAcquirePointerLocks(entityType: EntityType, pointers: string[]): string[] {
+    const inFlight = pointersBeingDeployed.get(entityType) ?? new Set<string>()
+    const conflicts = pointers.filter((pointer) => inFlight.has(pointer))
+    if (conflicts.length > 0) {
+      return conflicts
+    }
+    for (const pointer of pointers) {
+      inFlight.add(pointer)
+    }
+    pointersBeingDeployed.set(entityType, inFlight)
+    return []
+  }
+
+  function releasePointerLocks(entityType: EntityType, pointers: string[]): void {
+    const inFlight = pointersBeingDeployed.get(entityType)
+    if (!inFlight) return
+    for (const pointer of pointers) {
+      inFlight.delete(pointer)
+    }
+    if (inFlight.size === 0) {
+      pointersBeingDeployed.delete(entityType)
+    }
+  }
 
   function calculateIfLegacy(entity: Entity, authChain: AuthChain, context: DeploymentContext): DeploymentContext {
     if (isLegacyEntityV2(entity, authChain, context)) {
@@ -153,7 +196,8 @@ export function createDeploymentService(
           overwrittenBy
         )
         // Modify active pointers
-        const pointersFromEntity = await components.pointerManager.referenceEntityFromPointers(
+        const pointersFromEntity = await pointerBookkeeping.referenceEntityFromPointers(
+          components.deploymentsRepository,
           database,
           entity,
           overwrote,
@@ -163,8 +207,9 @@ export function createDeploymentService(
         // Update pointers and active entities
         const { clearedPointers, setPointers } = Array.from(pointersFromEntity).reduce(
           (acc, current) => {
-            if (current[1].after === DELTA_POINTER_RESULT.CLEARED) acc.clearedPointers.push(current[0])
-            if (current[1].after === DELTA_POINTER_RESULT.SET) acc.setPointers.push(current[0])
+            if (current[1].after === pointerBookkeeping.DELTA_POINTER_RESULT.CLEARED)
+              acc.clearedPointers.push(current[0])
+            if (current[1].after === pointerBookkeeping.DELTA_POINTER_RESULT.SET) acc.setPointers.push(current[0])
             return acc
           },
           { clearedPointers: [] as string[], setPointers: [] as string[] }
@@ -230,19 +275,24 @@ export function createDeploymentService(
     isContentUnchanged: boolean
   ): Promise<{ ok: boolean; errors?: string[] }> {
     // When deploying a new entity in some context which is not sync, we run some server side checks
-    const serverValidationResult = await components.serverValidator.validate(entity, context, {
-      areThereNewerEntities: (entity) => areThereNewerEntitiesOnPointers(entity),
-      isEntityDeployedAlready: () => isEntityDeployedAlready,
-      isNotFailedDeployment: async (entity) =>
-        (await components.failedDeployments.findFailedDeployment(entity.id)) === undefined,
-      isEntityRateLimited: (entity) =>
-        components.deployRateLimiter.isRateLimited(entity.type, entity.pointers) ||
-        (entity.type === EntityType.PROFILE &&
-          isContentUnchanged &&
-          components.deployRateLimiter.isUnchangedDeploymentRateLimited(entity.type, entity.pointers)),
-      isRequestTtlBackwards: (entity) =>
-        Date.now() - entity.timestamp > components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
-    })
+    const serverValidationResult = await serverValidator.validateForServer(
+      components.failedDeployments,
+      entity,
+      context,
+      {
+        areThereNewerEntities: (entity) => areThereNewerEntitiesOnPointers(entity),
+        isEntityDeployedAlready: () => isEntityDeployedAlready,
+        isNotFailedDeployment: async (entity) =>
+          (await components.failedDeployments.findFailedDeployment(entity.id)) === undefined,
+        isEntityRateLimited: (entity) =>
+          rateLimiter.isRateLimited(entity.type, entity.pointers) ||
+          (entity.type === EntityType.PROFILE &&
+            isContentUnchanged &&
+            rateLimiter.isUnchangedDeploymentRateLimited(entity.type, entity.pointers)),
+        isRequestTtlBackwards: (entity) =>
+          Date.now() - entity.timestamp > components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
+      }
+    )
 
     // If there is an error in the server side validation, we won't run protocol validations
     if (serverValidationResult.ok == false) {
@@ -261,6 +311,9 @@ export function createDeploymentService(
   }
 
   return {
+    setRateLimiter(rl: IDeployRateLimiterComponent) {
+      rateLimiter = rl
+    },
     async deployEntity(
       files: DeploymentFiles,
       entityId: string,
@@ -308,7 +361,7 @@ export function createDeploymentService(
       // Try to claim the pointers for this in-flight deploy. If any of them are
       // already being deployed by a concurrent caller, fail fast without acquiring
       // any locks.
-      const overlappingPointers = components.pointerLockManager.tryAcquire(entity.type, entity.pointers)
+      const overlappingPointers = tryAcquirePointerLocks(entity.type, entity.pointers)
       if (overlappingPointers.length > 0) {
         return InvalidResult({
           errors: [
@@ -391,14 +444,10 @@ export function createDeploymentService(
           // Only record in rate limiter for LOCAL deployments to prevent
           // synced/fix-attempt entities from polluting the cache
           if (context === DeploymentContext.LOCAL) {
-            components.deployRateLimiter.newDeployment(
-              entity.type,
-              entity.pointers,
-              storeResult.auditInfoComplete.localTimestamp
-            )
+            rateLimiter.newDeployment(entity.type, entity.pointers, storeResult.auditInfoComplete.localTimestamp)
 
             if (entity.type === EntityType.PROFILE && isContentUnchanged) {
-              components.deployRateLimiter.newUnchangedDeployment(
+              rateLimiter.newUnchangedDeployment(
                 entity.type,
                 entity.pointers,
                 storeResult.auditInfoComplete.localTimestamp
@@ -424,7 +473,7 @@ export function createDeploymentService(
           errors: [`There was an error deploying the entity`]
         })
       } finally {
-        components.pointerLockManager.release(entity.type, entity.pointers)
+        releasePointerLocks(entity.type, entity.pointers)
       }
     }
   }

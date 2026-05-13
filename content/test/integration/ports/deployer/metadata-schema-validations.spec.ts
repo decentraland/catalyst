@@ -16,7 +16,7 @@ describe('Integration - Deployment with metadata validation', () => {
 
   beforeAll(async () => {
     server = await createDefaultServer()
-    makeNoopServerValidator(server.components)
+    makeNoopServerValidator()
   })
 
   beforeEach(async () => {

@@ -9,12 +9,21 @@ import {
 } from '@dcl/catalyst-contracts'
 import RequestManager, { ContractFactory } from 'eth-connect'
 import { AppComponents } from '../../types'
-import { DAOComponent } from './types'
 
-export async function createDAOComponent(
+/**
+ * Read-only source of the catalyst DAO's server list. Private to peer-cluster — the
+ * cluster owns the choice between the on-chain DAO and the custom static fallback,
+ * and is the only consumer of either implementation.
+ */
+export interface DAOSource {
+  getAllContentServers(): Promise<CatalystServerInfo[]>
+  getAllServers(): Promise<CatalystServerInfo[]>
+}
+
+export async function createDAOSource(
   components: Pick<AppComponents, 'l1Provider'>,
   network: L1Network
-): Promise<DAOComponent> {
+): Promise<DAOSource> {
   const requestManager = new RequestManager(components.l1Provider)
   const contract = (await new ContractFactory(requestManager, catalystAbi).at(l1Contracts[network].catalyst)) as any
 
@@ -46,12 +55,12 @@ export async function createDAOComponent(
   }
 }
 
-export function createCustomDAOComponent(customDAOServers: string): DAOComponent {
+export function createCustomDAOSource(customDAOServers: string): DAOSource {
   const servers = customDAOServers.split(',')
 
   async function getAllContentServers(): Promise<CatalystServerInfo[]> {
-    const servers = await getAllServers()
-    return servers.map((server) => ({ ...server, address: server.address + '/content' }))
+    const all = await getAllServers()
+    return all.map((server) => ({ ...server, address: server.address + '/content' }))
   }
 
   async function getAllServers(): Promise<CatalystServerInfo[]> {

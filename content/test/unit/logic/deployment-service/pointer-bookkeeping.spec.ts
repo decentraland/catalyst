@@ -2,10 +2,10 @@ import { Entity, EntityType } from '@dcl/schemas'
 import { DatabaseClient } from '../../../../src/adapters/database'
 import { IDeploymentsRepository } from '../../../../src/adapters/deployments-repository'
 import {
-  createPointerManager,
   DELTA_POINTER_RESULT,
-  IPointerManager
-} from '../../../../src/logic/pointer-manager'
+  PointerDeltaMap,
+  referenceEntityFromPointers
+} from '../../../../src/logic/deployment-service/pointer-bookkeeping'
 
 function buildEntity(overrides: Partial<Entity> = {}): Entity {
   return {
@@ -23,7 +23,6 @@ function buildEntity(overrides: Partial<Entity> = {}): Entity {
 describe('when referencing an entity from its pointers', () => {
   let database: DatabaseClient
   let deploymentsRepository: jest.Mocked<IDeploymentsRepository>
-  let pointerManager: IPointerManager
 
   beforeEach(() => {
     database = {} as DatabaseClient
@@ -41,7 +40,6 @@ describe('when referencing an entity from its pointers', () => {
       calculateOverwrittenByManyFast: jest.fn(),
       calculateOverwrittenBySlow: jest.fn()
     }
-    pointerManager = createPointerManager({ deploymentsRepository })
   })
 
   afterEach(() => {
@@ -49,10 +47,11 @@ describe('when referencing an entity from its pointers', () => {
   })
 
   describe('and the entity has already been overwritten by a newer deployment', () => {
-    let result: Awaited<ReturnType<IPointerManager['referenceEntityFromPointers']>>
+    let result: PointerDeltaMap
 
     beforeEach(async () => {
-      result = await pointerManager.referenceEntityFromPointers(
+      result = await referenceEntityFromPointers(
+        deploymentsRepository,
         database,
         buildEntity({ pointers: ['0,0', '0,1'] }),
         new Set([10, 11]),
@@ -72,12 +71,12 @@ describe('when referencing an entity from its pointers', () => {
   describe('and the entity is the latest active deployment for its pointers', () => {
     describe('and there are no previously overwritten deployments', () => {
       let entity: Entity
-      let result: Awaited<ReturnType<IPointerManager['referenceEntityFromPointers']>>
+      let result: PointerDeltaMap
 
       beforeEach(async () => {
         entity = buildEntity({ pointers: ['0,0', '0,1'] })
         deploymentsRepository.getDeployments.mockResolvedValueOnce([])
-        result = await pointerManager.referenceEntityFromPointers(database, entity, new Set(), false)
+        result = await referenceEntityFromPointers(deploymentsRepository, database, entity, new Set(), false)
       })
 
       it('should query the repository with the empty overwritten id set', () => {
@@ -92,12 +91,12 @@ describe('when referencing an entity from its pointers', () => {
 
     describe('and an overwritten deployment shares a pointer with the new entity', () => {
       let entity: Entity
-      let result: Awaited<ReturnType<IPointerManager['referenceEntityFromPointers']>>
+      let result: PointerDeltaMap
 
       beforeEach(async () => {
         entity = buildEntity({ pointers: ['0,0', '0,1'] })
         deploymentsRepository.getDeployments.mockResolvedValueOnce([{ id: 42, pointers: ['0,0'] }])
-        result = await pointerManager.referenceEntityFromPointers(database, entity, new Set([42]), false)
+        result = await referenceEntityFromPointers(deploymentsRepository, database, entity, new Set([42]), false)
       })
 
       it('should mark the shared pointer as SET with the previous deployment id as `before`', () => {
@@ -111,12 +110,12 @@ describe('when referencing an entity from its pointers', () => {
 
     describe('and an overwritten deployment has pointers not present in the new entity', () => {
       let entity: Entity
-      let result: Awaited<ReturnType<IPointerManager['referenceEntityFromPointers']>>
+      let result: PointerDeltaMap
 
       beforeEach(async () => {
         entity = buildEntity({ pointers: ['0,0'] })
         deploymentsRepository.getDeployments.mockResolvedValueOnce([{ id: 42, pointers: ['0,0', '1,1'] }])
-        result = await pointerManager.referenceEntityFromPointers(database, entity, new Set([42]), false)
+        result = await referenceEntityFromPointers(deploymentsRepository, database, entity, new Set([42]), false)
       })
 
       it('should mark the entity pointer as SET with the previous deployment id', () => {
@@ -130,7 +129,7 @@ describe('when referencing an entity from its pointers', () => {
 
     describe('and multiple overwritten deployments overlap on the same orphan pointer', () => {
       let entity: Entity
-      let result: Awaited<ReturnType<IPointerManager['referenceEntityFromPointers']>>
+      let result: PointerDeltaMap
 
       beforeEach(async () => {
         entity = buildEntity({ pointers: ['0,0'] })
@@ -138,7 +137,7 @@ describe('when referencing an entity from its pointers', () => {
           { id: 1, pointers: ['1,1'] },
           { id: 2, pointers: ['1,1'] }
         ])
-        result = await pointerManager.referenceEntityFromPointers(database, entity, new Set([1, 2]), false)
+        result = await referenceEntityFromPointers(deploymentsRepository, database, entity, new Set([1, 2]), false)
       })
 
       it('should keep the first encountered deployment id as `before` for the orphan pointer', () => {
