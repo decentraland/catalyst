@@ -5,7 +5,7 @@ import { DeploymentData, buildEntity } from 'dcl-catalyst-client/dist/client/uti
 import fs from 'fs'
 import path from 'path'
 import { DeploymentContext, DeploymentResult, isInvalidDeployment } from '../../src/deployment-types'
-import { retry } from '../../src/helpers/RetryHelper'
+import { retry } from '../helpers/RetryHelper'
 import { createEntityParser } from '../../src/logic/entity-parser'
 import { Deployer } from '../../src/logic/deployment-service'
 
