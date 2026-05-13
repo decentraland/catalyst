@@ -10,6 +10,11 @@ export type ISyncOrchestrator = {
    * schedule failed-deployment retries, and register the cluster's sync-finished callback.
    * Returns the underlying sync job and a future that resolves once the initial bootstrap
    * is complete — tests use the latter to wait for steady state before asserting.
+   *
+   * Named `synchronize` rather than `start` so the WKC lifecycle framework's legacy
+   * auto-start (which calls any `.start()` method on registered components) does not
+   * invoke us at `startComponents()` time. The orchestrator must run AFTER all other
+   * components have started — `service.ts` calls this explicitly.
    */
-  start(): Promise<[SyncJob, IFuture<void>]>
+  synchronize(): Promise<[SyncJob, IFuture<void>]>
 }

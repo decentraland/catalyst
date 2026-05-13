@@ -122,12 +122,12 @@ export class TestProgram {
 }
 
 export async function startProgramAndWaitUntilBootstrapFinishes(server: TestProgram) {
-  // Intercept syncOrchestrator.start so the test can await the bootstrap-finished
+  // Intercept syncOrchestrator.synchronize so the test can await the bootstrap-finished
   // future before assertions run.
   const orchestrator = server.components.syncOrchestrator
-  const startOriginal = orchestrator.start.bind(orchestrator)
-  jest.spyOn(orchestrator, 'start').mockImplementation(async () => {
-    const [a, b] = await startOriginal()
+  const synchronizeOriginal = orchestrator.synchronize.bind(orchestrator)
+  jest.spyOn(orchestrator, 'synchronize').mockImplementation(async () => {
+    const [a, b] = await synchronizeOriginal()
     await b
     return [a, b]
   })

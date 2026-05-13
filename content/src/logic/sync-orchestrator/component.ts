@@ -16,7 +16,7 @@ export function createSyncOrchestrator(
   >
 ): ISyncOrchestrator {
   return {
-    async start() {
+    async synchronize() {
       const syncJob: SyncJob = await components.synchronizer.syncWithServers(
         new Set(components.contentCluster.getAllServersInCluster())
       )

@@ -55,7 +55,7 @@ export async function main(program: Lifecycle.EntryPointParameters<AppComponents
   const disableSynchronization = components.env.getConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION)
 
   if (!disableSynchronization) {
-    await components.syncOrchestrator.start()
+    await components.syncOrchestrator.synchronize()
   } else {
     components.synchronizationState.toSyncing()
   }
