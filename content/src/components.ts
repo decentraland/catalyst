@@ -31,7 +31,6 @@ import { createMigrationExecutor } from './migrations/migration-executor'
 import { createActiveEntitiesRepository } from './adapters/active-entities-repository'
 import { createContentFilesRepository } from './adapters/content-files-repository'
 import { createDeploymentsRepository } from './adapters/deployments-repository'
-import { createFailedDeploymentsRepository } from './adapters/failed-deployments-repository'
 import { createPointersRepository } from './adapters/pointers-repository'
 import { createSnapshotsRepository } from './adapters/snapshots-repository'
 
@@ -44,10 +43,9 @@ import { createDatabaseComponent } from './adapters/database'
 import { createDenylist } from './adapters/denylist'
 import { createDeployRateLimiter } from './adapters/deploy-rate-limiter'
 import { createDeployedEntitiesBloomFilter } from './adapters/deployed-entities-bloom-filter'
-import { createFailedDeployments } from './adapters/failed-deployments-cache'
+import { createFailedDeployments } from './adapters/failed-deployments'
 import { createPointerLockManager } from './adapters/pointer-lock-manager'
 import { createProcessedSnapshotStorage } from './adapters/processed-snapshot-storage'
-import { createSnapshotGenerator } from './adapters/snapshot-generator'
 import { createSnapshotStorage } from './adapters/snapshot-storage'
 import { createSynchronizationState } from './adapters/synchronization-state'
 import { createSystemProperties } from './adapters/system-properties'
@@ -160,7 +158,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const activeEntitiesRepository = createActiveEntitiesRepository()
   const contentFilesRepository = createContentFilesRepository()
   const deploymentsRepository = createDeploymentsRepository()
-  const failedDeploymentsRepository = createFailedDeploymentsRepository()
   const pointersRepository = createPointersRepository()
   const snapshotsRepository = createSnapshotsRepository()
 
@@ -211,11 +208,10 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const pointerManager = createPointerManager({ deploymentsRepository })
 
-  const failedDeployments = await createFailedDeployments({ metrics, database, failedDeploymentsRepository })
+  const failedDeployments = await createFailedDeployments({ metrics, database })
   const failedDeploymentsReporter = createFailedDeploymentsReporter({
     database,
-    failedDeployments,
-    failedDeploymentsRepository
+    failedDeployments
   })
 
   const deployRateLimiter = createDeployRateLimiter(
@@ -434,9 +430,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     snapshotsRepository
   })
 
-  const snapshotGenerator = createSnapshotGenerator({ snapshots })
-
-  const snapshotGenerationJob = createJobComponent({ logs }, snapshotGenerator.generateSnapshots, ms('6h'), {
+  const snapshotGenerationJob = createJobComponent({ logs }, snapshots.runScheduledGeneration, ms('6h'), {
     startupDelay: 0,
     onError: (err) => logs.getLogger('SnapshotGenerationJob').error(err as Error)
   })
@@ -515,7 +509,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     env,
     failedDeployments,
     failedDeploymentsReporter,
-    failedDeploymentsRepository,
     fetcher,
     fs,
     garbageCollectionJob,
@@ -534,7 +527,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     server,
     serverValidator,
     snapshotGenerationJob,
-    snapshotGenerator,
     snapshotsRepository,
     snapshotStorage,
     staticConfigs,

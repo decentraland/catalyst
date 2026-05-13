@@ -5,7 +5,7 @@ import {
   FailureReason,
   IFailedDeploymentsComponent,
   SnapshotFailedDeployment
-} from '../../../src/adapters/failed-deployments-cache'
+} from '../../../src/adapters/failed-deployments'
 import { TestProgram } from '../TestProgram'
 import { createDefaultServer, resetServer } from '../simpleTestEnvironment'
 
@@ -88,7 +88,7 @@ async function startCacheWith(
 ): Promise<IFailedDeploymentsComponent> {
   await server.components.database.transaction(async (db) => {
     for (const deployment of base) {
-      await server.components.failedDeploymentsRepository.saveSnapshotFailedDeployment(db, deployment)
+      await server.components.failedDeployments.saveSnapshotFailedDeployment(db, deployment)
     }
   })
   const cache = await createFailedDeployments(server.components)

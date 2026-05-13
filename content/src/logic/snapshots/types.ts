@@ -20,4 +20,17 @@ export interface ISnapshots {
    * Returns the final metadata for every interval.
    */
   generateSnapshotsInMultipleTimeRanges(timeRangeToDivide: TimeRange): Promise<SnapshotMetadata[]>
+
+  /**
+   * Run a full snapshot generation across the whole catalyst history and cache the resulting
+   * metadata in memory for status endpoints. Designed to be invoked by the recurring snapshot
+   * job; the start timestamp is intentionally fixed so reruns produce stable snapshot sets.
+   */
+  runScheduledGeneration(): Promise<void>
+
+  /**
+   * Return the metadata produced by the most recent successful `runScheduledGeneration` call,
+   * or `undefined` if the scheduled job has not completed once yet.
+   */
+  getCurrentSnapshots(): SnapshotMetadata[] | undefined
 }

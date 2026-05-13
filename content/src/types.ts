@@ -28,16 +28,14 @@ import { Denylist } from './adapters/denylist'
 import { IDeploymentsRepository } from './adapters/deployments-repository'
 import { IDeployRateLimiterComponent } from './adapters/deploy-rate-limiter'
 import { IFailedDeploymentsReporter } from './logic/failed-deployments-reporter'
-import { IFailedDeploymentsRepository } from './adapters/failed-deployments-repository'
 import { IPointersRepository } from './adapters/pointers-repository'
 import { ISnapshotsRepository } from './adapters/snapshots-repository'
 import { DeployedEntitiesBloomFilter } from './adapters/deployed-entities-bloom-filter'
 import { Deployer } from './logic/deployment-service'
 import { IPointerLockManager } from './adapters/pointer-lock-manager'
-import { IFailedDeploymentsComponent } from './adapters/failed-deployments-cache'
+import { IFailedDeploymentsComponent } from './adapters/failed-deployments'
 import { IDatabaseComponent } from './adapters/database'
 import { ISequentialTaskExecutorComponent } from './logic/sequential-task-executor'
-import { SnapshotGenerator } from './adapters/snapshot-generator'
 import { SynchronizationState } from './adapters/synchronization-state'
 import { SystemProperties } from './adapters/system-properties'
 import { IGarbageCollectionComponent } from './logic/garbage-collection'
@@ -85,7 +83,6 @@ export type AppComponents = {
   activeEntitiesRepository: IActiveEntitiesRepository
   contentFilesRepository: IContentFilesRepository
   deploymentsRepository: IDeploymentsRepository
-  failedDeploymentsRepository: IFailedDeploymentsRepository
   pointersRepository: IPointersRepository
   snapshotsRepository: ISnapshotsRepository
   config: IConfigComponent
@@ -124,7 +121,6 @@ export type AppComponents = {
   sequentialExecutor: ISequentialTaskExecutorComponent
   denylist: Denylist
   fs: IFileSystemComponent
-  snapshotGenerator: SnapshotGenerator
   processedSnapshotStorage: ProcessedSnapshotsStorageComponent
   snapshotStorage: ISnapshotStorageComponent
   l1Provider: HTTPProvider

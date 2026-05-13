@@ -6,7 +6,7 @@ import { DeploymentData } from 'dcl-catalyst-client/dist/client/utils/Deployment
 import { Response } from 'node-fetch'
 import { Deployment } from '../../src/deployment-types'
 import { getDeployments } from '../../src/logic/deployments'
-import { FailedDeployment, FailureReason } from '../../src/adapters/failed-deployments-cache'
+import { FailedDeployment, FailureReason } from '../../src/adapters/failed-deployments'
 import { EntityVersion } from '../../src/types'
 import { assertPromiseIsRejected, assertPromiseRejectionGeneric } from '../helpers/PromiseAssertions'
 import { TestProgram } from './TestProgram'

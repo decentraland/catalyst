@@ -93,7 +93,7 @@ describe('Delete unreferenced files - ', () => {
     jest.spyOn(Date, 'now').mockReturnValue(1577836800000 + MS_PER_DAY)
     await startSnapshotNeededComponents(components)
 
-    const snapshots = components.snapshotGenerator.getCurrentSnapshots()
+    const snapshots = components.snapshots.getCurrentSnapshots()
 
     expect(snapshots).toHaveLength(1)
 
@@ -143,7 +143,7 @@ describe('Delete unreferenced files - ', () => {
 })
 
 async function startSnapshotNeededComponents(
-  components: Pick<AppComponents, 'logs' | 'database' | 'storage' | 'fs' | 'snapshotGenerator'>
+  components: Pick<AppComponents, 'logs' | 'database' | 'storage' | 'fs' | 'snapshots'>
 ) {
   const startOptions = { started: jest.fn(), live: jest.fn(), getComponents: jest.fn() }
   await startComponent(components.database, startOptions)
@@ -152,7 +152,7 @@ async function startSnapshotNeededComponents(
   await startComponent(components.logs as IBaseComponent, startOptions)
   // The snapshot generator no longer has a START_COMPONENT hook — scheduling
   // moved to a job component in components.ts. Trigger the initial run directly.
-  await components.snapshotGenerator.generateSnapshots()
+  await components.snapshots.runScheduledGeneration()
 }
 
 async function startComponent(component: IBaseComponent, startOptions: IBaseComponent.ComponentStartOptions) {
