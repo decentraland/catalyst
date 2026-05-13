@@ -4,9 +4,9 @@ import { CURRENT_COMMIT_HASH, CURRENT_VERSION, EnvironmentConfig } from '../../E
 import { statusResponseFromComponents } from '../../logic/status-checks'
 
 export async function getStatusHandler(
-  context: HandlerContextWithPath<'contentCluster' | 'synchronizationState' | 'config', '/status'>
+  context: HandlerContextWithPath<'contentCluster' | 'syncOrchestrator' | 'config', '/status'>
 ): Promise<{ status: number; body: StatusContent }> {
-  const { contentCluster, synchronizationState, config } = context.components
+  const { contentCluster, syncOrchestrator, config } = context.components
   const serverStatus = await statusResponseFromComponents(context.components)
   const ethNetwork = await config.requireString(EnvironmentConfig[EnvironmentConfig.ETH_NETWORK])
 
@@ -19,7 +19,7 @@ export async function getStatusHandler(
       ethNetwork,
       synchronizationStatus: {
         ...contentCluster.getStatus(),
-        synchronizationState: synchronizationState.getState()
+        synchronizationState: syncOrchestrator.getState()
       }
     }
   }

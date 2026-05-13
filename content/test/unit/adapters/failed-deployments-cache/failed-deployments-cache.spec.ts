@@ -6,7 +6,8 @@ import {
   IFailedDeploymentsComponent,
   SnapshotFailedDeployment
 } from '../../../../src/adapters/failed-deployments'
-import { IDatabaseComponent } from '../../../../src/adapters/database'
+import { DatabaseTransactionalClient, IDatabaseComponent } from '../../../../src/adapters/database'
+import { FailedDeployment } from '../../../../src/adapters/failed-deployments'
 import { metricsDeclaration } from '../../../../src/metrics'
 import { createDatabaseMockedComponent } from '../../../mocks/database-component-mock'
 
@@ -180,6 +181,101 @@ describe('when using the merged failed-deployments adapter', () => {
 
     it('should enumerate every warmed deployment via getAllFailedDeployments', async () => {
       expect(await adapter.getAllFailedDeployments()).toHaveLength(250)
+    })
+  })
+
+  describe('and reportFailure is called for a snapshot deployment whose entity is not yet cached', () => {
+    let adapter: IFailedDeploymentsComponent
+
+    beforeEach(async () => {
+      adapter = await createFailedDeployments({ metrics, database })
+      await adapter.start()
+      database.queryWithValues.mockClear()
+      await adapter.reportFailure(baseDeployment)
+    })
+
+    it('should not open a database transaction', () => {
+      expect(database.transaction).not.toHaveBeenCalled()
+    })
+
+    it('should issue the INSERT through the pool db client', () => {
+      expect(database.queryWithValues).toHaveBeenCalledWith(
+        expect.objectContaining({ text: expect.stringContaining('INSERT INTO failed_deployments') }),
+        'save_failed_deployment'
+      )
+    })
+
+    it('should update the in-memory cache after the SQL insert succeeds', async () => {
+      expect(await adapter.findFailedDeployment(baseDeployment.entityId)).toEqual(baseDeployment)
+    })
+  })
+
+  describe('and reportFailure is called for a snapshot deployment whose entity is already cached', () => {
+    let adapter: IFailedDeploymentsComponent
+    let txClient: jest.Mocked<IDatabaseComponent>
+    let reReportedDeployment: SnapshotFailedDeployment
+
+    beforeEach(async () => {
+      reReportedDeployment = { ...baseDeployment, failureTimestamp: 999 }
+      database.queryWithValues.mockResolvedValueOnce({ rows: [baseDeployment], rowCount: 1 } as any)
+      adapter = await createFailedDeployments({ metrics, database })
+      await adapter.start()
+      txClient = createDatabaseMockedComponent()
+      txClient.queryWithValues.mockResolvedValue({ rows: [], rowCount: 0 } as any)
+      database.transaction.mockImplementation((fn) => fn(txClient as unknown as DatabaseTransactionalClient))
+      database.queryWithValues.mockClear()
+      await adapter.reportFailure(reReportedDeployment)
+    })
+
+    it('should open a single database transaction', () => {
+      expect(database.transaction).toHaveBeenCalledTimes(1)
+    })
+
+    it('should issue both the DELETE and the INSERT through the transactional client', () => {
+      expect(txClient.queryWithValues).toHaveBeenCalledWith(
+        expect.objectContaining({ text: expect.stringContaining('DELETE FROM failed_deployments') }),
+        'delete_failed_deployment'
+      )
+      expect(txClient.queryWithValues).toHaveBeenCalledWith(
+        expect.objectContaining({ text: expect.stringContaining('INSERT INTO failed_deployments') }),
+        'save_failed_deployment'
+      )
+    })
+
+    it('should update the in-memory cache only after the transaction has committed', async () => {
+      expect(await adapter.findFailedDeployment(reReportedDeployment.entityId)).toEqual(reReportedDeployment)
+    })
+  })
+
+  describe('and reportFailure is called for a non-snapshot deployment', () => {
+    let adapter: IFailedDeploymentsComponent
+    let nonSnapshotDeployment: FailedDeployment
+
+    beforeEach(async () => {
+      nonSnapshotDeployment = {
+        entityType: EntityType.PROFILE,
+        entityId: 'no-snapshot-entity',
+        failureTimestamp: 123,
+        reason: FailureReason.DEPLOYMENT_ERROR,
+        authChain: [],
+        errorDescription: 'some-error'
+      }
+      adapter = await createFailedDeployments({ metrics, database })
+      await adapter.start()
+      database.queryWithValues.mockClear()
+      await adapter.reportFailure(nonSnapshotDeployment)
+    })
+
+    it('should not open a database transaction', () => {
+      expect(database.transaction).not.toHaveBeenCalled()
+    })
+
+    it('should not issue any SQL (non-snapshot failures are not persisted)', () => {
+      expect(database.queryWithValues).not.toHaveBeenCalled()
+    })
+
+    it('should write through to the in-memory cache', async () => {
+      expect(await adapter.findFailedDeployment(nonSnapshotDeployment.entityId)).toEqual(nonSnapshotDeployment)
     })
   })
 })

@@ -2,10 +2,10 @@ import { createConfigComponent } from '@well-known-components/env-config-provide
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { createLogComponent } from '@well-known-components/logger'
 import { ISnapshotsRepository } from '../../../../src/adapters/snapshots-repository'
+import { createSnapshotStorage } from '../../../../src/adapters/snapshot-storage'
 import { createTestDatabaseComponent } from '../../../mocks/database-component-mock'
-import { createProcessedSnapshotStorage } from '../../../../src/adapters/processed-snapshot-storage'
 
-describe('processed snapshot storage', () => {
+describe('snapshot storage', () => {
   const database = createTestDatabaseComponent()
 
   let logs: ILoggerComponent
@@ -35,39 +35,49 @@ describe('processed snapshot storage', () => {
     jest.restoreAllMocks()
   })
 
-  describe('processedFrom', () => {
-    it('should return the result from they query when the hashes are not in cache', async () => {
-      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs, snapshotsRepository })
+  describe('has', () => {
+    it('should forward to snapshotsRepository.isOwnSnapshot', async () => {
+      const snapshotStorage = createSnapshotStorage({ database, logs, snapshotsRepository })
+      snapshotsRepository.isOwnSnapshot.mockResolvedValueOnce(true)
+
+      expect(await snapshotStorage.has('someHash')).toBe(true)
+      expect(snapshotsRepository.isOwnSnapshot).toBeCalledWith(database, 'someHash')
+    })
+  })
+
+  describe('filterProcessedSnapshotsFrom', () => {
+    it('should return the result from the query when the hashes are not in cache', async () => {
+      const snapshotStorage = createSnapshotStorage({ database, logs, snapshotsRepository })
       const processedSnapshot = 'someHash'
       snapshotsRepository.getProcessedSnapshots.mockResolvedValueOnce(new Set([processedSnapshot]))
 
-      expect(await processedSnapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot])).toEqual(
+      expect(await snapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot])).toEqual(
         new Set([processedSnapshot])
       )
     })
 
     it('should cache the processed snapshots', async () => {
-      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs, snapshotsRepository })
+      const snapshotStorage = createSnapshotStorage({ database, logs, snapshotsRepository })
       const processedSnapshot = 'someHash'
       snapshotsRepository.getProcessedSnapshots.mockResolvedValue(new Set([processedSnapshot]))
 
-      await processedSnapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot])
+      await snapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot])
       expect(snapshotsRepository.getProcessedSnapshots).toBeCalledTimes(1)
       // now the result should be cached
       snapshotsRepository.getProcessedSnapshots.mockClear()
-      await processedSnapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot])
+      await snapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot])
       expect(snapshotsRepository.getProcessedSnapshots).toBeCalledTimes(0)
     })
 
     it('should query the db if not ALL the snapshots are in the cache', async () => {
-      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs, snapshotsRepository })
+      const snapshotStorage = createSnapshotStorage({ database, logs, snapshotsRepository })
       const processedSnapshot = 'someHash'
       snapshotsRepository.getProcessedSnapshots.mockResolvedValue(new Set([processedSnapshot]))
 
-      await processedSnapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot])
+      await snapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot])
       // now the snapshot 'processedSnapshot' is cached
       const anotherHashNotInCache = 'anotherHashNotInCache'
-      await processedSnapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot, anotherHashNotInCache])
+      await snapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot, anotherHashNotInCache])
       expect(snapshotsRepository.getProcessedSnapshots).toBeCalledWith(
         expect.anything(),
         expect.arrayContaining([processedSnapshot, anotherHashNotInCache])
@@ -75,7 +85,7 @@ describe('processed snapshot storage', () => {
     })
 
     it('should not query the db if ALL the snapshots are in the cache', async () => {
-      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs, snapshotsRepository })
+      const snapshotStorage = createSnapshotStorage({ database, logs, snapshotsRepository })
       const processedSnapshot = 'someHash'
       const anotherProcessedSnapshot = 'anotherHash'
       const otherProcessedSnapshot = 'otherHash'
@@ -83,12 +93,12 @@ describe('processed snapshot storage', () => {
       snapshotsRepository.getProcessedSnapshots.mockResolvedValueOnce(
         new Set([processedSnapshot, otherProcessedSnapshot])
       )
-      await processedSnapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot, otherProcessedSnapshot])
+      await snapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot, otherProcessedSnapshot])
       snapshotsRepository.getProcessedSnapshots.mockResolvedValueOnce(new Set([anotherProcessedSnapshot]))
-      await processedSnapshotStorage.filterProcessedSnapshotsFrom([anotherProcessedSnapshot])
+      await snapshotStorage.filterProcessedSnapshotsFrom([anotherProcessedSnapshot])
 
       snapshotsRepository.getProcessedSnapshots.mockClear()
-      await processedSnapshotStorage.filterProcessedSnapshotsFrom([
+      await snapshotStorage.filterProcessedSnapshotsFrom([
         processedSnapshot,
         otherProcessedSnapshot,
         anotherProcessedSnapshot
@@ -99,23 +109,23 @@ describe('processed snapshot storage', () => {
 
   describe('markSnapshotAsProcessed', () => {
     it('should save the snapshot and set the current process time', async () => {
-      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs, snapshotsRepository })
+      const snapshotStorage = createSnapshotStorage({ database, logs, snapshotsRepository })
       const processedSnapshot = 'someHash'
       const expectedProcessTime = Date.now()
       jest.spyOn(Date, 'now').mockReturnValue(expectedProcessTime)
 
-      await processedSnapshotStorage.markSnapshotAsProcessed(processedSnapshot)
+      await snapshotStorage.markSnapshotAsProcessed(processedSnapshot)
 
       expect(snapshotsRepository.saveProcessedSnapshot).toBeCalledWith(database, processedSnapshot, expectedProcessTime)
     })
 
     it('should cache the processed snapshot when saving a snapshot', async () => {
-      const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs, snapshotsRepository })
+      const snapshotStorage = createSnapshotStorage({ database, logs, snapshotsRepository })
       const processedSnapshot = 'someHash'
 
-      await processedSnapshotStorage.markSnapshotAsProcessed(processedSnapshot)
+      await snapshotStorage.markSnapshotAsProcessed(processedSnapshot)
       snapshotsRepository.getProcessedSnapshots.mockClear()
-      const processedSnapshots = await processedSnapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot])
+      const processedSnapshots = await snapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot])
       expect(snapshotsRepository.getProcessedSnapshots).toBeCalledTimes(0)
       expect(processedSnapshots).toEqual(new Set([processedSnapshot]))
     })

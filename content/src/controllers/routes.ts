@@ -34,7 +34,7 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
   } else {
     router.post(
       '/entities',
-      preventExecutionIfBoostrapping({ synchronizationState: components.synchronizationState }),
+      preventExecutionIfBoostrapping({ syncOrchestrator: components.syncOrchestrator }),
       multipartParserWrapper(createEntity)
     )
   }

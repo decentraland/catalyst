@@ -7,11 +7,11 @@ import { getURNProtocol } from '@dcl/schemas'
 // Method: GET
 export async function getERC721EntityHandler(
   context: HandlerContextWithPath<
-    'erc721' | 'activeEntities' | 'database',
+    'entities' | 'activeEntities' | 'database',
     '/entities/active/erc721/:chainId/:contract/:option/:emission?'
   >
 ): Promise<{ status: 200; body: Erc721 }> {
-  const { database, activeEntities, erc721 } = context.components
+  const { database, activeEntities, entities } = context.components
   const { chainId, contract, option, emission } = context.params
 
   const protocol = getURNProtocol(parseInt(chainId, 10))
@@ -20,7 +20,7 @@ export async function getERC721EntityHandler(
     throw new InvalidRequestError(`Invalid chainId '${chainId}'`)
   }
 
-  const pointer = erc721.buildUrn(protocol, contract, option)
+  const pointer = entities.buildUrn(protocol, contract, option)
   const entity = await findEntityByPointer(database, activeEntities, pointer)
   if (!entity || !entity.metadata) {
     throw new NotFoundError('Entity does not exist')
@@ -32,6 +32,6 @@ export async function getERC721EntityHandler(
 
   return {
     status: 200,
-    body: erc721.formatERC721Entity(pointer, entity, emission)
+    body: entities.formatERC721Entity(pointer, entity, emission)
   }
 }

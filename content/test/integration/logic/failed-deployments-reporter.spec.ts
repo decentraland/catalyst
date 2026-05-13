@@ -6,7 +6,6 @@ import {
   IFailedDeploymentsComponent,
   SnapshotFailedDeployment
 } from '../../../src/adapters/failed-deployments'
-import { createFailedDeploymentsReporter } from '../../../src/logic/failed-deployments-reporter'
 import { TestProgram } from '../TestProgram'
 import { createDefaultServer, resetServer } from '../simpleTestEnvironment'
 
@@ -46,11 +45,7 @@ describe('when reporting a failure end-to-end against a real database', () => {
     beforeEach(async () => {
       newDeployment = { ...baseDeployment, entityId: 'fresh-entity' }
       const cache = await startCacheWith(server, [baseDeployment])
-      const reporter = createFailedDeploymentsReporter({
-        database: server.components.database,
-        failedDeployments: cache
-      })
-      await reporter.reportFailure(newDeployment)
+      await cache.reportFailure(newDeployment)
       reReadCache = await startCacheWith(server, [])
     })
 
@@ -67,11 +62,7 @@ describe('when reporting a failure end-to-end against a real database', () => {
     beforeEach(async () => {
       updatedDeployment = { ...baseDeployment, failureTimestamp: baseDeployment.failureTimestamp + 10 }
       const cache = await startCacheWith(server, [baseDeployment])
-      const reporter = createFailedDeploymentsReporter({
-        database: server.components.database,
-        failedDeployments: cache
-      })
-      await reporter.reportFailure(updatedDeployment)
+      await cache.reportFailure(updatedDeployment)
       reReadCache = await startCacheWith(server, [])
     })
 

@@ -1,4 +1,6 @@
-export interface IHashing {
+import { AuthChain, EthAddress, ValidationResult } from '@dcl/crypto'
+
+export interface ICrypto {
   /**
    * Hash the given files with IPFS hash v1 (CIDv1 / `bafy...`).
    * Used for entities deployed after the IPFS migration.
@@ -9,4 +11,12 @@ export interface IHashing {
    * re-verify the content of legacy entities deployed before the IPFS migration.
    */
   calculateDeprecatedHashes<T extends Uint8Array>(files: T[]): Promise<{ hash: string; file: T }[]>
+  /** Return whether the given address used is owned by Decentraland */
+  isAddressOwnedByDecentraland(address: EthAddress): boolean
+  /** Validate that the signature belongs to the Ethereum address */
+  validateSignature(
+    expectedFinalAuthority: string,
+    authChain: AuthChain,
+    dateToValidateExpirationInMillis: number
+  ): Promise<ValidationResult>
 }

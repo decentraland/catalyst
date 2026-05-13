@@ -45,30 +45,23 @@ import { createDeployRateLimiter } from './adapters/deploy-rate-limiter'
 import { createDeployedEntitiesBloomFilter } from './adapters/deployed-entities-bloom-filter'
 import { createFailedDeployments } from './adapters/failed-deployments'
 import { createPointerLockManager } from './adapters/pointer-lock-manager'
-import { createProcessedSnapshotStorage } from './adapters/processed-snapshot-storage'
 import { createSnapshotStorage } from './adapters/snapshot-storage'
-import { createSynchronizationState } from './adapters/synchronization-state'
 import { createSystemProperties } from './adapters/system-properties'
 
 // =============================================================================
 // Logic components
 // =============================================================================
 import { createActiveEntitiesComponent } from './logic/active-entities'
-import { createAuthenticator } from './logic/authenticator'
 import { createBatchDeployerComponent } from './logic/batch-deployer'
-import { createChallengeSupervisor } from './logic/challenge-supervisor'
 import { splitByCommaTrimAndRemoveEmptyElements } from './logic/config-helpers'
+import { createCrypto } from './logic/crypto'
 import { createDeploymentsComponent, retryFailedDeploymentExecution } from './logic/deployments'
 import { createDeploymentService } from './logic/deployment-service'
-import { createEntityParser } from './logic/entity-parser'
-import { createErc721 } from './logic/erc721'
-import { createFailedDeploymentsReporter } from './logic/failed-deployments-reporter'
+import { createEntities } from './logic/entities'
 import { createGarbageCollectionComponent } from './logic/garbage-collection'
-import { createHashing } from './logic/hashing'
 import { createContentCluster } from './logic/peer-cluster'
 import { createPointerManager } from './logic/pointer-manager'
 import { createQueryParams } from './logic/query-params'
-import { createRetryFailedDeploymentsScheduler } from './logic/retry-failed-deployments'
 import { createSequentialTaskExecutor } from './logic/sequential-task-executor'
 import { createServerValidator } from './logic/server-validator'
 import { createSnapshots } from './logic/snapshots'
@@ -167,7 +160,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   // ---------------------------------------------------------------------------
   const sequentialExecutor = createSequentialTaskExecutor({ metrics, logs })
   const systemProperties = createSystemProperties({ database })
-  const challengeSupervisor = createChallengeSupervisor()
 
   // ---------------------------------------------------------------------------
   // 6. Storage + DAO client + authenticator
@@ -191,16 +183,14 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
         env.getConfig(EnvironmentConfig.ADDITIONAL_DECENTRALAND_ADDRESS)
       ]
     : [env.getConfig(EnvironmentConfig.DECENTRALAND_ADDRESS)]
-  const authenticator = createAuthenticator(l1Provider, decentralandAddresses as EthAddress[])
+  const crypto = createCrypto(l1Provider, decentralandAddresses as EthAddress[])
 
   // ---------------------------------------------------------------------------
   // 7. Domain logic
   // ---------------------------------------------------------------------------
   // Stateless helpers — pure factories with no setup, declared first so any logic below can inject them.
-  const hashing = createHashing()
   const queryParams = createQueryParams()
-  const entityParser = createEntityParser()
-  const erc721 = createErc721({ env })
+  const entities = createEntities({ env })
 
   const contentCluster = createContentCluster(
     { daoClient, logs, env },
@@ -210,10 +200,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const pointerManager = createPointerManager({ deploymentsRepository })
 
   const failedDeployments = await createFailedDeployments({ metrics, database })
-  const failedDeploymentsReporter = createFailedDeploymentsReporter({
-    database,
-    failedDeployments
-  })
 
   const deployRateLimiter = createDeployRateLimiter(
     { logs, metrics },
@@ -230,7 +216,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const validator = await createContentValidator({
     storage,
-    authenticator,
+    crypto,
     env,
     logs,
     metrics,
@@ -273,15 +259,14 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     serverValidator,
     env,
     logs,
-    authenticator,
+    crypto,
     database,
     deployedEntitiesBloomFilter,
     activeEntities,
     denylist,
     deploymentsRepository,
     contentFilesRepository,
-    hashing,
-    entityParser
+    entities
   })
 
   // ---------------------------------------------------------------------------
@@ -322,8 +307,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     env.getConfig<string>(EnvironmentConfig.SYNC_IGNORED_ENTITY_TYPES)
   )
 
-  const processedSnapshotStorage = createProcessedSnapshotStorage({ database, logs, snapshotsRepository })
-
   const batchDeployer = createBatchDeployerComponent(
     {
       logs,
@@ -336,7 +319,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       deployedEntitiesBloomFilter,
       storage,
       failedDeployments,
-      failedDeploymentsReporter,
       deploymentsRepository
     },
     {
@@ -350,7 +332,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     }
   )
 
-  const snapshotStorage = createSnapshotStorage({ database, snapshotsRepository })
+  const snapshotStorage = createSnapshotStorage({ database, logs, snapshotsRepository })
 
   const materializedViewUpdateJob = createJobComponent(
     { logs },
@@ -370,7 +352,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       metrics,
       deployer: batchDeployer,
       storage,
-      processedSnapshotStorage,
+      processedSnapshotStorage: snapshotStorage,
       snapshotStorage
     },
     {
@@ -398,8 +380,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     }
   )
 
-  const synchronizationState = createSynchronizationState({ logs, metrics })
-
   // Built but intentionally NOT included in the returned components map: the WKC
   // framework auto-starts every IJobComponent it finds there. The scheduler below
   // owns this job and starts it manually after sync bootstrap finishes.
@@ -416,7 +396,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
           deployer,
           contentCluster,
           failedDeployments,
-          failedDeploymentsReporter,
           storage,
           batchDeployer
         },
@@ -429,18 +408,17 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     }
   )
 
-  const retryFailedDeployments = createRetryFailedDeploymentsScheduler(retryFailedDeploymentsJob)
-
-  const syncOrchestrator = createSyncOrchestrator({
-    logs,
-    contentCluster,
-    downloadQueue,
-    batchDeployer,
-    metrics,
-    retryFailedDeployments,
-    synchronizer,
-    synchronizationState
-  })
+  const syncOrchestrator = createSyncOrchestrator(
+    {
+      logs,
+      contentCluster,
+      downloadQueue,
+      batchDeployer,
+      metrics,
+      synchronizer
+    },
+    retryFailedDeploymentsJob
+  )
 
   const snapshots = createSnapshots({
     logs,
@@ -513,12 +491,11 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   return {
     activeEntities,
     activeEntitiesRepository,
-    authenticator,
     batchDeployer,
-    challengeSupervisor,
     config,
     contentCluster,
     contentFilesRepository,
+    crypto,
     daoClient,
     database,
     denylist,
@@ -531,7 +508,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     downloadQueue,
     env,
     failedDeployments,
-    failedDeploymentsReporter,
     fetcher,
     fs,
     garbageCollectionJob,
@@ -544,8 +520,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     pointerLockManager,
     pointerManager,
     pointersRepository,
-    processedSnapshotStorage,
-    retryFailedDeployments,
     sequentialExecutor,
     server,
     serverValidator,
@@ -554,16 +528,13 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     snapshotStorage,
     staticConfigs,
     storage,
-    synchronizationState,
     synchronizer,
     syncOrchestrator,
     systemProperties,
     tracer,
     validator,
-    hashing,
     queryParams,
-    entityParser,
-    erc721,
+    entities,
     snapshots
   }
 }

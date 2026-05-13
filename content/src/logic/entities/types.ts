@@ -10,7 +10,16 @@ export type Erc721Entity = {
   attributes: { trait_type: string; value: string }[]
 }
 
-export interface IErc721 {
+export interface IEntities {
+  /**
+   * Parse and validate a serialized entity. Throws `InvalidEntityError` if the buffer
+   * does not contain valid JSON or the parsed object is missing required fields.
+   *
+   * @param buffer - the raw entity bytes
+   * @param id - the entity id (used verbatim on the result; the parser does not verify it against the content hash)
+   */
+  parse(buffer: Uint8Array, id: string): Entity
+
   /**
    * Build a Decentraland wearable/emote URN for the given protocol, contract address, and item option.
    * Uses `collections-v2` for `0x`-prefixed contracts and `collections-v1` otherwise.

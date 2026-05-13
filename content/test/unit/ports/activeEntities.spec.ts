@@ -19,7 +19,7 @@ import { createPointersRepository } from '../../../src/adapters/pointers-reposit
 import { createActiveEntitiesRepository } from '../../../src/adapters/active-entities-repository'
 import { createContentFilesRepository } from '../../../src/adapters/content-files-repository'
 import { createDeploymentsRepository } from '../../../src/adapters/deployments-repository'
-import { createAuthenticator } from '../../../src/logic/authenticator'
+import { createCrypto } from '../../../src/logic/crypto'
 import { EntityVersion } from '../../../src/types'
 import { NoOpServerValidator, NoOpValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import { createDeploymentsComponentMock } from '../../mocks/deployments-component-mock'
@@ -465,7 +465,7 @@ async function buildComponents() {
   const failedDeployments = await createFailedDeployments({ metrics, database })
   const storage = createInMemoryStorage()
   const pointerManager = createNoOpPointerManager()
-  const authenticator = createAuthenticator(
+  const crypto = createCrypto(
     new HTTPProvider('https://rpc.decentraland.org/mainnet?project=catalyst-ci'),
     [DECENTRALAND_ADDRESS]
   )
@@ -505,7 +505,7 @@ async function buildComponents() {
     serverValidator,
     metrics,
     logs,
-    authenticator,
+    crypto,
     database,
     deployedEntitiesBloomFilter,
     activeEntities,

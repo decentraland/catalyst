@@ -35,7 +35,7 @@ import { IContentValidator } from './types'
 
 type ContentValidatorDeps = Pick<
   AppComponents,
-  'storage' | 'authenticator' | 'env' | 'logs' | 'metrics' | 'config' | 'fetcher'
+  'storage' | 'crypto' | 'env' | 'logs' | 'metrics' | 'config' | 'fetcher'
 > & {
   l1Provider: HTTPProvider
   l2Provider: HTTPProvider
@@ -53,9 +53,7 @@ const createEthereumProvider = (httpProvider: HTTPProvider): EthereumProvider =>
   }
 }
 
-async function createExternalCallsBag(
-  components: Pick<AppComponents, 'storage' | 'authenticator'>
-): Promise<ExternalCalls> {
+async function createExternalCallsBag(components: Pick<AppComponents, 'storage' | 'crypto'>): Promise<ExternalCalls> {
   async function calculateFilesHashes(
     files: Map<string, Uint8Array>
   ): Promise<Map<string, { calculatedHash: string; buffer: Uint8Array }>> {
@@ -83,9 +81,9 @@ async function createExternalCallsBag(
       return undefined
     },
     ownerAddress: (auditInfo) => Authenticator.ownerAddress(auditInfo.authChain),
-    isAddressOwnedByDecentraland: (address: string) => components.authenticator.isAddressOwnedByDecentraland(address),
+    isAddressOwnedByDecentraland: (address: string) => components.crypto.isAddressOwnedByDecentraland(address),
     validateSignature: (entityId, auditInfo, timestamp) =>
-      components.authenticator.validateSignature(entityId, auditInfo.authChain, timestamp),
+      components.crypto.validateSignature(entityId, auditInfo.authChain, timestamp),
     calculateFilesHashes
   }
 }

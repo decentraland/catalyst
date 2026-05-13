@@ -1,11 +1,10 @@
 import { IContentStorageComponent, IFileSystemComponent } from '@dcl/catalyst-storage'
 import { IContentValidator } from './adapters/content-validator'
-import { IAuthenticator } from './logic/authenticator'
+import { ICrypto } from './logic/crypto'
 import { ServerValidator } from './logic/server-validator'
 import { EntityType, SyncDeployment } from '@dcl/schemas'
 import { SynchronizerComponent } from '@dcl/snapshots-fetcher'
 import { IJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
-import { ISnapshotStorageComponent } from '@dcl/snapshots-fetcher/dist/types'
 import {
   IConfigComponent,
   IFetchComponent,
@@ -27,7 +26,6 @@ import { DAOComponent } from './adapters/dao-client'
 import { Denylist } from './adapters/denylist'
 import { IDeploymentsRepository } from './adapters/deployments-repository'
 import { IDeployRateLimiterComponent } from './adapters/deploy-rate-limiter'
-import { IFailedDeploymentsReporter } from './logic/failed-deployments-reporter'
 import { IPointersRepository } from './adapters/pointers-repository'
 import { ISnapshotsRepository } from './adapters/snapshots-repository'
 import { DeployedEntitiesBloomFilter } from './adapters/deployed-entities-bloom-filter'
@@ -36,19 +34,14 @@ import { IPointerLockManager } from './adapters/pointer-lock-manager'
 import { IFailedDeploymentsComponent } from './adapters/failed-deployments'
 import { IDatabaseComponent } from './adapters/database'
 import { ISequentialTaskExecutorComponent } from './logic/sequential-task-executor'
-import { SynchronizationState } from './adapters/synchronization-state'
 import { SystemProperties } from './adapters/system-properties'
 import { IGarbageCollectionComponent } from './logic/garbage-collection'
 import { IPointerManager } from './logic/pointer-manager'
-import { IChallengeSupervisor } from './logic/challenge-supervisor'
 import { IContentClusterComponent } from './logic/peer-cluster'
-import { IRetryFailedDeploymentsComponent } from './logic/retry-failed-deployments'
-import { ProcessedSnapshotsStorageComponent } from './adapters/processed-snapshot-storage'
+import { SnapshotStorage } from './adapters/snapshot-storage'
 import { IDeploymentsComponent } from './logic/deployments'
-import { IHashing } from './logic/hashing'
 import { IQueryParams } from './logic/query-params'
-import { IEntityParser } from './logic/entity-parser'
-import { IErc721 } from './logic/erc721'
+import { IEntities } from './logic/entities'
 import { ISnapshots } from './logic/snapshots'
 import { ISyncOrchestrator } from './logic/sync-orchestrator'
 import { IBatchDeployer } from './logic/batch-deployer'
@@ -101,16 +94,13 @@ export type AppComponents = {
   denylistReloadJob: IJobComponent
   snapshotGenerationJob: IJobComponent
   garbageCollectionJob: IJobComponent
-  synchronizationState: SynchronizationState
   deployedEntitiesBloomFilter: DeployedEntitiesBloomFilter
-  challengeSupervisor: IChallengeSupervisor
   contentCluster: IContentClusterComponent
   pointerManager: IPointerManager
   failedDeployments: IFailedDeploymentsComponent
-  failedDeploymentsReporter: IFailedDeploymentsReporter
   deployRateLimiter: IDeployRateLimiterComponent
   storage: IContentStorageComponent
-  authenticator: IAuthenticator
+  crypto: ICrypto
   migrationManager: MigrationExecutor
   serverValidator: ServerValidator
   validator: IContentValidator
@@ -118,20 +108,16 @@ export type AppComponents = {
   systemProperties: SystemProperties
   daoClient: DAOComponent
   server: IHttpServerComponent<GlobalContext>
-  retryFailedDeployments: IRetryFailedDeploymentsComponent
   activeEntities: ActiveEntities
   sequentialExecutor: ISequentialTaskExecutorComponent
   denylist: Denylist
   fs: IFileSystemComponent
-  processedSnapshotStorage: ProcessedSnapshotsStorageComponent
-  snapshotStorage: ISnapshotStorageComponent
+  snapshotStorage: SnapshotStorage
   l1Provider: HTTPProvider
   tracer: ITracerComponent
   syncOrchestrator: ISyncOrchestrator
-  hashing: IHashing
   queryParams: IQueryParams
-  entityParser: IEntityParser
-  erc721: IErc721
+  entities: IEntities
   snapshots: ISnapshots
 }
 

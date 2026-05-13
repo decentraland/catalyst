@@ -30,7 +30,7 @@ describe('precessed snapshot storage', () => {
       const processedSnapshot = 'someHash'
       await components.snapshotsRepository.saveProcessedSnapshot(components.database, processedSnapshot, Date.now())
 
-      expect(await components.processedSnapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot])).toEqual(
+      expect(await components.snapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot])).toEqual(
         new Set([processedSnapshot])
       )
     })
@@ -40,11 +40,11 @@ describe('precessed snapshot storage', () => {
       const processedSnapshot = 'someHash'
       await components.snapshotsRepository.saveProcessedSnapshot(components.database, processedSnapshot, Date.now())
 
-      await components.processedSnapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot])
+      await components.snapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot])
       expect(dbQuerySpy).toBeCalledTimes(1)
       // now the result should be cached
       dbQuerySpy.mockClear()
-      await components.processedSnapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot])
+      await components.snapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot])
       expect(dbQuerySpy).toBeCalledTimes(0)
     })
 
@@ -53,10 +53,10 @@ describe('precessed snapshot storage', () => {
       const processedSnapshot = 'someHash'
       await components.snapshotsRepository.saveProcessedSnapshot(components.database, processedSnapshot, Date.now())
 
-      await components.processedSnapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot])
+      await components.snapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot])
       // now the snapshot 'processedSnapshot' is cached
       const anotherHashNotInCache = 'anotherHashNotInCache'
-      await components.processedSnapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot, anotherHashNotInCache])
+      await components.snapshotStorage.filterProcessedSnapshotsFrom([processedSnapshot, anotherHashNotInCache])
       expect(dbQuerySpy).toBeCalledWith(
         expect.anything(),
         expect.arrayContaining([processedSnapshot, anotherHashNotInCache])
@@ -81,15 +81,15 @@ describe('precessed snapshot storage', () => {
         Date.now()
       )
 
-      await components.processedSnapshotStorage.filterProcessedSnapshotsFrom([
+      await components.snapshotStorage.filterProcessedSnapshotsFrom([
         processedSnapshot,
         otherProcessedSnapshot
       ])
-      await components.processedSnapshotStorage.filterProcessedSnapshotsFrom([anotherProcessedSnapshot])
+      await components.snapshotStorage.filterProcessedSnapshotsFrom([anotherProcessedSnapshot])
 
       // now the result should be cached
       dbQuerySpy.mockClear()
-      await components.processedSnapshotStorage.filterProcessedSnapshotsFrom([
+      await components.snapshotStorage.filterProcessedSnapshotsFrom([
         processedSnapshot,
         otherProcessedSnapshot,
         anotherProcessedSnapshot
@@ -108,7 +108,7 @@ describe('precessed snapshot storage', () => {
       const expectedProcessTime = Date.now()
       jest.spyOn(Date, 'now').mockReturnValue(expectedProcessTime)
 
-      await components.processedSnapshotStorage.markSnapshotAsProcessed(processedSnapshot)
+      await components.snapshotStorage.markSnapshotAsProcessed(processedSnapshot)
 
       expect(saveProcessedSnapshotSpy).toBeCalledWith(expect.anything(), processedSnapshot, expectedProcessTime)
     })
@@ -117,8 +117,8 @@ describe('precessed snapshot storage', () => {
       const { components } = server
       const processedSnapshot = 'someHash'
 
-      await components.processedSnapshotStorage.markSnapshotAsProcessed(processedSnapshot)
-      const processedSnapshots = await components.processedSnapshotStorage.filterProcessedSnapshotsFrom([
+      await components.snapshotStorage.markSnapshotAsProcessed(processedSnapshot)
+      const processedSnapshots = await components.snapshotStorage.filterProcessedSnapshotsFrom([
         processedSnapshot
       ])
       expect(dbQuerySpy).toBeCalledTimes(0)

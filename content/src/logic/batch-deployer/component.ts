@@ -39,7 +39,6 @@ export function createBatchDeployerComponent(
     | 'deployedEntitiesBloomFilter'
     | 'storage'
     | 'failedDeployments'
-    | 'failedDeploymentsReporter'
     | 'deploymentsRepository'
   >,
   syncOptions: {
@@ -259,7 +258,7 @@ export function createBatchDeployerComponent(
                   reason: errorDescription
                 })
                 // failed deployments are automatically rescheduled
-                await components.failedDeploymentsReporter.reportFailure({
+                await components.failedDeployments.reportFailure({
                   entityType: entity.entityType as any,
                   entityId: entity.entityId,
                   reason: FailureReason.DEPLOYMENT_ERROR,

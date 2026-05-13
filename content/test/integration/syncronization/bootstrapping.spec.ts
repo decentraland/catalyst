@@ -7,7 +7,7 @@ import { assertDeploymentsAreReported, buildDeployment } from '../E2EAssertions'
 import { setupTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
 import { startProgramAndWaitUntilBootstrapFinishes, TestProgram } from '../TestProgram'
-import { State } from '../../../src/adapters/synchronization-state'
+import { State } from '../../../src/logic/sync-orchestrator'
 
 // Captured at module load time, before any beforeEach installs a Date.now spy.
 // fakeNow uses this to read real elapsed time without re-entering its own mock
@@ -45,8 +45,8 @@ describe('Bootstrapping synchronization tests', function () {
     jest.spyOn(Date, 'now').mockImplementation(fakeNow)
     jest.spyOn(server1.components.validator, 'validate').mockResolvedValue({ ok: true })
     jest.spyOn(server2.components.validator, 'validate').mockResolvedValue({ ok: true })
-    jest.spyOn(server1.components.synchronizationState, 'getState').mockReturnValue(State.SYNCING)
-    jest.spyOn(server2.components.synchronizationState, 'getState').mockReturnValue(State.SYNCING)
+    jest.spyOn(server1.components.syncOrchestrator, 'getState').mockReturnValue(State.SYNCING)
+    jest.spyOn(server2.components.syncOrchestrator, 'getState').mockReturnValue(State.SYNCING)
     loggerIndex = 1
   })
 
@@ -122,7 +122,7 @@ describe('Bootstrapping synchronization tests', function () {
 
     // now we start a new server 2 so it processes the 3 snapshots: the first one, the second one and the 5 empty ones (only one of these processed)
     const markSnapshotAsProcessedSpy = jest.spyOn(
-      server2.components.processedSnapshotStorage,
+      server2.components.snapshotStorage,
       'markSnapshotAsProcessed'
     )
     jest.spyOn(server2.components.snapshotStorage, 'has').mockResolvedValue(false)
@@ -226,7 +226,7 @@ describe('Bootstrapping synchronization tests', function () {
   })
 
   it('when a server is bootstrapping, it should not accept new deployments', async () => {
-    jest.spyOn(server1.components.synchronizationState, 'getState').mockReturnValue(State.BOOTSTRAPPING)
+    jest.spyOn(server1.components.syncOrchestrator, 'getState').mockReturnValue(State.BOOTSTRAPPING)
     await server1.startProgram()
 
     await expect(deployEntityAtTimestamp(server1, 'p1', fakeNow() + 1)).rejects.toThrow(
@@ -235,7 +235,7 @@ describe('Bootstrapping synchronization tests', function () {
   })
 
   it('when a server is syncing, it should accept new deployments', async () => {
-    jest.spyOn(server1.components.synchronizationState, 'getState').mockReturnValue(State.SYNCING)
+    jest.spyOn(server1.components.syncOrchestrator, 'getState').mockReturnValue(State.SYNCING)
     await server1.startProgram()
 
     const deployment = await deployEntityAtTimestamp(server1, 'p1', fakeNow() + 1)

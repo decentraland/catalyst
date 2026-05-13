@@ -9,8 +9,8 @@ import assert from 'assert'
 import { HTTPProvider } from 'eth-connect'
 
 import { isEntityContentUnchanged } from '../../../src/logic/deployment-service'
-import { createHashing } from '../../../src/logic/hashing'
-import { createEntityParser } from '../../../src/logic/entity-parser'
+import { createCrypto } from '../../../src/logic/crypto'
+import { createEntities } from '../../../src/logic/entities'
 import { DEFAULT_ENTITIES_CACHE_SIZE, Environment, EnvironmentConfig } from '../../../src/Environment'
 import {
   Deployment,
@@ -35,7 +35,6 @@ import { createPointerLockManager } from '../../../src/adapters/pointer-lock-man
 import { createFailedDeployments } from '../../../src/adapters/failed-deployments'
 import { createTestDatabaseComponent } from '../../mocks/database-component-mock'
 import { createSequentialTaskExecutor } from '../../../src/logic/sequential-task-executor'
-import { createAuthenticator } from '../../../src/logic/authenticator'
 import { DELTA_POINTER_RESULT } from '../../../src/logic/pointer-manager'
 import { EntityVersion } from '../../../src/types'
 import { buildEntityAndFile } from '../../helpers/entity-tests-helper'
@@ -206,7 +205,7 @@ describe('Deployer', function () {
     const failedDeployments = await createFailedDeployments({ metrics, database })
     const storage = createInMemoryStorage()
     const pointerManager = createNoOpPointerManager()
-    const authenticator = createAuthenticator(
+    const crypto = createCrypto(
       new HTTPProvider('https://rpc.decentraland.org/mainnet?project=catalyst-ci'),
       [DECENTRALAND_ADDRESS]
     )
@@ -244,15 +243,14 @@ describe('Deployer', function () {
       serverValidator,
       metrics,
       logs,
-      authenticator,
+      crypto,
       database,
       deployedEntitiesBloomFilter: deployedEntitiesBloomFilter,
       activeEntities,
       denylist,
       contentFilesRepository,
       deploymentsRepository,
-      hashing: createHashing(),
-      entityParser: createEntityParser()
+      entities: createEntities({ env })
     }
     const deployer = createDeploymentService(deployerComponents)
     return {

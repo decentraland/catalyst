@@ -3,6 +3,11 @@ import { SynchronizerComponent } from '@dcl/snapshots-fetcher'
 
 export type SyncJob = Awaited<ReturnType<SynchronizerComponent['syncWithServers']>>
 
+export enum State {
+  BOOTSTRAPPING = 'Bootstrapping',
+  SYNCING = 'Syncing'
+}
+
 export type ISyncOrchestrator = {
   /**
    * Kick off the cluster synchronization job once at server startup. Subscribes to the
@@ -17,4 +22,10 @@ export type ISyncOrchestrator = {
    * components have started — `service.ts` calls this explicitly.
    */
   synchronize(): Promise<[SyncJob, IFuture<void>]>
+
+  /** Current synchronization state. Starts at `BOOTSTRAPPING`; flips to `SYNCING` after the initial bootstrap finishes. */
+  getState(): State
+
+  /** Force-flip the state to `SYNCING`. Used by `service.ts` when synchronization is disabled via env. */
+  toSyncing(): void
 }
