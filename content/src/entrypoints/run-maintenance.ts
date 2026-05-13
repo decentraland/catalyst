@@ -61,7 +61,6 @@ void Lifecycle.run({
         metrics,
         database,
         storage,
-        fs,
         contentFilesRepository,
         deploymentsRepository,
         snapshotsRepository,

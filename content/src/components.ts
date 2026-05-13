@@ -296,7 +296,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       systemProperties,
       activeEntities,
       contentFilesRepository,
-      fs,
       deploymentsRepository,
       snapshotsRepository
     },

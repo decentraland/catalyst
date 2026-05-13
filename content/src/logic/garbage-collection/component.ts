@@ -18,7 +18,6 @@ export function createGarbageCollectionComponent(
     | 'database'
     | 'activeEntities'
     | 'contentFilesRepository'
-    | 'fs'
     | 'deploymentsRepository'
     | 'snapshotsRepository'
   >,

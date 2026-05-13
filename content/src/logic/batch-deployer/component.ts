@@ -55,9 +55,12 @@ export function createBatchDeployerComponent(
   // Returned component, captured by closures so internal calls to public methods route
   // through the returned object. Otherwise `jest.spyOn(component, 'deployEntityFromRemoteServer')`
   // would only intercept external callers (the property is overwritten on the returned
-  // object), missing the internal call site inside `handleDeploymentFromServers`. Filled
-  // via Object.assign after all the inner functions are declared.
-  const self: IBatchDeployer = {} as IBatchDeployer
+  // object), missing the internal call site inside `handleDeploymentFromServers`. Assigned
+  // below once all inner functions are declared; only `handleDeploymentFromServers` reads it
+  // and that runs asynchronously after the factory returns, so the assignment is always
+  // visible by the time it's needed.
+  // eslint-disable-next-line prefer-const -- forward-referenced let; assigned at end of factory
+  let self: IBatchDeployer
 
   // accumulator of all deployments
   const deploymentsMap = new Map<
@@ -290,7 +293,7 @@ export function createBatchDeployerComponent(
     }
   }
 
-  Object.assign(self, {
+  self = {
     async stop() {
       // stop will wait for the queue to end.
       return parallelDeploymentJobs.onIdle()
@@ -308,7 +311,7 @@ export function createBatchDeployerComponent(
     },
     deployEntityFromRemoteServer,
     deployDownloadedEntity
-  })
+  }
   return self
 }
 
