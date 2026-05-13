@@ -8,11 +8,16 @@ const FAILED_DEPLOYMENTS_METRIC = 'dcl_content_server_failed_deployments'
 /**
  * Owns both the failed-deployments table (SQL) and an in-process mirror of it (Map).
  *
- * Writes that need transactional control take a `DatabaseClient` so the calling logic
- * component can pass a transaction client; the in-memory mirror is updated synchronously
- * after the SQL await succeeds. Pure read methods serve from the cache without touching
- * the database. A `cacheFailedDeployment` escape hatch exists for non-snapshot failures
- * that are intentionally not persisted.
+ * The SQL methods (`saveSnapshotFailedDeployment`, `deleteFailedDeployment`) are pure
+ * persistence — they do NOT mutate the in-memory mirror. This avoids cache/DB drift
+ * when callers compose them inside a transaction: if the first statement commits to
+ * the cache but the second statement throws, the rollback would leave the cache out
+ * of sync with the rolled-back DB.
+ *
+ * Callers are responsible for the matching cache update via `cacheFailedDeployment`
+ * (upsert) once the transaction has been committed. The single-step convenience
+ * `removeFailedDeployment` colocates the SQL+evict because it isn't composed with
+ * any other transactional statement.
  */
 export async function createFailedDeployments(
   components: Pick<AppComponents, 'metrics' | 'database'>
@@ -40,14 +45,11 @@ export async function createFailedDeployments(
     return rows
   }
 
-  async function deleteFailedDeployment(db: DatabaseClient, entityId: string): Promise<void> {
+  async function deleteFromTable(db: DatabaseClient, entityId: string): Promise<void> {
     await db.queryWithValues(
       SQL`DELETE FROM failed_deployments WHERE entity_id = ${entityId}`,
       'delete_failed_deployment'
     )
-    if (failedDeploymentsByEntityId.delete(entityId)) {
-      observeSize()
-    }
   }
 
   return {
@@ -79,11 +81,9 @@ export async function createFailedDeployments(
           RETURNING entity_id`,
         'save_failed_deployment'
       )
-      failedDeploymentsByEntityId.set(entityId, deployment)
-      observeSize()
     },
 
-    deleteFailedDeployment,
+    deleteFailedDeployment: deleteFromTable,
 
     async cacheFailedDeployment(deployment: FailedDeployment) {
       failedDeploymentsByEntityId.set(deployment.entityId, deployment)
@@ -92,9 +92,13 @@ export async function createFailedDeployments(
 
     async removeFailedDeployment(entityId: string) {
       // Hot path called after every successful deployment; bail before touching the DB
-      // if the entity was never marked as failed.
+      // if the entity was never marked as failed. Single statement — no transaction
+      // composition risk, so the cache evict can safely follow the SQL.
       if (!failedDeploymentsByEntityId.has(entityId)) return
-      await deleteFailedDeployment(database, entityId)
+      await deleteFromTable(database, entityId)
+      if (failedDeploymentsByEntityId.delete(entityId)) {
+        observeSize()
+      }
     }
   }
 }

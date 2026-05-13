@@ -76,8 +76,8 @@ describe('when using the merged failed-deployments adapter', () => {
       )
     })
 
-    it('should upsert the deployment into the in-memory cache', async () => {
-      expect(await adapter.findFailedDeployment(baseDeployment.entityId)).toEqual(baseDeployment)
+    it('should NOT touch the in-memory cache (caller does the post-tx cache update via cacheFailedDeployment)', async () => {
+      expect(await adapter.findFailedDeployment(baseDeployment.entityId)).toBeUndefined()
     })
   })
 
@@ -101,8 +101,8 @@ describe('when using the merged failed-deployments adapter', () => {
       )
     })
 
-    it('should evict the deployment from the in-memory cache', async () => {
-      expect(await adapter.findFailedDeployment(baseDeployment.entityId)).toBeUndefined()
+    it('should NOT touch the in-memory cache (caller drives the cache evict explicitly after the transaction)', async () => {
+      expect(await adapter.findFailedDeployment(baseDeployment.entityId)).toEqual(baseDeployment)
     })
   })
 

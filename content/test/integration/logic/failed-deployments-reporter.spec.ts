@@ -48,8 +48,7 @@ describe('when reporting a failure end-to-end against a real database', () => {
       const cache = await startCacheWith(server, [baseDeployment])
       const reporter = createFailedDeploymentsReporter({
         database: server.components.database,
-        failedDeployments: cache,
-        
+        failedDeployments: cache
       })
       await reporter.reportFailure(newDeployment)
       reReadCache = await startCacheWith(server, [])
@@ -70,8 +69,7 @@ describe('when reporting a failure end-to-end against a real database', () => {
       const cache = await startCacheWith(server, [baseDeployment])
       const reporter = createFailedDeploymentsReporter({
         database: server.components.database,
-        failedDeployments: cache,
-        
+        failedDeployments: cache
       })
       await reporter.reportFailure(updatedDeployment)
       reReadCache = await startCacheWith(server, [])

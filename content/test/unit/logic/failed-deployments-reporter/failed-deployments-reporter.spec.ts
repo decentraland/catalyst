@@ -67,8 +67,8 @@ describe('when the reporter is asked to report a failure', () => {
         expect(failedDeployments.saveSnapshotFailedDeployment).toHaveBeenCalledWith(txClient, reReportedDeployment)
       })
 
-      it('should not call the cache-only escape hatch (the SQL methods handle the cache write themselves)', () => {
-        expect(failedDeployments.cacheFailedDeployment).not.toHaveBeenCalled()
+      it('should update the cache only after the transaction has committed', () => {
+        expect(failedDeployments.cacheFailedDeployment).toHaveBeenCalledWith(reReportedDeployment)
       })
     })
 
@@ -92,8 +92,8 @@ describe('when the reporter is asked to report a failure', () => {
         expect(failedDeployments.deleteFailedDeployment).not.toHaveBeenCalled()
       })
 
-      it('should not call the cache-only escape hatch (saveSnapshotFailedDeployment handles the cache write itself)', () => {
-        expect(failedDeployments.cacheFailedDeployment).not.toHaveBeenCalled()
+      it('should update the cache after the SQL insert succeeds', () => {
+        expect(failedDeployments.cacheFailedDeployment).toHaveBeenCalledWith(baseSnapshotDeployment)
       })
     })
   })

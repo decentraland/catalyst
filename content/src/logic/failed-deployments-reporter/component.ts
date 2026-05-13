@@ -12,7 +12,6 @@ export function createFailedDeploymentsReporter(
       if (isSnapshotFailedDeployment(deployment)) {
         // Snapshot deployments are persisted. If the entity is already cached we re-report it
         // by deleting and re-inserting inside a single transaction; otherwise a plain insert suffices.
-        // The cache write happens inside save/delete after the SQL succeeds.
         const reported = await failedDeployments.findFailedDeployment(deployment.entityId)
         if (reported) {
           await database.transaction(async (txDatabase) => {
@@ -22,9 +21,11 @@ export function createFailedDeploymentsReporter(
         } else {
           await failedDeployments.saveSnapshotFailedDeployment(database, deployment)
         }
-      } else {
-        await failedDeployments.cacheFailedDeployment(deployment)
       }
+      // Apply the cache update only after the SQL has fully committed. If we updated the
+      // cache inside the SQL methods, a multi-step transaction whose second statement
+      // throws would leave the cache out of sync with the rolled-back DB.
+      await failedDeployments.cacheFailedDeployment(deployment)
     }
   }
 }

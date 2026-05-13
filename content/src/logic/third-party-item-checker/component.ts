@@ -2,6 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import { ThirdPartyItemChecker } from '@dcl/content-validator'
 import { ContractAddress } from '@dcl/schemas'
+import { ILoggerComponent } from '@well-known-components/interfaces'
 import RequestManager, { ContractFactory, HTTPProvider, RPCSendableMessage, toData } from 'eth-connect'
 import { BlockchainCollectionThirdPartyItem, parseUrn } from '@dcl/urn-resolver'
 import { erc1155Abi, erc721Abi, sendBatch, sendSingle } from '../contract-helpers'
@@ -38,7 +39,7 @@ export async function createThirdPartyItemChecker(
   const erc1155ContractFactory = new ContractFactory(requestManager, erc1155Abi)
 
   const contractTypeCacheFile = path.join(storageRoot, `third-party-contracts-${network}.json`)
-  const contractTypes: Record<ContractAddress, ContractType> = loadCacheFile(contractTypeCacheFile)
+  const contractTypes: Record<ContractAddress, ContractType> = loadCacheFile(contractTypeCacheFile, logger)
 
   function isErc721(contractAddress: ContractAddress): boolean {
     return contractTypes[contractAddress.toLowerCase()] === ContractType.ERC721
@@ -184,14 +185,21 @@ export async function createThirdPartyItemChecker(
   }
 }
 
-function loadCacheFile(file: string): Record<string, ContractType> {
+function loadCacheFile(file: string, logger: ILoggerComponent.ILogger): Record<string, ContractType> {
   try {
     if (!fs.existsSync(file)) {
       saveCacheFile(file, {})
     }
     const fileContent = fs.readFileSync(file, 'utf-8')
     return JSON.parse(fileContent)
-  } catch (_) {
+  } catch (err) {
+    // Malformed JSON, missing read permission, etc. We can rebuild the cache from
+    // RPC calls, so fall through to an empty cache — but surface the problem so a
+    // recurring corruption isn't silent.
+    logger.warn('Failed to load third-party contract cache; starting with an empty cache.', {
+      file,
+      error: err instanceof Error ? err.message : String(err)
+    })
     return {}
   }
 }
