@@ -85,7 +85,7 @@ describe('Bootstrapping synchronization tests', function () {
 
     // we advance the clock 1 day so the new daily snapshot is created
     advanceTime(timeRangeLogic.MS_PER_DAY)
-    await server1.components.snapshotGenerator.generateSnapshots()
+    await server1.components.snapshots.runScheduledGeneration()
 
     // now we start a new server 2 and expect that after bootstrap, it processed all the snapshots from server 1
     await startProgramAndWaitUntilBootstrapFinishes(server2)
@@ -118,7 +118,7 @@ describe('Bootstrapping synchronization tests', function () {
     // now we advance the clock to the first week, and run the snapshot generation so it generates 7 daily snapshots
     // the first one and the second one with entities, the other 5 empty snapshots
     advanceTime(6 * timeRangeLogic.MS_PER_DAY)
-    await server1.components.snapshotGenerator.generateSnapshots()
+    await server1.components.snapshots.runScheduledGeneration()
 
     // now we start a new server 2 so it processes the 3 snapshots: the first one, the second one and the 5 empty ones (only one of these processed)
     const markSnapshotAsProcessedSpy = jest.spyOn(
@@ -147,7 +147,7 @@ describe('Bootstrapping synchronization tests', function () {
     // now we advance the clock one day more, 8 days passed, it will generate 1 weekly snapshot (replacing the first 7)
     // and a new daily one for the 8th day
     advanceTime(timeRangeLogic.MS_PER_DAY)
-    await server1.components.snapshotGenerator.generateSnapshots()
+    await server1.components.snapshots.runScheduledGeneration()
 
     // now we run the sync from snapshots again in server 2 (would be nice to have a mechanism to restart the server)
     // it should save the weekly snapshot as already processed as it already processed the 7 ones that it's replacing
@@ -196,7 +196,7 @@ describe('Bootstrapping synchronization tests', function () {
 
     // we advance the clock 1 day so the new daily snapshot is created
     advanceTime(timeRangeLogic.MS_PER_DAY)
-    await server1.components.snapshotGenerator.generateSnapshots()
+    await server1.components.snapshots.runScheduledGeneration()
 
     // now we start a new server 2 and expect that after bootstrap, it processed all the snapshots from server 1
     await startProgramAndWaitUntilBootstrapFinishes(server2)

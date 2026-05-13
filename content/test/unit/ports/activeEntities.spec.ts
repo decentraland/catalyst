@@ -14,8 +14,7 @@ import { ActiveEntities, createActiveEntitiesComponent } from '../../../src/logi
 import { Denylist } from '../../../src/adapters/denylist'
 import { createDeployedEntitiesBloomFilter } from '../../../src/adapters/deployed-entities-bloom-filter'
 import { createNoOpDeployRateLimiter } from '../../mocks/deploy-rate-limiter-mock'
-import { createFailedDeployments } from '../../../src/adapters/failed-deployments-cache'
-import { createFailedDeploymentsRepository } from '../../../src/adapters/failed-deployments-repository'
+import { createFailedDeployments } from '../../../src/adapters/failed-deployments'
 import { createPointersRepository } from '../../../src/adapters/pointers-repository'
 import { createActiveEntitiesRepository } from '../../../src/adapters/active-entities-repository'
 import { createContentFilesRepository } from '../../../src/adapters/content-files-repository'
@@ -463,8 +462,7 @@ async function buildComponents() {
   const logs = createLogsMockedComponent()
   const deployRateLimiter = createNoOpDeployRateLimiter()
   const metrics = createTestMetricsComponent(metricsDeclaration)
-  const failedDeploymentsRepository = createFailedDeploymentsRepository()
-  const failedDeployments = await createFailedDeployments({ metrics, database, failedDeploymentsRepository })
+  const failedDeployments = await createFailedDeployments({ metrics, database })
   const storage = createInMemoryStorage()
   const pointerManager = createNoOpPointerManager()
   const authenticator = createAuthenticator(

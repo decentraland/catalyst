@@ -5,16 +5,15 @@ import {
   FailureReason,
   IFailedDeploymentsComponent,
   SnapshotFailedDeployment
-} from '../../../../src/adapters/failed-deployments-cache'
-import { IFailedDeploymentsRepository } from '../../../../src/adapters/failed-deployments-repository'
+} from '../../../../src/adapters/failed-deployments'
+import { IDatabaseComponent } from '../../../../src/adapters/database'
 import { metricsDeclaration } from '../../../../src/metrics'
-import { createTestDatabaseComponent } from '../../../mocks/database-component-mock'
-import { AppComponents } from '../../../../src/types'
+import { createDatabaseMockedComponent } from '../../../mocks/database-component-mock'
 
-describe('when using the failed-deployments cache adapter', () => {
+describe('when using the merged failed-deployments adapter', () => {
   let baseDeployment: SnapshotFailedDeployment
-  let failedDeploymentsRepository: jest.Mocked<IFailedDeploymentsRepository>
-  let cacheComponents: Pick<AppComponents, 'database' | 'metrics' | 'failedDeploymentsRepository'>
+  let metrics: ReturnType<typeof createTestMetricsComponent>
+  let database: jest.Mocked<IDatabaseComponent>
 
   beforeEach(() => {
     baseDeployment = {
@@ -26,124 +25,161 @@ describe('when using the failed-deployments cache adapter', () => {
       errorDescription: 'some-error',
       snapshotHash: 'someHash'
     }
-    failedDeploymentsRepository = {
-      saveSnapshotFailedDeployment: jest.fn(),
-      deleteFailedDeployment: jest.fn(),
-      getSnapshotFailedDeployments: jest.fn().mockResolvedValue([])
-    }
-    cacheComponents = {
-      metrics: createTestMetricsComponent(metricsDeclaration),
-      database: createTestDatabaseComponent(),
-      failedDeploymentsRepository
-    }
+    metrics = createTestMetricsComponent(metricsDeclaration)
+    database = createDatabaseMockedComponent()
+    // Default: no rows persisted on start
+    database.queryWithValues.mockResolvedValue({ rows: [], rowCount: 0 } as any)
   })
 
   afterEach(() => {
     jest.restoreAllMocks()
   })
 
-  describe('and the cache is started after the repository returned one persisted deployment', () => {
-    let cache: IFailedDeploymentsComponent
+  describe('and the table contains one persisted deployment at start', () => {
+    let adapter: IFailedDeploymentsComponent
 
     beforeEach(async () => {
-      failedDeploymentsRepository.getSnapshotFailedDeployments.mockResolvedValueOnce([baseDeployment])
-      cache = await createFailedDeployments(cacheComponents)
-      await cache.start()
+      database.queryWithValues.mockResolvedValueOnce({ rows: [baseDeployment], rowCount: 1 } as any)
+      adapter = await createFailedDeployments({ metrics, database })
+      await adapter.start()
     })
 
     it('should expose the persisted deployment via getAllFailedDeployments', async () => {
-      const failed = await cache.getAllFailedDeployments()
-      expect(failed).toEqual([baseDeployment])
+      expect(await adapter.getAllFailedDeployments()).toEqual([baseDeployment])
     })
 
     it('should return the persisted deployment via findFailedDeployment for its entityId', async () => {
-      const failed = await cache.findFailedDeployment(baseDeployment.entityId)
-      expect(failed).toEqual(baseDeployment)
+      expect(await adapter.findFailedDeployment(baseDeployment.entityId)).toEqual(baseDeployment)
     })
 
     it('should return undefined via findFailedDeployment for an unknown entityId', async () => {
-      const failed = await cache.findFailedDeployment('unknown-entity-id')
-      expect(failed).toBeUndefined()
+      expect(await adapter.findFailedDeployment('unknown-entity-id')).toBeUndefined()
+    })
+  })
+
+  describe('and saveSnapshotFailedDeployment is called with an explicit db client', () => {
+    let adapter: IFailedDeploymentsComponent
+    let txClient: jest.Mocked<IDatabaseComponent>
+
+    beforeEach(async () => {
+      adapter = await createFailedDeployments({ metrics, database })
+      await adapter.start()
+      txClient = createDatabaseMockedComponent()
+      txClient.queryWithValues.mockResolvedValue({ rows: [], rowCount: 0 } as any)
+      await adapter.saveSnapshotFailedDeployment(txClient, baseDeployment)
+    })
+
+    it('should issue the INSERT through the supplied db client', () => {
+      expect(txClient.queryWithValues).toHaveBeenCalledWith(
+        expect.objectContaining({ text: expect.stringContaining('INSERT INTO failed_deployments') }),
+        'save_failed_deployment'
+      )
+    })
+
+    it('should NOT touch the in-memory cache (caller does the post-tx cache update via cacheFailedDeployment)', async () => {
+      expect(await adapter.findFailedDeployment(baseDeployment.entityId)).toBeUndefined()
+    })
+  })
+
+  describe('and deleteFailedDeployment is called with an explicit db client', () => {
+    let adapter: IFailedDeploymentsComponent
+    let txClient: jest.Mocked<IDatabaseComponent>
+
+    beforeEach(async () => {
+      database.queryWithValues.mockResolvedValueOnce({ rows: [baseDeployment], rowCount: 1 } as any)
+      adapter = await createFailedDeployments({ metrics, database })
+      await adapter.start()
+      txClient = createDatabaseMockedComponent()
+      txClient.queryWithValues.mockResolvedValue({ rows: [], rowCount: 0 } as any)
+      await adapter.deleteFailedDeployment(txClient, baseDeployment.entityId)
+    })
+
+    it('should issue the DELETE through the supplied db client', () => {
+      expect(txClient.queryWithValues).toHaveBeenCalledWith(
+        expect.objectContaining({ text: expect.stringContaining('DELETE FROM failed_deployments') }),
+        'delete_failed_deployment'
+      )
+    })
+
+    it('should NOT touch the in-memory cache (caller drives the cache evict explicitly after the transaction)', async () => {
+      expect(await adapter.findFailedDeployment(baseDeployment.entityId)).toEqual(baseDeployment)
     })
   })
 
   describe('and removeFailedDeployment is called for an entity that is in the cache', () => {
-    let cache: IFailedDeploymentsComponent
+    let adapter: IFailedDeploymentsComponent
 
     beforeEach(async () => {
-      failedDeploymentsRepository.getSnapshotFailedDeployments.mockResolvedValueOnce([baseDeployment])
-      cache = await createFailedDeployments(cacheComponents)
-      await cache.start()
-      await cache.removeFailedDeployment(baseDeployment.entityId)
+      database.queryWithValues.mockResolvedValueOnce({ rows: [baseDeployment], rowCount: 1 } as any)
+      adapter = await createFailedDeployments({ metrics, database })
+      await adapter.start()
+      database.queryWithValues.mockClear()
+      await adapter.removeFailedDeployment(baseDeployment.entityId)
     })
 
-    it('should delete the row from the repository using the same database client', () => {
-      expect(failedDeploymentsRepository.deleteFailedDeployment).toHaveBeenCalledWith(
-        cacheComponents.database,
-        baseDeployment.entityId
+    it('should issue the DELETE through the pool db client', () => {
+      expect(database.queryWithValues).toHaveBeenCalledWith(
+        expect.objectContaining({ text: expect.stringContaining('DELETE FROM failed_deployments') }),
+        'delete_failed_deployment'
       )
     })
 
     it('should remove the deployment from the cache', async () => {
-      const failed = await cache.getAllFailedDeployments()
-      expect(failed).toHaveLength(0)
+      expect(await adapter.getAllFailedDeployments()).toHaveLength(0)
     })
   })
 
   describe('and removeFailedDeployment is called for an entity that is not in the cache', () => {
-    let cache: IFailedDeploymentsComponent
+    let adapter: IFailedDeploymentsComponent
 
     beforeEach(async () => {
-      cache = await createFailedDeployments(cacheComponents)
-      await cache.start()
-      await cache.removeFailedDeployment('not-in-cache')
+      adapter = await createFailedDeployments({ metrics, database })
+      await adapter.start()
+      database.queryWithValues.mockClear()
+      await adapter.removeFailedDeployment('not-in-cache')
     })
 
-    it('should not call the repository', () => {
-      expect(failedDeploymentsRepository.deleteFailedDeployment).not.toHaveBeenCalled()
+    it('should not issue any SQL', () => {
+      expect(database.queryWithValues).not.toHaveBeenCalled()
     })
   })
 
   describe('and cacheFailedDeployment is called with a new deployment', () => {
-    let cache: IFailedDeploymentsComponent
+    let adapter: IFailedDeploymentsComponent
 
     beforeEach(async () => {
-      cache = await createFailedDeployments(cacheComponents)
-      await cache.start()
-      await cache.cacheFailedDeployment(baseDeployment)
+      adapter = await createFailedDeployments({ metrics, database })
+      await adapter.start()
+      database.queryWithValues.mockClear()
+      await adapter.cacheFailedDeployment(baseDeployment)
     })
 
-    it('should not write to the repository (cache adapter is write-through, persistence is the reporter`s job)', () => {
-      expect(failedDeploymentsRepository.saveSnapshotFailedDeployment).not.toHaveBeenCalled()
-      expect(failedDeploymentsRepository.deleteFailedDeployment).not.toHaveBeenCalled()
+    it('should not issue any SQL (cache-only escape hatch for non-persisted failures)', () => {
+      expect(database.queryWithValues).not.toHaveBeenCalled()
     })
 
     it('should expose the deployment via findFailedDeployment', async () => {
-      const failed = await cache.findFailedDeployment(baseDeployment.entityId)
-      expect(failed).toEqual(baseDeployment)
+      expect(await adapter.findFailedDeployment(baseDeployment.entityId)).toEqual(baseDeployment)
     })
   })
 
-  describe('and the cache is warmed with many persisted deployments', () => {
-    let cache: IFailedDeploymentsComponent
+  describe('and the table is warmed with many persisted deployments at start', () => {
+    let adapter: IFailedDeploymentsComponent
     let warmedDeployments: SnapshotFailedDeployment[]
-    let warmedCount: number
 
     beforeEach(async () => {
-      warmedCount = 250
-      warmedDeployments = Array.from({ length: warmedCount }, (_, i) => ({
+      warmedDeployments = Array.from({ length: 250 }, (_, i) => ({
         ...baseDeployment,
         entityId: `entity-${i}`,
         snapshotHash: `snapshot-${i}`
       }))
-      failedDeploymentsRepository.getSnapshotFailedDeployments.mockResolvedValueOnce(warmedDeployments)
-      cache = await createFailedDeployments(cacheComponents)
-      await cache.start()
+      database.queryWithValues.mockResolvedValueOnce({ rows: warmedDeployments, rowCount: 250 } as any)
+      adapter = await createFailedDeployments({ metrics, database })
+      await adapter.start()
     })
 
-    it('should enumerate every warmed deployment via getAllFailedDeployments (no implicit ttl/lru eviction)', async () => {
-      const failed = await cache.getAllFailedDeployments()
-      expect(failed).toHaveLength(warmedCount)
+    it('should enumerate every warmed deployment via getAllFailedDeployments', async () => {
+      expect(await adapter.getAllFailedDeployments()).toHaveLength(250)
     })
   })
 })

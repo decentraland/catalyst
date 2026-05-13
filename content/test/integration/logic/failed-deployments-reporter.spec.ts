@@ -5,7 +5,7 @@ import {
   FailureReason,
   IFailedDeploymentsComponent,
   SnapshotFailedDeployment
-} from '../../../src/adapters/failed-deployments-cache'
+} from '../../../src/adapters/failed-deployments'
 import { createFailedDeploymentsReporter } from '../../../src/logic/failed-deployments-reporter'
 import { TestProgram } from '../TestProgram'
 import { createDefaultServer, resetServer } from '../simpleTestEnvironment'
@@ -48,8 +48,7 @@ describe('when reporting a failure end-to-end against a real database', () => {
       const cache = await startCacheWith(server, [baseDeployment])
       const reporter = createFailedDeploymentsReporter({
         database: server.components.database,
-        failedDeployments: cache,
-        failedDeploymentsRepository: server.components.failedDeploymentsRepository
+        failedDeployments: cache
       })
       await reporter.reportFailure(newDeployment)
       reReadCache = await startCacheWith(server, [])
@@ -70,8 +69,7 @@ describe('when reporting a failure end-to-end against a real database', () => {
       const cache = await startCacheWith(server, [baseDeployment])
       const reporter = createFailedDeploymentsReporter({
         database: server.components.database,
-        failedDeployments: cache,
-        failedDeploymentsRepository: server.components.failedDeploymentsRepository
+        failedDeployments: cache
       })
       await reporter.reportFailure(updatedDeployment)
       reReadCache = await startCacheWith(server, [])
@@ -91,7 +89,7 @@ async function startCacheWith(
 ): Promise<IFailedDeploymentsComponent> {
   await server.components.database.transaction(async (db) => {
     for (const deployment of base) {
-      await server.components.failedDeploymentsRepository.saveSnapshotFailedDeployment(db, deployment)
+      await server.components.failedDeployments.saveSnapshotFailedDeployment(db, deployment)
     }
   })
   const cache = await createFailedDeployments(server.components)
