@@ -13,7 +13,6 @@ import {
 } from '../../deployment-types'
 import { FailedDeployment } from '../../adapters/failed-deployments'
 import { DatabaseClient, DatabaseTransactionalClient } from '../../adapters/database'
-import { deployEntityFromRemoteServer } from '../sync-orchestrator'
 import { IGNORING_FIX_ERROR } from '../server-validator'
 import { AppComponents, DeploymentId, EntityVersion } from '../../types'
 import { DeploymentPointerChanges, IDeploymentsComponent } from './types'
@@ -54,6 +53,7 @@ export async function retryFailedDeploymentExecution(
     | 'failedDeployments'
     | 'failedDeploymentsReporter'
     | 'storage'
+    | 'batchDeployer'
   >,
   logger?: ILoggerComponent.ILogger
 ): Promise<void> {
@@ -72,8 +72,7 @@ export async function retryFailedDeploymentExecution(
     if (authChain) {
       logs.debug(`Will retry to deploy entity`, { entityId, entityType })
       try {
-        await deployEntityFromRemoteServer(
-          components,
+        await components.batchDeployer.deployEntityFromRemoteServer(
           entityId,
           entityType,
           authChain,

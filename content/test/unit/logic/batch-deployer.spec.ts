@@ -1,7 +1,6 @@
 import ms from 'ms'
 import { createBatchDeployerComponent } from '../../../src/logic/batch-deployer'
 import * as deployments from '../../../src/logic/deployments'
-import * as deployRemote from '../../../src/logic/sync-orchestrator'
 
 function createMockComponents() {
   return {
@@ -14,13 +13,17 @@ function createMockComponents() {
     },
     metrics: {
       increment: jest.fn(),
-      decrement: jest.fn()
+      decrement: jest.fn(),
+      startTimer: jest.fn().mockReturnValue({ end: jest.fn() })
     },
     fetcher: {},
-    deployer: {},
+    deployer: {
+      deployEntity: jest.fn().mockResolvedValue(0)
+    },
     downloadQueue: {},
     staticConfigs: {
-      contentStorageFolder: '/tmp'
+      contentStorageFolder: '/tmp',
+      tmpDownloadFolder: '/tmp'
     },
     database: {
       queryWithValues: jest.fn()
@@ -57,7 +60,6 @@ describe('createBatchDeployerComponent', () => {
   beforeEach(() => {
     markAsDeployed = jest.fn().mockResolvedValue(undefined)
     jest.spyOn(deployments, 'isEntityDeployed').mockResolvedValue(false)
-    jest.spyOn(deployRemote, 'deployEntityFromRemoteServer').mockResolvedValue(undefined as any)
   })
 
   afterEach(() => {
@@ -81,6 +83,7 @@ describe('createBatchDeployerComponent', () => {
           queueOptions: { autoStart: true, concurrency: 1, timeout: 10000 },
           profileDuration: ms('1 year')
         })
+        const deploySpy = jest.spyOn(batchDeployer, 'deployEntityFromRemoteServer').mockResolvedValue(undefined)
 
         // Advance time so the profile is now older than PROFILE_DURATION
         jest.advanceTimersByTime(120_000)
@@ -101,7 +104,7 @@ describe('createBatchDeployerComponent', () => {
 
         expect(markAsDeployed).toHaveBeenCalled()
         expect(components.metrics.increment).toHaveBeenCalledWith('dcl_ignored_sync_deployments')
-        expect(deployRemote.deployEntityFromRemoteServer).not.toHaveBeenCalled()
+        expect(deploySpy).not.toHaveBeenCalled()
       })
     })
 
@@ -113,6 +116,7 @@ describe('createBatchDeployerComponent', () => {
           queueOptions: { autoStart: true, concurrency: 1, timeout: 10000 },
           profileDuration: ms('1 year')
         })
+        const deploySpy = jest.spyOn(batchDeployer, 'deployEntityFromRemoteServer').mockResolvedValue(undefined)
 
         const recentTimestamp = Date.now() - 60_000
 
@@ -130,7 +134,7 @@ describe('createBatchDeployerComponent', () => {
 
         await batchDeployer.onIdle()
 
-        expect(deployRemote.deployEntityFromRemoteServer).toHaveBeenCalled()
+        expect(deploySpy).toHaveBeenCalled()
       })
     })
   })

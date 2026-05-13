@@ -3,7 +3,7 @@ import { IContentValidator } from './adapters/content-validator'
 import { IAuthenticator } from './logic/authenticator'
 import { ServerValidator } from './logic/server-validator'
 import { EntityType, SyncDeployment } from '@dcl/schemas'
-import { IDeployerComponent, SynchronizerComponent } from '@dcl/snapshots-fetcher'
+import { SynchronizerComponent } from '@dcl/snapshots-fetcher'
 import { IJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { ISnapshotStorageComponent } from '@dcl/snapshots-fetcher/dist/types'
 import {
@@ -50,6 +50,8 @@ import { IQueryParams } from './logic/query-params'
 import { IEntityParser } from './logic/entity-parser'
 import { IErc721 } from './logic/erc721'
 import { ISnapshots } from './logic/snapshots'
+import { ISyncOrchestrator } from './logic/sync-orchestrator'
+import { IBatchDeployer } from './logic/batch-deployer'
 import { IJobComponent } from '@dcl/job-component'
 
 // Minimum amount of needed stuff to make the sync work
@@ -92,7 +94,7 @@ export type AppComponents = {
     contentStorageFolder: string
     tmpDownloadFolder: string
   }
-  batchDeployer: IDeployerComponent
+  batchDeployer: IBatchDeployer
   synchronizer: SynchronizerComponent
   deployments: IDeploymentsComponent
   materializedViewUpdateJob: IJobComponent
@@ -125,6 +127,7 @@ export type AppComponents = {
   snapshotStorage: ISnapshotStorageComponent
   l1Provider: HTTPProvider
   tracer: ITracerComponent
+  syncOrchestrator: ISyncOrchestrator
   hashing: IHashing
   queryParams: IQueryParams
   entityParser: IEntityParser
@@ -147,6 +150,7 @@ export type MaintenanceComponents = {
   contentFilesRepository: IContentFilesRepository
   deploymentsRepository: IDeploymentsRepository
   snapshotsRepository: ISnapshotsRepository
+  garbageCollectionManager: IGarbageCollectionComponent
 }
 
 export type Timestamp = number
