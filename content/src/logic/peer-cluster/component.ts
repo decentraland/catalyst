@@ -2,6 +2,7 @@ import { CatalystServerInfo } from '@dcl/catalyst-contracts'
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import future from 'fp-future'
+import { v4 as uuidv4 } from 'uuid'
 import { EnvironmentConfig } from '../../Environment'
 import { AppComponents } from '../../types'
 import { IContentClusterComponent } from './types'
@@ -43,6 +44,8 @@ export function createContentCluster(
   const normalizedContentServerAddress = normalizeContentBaseUrl(
     components.env.getConfig<string>(EnvironmentConfig.CONTENT_SERVER_ADDRESS)
   )
+
+  const challengeText = uuidv4()
 
   async function getContentServersFromDao(): Promise<string[]> {
     try {
@@ -111,6 +114,10 @@ export function createContentCluster(
 
     getStatus(): { lastSyncWithDAO: number } {
       return { lastSyncWithDAO: timeOfLastSync }
+    },
+
+    getChallengeText(): string {
+      return challengeText
     }
   }
 }

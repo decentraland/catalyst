@@ -57,6 +57,6 @@ export async function main(program: Lifecycle.EntryPointParameters<AppComponents
   if (!disableSynchronization) {
     await components.syncOrchestrator.synchronize()
   } else {
-    components.synchronizationState.toSyncing()
+    components.syncOrchestrator.toSyncing()
   }
 }

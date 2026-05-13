@@ -182,7 +182,7 @@ describe('batch deployer - ', () => {
       })
 
     jest.spyOn(deployments, 'isEntityDeployed').mockResolvedValue(false)
-    const reportFailureSpy = jest.spyOn(components.failedDeploymentsReporter, 'reportFailure').mockResolvedValue()
+    const reportFailureSpy = jest.spyOn(components.failedDeployments, 'reportFailure').mockResolvedValue()
 
     const markedAsDeployed = new Set()
     await components.batchDeployer.scheduleEntityDeployment(

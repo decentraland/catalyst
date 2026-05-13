@@ -1,8 +1,19 @@
-import { I18N, BodyShape, Emote, StandardProps, Wearable, WearableRepresentation, Entity } from '@dcl/schemas'
+import { EntityContentItemReference } from '@dcl/hashing'
+import {
+  BodyShape,
+  Emote,
+  Entity,
+  EntityType,
+  I18N,
+  StandardProps,
+  Wearable,
+  WearableRepresentation
+} from '@dcl/schemas'
 import { EnvironmentConfig } from '../../Environment'
-import { AppComponents } from '../../types'
-import { findImageHash, findThumbnailHash } from '../entities'
-import { Erc721Entity, IErc721 } from './types'
+import { AnyObject, AppComponents } from '../../types'
+import { InvalidEntityError } from './errors'
+import { Erc721Entity, IEntities } from './types'
+import { findImageHash, findThumbnailHash } from './utils'
 
 type ERC721StandardTrait = {
   trait_type: string
@@ -27,11 +38,19 @@ const RARITIES_EMISSIONS = {
   unique: 1
 }
 
-export function createErc721(components: Pick<AppComponents, 'env'>): IErc721 {
+const textDecoder = new TextDecoder()
+
+export function createEntities(components: Pick<AppComponents, 'env'>): IEntities {
   const { env } = components
   const baseUrl = env.getConfig<string>(EnvironmentConfig.CONTENT_SERVER_ADDRESS)
 
   return {
+    parse(buffer: Uint8Array, id: string): Entity {
+      const entityAsObject = getObjectEntityFromBuffer(buffer)
+      validateObjectEntity(entityAsObject)
+      return parseEntityFromObject(entityAsObject, id)
+    },
+
     buildUrn(protocol: string, contract: string, option: string): string {
       const version = contract.startsWith('0x') ? 'v2' : 'v1'
       return `urn:decentraland:${protocol}:collections-${version}:${contract}:${option}`
@@ -74,6 +93,66 @@ export function createErc721(components: Pick<AppComponents, 'env'>): IErc721 {
       }
     }
   }
+}
+
+function getObjectEntityFromBuffer(buffer: Uint8Array): AnyObject {
+  try {
+    return JSON.parse(textDecoder.decode(buffer))
+  } catch (e) {
+    throw new InvalidEntityError('Failed to parse the entity file. Please make sure that it is a valid json.')
+  }
+}
+
+function parseContent(contents: any[]): EntityContentItemReference[] | undefined {
+  if (!contents || contents.length === 0) return
+
+  return contents.map(({ file, hash }) => {
+    if (!file || !hash) {
+      throw new InvalidEntityError('Content must contain a file name and a file hash')
+    }
+
+    if (
+      !(typeof file === 'string' || file instanceof String) ||
+      !(typeof hash === 'string' || hash instanceof String)
+    ) {
+      throw new InvalidEntityError('Please make sure that all file names and a file hashes are valid strings')
+    }
+
+    return { file: file as string, hash: hash as string }
+  })
+}
+
+function parseEntityFromObject(entityAsObject: AnyObject, id: string): Entity {
+  return {
+    id,
+    type: EntityType[(entityAsObject.type as string).toUpperCase().trim()],
+    pointers: (entityAsObject.pointers as string[]).map((pointer: string) => pointer.toLowerCase()),
+    content: parseContent(entityAsObject.content as Array<any>) || [],
+    version: (entityAsObject.version as string) ?? 'v3',
+    timestamp: entityAsObject.timestamp as number,
+    metadata: entityAsObject.metadata
+  }
+}
+
+function validateObjectEntity(entityAsObject: AnyObject): void {
+  const { type, pointers, timestamp, content } = entityAsObject
+
+  if (!type || !(Object.values(EntityType) as string[]).includes(type as string))
+    throw new InvalidEntityError(
+      `Please set a valid type. It must be one of ${Object.values(EntityType)}. We got '${type}'`
+    )
+
+  if (
+    !pointers ||
+    !Array.isArray(pointers) ||
+    !pointers.every((pointer) => typeof pointer === 'string' || pointer instanceof String)
+  )
+    throw new InvalidEntityError('Please set valid pointers')
+
+  if (!timestamp || typeof timestamp !== 'number')
+    throw new InvalidEntityError(`Please set a valid timestamp. We got ${timestamp}`)
+
+  if (!!content && !Array.isArray(content)) throw new InvalidEntityError('Expected an array as content')
 }
 
 /** Prioritize the english variant; otherwise return the first available. */

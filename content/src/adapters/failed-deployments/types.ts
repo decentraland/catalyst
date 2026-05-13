@@ -61,4 +61,11 @@ export type IFailedDeploymentsComponent = {
    * evict can safely follow the SQL. Skips work if the entity isn't currently cached.
    */
   removeFailedDeployment(entityId: string): Promise<void>
+  /**
+   * High-level: report a deployment failure. For snapshot deployments, persists to SQL
+   * (in a transaction if the entity is already failed, otherwise plain insert). For
+   * non-snapshot deployments, only the in-memory cache is updated. The cache mutation
+   * is always applied after the SQL has committed, to avoid cache/DB drift on rollback.
+   */
+  reportFailure(deployment: FailedDeployment): Promise<void>
 }

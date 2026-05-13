@@ -245,4 +245,38 @@ describe('when creating a content cluster component', () => {
       expect(cluster.getAllServersInCluster()).toEqual([])
     })
   })
+
+  describe('when exposing the challenge text', () => {
+    it('should expose a non-empty challenge text', async () => {
+      const env = new Environment()
+      env.setConfig(EnvironmentConfig.CONTENT_SERVER_ADDRESS, localAddress)
+      const logs = await setupLogs()
+      const daoClient = createDaoClient([localAddress])
+      const cluster = createContentCluster({ daoClient, logs, env }, 1000)
+
+      expect(cluster.getChallengeText()).toEqual(expect.any(String))
+      expect(cluster.getChallengeText().length).toBeGreaterThan(0)
+    })
+
+    it('should return the same challenge text on repeated calls', async () => {
+      const env = new Environment()
+      env.setConfig(EnvironmentConfig.CONTENT_SERVER_ADDRESS, localAddress)
+      const logs = await setupLogs()
+      const daoClient = createDaoClient([localAddress])
+      const cluster = createContentCluster({ daoClient, logs, env }, 1000)
+
+      expect(cluster.getChallengeText()).toBe(cluster.getChallengeText())
+    })
+
+    it('should generate a different challenge text for each instance', async () => {
+      const env = new Environment()
+      env.setConfig(EnvironmentConfig.CONTENT_SERVER_ADDRESS, localAddress)
+      const logs = await setupLogs()
+      const daoClient = createDaoClient([localAddress])
+      const first = createContentCluster({ daoClient, logs, env }, 1000)
+      const second = createContentCluster({ daoClient, logs, env }, 1000)
+
+      expect(first.getChallengeText()).not.toBe(second.getChallengeText())
+    })
+  })
 })

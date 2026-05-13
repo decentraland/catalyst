@@ -15,8 +15,8 @@ import {
 import { DatabaseClient } from '../../adapters/database'
 import { happenedBefore } from './time-sorting'
 import { AppComponents, EntityVersion } from '../../types'
+import { ICrypto } from '../crypto'
 import { calculateOverwrites, getDeployments, saveDeploymentAndContentFiles } from '../deployments'
-import { IHashing } from '../hashing'
 import { DELTA_POINTER_RESULT } from '../pointer-manager'
 import { IDeploymentService } from './types'
 
@@ -41,7 +41,7 @@ export function isEntityContentUnchanged(newEntity: Entity, activeEntity: Entity
  * them in the service (because there might be hundreds of files), we will send the hash result.
  */
 export async function hashFiles(
-  hashing: IHashing,
+  crypto: ICrypto,
   files: DeploymentFiles,
   entityId: string
 ): Promise<Map<string, Uint8Array>> {
@@ -49,8 +49,8 @@ export async function hashFiles(
     return files
   } else {
     const hashEntries = isIPFSHash(entityId)
-      ? await hashing.calculateIPFSHashes(files)
-      : await hashing.calculateDeprecatedHashes(files)
+      ? await crypto.calculateIPFSHashes(files)
+      : await crypto.calculateDeprecatedHashes(files)
     return new Map(hashEntries.map(({ hash, file }) => [hash, file]))
   }
 }
@@ -67,7 +67,7 @@ export function createDeploymentService(
     | 'validator'
     | 'serverValidator'
     | 'logs'
-    | 'authenticator'
+    | 'crypto'
     | 'database'
     | 'deployedEntitiesBloomFilter'
     | 'env'
@@ -75,8 +75,7 @@ export function createDeploymentService(
     | 'denylist'
     | 'deploymentsRepository'
     | 'contentFilesRepository'
-    | 'hashing'
-    | 'entityParser'
+    | 'entities'
   >
 ): IDeploymentService {
   const logger = components.logs.getLogger('deployer')
@@ -94,7 +93,7 @@ export function createDeploymentService(
     return (
       (context === DeploymentContext.FIX_ATTEMPT || context === DeploymentContext.SYNCED) &&
       new Date(entity.timestamp) < LEGACY_CONTENT_MIGRATION_TIMESTAMP &&
-      components.authenticator.isAddressOwnedByDecentraland(Authenticator.ownerAddress(authChain))
+      components.crypto.isAddressOwnedByDecentraland(Authenticator.ownerAddress(authChain))
     )
   }
 
@@ -280,7 +279,7 @@ export function createDeploymentService(
       }
 
       // Hash all files
-      const hashes: Map<string, Uint8Array> = await hashFiles(components.hashing, files, entityId)
+      const hashes: Map<string, Uint8Array> = await hashFiles(components.crypto, files, entityId)
 
       // Find entity file
       const entityFile = hashes.get(entityId)
@@ -291,7 +290,7 @@ export function createDeploymentService(
       // Parse entity file into an Entity
       let entity: Entity
       try {
-        entity = components.entityParser.parse(entityFile, entityId)
+        entity = components.entities.parse(entityFile, entityId)
         if (!entity) {
           return InvalidResult({ errors: ['There was a problem parsing the entity, it was null'] })
         }

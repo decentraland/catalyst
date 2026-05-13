@@ -45,7 +45,7 @@ describe('Delete unreferenced files - ', () => {
     await server.deployEntity(deployResult.deployData)
 
     const contentsByHash: Map<string, Uint8Array> = await hashFiles(
-      components.hashing,
+      components.crypto,
       deployResult.deployData.files,
       deployResult.deployData.entityId
     )
@@ -74,7 +74,7 @@ describe('Delete unreferenced files - ', () => {
     await server.deployEntity(deployResult.deployData)
 
     const contentsByHash: Map<string, Uint8Array> = await hashFiles(
-      components.hashing,
+      components.crypto,
       deployResult.deployData.files,
       deployResult.deployData.entityId
     )
@@ -123,7 +123,7 @@ describe('Delete unreferenced files - ', () => {
     await server.deployEntity(deployResult.deployData)
 
     const contentsByHash: Map<string, Uint8Array> = await hashFiles(
-      components.hashing,
+      components.crypto,
       deployResult.deployData.files,
       deployResult.deployData.entityId
     )

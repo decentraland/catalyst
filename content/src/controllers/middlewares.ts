@@ -1,18 +1,18 @@
 import { IHttpServerComponent, ILoggerComponent } from '@well-known-components/interfaces'
 import { AppComponents } from '../types'
-import { State } from '../adapters/synchronization-state'
+import { State } from '../logic/sync-orchestrator'
 import { Error } from '@dcl/catalyst-api-specs/lib/client'
 import { InvalidRequestError, NotFoundError } from './errors'
 import { Middleware } from '@dcl/http-server/dist/middleware'
 
 export function preventExecutionIfBoostrapping({
-  synchronizationState
-}: Pick<AppComponents, 'synchronizationState'>): Middleware<IHttpServerComponent.DefaultContext<object>> {
+  syncOrchestrator
+}: Pick<AppComponents, 'syncOrchestrator'>): Middleware<IHttpServerComponent.DefaultContext<object>> {
   return async (
     _ctx: IHttpServerComponent.DefaultContext<object>,
     next: () => Promise<IHttpServerComponent.IResponse>
   ): Promise<{ status: number; body: Error } | IHttpServerComponent.IResponse> => {
-    if (synchronizationState.getState() == State.BOOTSTRAPPING) {
+    if (syncOrchestrator.getState() == State.BOOTSTRAPPING) {
       const errorBody: Error = {
         error: 'Deployments are not allowed while the Catalyst is bootstrapping'
       }

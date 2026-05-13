@@ -51,7 +51,6 @@ export async function retryFailedDeploymentExecution(
     | 'deployer'
     | 'contentCluster'
     | 'failedDeployments'
-    | 'failedDeploymentsReporter'
     | 'storage'
     | 'batchDeployer'
   >,
@@ -84,7 +83,7 @@ export async function retryFailedDeploymentExecution(
         const errorDescription = error.message + ''
 
         if (!errorDescription.includes(IGNORING_FIX_ERROR)) {
-          await components.failedDeploymentsReporter.reportFailure({ ...failedDeployment, errorDescription })
+          await components.failedDeployments.reportFailure({ ...failedDeployment, errorDescription })
         }
 
         logs.error(`Failed to fix deployment of entity`, { entityId, entityType, errorDescription })
