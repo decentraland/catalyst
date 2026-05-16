@@ -5,8 +5,7 @@
     "sourceType": "module", // Allows for the use of imports
     "project": [
       // Specify it only for TypeScript files
-      "./content/tsconfig.json",
-      "./lambdas/tsconfig.json"
+      "./tsconfig.json"
     ]
   },
   "extends": [

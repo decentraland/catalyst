@@ -4,9 +4,7 @@ RUN apk add --no-cache git
 
 COPY package.json .
 COPY yarn.lock .
-COPY content/blocks-cache-*.csv content/
-COPY content/package.json content/
-COPY lambdas/package.json lambdas/
+COPY blocks-cache-*.csv ./
 
 # get production dependencies
 FROM base as dependencies
@@ -23,11 +21,9 @@ FROM base
 RUN apk update && apk upgrade
 
 COPY --from=dependencies /app/node_modules ./node_modules/
-COPY --from=dependencies /app/content/node_modules ./node_modules/
 
-COPY --from=catalyst-builder /app/content/dist/src content/
-COPY --from=catalyst-builder /app/content/blocks-cache-*.csv /app/
-COPY --from=catalyst-builder /app/lambdas/dist/src lambdas/
+COPY --from=catalyst-builder /app/dist/src ./
+COPY --from=catalyst-builder /app/blocks-cache-*.csv /app/
 
 # https://docs.docker.com/engine/reference/builder/#arg
 ARG CURRENT_VERSION=4.0.0-ci
@@ -50,4 +46,4 @@ RUN apk add --no-cache tini
 ENTRYPOINT ["/sbin/tini", "--"]
 
 # Run the program under Tini
-CMD [ "/usr/local/bin/node", "--max-old-space-size=8192", "content/entrypoints/run-server.js" ]
+CMD [ "/usr/local/bin/node", "--max-old-space-size=8192", "entrypoints/run-server.js" ]

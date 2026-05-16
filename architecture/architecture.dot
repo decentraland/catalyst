@@ -49,23 +49,18 @@ digraph G {
             URL="https://nats.io/"
         ]        
 
-        BFF -> Archipelago -> Lambdas -> Content
+        BFF -> Archipelago -> Content
         edge [
             style = "normal"
             dir=both
         ]
-        
+
         Content:e -> Nginx [constraint=false]
         Content [
             label=<Content Server<BR/> <FONT POINT-SIZE="10">Assets Storage</FONT>>
-            URL="https://github.com/decentraland/catalyst/tree/main/content"
+            URL="https://github.com/decentraland/catalyst"
         ]
-        Lambdas:e -> Nginx [constraint=false]
-        Lambdas [
-            label=<Lambdas<BR/> <FONT POINT-SIZE="10">Utilities to retrieve and validate data</FONT>>
-            URL="https://github.com/decentraland/catalyst/tree/main/lambdas"
-        ]
-        BFF -> Nginx [constraint=false]        
+        BFF -> Nginx [constraint=false]
         
         BFF -> NATS[constraint=false]        
         Archipelago -> NATS[constraint=false]
@@ -84,7 +79,7 @@ digraph G {
         label=<LiveKit<BR/> <FONT POINT-SIZE="10">High Quality Media Server</FONT>>
         URL="https://livekit.io/"
     ]
-    Lambdas:ne -> TheGraph [ltail=cluster_catalyst]
+    Content:ne -> TheGraph [ltail=cluster_catalyst]
 
     edge [dir=both]
     Nginx -> CatalystClient    

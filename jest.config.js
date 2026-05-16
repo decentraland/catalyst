@@ -1,3 +1,5 @@
+const sharedIgnorePatterns = ['/node_modules/', '/dist/', '/.claude/', '/.agents/']
+
 module.exports = {
   coverageDirectory: 'coverage',
   coverageReporters: ['json'],
@@ -17,7 +19,8 @@ module.exports = {
           tsconfig: '<rootDir>/test/tsconfig.json'
         }
       },
-      testMatch: ['**/test/unit/**/*.spec.(ts)'],
+      testMatch: ['<rootDir>/test/unit/**/*.spec.(ts)'],
+      testPathIgnorePatterns: sharedIgnorePatterns,
       preset: 'ts-jest',
       moduleNameMapper: {
         '^file-type$': '<rootDir>/__mocks__/file-type.ts'
@@ -30,7 +33,8 @@ module.exports = {
           tsconfig: '<rootDir>/test/tsconfig.json'
         }
       },
-      testMatch: ['**/test/integration/**/*.spec.(ts)'],
+      testMatch: ['<rootDir>/test/integration/**/*.spec.(ts)'],
+      testPathIgnorePatterns: sharedIgnorePatterns,
       globalSetup: './jest.globalSetup.ts',
       globalTeardown: './jest.globalTeardown.ts',
       setupFilesAfterEnv: ['./jest.setupFilesAfterEnv.ts'],
