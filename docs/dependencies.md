@@ -1,4 +1,4 @@
-# Content Server dependencies
+# Dependencies
 ```mermaid
 graph LR
 

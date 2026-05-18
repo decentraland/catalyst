@@ -23,7 +23,7 @@ jobs:
       - name: lint
         run: yarn lint:check
 
-  test:
+  test-content:
     runs-on: ubuntu-latest
     services:
       postgres:
