@@ -1,9 +1,11 @@
 import { HandlerContextWithPath } from '../../types'
 import { NotFoundError } from '../errors'
-import { checkNotModified, createContentFileHeaders, retrieveContentWithRange } from '../utils'
+import { checkNotModified, createContentFileHeaders, observeContentBodySize, retrieveContentWithRange } from '../utils'
 
 // Method: GET or HEAD
-export async function getContentHandler(context: HandlerContextWithPath<'storage', '/contents/:hashId'>) {
+export async function getContentHandler(
+  context: HandlerContextWithPath<'storage' | 'metrics' | 'logs', '/contents/:hashId'>
+) {
   const shouldCalculateContentType = context.url.searchParams.has('includeMimeType')
   const hash = context.params.hashId
 
@@ -34,12 +36,17 @@ export async function getContentHandler(context: HandlerContextWithPath<'storage
     ? calculatedHeaders
     : { ...calculatedHeaders, 'Content-Type': 'application/octet-stream' }
 
+  const body =
+    context.request.method.toUpperCase() === 'GET'
+      ? observeContentBodySize(await content.asRawStream(), content.size, hash, context.components)
+      : undefined
+
   return {
     status,
     headers: {
       ...headers,
       ...result.rangeHeaders
     },
-    body: context.request.method.toUpperCase() === 'GET' ? await content.asRawStream() : undefined
+    body
   }
 }

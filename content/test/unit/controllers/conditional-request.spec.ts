@@ -14,6 +14,13 @@ describe('when handling conditional requests', () => {
 
   let contentItem: ContentItem
   let storage: IContentStorageComponent
+  // The body-size observer in the handlers needs `metrics` and `logs`; the
+  // 200-path tests below would otherwise crash on `components.logs.getLogger`
+  // even though they don't actually care about the observation behaviour.
+  // Casting to `any` keeps the call sites unchanged at runtime while
+  // satisfying the new handler type signatures.
+  const metrics = { increment: jest.fn() } as any
+  const logs = { getLogger: jest.fn().mockReturnValue({ warn: jest.fn() }) } as any
 
   beforeEach(() => {
     contentItem = createContentItemMock(500)
@@ -25,19 +32,19 @@ describe('when handling conditional requests', () => {
   })
 
   describe('when serving content by hash', () => {
-    let context: HandlerContextWithPath<'storage', '/contents/:hashId'>
+    let context: HandlerContextWithPath<'storage' | 'metrics' | 'logs', '/contents/:hashId'>
 
     describe('when the If-None-Match header matches the ETag', () => {
       beforeEach(() => {
         context = {
           params: { hashId },
-          components: { storage },
+          components: { storage, metrics, logs },
           url: new URL('http://localhost/contents/' + hashId),
           request: {
             method: 'GET',
             ...createRequestMock({ 'if-none-match': etag })
           }
-        } as unknown as HandlerContextWithPath<'storage', '/contents/:hashId'>
+        } as unknown as HandlerContextWithPath<'storage' | 'metrics' | 'logs', '/contents/:hashId'>
       })
 
       it('should return 304 with no body', async () => {
@@ -62,13 +69,13 @@ describe('when handling conditional requests', () => {
       beforeEach(() => {
         context = {
           params: { hashId },
-          components: { storage },
+          components: { storage, metrics, logs },
           url: new URL('http://localhost/contents/' + hashId),
           request: {
             method: 'GET',
             ...createRequestMock({ 'if-none-match': '"different-hash"' })
           }
-        } as unknown as HandlerContextWithPath<'storage', '/contents/:hashId'>
+        } as unknown as HandlerContextWithPath<'storage' | 'metrics' | 'logs', '/contents/:hashId'>
       })
 
       it('should return the full response', async () => {
@@ -82,13 +89,13 @@ describe('when handling conditional requests', () => {
       beforeEach(() => {
         context = {
           params: { hashId },
-          components: { storage },
+          components: { storage, metrics, logs },
           url: new URL('http://localhost/contents/' + hashId),
           request: {
             method: 'GET',
             ...createRequestMock()
           }
-        } as unknown as HandlerContextWithPath<'storage', '/contents/:hashId'>
+        } as unknown as HandlerContextWithPath<'storage' | 'metrics' | 'logs', '/contents/:hashId'>
       })
 
       it('should return the full response', async () => {
@@ -101,7 +108,7 @@ describe('when handling conditional requests', () => {
 
   describe('when serving an entity image', () => {
     let context: HandlerContextWithPath<
-      'activeEntities' | 'database' | 'storage',
+      'activeEntities' | 'database' | 'storage' | 'metrics' | 'logs',
       '/entities/active/entity/:pointer/image'
     >
 
@@ -138,7 +145,7 @@ describe('when handling conditional requests', () => {
             ...createRequestMock({ 'if-none-match': etag })
           }
         } as unknown as HandlerContextWithPath<
-          'activeEntities' | 'database' | 'storage',
+          'activeEntities' | 'database' | 'storage' | 'metrics' | 'logs',
           '/entities/active/entity/:pointer/image'
         >
       })
@@ -158,7 +165,7 @@ describe('when handling conditional requests', () => {
 
   describe('when serving an entity thumbnail', () => {
     let context: HandlerContextWithPath<
-      'database' | 'activeEntities' | 'storage',
+      'database' | 'activeEntities' | 'storage' | 'metrics' | 'logs',
       '/entities/active/entity/:pointer/thumbnail'
     >
 
@@ -195,7 +202,7 @@ describe('when handling conditional requests', () => {
             ...createRequestMock({ 'if-none-match': etag })
           }
         } as unknown as HandlerContextWithPath<
-          'database' | 'activeEntities' | 'storage',
+          'database' | 'activeEntities' | 'storage' | 'metrics' | 'logs',
           '/entities/active/entity/:pointer/thumbnail'
         >
       })

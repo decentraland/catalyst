@@ -1,11 +1,14 @@
 import { HandlerContextWithPath } from '../../types'
 import { NotFoundError } from '../errors'
 import { findEntityByPointer, findImageHash } from '../../logic/entities'
-import { checkNotModified, createContentFileHeaders, retrieveContentWithRange } from '../utils'
+import { checkNotModified, createContentFileHeaders, observeContentBodySize, retrieveContentWithRange } from '../utils'
 
 // Method: GET or HEAD
 export async function getEntityImageHandler(
-  context: HandlerContextWithPath<'activeEntities' | 'database' | 'storage', '/entities/active/entity/:pointer/image'>
+  context: HandlerContextWithPath<
+    'activeEntities' | 'database' | 'storage' | 'metrics' | 'logs',
+    '/entities/active/entity/:pointer/image'
+  >
 ) {
   const { activeEntities, database } = context.components
   const pointer: string = context.params.pointer
@@ -38,12 +41,17 @@ export async function getEntityImageHandler(
   const { content, status } = result
   const headers = await createContentFileHeaders(content, hash)
 
+  const body =
+    context.request.method.toUpperCase() === 'GET'
+      ? observeContentBodySize(await content.asRawStream(), content.size, hash, context.components)
+      : undefined
+
   return {
     status,
     headers: {
       ...headers,
       ...result.rangeHeaders
     },
-    body: context.request.method.toUpperCase() === 'GET' ? await content.asRawStream() : undefined
+    body
   }
 }

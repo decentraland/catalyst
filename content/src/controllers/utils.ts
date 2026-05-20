@@ -1,8 +1,10 @@
 import { ContentItem, FileInfo, IContentStorageComponent } from '@dcl/catalyst-storage'
+import { ILoggerComponent, IMetricsComponent } from '@well-known-components/interfaces'
+import { metricsDeclaration } from '../metrics'
 import { Pagination } from '../types'
 import { InvalidRequestError } from './errors'
 import { FileTypeParser } from 'file-type'
-import { Readable } from 'stream'
+import { Readable, Transform } from 'stream'
 
 export function paginationObject(url: URL, maxPageSize: number = 1000): Pagination {
   const pageSize = url.searchParams.has('pageSize') ? parseInt(url.searchParams.get('pageSize')!, 10) : 100
@@ -130,7 +132,13 @@ export async function createContentFileHeaders(content: ContentItem, hash: strin
     if (content.encoding) {
       headers['Content-Encoding'] = content.encoding
     }
-    if (content.size) {
+    // Use null-check rather than truthiness so a legitimate 0-byte file emits
+    // `Content-Length: 0` instead of being elided. A missing Content-Length
+    // forces chunked transfer encoding, which is indistinguishable from an
+    // empty-but-cleanly-terminated chunk stream at upstream caches — and that
+    // ambiguity is exactly what lets a truncated origin pull get cached as
+    // "valid 0-byte response" by aggressively-configured CDNs.
+    if (content.size != null) {
       headers['Content-Length'] = content.size.toString()
     }
     return headers
@@ -138,6 +146,85 @@ export async function createContentFileHeaders(content: ContentItem, hash: strin
     stream.destroy()
     throw error
   }
+}
+
+/**
+ * Wrap a content body stream in a passthrough that compares bytes-streamed
+ * against the size declared by storage, and emits a metric + warn log when
+ * the two disagree.
+ *
+ * Detects the failure mode we cannot observe today: a stream that begins
+ * normally and then ends short of `content.size` bytes for any reason
+ * (storage backend hiccup, file-type detection consuming bytes that don't
+ * get re-read, an upstream proxy mangling chunked encoding). Without this,
+ * an empty / truncated body looks identical to a successful response at the
+ * HTTP layer, and aggressively-cached CDNs in front of the catalyst will
+ * latch onto the broken response for the lifetime of their TTL.
+ *
+ * When `expectedSize` is null (size unknown — uncommon for stored objects,
+ * happens for some range responses) we can't validate and return the source
+ * stream unchanged. The metric only fires for cases where storage knows the
+ * size and the served body diverges from it.
+ *
+ * Source-stream errors are forwarded to the wrapped stream so the HTTP
+ * framework still tears the response down cleanly; the `error` label on the
+ * metric lets ops distinguish stream-errored short responses from
+ * cleanly-ended short responses (the latter is the more alarming case —
+ * means the origin claimed to send N bytes and then ended at <N without
+ * raising an error).
+ */
+export function observeContentBodySize(
+  source: Readable,
+  expectedSize: number | null,
+  hash: string,
+  components: {
+    metrics: IMetricsComponent<keyof typeof metricsDeclaration>
+    logs: ILoggerComponent
+  }
+): Readable {
+  if (expectedSize === null) return source
+
+  const logger = components.logs.getLogger('content-body-size-observer')
+  let observed = 0
+  let reported = false
+
+  const report = (reason: 'truncated' | 'error', error?: unknown) => {
+    if (reported) return
+    reported = true
+    components.metrics.increment('dcl_content_short_response_total', { reason })
+    logger.warn('content response body size mismatch', {
+      hash,
+      expectedSize,
+      observed,
+      reason,
+      ...(error instanceof Error ? { error: error.message } : {})
+    } as any)
+  }
+
+  // Transform is preferable to attaching a 'data' listener directly: a data
+  // listener can put the source into flowing mode prematurely, which races
+  // with the HTTP framework's own consumer. Transform respects backpressure
+  // and lets the framework drive the flow as it would for the raw source.
+  const counter = new Transform({
+    transform(chunk: Buffer | Uint8Array, _encoding, callback) {
+      observed += chunk.length
+      callback(null, chunk)
+    },
+    flush(callback) {
+      if (observed !== expectedSize) {
+        report('truncated')
+      }
+      callback()
+    }
+  })
+
+  source.on('error', (err) => {
+    report('error', err)
+    counter.destroy(err)
+  })
+  source.pipe(counter)
+
+  return counter
 }
 
 export async function retrieveContentWithRange(
