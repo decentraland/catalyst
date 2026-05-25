@@ -82,7 +82,7 @@ export class Environment implements IConfigComponent {
   async requireNumber(name: string): Promise<number> {
     const value = await this.getNumber(name)
     if (value === undefined) {
-      throw new Error('Configuration: string ' + name + ' is required')
+      throw new Error('Configuration: number ' + name + ' is required')
     }
     return value
   }
@@ -219,18 +219,18 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.FOLDER_MIGRATION_MAX_CONCURRENCY,
-      () => process.env.FOLDER_MIGRATION_MAX_CONCURRENCY ?? DEFAULT_FOLDER_MIGRATION_MAX_CONCURRENCY
+      () => Number(process.env.FOLDER_MIGRATION_MAX_CONCURRENCY) || DEFAULT_FOLDER_MIGRATION_MAX_CONCURRENCY
     )
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.HTTP_SERVER_PORT,
-      () => process.env.HTTP_SERVER_PORT ?? DEFAULT_HTTP_SERVER_PORT
+      () => Number(process.env.HTTP_SERVER_PORT) || DEFAULT_HTTP_SERVER_PORT
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_REQUESTS, () => process.env.LOG_REQUESTS !== 'false')
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL,
-      () => process.env.UPDATE_FROM_DAO_INTERVAL ?? ms('30m')
+      () => ms(process.env.UPDATE_FROM_DAO_INTERVAL ?? '30m')
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DECENTRALAND_ADDRESS, () => DECENTRALAND_ADDRESS)
     this.registerConfigIfNotAlreadySet(
@@ -244,7 +244,7 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.DEPLOYMENTS_DEFAULT_RATE_LIMIT_MAX,
-      () => process.env.DEPLOYMENTS_DEFAULT_RATE_LIMIT_MAX ?? 300
+      () => Number(process.env.DEPLOYMENTS_DEFAULT_RATE_LIMIT_MAX) || 300
     )
     this.registerConfigIfNotAlreadySet(
       env,
@@ -363,7 +363,7 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.PSQL_PORT,
-      () => process.env.POSTGRES_PORT ?? DEFAULT_DATABASE_CONFIG.port
+      () => Number(process.env.POSTGRES_PORT) || DEFAULT_DATABASE_CONFIG.port
     )
 
     this.registerConfigIfNotAlreadySet(
@@ -427,7 +427,7 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.ENTITIES_CACHE_SIZE,
-      () => process.env.ENTITIES_CACHE_SIZE ?? DEFAULT_ENTITIES_CACHE_SIZE
+      () => Number(process.env.ENTITIES_CACHE_SIZE) || DEFAULT_ENTITIES_CACHE_SIZE
     )
 
     /*
@@ -440,7 +440,7 @@ export class EnvironmentBuilder {
           .filter(([name, value]) => name.startsWith('DEPLOYMENT_RATE_LIMIT_MAX_') && !!value)
           .map(([name, value]) => [
             parseEntityType(name.replace('DEPLOYMENT_RATE_LIMIT_MAX_', '')) as EntityType,
-            value as any as number
+            parseInt(value!, 10)
           ])
       )
       return rateLimitMaxConfig ?? new Map()
@@ -466,7 +466,7 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.RETRY_FAILED_DEPLOYMENTS_DELAY_TIME,
-      () => process.env.RETRY_FAILED_DEPLOYMENTS_DELAY_TIME ?? ms('15m')
+      () => ms(process.env.RETRY_FAILED_DEPLOYMENTS_DELAY_TIME ?? '15m')
     )
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.READ_ONLY, () => process.env.READ_ONLY == 'true')
