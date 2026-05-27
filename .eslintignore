@@ -6,9 +6,7 @@ node_modules/
 **/node_modules
 **/__mocks__
 tmpbin
-content/test
-lambdas/test
-comms/lighthouse/test
+test
 jest.config.js
 printApiCoverage.js
 reportApiCoverage.js

@@ -2,9 +2,9 @@
   "compilerOptions": {
     "module": "commonjs",
     "target": "es2020",
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false,
     "stripInternal": true,
     "strictNullChecks": true,
     "pretty": true,
@@ -16,19 +16,20 @@
     "noUnusedLocals": true,
     "jsx": "react",
     "skipLibCheck": true,
+    "outDir": "dist",
+    "rootDir": ".",
+    "baseUrl": ".",
+    "tsBuildInfoFile": "./dist/.tsbuildinfo",
     "lib": [
       "es2020",
       "esnext.asynciterable",
       "esnext"
     ]
   },
-  "references": [
-    {
-      "path": "./content"
-    },
-    {
-      "path": "./lambdas"
-    }
+  "include": [
+    "src",
+    "test",
+    "__mocks__"
   ],
   "exclude": [
     "node_modules",
