@@ -5,6 +5,11 @@ import { DeploymentContext, isInvalidDeployment, isSuccessfulDeployment } from '
 import { FormHandlerContextWithPath } from '../../types'
 import { InvalidRequestError } from '../errors'
 
+// A real auth chain has 2-3 links; cap generously. This bounds the index-parsing loop below so a
+// crafted `authChain[<huge>][...]` field name can't drive a large iteration count on the public,
+// unauthenticated POST /entities endpoint (issue #1936).
+const MAX_AUTH_CHAIN_LENGTH = 10
+
 type ContentFile = {
   path?: string
   content: Buffer
@@ -116,6 +121,10 @@ function extractAuthChain(fields: Record<string, Field>): AuthLink[] | undefined
 
   if (biggestIndex === -1) {
     return undefined
+  }
+
+  if (biggestIndex >= MAX_AUTH_CHAIN_LENGTH) {
+    throw new InvalidRequestError(`Auth chain is too long; the maximum allowed is ${MAX_AUTH_CHAIN_LENGTH} elements`)
   }
 
   // fill all the authchain

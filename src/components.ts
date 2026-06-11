@@ -11,7 +11,7 @@ import { createSynchronizer } from '@dcl/snapshots-fetcher'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { createTracedFetcherComponent } from '@dcl/traced-fetch-component'
 import { createFetchComponent } from '@dcl/fetch-component'
-import { createHttpTracerComponent } from '@well-known-components/http-tracer-component'
+import { createHttpTracerComponent } from '@dcl/http-tracer-component'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTracerComponent } from '@well-known-components/tracer-component'
 import { HTTPProvider } from 'eth-connect'
@@ -464,13 +464,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   // Registers tracing middleware as a side effect (wraps each request in a trace span).
   // Registered before metrics so trace context is available to the metrics layer.
-  // `@well-known-components/http-tracer-component` is typed against the WKC `IHttpServerComponent`,
-  // whereas `server` now uses `@dcl/core-commons`' (native-fetch) one. They are structurally
-  // compatible for the tracer's purposes (it only wraps `server.use`), so assert the expected type.
-  createHttpTracerComponent({
-    server: server as unknown as Parameters<typeof createHttpTracerComponent>[0]['server'],
-    tracer
-  })
+  // `@dcl/http-tracer-component` shares the native-fetch `IHttpServerComponent` from
+  // `@dcl/core-commons`, so the v2 `server` is accepted directly (no cast needed).
+  createHttpTracerComponent({ server, tracer })
 
   await instrumentHttpServerWithPromClientRegistry({ server, metrics, config, registry: metrics.registry! })
 

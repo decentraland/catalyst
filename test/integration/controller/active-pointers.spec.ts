@@ -212,6 +212,24 @@ describe('Integration - Create entities', () => {
     expect(queryResult.rowCount).toBe(1)
     expect(queryResult.rows[0].deleter_entity_id).toBe(deleterDeploymentId)
   }
+
+  it('rejects an auth chain with an out-of-range index without a runaway loop (issue #1936)', async () => {
+    const form = new FormData()
+    form.append('entityId', 'QmTestEntityIdIgnoredBecauseAuthChainIsRejected')
+    // A single high-index auth-chain field; the handler must reject before iterating, so a crafted
+    // `authChain[<huge>][...]` field name can't drive a large loop on this public endpoint.
+    form.append('authChain[20][type]', 'SIGNER')
+    form.append('authChain[20][payload]', '0x1234')
+    form.append('authChain[20][signature]', '')
+
+    const response = await fetch(`${server.getUrl()}/entities`, {
+      method: 'POST',
+      body: form.getBuffer(),
+      headers: form.getHeaders()
+    })
+
+    expect(response.status).toBe(400)
+  })
 })
 
 function createForm(entityId: string, filename: string) {
