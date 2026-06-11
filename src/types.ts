@@ -7,12 +7,14 @@ import { IJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import {
   IConfigComponent,
   IFetchComponent,
-  IHttpServerComponent,
   ILoggerComponent,
   IMetricsComponent,
   ITracerComponent
 } from '@well-known-components/interfaces'
-import { FormDataContext } from '@well-known-components/multipart-wrapper'
+// `@dcl/http-server` v2 produces native-fetch request/response types, defined in `@dcl/core-commons`.
+// Source `IHttpServerComponent` from there so handler context types match what the server provides.
+import { IHttpServerComponent } from '@dcl/core-commons'
+import { Field, File } from '@well-known-components/multipart-wrapper'
 import { HTTPProvider } from 'eth-connect'
 import qs from 'qs'
 import { Environment } from './Environment'
@@ -53,6 +55,18 @@ export type HandlerContextWithPath<
   }>,
   Path
 >
+
+/**
+ * Handler context enriched with parsed multipart form data. Mirrors the shape from
+ * `@well-known-components/multipart-wrapper`, but binds to the native-fetch
+ * `IHttpServerComponent.DefaultContext` (from `@dcl/core-commons`) to match `@dcl/http-server` v2.
+ */
+export type FormDataContext<T> = IHttpServerComponent.DefaultContext<T> & {
+  formData: {
+    fields: Record<string, Field>
+    files: Record<string, File>
+  }
+}
 
 export type FormHandlerContextWithPath<
   ComponentNames extends keyof AppComponents,

@@ -1,4 +1,3 @@
-import fetch from 'node-fetch'
 import { makeNoopValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import { buildDeployData, EntityCombo } from '../E2ETestUtils'
 import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
@@ -62,7 +61,7 @@ describe('GET /contents/:hashId', () => {
     describe('and no range header is provided', () => {
       it('should respond with a 200 status, full content, Accept-Ranges, and CORS expose headers', async () => {
         const res = await fetch(`${server.getUrl()}/contents/${fileHash}`)
-        const body = await res.buffer()
+        const body = Buffer.from(await res.arrayBuffer())
         expect(res.status).toBe(200)
         expect(res.headers.get('accept-ranges')).toBe('bytes')
         expect(body.length).toBe(fileBuffer.length)
@@ -80,7 +79,7 @@ describe('GET /contents/:hashId', () => {
             headers: { Range: 'bytes=0-99' }
           })
         ])
-        const body = await rangeRes.buffer()
+        const body = Buffer.from(await rangeRes.arrayBuffer())
         expect(rangeRes.status).toBe(206)
         expect(rangeRes.headers.get('content-range')).toBe(`bytes 0-99/${fileBuffer.length}`)
         expect(rangeRes.headers.get('content-length')).toBe('100')
@@ -96,7 +95,7 @@ describe('GET /contents/:hashId', () => {
           const res = await fetch(`${server.getUrl()}/contents/${fileHash}`, {
             headers: { Range: `bytes=${start}-${end}` }
           })
-          const body = await res.buffer()
+          const body = Buffer.from(await res.arrayBuffer())
           expect(res.status).toBe(206)
           expect(body.length).toBe(100)
           expect(body).toEqual(fileBuffer.slice(start, end + 1))
@@ -109,7 +108,7 @@ describe('GET /contents/:hashId', () => {
           const res = await fetch(`${server.getUrl()}/contents/${fileHash}`, {
             headers: { Range: `bytes=${start}-` }
           })
-          const body = await res.buffer()
+          const body = Buffer.from(await res.arrayBuffer())
           expect(res.status).toBe(206)
           expect(body.length).toBe(50)
           expect(body).toEqual(fileBuffer.slice(start))
@@ -121,7 +120,7 @@ describe('GET /contents/:hashId', () => {
           const res = await fetch(`${server.getUrl()}/contents/${fileHash}`, {
             headers: { Range: 'bytes=-50' }
           })
-          const body = await res.buffer()
+          const body = Buffer.from(await res.arrayBuffer())
           expect(res.status).toBe(206)
           expect(body.length).toBe(50)
           expect(body).toEqual(fileBuffer.slice(fileBuffer.length - 50))
@@ -152,7 +151,7 @@ describe('GET /contents/:hashId', () => {
     describe('and the request method is HEAD', () => {
       it('should respond with a 200 status, the Accept-Ranges header, and no body', async () => {
         const res = await fetch(`${server.getUrl()}/contents/${fileHash}`, { method: 'HEAD' })
-        const body = await res.buffer()
+        const body = Buffer.from(await res.arrayBuffer())
         expect(res.status).toBe(200)
         expect(res.headers.get('accept-ranges')).toBe('bytes')
         expect(body.length).toBe(0)
@@ -164,7 +163,7 @@ describe('GET /contents/:hashId', () => {
             method: 'HEAD',
             headers: { Range: 'bytes=0-99' }
           })
-          const body = await res.buffer()
+          const body = Buffer.from(await res.arrayBuffer())
           expect(res.status).toBe(206)
           expect(res.headers.get('content-range')).toBe(`bytes 0-99/${fileBuffer.length}`)
           expect(body.length).toBe(0)
@@ -177,7 +176,7 @@ describe('GET /contents/:hashId', () => {
             method: 'HEAD',
             headers: { Range: `bytes=${fileBuffer.length + 100}-${fileBuffer.length + 200}` }
           })
-          const body = await res.buffer()
+          const body = Buffer.from(await res.arrayBuffer())
           expect(res.status).toBe(416)
           expect(res.headers.get('content-range')).toBe(`bytes */${fileBuffer.length}`)
           expect(body.length).toBe(0)

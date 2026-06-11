@@ -1,5 +1,5 @@
 import { createFsComponent } from '@dcl/catalyst-storage'
-import fetch from 'node-fetch'
+import { readFileSync } from 'fs'
 import { stopAllComponents } from '../../../src/logic/components-lifecycle'
 import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
@@ -221,9 +221,11 @@ function createForm(entityId: string, filename: string) {
   // Add entityId
   form.append('entityId', entityId)
 
-  // Add entity file
-  const entityFile = fs.createReadStream(getIntegrationResourcePathFor(filename))
-  form.append('files', entityFile)
+  // Add entity file. Read it into a Buffer (rather than a stream) so the form can be serialized
+  // synchronously with getBuffer() below — native fetch doesn't consume a form-data stream the way
+  // node-fetch did.
+  const entityFile = readFileSync(getIntegrationResourcePathFor(filename))
+  form.append('files', entityFile, { filename })
 
   // Add authChain. Just as a example
   const authChain = [
@@ -251,7 +253,11 @@ function createForm(entityId: string, filename: string) {
 }
 
 async function callCreateEntityEndpoint(server: TestProgram, form: FormData) {
-  const response = await fetch(`${server.getUrl()}/entities`, { method: 'POST', body: form })
+  const response = await fetch(`${server.getUrl()}/entities`, {
+    method: 'POST',
+    body: form.getBuffer(),
+    headers: form.getHeaders()
+  })
   expect(response.status).toBe(200)
   expect(await response.json()).toHaveProperty('creationTimestamp')
 }

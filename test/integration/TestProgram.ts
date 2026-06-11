@@ -1,8 +1,8 @@
 import { Entity } from '@dcl/schemas'
 import { ILoggerComponent, Lifecycle } from '@well-known-components/interfaces'
+import { createFetchComponent } from '@well-known-components/fetch-component'
 import { ContentClient, createContentClient } from 'dcl-catalyst-client/dist/client/ContentClient'
 import { DeploymentData } from 'dcl-catalyst-client/dist/client/utils/DeploymentBuilder'
-import fetch from 'node-fetch'
 import { EnvironmentConfig } from '../../src/Environment'
 import { AuditInfo, Deployment, DeploymentOptions, isInvalidDeployment } from '../../src/deployment-types'
 import { getDeployments } from '../../src/logic/deployments'
@@ -26,9 +26,14 @@ export class TestProgram {
   logger: ILoggerComponent.ILogger
 
   constructor(public components: AppComponents) {
+    // dcl-catalyst-client (21.x, its latest) is still built for node-fetch: it calls `.buffer()` on
+    // responses and posts deployments as a `form-data` stream, relying on node-fetch to set the
+    // multipart Content-Type. The production `components.fetcher` is now native fetch (via
+    // @dcl/fetch-component), which does neither, so give the test client its own node-fetch-backed
+    // fetcher from @well-known-components/fetch-component.
     this.client = createContentClient({
       url: this.getUrl(),
-      fetcher: components.fetcher
+      fetcher: createFetchComponent()
     })
     this.logger = components.logs.getLogger('TestProgram')
   }

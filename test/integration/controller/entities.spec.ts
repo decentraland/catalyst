@@ -1,4 +1,3 @@
-import fetch from 'node-fetch'
 import { makeNoopValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import { createDefaultServer } from '../simpleTestEnvironment'
 import { TestProgram } from '../TestProgram'

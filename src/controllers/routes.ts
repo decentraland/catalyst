@@ -1,6 +1,6 @@
 import { Router } from '@dcl/http-server'
-import { multipartParserWrapper } from '@well-known-components/multipart-wrapper'
 import { EnvironmentConfig } from '../Environment'
+import { multipartParserWrapper } from './multipart'
 import { GlobalContext } from '../types'
 import { getActiveEntitiesHandler } from './handlers/active-entities-handler'
 import { createEntity } from './handlers/create-entity-handler'
@@ -35,7 +35,10 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
     router.post(
       '/entities',
       preventExecutionIfBoostrapping({ syncOrchestrator: components.syncOrchestrator }),
-      multipartParserWrapper(createEntity)
+      multipartParserWrapper(createEntity, {
+        maxFileSize: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FILE_SIZE),
+        maxFiles: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FILE_COUNT)
+      })
     )
   }
 

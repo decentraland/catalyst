@@ -13,6 +13,12 @@ const DECENTRALAND_ADDRESS: EthAddress = '0x1337e0507eb4ab47e08a179573ed4533d9e2
 
 const DEFAULT_FOLDER_MIGRATION_MAX_CONCURRENCY = 1000
 export const DEFAULT_ENTITIES_CACHE_SIZE = 150000
+// HTTP-layer DoS guard for POST /entities uploads. The per-entity business limits live in
+// `@dcl/content-validator` (e.g. 15 MB/parcel for scenes) and run *after* the body is buffered,
+// so these caps only bound how much an unauthenticated client can stream into memory per request.
+// Generous on purpose; tune via env on catalysts that accept very large multi-parcel scenes.
+export const DEFAULT_MAX_UPLOAD_FILE_SIZE = 100 * 1024 * 1024 // 100 MB per file
+export const DEFAULT_MAX_UPLOAD_FILE_COUNT = 3000
 export const DEFAULT_ETH_NETWORK = 'sepolia'
 
 export const DEFAULT_ENS_OWNER_PROVIDER_URL_TESTNET =
@@ -160,6 +166,8 @@ export enum EnvironmentConfig {
   DENYLIST_FILE_NAME,
   DENYLIST_URLS,
   READ_ONLY,
+  MAX_UPLOAD_FILE_SIZE,
+  MAX_UPLOAD_FILE_COUNT,
   SUBGRAPH_COMPONENT_RETRIES,
   SUBGRAPH_COMPONENT_QUERY_TIMEOUT,
 
@@ -172,7 +180,10 @@ export enum EnvironmentConfig {
   // Decompression cache settings for folder-based storage
   STORAGE_DECOMPRESS_CACHE_TTL,
   STORAGE_DECOMPRESS_CACHE_MAX_SIZE,
-  STORAGE_DECOMPRESS_CACHE_EVICTION_INTERVAL
+  STORAGE_DECOMPRESS_CACHE_EVICTION_INTERVAL,
+  // Max bytes a single gzip content file may inflate to (decompression-bomb guard).
+  // Undefined falls back to the library default (256MB).
+  STORAGE_DECOMPRESS_MAX_FILE_SIZE
 }
 export class EnvironmentBuilder {
   private baseEnv: Environment
@@ -471,6 +482,16 @@ export class EnvironmentBuilder {
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.READ_ONLY, () => process.env.READ_ONLY == 'true')
 
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_UPLOAD_FILE_SIZE, () =>
+      process.env.MAX_UPLOAD_FILE_SIZE ? parseInt(process.env.MAX_UPLOAD_FILE_SIZE, 10) : DEFAULT_MAX_UPLOAD_FILE_SIZE
+    )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_UPLOAD_FILE_COUNT, () =>
+      process.env.MAX_UPLOAD_FILE_COUNT
+        ? parseInt(process.env.MAX_UPLOAD_FILE_COUNT, 10)
+        : DEFAULT_MAX_UPLOAD_FILE_COUNT
+    )
+
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.IGNORE_BLOCKCHAIN_ACCESS_CHECKS,
@@ -519,6 +540,11 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.STORAGE_DECOMPRESS_CACHE_EVICTION_INTERVAL, () =>
       process.env.STORAGE_DECOMPRESS_CACHE_EVICTION_INTERVAL
         ? ms(process.env.STORAGE_DECOMPRESS_CACHE_EVICTION_INTERVAL)
+        : undefined
+    )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.STORAGE_DECOMPRESS_MAX_FILE_SIZE, () =>
+      process.env.STORAGE_DECOMPRESS_MAX_FILE_SIZE
+        ? parseInt(process.env.STORAGE_DECOMPRESS_MAX_FILE_SIZE, 10)
         : undefined
     )
 

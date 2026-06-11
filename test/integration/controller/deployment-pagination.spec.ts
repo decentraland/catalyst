@@ -1,5 +1,5 @@
 import { EntityType } from '@dcl/schemas'
-import { createFetchComponent } from '@well-known-components/fetch-component'
+import { createFetchComponent } from '@dcl/fetch-component'
 import { DeploymentField } from '../../../src/types'
 import { DeploymentOptions, SortingField, SortingOrder } from '../../../src/deployment-types'
 import { createQueryParams } from '../../../src/logic/query-params'

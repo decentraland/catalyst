@@ -76,11 +76,11 @@ export async function createEntity(
     }
   } catch (error) {
     metrics.increment('dcl_deployments_endpoint_counter', { kind: 'error' })
+    // Never log `authChain` or `signature`: they are cryptographic credentials and
+    // must not end up in logs/aggregation. `entityId` + `ethAddress` are enough to debug.
     logger.error(`POST /entities - Internal server error '${error}'`, {
       entityId,
-      authChain: JSON.stringify(authChain),
       ethAddress,
-      signature,
       userAgent
     })
     logger.error(error)

@@ -5,7 +5,7 @@ import {
 } from '@dcl/catalyst-storage'
 import { ContentMapping } from '@dcl/schemas'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
-import { createFetchComponent } from '@well-known-components/fetch-component'
+import { createFetchComponent } from '@dcl/fetch-component'
 import { IFetchComponent, ILoggerComponent, Lifecycle } from '@well-known-components/interfaces'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@dcl/metrics'
@@ -39,7 +39,10 @@ void Lifecycle.run({
         LOG_LEVEL: 'INFO'
       })
     })
-    const fetcher = createFetchComponent()
+    // `@dcl/fetch-component` types its result via `@dcl/core-commons`' IFetchComponent; this bag is
+    // typed against `@well-known-components/interfaces`' version. They are structurally identical, so
+    // assert the WKC type at the boundary (see the equivalent note in src/components.ts).
+    const fetcher = createFetchComponent() as unknown as IFetchComponent
     const metrics = createTestMetricsComponent(metricsDeclaration)
     const env = await new EnvironmentBuilder().withConfig(EnvironmentConfig.PG_QUERY_TIMEOUT, 300_000).build()
     const fs = createFsComponent()

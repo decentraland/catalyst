@@ -1,5 +1,4 @@
 import { EntityType } from '@dcl/schemas'
-import fetch from 'node-fetch'
 import { makeNoopValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import { buildDeployData, deployEntitiesCombo } from '../E2ETestUtils'
 import { createDefaultServer } from '../simpleTestEnvironment'

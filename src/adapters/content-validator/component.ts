@@ -250,7 +250,8 @@ async function createSubgraphValidateFn(
  *  - otherwise                                  -> subgraph (TheGraph) checker
  */
 export async function createContentValidator(components: ContentValidatorDeps): Promise<IContentValidator> {
-  const { env, l1Provider, l2Provider } = components
+  const { env, logs, l1Provider, l2Provider } = components
+  const logger = logs.getLogger('content-validator')
 
   const externalCalls = await createExternalCallsBag(components)
 
@@ -261,6 +262,13 @@ export async function createContentValidator(components: ContentValidatorDeps): 
 
   let validate: ValidateFn
   if (ignoreBlockchainAccess) {
+    // This bypasses all on-chain ownership/access checks, so any signed request can
+    // deploy entities for pointers it does not own. It exists for tests/local dev only;
+    // warn loudly so it can be spotted if it ever leaks into a real deployment.
+    logger.warn(
+      'IGNORE_BLOCKCHAIN_ACCESS_CHECKS is enabled: blockchain ownership/access validation is DISABLED. ' +
+        'Deployments will NOT be checked for pointer ownership. This must never be set in production.'
+    )
     validate = await createIgnoreBlockchainAccessValidateFn(components, externalCalls)
   } else if (useOnChainValidator) {
     validate = await createOnChainValidateFn(components, externalCalls, l1Provider, l2Provider)
