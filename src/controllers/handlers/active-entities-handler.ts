@@ -9,13 +9,13 @@ export const activeEntitiesBodySchema = {
   oneOf: [
     {
       type: 'object',
-      properties: { ids: { type: 'array', items: { type: 'string' }, minItems: 1, maxItems: 1000 } },
+      properties: { ids: { type: 'array', items: { type: 'string', minLength: 1 }, minItems: 1, maxItems: 1000 } },
       required: ['ids'],
       additionalProperties: false
     },
     {
       type: 'object',
-      properties: { pointers: { type: 'array', items: { type: 'string' }, minItems: 1, maxItems: 1000 } },
+      properties: { pointers: { type: 'array', items: { type: 'string', minLength: 1 }, minItems: 1, maxItems: 1000 } },
       required: ['pointers'],
       additionalProperties: false
     }

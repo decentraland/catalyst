@@ -229,6 +229,10 @@ describe('Integration - Create entities', () => {
     })
 
     expect(response.status).toBe(400)
+    // Assert the index cap specifically — without it the loop would instead throw
+    // "Missing auth chain element at index 0", which would also be a 400 (so a bare status
+    // check wouldn't prove the cap fired).
+    expect((await response.json()).error).toContain('too long')
   })
 })
 
