@@ -54,6 +54,29 @@ describe('Integration - Entities', () => {
 
     expect(res.status).toBe(400)
   })
+
+  // A crafted authChain JSON field that parses to an empty array, a non-array, or an array whose
+  // first element is not an object used to crash with a 500 (TypeError on authChain[0].payload)
+  // before any validation ran.
+  it.each([
+    ['an empty array', '[]'],
+    ['a non-array value', '42'],
+    ['an object', '{}'],
+    ['an array with a null element', '[null]']
+  ])('returns 400 (not 500) when the authChain field is %s', async (_label, authChainValue) => {
+    const form = new FormData()
+    form.append('entityId', 'QmTestEntityId')
+    form.append('files', Buffer.from('content'), { filename: 'entity.json' })
+    form.append('authChain', authChainValue)
+
+    const res = await fetch(server.getUrl() + `/entities`, {
+      method: 'POST',
+      body: form.getBuffer(),
+      headers: form.getHeaders()
+    })
+
+    expect(res.status).toBe(400)
+  })
 })
 
 function buildValidEntityForm(): FormData {

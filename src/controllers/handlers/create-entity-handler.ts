@@ -35,7 +35,11 @@ export async function createEntity(
   const userAgent: string = context.request.headers.get('user-agent') ?? 'unknown'
 
   let authChain = extractAuthChain(context.formData.fields)
-  const ethAddress: EthAddress = authChain ? authChain[0].payload : ''
+  // Null-safe: a client-supplied `authChain` JSON can parse to an array whose first element is
+  // missing or not an object (e.g. `[]`, `[null]`). Reading `.payload` directly would throw a
+  // TypeError here — before the try/catch below — and surface as a 500. The structural check is
+  // left to AuthChain.validate(), which returns a clean 400.
+  const ethAddress: EthAddress = authChain?.[0]?.payload ?? ''
   const signature: Signature = context.formData.fields.signature?.value
 
   if (authChain) {
@@ -107,11 +111,18 @@ function requireString(val: string): string {
 
 function extractAuthChain(fields: Record<string, Field>): AuthLink[] | undefined {
   if (fields[`authChain`]) {
+    let parsed: unknown
     try {
-      return JSON.parse(fields[`authChain`].value)
+      parsed = JSON.parse(fields[`authChain`].value)
     } catch {
       throw new InvalidRequestError('Invalid auth chain')
     }
+    // The field is attacker-controlled: reject anything that isn't an array up front so the caller
+    // never indexes into a non-array (a number, object, or string would otherwise crash downstream).
+    if (!Array.isArray(parsed)) {
+      throw new InvalidRequestError('Invalid auth chain')
+    }
+    return parsed
   }
 
   const ret: AuthChain = []
