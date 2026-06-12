@@ -80,9 +80,20 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
     // sum (a request may carry many files/fields), and this wrapper buffers everything in memory, so
     // track the total and reject once it crosses `maxTotalSize`.
     let totalBytes = 0
+    // Set once any limit is hit. `abort` destroys the parser exactly once, and the field/file
+    // handlers short-circuit on `aborted` — so in-flight chunks aren't buffered after a rejection
+    // (bounding the overshoot past a limit) and destroy() is never called more than once.
+    let aborted = false
+    const abort = (error: Error): void => {
+      if (aborted) {
+        return
+      }
+      aborted = true
+      formDataParser.destroy(error)
+    }
     const rejectIfOverTotal = (): boolean => {
       if (maxTotalSize !== undefined && totalBytes > maxTotalSize) {
-        formDataParser.destroy(
+        abort(
           new PayloadTooLargeError(
             `The request body is too large. The maximum allowed total upload size is ${maxTotalSize} bytes.`
           )
@@ -94,25 +105,26 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
 
     // Emitted once more files than `maxFiles` are seen. Reject instead of dropping them silently.
     formDataParser.on('filesLimit', function () {
-      formDataParser.destroy(
-        new PayloadTooLargeError(`Too many files in the request. The maximum allowed is ${limits.maxFiles}.`)
-      )
+      abort(new PayloadTooLargeError(`Too many files in the request. The maximum allowed is ${limits.maxFiles}.`))
     })
 
     // Emitted once more than `maxFields` non-file fields are seen. Bounds the in-memory `fields`
     // object and any downstream per-field work (e.g. the auth-chain index scan) so a request with a
     // huge number of fields can't exhaust memory/CPU.
     formDataParser.on('fieldsLimit', function () {
-      formDataParser.destroy(
+      abort(
         new PayloadTooLargeError(`Too many form fields in the request. The maximum allowed is ${limits.maxFields}.`)
       )
     })
 
     formDataParser.on('field', function (name, value, info) {
+      if (aborted) {
+        return
+      }
       // busboy truncates a field value larger than `maxFieldSize` (setting valueTruncated); reject
       // rather than store a partial value.
       if (info.valueTruncated) {
-        formDataParser.destroy(
+        abort(
           new PayloadTooLargeError(
             `Field '${name}' is too large. The maximum allowed size per field is ${limits.maxFieldSize} bytes.`
           )
@@ -129,6 +141,9 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
     formDataParser.on('file', function (name, stream, info) {
       const chunks: Buffer[] = []
       stream.on('data', function (data: Buffer) {
+        if (aborted) {
+          return
+        }
         totalBytes += data.length
         if (rejectIfOverTotal()) {
           return
@@ -138,14 +153,14 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       // Emitted when the file exceeds `maxFileSize`. busboy truncates the stream, so we
       // must reject rather than store partial (and therefore wrong-hash) content.
       stream.on('limit', function () {
-        formDataParser.destroy(
+        abort(
           new PayloadTooLargeError(
             `File '${info.filename}' is too large. The maximum allowed size per file is ${limits.maxFileSize} bytes.`
           )
         )
       })
       stream.on('error', function (err: Error) {
-        formDataParser.destroy(err)
+        abort(err)
       })
       stream.on('end', function () {
         files[name] = Object.assign(Object.assign({}, info), { fieldname: name, value: Buffer.concat(chunks) })
@@ -158,12 +173,21 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
     const requestBody = ctx.request.body as unknown as Parameters<typeof Readable.fromWeb>[0] | null
     const source = requestBody ? Readable.fromWeb(requestBody) : Readable.from([])
 
-    // `pipeline` tears down *both* streams if either errors: when a limit handler calls
-    // `formDataParser.destroy(...)` the request body (a web stream) is cancelled and the upload is
-    // aborted, and a client that disconnects mid-upload rejects here — instead of leaving the parser
-    // and an unsettled promise dangling (a slow resource leak). It also rejects with whatever error
-    // we passed to `destroy`, so typed limit errors map to the right HTTP status.
-    await pipeline(source, formDataParser)
+    // `pipeline` tears down *both* streams if either errors: when a limit handler calls `abort()`
+    // (destroying the parser) the request body (a web stream) is cancelled and the upload is aborted,
+    // and a client that disconnects mid-upload rejects here — instead of leaving the parser and an
+    // unsettled promise dangling (a slow resource leak).
+    try {
+      await pipeline(source, formDataParser)
+    } catch (error) {
+      // Our own size-limit rejections keep their 413 status. Any other failure means we couldn't
+      // parse the request body (a malformed, truncated, or empty multipart body, or a mid-upload
+      // disconnect) — that's a client error (400), not an internal 500.
+      if (error instanceof PayloadTooLargeError) {
+        throw error
+      }
+      throw new InvalidRequestError('Invalid multipart/form-data request')
+    }
 
     const newContext = Object.assign(Object.create(ctx), { formData: { fields, files } })
     return handler(newContext as Ctx)

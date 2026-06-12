@@ -77,6 +77,26 @@ describe('Integration - Entities', () => {
 
     expect(res.status).toBe(400)
   })
+
+  // The MAX_AUTH_CHAIN_LENGTH cap must apply to the JSON authChain field too, not just the indexed
+  // authChain[N][...] fields. Assert the "too long" message specifically — a bare 400 would also
+  // come from AuthChain.validate rejecting the garbage links, so it wouldn't prove the cap fired.
+  it('returns 400 with a "too long" error when the authChain JSON exceeds the maximum length', async () => {
+    const form = new FormData()
+    form.append('entityId', 'QmTestEntityId')
+    form.append('files', Buffer.from('content'), { filename: 'entity.json' })
+    const longChain = Array.from({ length: 11 }, () => ({ type: 'SIGNER', payload: '0x1', signature: '' }))
+    form.append('authChain', JSON.stringify(longChain))
+
+    const res = await fetch(server.getUrl() + `/entities`, {
+      method: 'POST',
+      body: form.getBuffer(),
+      headers: form.getHeaders()
+    })
+
+    expect(res.status).toBe(400)
+    expect((await res.json()).error).toContain('too long')
+  })
 })
 
 function buildValidEntityForm(): FormData {

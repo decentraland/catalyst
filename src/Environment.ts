@@ -29,6 +29,23 @@ export const DEFAULT_MAX_UPLOAD_FIELD_SIZE = 100 * 1024 // 100 KB per field valu
 // to bound the pathological case without rejecting large estate deployments. Streaming uploads to
 // disk (instead of buffering) would remove the memory exposure entirely and is the proper follow-up.
 export const DEFAULT_MAX_UPLOAD_TOTAL_SIZE = 2 * 1024 * 1024 * 1024 // 2 GiB total per request
+
+/**
+ * Parse a non-negative integer env var, falling back to `defaultValue` when it is unset/empty.
+ * Throws on an invalid value rather than letting `parseInt` return `NaN`: busboy treats a `NaN`
+ * limit as "no limit", which would silently disable an upload cap the operator believed they set.
+ */
+function parseNonNegativeIntEnv(name: string, defaultValue: number): number {
+  const raw = process.env[name]
+  if (raw === undefined || raw === '') {
+    return defaultValue
+  }
+  const parsed = parseInt(raw, 10)
+  if (isNaN(parsed) || parsed < 0) {
+    throw new Error(`Invalid ${name}: expected a non-negative integer but got "${raw}"`)
+  }
+  return parsed
+}
 export const DEFAULT_ETH_NETWORK = 'sepolia'
 
 export const DEFAULT_ENS_OWNER_PROVIDER_URL_TESTNET =
@@ -496,31 +513,23 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.READ_ONLY, () => process.env.READ_ONLY == 'true')
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_UPLOAD_FILE_SIZE, () =>
-      process.env.MAX_UPLOAD_FILE_SIZE ? parseInt(process.env.MAX_UPLOAD_FILE_SIZE, 10) : DEFAULT_MAX_UPLOAD_FILE_SIZE
+      parseNonNegativeIntEnv('MAX_UPLOAD_FILE_SIZE', DEFAULT_MAX_UPLOAD_FILE_SIZE)
     )
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_UPLOAD_FILE_COUNT, () =>
-      process.env.MAX_UPLOAD_FILE_COUNT
-        ? parseInt(process.env.MAX_UPLOAD_FILE_COUNT, 10)
-        : DEFAULT_MAX_UPLOAD_FILE_COUNT
+      parseNonNegativeIntEnv('MAX_UPLOAD_FILE_COUNT', DEFAULT_MAX_UPLOAD_FILE_COUNT)
     )
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_UPLOAD_FIELD_COUNT, () =>
-      process.env.MAX_UPLOAD_FIELD_COUNT
-        ? parseInt(process.env.MAX_UPLOAD_FIELD_COUNT, 10)
-        : DEFAULT_MAX_UPLOAD_FIELD_COUNT
+      parseNonNegativeIntEnv('MAX_UPLOAD_FIELD_COUNT', DEFAULT_MAX_UPLOAD_FIELD_COUNT)
     )
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_UPLOAD_FIELD_SIZE, () =>
-      process.env.MAX_UPLOAD_FIELD_SIZE
-        ? parseInt(process.env.MAX_UPLOAD_FIELD_SIZE, 10)
-        : DEFAULT_MAX_UPLOAD_FIELD_SIZE
+      parseNonNegativeIntEnv('MAX_UPLOAD_FIELD_SIZE', DEFAULT_MAX_UPLOAD_FIELD_SIZE)
     )
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE, () =>
-      process.env.MAX_UPLOAD_TOTAL_SIZE
-        ? parseInt(process.env.MAX_UPLOAD_TOTAL_SIZE, 10)
-        : DEFAULT_MAX_UPLOAD_TOTAL_SIZE
+      parseNonNegativeIntEnv('MAX_UPLOAD_TOTAL_SIZE', DEFAULT_MAX_UPLOAD_TOTAL_SIZE)
     )
 
     this.registerConfigIfNotAlreadySet(

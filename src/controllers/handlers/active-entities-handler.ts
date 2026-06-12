@@ -29,6 +29,8 @@ export async function getActiveEntitiesHandler(
 ): Promise<{ status: 200; body: Entity[] }> {
   const { database, activeEntities, denylist } = context.components
   // The schema-validator middleware guarantees exactly one of `ids`/`pointers` (non-empty arrays).
+  // It reads the body via `request.clone().json()`, so the original request body is still unread
+  // here and this second `json()` call is safe.
   const body = (await context.request.json()) as { ids: string[] } | { pointers: string[] }
 
   const entities: Entity[] = (

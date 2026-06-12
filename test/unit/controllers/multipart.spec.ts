@@ -263,4 +263,72 @@ describe('when parsing a multipart request with upload limits', () => {
       expect(handler).not.toHaveBeenCalled()
     })
   })
+
+  describe('and the request has no body', () => {
+    let wrapped: (ctx: IHttpServerComponent.DefaultContext<any>) => Promise<IHttpServerComponent.IResponse>
+    let context: IHttpServerComponent.DefaultContext<any>
+
+    beforeEach(() => {
+      const headers = new FormData().getHeaders()
+      wrapped = multipartParserWrapper(handler as any, { maxFileSize: 1024, maxFiles: 10 })
+      context = {
+        request: {
+          headers: { get: (name: string) => (headers as Record<string, string>)[name.toLowerCase()] },
+          body: null
+        }
+      } as any
+    })
+
+    it('should reject with an InvalidRequestError instead of crashing with a 500', async () => {
+      await expect(wrapped(context)).rejects.toThrow(InvalidRequestError)
+    })
+
+    it('should not invoke the handler', async () => {
+      await wrapped(context).catch(() => undefined)
+
+      expect(handler).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('and the cumulative size of the fields exceeds the total allowed', () => {
+    let form: FormData
+    let wrapped: (ctx: IHttpServerComponent.DefaultContext<any>) => Promise<IHttpServerComponent.IResponse>
+
+    beforeEach(() => {
+      form = new FormData()
+      // Three fields, each within maxFieldSize, but together over maxTotalSize.
+      form.append('a', 'x'.repeat(50))
+      form.append('b', 'x'.repeat(50))
+      form.append('c', 'x'.repeat(50))
+      wrapped = multipartParserWrapper(handler as any, { maxFieldSize: 1024, maxFields: 10, maxTotalSize: 100 })
+    })
+
+    it('should reject with a PayloadTooLargeError', async () => {
+      await expect(wrapped(buildContext(form))).rejects.toThrow(PayloadTooLargeError)
+    })
+  })
+
+  describe('and two files share the same field name', () => {
+    let form: FormData
+    let wrapped: (ctx: IHttpServerComponent.DefaultContext<any>) => Promise<IHttpServerComponent.IResponse>
+    let capturedFiles: Record<string, { value: Buffer }> | undefined
+
+    beforeEach(() => {
+      capturedFiles = undefined
+      handler.mockImplementation(async (ctx: any) => {
+        capturedFiles = ctx.formData.files
+        return { status: 200, body: {} }
+      })
+      form = new FormData()
+      form.append('dup', Buffer.from('first'), { filename: 'a.bin' })
+      form.append('dup', Buffer.from('second'), { filename: 'b.bin' })
+      wrapped = multipartParserWrapper(handler as any, { maxFileSize: 1024, maxFiles: 10 })
+    })
+
+    it('should keep the last file uploaded under that name', async () => {
+      await wrapped(buildContext(form))
+
+      expect(capturedFiles!['dup'].value.toString()).toBe('second')
+    })
+  })
 })

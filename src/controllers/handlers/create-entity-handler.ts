@@ -122,6 +122,12 @@ function extractAuthChain(fields: Record<string, Field>): AuthLink[] | undefined
     if (!Array.isArray(parsed)) {
       throw new InvalidRequestError('Invalid auth chain')
     }
+    // Same cap as the indexed `authChain[N][...]` path below: bound the work handed to
+    // AuthChain.validate() / deployer.deployEntity() so the JSON path can't bypass it with a
+    // huge array on this public, unauthenticated endpoint.
+    if (parsed.length > MAX_AUTH_CHAIN_LENGTH) {
+      throw new InvalidRequestError(`Auth chain is too long; the maximum allowed is ${MAX_AUTH_CHAIN_LENGTH} elements`)
+    }
     return parsed
   }
 
