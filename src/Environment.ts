@@ -19,6 +19,8 @@ export const DEFAULT_ENTITIES_CACHE_SIZE = 150000
 // Generous on purpose; tune via env on catalysts that accept very large multi-parcel scenes.
 export const DEFAULT_MAX_UPLOAD_FILE_SIZE = 100 * 1024 * 1024 // 100 MB per file
 export const DEFAULT_MAX_UPLOAD_FILE_COUNT = 3000
+export const DEFAULT_MAX_UPLOAD_FIELD_COUNT = 100 // non-file form fields (e.g. entityId + auth-chain links)
+export const DEFAULT_MAX_UPLOAD_FIELD_SIZE = 100 * 1024 // 100 KB per field value
 export const DEFAULT_ETH_NETWORK = 'sepolia'
 
 export const DEFAULT_ENS_OWNER_PROVIDER_URL_TESTNET =
@@ -168,6 +170,8 @@ export enum EnvironmentConfig {
   READ_ONLY,
   MAX_UPLOAD_FILE_SIZE,
   MAX_UPLOAD_FILE_COUNT,
+  MAX_UPLOAD_FIELD_COUNT,
+  MAX_UPLOAD_FIELD_SIZE,
   SUBGRAPH_COMPONENT_RETRIES,
   SUBGRAPH_COMPONENT_QUERY_TIMEOUT,
 
@@ -490,6 +494,18 @@ export class EnvironmentBuilder {
       process.env.MAX_UPLOAD_FILE_COUNT
         ? parseInt(process.env.MAX_UPLOAD_FILE_COUNT, 10)
         : DEFAULT_MAX_UPLOAD_FILE_COUNT
+    )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_UPLOAD_FIELD_COUNT, () =>
+      process.env.MAX_UPLOAD_FIELD_COUNT
+        ? parseInt(process.env.MAX_UPLOAD_FIELD_COUNT, 10)
+        : DEFAULT_MAX_UPLOAD_FIELD_COUNT
+    )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_UPLOAD_FIELD_SIZE, () =>
+      process.env.MAX_UPLOAD_FIELD_SIZE
+        ? parseInt(process.env.MAX_UPLOAD_FIELD_SIZE, 10)
+        : DEFAULT_MAX_UPLOAD_FIELD_SIZE
     )
 
     this.registerConfigIfNotAlreadySet(

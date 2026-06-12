@@ -43,7 +43,9 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
       preventExecutionIfBoostrapping({ syncOrchestrator: components.syncOrchestrator }),
       multipartParserWrapper(createEntity, {
         maxFileSize: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FILE_SIZE),
-        maxFiles: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FILE_COUNT)
+        maxFiles: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FILE_COUNT),
+        maxFields: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FIELD_COUNT),
+        maxFieldSize: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FIELD_SIZE)
       })
     )
   }

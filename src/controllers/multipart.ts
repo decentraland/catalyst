@@ -20,6 +20,10 @@ export type MultipartLimits = {
   maxFileSize?: number
   /** Maximum number of files accepted in a single request. */
   maxFiles?: number
+  /** Maximum number of non-file form fields accepted in a single request. */
+  maxFields?: number
+  /** Maximum size, in bytes, accepted for any single non-file field value. */
+  maxFieldSize?: number
 }
 
 export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T extends IHttpServerComponent.IResponse>(
@@ -33,7 +37,9 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       },
       limits: {
         fileSize: limits.maxFileSize,
-        files: limits.maxFiles
+        files: limits.maxFiles,
+        fields: limits.maxFields,
+        fieldSize: limits.maxFieldSize
       }
     })
 
@@ -52,7 +58,26 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       )
     })
 
+    // Emitted once more than `maxFields` non-file fields are seen. Bounds the in-memory `fields`
+    // object and any downstream per-field work (e.g. the auth-chain index scan) so a request with a
+    // huge number of fields can't exhaust memory/CPU.
+    formDataParser.on('fieldsLimit', function () {
+      formDataParser.destroy(
+        new PayloadTooLargeError(`Too many form fields in the request. The maximum allowed is ${limits.maxFields}.`)
+      )
+    })
+
     formDataParser.on('field', function (name, value, info) {
+      // busboy truncates a field value larger than `maxFieldSize` (setting valueTruncated); reject
+      // rather than store a partial value.
+      if (info.valueTruncated) {
+        formDataParser.destroy(
+          new PayloadTooLargeError(
+            `Field '${name}' is too large. The maximum allowed size per field is ${limits.maxFieldSize} bytes.`
+          )
+        )
+        return
+      }
       fields[name] = Object.assign({ fieldname: name, value }, info)
     })
 

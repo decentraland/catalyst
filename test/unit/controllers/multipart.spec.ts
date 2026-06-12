@@ -89,4 +89,43 @@ describe('when parsing a multipart request with upload limits', () => {
       await expect(wrapped(buildContext(form))).rejects.toThrow(PayloadTooLargeError)
     })
   })
+
+  describe('and the request contains more form fields than the maximum allowed', () => {
+    let form: FormData
+    let wrapped: (ctx: IHttpServerComponent.DefaultContext<any>) => Promise<IHttpServerComponent.IResponse>
+
+    beforeEach(() => {
+      form = new FormData()
+      // Mimics the auth-chain index-spam vector: many small form fields.
+      for (let i = 0; i < 50; i++) {
+        form.append(`authChain[${i}][type]`, 'SIGNER')
+      }
+      wrapped = multipartParserWrapper(handler as any, { maxFileSize: 1024, maxFiles: 10, maxFields: 10 })
+    })
+
+    it('should reject with a PayloadTooLargeError', async () => {
+      await expect(wrapped(buildContext(form))).rejects.toThrow(PayloadTooLargeError)
+    })
+
+    it('should not invoke the handler', async () => {
+      await expect(wrapped(buildContext(form))).rejects.toThrow()
+
+      expect(handler).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('and a form field value exceeds the maximum allowed size', () => {
+    let form: FormData
+    let wrapped: (ctx: IHttpServerComponent.DefaultContext<any>) => Promise<IHttpServerComponent.IResponse>
+
+    beforeEach(() => {
+      form = new FormData()
+      form.append('entityId', 'x'.repeat(2048))
+      wrapped = multipartParserWrapper(handler as any, { maxFileSize: 1024, maxFiles: 10, maxFieldSize: 1024 })
+    })
+
+    it('should reject with a PayloadTooLargeError', async () => {
+      await expect(wrapped(buildContext(form))).rejects.toThrow(PayloadTooLargeError)
+    })
+  })
 })
