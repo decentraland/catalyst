@@ -24,7 +24,14 @@ export async function createEntity(
   const { metrics, deployer, logs } = context.components
 
   const logger = logs.getLogger('create-entity')
-  const entityId: string = context.formData.fields.entityId.value
+  // Guard the required field explicitly: without it a missing `entityId` throws a TypeError and the
+  // request fails with a 500 (and an error log) instead of a 400 — trivially abusable on this public
+  // endpoint to generate log noise.
+  const entityIdField = context.formData.fields.entityId
+  if (!entityIdField) {
+    throw new InvalidRequestError('Missing required field: entityId')
+  }
+  const entityId: string = entityIdField.value
   const userAgent: string = context.request.headers.get('user-agent') ?? 'unknown'
 
   let authChain = extractAuthChain(context.formData.fields)

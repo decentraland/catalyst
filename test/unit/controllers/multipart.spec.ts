@@ -2,7 +2,7 @@ import FormData from 'form-data'
 import { Readable } from 'stream'
 import { IHttpServerComponent } from '@dcl/core-commons'
 import { multipartParserWrapper } from '../../../src/controllers/multipart'
-import { PayloadTooLargeError } from '../../../src/controllers/errors'
+import { InvalidRequestError, PayloadTooLargeError } from '../../../src/controllers/errors'
 
 function buildContext(form: FormData): IHttpServerComponent.DefaultContext<any> {
   const headers = form.getHeaders()
@@ -126,6 +126,62 @@ describe('when parsing a multipart request with upload limits', () => {
 
     it('should reject with a PayloadTooLargeError', async () => {
       await expect(wrapped(buildContext(form))).rejects.toThrow(PayloadTooLargeError)
+    })
+  })
+
+  describe('and the request body is not a multipart/form-data body', () => {
+    let wrapped: (ctx: IHttpServerComponent.DefaultContext<any>) => Promise<IHttpServerComponent.IResponse>
+    let context: IHttpServerComponent.DefaultContext<any>
+
+    beforeEach(() => {
+      wrapped = multipartParserWrapper(handler as any, { maxFileSize: 1024, maxFiles: 10 })
+      context = {
+        request: {
+          headers: { get: (name: string) => (name.toLowerCase() === 'content-type' ? 'application/json' : undefined) },
+          body: Readable.toWeb(Readable.from(Buffer.from('{"not":"multipart"}')))
+        }
+      } as any
+    })
+
+    it('should reject with an InvalidRequestError instead of crashing with a 500', async () => {
+      await expect(wrapped(context)).rejects.toThrow(InvalidRequestError)
+    })
+
+    it('should not invoke the handler', async () => {
+      await expect(wrapped(context)).rejects.toThrow()
+
+      expect(handler).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('and the request body stream errors mid-upload (e.g. the client disconnects)', () => {
+    let wrapped: (ctx: IHttpServerComponent.DefaultContext<any>) => Promise<IHttpServerComponent.IResponse>
+    let context: IHttpServerComponent.DefaultContext<any>
+
+    beforeEach(() => {
+      const form = new FormData()
+      form.append('entityId', 'an-entity-id')
+      const headers = form.getHeaders()
+      // A body stream that fails partway through. Without proper teardown the parser would emit
+      // neither `finish` nor `error` and the wrapper would hang forever; it must reject instead.
+      const erroringBody = new Readable({
+        read() {
+          this.destroy(new Error('socket hang up'))
+        }
+      })
+      wrapped = multipartParserWrapper(handler as any, { maxFileSize: 1024, maxFiles: 10 })
+      context = {
+        request: {
+          headers: { get: (name: string) => headers[name.toLowerCase()] },
+          body: Readable.toWeb(erroringBody)
+        }
+      } as any
+    })
+
+    it('should reject rather than hang, and not invoke the handler', async () => {
+      await expect(wrapped(context)).rejects.toThrow()
+
+      expect(handler).not.toHaveBeenCalled()
     })
   })
 })

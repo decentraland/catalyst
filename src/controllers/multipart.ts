@@ -2,8 +2,9 @@ import { IHttpServerComponent } from '@dcl/core-commons'
 import { Field, File } from '@well-known-components/multipart-wrapper'
 import busboy from 'busboy'
 import { Readable } from 'stream'
+import { pipeline } from 'stream/promises'
 import { FormDataContext } from '../types'
-import { PayloadTooLargeError } from './errors'
+import { InvalidRequestError, PayloadTooLargeError } from './errors'
 
 /**
  * Limits applied to a multipart request before its contents are buffered into memory.
@@ -14,6 +15,10 @@ import { PayloadTooLargeError } from './errors'
  * streaming a large body. This wrapper is a drop-in replacement that wires `busboy`'s
  * native limits and rejects (HTTP 413) as soon as a limit is exceeded, instead of
  * silently buffering or truncating.
+ *
+ * Note: these are *per-file* / *per-field* bounds. The cumulative body size is still only
+ * bounded by `maxFiles * maxFileSize`; deployments that accept very large multi-file uploads
+ * should additionally cap the total request body at the reverse proxy / load balancer.
  */
 export type MultipartLimits = {
   /** Maximum size, in bytes, accepted for any single uploaded file. */
@@ -31,25 +36,29 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
   limits: MultipartLimits = {}
 ): (ctx: IHttpServerComponent.DefaultContext<U>) => Promise<T> {
   return async function (ctx: IHttpServerComponent.DefaultContext<U>): Promise<T> {
-    const formDataParser = busboy({
-      headers: {
-        'content-type': ctx.request.headers.get('content-type') || undefined
-      },
-      limits: {
-        fileSize: limits.maxFileSize,
-        files: limits.maxFiles,
-        fields: limits.maxFields,
-        fieldSize: limits.maxFieldSize
-      }
-    })
+    let formDataParser: ReturnType<typeof busboy>
+    try {
+      formDataParser = busboy({
+        headers: {
+          'content-type': ctx.request.headers.get('content-type') || undefined
+        },
+        limits: {
+          fileSize: limits.maxFileSize,
+          files: limits.maxFiles,
+          fields: limits.maxFields,
+          fieldSize: limits.maxFieldSize
+        }
+      })
+    } catch {
+      // busboy throws synchronously when the Content-Type isn't multipart/form-data. Surface it as a
+      // client error (400) rather than letting it bubble up as an internal server error (500).
+      throw new InvalidRequestError('Invalid request: expected a multipart/form-data body')
+    }
 
-    const fields: Record<string, Field> = {}
-    const files: Record<string, File> = {}
-
-    const finished = new Promise<void>((ok, err) => {
-      formDataParser.on('error', err)
-      formDataParser.on('finish', ok)
-    })
+    // Null-prototype maps so that an attacker-controlled field/file name such as `__proto__` or
+    // `constructor` is stored as a plain key instead of mutating the object's prototype.
+    const fields: Record<string, Field> = Object.create(null)
+    const files: Record<string, File> = Object.create(null)
 
     // Emitted once more files than `maxFiles` are seen. Reject instead of dropping them silently.
     formDataParser.on('filesLimit', function () {
@@ -107,13 +116,16 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
     // rather than a Node stream. Adapt it so it can be piped into busboy. The static type still
     // describes a node-fetch body (sourced from @well-known-components/interfaces), hence the cast.
     const requestBody = ctx.request.body as unknown as Parameters<typeof Readable.fromWeb>[0] | null
-    if (requestBody) {
-      Readable.fromWeb(requestBody).pipe(formDataParser)
-    } else {
-      formDataParser.end()
-    }
+    const source = requestBody ? Readable.fromWeb(requestBody) : Readable.from([])
+
+    // `pipeline` tears down *both* streams if either errors: when a limit handler calls
+    // `formDataParser.destroy(...)` the request body (a web stream) is cancelled and the upload is
+    // aborted, and a client that disconnects mid-upload rejects here — instead of leaving the parser
+    // and an unsettled promise dangling (a slow resource leak). It also rejects with whatever error
+    // we passed to `destroy`, so typed limit errors map to the right HTTP status.
+    await pipeline(source, formDataParser)
+
     const newContext = Object.assign(Object.create(ctx), { formData: { fields, files } })
-    await finished
     return handler(newContext as Ctx)
   }
 }
