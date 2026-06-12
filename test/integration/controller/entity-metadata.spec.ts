@@ -1,4 +1,3 @@
-import fetch from 'node-fetch'
 import { makeNoopValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import { buildDeployData, EntityCombo } from '../E2ETestUtils'
 import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
@@ -95,7 +94,7 @@ describe('GET /queries/items/:pointer/thumbnail', () => {
         const res = await fetch(`${server.getUrl()}/queries/items/wearable/thumbnail`, {
           headers: { Range: 'bytes=0-99' }
         })
-        const body = await res.buffer()
+        const body = Buffer.from(await res.arrayBuffer())
         expect(res.status).toBe(206)
         expect(res.headers.get('content-range')).toBe(`bytes 0-99/${fileBuffer.length}`)
         expect(body.length).toBe(100)
@@ -106,7 +105,7 @@ describe('GET /queries/items/:pointer/thumbnail', () => {
     describe('and the request method is HEAD', () => {
       it('should respond with a 200 status and no body', async () => {
         const res = await fetch(`${server.getUrl()}/queries/items/wearable/thumbnail`, { method: 'HEAD' })
-        const body = await res.buffer()
+        const body = Buffer.from(await res.arrayBuffer())
         expect(res.status).toBe(200)
         expect(body.length).toBe(0)
       })
@@ -188,7 +187,7 @@ describe('GET /queries/items/:pointer/image', () => {
         const res = await fetch(`${server.getUrl()}/queries/items/wearable/image`, {
           headers: { Range: 'bytes=0-99' }
         })
-        const body = await res.buffer()
+        const body = Buffer.from(await res.arrayBuffer())
         expect(res.status).toBe(206)
         expect(res.headers.get('content-range')).toBe(`bytes 0-99/${fileBuffer.length}`)
         expect(body.length).toBe(100)
@@ -199,7 +198,7 @@ describe('GET /queries/items/:pointer/image', () => {
     describe('and the request method is HEAD', () => {
       it('should respond with a 200 status and no body', async () => {
         const res = await fetch(`${server.getUrl()}/queries/items/wearable/image`, { method: 'HEAD' })
-        const body = await res.buffer()
+        const body = Buffer.from(await res.arrayBuffer())
         expect(res.status).toBe(200)
         expect(body.length).toBe(0)
       })

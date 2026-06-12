@@ -1,4 +1,4 @@
-import { createFetchComponent } from '@well-known-components/fetch-component'
+import { createFetchComponent } from '@dcl/fetch-component'
 import { DeploymentField } from '../../../src/types'
 import { Deployment } from '../../../src/deployment-types'
 import { makeNoopValidator } from '../../helpers/logic/server-validator/NoOpValidator'

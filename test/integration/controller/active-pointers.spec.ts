@@ -1,11 +1,12 @@
 import { createFsComponent } from '@dcl/catalyst-storage'
-import fetch from 'node-fetch'
+import { readFileSync } from 'fs'
 import { stopAllComponents } from '../../../src/logic/components-lifecycle'
 import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
 import { TestProgram } from '../TestProgram'
 import FormData = require('form-data')
 import { resetServer, createDefaultServer } from '../simpleTestEnvironment'
+import { createPointersRepository } from '../../../src/adapters/pointers-repository/component'
 import LeakDetector from 'jest-leak-detector'
 
 interface ActivePointersRow {
@@ -212,6 +213,47 @@ describe('Integration - Create entities', () => {
     expect(queryResult.rowCount).toBe(1)
     expect(queryResult.rows[0].deleter_entity_id).toBe(deleterDeploymentId)
   }
+
+  it('matches a urn prefix with LIKE wildcards literally, not as wildcards', async () => {
+    // `_` is a single-character LIKE wildcard. The repository escapes it (with a backslash) so the
+    // prefix matches literally. This guards a subtle bug: an explicit `ESCAPE '\'` written in the
+    // SQL would be cooked by JS to `ESCAPE ''`, which Postgres reads as "no escape character" —
+    // silently disabling the escaping. With the bug the literal row wouldn't match (escape disabled);
+    // with no escaping at all the `_` would also match the colliding row.
+    const repository = createPointersRepository()
+    await server.components.database.query(
+      `INSERT INTO active_pointers (pointer, entity_id) VALUES ('urn:test:item_one', 'entity-literal'), ('urn:test:itemxone', 'entity-collision')`
+    )
+
+    const ids = await repository.getItemEntitiesIdsThatMatchCollectionUrnPrefix(
+      server.components.database,
+      'urn:test:item_one'
+    )
+
+    expect(ids).toEqual(['entity-literal'])
+  })
+
+  it('rejects an auth chain with an out-of-range index without a runaway loop (issue #1936)', async () => {
+    const form = new FormData()
+    form.append('entityId', 'QmTestEntityIdIgnoredBecauseAuthChainIsRejected')
+    // A single high-index auth-chain field; the handler must reject before iterating, so a crafted
+    // `authChain[<huge>][...]` field name can't drive a large loop on this public endpoint.
+    form.append('authChain[20][type]', 'SIGNER')
+    form.append('authChain[20][payload]', '0x1234')
+    form.append('authChain[20][signature]', '')
+
+    const response = await fetch(`${server.getUrl()}/entities`, {
+      method: 'POST',
+      body: form.getBuffer(),
+      headers: form.getHeaders()
+    })
+
+    expect(response.status).toBe(400)
+    // Assert the index cap specifically — without it the loop would instead throw
+    // "Missing auth chain element at index 0", which would also be a 400 (so a bare status
+    // check wouldn't prove the cap fired).
+    expect((await response.json()).error).toContain('too long')
+  })
 })
 
 function createForm(entityId: string, filename: string) {
@@ -221,9 +263,11 @@ function createForm(entityId: string, filename: string) {
   // Add entityId
   form.append('entityId', entityId)
 
-  // Add entity file
-  const entityFile = fs.createReadStream(getIntegrationResourcePathFor(filename))
-  form.append('files', entityFile)
+  // Add entity file. Read it into a Buffer (rather than a stream) so the form can be serialized
+  // synchronously with getBuffer() below — native fetch doesn't consume a form-data stream the way
+  // node-fetch did.
+  const entityFile = readFileSync(getIntegrationResourcePathFor(filename))
+  form.append('files', entityFile, { filename })
 
   // Add authChain. Just as a example
   const authChain = [
@@ -251,7 +295,11 @@ function createForm(entityId: string, filename: string) {
 }
 
 async function callCreateEntityEndpoint(server: TestProgram, form: FormData) {
-  const response = await fetch(`${server.getUrl()}/entities`, { method: 'POST', body: form })
+  const response = await fetch(`${server.getUrl()}/entities`, {
+    method: 'POST',
+    body: form.getBuffer(),
+    headers: form.getHeaders()
+  })
   expect(response.status).toBe(200)
   expect(await response.json()).toHaveProperty('creationTimestamp')
 }

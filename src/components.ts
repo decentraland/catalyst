@@ -10,8 +10,8 @@ import { EthAddress } from '@dcl/schemas'
 import { createSynchronizer } from '@dcl/snapshots-fetcher'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { createTracedFetcherComponent } from '@dcl/traced-fetch-component'
-import { createFetchComponent } from '@well-known-components/fetch-component'
-import { createHttpTracerComponent } from '@well-known-components/http-tracer-component'
+import { createFetchComponent } from '@dcl/fetch-component'
+import { createHttpTracerComponent } from '@dcl/http-tracer-component'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTracerComponent } from '@well-known-components/tracer-component'
 import { HTTPProvider } from 'eth-connect'
@@ -100,7 +100,16 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     },
     defaultFetcherOptions: { timeout: ms(env.getConfig<string>(EnvironmentConfig.FETCH_REQUEST_TIMEOUT)) }
   })
-  const fetcher = await createTracedFetcherComponent({ tracer, fetchComponent: baseFetcher })
+  // `@dcl/fetch-component`/`@dcl/traced-fetch-component` type the fetcher via `@dcl/core-commons`'
+  // IFetchComponent, while the rest of the app — and the external libs we hand the fetcher to
+  // (block-indexer, snapshots-fetcher, thegraph) — are typed against `@well-known-components/interfaces`'
+  // IFetchComponent. The two are structurally identical (a `{ fetch }` returning a native Response) and
+  // differ only in nominal Request/Response type identities, so we assert the WKC type once at this
+  // boundary instead of threading the core-commons type through the whole component graph.
+  const fetcher = (await createTracedFetcherComponent({
+    tracer,
+    fetchComponent: baseFetcher
+  })) as unknown as AppComponents['fetcher']
 
   const fs = createFsComponent()
 
@@ -163,7 +172,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const storage = await createFolderBasedFileSystemContentStorage({ fs, logs }, contentFolder, {
     decompressCacheTTL: env.getConfig(EnvironmentConfig.STORAGE_DECOMPRESS_CACHE_TTL),
     decompressCacheMaxSize: env.getConfig(EnvironmentConfig.STORAGE_DECOMPRESS_CACHE_MAX_SIZE),
-    decompressCacheEvictionInterval: env.getConfig(EnvironmentConfig.STORAGE_DECOMPRESS_CACHE_EVICTION_INTERVAL)
+    decompressCacheEvictionInterval: env.getConfig(EnvironmentConfig.STORAGE_DECOMPRESS_CACHE_EVICTION_INTERVAL),
+    decompressMaxFileSize: env.getConfig(EnvironmentConfig.STORAGE_DECOMPRESS_MAX_FILE_SIZE)
   })
 
   const customDAO: string = env.getConfig(EnvironmentConfig.CUSTOM_DAO) ?? ''
@@ -454,6 +464,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   // Registers tracing middleware as a side effect (wraps each request in a trace span).
   // Registered before metrics so trace context is available to the metrics layer.
+  // `@dcl/http-tracer-component` shares the native-fetch `IHttpServerComponent` from
+  // `@dcl/core-commons`, so the v2 `server` is accepted directly (no cast needed).
   createHttpTracerComponent({ server, tracer })
 
   await instrumentHttpServerWithPromClientRegistry({ server, metrics, config, registry: metrics.registry! })

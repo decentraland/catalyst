@@ -26,3 +26,11 @@ export class NotFoundError extends Error {
     Error.captureStackTrace(this, this.constructor)
   }
 }
+
+export class PayloadTooLargeError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'PayloadTooLargeError'
+    Error.captureStackTrace(this, this.constructor)
+  }
+}

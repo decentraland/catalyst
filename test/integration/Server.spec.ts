@@ -1,7 +1,6 @@
 import { SimpleContentItem } from '@dcl/catalyst-storage/dist/content-item'
 import { Entity, EntityType, PointerChangesSyncDeployment } from '@dcl/schemas'
 import { random } from 'faker'
-import fetch from 'node-fetch'
 import { randomEntity } from '../helpers/entity-tests-helper'
 import { E2ETestEnvironment } from './E2ETestEnvironment'
 
@@ -84,7 +83,7 @@ describe('Integration - Server', () => {
   it(`Download Content`, async () => {
     const response = await fetch(`${address}/contents/${content.hash}`)
     expect(response.ok).toBe(true)
-    const buffer = await response.buffer()
+    const buffer = Buffer.from(await response.arrayBuffer())
     expect(buffer).toEqual(content.buffer)
   })
 

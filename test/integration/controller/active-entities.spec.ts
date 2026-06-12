@@ -1,5 +1,4 @@
 import { Entity, EntityType } from '@dcl/schemas'
-import fetch from 'node-fetch'
 import * as deployments from '../../../src/logic/deployments'
 import { makeNoopValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import { buildDeployData } from '../E2ETestUtils'
@@ -35,10 +34,23 @@ describe('Integration - Get Active Entities', () => {
 
     expect(result.status).toBe(400)
     expect(result.statusText).toBe('Bad Request')
-    expect(await result.json()).toEqual({
-      error:
-        'ids or pointers must be present, but not both. They must be arrays and contain at least one element. None of the elements can be empty.'
+    // Body validation is now handled by the @dcl/schema-validator-component middleware, which
+    // returns its own { ok, message, data } shape on a schema violation.
+    const body = await result.json()
+    expect(body.ok).toBe(false)
+    expect(body.message).toBe('Invalid JSON body')
+  })
+
+  it('when asking with more than 1000 ids, it returns client error (issue #1935)', async () => {
+    const ids = Array.from({ length: 1001 }, (_, i) => `id-${i}`)
+    const result = await fetch(server.getUrl() + `/entities/active`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids })
     })
+
+    expect(result.status).toBe(400)
+    expect((await result.json()).ok).toBe(false)
   })
 
   it('when asking by ID, it returns active entities with given ID', async () => {

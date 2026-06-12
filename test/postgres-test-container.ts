@@ -1,6 +1,6 @@
 import { exec } from 'child_process'
 import Dockerode from 'dockerode'
-import { PassThrough } from 'stream'
+import { PassThrough, Stream } from 'stream'
 import { GenericContainer } from 'testcontainers'
 import { LogWaitStrategy } from 'testcontainers/dist/wait-strategy'
 import { promisify } from 'util'
@@ -48,7 +48,10 @@ class PostgresWaitStrategy extends LogWaitStrategy {
     return new Promise(async (resolve, reject) => {
       const stream = await container.logs({ stdout: true, stderr: true, follow: true })
       const demuxedStream = new PassThrough({ autoDestroy: true, encoding: "utf-8" });
-      this.DOCKERODE.modem.demuxStream(stream, demuxedStream, demuxedStream);
+      // @types/node 24 typed `NodeJS.ReadableStream` (what container.logs returns) as no longer
+      // assignable to the `Stream` class demuxStream expects (it now requires `compose`). The value is
+      // a real Node stream at runtime, so assert the class type here.
+      this.DOCKERODE.modem.demuxStream(stream as unknown as Stream, demuxedStream, demuxedStream);
       stream.on("end", () => demuxedStream.end());
       demuxedStream
         .on('data', (line) => {

@@ -5,7 +5,7 @@ import {
 } from '@dcl/catalyst-storage'
 import { ContentMapping } from '@dcl/schemas'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
-import { createFetchComponent } from '@well-known-components/fetch-component'
+import { createFetchComponent } from '@dcl/fetch-component'
 import { IFetchComponent, ILoggerComponent, Lifecycle } from '@well-known-components/interfaces'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@dcl/metrics'
@@ -39,7 +39,10 @@ void Lifecycle.run({
         LOG_LEVEL: 'INFO'
       })
     })
-    const fetcher = createFetchComponent()
+    // `@dcl/fetch-component` types its result via `@dcl/core-commons`' IFetchComponent; this bag is
+    // typed against `@well-known-components/interfaces`' version. They are structurally identical, so
+    // assert the WKC type at the boundary (see the equivalent note in src/components.ts).
+    const fetcher = createFetchComponent() as unknown as IFetchComponent
     const metrics = createTestMetricsComponent(metricsDeclaration)
     const env = await new EnvironmentBuilder().withConfig(EnvironmentConfig.PG_QUERY_TIMEOUT, 300_000).build()
     const fs = createFsComponent()
@@ -149,7 +152,14 @@ async function ensureFileExistsInStorage(
 
   try {
     const data = await fetcher.fetch(url)
-    const stream = Readable.from(data.body)
+    if (!data.body) {
+      throw new Error(`Empty response body received while downloading file ${file}`)
+    }
+    // `fetcher` is the native-fetch component, so `data.body` is a web `ReadableStream`. Use
+    // `Readable.fromWeb` (the same adapter the multipart wrapper uses) rather than `Readable.from`,
+    // which only works on a web stream by accident via its async iterator and won't propagate
+    // cancellation cleanly on destroy().
+    const stream = Readable.fromWeb(data.body as unknown as Parameters<typeof Readable.fromWeb>[0])
     try {
       await storage.storeStream(file, stream)
       logger.info(`File ${file} downloaded and stored successfully`)

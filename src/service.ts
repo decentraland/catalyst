@@ -1,4 +1,5 @@
-import { IHttpServerComponent, Lifecycle } from '@well-known-components/interfaces'
+import { Lifecycle } from '@well-known-components/interfaces'
+import { IHttpServerComponent } from '@dcl/core-commons'
 import { setupRouter } from './controllers/routes'
 import { EnvironmentConfig } from './Environment'
 import { migrateContentFolderStructure } from './migrations/ContentFolderMigrationManager'

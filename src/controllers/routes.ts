@@ -1,8 +1,9 @@
 import { Router } from '@dcl/http-server'
-import { multipartParserWrapper } from '@well-known-components/multipart-wrapper'
+import { createSchemaValidatorComponent } from '@dcl/schema-validator-component'
 import { EnvironmentConfig } from '../Environment'
+import { multipartParserWrapper } from './multipart'
 import { GlobalContext } from '../types'
-import { getActiveEntitiesHandler } from './handlers/active-entities-handler'
+import { activeEntitiesBodySchema, getActiveEntitiesHandler } from './handlers/active-entities-handler'
 import { createEntity } from './handlers/create-entity-handler'
 import { createErrorHandler, preventExecutionIfBoostrapping } from './middlewares'
 import { getFailedDeploymentsHandler } from './handlers/failed-deployments-handler'
@@ -29,19 +30,34 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
   const env = components.env
   const logger = components.logs.getLogger('router')
 
+  // Request-body validation via the shared @dcl/schema-validator-component (used as middleware).
+  // `ensureJsonContentType: false` preserves the previous lenient behavior (validate the parsed
+  // body regardless of the Content-Type header).
+  const schemaValidator = createSchemaValidatorComponent<GlobalContext>({ ensureJsonContentType: false })
+
   if (env.getConfig(EnvironmentConfig.READ_ONLY)) {
     logger.info(`Content Server running on read-only mode. POST /entities endpoint will not be exposed`)
   } else {
     router.post(
       '/entities',
       preventExecutionIfBoostrapping({ syncOrchestrator: components.syncOrchestrator }),
-      multipartParserWrapper(createEntity)
+      multipartParserWrapper(createEntity, {
+        maxFileSize: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FILE_SIZE),
+        maxFiles: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FILE_COUNT),
+        maxFields: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FIELD_COUNT),
+        maxFieldSize: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FIELD_SIZE),
+        maxTotalSize: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE)
+      })
     )
   }
 
   router.get('/entities/:type', getEntitiesHandler) // TODO: Deprecate
   router.get('/entities/active/collections/:collectionUrn', getEntitiesByCollectionPointerPrefixHandler)
-  router.post('/entities/active', getActiveEntitiesHandler)
+  router.post(
+    '/entities/active',
+    schemaValidator.withSchemaValidatorMiddleware(activeEntitiesBodySchema),
+    getActiveEntitiesHandler
+  )
   router.head('/contents/:hashId', getContentHandler)
   router.get('/contents/:hashId', getContentHandler)
   router.get('/available-content', getAvailableContentHandler)

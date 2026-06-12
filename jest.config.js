@@ -33,6 +33,7 @@ module.exports = {
           tsconfig: '<rootDir>/test/tsconfig.json'
         }
       },
+      testEnvironment: '<rootDir>/test/fetch-environment.js',
       testMatch: ['<rootDir>/test/integration/**/*.spec.(ts)'],
       testPathIgnorePatterns: sharedIgnorePatterns,
       globalSetup: './jest.globalSetup.ts',
