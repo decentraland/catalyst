@@ -16,9 +16,9 @@ import { InvalidRequestError, PayloadTooLargeError } from './errors'
  * native limits and rejects (HTTP 413) as soon as a limit is exceeded, instead of
  * silently buffering or truncating.
  *
- * Note: these are *per-file* / *per-field* bounds. The cumulative body size is still only
- * bounded by `maxFiles * maxFileSize`; deployments that accept very large multi-file uploads
- * should additionally cap the total request body at the reverse proxy / load balancer.
+ * `maxTotalSize` additionally bounds the cumulative body size across all files and fields (and is
+ * pre-checked against the declared Content-Length). The wrapper still buffers files in memory, so a
+ * reverse-proxy / load-balancer body cap remains a sensible extra layer for very large uploads.
  */
 export type MultipartLimits = {
   /** Maximum size, in bytes, accepted for any single uploaded file. */
@@ -168,8 +168,8 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
     })
 
     // @dcl/http-server v2 hands handlers a native `Request`, whose `body` is a web `ReadableStream`
-    // rather than a Node stream. Adapt it so it can be piped into busboy. The static type still
-    // describes a node-fetch body (sourced from @well-known-components/interfaces), hence the cast.
+    // rather than a Node stream. Adapt it so it can be piped into busboy. The cast bridges the
+    // lib.dom `ReadableStream` type to the `node:stream/web` one that `Readable.fromWeb` expects.
     const requestBody = ctx.request.body as unknown as Parameters<typeof Readable.fromWeb>[0] | null
     const source = requestBody ? Readable.fromWeb(requestBody) : Readable.from([])
 

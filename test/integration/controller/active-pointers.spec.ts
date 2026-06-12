@@ -6,6 +6,7 @@ import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
 import { TestProgram } from '../TestProgram'
 import FormData = require('form-data')
 import { resetServer, createDefaultServer } from '../simpleTestEnvironment'
+import { createPointersRepository } from '../../../src/adapters/pointers-repository/component'
 import LeakDetector from 'jest-leak-detector'
 
 interface ActivePointersRow {
@@ -212,6 +213,25 @@ describe('Integration - Create entities', () => {
     expect(queryResult.rowCount).toBe(1)
     expect(queryResult.rows[0].deleter_entity_id).toBe(deleterDeploymentId)
   }
+
+  it('matches a urn prefix with LIKE wildcards literally, not as wildcards', async () => {
+    // `_` is a single-character LIKE wildcard. The repository escapes it (with a backslash) so the
+    // prefix matches literally. This guards a subtle bug: an explicit `ESCAPE '\'` written in the
+    // SQL would be cooked by JS to `ESCAPE ''`, which Postgres reads as "no escape character" —
+    // silently disabling the escaping. With the bug the literal row wouldn't match (escape disabled);
+    // with no escaping at all the `_` would also match the colliding row.
+    const repository = createPointersRepository()
+    await server.components.database.query(
+      `INSERT INTO active_pointers (pointer, entity_id) VALUES ('urn:test:item_one', 'entity-literal'), ('urn:test:itemxone', 'entity-collision')`
+    )
+
+    const ids = await repository.getItemEntitiesIdsThatMatchCollectionUrnPrefix(
+      server.components.database,
+      'urn:test:item_one'
+    )
+
+    expect(ids).toEqual(['entity-literal'])
+  })
 
   it('rejects an auth chain with an out-of-range index without a runaway loop (issue #1936)', async () => {
     const form = new FormData()
