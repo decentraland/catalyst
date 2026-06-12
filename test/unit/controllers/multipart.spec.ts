@@ -129,6 +129,34 @@ describe('when parsing a multipart request with upload limits', () => {
     })
   })
 
+  describe('and a form field name collides with the object prototype', () => {
+    let form: FormData
+    let wrapped: (ctx: IHttpServerComponent.DefaultContext<any>) => Promise<IHttpServerComponent.IResponse>
+
+    beforeEach(() => {
+      form = new FormData()
+      // On a plain `{}` object, assigning to a `__proto__` key mutates the prototype instead of
+      // adding a property; on a null-prototype map it is stored as an ordinary key.
+      form.append('__proto__', 'polluted')
+      form.append('entityId', 'an-entity-id')
+      wrapped = multipartParserWrapper(handler as any, { maxFileSize: 1024, maxFiles: 10 })
+    })
+
+    it('should keep the parsed fields on a null-prototype object so the prototype is not mutated', async () => {
+      await wrapped(buildContext(form))
+
+      const { fields } = (handler.mock.calls[0][0] as any).formData
+      expect(Object.getPrototypeOf(fields)).toBeNull()
+    })
+
+    it('should still expose the legitimate fields to the handler', async () => {
+      await wrapped(buildContext(form))
+
+      const { fields } = (handler.mock.calls[0][0] as any).formData
+      expect(fields.entityId.value).toBe('an-entity-id')
+    })
+  })
+
   describe('and the request body is not a multipart/form-data body', () => {
     let wrapped: (ctx: IHttpServerComponent.DefaultContext<any>) => Promise<IHttpServerComponent.IResponse>
     let context: IHttpServerComponent.DefaultContext<any>

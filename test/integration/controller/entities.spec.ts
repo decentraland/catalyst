@@ -41,6 +41,19 @@ describe('Integration - Entities', () => {
 
     expect(res.status).toBe(400)
   })
+
+  it('returns 400 when the multipart body is missing the required entityId field', async () => {
+    const form = new FormData()
+    form.append('files', Buffer.from('content'), { filename: 'entity.json' })
+
+    const res = await fetch(server.getUrl() + `/entities`, {
+      method: 'POST',
+      body: form.getBuffer(),
+      headers: form.getHeaders()
+    })
+
+    expect(res.status).toBe(400)
+  })
 })
 
 function buildValidEntityForm(): FormData {
