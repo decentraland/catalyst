@@ -21,6 +21,14 @@ export const DEFAULT_MAX_UPLOAD_FILE_SIZE = 100 * 1024 * 1024 // 100 MB per file
 export const DEFAULT_MAX_UPLOAD_FILE_COUNT = 3000
 export const DEFAULT_MAX_UPLOAD_FIELD_COUNT = 100 // non-file form fields (e.g. entityId + auth-chain links)
 export const DEFAULT_MAX_UPLOAD_FIELD_SIZE = 100 * 1024 // 100 KB per field value
+// Cumulative cap across every file + field in a single upload. `MAX_UPLOAD_FILE_SIZE` bounds one
+// file and `MAX_UPLOAD_FILE_COUNT` bounds the count, but their product (the only implicit ceiling)
+// is huge, and this wrapper buffers files in memory — so without a total cap one request could try
+// to buffer hundreds of GB. The validator's size check is *per pointer*, so a legitimate multi-parcel
+// scene can be several GB; this default is deliberately generous (and `MAX_UPLOAD_TOTAL_SIZE`-tunable)
+// to bound the pathological case without rejecting large estate deployments. Streaming uploads to
+// disk (instead of buffering) would remove the memory exposure entirely and is the proper follow-up.
+export const DEFAULT_MAX_UPLOAD_TOTAL_SIZE = 2 * 1024 * 1024 * 1024 // 2 GiB total per request
 export const DEFAULT_ETH_NETWORK = 'sepolia'
 
 export const DEFAULT_ENS_OWNER_PROVIDER_URL_TESTNET =
@@ -172,6 +180,7 @@ export enum EnvironmentConfig {
   MAX_UPLOAD_FILE_COUNT,
   MAX_UPLOAD_FIELD_COUNT,
   MAX_UPLOAD_FIELD_SIZE,
+  MAX_UPLOAD_TOTAL_SIZE,
   SUBGRAPH_COMPONENT_RETRIES,
   SUBGRAPH_COMPONENT_QUERY_TIMEOUT,
 
@@ -506,6 +515,12 @@ export class EnvironmentBuilder {
       process.env.MAX_UPLOAD_FIELD_SIZE
         ? parseInt(process.env.MAX_UPLOAD_FIELD_SIZE, 10)
         : DEFAULT_MAX_UPLOAD_FIELD_SIZE
+    )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE, () =>
+      process.env.MAX_UPLOAD_TOTAL_SIZE
+        ? parseInt(process.env.MAX_UPLOAD_TOTAL_SIZE, 10)
+        : DEFAULT_MAX_UPLOAD_TOTAL_SIZE
     )
 
     this.registerConfigIfNotAlreadySet(

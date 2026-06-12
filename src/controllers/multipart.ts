@@ -29,6 +29,8 @@ export type MultipartLimits = {
   maxFields?: number
   /** Maximum size, in bytes, accepted for any single non-file field value. */
   maxFieldSize?: number
+  /** Maximum cumulative size, in bytes, across every file and field in a single request. */
+  maxTotalSize?: number
 }
 
 export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T extends IHttpServerComponent.IResponse>(
@@ -36,6 +38,20 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
   limits: MultipartLimits = {}
 ): (ctx: IHttpServerComponent.DefaultContext<U>) => Promise<T> {
   return async function (ctx: IHttpServerComponent.DefaultContext<U>): Promise<T> {
+    const { maxTotalSize } = limits
+
+    // Reject an upload whose declared Content-Length already exceeds the total budget, before we read
+    // (and buffer) any of the body. A request that lies about or omits Content-Length is still bounded
+    // by the cumulative `totalBytes` guard below, which stops once the buffered bytes exceed the cap.
+    if (maxTotalSize !== undefined) {
+      const declaredSize = parseInt(ctx.request.headers.get('content-length') || '', 10)
+      if (!isNaN(declaredSize) && declaredSize > maxTotalSize) {
+        throw new PayloadTooLargeError(
+          `The request body is too large. The maximum allowed total upload size is ${maxTotalSize} bytes.`
+        )
+      }
+    }
+
     let formDataParser: ReturnType<typeof busboy>
     try {
       formDataParser = busboy({
@@ -59,6 +75,22 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
     // `constructor` is stored as a plain key instead of mutating the object's prototype.
     const fields: Record<string, Field> = Object.create(null)
     const files: Record<string, File> = Object.create(null)
+
+    // Cumulative bytes seen across every file and field. The per-file/per-field caps don't bound the
+    // sum (a request may carry many files/fields), and this wrapper buffers everything in memory, so
+    // track the total and reject once it crosses `maxTotalSize`.
+    let totalBytes = 0
+    const rejectIfOverTotal = (): boolean => {
+      if (maxTotalSize !== undefined && totalBytes > maxTotalSize) {
+        formDataParser.destroy(
+          new PayloadTooLargeError(
+            `The request body is too large. The maximum allowed total upload size is ${maxTotalSize} bytes.`
+          )
+        )
+        return true
+      }
+      return false
+    }
 
     // Emitted once more files than `maxFiles` are seen. Reject instead of dropping them silently.
     formDataParser.on('filesLimit', function () {
@@ -87,12 +119,20 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
         )
         return
       }
+      totalBytes += Buffer.byteLength(value)
+      if (rejectIfOverTotal()) {
+        return
+      }
       fields[name] = Object.assign({ fieldname: name, value }, info)
     })
 
     formDataParser.on('file', function (name, stream, info) {
       const chunks: Buffer[] = []
       stream.on('data', function (data: Buffer) {
+        totalBytes += data.length
+        if (rejectIfOverTotal()) {
+          return
+        }
         chunks.push(data)
       })
       // Emitted when the file exceeds `maxFileSize`. busboy truncates the stream, so we

@@ -129,6 +129,57 @@ describe('when parsing a multipart request with upload limits', () => {
     })
   })
 
+  describe('and the cumulative size of the files exceeds the total allowed', () => {
+    let form: FormData
+    let wrapped: (ctx: IHttpServerComponent.DefaultContext<any>) => Promise<IHttpServerComponent.IResponse>
+
+    beforeEach(() => {
+      form = new FormData()
+      // Two files, each within maxFileSize, but together over maxTotalSize.
+      form.append('a', Buffer.alloc(1000, 1), { filename: 'a.bin' })
+      form.append('b', Buffer.alloc(1000, 1), { filename: 'b.bin' })
+      wrapped = multipartParserWrapper(handler as any, { maxFileSize: 4096, maxFiles: 10, maxTotalSize: 1500 })
+    })
+
+    it('should reject with a PayloadTooLargeError', async () => {
+      await expect(wrapped(buildContext(form))).rejects.toThrow(PayloadTooLargeError)
+    })
+
+    it('should not invoke the handler', async () => {
+      await expect(wrapped(buildContext(form))).rejects.toThrow()
+
+      expect(handler).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('and the declared Content-Length already exceeds the total allowed', () => {
+    let wrapped: (ctx: IHttpServerComponent.DefaultContext<any>) => Promise<IHttpServerComponent.IResponse>
+    let context: IHttpServerComponent.DefaultContext<any>
+
+    beforeEach(() => {
+      const form = new FormData()
+      form.append('entityId', 'an-entity-id')
+      const headers = { ...form.getHeaders(), 'content-length': '5000' }
+      wrapped = multipartParserWrapper(handler as any, { maxFileSize: 4096, maxFiles: 10, maxTotalSize: 1500 })
+      context = {
+        request: {
+          headers: { get: (name: string) => (headers as Record<string, string>)[name.toLowerCase()] },
+          body: Readable.toWeb(Readable.from(form.getBuffer()))
+        }
+      } as any
+    })
+
+    it('should reject with a PayloadTooLargeError before reading the body', async () => {
+      await expect(wrapped(context)).rejects.toThrow(PayloadTooLargeError)
+    })
+
+    it('should not invoke the handler', async () => {
+      await expect(wrapped(context)).rejects.toThrow()
+
+      expect(handler).not.toHaveBeenCalled()
+    })
+  })
+
   describe('and a form field name collides with the object prototype', () => {
     let form: FormData
     let wrapped: (ctx: IHttpServerComponent.DefaultContext<any>) => Promise<IHttpServerComponent.IResponse>
