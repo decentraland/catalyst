@@ -8,6 +8,11 @@ export enum EntityField {
   METADATA = 'metadata'
 }
 
+// Bound the request-controlled `id`/`pointer` arrays that feed the `ANY(...)`/overlap query, matching
+// the cap on POST /entities/active (issue #1935). This public, unauthenticated endpoint would
+// otherwise let one request push an unbounded number of values into the query.
+const MAX_IDS_OR_POINTERS = 1000
+
 /**
  * @deprecated
  * this endpoint will be deprecated in favor of `getActiveEntities`
@@ -15,9 +20,9 @@ export enum EntityField {
 // Method: GET
 // Query String: ?{filter}&fields={fieldList}
 export async function getEntitiesHandler(
-  context: HandlerContextWithPath<'activeEntities' | 'database' | 'queryParams', '/entities/:type'>
+  context: HandlerContextWithPath<'activeEntities' | 'database' | 'queryParams' | 'denylist', '/entities/:type'>
 ) {
-  const { database, activeEntities, queryParams } = context.components
+  const { database, activeEntities, queryParams, denylist } = context.components
   const type: EntityType = parseEntityType(context.params.type)
   const parsedParams = queryParams.qsParser(context.url.searchParams)
 
@@ -43,16 +48,23 @@ export async function getEntitiesHandler(
     }
   }
 
+  if (ids.length > MAX_IDS_OR_POINTERS || pointers.length > MAX_IDS_OR_POINTERS) {
+    return {
+      status: 400,
+      body: { error: `Too many ids or pointers; the maximum allowed is ${MAX_IDS_OR_POINTERS}` }
+    }
+  }
+
   // Validate fields are correct or empty
   let enumFields: EntityField[] | undefined = undefined
   if (fields) {
     enumFields = fields.split(',').map((f) => (<any>EntityField)[f.toUpperCase().trim()])
   }
 
-  // Calculate and mask entities
-  const entities: Entity[] = !!ids.length
-    ? await activeEntities.withIds(database, ids)
-    : await activeEntities.withPointers(database, pointers)
+  // Calculate and mask entities (dropping any denylisted entity, as the sibling listing endpoints do)
+  const entities: Entity[] = (
+    !!ids.length ? await activeEntities.withIds(database, ids) : await activeEntities.withPointers(database, pointers)
+  ).filter((entity) => !denylist.isDenylisted(entity.id))
 
   const maskedEntities: Entity[] = entities.map((entity) => maskEntity(entity, enumFields))
   return {

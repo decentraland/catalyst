@@ -5,17 +5,23 @@ import { checkNotModified, createContentFileHeaders, retrieveContentWithRange } 
 
 // Method: GET or HEAD
 export async function getEntityImageHandler(
-  context: HandlerContextWithPath<'activeEntities' | 'database' | 'storage', '/entities/active/entity/:pointer/image'>
+  context: HandlerContextWithPath<
+    'activeEntities' | 'database' | 'storage' | 'denylist',
+    '/entities/active/entity/:pointer/image'
+  >
 ) {
-  const { activeEntities, database } = context.components
+  const { activeEntities, database, denylist } = context.components
   const pointer: string = context.params.pointer
   const entity = await findEntityByPointer(database, activeEntities, pointer)
-  if (!entity) {
+  // Treat a denylisted entity as not found so its content (and its very existence) isn't exposed
+  // through the image endpoint, mirroring the listing endpoints that already filter the denylist.
+  if (!entity || denylist.isDenylisted(entity.id)) {
     throw new NotFoundError('Entity not found.')
   }
 
   const hash = findImageHash(entity)
-  if (!hash) {
+  // Also guard against a specific content hash being denylisted independently of its entity.
+  if (!hash || denylist.isDenylisted(hash)) {
     throw new NotFoundError('Entity has no image.')
   }
 
