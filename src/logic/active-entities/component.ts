@@ -55,21 +55,31 @@ export function createActiveEntitiesComponent(
 
   const normalizePointerCacheKey = (pointer: string) => pointer.toLowerCase()
 
-  const createEntityByPointersCache = (): Map<string, string | NotActiveEntity> => {
-    const entityIdByPointers = new Map<string, string | NotActiveEntity>()
+  type PointersCache = {
+    get(pointer: string): string | NotActiveEntity | undefined
+    set(pointer: string, entity: string | NotActiveEntity): void
+    has(pointer: string): boolean
+    clear(): void
+  }
+
+  const createEntityByPointersCache = (): PointersCache => {
+    // LRU instead of an unbounded Map: this cache grows with every distinct pointer ever looked up,
+    // so cap it (to ENTITIES_CACHE_SIZE) to avoid unbounded memory growth under pointer churn.
+    const entityIdByPointers = new LRU<string, string | NotActiveEntity>({
+      max: components.env.getConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE)
+    })
     return {
-      ...entityIdByPointers,
       get(pointer: string) {
         return entityIdByPointers.get(normalizePointerCacheKey(pointer))
       },
       set(pointer: string, entity: string | NotActiveEntity) {
-        return entityIdByPointers.set(normalizePointerCacheKey(pointer), entity)
+        entityIdByPointers.set(normalizePointerCacheKey(pointer), entity)
       },
       has(pointer: string) {
         return entityIdByPointers.has(normalizePointerCacheKey(pointer))
       },
       clear() {
-        return entityIdByPointers.clear()
+        entityIdByPointers.clear()
       }
     }
   }

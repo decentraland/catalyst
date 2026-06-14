@@ -8,6 +8,10 @@ import { GCStaleProfilesResult, IGarbageCollectionComponent, SweepResult } from 
 
 const PROFILE_CLEANUP_LIMIT = 10000
 
+// How many unused content hashes to delete from storage per batch. Bounds both the in-memory list
+// and the size of each storage.delete operation during a sweep.
+const GC_DELETE_BATCH_SIZE = 1000
+
 export function createGarbageCollectionComponent(
   components: Pick<
     AppComponents,
@@ -33,16 +37,37 @@ export function createGarbageCollectionComponent(
    * If they are not being used, then we will delete them.
    */
   async function gcUnusedHashes(): Promise<Set<string>> {
-    const hashes = await components.contentFilesRepository.findContentHashesNotBeingUsedAnymore(
+    const deletedHashes = new Set<string>()
+    let batch: string[] = []
+
+    const flushBatch = async (): Promise<void> => {
+      if (batch.length === 0) {
+        return
+      }
+      await components.storage.delete(batch)
+      for (const hash of batch) {
+        deletedHashes.add(hash)
+      }
+      batch = []
+    }
+
+    // Stream the unused hashes and delete them in fixed-size batches, so neither the in-memory list
+    // nor a single storage.delete grows unbounded with the number of overwritten deployments.
+    for await (const hash of components.contentFilesRepository.streamContentHashesNotBeingUsedAnymore(
       components.database,
-      lastTimeOfCollection
-    )
+      lastTimeOfCollection,
+      { batchSize: GC_DELETE_BATCH_SIZE }
+    )) {
+      batch.push(hash)
+      if (batch.length >= GC_DELETE_BATCH_SIZE) {
+        await flushBatch()
+      }
+    }
+    await flushBatch()
 
-    components.metrics.increment('dcl_content_garbage_collection_items_total', {}, hashes.length)
-
-    logger.debug(`Hashes to delete are: (${hashes.join(',')})`)
-    await components.storage.delete(hashes)
-    return new Set<string>(hashes)
+    components.metrics.increment('dcl_content_garbage_collection_items_total', {}, deletedHashes.size)
+    logger.debug(`Garbage collection deleted ${deletedHashes.size} unused content hashes`)
+    return deletedHashes
   }
 
   // NOTE: remove old profile deployments and their images,
