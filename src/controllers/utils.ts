@@ -112,14 +112,12 @@ export function checkNotModified(
   return undefined
 }
 
-export async function createContentFileHeaders(content: ContentItem, hash: string): Promise<Record<string, string>> {
-  const stream: Readable = await content.asRawStream()
-  const fileTypeParser = new FileTypeParser()
-  try {
-    const mime = await fileTypeParser.fromStream(stream)
-    const mimeType = mime?.mime || 'application/octet-stream'
-    stream.destroy()
-
+export async function createContentFileHeaders(
+  content: ContentItem,
+  hash: string,
+  detectMimeType = true
+): Promise<Record<string, string>> {
+  const buildHeaders = (mimeType: string): Record<string, string> => {
     const headers: Record<string, string> = {
       'Content-Type': mimeType,
       ETag: toETag(hash),
@@ -134,6 +132,22 @@ export async function createContentFileHeaders(content: ContentItem, hash: strin
       headers['Content-Length'] = content.size.toString()
     }
     return headers
+  }
+
+  // Sniffing the MIME type opens a second stream on the content object (an extra S3 GET / fs open)
+  // just to read its head. Skip it when the caller doesn't need the type (the hot /contents path
+  // serves application/octet-stream unless `?includeMimeType` is set).
+  if (!detectMimeType) {
+    return buildHeaders('application/octet-stream')
+  }
+
+  const stream: Readable = await content.asRawStream()
+  const fileTypeParser = new FileTypeParser()
+  try {
+    const mime = await fileTypeParser.fromStream(stream)
+    const mimeType = mime?.mime || 'application/octet-stream'
+    stream.destroy()
+    return buildHeaders(mimeType)
   } catch (error) {
     stream.destroy()
     throw error

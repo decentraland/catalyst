@@ -465,10 +465,12 @@ async function buildComponents() {
     [DECENTRALAND_ADDRESS]
   )
   const deploymentsRepository = createDeploymentsRepository()
+  env.setConfig(EnvironmentConfig.BLOOM_FILTER_EXPECTED_ELEMENTS, 5_000_000)
   const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({
     database,
     logs,
-    deploymentsRepository
+    deploymentsRepository,
+    env
   })
   env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)
   const denylist: Denylist = { isDenylisted: () => false, reload: jest.fn() }

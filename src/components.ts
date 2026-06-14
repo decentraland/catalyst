@@ -162,7 +162,10 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   // ---------------------------------------------------------------------------
   // 5. Stateful adapters
   // ---------------------------------------------------------------------------
-  const sequentialExecutor = createSequentialTaskExecutor({ metrics, logs })
+  const sequentialExecutor = createSequentialTaskExecutor(
+    { metrics, logs },
+    { concurrency: env.getConfig<number>(EnvironmentConfig.SEQUENTIAL_TASK_CONCURRENCY) }
+  )
   const systemProperties = createSystemProperties({ database })
 
   // ---------------------------------------------------------------------------
@@ -217,7 +220,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     l2Provider
   })
 
-  const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, deploymentsRepository })
+  const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, deploymentsRepository, env })
   const deployments = createDeploymentsComponent({ database, logs })
   const activeEntities = createActiveEntitiesComponent({
     database,

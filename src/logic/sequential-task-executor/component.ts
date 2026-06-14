@@ -8,14 +8,22 @@ type SequentialTaskComponents = {
   logs: ILoggerComponent
 }
 
-export function createSequentialTaskExecutor(components: SequentialTaskComponents): ISequentialTaskExecutorComponent {
+export function createSequentialTaskExecutor(
+  components: SequentialTaskComponents,
+  options?: { concurrency?: number }
+): ISequentialTaskExecutorComponent {
   const { metrics, logs } = components
   const logger = logs.getLogger('SequentialTaskComponent')
+  // Per-jobName queue concurrency. Defaults to 1 (strictly sequential) to preserve the original
+  // behavior; raising it (via SEQUENTIAL_TASK_CONCURRENCY) lets the read endpoints that use this
+  // executor — /deployments and /pointer-changes — run in parallel up to the DB pool size instead
+  // of head-of-line blocking the whole cluster's polling on a single slow query.
+  const concurrency = options?.concurrency && options.concurrency > 0 ? options.concurrency : 1
   const queues = new Map<string, PQueue>()
 
   function getQueue(jobName: string) {
     if (queues.has(jobName)) return queues.get(jobName)!
-    const queue = new PQueue({ autoStart: true, concurrency: 1, throwOnTimeout: false })
+    const queue = new PQueue({ autoStart: true, concurrency, throwOnTimeout: false })
     queues.set(jobName, queue)
     return queue
   }

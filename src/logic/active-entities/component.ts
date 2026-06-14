@@ -149,11 +149,12 @@ export function createActiveEntitiesComponent(
 
     // Check which pointers or ids doesn't have an active entity and set as NONE
     if (pointers) {
+      // Precompute the set of normalized pointers that have an active entity, so the check below is
+      // O(1) per requested pointer instead of re-scanning (and re-normalizing) every entity for each
+      // pointer — which is quadratic for large /entities/active requests (up to 1000 pointers).
+      const activePointerKeys = new Set(entities.flatMap((entity) => entity.pointers.map(normalizePointerCacheKey)))
       const pointersWithoutActiveEntity = pointers.filter(
-        (pointer) =>
-          !entities.some((entity) =>
-            entity.pointers.map(normalizePointerCacheKey).includes(normalizePointerCacheKey(pointer))
-          )
+        (pointer) => !activePointerKeys.has(normalizePointerCacheKey(pointer))
       )
 
       for (const pointer of pointersWithoutActiveEntity) {

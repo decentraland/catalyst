@@ -209,7 +209,8 @@ describe('Deployer', function () {
       [DECENTRALAND_ADDRESS]
     )
     const deploymentsRepository = createDeploymentsRepository()
-    const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, deploymentsRepository })
+    env.setConfig(EnvironmentConfig.BLOOM_FILTER_EXPECTED_ELEMENTS, 5_000_000)
+    const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, deploymentsRepository, env })
     env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)
     const denylist: Denylist = { isDenylisted: () => false, reload: jest.fn() }
     const sequentialExecutor = createSequentialTaskExecutor({ logs, metrics })

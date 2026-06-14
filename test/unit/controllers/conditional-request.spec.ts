@@ -97,6 +97,49 @@ describe('when handling conditional requests', () => {
         expect(response).toHaveProperty('body')
       })
     })
+
+    describe('and includeMimeType is not requested', () => {
+      beforeEach(() => {
+        context = {
+          params: { hashId },
+          components: { storage },
+          url: new URL('http://localhost/contents/' + hashId),
+          request: {
+            method: 'GET',
+            ...createRequestMock()
+          }
+        } as unknown as HandlerContextWithPath<'storage', '/contents/:hashId'>
+      })
+
+      it('should respond with application/octet-stream without sniffing the content type', async () => {
+        const response = await getContentHandler(context)
+        expect(response.headers['Content-Type']).toBe('application/octet-stream')
+      })
+
+      it('should open the content stream only once, for the body and not for MIME detection', async () => {
+        await getContentHandler(context)
+        expect(contentItem.asRawStream).toHaveBeenCalledTimes(1)
+      })
+    })
+
+    describe('and includeMimeType is requested', () => {
+      beforeEach(() => {
+        context = {
+          params: { hashId },
+          components: { storage },
+          url: new URL('http://localhost/contents/' + hashId + '?includeMimeType'),
+          request: {
+            method: 'GET',
+            ...createRequestMock()
+          }
+        } as unknown as HandlerContextWithPath<'storage', '/contents/:hashId'>
+      })
+
+      it('should open the content stream for MIME detection in addition to the body', async () => {
+        await getContentHandler(context)
+        expect(contentItem.asRawStream).toHaveBeenCalledTimes(2)
+      })
+    })
   })
 
   describe('when serving an entity image', () => {

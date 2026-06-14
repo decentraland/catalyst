@@ -3,15 +3,21 @@ import { IBaseComponent } from '@well-known-components/interfaces'
 import * as bf from 'bloom-filters'
 import future from 'fp-future'
 import { joinOverlappedTimeRanges } from '../../logic/time-range'
+import { EnvironmentConfig } from '../../Environment'
 import { AppComponents } from '../../types'
 import { DeployedEntitiesBloomFilter } from './types'
 
 export function createDeployedEntitiesBloomFilter(
-  components: Pick<AppComponents, 'database' | 'logs' | 'deploymentsRepository'>
+  components: Pick<AppComponents, 'database' | 'logs' | 'deploymentsRepository' | 'env'>
 ): DeployedEntitiesBloomFilter & IBaseComponent {
   const logger = components.logs.getLogger('deployedEntitiesBloomFilter')
 
-  const deploymentsBloomFilter = bf.BloomFilter.create(5_000_000, 0.001)
+  // Sized via BLOOM_FILTER_EXPECTED_ELEMENTS. Once the inserted element count exceeds the configured
+  // capacity the real false-positive rate rises above the target 0.1%, and each false positive costs
+  // an extra deploymentExists DB check on the sync hot path — so this should track the deployments
+  // table size (verify with the dcl_deployed_entities_bloom_filter_checks_total{hit="false"} metric).
+  const expectedElements = components.env.getConfig<number>(EnvironmentConfig.BLOOM_FILTER_EXPECTED_ELEMENTS)
+  const deploymentsBloomFilter = bf.BloomFilter.create(expectedElements, 0.001)
 
   const initialized = future<void>()
 

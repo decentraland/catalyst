@@ -176,6 +176,9 @@ export enum EnvironmentConfig {
   PG_STREAM_QUERY_TIMEOUT,
   GARBAGE_COLLECTION,
   GARBAGE_COLLECTION_INTERVAL,
+  BLOOM_FILTER_EXPECTED_ELEMENTS,
+  SEQUENTIAL_TASK_CONCURRENCY,
+  ENTITIES_CACHE_CONTROL_MAX_AGE,
   PROFILE_DURATION,
   SNAPSHOT_FREQUENCY_IN_MILLISECONDS,
   CUSTOM_DAO,
@@ -416,6 +419,15 @@ export class EnvironmentBuilder {
       env,
       EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL,
       () => process.env.GARBAGE_COLLECTION_INTERVAL ?? ms('6h')
+    )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.BLOOM_FILTER_EXPECTED_ELEMENTS, () =>
+      process.env.BLOOM_FILTER_EXPECTED_ELEMENTS ? parseInt(process.env.BLOOM_FILTER_EXPECTED_ELEMENTS, 10) : 10_000_000
+    )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SEQUENTIAL_TASK_CONCURRENCY, () =>
+      process.env.SEQUENTIAL_TASK_CONCURRENCY ? parseInt(process.env.SEQUENTIAL_TASK_CONCURRENCY, 10) : 4
+    )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ENTITIES_CACHE_CONTROL_MAX_AGE, () =>
+      process.env.ENTITIES_CACHE_CONTROL_MAX_AGE ? parseInt(process.env.ENTITIES_CACHE_CONTROL_MAX_AGE, 10) : 10
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PROFILE_DURATION, () => {
       if (!process.env.PROFILE_DURATION) return ms('1 year')
