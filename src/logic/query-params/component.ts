@@ -5,7 +5,18 @@ import { IQueryParams } from './types'
 export function createQueryParams(): IQueryParams {
   return {
     qsParser(rawQueryParams: URLSearchParams): QueryParams {
-      return qs.parse(rawQueryParams.toString(), { parseArrays: true })
+      // Bound the parser's work as defense-in-depth against query-string abuse. `parameterLimit` is
+      // intentionally set above the per-endpoint array caps (1000) so a handler can see an oversized
+      // request and reject it with a clean 400, rather than qs silently dropping the excess.
+      // `arrayLimit`/`depth` are tightened because no endpoint relies on bracket-indexed or deeply
+      // nested query params — arrays here use repeated keys (e.g. `?cid=a&cid=b`), which are governed
+      // by `parameterLimit`, not `arrayLimit`.
+      return qs.parse(rawQueryParams.toString(), {
+        parseArrays: true,
+        parameterLimit: 2000,
+        arrayLimit: 100,
+        depth: 5
+      })
     },
     qsGetArray(queryParams: QueryParams, paramName: string): string[] {
       const parsedParam = (queryParams[paramName] as string[]) || []

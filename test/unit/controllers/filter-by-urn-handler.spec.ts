@@ -7,22 +7,27 @@ import { createMockedEntity } from '../../mocks/entity-mock'
 import { Entity } from '@dcl/schemas'
 
 describe('when retrieving active entities by a collection URN prefix', () => {
-  let context: HandlerContextWithPath<'activeEntities', '/entities/active/collections/:collectionUrn'>
+  let context: HandlerContextWithPath<'activeEntities' | 'denylist', '/entities/active/collections/:collectionUrn'>
   let withPrefixMock: jest.MockedFn<ActiveEntities['withPrefix']>
+  let denylist: { isDenylisted: jest.Mock; reload: jest.Mock }
 
   beforeEach(() => {
     withPrefixMock = jest.fn()
+    denylist = { isDenylisted: jest.fn().mockReturnValue(false), reload: jest.fn() }
 
     context = {
       params: {
         collectionUrn: 'urn:decentraland:mumbai:collections-thirdparty:aThirdParty'
       },
-      components: { activeEntities: createMockedActiveEntitiesComponent({ withPrefix: withPrefixMock }) },
+      components: {
+        activeEntities: createMockedActiveEntitiesComponent({ withPrefix: withPrefixMock }),
+        denylist
+      },
       url: new URL(
         'http://localhost/entities/active/collections/urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection'
       ),
       request: {} as any
-    }
+    } as unknown as HandlerContextWithPath<'activeEntities' | 'denylist', '/entities/active/collections/:collectionUrn'>
   })
 
   describe.each([
@@ -129,6 +134,21 @@ describe('when retrieving active entities by a collection URN prefix', () => {
       const response = await getEntitiesByCollectionPointerPrefixHandler(context)
       expect(response.status).toBe(200)
       expect(response.body).toEqual({ total: entities.length, entities })
+    })
+  })
+
+  describe('and some of the matching entities are denylisted', () => {
+    let entities: Entity[]
+
+    beforeEach(() => {
+      entities = [createMockedEntity({ id: 'entity-1' }), createMockedEntity({ id: 'entity-2' })]
+      withPrefixMock.mockResolvedValue({ total: entities.length, entities })
+      denylist.isDenylisted.mockImplementation((id: string) => id === 'entity-2')
+    })
+
+    it('should omit the denylisted entities from the returned list', async () => {
+      const response = await getEntitiesByCollectionPointerPrefixHandler(context)
+      expect(response.body.entities).toEqual([entities[0]])
     })
   })
 })

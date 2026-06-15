@@ -19,6 +19,32 @@ describe('when parsing raw URLSearchParams', () => {
       expect(queryParams.qsParser(new URLSearchParams(''))).toEqual({})
     })
   })
+
+  describe('and the number of repeated keys is just above a per-endpoint cap', () => {
+    let query: string
+
+    beforeEach(() => {
+      query = Array.from({ length: 1001 }, (_, i) => `cid=${i}`).join('&')
+    })
+
+    it('should parse every value so handlers can see the overage and reject it with a 400', () => {
+      const parsed = queryParams.qsParser(new URLSearchParams(query))
+      expect((parsed.cid as string[]).length).toBe(1001)
+    })
+  })
+
+  describe('and the number of repeated keys far exceeds the parameter limit', () => {
+    let query: string
+
+    beforeEach(() => {
+      query = Array.from({ length: 3000 }, (_, i) => `cid=${i}`).join('&')
+    })
+
+    it('should bound the parsed array to the configured parameter limit', () => {
+      const parsed = queryParams.qsParser(new URLSearchParams(query))
+      expect((parsed.cid as string[]).length).toBeLessThanOrEqual(2000)
+    })
+  })
 })
 
 describe('when reading an array param via qsGetArray', () => {
