@@ -97,36 +97,40 @@ export async function createDatabase(
         const endTimer = startTimer(durationQueryNameLabel)
         const client = await streamPool.connect()
 
+        const stream: any = new QueryStream(sql.text, sql.values, config)
+        stream.callback = function () {
+          // noop
+        }
+
+        let completed = false
         try {
-          const stream: any = new QueryStream(sql.text, sql.values, config)
+          const queryPromise = client.query(stream)
 
-          stream.callback = function () {
-            // noop
+          for await (const row of stream) {
+            yield row
           }
 
-          try {
-            const queryPromise = client.query(stream)
+          stream.destroy()
 
-            for await (const row of stream) {
-              yield row
-            }
-
-            stream.destroy()
-
-            await queryPromise
-            // finish - OK, this call is necessary to finish the query when we configure query_timeout due to a bug in pg
-            stream.callback(undefined, undefined)
-            endTimer({ status: 'success' })
-          } catch (error) {
-            // finish - with error, this call is necessary to finish the query when we configure query_timeout due to a bug in pg
-            stream.callback(error, undefined)
-            endTimer({ status: 'error' })
-            logger.error('Error running stream query:')
-            logger.error(error)
-            throw error
-          }
+          await queryPromise
+          // finish - OK, this call is necessary to finish the query when we configure query_timeout due to a bug in pg
+          stream.callback(undefined, undefined)
+          endTimer({ status: 'success' })
+          completed = true
+        } catch (error) {
+          // finish - with error, this call is necessary to finish the query when we configure query_timeout due to a bug in pg
+          stream.callback(error, undefined)
+          endTimer({ status: 'error' })
+          logger.error('Error running stream query:')
+          logger.error(error)
+          throw error
         } finally {
-          client.release()
+          // Always tear down the stream before the connection returns to the pool, even if the
+          // consumer abandoned the generator early (break/throw) — otherwise a pooled connection
+          // could be reused with an in-flight query stream still attached. Discard the connection
+          // unless the stream finished cleanly, so a half-consumed cursor can't corrupt a future borrower.
+          stream.destroy()
+          client.release(completed ? undefined : true)
         }
       },
 

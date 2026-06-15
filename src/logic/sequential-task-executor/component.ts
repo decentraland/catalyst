@@ -8,6 +8,10 @@ type SequentialTaskComponents = {
   logs: ILoggerComponent
 }
 
+// Upper bound on per-jobName queue concurrency, so an operator typo (e.g. 40000) can't spawn enough
+// parallel tasks to exhaust the DB connection pool.
+const MAX_SEQUENTIAL_TASK_CONCURRENCY = 16
+
 export function createSequentialTaskExecutor(
   components: SequentialTaskComponents,
   options?: { concurrency?: number }
@@ -18,7 +22,13 @@ export function createSequentialTaskExecutor(
   // behavior; raising it (via SEQUENTIAL_TASK_CONCURRENCY) lets the read endpoints that use this
   // executor — /deployments and /pointer-changes — run in parallel up to the DB pool size instead
   // of head-of-line blocking the whole cluster's polling on a single slow query.
-  const concurrency = options?.concurrency && options.concurrency > 0 ? options.concurrency : 1
+  const requestedConcurrency = options?.concurrency && options.concurrency > 0 ? options.concurrency : 1
+  const concurrency = Math.min(requestedConcurrency, MAX_SEQUENTIAL_TASK_CONCURRENCY)
+  if (requestedConcurrency > MAX_SEQUENTIAL_TASK_CONCURRENCY) {
+    logger.warn(
+      `Requested sequential task concurrency ${requestedConcurrency} exceeds the maximum; clamping to ${MAX_SEQUENTIAL_TASK_CONCURRENCY}.`
+    )
+  }
   const queues = new Map<string, PQueue>()
 
   function getQueue(jobName: string) {

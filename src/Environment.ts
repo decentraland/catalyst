@@ -420,15 +420,19 @@ export class EnvironmentBuilder {
       EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL,
       () => process.env.GARBAGE_COLLECTION_INTERVAL ?? ms('6h')
     )
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.BLOOM_FILTER_EXPECTED_ELEMENTS, () =>
-      process.env.BLOOM_FILTER_EXPECTED_ELEMENTS ? parseInt(process.env.BLOOM_FILTER_EXPECTED_ELEMENTS, 10) : 10_000_000
-    )
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SEQUENTIAL_TASK_CONCURRENCY, () =>
-      process.env.SEQUENTIAL_TASK_CONCURRENCY ? parseInt(process.env.SEQUENTIAL_TASK_CONCURRENCY, 10) : 4
-    )
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ENTITIES_CACHE_CONTROL_MAX_AGE, () =>
-      process.env.ENTITIES_CACHE_CONTROL_MAX_AGE ? parseInt(process.env.ENTITIES_CACHE_CONTROL_MAX_AGE, 10) : 10
-    )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.BLOOM_FILTER_EXPECTED_ELEMENTS, () => {
+      const parsed = parseInt(process.env.BLOOM_FILTER_EXPECTED_ELEMENTS ?? '', 10)
+      return Number.isNaN(parsed) ? 10_000_000 : parsed
+    })
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SEQUENTIAL_TASK_CONCURRENCY, () => {
+      const parsed = parseInt(process.env.SEQUENTIAL_TASK_CONCURRENCY ?? '', 10)
+      return Number.isNaN(parsed) ? 4 : parsed
+    })
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ENTITIES_CACHE_CONTROL_MAX_AGE, () => {
+      // parseInt (not `|| default`) so an explicit 0 — which disables the Cache-Control header — is preserved.
+      const parsed = parseInt(process.env.ENTITIES_CACHE_CONTROL_MAX_AGE ?? '', 10)
+      return Number.isNaN(parsed) ? 10 : parsed
+    })
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PROFILE_DURATION, () => {
       if (!process.env.PROFILE_DURATION) return ms('1 year')
       const value = ms(process.env.PROFILE_DURATION)
