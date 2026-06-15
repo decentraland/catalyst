@@ -176,6 +176,9 @@ export enum EnvironmentConfig {
   PG_STREAM_QUERY_TIMEOUT,
   GARBAGE_COLLECTION,
   GARBAGE_COLLECTION_INTERVAL,
+  BLOOM_FILTER_EXPECTED_ELEMENTS,
+  SEQUENTIAL_TASK_CONCURRENCY,
+  ENTITIES_CACHE_CONTROL_MAX_AGE,
   PROFILE_DURATION,
   SNAPSHOT_FREQUENCY_IN_MILLISECONDS,
   CUSTOM_DAO,
@@ -417,6 +420,20 @@ export class EnvironmentBuilder {
       EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL,
       () => process.env.GARBAGE_COLLECTION_INTERVAL ?? ms('6h')
     )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.BLOOM_FILTER_EXPECTED_ELEMENTS, () => {
+      const parsed = parseInt(process.env.BLOOM_FILTER_EXPECTED_ELEMENTS ?? '', 10)
+      // Floor at 1: a 0/negative value would make BloomFilter.create() a degenerate 0-size filter.
+      return Number.isNaN(parsed) ? 10_000_000 : Math.max(parsed, 1)
+    })
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SEQUENTIAL_TASK_CONCURRENCY, () => {
+      const parsed = parseInt(process.env.SEQUENTIAL_TASK_CONCURRENCY ?? '', 10)
+      return Number.isNaN(parsed) ? 1 : parsed
+    })
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ENTITIES_CACHE_CONTROL_MAX_AGE, () => {
+      // parseInt (not `|| default`) so an explicit 0 — which disables the Cache-Control header — is preserved.
+      const parsed = parseInt(process.env.ENTITIES_CACHE_CONTROL_MAX_AGE ?? '', 10)
+      return Number.isNaN(parsed) ? 10 : parsed
+    })
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PROFILE_DURATION, () => {
       if (!process.env.PROFILE_DURATION) return ms('1 year')
       const value = ms(process.env.PROFILE_DURATION)

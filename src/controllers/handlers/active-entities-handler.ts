@@ -33,6 +33,8 @@ export async function getActiveEntitiesHandler(
   // here and this second `json()` call is safe.
   const body = (await context.request.json()) as { ids: string[] } | { pointers: string[] }
 
+  // No Cache-Control here: this is a POST and shared caches don't cache POST responses, so the
+  // header would be a no-op. The cache window is applied on the GET /entities/:type read path.
   const entities: Entity[] = (
     'ids' in body
       ? await activeEntities.withIds(database, body.ids)

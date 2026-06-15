@@ -45,10 +45,8 @@ export async function getContentHandler(context: HandlerContextWithPath<'storage
   }
 
   const { content, status } = result
-  const calculatedHeaders = await createContentFileHeaders(content, hash)
-  const headers = shouldCalculateContentType
-    ? calculatedHeaders
-    : { ...calculatedHeaders, 'Content-Type': 'application/octet-stream' }
+  // Only sniff MIME when requested; otherwise skip the extra content stream (see createContentFileHeaders).
+  const headers = await createContentFileHeaders(content, hash, shouldCalculateContentType)
 
   return {
     status,

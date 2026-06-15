@@ -1,3 +1,4 @@
+import LRU from 'lru-cache'
 import { downloadEntityAndContentFiles } from '@dcl/snapshots-fetcher'
 import { streamToBuffer } from '@dcl/catalyst-storage/dist/content-item'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
@@ -12,6 +13,10 @@ import { IBatchDeployer } from './types'
 
 const REQUEST_MAX_RETRIES = 10
 const REQUEST_RETRY_WAIT_TIME = 1000
+
+// Bounds the in-process dedup cache of processed entity ids. It's a fast path in front of
+// isEntityDeployed, so an evicted entry just costs a re-check.
+const MAX_TRACKED_SUCCESSFUL_DEPLOYMENTS = 100_000
 
 /**
  * An IDeployerComponent parallelizes deployments with a JobQueue.
@@ -68,7 +73,7 @@ export function createBatchDeployerComponent(
       markAsDeployedFns: Required<DeployableEntity['markAsDeployed'][]>
     }
   >()
-  const successfulDeployments = new Set<string>()
+  const successfulDeployments = new LRU<string, true>({ max: MAX_TRACKED_SUCCESSFUL_DEPLOYMENTS })
 
   // Per-instance load-balancing LRU for round-robin selection across mirror servers.
   // Used by `deployEntityFromRemoteServer` to spread download requests across the catalyst
@@ -157,7 +162,7 @@ export function createBatchDeployerComponent(
 
     // ignore entities that are already deployed locally
     if (await isEntityDeployed(components.database, components, entity.entityId, entity.entityTimestamp)) {
-      successfulDeployments.add(entity.entityId)
+      successfulDeployments.set(entity.entityId, true)
       return true
     }
 
@@ -225,7 +230,7 @@ export function createBatchDeployerComponent(
               for (const markAsDeployed of markAsDeployedFns) {
                 await markAsDeployed()
               }
-              successfulDeployments.add(entity.entityId)
+              successfulDeployments.set(entity.entityId, true)
               deploymentsMap.delete(entity.entityId)
               return
             }
@@ -243,7 +248,7 @@ export function createBatchDeployerComponent(
                   DeploymentContext.SYNCED
                 )
                 wasEntityProcessed = true
-                successfulDeployments.add(entity.entityId)
+                successfulDeployments.set(entity.entityId, true)
                 logs.info(`Synced deployment successful`, {
                   entityType: entity.entityType,
                   entityId: entity.entityId,

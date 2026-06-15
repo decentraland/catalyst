@@ -21,7 +21,6 @@ export function createActiveEntitiesComponent(
     | 'logs'
     | 'metrics'
     | 'denylist'
-    | 'sequentialExecutor'
     | 'deployments'
     | 'pointersRepository'
     | 'activeEntitiesRepository'
@@ -157,11 +156,11 @@ export function createActiveEntitiesComponent(
 
     // Check which pointers or ids doesn't have an active entity and set as NONE
     if (pointers) {
+      // Precompute a Set of active pointers so the lookup below is O(1) per pointer, avoiding an
+      // O(pointers × entities) scan on large /entities/active requests.
+      const activePointerKeys = new Set(entities.flatMap((entity) => entity.pointers.map(normalizePointerCacheKey)))
       const pointersWithoutActiveEntity = pointers.filter(
-        (pointer) =>
-          !entities.some((entity) =>
-            entity.pointers.map(normalizePointerCacheKey).includes(normalizePointerCacheKey(pointer))
-          )
+        (pointer) => !activePointerKeys.has(normalizePointerCacheKey(pointer))
       )
 
       for (const pointer of pointersWithoutActiveEntity) {

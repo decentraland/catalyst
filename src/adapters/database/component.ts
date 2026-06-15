@@ -1,11 +1,15 @@
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { IDatabase } from '@well-known-components/interfaces'
-import { Client, ClientConfig, Pool, PoolClient, PoolConfig } from 'pg'
+import { ClientConfig, Pool, PoolClient, PoolConfig } from 'pg'
 import QueryStream from 'pg-query-stream'
 import { SQLStatement } from 'sql-template-strings'
 import { EnvironmentConfig } from '../../Environment'
 import { AppComponents } from '../../types'
 import { DatabaseTransactionalClient, IDatabaseComponent } from './types'
+
+// Max connections for the dedicated streaming pool. Kept small: stream queries are few and
+// long-lived, and each generator holds one connection for its whole duration.
+const STREAM_POOL_MAX = 4
 
 export async function createDatabaseComponent(
   components: Pick<AppComponents, 'logs' | 'env' | 'metrics'>,
@@ -38,6 +42,9 @@ export async function createDatabase(
 ): Promise<IDatabaseComponent> {
   const { logs } = components
   const logger = logs.getLogger('database-component')
+
+  // Dedicated pool for streaming queries, separate from the main pool because they run with a longer query_timeout.
+  const streamPool = new Pool({ ...(streamQueriesConfig as PoolConfig), max: STREAM_POOL_MAX })
 
   const startTimer = (durationQueryNameLabel: string | undefined) =>
     (durationQueryNameLabel
@@ -85,41 +92,42 @@ export async function createDatabase(
         config?: { batchSize?: number },
         durationQueryNameLabel?: string
       ): AsyncGenerator<T> {
-        // Create a streamPool and reuse it ?
         const endTimer = startTimer(durationQueryNameLabel)
-        const client = new Client(streamQueriesConfig)
-        await client.connect()
+        const client = await streamPool.connect()
 
+        const stream: any = new QueryStream(sql.text, sql.values, config)
+        stream.callback = function () {
+          // noop
+        }
+
+        let completed = false
         try {
-          const stream: any = new QueryStream(sql.text, sql.values, config)
+          const queryPromise = client.query(stream)
 
-          stream.callback = function () {
-            // noop
+          for await (const row of stream) {
+            yield row
           }
 
-          try {
-            const queryPromise = client.query(stream)
+          stream.destroy()
 
-            for await (const row of stream) {
-              yield row
-            }
-
-            stream.destroy()
-
-            await queryPromise
-            // finish - OK, this call is necessary to finish the query when we configure query_timeout due to a bug in pg
-            stream.callback(undefined, undefined)
-            endTimer({ status: 'success' })
-          } catch (error) {
-            // finish - with error, this call is necessary to finish the query when we configure query_timeout due to a bug in pg
-            stream.callback(error, undefined)
-            endTimer({ status: 'error' })
-            logger.error('Error running stream query:')
-            logger.error(error)
-            throw error
-          }
+          await queryPromise
+          // finish - OK, this call is necessary to finish the query when we configure query_timeout due to a bug in pg
+          stream.callback(undefined, undefined)
+          endTimer({ status: 'success' })
+          completed = true
+        } catch (error) {
+          // finish - with error, this call is necessary to finish the query when we configure query_timeout due to a bug in pg
+          stream.callback(error, undefined)
+          endTimer({ status: 'error' })
+          logger.error('Error running stream query:')
+          logger.error(error)
+          throw error
         } finally {
-          await client.end()
+          // Tear the stream down before the connection returns to the pool (even if the consumer
+          // abandoned the generator early), and discard the connection unless it finished cleanly —
+          // a half-consumed cursor must not be reused by the next borrower.
+          stream.destroy()
+          client.release(completed ? undefined : true)
         }
       },
 
@@ -195,6 +203,13 @@ export async function createDatabase(
         return
       }
       didStop = true
+
+      // Drain the dedicated streaming pool first; its clients are short-lived per generator.
+      try {
+        await streamPool.end()
+      } catch (error) {
+        logger.error(error as Error)
+      }
 
       let gracePeriods = 10
 

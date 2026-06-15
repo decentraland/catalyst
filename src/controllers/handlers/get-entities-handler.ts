@@ -1,6 +1,7 @@
 import { EntityContentItemReference } from '@dcl/hashing'
 import { Entity, EntityType } from '@dcl/schemas'
 import { HandlerContextWithPath, parseEntityType } from '../../types'
+import { EnvironmentConfig } from '../../Environment'
 
 export enum EntityField {
   CONTENT = 'content',
@@ -20,9 +21,9 @@ const MAX_IDS_OR_POINTERS = 1000
 // Method: GET
 // Query String: ?{filter}&fields={fieldList}
 export async function getEntitiesHandler(
-  context: HandlerContextWithPath<'activeEntities' | 'database' | 'queryParams' | 'denylist', '/entities/:type'>
+  context: HandlerContextWithPath<'activeEntities' | 'database' | 'queryParams' | 'denylist' | 'env', '/entities/:type'>
 ) {
-  const { database, activeEntities, queryParams, denylist } = context.components
+  const { database, activeEntities, queryParams, denylist, env } = context.components
   const type: EntityType = parseEntityType(context.params.type)
   const parsedParams = queryParams.qsParser(context.url.searchParams)
 
@@ -67,8 +68,11 @@ export async function getEntitiesHandler(
   ).filter((entity) => !denylist.isDenylisted(entity.id))
 
   const maskedEntities: Entity[] = entities.map((entity) => maskEntity(entity, enumFields))
+  // Short, opt-in cache window (default 10s, via ENTITIES_CACHE_CONTROL_MAX_AGE; 0 disables).
+  const maxAge = env.getConfig<number>(EnvironmentConfig.ENTITIES_CACHE_CONTROL_MAX_AGE)
   return {
     status: 200,
+    ...(maxAge && maxAge > 0 ? { headers: { 'Cache-Control': `public, max-age=${maxAge}` } } : {}),
     body: maskedEntities
   }
 }

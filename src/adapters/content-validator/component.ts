@@ -8,7 +8,6 @@ import {
   loadTree
 } from '@dcl/block-indexer'
 import { l1Contracts } from '@dcl/catalyst-contracts'
-import { streamToBuffer } from '@dcl/catalyst-storage/dist/content-item'
 import {
   DeploymentToValidate,
   ExternalCalls,
@@ -57,28 +56,24 @@ async function createExternalCallsBag(components: Pick<AppComponents, 'storage' 
   async function calculateFilesHashes(
     files: Map<string, Uint8Array>
   ): Promise<Map<string, { calculatedHash: string; buffer: Uint8Array }>> {
-    const resultMap = new Map<string, { calculatedHash: string; buffer: Uint8Array }>()
+    const entries = await Promise.all(
+      Array.from(files.entries()).map(async ([key, value]) => {
+        const hashGenerationFn = key.startsWith('Qm') ? hashV0 : hashV1
+        const calculatedHash = await hashGenerationFn(Readable.from(value))
+        return [key, { calculatedHash, buffer: value }] as [string, { calculatedHash: string; buffer: Uint8Array }]
+      })
+    )
 
-    for (const [key, value] of files.entries()) {
-      const hashGenerationFn = key.startsWith('Qm') ? hashV0 : hashV1
-      const readableContent = Readable.from(value)
-      const calculatedHash = await hashGenerationFn(readableContent)
-      resultMap.set(key, { calculatedHash, buffer: value })
-    }
-
-    return resultMap
+    return new Map(entries)
   }
 
   return {
     isContentStoredAlready: (hashes) => components.storage.existMultiple(hashes),
     fetchContentFileSize: async (hash) => {
-      const maybeFile = await components.storage.retrieve(hash)
-      if (maybeFile) {
-        const stream = await maybeFile.asStream()
-        const buffer = await streamToBuffer(stream)
-        return buffer.byteLength
-      }
-      return undefined
+      // `contentSize` is the decompressed/logical length: the gzip ISIZE trailer for compressed files,
+      // or the file size for uncompressed ones. undefined when the file is missing or unreadable.
+      const info = await components.storage.fileInfo(hash)
+      return info?.contentSize ?? undefined
     },
     ownerAddress: (auditInfo) => Authenticator.ownerAddress(auditInfo.authChain),
     isAddressOwnedByDecentraland: (address: string) => components.crypto.isAddressOwnedByDecentraland(address),
