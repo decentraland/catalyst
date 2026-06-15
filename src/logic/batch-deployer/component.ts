@@ -14,9 +14,8 @@ import { IBatchDeployer } from './types'
 const REQUEST_MAX_RETRIES = 10
 const REQUEST_RETRY_WAIT_TIME = 1000
 
-// Bounds the in-process dedup cache of already-processed entity ids. It's only a fast path in front
-// of isEntityDeployed (which consults the bloom filter + DB), so evicting old entries is safe — it
-// just costs a re-check. Without a bound this grew for the whole process lifetime during a sync.
+// Bounds the in-process dedup cache of processed entity ids (previously an unbounded Set that grew
+// for the whole sync). It's a fast path in front of isEntityDeployed, so eviction just costs a re-check.
 const MAX_TRACKED_SUCCESSFUL_DEPLOYMENTS = 100_000
 
 /**

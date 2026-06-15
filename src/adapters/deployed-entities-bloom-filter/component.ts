@@ -12,10 +12,9 @@ export function createDeployedEntitiesBloomFilter(
 ): DeployedEntitiesBloomFilter & IBaseComponent {
   const logger = components.logs.getLogger('deployedEntitiesBloomFilter')
 
-  // Sized via BLOOM_FILTER_EXPECTED_ELEMENTS. Once the inserted element count exceeds the configured
-  // capacity the real false-positive rate rises above the target 0.1%, and each false positive costs
-  // an extra deploymentExists DB check on the sync hot path — so this should track the deployments
-  // table size (verify with the dcl_deployed_entities_bloom_filter_checks_total{hit="false"} metric).
+  // Sized via BLOOM_FILTER_EXPECTED_ELEMENTS. Past capacity the false-positive rate climbs and each FP
+  // costs an extra deploymentExists query on the sync path — track the deployments-table size
+  // (metric: dcl_deployed_entities_bloom_filter_checks_total{hit="false"}).
   const expectedElements = components.env.getConfig<number>(EnvironmentConfig.BLOOM_FILTER_EXPECTED_ELEMENTS)
   const deploymentsBloomFilter = bf.BloomFilter.create(expectedElements, 0.001)
 

@@ -45,8 +45,7 @@ export async function getContentHandler(context: HandlerContextWithPath<'storage
   }
 
   const { content, status } = result
-  // Only sniff the MIME type when the client asked for it; otherwise we'd open a second stream on
-  // the content (an extra storage round-trip) just to discard the result for octet-stream.
+  // Only sniff MIME when requested; otherwise skip the extra content stream (see createContentFileHeaders).
   const headers = await createContentFileHeaders(content, hash, shouldCalculateContentType)
 
   return {

@@ -18,10 +18,9 @@ export function createSequentialTaskExecutor(
 ): ISequentialTaskExecutorComponent {
   const { metrics, logs } = components
   const logger = logs.getLogger('SequentialTaskComponent')
-  // Per-jobName queue concurrency. Defaults to 1 (strictly sequential) to preserve the original
-  // behavior; raising it (via SEQUENTIAL_TASK_CONCURRENCY) lets the read endpoints that use this
-  // executor — /deployments and /pointer-changes — run in parallel up to the DB pool size instead
-  // of head-of-line blocking the whole cluster's polling on a single slow query.
+  // Per-jobName concurrency, default 1 (preserves the original strictly-sequential behavior). Raising
+  // it (SEQUENTIAL_TASK_CONCURRENCY) lets /deployments and /pointer-changes run in parallel instead of
+  // head-of-line blocking peer polling.
   const requestedConcurrency = options?.concurrency && options.concurrency > 0 ? options.concurrency : 1
   const concurrency = Math.min(requestedConcurrency, MAX_SEQUENTIAL_TASK_CONCURRENCY)
   if (requestedConcurrency > MAX_SEQUENTIAL_TASK_CONCURRENCY) {

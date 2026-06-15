@@ -7,9 +7,8 @@ const MATERIALIZED_VIEW = 'active_third_party_collection_items_deployments_with_
 const INDEX_NAME = 'active_third_party_collection_items_deployments_with_content_entity_id_idx'
 
 export async function up(pgm: MigrationBuilder): Promise<void> {
-  // getDeploymentsForActiveThirdPartyItemsByEntityIds filters this materialized view by
-  // `entity_id = ANY(...)`, but the view only had indexes on deployment_id and pointer, so each
-  // lookup sequentially scanned the whole view. Index entity_id so those lookups are index-backed.
+  // The view only indexed deployment_id and pointer, but getDeploymentsForActiveThirdPartyItemsByEntityIds
+  // filters by entity_id — so each lookup scanned the whole view. Index entity_id.
   pgm.sql(`CREATE INDEX IF NOT EXISTS ${INDEX_NAME} ON ${MATERIALIZED_VIEW} (entity_id);`)
 }
 

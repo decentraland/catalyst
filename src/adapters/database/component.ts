@@ -43,9 +43,8 @@ export async function createDatabase(
   const { logs } = components
   const logger = logs.getLogger('database-component')
 
-  // Dedicated small pool for streaming queries so each stream reuses a pooled connection instead of
-  // opening (TCP + TLS + auth) and tearing down a fresh client on every call. Separate from the main
-  // pool because stream queries use a longer query_timeout (carried in streamQueriesConfig).
+  // Dedicated pool for streaming queries: reuse a pooled connection instead of opening (TCP+TLS+auth)
+  // and tearing down a fresh client per call. Separate from the main pool for the longer query_timeout.
   const streamPool = new Pool({ ...(streamQueriesConfig as PoolConfig), max: STREAM_POOL_MAX })
 
   const startTimer = (durationQueryNameLabel: string | undefined) =>
@@ -125,10 +124,9 @@ export async function createDatabase(
           logger.error(error)
           throw error
         } finally {
-          // Always tear down the stream before the connection returns to the pool, even if the
-          // consumer abandoned the generator early (break/throw) — otherwise a pooled connection
-          // could be reused with an in-flight query stream still attached. Discard the connection
-          // unless the stream finished cleanly, so a half-consumed cursor can't corrupt a future borrower.
+          // Tear the stream down before the connection returns to the pool (even if the consumer
+          // abandoned the generator early), and discard the connection unless it finished cleanly —
+          // a half-consumed cursor must not be reused by the next borrower.
           stream.destroy()
           client.release(completed ? undefined : true)
         }

@@ -134,9 +134,8 @@ export async function createContentFileHeaders(
     return headers
   }
 
-  // Sniffing the MIME type opens a second stream on the content object (an extra S3 GET / fs open)
-  // just to read its head. Skip it when the caller doesn't need the type (the hot /contents path
-  // serves application/octet-stream unless `?includeMimeType` is set).
+  // MIME sniffing opens a second stream on the content (an extra S3 GET / fs open) just to read its
+  // head — skip it when the caller didn't ask via `?includeMimeType`.
   if (!detectMimeType) {
     return buildHeaders('application/octet-stream')
   }
