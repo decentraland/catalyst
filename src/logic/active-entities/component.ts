@@ -58,7 +58,6 @@ export function createActiveEntitiesComponent(
   type PointersCache = {
     get(pointer: string): string | NotActiveEntity | undefined
     set(pointer: string, entity: string | NotActiveEntity): void
-    has(pointer: string): boolean
     clear(): void
   }
 
@@ -74,9 +73,6 @@ export function createActiveEntitiesComponent(
       },
       set(pointer: string, entity: string | NotActiveEntity) {
         entityIdByPointers.set(normalizePointerCacheKey(pointer), entity)
-      },
-      has(pointer: string) {
-        return entityIdByPointers.has(normalizePointerCacheKey(pointer))
       },
       clear() {
         entityIdByPointers.clear()
@@ -100,9 +96,11 @@ export function createActiveEntitiesComponent(
   }
 
   function setPreviousEntityAsNone(pointer: string): void {
-    if (entityIdByPointers.has(pointer)) {
+    // Single get() instead of has()+get(): one lookup, and it refreshes the entry's LRU recency
+    // (lru-cache's has() does not). Cached values are never undefined, so undefined means absent.
+    const entityId = entityIdByPointers.get(pointer)
+    if (entityId !== undefined) {
       // pointer now have a different active entity, let's update the old one
-      const entityId = entityIdByPointers.get(pointer)
       if (isPointingToEntity(entityId)) {
         const entity = cache.get(entityId) // it should be present
         if (isEntityPresent(entity)) {
@@ -321,8 +319,9 @@ export function createActiveEntitiesComponent(
 
   async function clearPointers(pointers: string[]): Promise<void> {
     for (const pointer of pointers) {
-      if (entityIdByPointers.has(pointer)) {
-        const entityId = entityIdByPointers.get(pointer)!
+      // Single get() instead of has()+get(): one lookup, and it refreshes LRU recency (has() does not).
+      const entityId = entityIdByPointers.get(pointer)
+      if (entityId !== undefined) {
         cache.set(entityId, 'NOT_ACTIVE_ENTITY')
         entityIdByPointers.set(pointer, 'NOT_ACTIVE_ENTITY')
       }

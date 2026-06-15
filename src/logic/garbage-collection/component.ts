@@ -45,6 +45,9 @@ export function createGarbageCollectionComponent(
         return
       }
       await components.storage.delete(batch)
+      // Emit the metric per batch (after the delete) so progress is observable during a long sweep
+      // and a crash mid-sweep still records what was already deleted.
+      components.metrics.increment('dcl_content_garbage_collection_items_total', {}, batch.length)
       for (const hash of batch) {
         deletedHashes.add(hash)
       }
@@ -65,7 +68,6 @@ export function createGarbageCollectionComponent(
     }
     await flushBatch()
 
-    components.metrics.increment('dcl_content_garbage_collection_items_total', {}, deletedHashes.size)
     logger.debug(`Garbage collection deleted ${deletedHashes.size} unused content hashes`)
     return deletedHashes
   }
