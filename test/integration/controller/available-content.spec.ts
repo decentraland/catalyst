@@ -25,4 +25,12 @@ describe('Integration - Available Content', () => {
 
     expect(res.status).toBe(400)
   })
+
+  it('returns 400 when more cids than the allowed maximum are provided', async () => {
+    const cids = Array.from({ length: 1001 }, (_, i) => `cid=Qm${i}`).join('&')
+    const url = server.getUrl() + `/available-content?${cids}`
+    const res = await fetch(url)
+
+    expect(res.status).toBe(400)
+  })
 })

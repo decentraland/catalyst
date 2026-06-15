@@ -11,6 +11,11 @@ export const DEFAULT_FIELDS_ON_DEPLOYMENTS: DeploymentField[] = [
   DeploymentField.CONTENT,
   DeploymentField.METADATA
 ]
+
+// Bound each request-controlled filter array (entityIds / pointers / entityTypes) that feeds the
+// `= ANY(...)` / `&&` predicates. Without a cap, one request on this public endpoint can push a
+// very large array into the WHERE clause. The result set itself is already bounded by `limit`.
+const MAX_DEPLOYMENT_FILTER_VALUES = 1000
 // Method: GET
 // Query String: ?from={timestamp}&toLocalTimestamp={timestamp}&entityType={entityType}&entityId={entityId}&onlyCurrentlyPointed={boolean}
 export async function getDeploymentsHandler(
@@ -58,6 +63,17 @@ export async function getDeploymentsHandler(
     return {
       status: 400,
       body: { error: `Offset can't be higher than 5000. Please use the 'next' property for pagination.` }
+    }
+  }
+
+  if (
+    entityIds.length > MAX_DEPLOYMENT_FILTER_VALUES ||
+    pointers.length > MAX_DEPLOYMENT_FILTER_VALUES ||
+    entityTypes.length > MAX_DEPLOYMENT_FILTER_VALUES
+  ) {
+    return {
+      status: 400,
+      body: { error: `Too many filter values; the maximum allowed per filter is ${MAX_DEPLOYMENT_FILTER_VALUES}` }
     }
   }
 

@@ -6,7 +6,7 @@ import { GetEntitiesByPointerPrefix200 } from '@dcl/catalyst-api-specs/lib/clien
 
 // Method: GET
 export async function getEntitiesByCollectionPointerPrefixHandler(
-  context: HandlerContextWithPath<'activeEntities', '/entities/active/collections/:collectionUrn'>
+  context: HandlerContextWithPath<'activeEntities' | 'denylist', '/entities/active/collections/:collectionUrn'>
 ): Promise<{ status: 200; body: GetEntitiesByPointerPrefix200 }> {
   // Collection URN or Third Party ID
   const collectionUrn: string = context.params.collectionUrn
@@ -46,7 +46,9 @@ export async function getEntitiesByCollectionPointerPrefixHandler(
     status: 200,
     body: {
       total,
-      entities
+      // Drop denylisted entities so their metadata isn't served, matching the other listing
+      // endpoints. `total` is the unfiltered prefix count and may slightly over-count as a result.
+      entities: entities.filter((entity) => !context.components.denylist.isDenylisted(entity.id))
     }
   }
 }

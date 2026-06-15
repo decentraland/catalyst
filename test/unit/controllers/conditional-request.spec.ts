@@ -4,16 +4,20 @@ import { getContentHandler } from '../../../src/controllers/handlers/get-content
 import { getEntityImageHandler } from '../../../src/controllers/handlers/get-entity-image-handler'
 import { getEntityThumbnailHandler } from '../../../src/controllers/handlers/get-entity-thumbnail-handler'
 import { toETag } from '../../../src/controllers/utils'
+import { NotFoundError } from '../../../src/controllers/errors'
 import { createContentItemMock } from '../../mocks/content-item-mock'
 import { createStorageComponentMock } from '../../mocks/storage-component-mock'
 import { createRequestMock } from '../../mocks/request-mock'
 
 describe('when handling conditional requests', () => {
-  const hashId = 'QmSomeHash123'
+  // A syntactically valid IPFS CIDv0 hash; the content endpoint now rejects anything that isn't a
+  // valid CIDv0 (`Qm…`) / CIDv1 (`ba…`) before touching storage.
+  const hashId = 'QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG'
   const etag = toETag(hashId)
 
   let contentItem: ContentItem
   let storage: IContentStorageComponent
+  let denylist: { isDenylisted: jest.Mock; reload: jest.Mock }
 
   beforeEach(() => {
     contentItem = createContentItemMock(500)
@@ -22,22 +26,27 @@ describe('when handling conditional requests', () => {
       fileInfo: jest.fn().mockResolvedValue({ size: 500, encoding: null, contentSize: 500 }),
       retrieve: jest.fn().mockResolvedValue(contentItem)
     })
+    denylist = { isDenylisted: jest.fn().mockReturnValue(false), reload: jest.fn() }
+  })
+
+  afterEach(() => {
+    jest.clearAllMocks()
   })
 
   describe('when serving content by hash', () => {
-    let context: HandlerContextWithPath<'storage', '/contents/:hashId'>
+    let context: HandlerContextWithPath<'storage' | 'denylist', '/contents/:hashId'>
 
     describe('when the If-None-Match header matches the ETag', () => {
       beforeEach(() => {
         context = {
           params: { hashId },
-          components: { storage },
+          components: { storage, denylist },
           url: new URL('http://localhost/contents/' + hashId),
           request: {
             method: 'GET',
             ...createRequestMock({ 'if-none-match': etag })
           }
-        } as unknown as HandlerContextWithPath<'storage', '/contents/:hashId'>
+        } as unknown as HandlerContextWithPath<'storage' | 'denylist', '/contents/:hashId'>
       })
 
       it('should return 304 with no body', async () => {
@@ -62,13 +71,13 @@ describe('when handling conditional requests', () => {
       beforeEach(() => {
         context = {
           params: { hashId },
-          components: { storage },
+          components: { storage, denylist },
           url: new URL('http://localhost/contents/' + hashId),
           request: {
             method: 'GET',
             ...createRequestMock({ 'if-none-match': '"different-hash"' })
           }
-        } as unknown as HandlerContextWithPath<'storage', '/contents/:hashId'>
+        } as unknown as HandlerContextWithPath<'storage' | 'denylist', '/contents/:hashId'>
       })
 
       it('should return the full response', async () => {
@@ -82,13 +91,13 @@ describe('when handling conditional requests', () => {
       beforeEach(() => {
         context = {
           params: { hashId },
-          components: { storage },
+          components: { storage, denylist },
           url: new URL('http://localhost/contents/' + hashId),
           request: {
             method: 'GET',
             ...createRequestMock()
           }
-        } as unknown as HandlerContextWithPath<'storage', '/contents/:hashId'>
+        } as unknown as HandlerContextWithPath<'storage' | 'denylist', '/contents/:hashId'>
       })
 
       it('should return the full response', async () => {
@@ -98,17 +107,64 @@ describe('when handling conditional requests', () => {
       })
     })
 
-    describe('and includeMimeType is not requested', () => {
+    describe('and the requested hash is not a valid content hash', () => {
       beforeEach(() => {
         context = {
+          params: { hashId: '../../../etc/passwd' },
+          components: { storage, denylist },
+          url: new URL('http://localhost/contents/invalid'),
+          request: {
+            method: 'GET',
+            ...createRequestMock()
+          }
+        } as unknown as HandlerContextWithPath<'storage' | 'denylist', '/contents/:hashId'>
+      })
+
+      it('should reject with a NotFoundError', async () => {
+        await expect(getContentHandler(context)).rejects.toThrow(NotFoundError)
+      })
+
+      it('should not reach the storage layer', async () => {
+        await expect(getContentHandler(context)).rejects.toThrow()
+        expect(storage.fileInfo).not.toHaveBeenCalled()
+      })
+    })
+
+    describe('and the requested content is denylisted', () => {
+      beforeEach(() => {
+        denylist.isDenylisted.mockReturnValue(true)
+        context = {
           params: { hashId },
-          components: { storage },
+          components: { storage, denylist },
           url: new URL('http://localhost/contents/' + hashId),
           request: {
             method: 'GET',
             ...createRequestMock()
           }
-        } as unknown as HandlerContextWithPath<'storage', '/contents/:hashId'>
+        } as unknown as HandlerContextWithPath<'storage' | 'denylist', '/contents/:hashId'>
+      })
+
+      it('should reject with a NotFoundError', async () => {
+        await expect(getContentHandler(context)).rejects.toThrow(NotFoundError)
+      })
+
+      it('should not reach the storage layer', async () => {
+        await expect(getContentHandler(context)).rejects.toThrow()
+        expect(storage.fileInfo).not.toHaveBeenCalled()
+      })
+    })
+
+    describe('and includeMimeType is not requested', () => {
+      beforeEach(() => {
+        context = {
+          params: { hashId },
+          components: { storage, denylist },
+          url: new URL('http://localhost/contents/' + hashId),
+          request: {
+            method: 'GET',
+            ...createRequestMock()
+          }
+        } as unknown as HandlerContextWithPath<'storage' | 'denylist', '/contents/:hashId'>
       })
 
       it('should respond with application/octet-stream without sniffing the content type', async () => {
@@ -126,13 +182,13 @@ describe('when handling conditional requests', () => {
       beforeEach(() => {
         context = {
           params: { hashId },
-          components: { storage },
+          components: { storage, denylist },
           url: new URL('http://localhost/contents/' + hashId + '?includeMimeType'),
           request: {
             method: 'GET',
             ...createRequestMock()
           }
-        } as unknown as HandlerContextWithPath<'storage', '/contents/:hashId'>
+        } as unknown as HandlerContextWithPath<'storage' | 'denylist', '/contents/:hashId'>
       })
 
       it('should open the content stream for MIME detection in addition to the body', async () => {
@@ -144,7 +200,7 @@ describe('when handling conditional requests', () => {
 
   describe('when serving an entity image', () => {
     let context: HandlerContextWithPath<
-      'activeEntities' | 'database' | 'storage',
+      'activeEntities' | 'database' | 'storage' | 'denylist',
       '/entities/active/entity/:pointer/image'
     >
 
@@ -165,6 +221,7 @@ describe('when handling conditional requests', () => {
           params: { pointer: '0x1' },
           components: {
             storage,
+            denylist,
             activeEntities: {
               withPrefix: jest.fn(),
               withIds: jest.fn(),
@@ -181,7 +238,7 @@ describe('when handling conditional requests', () => {
             ...createRequestMock({ 'if-none-match': etag })
           }
         } as unknown as HandlerContextWithPath<
-          'activeEntities' | 'database' | 'storage',
+          'activeEntities' | 'database' | 'storage' | 'denylist',
           '/entities/active/entity/:pointer/image'
         >
       })
@@ -197,11 +254,61 @@ describe('when handling conditional requests', () => {
         expect(storage.retrieve).not.toHaveBeenCalled()
       })
     })
+
+    describe('and the entity is denylisted', () => {
+      beforeEach(() => {
+        denylist.isDenylisted.mockReturnValue(true)
+        const entity = {
+          id: 'entity-id',
+          type: 'profile',
+          pointers: ['0x1'],
+          timestamp: 1000,
+          content: [{ file: 'image.png', hash: hashId }],
+          metadata: {
+            image: 'image.png'
+          }
+        }
+
+        context = {
+          params: { pointer: '0x1' },
+          components: {
+            storage,
+            denylist,
+            activeEntities: {
+              withPrefix: jest.fn(),
+              withIds: jest.fn(),
+              withPointers: jest.fn().mockResolvedValue([entity]),
+              clear: jest.fn()
+            },
+            database: {
+              queryWithValues: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 })
+            }
+          },
+          url: new URL('http://localhost/entities/active/entity/0x1/image'),
+          request: {
+            method: 'GET',
+            ...createRequestMock()
+          }
+        } as unknown as HandlerContextWithPath<
+          'activeEntities' | 'database' | 'storage' | 'denylist',
+          '/entities/active/entity/:pointer/image'
+        >
+      })
+
+      it('should reject with a NotFoundError', async () => {
+        await expect(getEntityImageHandler(context)).rejects.toThrow(NotFoundError)
+      })
+
+      it('should not call storage.retrieve', async () => {
+        await expect(getEntityImageHandler(context)).rejects.toThrow()
+        expect(storage.retrieve).not.toHaveBeenCalled()
+      })
+    })
   })
 
   describe('when serving an entity thumbnail', () => {
     let context: HandlerContextWithPath<
-      'database' | 'activeEntities' | 'storage',
+      'database' | 'activeEntities' | 'storage' | 'denylist',
       '/entities/active/entity/:pointer/thumbnail'
     >
 
@@ -222,6 +329,7 @@ describe('when handling conditional requests', () => {
           params: { pointer: '0,0' },
           components: {
             storage,
+            denylist,
             activeEntities: {
               withPrefix: jest.fn(),
               withIds: jest.fn(),
@@ -238,7 +346,7 @@ describe('when handling conditional requests', () => {
             ...createRequestMock({ 'if-none-match': etag })
           }
         } as unknown as HandlerContextWithPath<
-          'database' | 'activeEntities' | 'storage',
+          'database' | 'activeEntities' | 'storage' | 'denylist',
           '/entities/active/entity/:pointer/thumbnail'
         >
       })
@@ -251,6 +359,56 @@ describe('when handling conditional requests', () => {
 
       it('should not call storage.retrieve', async () => {
         await getEntityThumbnailHandler(context)
+        expect(storage.retrieve).not.toHaveBeenCalled()
+      })
+    })
+
+    describe('and the entity is denylisted', () => {
+      beforeEach(() => {
+        denylist.isDenylisted.mockReturnValue(true)
+        const entity = {
+          id: 'entity-id',
+          type: 'scene',
+          pointers: ['0,0'],
+          timestamp: 1000,
+          content: [{ file: 'thumbnail.png', hash: hashId }],
+          metadata: {
+            thumbnail: 'thumbnail.png'
+          }
+        }
+
+        context = {
+          params: { pointer: '0,0' },
+          components: {
+            storage,
+            denylist,
+            activeEntities: {
+              withPrefix: jest.fn(),
+              withIds: jest.fn(),
+              withPointers: jest.fn().mockResolvedValue([entity]),
+              clear: jest.fn()
+            },
+            database: {
+              queryWithValues: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 })
+            }
+          },
+          url: new URL('http://localhost/entities/active/entity/0,0/thumbnail'),
+          request: {
+            method: 'GET',
+            ...createRequestMock()
+          }
+        } as unknown as HandlerContextWithPath<
+          'database' | 'activeEntities' | 'storage' | 'denylist',
+          '/entities/active/entity/:pointer/thumbnail'
+        >
+      })
+
+      it('should reject with a NotFoundError', async () => {
+        await expect(getEntityThumbnailHandler(context)).rejects.toThrow(NotFoundError)
+      })
+
+      it('should not call storage.retrieve', async () => {
+        await expect(getEntityThumbnailHandler(context)).rejects.toThrow()
         expect(storage.retrieve).not.toHaveBeenCalled()
       })
     })
