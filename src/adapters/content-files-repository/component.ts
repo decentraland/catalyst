@@ -54,13 +54,12 @@ async function saveContentFiles(
   await database.queryWithValues(query)
 }
 
-async function findContentHashesNotBeingUsedAnymore(
+async function* streamContentHashesNotBeingUsedAnymore(
   database: DatabaseClient,
-  lastGarbageCollectionTimestamp: number
-): Promise<string[]> {
-  return (
-    await database.queryWithValues<{ content_hash: string }>(
-      SQL`
+  lastGarbageCollectionTimestamp: number,
+  options?: { batchSize?: number }
+): AsyncIterable<string> {
+  const query = SQL`
     SELECT content_files.content_hash
     FROM content_files
     INNER JOIN deployments ON content_files.deployment=id
@@ -68,10 +67,15 @@ async function findContentHashesNotBeingUsedAnymore(
     WHERE dd.local_timestamp IS NULL OR dd.local_timestamp > to_timestamp(${lastGarbageCollectionTimestamp} / 1000.0)
     GROUP BY content_files.content_hash
     HAVING bool_or(deployments.deleter_deployment IS NULL) = FALSE
-  `,
-      'garbage_collection'
-    )
-  ).rows.map((row) => row.content_hash)
+  `
+  // Stream the result so garbage collection never materializes every unused hash in memory at once.
+  for await (const row of database.streamQuery<{ content_hash: string }>(
+    query,
+    { batchSize: options?.batchSize ?? 1000 },
+    'garbage_collection'
+  )) {
+    yield row.content_hash
+  }
 }
 
 async function* streamAllDistinctContentFileHashes(database: DatabaseClient): AsyncIterable<string> {
@@ -86,7 +90,7 @@ export function createContentFilesRepository(): IContentFilesRepository {
   return {
     getContentFiles,
     saveContentFiles,
-    findContentHashesNotBeingUsedAnymore,
+    streamContentHashesNotBeingUsedAnymore,
     streamAllDistinctContentFileHashes
   }
 }
