@@ -427,7 +427,7 @@ export class EnvironmentBuilder {
     })
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SEQUENTIAL_TASK_CONCURRENCY, () => {
       const parsed = parseInt(process.env.SEQUENTIAL_TASK_CONCURRENCY ?? '', 10)
-      return Number.isNaN(parsed) ? 4 : parsed
+      return Number.isNaN(parsed) ? 1 : parsed
     })
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ENTITIES_CACHE_CONTROL_MAX_AGE, () => {
       // parseInt (not `|| default`) so an explicit 0 — which disables the Cache-Control header — is preserved.
