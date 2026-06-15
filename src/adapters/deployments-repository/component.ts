@@ -16,6 +16,7 @@ async function deploymentExists(database: DatabaseClient, entityId: string): Pro
     SELECT 1
     FROM deployments
     WHERE entity_id = ${entityId}
+    LIMIT 1
   `,
     'deployment_exists'
   )
