@@ -12,6 +12,10 @@ export interface ContentFilesRow {
 export interface IContentFilesRepository {
   getContentFiles(db: DatabaseClient, deploymentIds: DeploymentId[]): Promise<Map<DeploymentId, DeploymentContent[]>>
   saveContentFiles(db: DatabaseClient, deploymentId: DeploymentId, content: ContentMapping[]): Promise<void>
-  findContentHashesNotBeingUsedAnymore(db: DatabaseClient, lastGarbageCollectionTimestamp: number): Promise<string[]>
+  streamContentHashesNotBeingUsedAnymore(
+    db: DatabaseClient,
+    lastGarbageCollectionTimestamp: number,
+    options?: { batchSize?: number }
+  ): AsyncIterable<string>
   streamAllDistinctContentFileHashes(db: DatabaseClient): AsyncIterable<string>
 }
