@@ -70,9 +70,10 @@ async function createExternalCallsBag(components: Pick<AppComponents, 'storage' 
   return {
     isContentStoredAlready: (hashes) => components.storage.existMultiple(hashes),
     fetchContentFileSize: async (hash) => {
-      // `contentSize` is the decompressed length (from the gzip trailer); fall back to `size` for uncompressed entries.
+      // `contentSize` is the decompressed/logical length: the gzip ISIZE trailer for compressed files,
+      // or the file size for uncompressed ones. undefined when the file is missing or unreadable.
       const info = await components.storage.fileInfo(hash)
-      return info?.contentSize ?? info?.size ?? undefined
+      return info?.contentSize ?? undefined
     },
     ownerAddress: (auditInfo) => Authenticator.ownerAddress(auditInfo.authChain),
     isAddressOwnedByDecentraland: (address: string) => components.crypto.isAddressOwnedByDecentraland(address),
