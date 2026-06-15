@@ -43,8 +43,7 @@ export async function createDatabase(
   const { logs } = components
   const logger = logs.getLogger('database-component')
 
-  // Dedicated pool for streaming queries: reuse a pooled connection instead of opening (TCP+TLS+auth)
-  // and tearing down a fresh client per call. Separate from the main pool for the longer query_timeout.
+  // Dedicated pool for streaming queries, separate from the main pool because they run with a longer query_timeout.
   const streamPool = new Pool({ ...(streamQueriesConfig as PoolConfig), max: STREAM_POOL_MAX })
 
   const startTimer = (durationQueryNameLabel: string | undefined) =>

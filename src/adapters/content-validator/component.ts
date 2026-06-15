@@ -56,7 +56,6 @@ async function createExternalCallsBag(components: Pick<AppComponents, 'storage' 
   async function calculateFilesHashes(
     files: Map<string, Uint8Array>
   ): Promise<Map<string, { calculatedHash: string; buffer: Uint8Array }>> {
-    // Hash files concurrently — this was a serial `await` loop on the profile deploy path.
     const entries = await Promise.all(
       Array.from(files.entries()).map(async ([key, value]) => {
         const hashGenerationFn = key.startsWith('Qm') ? hashV0 : hashV1
@@ -71,8 +70,7 @@ async function createExternalCallsBag(components: Pick<AppComponents, 'storage' 
   return {
     isContentStoredAlready: (hashes) => components.storage.existMultiple(hashes),
     fetchContentFileSize: async (hash) => {
-      // Read the size from storage metadata instead of retrieving + fully decompressing the file
-      // just to measure it. `contentSize` is the decompressed length; fall back to `size`.
+      // `contentSize` is the decompressed length (from the gzip trailer); fall back to `size` for uncompressed entries.
       const info = await components.storage.fileInfo(hash)
       return info?.contentSize ?? info?.size ?? undefined
     },

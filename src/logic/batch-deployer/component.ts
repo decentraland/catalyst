@@ -14,8 +14,8 @@ import { IBatchDeployer } from './types'
 const REQUEST_MAX_RETRIES = 10
 const REQUEST_RETRY_WAIT_TIME = 1000
 
-// Bounds the in-process dedup cache of processed entity ids (previously an unbounded Set that grew
-// for the whole sync). It's a fast path in front of isEntityDeployed, so eviction just costs a re-check.
+// Bounds the in-process dedup cache of processed entity ids. It's a fast path in front of
+// isEntityDeployed, so an evicted entry just costs a re-check.
 const MAX_TRACKED_SUCCESSFUL_DEPLOYMENTS = 100_000
 
 /**
