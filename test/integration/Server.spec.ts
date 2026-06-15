@@ -6,7 +6,9 @@ import { E2ETestEnvironment } from './E2ETestEnvironment'
 
 describe('Integration - Server', () => {
   const content = {
-    hash: random.alphaNumeric(10),
+    // A valid IPFS CIDv0: the /contents/:hashId handler now rejects non-CID hashes before reaching
+    // storage, and storage is mocked here, so the hash only needs to be well-formed.
+    hash: 'QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG',
     buffer: Buffer.from(random.alphaNumeric(10))
   }
   const entity1 = randomEntity(EntityType.SCENE)
