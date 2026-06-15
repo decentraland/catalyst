@@ -422,7 +422,8 @@ export class EnvironmentBuilder {
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.BLOOM_FILTER_EXPECTED_ELEMENTS, () => {
       const parsed = parseInt(process.env.BLOOM_FILTER_EXPECTED_ELEMENTS ?? '', 10)
-      return Number.isNaN(parsed) ? 10_000_000 : parsed
+      // Floor at 1: a 0/negative value would make BloomFilter.create() a degenerate 0-size filter.
+      return Number.isNaN(parsed) ? 10_000_000 : Math.max(parsed, 1)
     })
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SEQUENTIAL_TASK_CONCURRENCY, () => {
       const parsed = parseInt(process.env.SEQUENTIAL_TASK_CONCURRENCY ?? '', 10)
