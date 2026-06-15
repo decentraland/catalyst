@@ -21,7 +21,6 @@ export function createActiveEntitiesComponent(
     | 'logs'
     | 'metrics'
     | 'denylist'
-    | 'sequentialExecutor'
     | 'deployments'
     | 'pointersRepository'
     | 'activeEntitiesRepository'

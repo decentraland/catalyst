@@ -228,7 +228,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     logs,
     metrics,
     denylist,
-    sequentialExecutor,
     deployments,
     pointersRepository,
     activeEntitiesRepository,

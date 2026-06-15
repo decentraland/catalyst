@@ -33,7 +33,6 @@ import { createDeployedEntitiesBloomFilter } from '../../../src/adapters/deploye
 import { createDeploymentService } from '../../../src/logic/deployment-service'
 import { createFailedDeployments } from '../../../src/adapters/failed-deployments'
 import { createTestDatabaseComponent } from '../../mocks/database-component-mock'
-import { createSequentialTaskExecutor } from '../../../src/logic/sequential-task-executor'
 import {
   DELTA_POINTER_RESULT,
   PointerDeltaMap
@@ -213,7 +212,6 @@ describe('Deployer', function () {
     const deployedEntitiesBloomFilter = createDeployedEntitiesBloomFilter({ database, logs, deploymentsRepository, env })
     env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)
     const denylist: Denylist = { isDenylisted: () => false, reload: jest.fn() }
-    const sequentialExecutor = createSequentialTaskExecutor({ logs, metrics })
     const deployments = createDeploymentsComponentMock()
     const pointersRepository = createPointersRepository()
     const activeEntitiesRepository = createActiveEntitiesRepository()
@@ -224,7 +222,6 @@ describe('Deployer', function () {
       env,
       metrics,
       denylist,
-      sequentialExecutor,
       deployments,
       pointersRepository,
       activeEntitiesRepository,

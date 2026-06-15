@@ -22,7 +22,6 @@ import { createCrypto } from '../../../src/logic/crypto'
 import { EntityVersion } from '../../../src/types'
 import { NoOpValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import { createDeploymentsComponentMock } from '../../mocks/deployments-component-mock'
-import { createMockedSequentialTaskExecutorComponent } from '../../mocks/sequential-task-executor-component-mock'
 import { createDatabaseMockedComponent } from '../../mocks/database-component-mock'
 import { createLogsMockedComponent } from '../../mocks/logger-component-mock'
 import { IDeploymentsComponent } from '../../../src/logic/deployments'
@@ -361,7 +360,6 @@ describe('activeEntities', () => {
         logs: createLogsMockedComponent(),
         metrics: createTestMetricsComponent(metricsDeclaration),
         denylist: { isDenylisted: () => false, reload: jest.fn() },
-        sequentialExecutor: createMockedSequentialTaskExecutorComponent(),
         deployments: createDeploymentsComponentMock({
           getDeploymentsForActiveThirdPartyItemsByEntityIds: getDeploymentsForActiveThirdPartyItemsByEntityIdsMock
         }),
@@ -474,7 +472,6 @@ async function buildComponents() {
   })
   env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)
   const denylist: Denylist = { isDenylisted: () => false, reload: jest.fn() }
-  const sequentialExecutor = createMockedSequentialTaskExecutorComponent()
   const deployments = createDeploymentsComponentMock()
   const pointersRepository = createPointersRepository()
   const activeEntitiesRepository = createActiveEntitiesRepository()
@@ -485,7 +482,6 @@ async function buildComponents() {
     env,
     metrics,
     denylist,
-    sequentialExecutor,
     deployments,
     pointersRepository,
     activeEntitiesRepository,
