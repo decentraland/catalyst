@@ -2,7 +2,7 @@ import { createTestMetricsComponent } from '@dcl/metrics'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { createLogComponent } from '@well-known-components/logger'
-import { Environment, EnvironmentConfig } from '../../../../src/Environment'
+import { Environment, EnvironmentConfig, parsePgPoolSize } from '../../../../src/Environment'
 import { metricsDeclaration } from '../../../../src/metrics'
 
 // Capture the config every `new Pool(...)` is constructed with, without opening real connections.
@@ -45,6 +45,68 @@ describe('createDatabaseComponent', () => {
 
     it('should create the main pool with that value as its max connection count', () => {
       expect(mockPoolConfigs[0]).toEqual(expect.objectContaining({ max: 37 }))
+    })
+  })
+})
+
+describe('parsePgPoolSize', () => {
+  describe('when the value is unset', () => {
+    let result: number
+
+    beforeEach(() => {
+      result = parsePgPoolSize(undefined)
+    })
+
+    it('should default to 20', () => {
+      expect(result).toBe(20)
+    })
+  })
+
+  describe('when the value is a valid positive integer', () => {
+    let result: number
+
+    beforeEach(() => {
+      result = parsePgPoolSize('50')
+    })
+
+    it('should return the parsed value', () => {
+      expect(result).toBe(50)
+    })
+  })
+
+  describe('when the value is zero', () => {
+    let result: number
+
+    beforeEach(() => {
+      result = parsePgPoolSize('0')
+    })
+
+    it('should floor at 1', () => {
+      expect(result).toBe(1)
+    })
+  })
+
+  describe('when the value is negative', () => {
+    let result: number
+
+    beforeEach(() => {
+      result = parsePgPoolSize('-5')
+    })
+
+    it('should floor at 1', () => {
+      expect(result).toBe(1)
+    })
+  })
+
+  describe('when the value is not a number', () => {
+    let result: number
+
+    beforeEach(() => {
+      result = parsePgPoolSize('not-a-number')
+    })
+
+    it('should fall back to the default of 20', () => {
+      expect(result).toBe(20)
     })
   })
 })
