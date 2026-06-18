@@ -23,6 +23,11 @@ import * as serverValidator from './server-validator'
 import ms from 'ms'
 import { TestableDeploymentService } from './types'
 
+// Upper bound on concurrent content-file writes within a single deployment. Content files are
+// content-addressed and independent, so they can be written in parallel; the cap keeps a single
+// many-file entity from fanning out into an unbounded number of simultaneous storage writes.
+const CONTENT_STORE_CONCURRENCY = 10
+
 export function isIPFSHash(hash: string): boolean {
   return IPFSv2.validate(hash)
 }
@@ -254,15 +259,19 @@ export function createDeploymentService(
     return false
   }
 
-  async function storeEntityContent(hashes: Map<string, Uint8Array>): Promise<any> {
+  async function storeEntityContent(hashes: Map<string, Uint8Array>): Promise<void> {
     // Check for if content is already stored
     const alreadyStoredHashes: Map<string, boolean> = await components.storage.existMultiple(Array.from(hashes.keys()))
 
-    // If entity was committed, then store all it's content (that isn't already stored)
-    for (const [fileHash, content] of hashes) {
-      if (!alreadyStoredHashes.get(fileHash)) {
-        await components.storage.storeStream(fileHash, bufferToStream(content))
-      }
+    // Store all the entity's not-already-stored content. The files are independent
+    // (content-addressed) and this runs before/outside the deployment transaction, so write
+    // them in bounded-parallel batches instead of one at a time to speed up multi-file deploys.
+    const filesToStore = Array.from(hashes).filter(([fileHash]) => !alreadyStoredHashes.get(fileHash))
+    for (let i = 0; i < filesToStore.length; i += CONTENT_STORE_CONCURRENCY) {
+      const batch = filesToStore.slice(i, i + CONTENT_STORE_CONCURRENCY)
+      await Promise.all(
+        batch.map(([fileHash, content]) => components.storage.storeStream(fileHash, bufferToStream(content)))
+      )
     }
   }
 

@@ -13,6 +13,19 @@ const DECENTRALAND_ADDRESS: EthAddress = '0x1337e0507eb4ab47e08a179573ed4533d9e2
 
 const DEFAULT_FOLDER_MIGRATION_MAX_CONCURRENCY = 1000
 export const DEFAULT_ENTITIES_CACHE_SIZE = 150000
+// Default for PG_POOL_SIZE: max connections for the main pg pool. Sized above the deployment job
+// concurrency (batch deployer = 10) so concurrent deploy transactions — each holding a connection
+// for its whole tx — can't starve the read endpoints of connections. pg's own default is 10.
+export const DEFAULT_PG_POOL_SIZE = 20
+
+/**
+ * Parses the PG_POOL_SIZE env value: falls back to DEFAULT_PG_POOL_SIZE when unset or non-numeric,
+ * and floors at 1 to avoid a degenerate 0/negative pool. Exported for testing.
+ */
+export function parsePgPoolSize(raw: string | undefined): number {
+  const parsed = parseInt(raw ?? '', 10)
+  return Number.isNaN(parsed) ? DEFAULT_PG_POOL_SIZE : Math.max(parsed, 1)
+}
 // HTTP-layer DoS guard for POST /entities uploads. The per-entity business limits live in
 // `@dcl/content-validator` (e.g. 15 MB/parcel for scenes) and run *after* the body is buffered,
 // so these caps only bound how much an unauthenticated client can stream into memory per request.
@@ -174,6 +187,7 @@ export enum EnvironmentConfig {
   PG_IDLE_TIMEOUT,
   PG_QUERY_TIMEOUT,
   PG_STREAM_QUERY_TIMEOUT,
+  PG_POOL_SIZE,
   GARBAGE_COLLECTION,
   GARBAGE_COLLECTION_INTERVAL,
   BLOOM_FILTER_EXPECTED_ELEMENTS,
@@ -449,6 +463,9 @@ export class EnvironmentBuilder {
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PG_STREAM_QUERY_TIMEOUT, () =>
       process.env.PG_STREAM_QUERY_TIMEOUT ? ms(process.env.PG_STREAM_QUERY_TIMEOUT) : ms('10m')
+    )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PG_POOL_SIZE, () =>
+      parsePgPoolSize(process.env.PG_POOL_SIZE)
     )
     this.registerConfigIfNotAlreadySet(
       env,

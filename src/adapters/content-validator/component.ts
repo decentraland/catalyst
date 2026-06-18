@@ -1,7 +1,6 @@
 import {
   AvlTree,
   BlockInfo,
-  EthereumProvider,
   createAvlBlockSearch,
   createBlockRepository,
   createCachingEthereumProvider,
@@ -24,10 +23,11 @@ import { createTheGraphClient } from '@dcl/content-validator/dist/validations/ac
 import { Authenticator } from '@dcl/crypto'
 import { hashV0, hashV1 } from '@dcl/hashing'
 import { createSubgraphComponent } from '@well-known-components/thegraph-component'
-import RequestManager, { HTTPProvider } from 'eth-connect'
+import { HTTPProvider } from 'eth-connect'
 import { Readable } from 'stream'
 import { EnvironmentConfig } from '../../Environment'
 import { createItemChecker, createL1Checker, createL2Checker } from './checker'
+import { createEthereumProvider } from './ethereum-provider'
 import { createThirdPartyItemChecker } from './third-party-item-checker'
 import { AppComponents } from '../../types'
 import { IContentValidator } from './types'
@@ -38,18 +38,6 @@ type ContentValidatorDeps = Pick<
 > & {
   l1Provider: HTTPProvider
   l2Provider: HTTPProvider
-}
-
-const createEthereumProvider = (httpProvider: HTTPProvider): EthereumProvider => {
-  const reqMan = new RequestManager(httpProvider)
-  return {
-    getBlockNumber: async (): Promise<number> => {
-      return (await reqMan.eth_blockNumber()) as number
-    },
-    getBlock: async (block: number): Promise<{ timestamp: string | number }> => {
-      return await reqMan.eth_getBlockByNumber(block, false)
-    }
-  }
 }
 
 async function createExternalCallsBag(components: Pick<AppComponents, 'storage' | 'crypto'>): Promise<ExternalCalls> {
@@ -119,7 +107,11 @@ async function createOnChainValidateFn(
     blockRepository: createBlockRepository({
       metrics,
       logs,
-      ethereumProvider: createCachingEthereumProvider(createEthereumProvider(l1Provider))
+      ethereumProvider: createCachingEthereumProvider(
+        createEthereumProvider(l1Provider, () =>
+          metrics.increment('dcl_block_fetch_retries_total', { network: l1Network })
+        )
+      )
     }),
     metrics,
     logs
@@ -128,7 +120,11 @@ async function createOnChainValidateFn(
     blockRepository: createBlockRepository({
       metrics,
       logs,
-      ethereumProvider: createCachingEthereumProvider(createEthereumProvider(l2Provider))
+      ethereumProvider: createCachingEthereumProvider(
+        createEthereumProvider(l2Provider, () =>
+          metrics.increment('dcl_block_fetch_retries_total', { network: l2Network })
+        )
+      )
     }),
     metrics,
     logs

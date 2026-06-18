@@ -19,6 +19,12 @@ export const metricsDeclaration = validateMetricsDeclaration({
     labelNames: ['entity_type', 'deployment_context']
   },
 
+  dcl_block_fetch_retries_total: {
+    help: 'Total retried block RPC reads during on-chain validation (per network)',
+    type: 'counter',
+    labelNames: ['network']
+  },
+
   db_queued_queries_count: {
     help: 'Total number of queries that went through the queue since the service started',
     type: 'counter',
