@@ -10,7 +10,10 @@ import RequestManager, { HTTPProvider } from 'eth-connect'
 export const BLOCK_FETCH_MAX_RETRIES = 3
 const BLOCK_FETCH_BASE_DELAY_MS = 100
 
-export async function withBlockFetchRetry<T>(operation: () => Promise<T>): Promise<T> {
+export async function withBlockFetchRetry<T>(
+  operation: () => Promise<T>,
+  onRetry?: (attempt: number, error: unknown) => void
+): Promise<T> {
   let lastError: unknown
   for (let attempt = 1; attempt <= BLOCK_FETCH_MAX_RETRIES; attempt++) {
     try {
@@ -18,6 +21,9 @@ export async function withBlockFetchRetry<T>(operation: () => Promise<T>): Promi
     } catch (err) {
       lastError = err
       if (attempt < BLOCK_FETCH_MAX_RETRIES) {
+        // Notify before backing off so callers can observe how often the RPC is being retried
+        // (a chronically flaky provider otherwise only shows up as latency).
+        onRetry?.(attempt, err)
         // Exponential backoff with full jitter to avoid synchronized retries across the
         // many block lookups that concurrent validations issue at once.
         const base = BLOCK_FETCH_BASE_DELAY_MS * 2 ** (attempt - 1)
@@ -44,14 +50,29 @@ export async function readBlock(
   return result
 }
 
-export const createEthereumProvider = (httpProvider: HTTPProvider): EthereumProvider => {
+/**
+ * Reads the current block number, throwing on an empty result so withBlockFetchRetry treats it as
+ * a retryable attempt (mirrors readBlock for the binary search's upper bound). Exported for tests.
+ */
+export async function readBlockNumber(reqMan: { eth_blockNumber(): Promise<unknown> }): Promise<number> {
+  const blockNumber = (await reqMan.eth_blockNumber()) as number | null
+  if (blockNumber == null) {
+    throw new Error('Block number could not be retrieved')
+  }
+  return blockNumber
+}
+
+export const createEthereumProvider = (
+  httpProvider: HTTPProvider,
+  onRetry?: (attempt: number, error: unknown) => void
+): EthereumProvider => {
   const reqMan = new RequestManager(httpProvider)
   return {
     getBlockNumber: async (): Promise<number> => {
-      return withBlockFetchRetry(async () => (await reqMan.eth_blockNumber()) as number)
+      return withBlockFetchRetry(() => readBlockNumber(reqMan), onRetry)
     },
     getBlock: async (block: number): Promise<{ timestamp: string | number }> => {
-      return withBlockFetchRetry(() => readBlock(reqMan, block))
+      return withBlockFetchRetry(() => readBlock(reqMan, block), onRetry)
     }
   }
 }

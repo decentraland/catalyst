@@ -1,6 +1,7 @@
 import {
   BLOCK_FETCH_MAX_RETRIES,
   readBlock,
+  readBlockNumber,
   withBlockFetchRetry
 } from '../../../../src/adapters/content-validator/ethereum-provider'
 
@@ -80,6 +81,91 @@ describe('withBlockFetchRetry', () => {
       expect(operation).toHaveBeenCalledTimes(BLOCK_FETCH_MAX_RETRIES)
     })
   })
+
+  describe('when an onRetry callback is provided and the operation eventually succeeds', () => {
+    let operation: jest.Mock
+    let onRetry: jest.Mock
+
+    beforeEach(async () => {
+      operation = jest.fn().mockRejectedValueOnce(new Error('transient')).mockResolvedValueOnce('block')
+      onRetry = jest.fn()
+      await withBlockFetchRetry(operation, onRetry)
+    })
+
+    afterEach(() => {
+      jest.clearAllMocks()
+    })
+
+    it('should invoke the callback once for the single retry', () => {
+      expect(onRetry).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('when an onRetry callback is provided and the operation always fails', () => {
+    let operation: jest.Mock
+    let onRetry: jest.Mock
+
+    beforeEach(async () => {
+      operation = jest.fn().mockRejectedValue(new Error('persistent'))
+      onRetry = jest.fn()
+      try {
+        await withBlockFetchRetry(operation, onRetry)
+      } catch {
+        // expected to throw after exhausting retries
+      }
+    })
+
+    afterEach(() => {
+      jest.clearAllMocks()
+    })
+
+    it('should invoke the callback once per retry but not for the final failed attempt', () => {
+      expect(onRetry).toHaveBeenCalledTimes(BLOCK_FETCH_MAX_RETRIES - 1)
+    })
+  })
+})
+
+describe('readBlockNumber', () => {
+  describe('when the RPC returns a block number', () => {
+    let reqMan: { eth_blockNumber: jest.Mock }
+    let result: number
+
+    beforeEach(async () => {
+      reqMan = { eth_blockNumber: jest.fn().mockResolvedValue(88544241) }
+      result = await readBlockNumber(reqMan)
+    })
+
+    afterEach(() => {
+      jest.clearAllMocks()
+    })
+
+    it('should resolve with the block number', () => {
+      expect(result).toBe(88544241)
+    })
+  })
+
+  describe('when the RPC returns an empty result', () => {
+    let reqMan: { eth_blockNumber: jest.Mock }
+    let caughtError: Error | undefined
+
+    beforeEach(async () => {
+      reqMan = { eth_blockNumber: jest.fn().mockResolvedValue(null) }
+      caughtError = undefined
+      try {
+        await readBlockNumber(reqMan)
+      } catch (err) {
+        caughtError = err as Error
+      }
+    })
+
+    afterEach(() => {
+      jest.clearAllMocks()
+    })
+
+    it('should throw a "could not be retrieved" error', () => {
+      expect(caughtError?.message).toBe('Block number could not be retrieved')
+    })
+  })
 })
 
 describe('readBlock', () => {
@@ -124,7 +210,7 @@ describe('readBlock', () => {
     })
   })
 
-  describe('and an empty result is followed by a block when retried together', () => {
+  describe('when an empty result is followed by a block on retry', () => {
     let reqMan: { eth_getBlockByNumber: jest.Mock }
     let result: { timestamp: string | number }
 

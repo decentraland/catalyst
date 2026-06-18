@@ -107,7 +107,11 @@ async function createOnChainValidateFn(
     blockRepository: createBlockRepository({
       metrics,
       logs,
-      ethereumProvider: createCachingEthereumProvider(createEthereumProvider(l1Provider))
+      ethereumProvider: createCachingEthereumProvider(
+        createEthereumProvider(l1Provider, () =>
+          metrics.increment('dcl_block_fetch_retries_total', { network: l1Network })
+        )
+      )
     }),
     metrics,
     logs
@@ -116,7 +120,11 @@ async function createOnChainValidateFn(
     blockRepository: createBlockRepository({
       metrics,
       logs,
-      ethereumProvider: createCachingEthereumProvider(createEthereumProvider(l2Provider))
+      ethereumProvider: createCachingEthereumProvider(
+        createEthereumProvider(l2Provider, () =>
+          metrics.increment('dcl_block_fetch_retries_total', { network: l2Network })
+        )
+      )
     }),
     metrics,
     logs
