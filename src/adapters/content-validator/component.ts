@@ -25,6 +25,7 @@ import { Authenticator } from '@dcl/crypto'
 import { hashV0, hashV1 } from '@dcl/hashing'
 import { createSubgraphComponent } from '@well-known-components/thegraph-component'
 import RequestManager, { HTTPProvider } from 'eth-connect'
+import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { Readable } from 'stream'
 import { EnvironmentConfig } from '../../Environment'
 import { createItemChecker, createL1Checker, createL2Checker } from './checker'
@@ -40,14 +41,49 @@ type ContentValidatorDeps = Pick<
   l2Provider: HTTPProvider
 }
 
+// Block lookups during validation hit a single RPC provider that has no built-in retry. A
+// transient RPC error, or a momentarily-lagging replica that hasn't indexed the block yet,
+// would otherwise fail an otherwise-valid deployment with "Block <N> could not be retrieved".
+// This bounded retry sits BELOW the block-indexer LRU cache, so it only runs on an actual
+// cache-miss RPC call — cache hits are unaffected.
+const BLOCK_FETCH_MAX_RETRIES = 3
+const BLOCK_FETCH_BASE_DELAY_MS = 100
+
+async function withBlockFetchRetry<T>(operation: () => Promise<T>): Promise<T> {
+  let lastError: unknown
+  for (let attempt = 1; attempt <= BLOCK_FETCH_MAX_RETRIES; attempt++) {
+    try {
+      return await operation()
+    } catch (err) {
+      lastError = err
+      if (attempt < BLOCK_FETCH_MAX_RETRIES) {
+        // Exponential backoff with full jitter to avoid synchronized retries across the
+        // many block lookups that concurrent validations issue at once.
+        const base = BLOCK_FETCH_BASE_DELAY_MS * 2 ** (attempt - 1)
+        await sleep(base + Math.floor(Math.random() * base))
+      }
+    }
+  }
+  throw lastError
+}
+
 const createEthereumProvider = (httpProvider: HTTPProvider): EthereumProvider => {
   const reqMan = new RequestManager(httpProvider)
   return {
     getBlockNumber: async (): Promise<number> => {
-      return (await reqMan.eth_blockNumber()) as number
+      return withBlockFetchRetry(async () => (await reqMan.eth_blockNumber()) as number)
     },
     getBlock: async (block: number): Promise<{ timestamp: string | number }> => {
-      return await reqMan.eth_getBlockByNumber(block, false)
+      return withBlockFetchRetry(async () => {
+        const result = (await reqMan.eth_getBlockByNumber(block, false)) as { timestamp: string | number } | null
+        // An empty result is the symptom we actually observed in production (the RPC returned
+        // nothing for a recent block). Throw so it counts as a retryable attempt instead of
+        // propagating straight to a hard "could not be retrieved" failure on the first miss.
+        if (result == null || result.timestamp == null) {
+          throw new Error(`Block ${block} could not be retrieved`)
+        }
+        return result
+      })
     }
   }
 }

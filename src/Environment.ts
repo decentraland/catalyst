@@ -174,6 +174,7 @@ export enum EnvironmentConfig {
   PG_IDLE_TIMEOUT,
   PG_QUERY_TIMEOUT,
   PG_STREAM_QUERY_TIMEOUT,
+  PG_POOL_SIZE,
   GARBAGE_COLLECTION,
   GARBAGE_COLLECTION_INTERVAL,
   BLOOM_FILTER_EXPECTED_ELEMENTS,
@@ -450,6 +451,14 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PG_STREAM_QUERY_TIMEOUT, () =>
       process.env.PG_STREAM_QUERY_TIMEOUT ? ms(process.env.PG_STREAM_QUERY_TIMEOUT) : ms('10m')
     )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PG_POOL_SIZE, () => {
+      // Max connections for the main pool. Sized above the deployment job concurrency (batch
+      // deployer = 10) so concurrent deploy transactions — each of which holds a connection for
+      // its whole duration — can't starve the read endpoints (e.g. /content/pointer-changes) of
+      // connections. Floor at 1 to avoid a degenerate 0/negative pool. pg's own default is 10.
+      const parsed = parseInt(process.env.PG_POOL_SIZE ?? '', 10)
+      return Number.isNaN(parsed) ? 20 : Math.max(parsed, 1)
+    })
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.SNAPSHOT_FREQUENCY_IN_MILLISECONDS,
