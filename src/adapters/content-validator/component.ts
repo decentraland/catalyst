@@ -21,9 +21,10 @@ import { createOnChainAccessCheckValidateFns } from '@dcl/content-validator/dist
 import { createOnChainClient } from '@dcl/content-validator/dist/validations/access/on-chain/client'
 import { createSubgraphAccessCheckValidateFns } from '@dcl/content-validator/dist/validations/access/subgraph'
 import { createTheGraphClient } from '@dcl/content-validator/dist/validations/access/subgraph/the-graph-client'
+import { IFetchComponent } from '@dcl/core-commons'
 import { Authenticator } from '@dcl/crypto'
 import { hashV0, hashV1 } from '@dcl/hashing'
-import { createSubgraphComponent } from '@well-known-components/thegraph-component'
+import { createSubgraphComponent } from '@dcl/thegraph-component'
 import RequestManager, { HTTPProvider } from 'eth-connect'
 import { Readable } from 'stream'
 import { EnvironmentConfig } from '../../Environment'
@@ -188,7 +189,11 @@ async function createSubgraphValidateFn(
   externalCalls: ExternalCalls
 ): Promise<ValidateFn> {
   const { logs, config, env, metrics, fetcher } = components
-  const baseComponents = { config, fetch: fetcher, metrics, logs }
+  // `components.fetcher` is stored as the WKC `IFetchComponent` (see components.ts — it serves the
+  // other WKC-typed consumers like block-indexer and snapshots-fetcher), while @dcl/thegraph-component
+  // expects the structurally-identical native-fetch `IFetchComponent` from @dcl/core-commons. The
+  // underlying runtime value is already a native fetcher, so assert the core-commons type here.
+  const baseComponents = { config, fetch: fetcher as unknown as IFetchComponent, metrics, logs }
   const subGraphs = {
     L1: {
       landManager: await createSubgraphComponent(
