@@ -28,6 +28,11 @@ module.exports = {
     },
     {
       displayName: 'integration',
+      // Multi-server sync suites (e.g. failed-deployments) start two full programs and wait for
+      // bootstrap in a `beforeEach`; under the cumulative load of the whole integration run that
+      // setup can exceed the default 60s even though it finishes in seconds in isolation. Give the
+      // heavier integration suite more headroom.
+      testTimeout: 120000,
       globals: {
         'ts-jest': {
           tsconfig: '<rootDir>/test/tsconfig.json'

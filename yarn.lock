@@ -365,7 +365,7 @@
     eth-connect "^6.0.3"
     ethereum-cryptography "^2.0.0"
 
-"@dcl/fetch-component@1.1.1", "@dcl/fetch-component@^1.1.1":
+"@dcl/fetch-component@1.1.1", "@dcl/fetch-component@^1.0.1", "@dcl/fetch-component@^1.1.1":
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/@dcl/fetch-component/-/fetch-component-1.1.1.tgz#8f089f216150bab23d4cb798311796943243bc0b"
   integrity sha512-Q1d/By58NRFIF7h5oMSSFNFGtcJmoKKY6V3kOo314soCgSH0IETydwaD8Hu2zPWK9TZQVx+eDJppViyKVpt91Q==
@@ -1708,23 +1708,7 @@
   dependencies:
     dotenv "^16.0.1"
 
-"@well-known-components/fetch-component@^2.0.0":
-  version "2.0.2"
-  resolved "https://registry.npmjs.org/@well-known-components/fetch-component/-/fetch-component-2.0.2.tgz"
-  integrity sha512-LdY+6n9kuyACg3fcU4qMrNhLZuG7eqPxLSqzDgQyoHKeNjlzggoUqTVJKtIyi6vjPs8pSQ/Fx1xdLuBhOKCgww==
-  dependencies:
-    "@well-known-components/interfaces" "^1.4.1"
-    cross-fetch "^3.1.5"
-
-"@well-known-components/fetch-component@^3.0.0":
-  version "3.0.0"
-  resolved "https://registry.npmjs.org/@well-known-components/fetch-component/-/fetch-component-3.0.0.tgz"
-  integrity sha512-ycIaojkwLJvhpicdPsmsEzA9qPbV7voAjrRcVE7+n7UNctIQC8ppymapj0UQ3FFpdEWWVSzjoo33H0BW+sD8eg==
-  dependencies:
-    "@well-known-components/interfaces" "^1.4.1"
-    cross-fetch "^3.1.5"
-
-"@well-known-components/interfaces@^1.1.1", "@well-known-components/interfaces@^1.2.0", "@well-known-components/interfaces@^1.4.1", "@well-known-components/interfaces@^1.4.2", "@well-known-components/interfaces@^1.4.3", "@well-known-components/interfaces@^1.5.1", "@well-known-components/interfaces@^1.5.2":
+"@well-known-components/interfaces@^1.1.1", "@well-known-components/interfaces@^1.2.0", "@well-known-components/interfaces@^1.4.2", "@well-known-components/interfaces@^1.4.3", "@well-known-components/interfaces@^1.5.1", "@well-known-components/interfaces@^1.5.2":
   version "1.5.2"
   resolved "https://registry.npmjs.org/@well-known-components/interfaces/-/interfaces-1.5.2.tgz"
   integrity sha512-TzKQblOci2Azczk1DZ4JL5aJW7hwq7kHrFMO4lCRMmW51bA71BtiZlq0WP72Dln067xTSoHQAU4WHCFJlGYvEQ==
@@ -2531,13 +2515,6 @@ cron-parser@^5.0.0:
   dependencies:
     luxon "^3.7.1"
 
-cross-fetch@^3.1.5:
-  version "3.1.8"
-  resolved "https://registry.npmjs.org/cross-fetch/-/cross-fetch-3.1.8.tgz"
-  integrity sha512-cvA+JwZoU0Xq+h6WkMvAUqPEYy92Obet6UdKLfW60qn99ftItKjB5T+BkyWOFWe2pUyfQ+IJHmpOTznqk1M6Kg==
-  dependencies:
-    node-fetch "^2.6.12"
-
 cross-spawn@^6.0.0:
   version "6.0.6"
   resolved "https://registry.yarnpkg.com/cross-spawn/-/cross-spawn-6.0.6.tgz#30d0efa0712ddb7eb5a76e1e8721bffafa6b5d57"
@@ -2589,19 +2566,17 @@ data-urls@^2.0.0:
     whatwg-mimetype "^2.3.0"
     whatwg-url "^8.0.0"
 
-dcl-catalyst-client@^21.10.3:
-  version "21.10.3"
-  resolved "https://registry.npmjs.org/dcl-catalyst-client/-/dcl-catalyst-client-21.10.3.tgz"
-  integrity sha512-P3j+oSNwezqIN/MZtz0Ii8dmd5bTxziBqR2ifq4ZMydf016+MLSCwkexFZhz9wZ5eW0PN/bEOAcx4Rhx+xTcwg==
+dcl-catalyst-client@^22.0.0:
+  version "22.0.0"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-22.0.0.tgz#7098a6af3a740168c3e83aa476d4ea7962f4f27d"
+  integrity sha512-K2cjYR5RZcdH6YNC7YjQMmZd4fhlE7zGyc79sYWvJGgofjO8TxAJ7CCNahqqllzMrdnxidFFGOWXTYJMJmOdqA==
   dependencies:
     "@dcl/catalyst-contracts" "^4.4.0"
     "@dcl/crypto" "^3.4.0"
+    "@dcl/fetch-component" "^1.0.1"
     "@dcl/hashing" "^3.0.0"
     "@dcl/schemas" "^23.0.0"
-    "@well-known-components/fetch-component" "^2.0.0"
     cookie "^0.5.0"
-    cross-fetch "^3.1.5"
-    form-data "^4.0.0"
 
 debug@4, debug@^4.1.0, debug@^4.1.1, debug@^4.3.1, debug@^4.3.2, debug@^4.3.4:
   version "4.3.4"
@@ -4791,7 +4766,7 @@ node-cache@^5.1.2:
   dependencies:
     clone "2.x"
 
-node-fetch@2.7.0, node-fetch@^2.6.12:
+node-fetch@2.7.0:
   version "2.7.0"
   resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.7.0.tgz#d0f0fa6e3e2dc1d27efcd8ad99d550bda94d187d"
   integrity sha512-c4FRfUm/dbcWZ7U+1Wq0AwCyFL+3nt2bEw05wfxSz+DWpWsitgmSgYmy2dQdWyKC1694ELPqMs/YzUSNozLt8A==
