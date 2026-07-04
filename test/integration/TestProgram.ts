@@ -150,6 +150,10 @@ export class TestProgram {
 
   private async makeRequest(url: string): Promise<any> {
     const response = await fetch(url)
+    if (!response.ok) {
+      // Drain the body so the native fetcher releases the socket before the assertion aborts.
+      await response.text().catch(() => undefined)
+    }
     expect(response.ok).toBe(true)
     return response.json()
   }
