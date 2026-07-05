@@ -20,9 +20,10 @@ import { createOnChainAccessCheckValidateFns } from '@dcl/content-validator/dist
 import { createOnChainClient } from '@dcl/content-validator/dist/validations/access/on-chain/client'
 import { createSubgraphAccessCheckValidateFns } from '@dcl/content-validator/dist/validations/access/subgraph'
 import { createTheGraphClient } from '@dcl/content-validator/dist/validations/access/subgraph/the-graph-client'
+import { toCoreFetcher } from '../../logic/to-core-fetcher'
 import { Authenticator } from '@dcl/crypto'
 import { hashV0, hashV1 } from '@dcl/hashing'
-import { createSubgraphComponent } from '@well-known-components/thegraph-component'
+import { createSubgraphComponent } from '@dcl/thegraph-component'
 import { HTTPProvider } from 'eth-connect'
 import { Readable } from 'stream'
 import { EnvironmentConfig } from '../../Environment'
@@ -147,6 +148,9 @@ async function createOnChainValidateFn(
       logger.warn(`failed to load cache file ${file}`, e.toString())
     }
   }
+  // TODO: @dcl/block-indexer is pinned to 1.1.2 — 1.3.0 removes BlockSearch.tree (used here for the
+  // cache warm-up) in favour of internal caching via createAvlBlockSearch(..., { maxCachedBlocks }).
+  // Bumping requires reworking this warm-up and coordinating with @dcl/content-validator's block-indexer.
   await warmUpCache(l1BlockSearch.tree, l1Network)
   await warmUpCache(l2BlockSearch.tree, l2Network)
 
@@ -184,7 +188,11 @@ async function createSubgraphValidateFn(
   externalCalls: ExternalCalls
 ): Promise<ValidateFn> {
   const { logs, config, env, metrics, fetcher } = components
-  const baseComponents = { config, fetch: fetcher, metrics, logs }
+  // `components.fetcher` is stored as the WKC `IFetchComponent` (see components.ts — it serves the
+  // other WKC-typed consumers like block-indexer and snapshots-fetcher), while @dcl/thegraph-component
+  // expects the structurally-identical native-fetch `IFetchComponent` from @dcl/core-commons. The
+  // underlying runtime value is already a native fetcher, so assert the core-commons type here.
+  const baseComponents = { config, fetch: toCoreFetcher(fetcher), metrics, logs }
   const subGraphs = {
     L1: {
       landManager: await createSubgraphComponent(

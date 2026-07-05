@@ -1,5 +1,6 @@
 import LRU from 'lru-cache'
 import { downloadEntityAndContentFiles } from '@dcl/snapshots-fetcher'
+import { toCoreFetcher } from '../to-core-fetcher'
 import { streamToBuffer } from '@dcl/catalyst-storage/dist/content-item'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { DeployableEntity, TimeRange } from '@dcl/snapshots-fetcher/dist/types'
@@ -85,7 +86,9 @@ export function createBatchDeployerComponent(
     components.metrics.increment('dcl_pending_download_gauge', { entity_type: entityType })
     try {
       return await downloadEntityAndContentFiles(
-        components,
+        // snapshots-fetcher@10 types its fetcher via @dcl/core-commons (the same native runtime value
+        // stored under the WKC type on `components.fetcher`); assert the core-commons type here.
+        { ...components, fetcher: toCoreFetcher(components.fetcher) },
         entityId,
         servers,
         serverLru,

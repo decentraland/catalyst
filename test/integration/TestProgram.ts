@@ -1,6 +1,7 @@
+import { setTimeout as sleep } from 'timers/promises'
 import { Entity } from '@dcl/schemas'
 import { ILoggerComponent, Lifecycle } from '@well-known-components/interfaces'
-import { createFetchComponent } from '@well-known-components/fetch-component'
+import { createFetchComponent } from '@dcl/fetch-component'
 import { ContentClient, createContentClient } from 'dcl-catalyst-client/dist/client/ContentClient'
 import { DeploymentData } from 'dcl-catalyst-client/dist/client/utils/DeploymentBuilder'
 import { EnvironmentConfig } from '../../src/Environment'
@@ -14,6 +15,18 @@ import { deleteFolderRecursive } from './E2ETestUtils'
 
 process.env.RUNNING_TESTS = 'true'
 
+// The native-fetch content client (dcl-catalyst-client@22) parses responses in Node's host realm,
+// while Jest builds expected values in its sandbox realm. Node's `assert.deepStrictEqual` compares
+// prototypes by reference and rejects otherwise-identical cross-realm objects (reported as "no
+// visual difference"), so re-hydrate client results into the test realm before they reach assertions.
+// NB: `structuredClone` looks tidier but isn't usable here — Jest 27's node sandbox doesn't expose it
+// (`ReferenceError`), and copying the host's `structuredClone` in via fetch-environment.js would still
+// mint host-realm objects, i.e. the very cross-realm mismatch we're fixing. A JSON round-trip runs in
+// this realm; entity payloads are plain JSON (no Date/undefined) so nothing is lost.
+function toTestRealm<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value))
+}
+
 /** A wrapper around a server that helps make tests more easily */
 export class TestProgram {
   public readonly namePrefix: string
@@ -26,11 +39,9 @@ export class TestProgram {
   logger: ILoggerComponent.ILogger
 
   constructor(public components: AppComponents) {
-    // dcl-catalyst-client (21.x, its latest) is still built for node-fetch: it calls `.buffer()` on
-    // responses and posts deployments as a `form-data` stream, relying on node-fetch to set the
-    // multipart Content-Type. The production `components.fetcher` is now native fetch (via
-    // @dcl/fetch-component), which does neither, so give the test client its own node-fetch-backed
-    // fetcher from @well-known-components/fetch-component.
+    // dcl-catalyst-client@22 is native-fetch based: it posts deployments as a native `FormData` and
+    // reads response bodies via `arrayBuffer()` (no node-fetch `.buffer()` / `form-data` stream), so
+    // the test client uses the same native `@dcl/fetch-component` fetcher the production server does.
     this.client = createContentClient({
       url: this.getUrl(),
       fetcher: createFetchComponent()
@@ -71,11 +82,28 @@ export class TestProgram {
 
   async deployEntity(deployData: DeploymentData, fix: boolean = false) {
     this.logger.info('Deploying entity ' + deployData.entityId)
-    const response = (await this.client.deploy(deployData)) as any
-    const returnValue = await response.json()
 
-    if (!response.ok) {
-      throw new Error(JSON.stringify(returnValue))
+    // A background sync can momentarily hold a pointer lock, in which case the server rejects the
+    // deploy as retryable ("... currently being deployed. Please try again in a few seconds."). Only
+    // that specific case is retried so the test isn't flaky against the synchronizer; every other
+    // failure still surfaces immediately.
+    const maxAttempts = 8
+    let returnValue: any
+    for (let attempt = 1; ; attempt++) {
+      const response = (await this.client.deploy(deployData)) as any
+      returnValue = await response.json()
+
+      if (response.ok) {
+        break
+      }
+
+      const pointersLocked =
+        Array.isArray(returnValue?.errors) &&
+        returnValue.errors.some((error: string) => error.includes('currently being deployed'))
+      if (!pointersLocked || attempt >= maxAttempts) {
+        throw new Error(JSON.stringify(returnValue))
+      }
+      await sleep(500)
     }
 
     if (isInvalidDeployment(returnValue)) {
@@ -96,19 +124,21 @@ export class TestProgram {
   }
 
   getEntitiesByPointers(pointers: string[]): Promise<Entity[]> {
-    return this.client.fetchEntitiesByPointers(pointers)
+    return this.client.fetchEntitiesByPointers(pointers).then(toTestRealm)
   }
 
   getEntitiesByIds(...ids: string[]): Promise<Entity[]> {
-    return this.client.fetchEntitiesByIds(ids)
+    return this.client.fetchEntitiesByIds(ids).then(toTestRealm)
   }
 
   getEntityById(id: string): Promise<Entity> {
-    return this.client.fetchEntityById(id)
+    return this.client.fetchEntityById(id).then(toTestRealm)
   }
 
-  downloadContent(fileHash: string): Promise<Buffer> {
-    return this.client.downloadContent(fileHash)
+  async downloadContent(fileHash: string): Promise<Buffer> {
+    // v22's client returns a Uint8Array; wrap it back into a Buffer so existing assertions that
+    // compare against Buffer-valued deployment files (toEqual/deepStrictEqual) keep matching.
+    return Buffer.from(await this.client.downloadContent(fileHash))
   }
 
   async getAuditInfo(entity: Entity): Promise<AuditInfo> {
@@ -124,6 +154,10 @@ export class TestProgram {
 
   private async makeRequest(url: string): Promise<any> {
     const response = await fetch(url)
+    if (!response.ok) {
+      // Drain the body so the native fetcher releases the socket before the assertion aborts.
+      await response.text().catch(() => undefined)
+    }
     expect(response.ok).toBe(true)
     return response.json()
   }

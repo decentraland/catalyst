@@ -11,6 +11,7 @@ import { createSynchronizer } from '@dcl/snapshots-fetcher'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { createTracedFetcherComponent } from '@dcl/traced-fetch-component'
 import { createFetchComponent } from '@dcl/fetch-component'
+import { toCoreFetcher } from './logic/to-core-fetcher'
 import { createHttpTracerComponent } from '@dcl/http-tracer-component'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTracerComponent } from '@well-known-components/tracer-component'
@@ -333,7 +334,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     {
       logs,
       downloadQueue,
-      fetcher,
+      // snapshots-fetcher@10 types its fetcher via @dcl/core-commons; `fetcher` is the same native
+      // runtime value stored under the WKC type, so assert the core-commons type at this boundary.
+      fetcher: toCoreFetcher(fetcher),
       metrics,
       deployer: batchDeployer,
       storage,

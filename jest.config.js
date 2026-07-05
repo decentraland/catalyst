@@ -28,6 +28,8 @@ module.exports = {
     },
     {
       displayName: 'integration',
+      // NB: the integration timeout is raised in jest.setupFilesAfterEnv.ts via jest.setTimeout —
+      // a project-level `testTimeout` here is not reliably honored in Jest 27.
       globals: {
         'ts-jest': {
           tsconfig: '<rootDir>/test/tsconfig.json'

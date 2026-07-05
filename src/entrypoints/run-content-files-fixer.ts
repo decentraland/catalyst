@@ -152,6 +152,11 @@ async function ensureFileExistsInStorage(
 
   try {
     const data = await fetcher.fetch(url)
+    if (!data.ok) {
+      // Drain the body so undici releases the socket, and don't store the error page as the file.
+      await data.text().catch(() => undefined)
+      throw new Error(`Failed to download file ${file}. Status code was: ${data.status}`)
+    }
     if (!data.body) {
       throw new Error(`Empty response body received while downloading file ${file}`)
     }

@@ -3,7 +3,7 @@ import { metricsDefinitions as blockIndexerMetricsDefinitions } from '@dcl/block
 import { metricDeclarations as loggerMetricDeclarations } from '@well-known-components/logger'
 import { validateMetricsDeclaration } from '@dcl/metrics'
 import { getDefaultHttpMetrics } from '@dcl/http-server'
-import { metricDeclarations as theGraphMetricDeclarations } from '@well-known-components/thegraph-component'
+import { metricDeclarations as theGraphMetricDeclarations } from '@dcl/thegraph-component'
 import { sequentialJobMetrics } from './logic/sequential-task-executor'
 
 export const metricsDeclaration = validateMetricsDeclaration({
