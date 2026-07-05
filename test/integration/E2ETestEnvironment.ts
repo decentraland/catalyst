@@ -1,3 +1,4 @@
+import net from 'net'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { createLogComponent } from '@well-known-components/logger'
@@ -16,6 +17,30 @@ import { AppComponents } from '../../src/types'
 import { MockedDAOClient } from '../helpers/service/synchronization/clients/MockedDAOClient'
 import { createNoOpDeployRateLimiter } from '../mocks/deploy-rate-limiter-mock'
 import { TestProgram } from './TestProgram'
+
+/**
+ * Allocates `amount` distinct free TCP ports. Test servers used to run on fixed ports
+ * (6060/7070/8080) reused by every suite; because `@dcl/fetch-component` fetches through the global
+ * (undici) dispatcher, its keep-alive pool would hand back a socket to a server a previous suite had
+ * already torn down, surfacing as intermittent `TypeError: fetch failed` during sync/bootstrap.
+ * Ephemeral ports aren't reused within a run's keep-alive window, so a dead socket is never picked up.
+ */
+async function getFreePorts(amount: number): Promise<number[]> {
+  const servers = await Promise.all(
+    Array.from(
+      { length: amount },
+      () =>
+        new Promise<net.Server>((resolve, reject) => {
+          const srv = net.createServer()
+          srv.once('error', reject)
+          srv.listen(0, '127.0.0.1', () => resolve(srv))
+        })
+    )
+  )
+  const ports = servers.map((srv) => (srv.address() as net.AddressInfo).port)
+  await Promise.all(servers.map((srv) => new Promise<void>((resolve) => srv.close(() => resolve()))))
+  return ports
+}
 
 export class E2ETestEnvironment {
   public static TEST_SCHEMA = 'e2etest'
@@ -171,7 +196,7 @@ export class ServerBuilder {
   }
 
   async andBuildMany(amount: number): Promise<TestProgram[]> {
-    const ports = new Array(amount).fill(0).map((_, idx) => idx * 1010 + 6060)
+    const ports = await getFreePorts(amount)
     return this.andBuildOnPorts(ports)
   }
 
