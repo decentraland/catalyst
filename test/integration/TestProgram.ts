@@ -19,6 +19,10 @@ process.env.RUNNING_TESTS = 'true'
 // while Jest builds expected values in its sandbox realm. Node's `assert.deepStrictEqual` compares
 // prototypes by reference and rejects otherwise-identical cross-realm objects (reported as "no
 // visual difference"), so re-hydrate client results into the test realm before they reach assertions.
+// NB: `structuredClone` looks tidier but isn't usable here — Jest 27's node sandbox doesn't expose it
+// (`ReferenceError`), and copying the host's `structuredClone` in via fetch-environment.js would still
+// mint host-realm objects, i.e. the very cross-realm mismatch we're fixing. A JSON round-trip runs in
+// this realm; entity payloads are plain JSON (no Date/undefined) so nothing is lost.
 function toTestRealm<T>(value: T): T {
   return JSON.parse(JSON.stringify(value))
 }
