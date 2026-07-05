@@ -22,7 +22,8 @@ export async function createDatabaseComponent(
     user: components.env.getConfig<string>(EnvironmentConfig.PSQL_USER),
     password: components.env.getConfig<string>(EnvironmentConfig.PSQL_PASSWORD),
     idleTimeoutMillis: components.env.getConfig<number>(EnvironmentConfig.PG_IDLE_TIMEOUT),
-    query_timeout: components.env.getConfig<number>(EnvironmentConfig.PG_QUERY_TIMEOUT)
+    query_timeout: components.env.getConfig<number>(EnvironmentConfig.PG_QUERY_TIMEOUT),
+    max: components.env.getConfig<number>(EnvironmentConfig.PG_POOL_SIZE)
   }
   const streamQueryTimeout = components.env.getConfig<number>(EnvironmentConfig.PG_STREAM_QUERY_TIMEOUT)
 

@@ -134,6 +134,28 @@ describe('Deployer', function () {
     expect(storeSpy).not.toHaveBeenCalledWith(randomFileHash, expect.anything())
   })
 
+  it(`When an entity has more content files than the storage concurrency limit, then all of them are stored`, async () => {
+    const service = await buildDeployer()
+
+    // More files than CONTENT_STORE_CONCURRENCY (10) so the storage loop spans multiple batches.
+    const files = Array.from({ length: 12 }, (_, i) => Buffer.from(`content-file-${i}`))
+    const fileHashes = await Promise.all(files.map((file) => hashV1(file)))
+    const content = new Map(fileHashes.map((hash, i) => [`file-${i}`, hash]))
+    const [multiFileEntity, multiFileEntityFile] = await buildEntityAndFile(
+      EntityType.SCENE,
+      ['X9,Y9'],
+      Date.now(),
+      content,
+      { metadata: 'metadata' }
+    )
+    const storageSpy = jest.spyOn(service.components.storage, 'storeStream')
+
+    await service.deployEntity([multiFileEntityFile, ...files], multiFileEntity.id, auditInfo, DeploymentContext.LOCAL)
+
+    const storedHashes = storageSpy.mock.calls.map((call) => call[0])
+    expect(storedHashes).toEqual(expect.arrayContaining(fileHashes))
+  })
+
   it(`Given a pointer with no deployment, when is asked twice, then the second time cached the result is returned`, async () => {
     const service = await buildDeployer()
     const serviceSpy = jest
