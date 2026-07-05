@@ -35,7 +35,9 @@ export async function isEntityDeployed(
       return false
     }
   } else {
-    components.metrics.increment('dcl_deployed_entities_bloom_filter_checks_total', { hit: 'true' })
+    // Bloom filter says the entity is definitely not deployed: this is a true negative, so label it
+    // `hit: 'false'`. Labelling it 'true' corrupted the false-positive-rate signal the metric exists for.
+    components.metrics.increment('dcl_deployed_entities_bloom_filter_checks_total', { hit: 'false' })
     return false
   }
 }

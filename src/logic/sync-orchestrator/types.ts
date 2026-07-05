@@ -1,4 +1,5 @@
 import { IFuture } from 'fp-future'
+import { STOP_COMPONENT } from '@well-known-components/interfaces'
 import { SynchronizerComponent } from '@dcl/snapshots-fetcher'
 
 export type SyncJob = Awaited<ReturnType<SynchronizerComponent['syncWithServers']>>
@@ -28,4 +29,10 @@ export type ISyncOrchestrator = {
 
   /** Force-flip the state to `SYNCING`. Used by `service.ts` when synchronization is disabled via env. */
   toSyncing(): void
+
+  /**
+   * Stop the retry-failed-deployments job this orchestrator owns (it is not registered in
+   * AppComponents, so the WKC lifecycle can't stop it directly). Invoked on shutdown.
+   */
+  [STOP_COMPONENT](): Promise<void>
 }

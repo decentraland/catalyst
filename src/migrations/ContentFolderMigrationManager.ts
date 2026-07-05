@@ -64,18 +64,22 @@ export async function migrateContentFolderStructure(components: ContentFolderMig
     queued.push(wrappedPromise())
   }
 
-  try {
-    await Promise.all(queued)
-    logs.info(`Migrated ${migratedCount} files`)
-  } catch (err) {
-    logs.error(`Failure while migrating ${err}`)
-    throw Error(failures.join('\n'))
-  }
-
+  // `wrappedPromise` already catches every rejection into `failures`, so `Promise.all` never rejects
+  // (the previous try/catch around it was dead code).
+  await Promise.all(queued)
   await queue.onIdle()
 
+  logs.info(`Migrated ${migratedCount} files`)
+
   if (failures.length > 0) {
-    throw Error(failures.join('\n'))
+    // A single unreadable or racing file must not put the server into a permanent crash loop, so
+    // partial failures are logged and tolerated. But if there were files to migrate and NONE
+    // succeeded, that is a systemic problem (e.g. the storage volume is unreadable by this user) —
+    // fail loudly instead of starting up and silently serving 404s for all affected content.
+    if (migratedCount === 0) {
+      throw new Error(`Content folder migration failed for every file (${failures.length}): ${failures.join(', ')}`)
+    }
+    logs.warn(`Could not migrate ${failures.length} file(s): ${failures.join(', ')}`)
   }
 }
 

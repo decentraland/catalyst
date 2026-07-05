@@ -22,14 +22,21 @@ export function createSnapshots(
     db: DatabaseClient,
     timeRange: TimeRange,
     reason?: string
-  ): Promise<{ hash: string; numberOfEntities: number }> {
+  ): Promise<{ hash: string; numberOfEntities: number; generationTimestamp: number }> {
     const { end: endTimer } = metrics.startTimer('dcl_content_server_snapshot_generation_time', {
       interval_size: intervalSizeLabel(timeRange),
       reason: reason || 'unknown'
     })
     let numberOfEntities = 0
     let fileWriter: IFile | undefined
+    let stored = false
     try {
+      // Capture the generation time BEFORE opening the stream. The stream runs on a single MVCC
+      // snapshot taken at query start, so any deployment committed while it runs is not included; a
+      // timestamp taken after the stream would be later than that deploy's commit, and
+      // `snapshotIsOutdated` (local_timestamp > generation_time) would then never flag the snapshot
+      // for regeneration — the deployment would be missing from snapshots forever.
+      const generationTimestamp = Date.now()
       fileWriter = await createFileWriter(components, 'tmp-all-entities-snapshot')
       // Header marks this as the json format (vs. the binary format) for downstream readers.
       await fileWriter.appendDebounced('### Decentraland json snapshot\n')
@@ -39,13 +46,21 @@ export function createSnapshots(
         numberOfEntities++
       }
       const storedHash = await fileWriter.store()
+      stored = true
       endTimer({ result: 'success' })
-      return { hash: storedHash, numberOfEntities }
+      return { hash: storedHash, numberOfEntities, generationTimestamp }
     } catch (error) {
       endTimer({ result: 'error' })
       throw error
     } finally {
-      if (fileWriter) await fileWriter.close()
+      if (fileWriter) {
+        await fileWriter.close()
+        // On failure `store()` never ran (or didn't finish), so remove the partial tmp file. Without
+        // this, failed/crashed generations of multi-GB snapshots accumulate in the contents folder.
+        if (!stored) {
+          await fileWriter.delete()
+        }
+      }
     }
   }
 
@@ -94,7 +109,7 @@ export function createSnapshots(
           })
         )
 
-        const { hash, numberOfEntities } = await generateAndStoreSnapshot(
+        const { hash, numberOfEntities, generationTimestamp } = await generateAndStoreSnapshot(
           database,
           timeRange,
           getReasonForMetric({
@@ -106,31 +121,37 @@ export function createSnapshots(
           })
         )
         const savedSnapshotHashes = savedSnapshots.map((s) => s.hash)
+        const replacedSnapshotHashes =
+          isTimeRangeCoveredByOtherSnapshots || snapshotHasInactiveEntities ? savedSnapshotHashes : []
+        const newSnapshot = {
+          hash,
+          timeRange,
+          replacedSnapshotHashes,
+          numberOfEntities,
+          // Use the timestamp captured before the deployment stream opened (see generateAndStoreSnapshot).
+          generationTimestamp
+        }
+        let snapshotHashesToDeleteInStorage: string[] = []
         await database.transaction(async (txDatabase) => {
-          const replacedSnapshotHashes =
-            isTimeRangeCoveredByOtherSnapshots || snapshotHasInactiveEntities ? savedSnapshotHashes : []
-          const newSnapshot = {
-            hash,
-            timeRange,
-            replacedSnapshotHashes,
-            numberOfEntities,
-            generationTimestamp: Date.now()
-          }
           const snapshotHashesUsedInOtherTimeRanges = await snapshotsRepository.getSnapshotHashesNotInTimeRange(
             txDatabase,
             savedSnapshotHashes,
             timeRange
           )
-          const snapshotHashesToDeleteInStorage = savedSnapshotHashes.filter(
+          snapshotHashesToDeleteInStorage = savedSnapshotHashes.filter(
             (hash) => !snapshotHashesUsedInOtherTimeRanges.has(hash) && hash != newSnapshot.hash
           )
           // The order is important; a snapshot we save can share its hash with one we delete.
           await snapshotsRepository.deleteSnapshotsInTimeRange(txDatabase, savedSnapshotHashes, timeRange)
           await snapshotsRepository.saveSnapshot(txDatabase, newSnapshot)
-          logger.info(`Snapshots to delete: ${JSON.stringify(Array.from(snapshotHashesToDeleteInStorage))}`)
-          await storage.delete(snapshotHashesToDeleteInStorage)
-          snapshotMetadatas.push(newSnapshot)
         }, 'tx_snapshot')
+
+        // Delete the replaced snapshot files only after the transaction commits. Deleting inside the
+        // transaction risks leaving committed DB rows pointing at files that were already removed if
+        // the commit failed; a leftover file after a successful commit is merely reclaimed next run.
+        snapshotMetadatas.push(newSnapshot)
+        logger.info(`Snapshots to delete: ${JSON.stringify(snapshotHashesToDeleteInStorage)}`)
+        await storage.delete(snapshotHashesToDeleteInStorage)
         logger.info(
           `Snapshot generated for interval: [${new Date(timeRange.initTimestamp).toISOString()}, ${new Date(
             timeRange.endTimestamp

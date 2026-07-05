@@ -6,7 +6,7 @@ import {
   IFailedDeploymentsComponent,
   SnapshotFailedDeployment
 } from '../../../../src/adapters/failed-deployments'
-import { DatabaseTransactionalClient, IDatabaseComponent } from '../../../../src/adapters/database'
+import { IDatabaseComponent } from '../../../../src/adapters/database'
 import { FailedDeployment } from '../../../../src/adapters/failed-deployments'
 import { metricsDeclaration } from '../../../../src/metrics'
 import { createDatabaseMockedComponent } from '../../../mocks/database-component-mock'
@@ -212,7 +212,6 @@ describe('when using the merged failed-deployments adapter', () => {
 
   describe('and reportFailure is called for a snapshot deployment whose entity is already cached', () => {
     let adapter: IFailedDeploymentsComponent
-    let txClient: jest.Mocked<IDatabaseComponent>
     let reReportedDeployment: SnapshotFailedDeployment
 
     beforeEach(async () => {
@@ -220,29 +219,23 @@ describe('when using the merged failed-deployments adapter', () => {
       database.queryWithValues.mockResolvedValueOnce({ rows: [baseDeployment], rowCount: 1 } as any)
       adapter = await createFailedDeployments({ metrics, database })
       await adapter.start()
-      txClient = createDatabaseMockedComponent()
-      txClient.queryWithValues.mockResolvedValue({ rows: [], rowCount: 0 } as any)
-      database.transaction.mockImplementation((fn) => fn(txClient as unknown as DatabaseTransactionalClient))
       database.queryWithValues.mockClear()
       await adapter.reportFailure(reReportedDeployment)
     })
 
-    it('should open a single database transaction', () => {
-      expect(database.transaction).toHaveBeenCalledTimes(1)
+    it('should not open a database transaction', () => {
+      expect(database.transaction).not.toHaveBeenCalled()
     })
 
-    it('should issue both the DELETE and the INSERT through the transactional client', () => {
-      expect(txClient.queryWithValues).toHaveBeenCalledWith(
-        expect.objectContaining({ text: expect.stringContaining('DELETE FROM failed_deployments') }),
-        'delete_failed_deployment'
-      )
-      expect(txClient.queryWithValues).toHaveBeenCalledWith(
-        expect.objectContaining({ text: expect.stringContaining('INSERT INTO failed_deployments') }),
+    it('should re-report through a single idempotent upsert on the pool db client', () => {
+      expect(database.queryWithValues).toHaveBeenCalledTimes(1)
+      expect(database.queryWithValues).toHaveBeenCalledWith(
+        expect.objectContaining({ text: expect.stringContaining('ON CONFLICT (entity_id) DO UPDATE') }),
         'save_failed_deployment'
       )
     })
 
-    it('should update the in-memory cache only after the transaction has committed', async () => {
+    it('should update the in-memory cache after the SQL upsert succeeds', async () => {
       expect(await adapter.findFailedDeployment(reReportedDeployment.entityId)).toEqual(reReportedDeployment)
     })
   })

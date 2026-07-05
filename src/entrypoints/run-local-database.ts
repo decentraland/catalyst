@@ -67,10 +67,17 @@ async function runNewPsql() {
 }
 
 async function deletePreviousPsql() {
-  const { stderr, stdout } = await execute('docker rm -f postgres')
-  if (stderr && !stderr.includes('No such container: postgres')) {
-    throw new Error('Failed to delete the existing postgres container')
-  } else if (stdout) {
-    console.log('Deleted the previous container')
+  try {
+    const { stdout } = await execute('docker rm -f postgres')
+    if (stdout) {
+      console.log('Deleted the previous container')
+    }
+  } catch (error: any) {
+    // `docker rm -f` exits non-zero when the container doesn't exist, and promisify(exec) rejects
+    // before the stderr check can run. Tolerate the "no such container" case (the common first run).
+    const stderr: string = error?.stderr ?? ''
+    if (!stderr.includes('No such container: postgres')) {
+      throw new Error('Failed to delete the existing postgres container')
+    }
   }
 }

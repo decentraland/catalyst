@@ -114,12 +114,15 @@ export async function createThirdPartyItemChecker(
     // Mark as false all urns that cannot be parsed
     for (const urn of itemUrns) {
       const parsed = await parseUrn(urn)
-      if (!parsed) {
+      const parsedThirdParty = parsed as BlockchainCollectionThirdPartyItem | null
+      // A URN can parse to a non-third-party type (truthy but without nftContractAddress/nftTokenId).
+      // Dereferencing `.nftContractAddress` blindly threw a TypeError and failed the whole batch;
+      // instead mark just this URN invalid.
+      if (!parsedThirdParty || !parsedThirdParty.nftContractAddress || parsedThirdParty.nftTokenId === undefined) {
         allUrns[urn].result = false
       } else {
-        const parsed1 = parsed as BlockchainCollectionThirdPartyItem
-        allUrns[urn].contract = parsed1.nftContractAddress.toLowerCase()
-        allUrns[urn].nftId = parsed1.nftTokenId
+        allUrns[urn].contract = parsedThirdParty.nftContractAddress.toLowerCase()
+        allUrns[urn].nftId = parsedThirdParty.nftTokenId
       }
     }
 

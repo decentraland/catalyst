@@ -43,21 +43,65 @@ export const DEFAULT_MAX_UPLOAD_FIELD_SIZE = 100 * 1024 // 100 KB per field valu
 // disk (instead of buffering) would remove the memory exposure entirely and is the proper follow-up.
 export const DEFAULT_MAX_UPLOAD_TOTAL_SIZE = 2 * 1024 * 1024 * 1024 // 2 GiB total per request
 
+// Body cap for the JSON endpoints that buffer the whole request into memory before validating it
+// (POST /entities/active). The schema's `maxItems: 1000` can't help because JSON parsing happens
+// before validation, so without this an unauthenticated client can stream an arbitrarily large body
+// and OOM the process. 10 MB comfortably fits 1000 pointer/id strings.
+export const DEFAULT_MAX_ACTIVE_ENTITIES_BODY_SIZE = 10 * 1024 * 1024 // 10 MB
+
 /**
  * Parse a non-negative integer env var, falling back to `defaultValue` when it is unset/empty.
- * Throws on an invalid value rather than letting `parseInt` return `NaN`: busboy treats a `NaN`
- * limit as "no limit", which would silently disable an upload cap the operator believed they set.
+ * Throws on an invalid value (including partial parses like "256MB") rather than letting `parseInt`
+ * return a truncated number or `NaN`: consumers such as busboy treat `NaN` as "no limit" and library
+ * validators (lru-cache, p-queue, prom-client) throw on a non-integer, either of which turns a
+ * mistyped env var into a silently-disabled cap or a startup crash.
  */
 function parseNonNegativeIntEnv(name: string, defaultValue: number): number {
   const raw = process.env[name]
   if (raw === undefined || raw === '') {
     return defaultValue
   }
-  const parsed = parseInt(raw, 10)
-  if (isNaN(parsed) || parsed < 0) {
+  const trimmed = raw.trim()
+  if (!/^\d+$/.test(trimmed)) {
     throw new Error(`Invalid ${name}: expected a non-negative integer but got "${raw}"`)
   }
+  const parsed = parseInt(trimmed, 10)
+  // Reject values that don't round-trip through a JS number (> 2^53): parseInt would silently lose
+  // precision, enforcing a cap different from what the operator typed.
+  if (!Number.isSafeInteger(parsed)) {
+    throw new Error(`Invalid ${name}: value "${raw}" is too large to represent exactly`)
+  }
   return parsed
+}
+
+/**
+ * Like `parseNonNegativeIntEnv` but returns `undefined` when the var is unset/empty, so the consumer
+ * can fall back to its own (library) default. Still throws on a malformed value.
+ */
+function parseOptionalNonNegativeIntEnv(name: string): number | undefined {
+  const raw = process.env[name]
+  if (raw === undefined || raw === '') {
+    return undefined
+  }
+  return parseNonNegativeIntEnv(name, 0)
+}
+
+/**
+ * Parse a duration env var (e.g. "6h", "30m", or a plain-millisecond string) into milliseconds,
+ * falling back to `defaultValue` when unset/empty. Throws on an unparseable value instead of
+ * forwarding a raw string or `NaN` to consumers (`setTimeout`, the job scheduler) that would
+ * silently degrade into a ~1ms hot loop.
+ */
+function parseMsEnv(name: string, defaultValue: number): number {
+  const raw = process.env[name]
+  if (raw === undefined || raw === '') {
+    return defaultValue
+  }
+  const value = ms(raw)
+  if (value === undefined || Number.isNaN(value)) {
+    throw new Error(`Invalid ${name}: expected a duration (e.g. "6h") but got "${raw}"`)
+  }
+  return value
 }
 export const DEFAULT_ETH_NETWORK = 'sepolia'
 
@@ -110,7 +154,12 @@ export class Environment implements IConfigComponent {
   }
 
   getString(name: string): Promise<string | undefined> {
-    return this.getConfig(EnvironmentConfig[name])
+    const key = EnvironmentConfig[name as keyof typeof EnvironmentConfig]
+    const value = key !== undefined ? this.getConfig(key) : undefined
+    // Fall back to the raw env var for keys not modelled in EnvironmentConfig (e.g.
+    // WKC_METRICS_BEARER_TOKEN, read by the http-server instrumentation to guard /metrics).
+    // Without this such keys resolve to `undefined` no matter what the operator sets.
+    return (value ?? process.env[name]) as any
   }
 
   getNumber(name: string): Promise<number | undefined> {
@@ -135,7 +184,21 @@ export class Environment implements IConfigComponent {
 
   logConfigValues(logger: ILoggerComponent.ILogger): void {
     logger.info('These are the configuration values:')
-    const sensitiveEnvs = [EnvironmentConfig.PSQL_PASSWORD, EnvironmentConfig.PSQL_USER]
+    // Provider/subgraph URLs commonly embed an API key in the path or userinfo (Infura, The Graph
+    // gateway), so they are redacted alongside the DB credentials to keep secrets out of logs.
+    const sensitiveEnvs = [
+      EnvironmentConfig.PSQL_PASSWORD,
+      EnvironmentConfig.PSQL_USER,
+      EnvironmentConfig.L1_HTTP_PROVIDER_URL,
+      EnvironmentConfig.L2_HTTP_PROVIDER_URL,
+      EnvironmentConfig.ENS_OWNER_PROVIDER_URL,
+      EnvironmentConfig.LAND_MANAGER_SUBGRAPH_URL,
+      EnvironmentConfig.COLLECTIONS_L1_SUBGRAPH_URL,
+      EnvironmentConfig.COLLECTIONS_L2_SUBGRAPH_URL,
+      EnvironmentConfig.THIRD_PARTY_REGISTRY_L2_SUBGRAPH_URL,
+      EnvironmentConfig.BLOCKS_L1_SUBGRAPH_URL,
+      EnvironmentConfig.BLOCKS_L2_SUBGRAPH_URL
+    ]
     for (const [config, value] of this.configs.entries()) {
       if (!sensitiveEnvs.includes(config)) {
         logger.info(`${EnvironmentConfig[config]}: ${this.printObject(value)}`)
@@ -215,6 +278,7 @@ export enum EnvironmentConfig {
   MAX_UPLOAD_FIELD_COUNT,
   MAX_UPLOAD_FIELD_SIZE,
   MAX_UPLOAD_TOTAL_SIZE,
+  MAX_ACTIVE_ENTITIES_BODY_SIZE,
   SUBGRAPH_COMPONENT_RETRIES,
   SUBGRAPH_COMPONENT_QUERY_TIMEOUT,
 
@@ -274,21 +338,15 @@ export class EnvironmentBuilder {
       EnvironmentConfig.SYNC_IGNORED_ENTITY_TYPES,
       () => process.env.SYNC_IGNORED_ENTITY_TYPES ?? ''
     )
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.FOLDER_MIGRATION_MAX_CONCURRENCY,
-      () => process.env.FOLDER_MIGRATION_MAX_CONCURRENCY ?? DEFAULT_FOLDER_MIGRATION_MAX_CONCURRENCY
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.FOLDER_MIGRATION_MAX_CONCURRENCY, () =>
+      parseNonNegativeIntEnv('FOLDER_MIGRATION_MAX_CONCURRENCY', DEFAULT_FOLDER_MIGRATION_MAX_CONCURRENCY)
     )
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.HTTP_SERVER_PORT,
-      () => process.env.HTTP_SERVER_PORT ?? DEFAULT_HTTP_SERVER_PORT
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.HTTP_SERVER_PORT, () =>
+      parseNonNegativeIntEnv('HTTP_SERVER_PORT', DEFAULT_HTTP_SERVER_PORT)
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_REQUESTS, () => process.env.LOG_REQUESTS !== 'false')
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL,
-      () => process.env.UPDATE_FROM_DAO_INTERVAL ?? ms('30m')
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL, () =>
+      parseMsEnv('UPDATE_FROM_DAO_INTERVAL', ms('30m'))
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DECENTRALAND_ADDRESS, () => DECENTRALAND_ADDRESS)
     this.registerConfigIfNotAlreadySet(
@@ -299,10 +357,8 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DEPLOYMENTS_DEFAULT_RATE_LIMIT_TTL, () =>
       Math.floor(ms((process.env.DEPLOYMENTS_DEFAULT_RATE_LIMIT_TTL ?? '1m') as string) / 1000)
     )
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.DEPLOYMENTS_DEFAULT_RATE_LIMIT_MAX,
-      () => process.env.DEPLOYMENTS_DEFAULT_RATE_LIMIT_MAX ?? 300
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DEPLOYMENTS_DEFAULT_RATE_LIMIT_MAX, () =>
+      parseNonNegativeIntEnv('DEPLOYMENTS_DEFAULT_RATE_LIMIT_MAX', 300)
     )
     this.registerConfigIfNotAlreadySet(
       env,
@@ -325,7 +381,9 @@ export class EnvironmentBuilder {
       EnvironmentConfig.BOOTSTRAP_FROM_SCRATCH,
       () => process.env.BOOTSTRAP_FROM_SCRATCH === 'true'
     )
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.REQUEST_TTL_BACKWARDS, () => ms('20m'))
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.REQUEST_TTL_BACKWARDS, () =>
+      parseMsEnv('REQUEST_TTL_BACKWARDS', ms('20m'))
+    )
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.ENS_OWNER_PROVIDER_URL,
@@ -418,10 +476,8 @@ export class EnvironmentBuilder {
       EnvironmentConfig.PSQL_SCHEMA,
       () => process.env.POSTGRES_SCHEMA ?? DEFAULT_DATABASE_CONFIG.schema
     )
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.PSQL_PORT,
-      () => process.env.POSTGRES_PORT ?? DEFAULT_DATABASE_CONFIG.port
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PSQL_PORT, () =>
+      parseNonNegativeIntEnv('POSTGRES_PORT', DEFAULT_DATABASE_CONFIG.port)
     )
 
     this.registerConfigIfNotAlreadySet(
@@ -429,10 +485,8 @@ export class EnvironmentBuilder {
       EnvironmentConfig.GARBAGE_COLLECTION,
       () => process.env.GARBAGE_COLLECTION === 'true'
     )
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL,
-      () => process.env.GARBAGE_COLLECTION_INTERVAL ?? ms('6h')
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL, () =>
+      parseMsEnv('GARBAGE_COLLECTION_INTERVAL', ms('6h'))
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.BLOOM_FILTER_EXPECTED_ELEMENTS, () => {
       const parsed = parseInt(process.env.BLOOM_FILTER_EXPECTED_ELEMENTS ?? '', 10)
@@ -499,10 +553,9 @@ export class EnvironmentBuilder {
       () => process.env.HTTP_SERVER_HOST || DEFAULT_HTTP_SERVER_HOST
     )
 
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.ENTITIES_CACHE_SIZE,
-      () => process.env.ENTITIES_CACHE_SIZE ?? DEFAULT_ENTITIES_CACHE_SIZE
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ENTITIES_CACHE_SIZE, () =>
+      // Floored at 1: lru-cache rejects a 0/negative `max` at construction.
+      Math.max(1, parseNonNegativeIntEnv('ENTITIES_CACHE_SIZE', DEFAULT_ENTITIES_CACHE_SIZE))
     )
 
     /*
@@ -513,10 +566,13 @@ export class EnvironmentBuilder {
       const rateLimitMaxConfig: Map<EntityType, number> = new Map(
         Object.entries(process.env)
           .filter(([name, value]) => name.startsWith('DEPLOYMENT_RATE_LIMIT_MAX_') && !!value)
-          .map(([name, value]) => [
-            parseEntityType(name.replace('DEPLOYMENT_RATE_LIMIT_MAX_', '')) as EntityType,
-            value as any as number
-          ])
+          .map(([name]) => {
+            // Strict parse (same rules as parseNonNegativeIntEnv, which reads process.env[name]) so a
+            // mistyped value like "1_000" or "256MB" is rejected rather than silently truncated to a
+            // far-too-low rate-limit cap.
+            const parsed = parseNonNegativeIntEnv(name, 0)
+            return [parseEntityType(name.replace('DEPLOYMENT_RATE_LIMIT_MAX_', '')) as EntityType, parsed]
+          })
       )
       return rateLimitMaxConfig ?? new Map()
     })
@@ -538,10 +594,8 @@ export class EnvironmentBuilder {
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.VALIDATE_API, () => process.env.VALIDATE_API == 'true')
 
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.RETRY_FAILED_DEPLOYMENTS_DELAY_TIME,
-      () => process.env.RETRY_FAILED_DEPLOYMENTS_DELAY_TIME ?? ms('15m')
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.RETRY_FAILED_DEPLOYMENTS_DELAY_TIME, () =>
+      parseMsEnv('RETRY_FAILED_DEPLOYMENTS_DELAY_TIME', ms('15m'))
     )
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.READ_ONLY, () => process.env.READ_ONLY == 'true')
@@ -564,6 +618,12 @@ export class EnvironmentBuilder {
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE, () =>
       parseNonNegativeIntEnv('MAX_UPLOAD_TOTAL_SIZE', DEFAULT_MAX_UPLOAD_TOTAL_SIZE)
+    )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_ACTIVE_ENTITIES_BODY_SIZE, () =>
+      // No flooring: createBodySizeLimitMiddleware rejects a value < 1 loudly at startup. Flooring a
+      // mistaken 0 up to 1 would instead install a silent 1-byte cap that rejects every request.
+      parseNonNegativeIntEnv('MAX_ACTIVE_ENTITIES_BODY_SIZE', DEFAULT_MAX_ACTIVE_ENTITIES_BODY_SIZE)
     )
 
     this.registerConfigIfNotAlreadySet(
@@ -607,9 +667,7 @@ export class EnvironmentBuilder {
       process.env.STORAGE_DECOMPRESS_CACHE_TTL ? ms(process.env.STORAGE_DECOMPRESS_CACHE_TTL) : undefined
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.STORAGE_DECOMPRESS_CACHE_MAX_SIZE, () =>
-      process.env.STORAGE_DECOMPRESS_CACHE_MAX_SIZE
-        ? parseInt(process.env.STORAGE_DECOMPRESS_CACHE_MAX_SIZE, 10)
-        : undefined
+      parseOptionalNonNegativeIntEnv('STORAGE_DECOMPRESS_CACHE_MAX_SIZE')
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.STORAGE_DECOMPRESS_CACHE_EVICTION_INTERVAL, () =>
       process.env.STORAGE_DECOMPRESS_CACHE_EVICTION_INTERVAL
@@ -617,9 +675,7 @@ export class EnvironmentBuilder {
         : undefined
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.STORAGE_DECOMPRESS_MAX_FILE_SIZE, () =>
-      process.env.STORAGE_DECOMPRESS_MAX_FILE_SIZE
-        ? parseInt(process.env.STORAGE_DECOMPRESS_MAX_FILE_SIZE, 10)
-        : undefined
+      parseOptionalNonNegativeIntEnv('STORAGE_DECOMPRESS_MAX_FILE_SIZE')
     )
 
     return env

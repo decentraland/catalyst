@@ -14,6 +14,12 @@ export async function getERC721EntityHandler(
   const { database, activeEntities, entities, denylist } = context.components
   const { chainId, contract, option, emission } = context.params
 
+  // Reject anything that isn't a plain integer before parseInt, which would otherwise accept trailing
+  // garbage (e.g. "1abc" → 1) and silently treat it as a valid chain.
+  if (!/^\d+$/.test(chainId)) {
+    throw new InvalidRequestError(`Invalid chainId '${chainId}'`)
+  }
+
   const protocol = getURNProtocol(parseInt(chainId, 10))
 
   if (!protocol) {

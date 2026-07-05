@@ -163,6 +163,7 @@ export async function createDatabase(
          */
         const client: PoolClient = await pool.connect()
         components.metrics.increment('dcl_db_tx_acquired_clients_total')
+        let rollbackFailed = false
         try {
           await client.query('BEGIN')
           const databaseWithNewClient = await createDatabaseClient(client)
@@ -170,13 +171,23 @@ export async function createDatabase(
           await client.query('COMMIT')
           endTimer({ status: 'success' })
         } catch (error) {
-          await client.query('ROLLBACK')
           endTimer({ status: 'error' })
           logger.error(`Error running ${durationQueryNameLabel ?? ''} transaction:`)
-          logger.error(error)
+          logger.error(error as Error)
+          // ROLLBACK can itself fail (e.g. client-side query_timeout on the busy connection). If it
+          // does, the original error must still surface, and the connection must be destroyed rather
+          // than returned to the pool with an aborted transaction still open (which would poison the
+          // next borrower with "current transaction is aborted").
+          try {
+            await client.query('ROLLBACK')
+          } catch (rollbackError) {
+            rollbackFailed = true
+            logger.error(`Error rolling back ${durationQueryNameLabel ?? ''} transaction:`)
+            logger.error(rollbackError as Error)
+          }
           throw error
         } finally {
-          client.release()
+          client.release(rollbackFailed)
           components.metrics.increment('dcl_db_tx_released_clients_total')
         }
       }

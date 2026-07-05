@@ -1,4 +1,4 @@
-import { Router } from '@dcl/http-server'
+import { Router, createBodySizeLimitMiddleware } from '@dcl/http-server'
 import { createSchemaValidatorComponent } from '@dcl/schema-validator-component'
 import { EnvironmentConfig } from '../Environment'
 import { multipartParserWrapper } from './multipart'
@@ -55,6 +55,9 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
   router.get('/entities/active/collections/:collectionUrn', getEntitiesByCollectionPointerPrefixHandler)
   router.post(
     '/entities/active',
+    // Cap the body before the schema validator or handler buffer it into memory: JSON parsing
+    // happens before schema validation, so the schema's `maxItems` can't prevent an OOM on its own.
+    createBodySizeLimitMiddleware(env.getConfig<number>(EnvironmentConfig.MAX_ACTIVE_ENTITIES_BODY_SIZE)),
     schemaValidator.withSchemaValidatorMiddleware(activeEntitiesBodySchema),
     getActiveEntitiesHandler
   )

@@ -1,5 +1,5 @@
 import { IJobComponent } from '@dcl/job-component'
-import { IBaseComponent, START_COMPONENT } from '@well-known-components/interfaces'
+import { IBaseComponent, START_COMPONENT, STOP_COMPONENT } from '@well-known-components/interfaces'
 import future from 'fp-future'
 import { AppComponents } from '../../types'
 import { ISyncOrchestrator, State, SyncJob } from './types'
@@ -63,6 +63,11 @@ export function createSyncOrchestrator(
     getState() {
       return state
     },
-    toSyncing
+    toSyncing,
+    // Owned lifecycle: the retry job isn't in AppComponents, so stop it here on shutdown. Cancels the
+    // job's sleep and awaits any in-flight retry so it doesn't run against a draining DB pool.
+    async [STOP_COMPONENT]() {
+      await retryFailedDeploymentsJob[STOP_COMPONENT]?.()
+    }
   }
 }

@@ -1,6 +1,6 @@
 import { PostEntity200, PostEntity400 } from '@dcl/catalyst-api-specs/lib/client'
 import { Field } from '@well-known-components/multipart-wrapper'
-import { AuthChain, Authenticator, AuthLink, EthAddress, Signature } from '@dcl/crypto'
+import { AuthChain, AuthLink, EthAddress } from '@dcl/crypto'
 import { DeploymentContext, isInvalidDeployment, isSuccessfulDeployment } from '../../deployment-types'
 import { FormHandlerContextWithPath } from '../../types'
 import { InvalidRequestError } from '../errors'
@@ -34,22 +34,20 @@ export async function createEntity(
   const entityId: string = entityIdField.value
   const userAgent: string = context.request.headers.get('user-agent') ?? 'unknown'
 
-  let authChain = extractAuthChain(context.formData.fields)
+  const authChain = extractAuthChain(context.formData.fields)
   // Null-safe: a client-supplied `authChain` JSON can parse to an array whose first element is
   // missing or not an object (e.g. `[]`, `[null]`). Reading `.payload` directly would throw a
   // TypeError here — before the try/catch below — and surface as a 500. The structural check is
-  // left to AuthChain.validate(), which returns a clean 400.
+  // left to AuthChain.validate(), which returns a clean 400. Used only for logging.
   const ethAddress: EthAddress = authChain?.[0]?.payload ?? ''
-  const signature: Signature = context.formData.fields.signature?.value
 
-  if (authChain) {
-    if (!AuthChain.validate(authChain)) {
-      throw new InvalidRequestError('Invalid auth chain')
-    }
-  } else if (ethAddress && signature) {
-    authChain = Authenticator.createSimpleAuthChain(entityId, ethAddress, signature)
-  } else {
+  // `authChain` is required. The previous "simple auth chain" fallback was dead code: it derived the
+  // address from the very authChain whose absence was its precondition, so it could never run.
+  if (!authChain) {
     throw new InvalidRequestError('No auth chain can be derivated')
+  }
+  if (!AuthChain.validate(authChain)) {
+    throw new InvalidRequestError('Invalid auth chain')
   }
 
   const deployFiles: ContentFile[] = []

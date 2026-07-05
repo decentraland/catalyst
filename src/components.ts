@@ -13,6 +13,7 @@ import { createTracedFetcherComponent } from '@dcl/traced-fetch-component'
 import { createFetchComponent } from '@dcl/fetch-component'
 import { toCoreFetcher } from './logic/to-core-fetcher'
 import { createHttpTracerComponent } from '@dcl/http-tracer-component'
+import { START_COMPONENT, STOP_COMPONENT } from '@well-known-components/interfaces'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTracerComponent } from '@well-known-components/tracer-component'
 import { HTTPProvider } from 'eth-connect'
@@ -435,29 +436,37 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     { config, logs },
     {
       cors: {
+        // Requests are authenticated by signature (auth-chain), not cookies/sessions, so credentialed
+        // CORS is unnecessary — and `origin: true` + `credentials: true` is the wildcard-with-credentials
+        // pattern that would let any site ride a user's credentials the moment cookie auth is added.
         origin: true,
-        methods: ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'CONNECT', 'TRACE', 'PATCH', 'OPTION'],
+        methods: ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
         allowedHeaders: ['Cache-Control', 'Content-Type', 'Origin', 'Accept', 'User-Agent', 'X-Upload-Origin'],
-        credentials: true,
         maxAge: 86400
       }
     }
   )
 
+  // Guard against a stop-before-start: if another component's START throws mid-startup, the WKC
+  // lifecycle calls STOP on every component, and terminating a server that never listened throws.
+  // The lifecycle drives components through the symbol-keyed methods, so the guard must override
+  // those (overriding only the string `start`/`stop` would be dead code the lifecycle never calls).
   let started = false
+  const startServer = async (options: any) => {
+    started = true
+    await _server[START_COMPONENT]?.(options)
+  }
+  const stopServer = async () => {
+    if (started) {
+      return _server[STOP_COMPONENT]?.()
+    }
+  }
   const server = {
     ..._server,
-    start: async (options: any) => {
-      started = true
-      if (_server.start) {
-        await _server.start(options)
-      }
-    },
-    stop: async () => {
-      if (started && _server.stop) {
-        return _server.stop()
-      }
-    }
+    start: startServer,
+    stop: stopServer,
+    [START_COMPONENT]: startServer,
+    [STOP_COMPONENT]: stopServer
   }
 
   const buildInfo = {

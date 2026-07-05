@@ -79,7 +79,12 @@ export function createContentCluster(
       timeOfLastSync = Date.now()
 
       for (const cb of syncFinishedEventCallbacks) {
-        cb(serverClients)
+        // Callbacks may be async and reject (e.g. syncWithServers rejects once the synchronizer is
+        // stopped). Catch here so a rejected promise doesn't become an unhandled rejection that
+        // crashes the process during shutdown.
+        Promise.resolve(cb(serverClients)).catch((callbackError) => {
+          logger.error(`A sync-finished callback failed \n${callbackError}`)
+        })
       }
     } catch (error) {
       logger.error(`Failed to sync with the DAO \n${error}`)

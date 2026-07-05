@@ -19,8 +19,15 @@ export function createQueryParams(): IQueryParams {
       })
     },
     qsGetArray(queryParams: QueryParams, paramName: string): string[] {
-      const parsedParam = (queryParams[paramName] as string[]) || []
-      return Array.isArray(parsedParam) ? parsedParam : [parsedParam]
+      const parsedParam = queryParams[paramName]
+      // Treat a missing or empty value as absent (matches the previous `|| []`), so `?pointer=` is
+      // ignored rather than becoming a spurious empty-string filter term.
+      if (!parsedParam) return []
+      // `qs.parse` (depth > 0) turns bracket notation like `?pointer[x]=y` into a nested object, so a
+      // value here can be an object rather than a string. Keep only string elements — downstream
+      // callers do `.toLowerCase()`/`parseEntityType()`, which throw (→ 500) on a non-string.
+      const asArray = Array.isArray(parsedParam) ? parsedParam : [parsedParam]
+      return asArray.filter((value): value is string => typeof value === 'string')
     },
     qsGetNumber(queryParams: QueryParams, paramName: string): number | undefined {
       if (!queryParams[paramName]) return undefined
