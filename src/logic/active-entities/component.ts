@@ -355,11 +355,14 @@ export function createActiveEntitiesComponent(
     // Collection URN or Third Party ID
     collectionUrn: string,
     offset: number,
-    limit: number
+    limit: number,
+    // Optional: the caller (handler) has already parsed the URN to validate it, so it can pass whether
+    // this is a third-party collection to avoid a second parseUrn (a ~22-regex parser) per request.
+    isThirdPartyCollectionHint?: boolean
   ): Promise<{ total: number; entities: Entity[] }> {
     const database = components.database
-    const parsedUrn = await parseUrn(collectionUrn)
-    const isThirdPartyCollection = parsedUrn?.type === 'blockchain-collection-third-party-name'
+    const isThirdPartyCollection =
+      isThirdPartyCollectionHint ?? (await parseUrn(collectionUrn))?.type === 'blockchain-collection-third-party-name'
     const entityIds = await (isThirdPartyCollection
       ? thirdPartyItemsEntityIdsByPrefixCache.fetch(collectionUrn)
       : collectionItemsEntityIdsByPrefixCache.fetch(collectionUrn))

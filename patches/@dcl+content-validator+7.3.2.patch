@@ -1,0 +1,35 @@
+diff --git a/node_modules/@dcl/content-validator/dist/validations/index.js b/node_modules/@dcl/content-validator/dist/validations/index.js
+index 071717c..42fa661 100644
+--- a/node_modules/@dcl/content-validator/dist/validations/index.js
++++ b/node_modules/@dcl/content-validator/dist/validations/index.js
+@@ -19,18 +19,26 @@ const size_1 = require("./size");
+  */
+ async function calculateDeploymentSize(deployment, externalCalls) {
+     let totalSize = 0;
++    // Files not already uploaded need their size fetched from storage. Collect them and fetch in
++    // parallel instead of awaiting one at a time — a synced multi-file entity (scene) otherwise does
++    // N sequential storage round-trips here.
++    const hashesToFetch = [];
+     for (const hash of new Set(deployment.entity.content?.map((item) => item.hash) ?? [])) {
+         const uploadedFile = deployment.files.get(hash);
+         if (uploadedFile) {
+             totalSize += uploadedFile.byteLength;
+         }
+         else {
+-            const contentSize = await externalCalls.fetchContentFileSize(hash);
+-            if (contentSize === undefined)
+-                return `Couldn't fetch content file with hash: ${hash}`;
+-            totalSize += contentSize;
++            hashesToFetch.push(hash);
+         }
+     }
++    const fetchedSizes = await Promise.all(hashesToFetch.map((hash) => externalCalls.fetchContentFileSize(hash)));
++    for (let i = 0; i < fetchedSizes.length; i++) {
++        const contentSize = fetchedSizes[i];
++        if (contentSize === undefined)
++            return `Couldn't fetch content file with hash: ${hashesToFetch[i]}`;
++        totalSize += contentSize;
++    }
+     return totalSize;
+ }
+ /**

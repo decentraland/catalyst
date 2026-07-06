@@ -1,6 +1,8 @@
 import { Entity, EntityType, PointerChangesSyncDeployment } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
+import PQueue from 'p-queue'
 import SQL, { SQLStatement } from 'sql-template-strings'
+import { EnvironmentConfig } from '../../Environment'
 import { HistoricalDeployment, HistoricalDeploymentsRow } from '../../adapters/deployments-repository'
 import {
   AuditInfo,
@@ -55,6 +57,7 @@ export async function retryFailedDeploymentExecution(
     | 'failedDeployments'
     | 'storage'
     | 'batchDeployer'
+    | 'env'
   >,
   logger?: ILoggerComponent.ILogger
 ): Promise<void> {
@@ -65,12 +68,25 @@ export async function retryFailedDeploymentExecution(
   // TODO: there may be chances that failed deployments are not part of all catalyst in cluster
   const contentServersUrls = components.contentCluster.getAllServersInCluster()
 
+  // Retry with bounded parallelism (same bound as sync deploys) instead of one-at-a-time, so a large
+  // failed-deployment backlog drains faster. Each retry still holds a DB connection for its deploy
+  // transaction, so the concurrency cap keeps them from starving foreground reads. Two retries for the
+  // same pointer just conflict on the in-process pointer lock — the loser re-fails and is retried next
+  // cycle, which is benign for a retry job.
+  const concurrency = Math.max(1, components.env.getConfig<number>(EnvironmentConfig.SYNC_DEPLOY_CONCURRENCY) ?? 10)
+  const queue = new PQueue({ concurrency })
+
   // TODO: Implement an exponential backoff for retrying
   for (const failedDeployment of failedDeployments) {
     // Build Deployment from other servers
     const { entityId, entityType, authChain } = failedDeployment
 
-    if (authChain) {
+    if (!authChain) {
+      logs.info(`Can't retry failed deployment. Because it lacks of authChain`, { entityId, entityType })
+      continue
+    }
+
+    void queue.add(async () => {
       logs.debug(`Will retry to deploy entity`, { entityId, entityType })
       try {
         await components.batchDeployer.deployEntityFromRemoteServer(
@@ -91,10 +107,10 @@ export async function retryFailedDeploymentExecution(
         logs.error(`Failed to fix deployment of entity`, { entityId, entityType, errorDescription })
         logs.error(error)
       }
-    } else {
-      logs.info(`Can't retry failed deployment. Because it lacks of authChain`, { entityId, entityType })
-    }
+    })
   }
+
+  await queue.onIdle()
 }
 
 export function mapDeploymentsToEntities(deployments: Deployment[]): Entity[] {

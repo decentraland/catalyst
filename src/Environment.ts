@@ -282,6 +282,10 @@ export enum EnvironmentConfig {
   SUBGRAPH_COMPONENT_RETRIES,
   SUBGRAPH_COMPONENT_QUERY_TIMEOUT,
 
+  // Sync throughput knobs (parallel remote-entity downloads / deploys during bootstrap and catch-up)
+  SYNC_DOWNLOAD_CONCURRENCY,
+  SYNC_DEPLOY_CONCURRENCY,
+
   // List of entity types ignored during the synchronization
   SYNC_IGNORED_ENTITY_TYPES,
   IGNORE_BLOCKCHAIN_ACCESS_CHECKS,
@@ -662,6 +666,15 @@ export class EnvironmentBuilder {
       env,
       EnvironmentConfig.SUBGRAPH_COMPONENT_QUERY_TIMEOUT,
       () => process.env.SUBGRAPH_COMPONENT_QUERY_TIMEOUT ?? ms('1m')
+    )
+    // Parallel remote-entity download/deploy limits during sync. Default 10 (the previous hardcoded
+    // value); floored at 1 so a mistaken 0 can't stall sync. Keep the deploy limit at or below the pg
+    // pool size so synced deploys don't starve foreground reads of connections.
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SYNC_DOWNLOAD_CONCURRENCY, () =>
+      Math.max(1, parseNonNegativeIntEnv('SYNC_DOWNLOAD_CONCURRENCY', 10))
+    )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SYNC_DEPLOY_CONCURRENCY, () =>
+      Math.max(1, parseNonNegativeIntEnv('SYNC_DEPLOY_CONCURRENCY', 10))
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.STORAGE_DECOMPRESS_CACHE_TTL, () =>
       process.env.STORAGE_DECOMPRESS_CACHE_TTL ? ms(process.env.STORAGE_DECOMPRESS_CACHE_TTL) : undefined

@@ -85,7 +85,9 @@ describe('when retrieving active entities by a collection URN prefix', () => {
     if (shouldBeValid) {
       it('should call the withPrefix method with the URN prefix', async () => {
         await getEntitiesByCollectionPointerPrefixHandler(context)
-        expect(withPrefixMock).toHaveBeenCalledWith(urn, 0, 100)
+        // The handler passes the already-parsed is-third-party hint as the 4th arg so withPrefix
+        // doesn't re-parse the URN; the exact boolean depends on the URN type under test.
+        expect(withPrefixMock).toHaveBeenCalledWith(urn, 0, 100, expect.any(Boolean))
       })
     } else {
       it('should throw an InvalidRequestError', async () => {

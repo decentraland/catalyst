@@ -286,7 +286,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const downloadQueue = createJobQueue({
     autoStart: true,
-    concurrency: 10,
+    concurrency: env.getConfig<number>(EnvironmentConfig.SYNC_DOWNLOAD_CONCURRENCY),
     timeout: 60000
   })
 
@@ -312,7 +312,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       ignoredTypes: new Set(ignoredTypes),
       queueOptions: {
         autoStart: true,
-        concurrency: 10,
+        concurrency: env.getConfig<number>(EnvironmentConfig.SYNC_DEPLOY_CONCURRENCY),
         timeout: 100000
       },
       profileDuration: env.getConfig(EnvironmentConfig.PROFILE_DURATION)
@@ -386,7 +386,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
           contentCluster,
           failedDeployments,
           storage,
-          batchDeployer
+          batchDeployer,
+          env
         },
         logs.getLogger('RetryFailedDeployments')
       )

@@ -36,10 +36,12 @@ export async function getEntitiesByCollectionPointerPrefixHandler(
 
   const pagination = paginationObject(context.url)
 
+  // Reuse the URN we already parsed above so withPrefix doesn't parse it a second time.
   const { total, entities } = await context.components.activeEntities.withPrefix(
     collectionUrn,
     pagination.offset,
-    pagination.limit
+    pagination.limit,
+    parsedUrn.type === 'blockchain-collection-third-party-name'
   )
 
   return {
