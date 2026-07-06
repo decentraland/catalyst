@@ -150,5 +150,23 @@ describe('deployments-queries', () => {
         expect(result.text).not.toContain(`WHERE`)
       })
     })
+
+    describe('when metadata is not requested', () => {
+      it('should project NULL as entity_metadata instead of reading the column', () => {
+        const result = getHistoricalDeploymentsQuery(offset, limit, undefined, undefined, undefined, false)
+
+        expect(result.text).toContain('NULL AS entity_metadata')
+        expect(result.text).not.toContain('dep1.entity_metadata')
+      })
+    })
+
+    describe('when metadata is requested by default', () => {
+      it('should select the entity_metadata column', () => {
+        const result = getHistoricalDeploymentsQuery(offset, limit)
+
+        expect(result.text).toContain('dep1.entity_metadata')
+        expect(result.text).not.toContain('NULL AS entity_metadata')
+      })
+    })
   })
 })

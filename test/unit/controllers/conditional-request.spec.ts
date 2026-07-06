@@ -65,6 +65,11 @@ describe('when handling conditional requests', () => {
         await getContentHandler(context)
         expect(storage.retrieve).not.toHaveBeenCalled()
       })
+
+      it('should not fetch file metadata (304 is decided before touching storage)', async () => {
+        await getContentHandler(context)
+        expect(storage.fileInfo).not.toHaveBeenCalled()
+      })
     })
 
     describe('when the If-None-Match header does not match the ETag', () => {
@@ -104,6 +109,36 @@ describe('when handling conditional requests', () => {
         const response = await getContentHandler(context)
         expect(response.status).toBe(200)
         expect(response).toHaveProperty('body')
+      })
+
+      it('should serve without fetching file metadata when there is no Range', async () => {
+        await getContentHandler(context)
+        expect(storage.fileInfo).not.toHaveBeenCalled()
+        expect(storage.retrieve).toHaveBeenCalled()
+      })
+    })
+
+    describe('when a Range header is present', () => {
+      beforeEach(() => {
+        context = {
+          params: { hashId },
+          components: { storage, denylist },
+          url: new URL('http://localhost/contents/' + hashId),
+          request: {
+            method: 'GET',
+            ...createRequestMock({ range: 'bytes=0-99' })
+          }
+        } as unknown as HandlerContextWithPath<'storage' | 'denylist', '/contents/:hashId'>
+      })
+
+      it('should fetch file metadata to bound the range', async () => {
+        await getContentHandler(context)
+        expect(storage.fileInfo).toHaveBeenCalled()
+      })
+
+      it('should return a 206 partial response', async () => {
+        const response = await getContentHandler(context)
+        expect(response.status).toBe(206)
       })
     })
 
