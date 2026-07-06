@@ -286,6 +286,9 @@ export enum EnvironmentConfig {
   SYNC_DOWNLOAD_CONCURRENCY,
   SYNC_DEPLOY_CONCURRENCY,
 
+  // Max concurrent content-file size fetches during deployment size validation (default 1 = sequential)
+  CONTENT_SIZE_FETCH_CONCURRENCY,
+
   // List of entity types ignored during the synchronization
   SYNC_IGNORED_ENTITY_TYPES,
   IGNORE_BLOCKCHAIN_ACCESS_CHECKS,
@@ -675,6 +678,11 @@ export class EnvironmentBuilder {
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SYNC_DEPLOY_CONCURRENCY, () =>
       Math.max(1, parseNonNegativeIntEnv('SYNC_DEPLOY_CONCURRENCY', 10))
+    )
+    // Concurrency for content-file size fetches during size validation. Default 1 (sequential) keeps
+    // the original behavior; raise it to parallelize (bounded, so a large content list can't fan out).
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CONTENT_SIZE_FETCH_CONCURRENCY, () =>
+      Math.max(1, parseNonNegativeIntEnv('CONTENT_SIZE_FETCH_CONCURRENCY', 1))
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.STORAGE_DECOMPRESS_CACHE_TTL, () =>
       process.env.STORAGE_DECOMPRESS_CACHE_TTL ? ms(process.env.STORAGE_DECOMPRESS_CACHE_TTL) : undefined
