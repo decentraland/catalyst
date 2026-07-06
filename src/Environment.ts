@@ -679,10 +679,12 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SYNC_DEPLOY_CONCURRENCY, () =>
       Math.max(1, parseNonNegativeIntEnv('SYNC_DEPLOY_CONCURRENCY', 10))
     )
-    // Concurrency for content-file size fetches during size validation. Default 1 (sequential) keeps
-    // the original behavior; raise it to parallelize (bounded, so a large content list can't fan out).
+    // Concurrency for content-file size fetches during size validation. Default 10 (matching
+    // CONTENT_STORE_CONCURRENCY): only the sync path fetches these sizes, so this parallelizes
+    // bootstrap/catch-up. Bounded, so a large content list can't fan out; peak concurrent fetches is
+    // roughly SYNC_DEPLOY_CONCURRENCY x this. Set to 1 to restore the previous sequential behavior.
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CONTENT_SIZE_FETCH_CONCURRENCY, () =>
-      Math.max(1, parseNonNegativeIntEnv('CONTENT_SIZE_FETCH_CONCURRENCY', 1))
+      Math.max(1, parseNonNegativeIntEnv('CONTENT_SIZE_FETCH_CONCURRENCY', 10))
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.STORAGE_DECOMPRESS_CACHE_TTL, () =>
       process.env.STORAGE_DECOMPRESS_CACHE_TTL ? ms(process.env.STORAGE_DECOMPRESS_CACHE_TTL) : undefined
