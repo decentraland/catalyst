@@ -12,6 +12,13 @@ const PROFILE_CLEANUP_LIMIT = 10000
 // and the size of each storage.delete operation during a sweep.
 const GC_DELETE_BATCH_SIZE = 1000
 
+// Safety margin subtracted from the stored garbage-collection watermark. The next sweep only
+// reconsiders hashes whose overwrite committed after the watermark; a deploy that assigned an older
+// local_timestamp but committed just after the sweep started would otherwise slip below a
+// strictly-later watermark and leak forever. Rewinding the watermark by more than any plausible
+// deploy transaction duration guarantees such overwrites are re-examined next run.
+const GC_WATERMARK_SAFETY_MARGIN_MS = 10 * 60 * 1000 // 10 minutes
+
 export function createGarbageCollectionComponent(
   components: Pick<
     AppComponents,
@@ -44,14 +51,23 @@ export function createGarbageCollectionComponent(
       if (batch.length === 0) {
         return
       }
-      await components.storage.delete(batch)
+      // Re-verify immediately before deleting. The sweep query ran against an earlier DB snapshot, so
+      // a concurrent deploy may have re-referenced a hash since; and because storage is a single
+      // content-addressed namespace, a candidate hash may also be a snapshot file or an entity JSON
+      // (byte-identical files collide on hash). Never delete anything that is still referenced.
+      const stillReferenced = await components.contentFilesRepository.findReferencedHashes(components.database, batch)
+      const toDelete = batch.filter((hash) => !stillReferenced.has(hash))
+      batch = []
+      if (toDelete.length === 0) {
+        return
+      }
+      await components.storage.delete(toDelete)
       // Emit the metric per batch (after the delete) so progress is observable during a long sweep
       // and a crash mid-sweep still records what was already deleted.
-      components.metrics.increment('dcl_content_garbage_collection_items_total', {}, batch.length)
-      for (const hash of batch) {
+      components.metrics.increment('dcl_content_garbage_collection_items_total', {}, toDelete.length)
+      for (const hash of toDelete) {
         deletedHashes.add(hash)
       }
-      batch = []
     }
 
     // Stream the unused hashes and delete them in fixed-size batches, so neither the in-memory list
@@ -73,12 +89,11 @@ export function createGarbageCollectionComponent(
   }
 
   // NOTE: remove old profile deployments and their images,
-  // it will remove a max of ${PROFILE_CLEANUP_LIMIT}
+  // it will remove a max of ${PROFILE_CLEANUP_LIMIT} root profiles (plus the older versions they overwrote)
   async function gcStaleProfiles(oldProfileSince: Date): Promise<GCStaleProfilesResult> {
-    const result = await components.database.queryWithValues<{ id: string; content_hash: string }>(
-      SQL`SELECT d.id, cf.content_hash
+    const rootResult = await components.database.queryWithValues<{ id: string }>(
+      SQL`SELECT d.id
           FROM deployments d
-          LEFT JOIN content_files cf on cf.deployment = d.id
           WHERE d.entity_type = 'profile'
           AND entity_timestamp < ${oldProfileSince}
           AND NOT EXISTS (
@@ -90,7 +105,7 @@ export function createGarbageCollectionComponent(
       'gc_old_profiles_query_old_deployments'
     )
 
-    if (result.rowCount === 0) {
+    if (rootResult.rowCount === 0) {
       logger.info(`Profile cleanup: no profiles to remove`)
       return {
         deletedHashes: new Set<string>(),
@@ -98,44 +113,63 @@ export function createGarbageCollectionComponent(
       }
     }
 
+    const rootIds = rootResult.rows.map((row) => row.id)
+
+    // Expand to the full overwrite chain: every deployment (transitively) overwritten by a selected
+    // profile. Deleting the whole chain together — rather than nulling `deleter_deployment` on the
+    // survivors — prevents an old, already-overwritten version from being "resurrected" as active
+    // (deleter NULL) and re-entering snapshots, and leaves no dangling self-referential FK.
+    const chainResult = await components.database.queryWithValues<{ id: string; content_hash: string | null }>(
+      SQL`
+        WITH RECURSIVE chain AS (
+          SELECT id FROM deployments WHERE id = ANY(${rootIds})
+          UNION
+          SELECT d.id FROM deployments d INNER JOIN chain c ON d.deleter_deployment = c.id
+        )
+        SELECT chain.id, cf.content_hash
+        FROM chain
+        LEFT JOIN content_files cf ON cf.deployment = chain.id`,
+      'gc_old_profiles_expand_overwrite_chain'
+    )
+
     const deploymentsSet = new Set<string>()
     const hashesSet = new Set<string>()
-
-    for (const { id, content_hash } of result.rows) {
+    for (const { id, content_hash } of chainResult.rows) {
+      deploymentsSet.add(id)
       if (content_hash) {
         hashesSet.add(content_hash)
       }
-      deploymentsSet.add(id)
     }
 
-    const hashesInUse = await components.database.queryWithValues<{ content_hash: string }>(
-      SQL`SELECT content_hash FROM content_files cf inner join deployments d on cf.deployment = d.id WHERE content_hash = ANY(${Array.from(
-        hashesSet
-      )}) AND d.entity_timestamp > ${oldProfileSince}`,
-      'gc_old_profiles_check_hashes_in_use'
-    )
+    const deployments = Array.from(deploymentsSet)
+    const candidateHashes = Array.from(hashesSet)
 
-    for (const { content_hash } of hashesInUse.rows) {
-      hashesSet.delete(content_hash)
+    // A hash is still in use — and must be kept — if it is referenced by a deployment we are NOT
+    // deleting (e.g. a default profile shares byte-identical avatar images with the profiles built
+    // from it), or if it is a snapshot file or an entity id in the shared content-addressed storage.
+    if (candidateHashes.length > 0) {
+      const stillReferenced = await components.database.queryWithValues<{ hash: string }>(
+        SQL`
+          SELECT content_hash AS hash FROM content_files
+            WHERE content_hash = ANY(${candidateHashes}) AND deployment <> ALL(${deployments})
+          UNION
+          SELECT hash FROM snapshots WHERE hash = ANY(${candidateHashes})
+          UNION
+          SELECT entity_id AS hash FROM deployments WHERE entity_id = ANY(${candidateHashes})`,
+        'gc_old_profiles_check_hashes_in_use'
+      )
+      for (const { hash } of stillReferenced.rows) {
+        hashesSet.delete(hash)
+      }
     }
 
     const hashes = Array.from(hashesSet)
-    const deployments = Array.from(deploymentsSet)
 
-    logger.info(`Profile cleanup will remove ${hashes.length} files`)
-    await components.storage.delete(hashes)
-
-    logger.info(`Profile cleanup will remove ${hashes.length} from content_files`)
+    logger.info(`Profile cleanup will remove ${deployments.length} deployments and ${hashes.length} from content_files`)
     await components.database.transaction(async (database) => {
       await database.queryWithValues(
         SQL`DELETE FROM content_files WHERE deployment = ANY(${deployments})`,
         'gc_old_profiles_delete_content_files'
-      )
-
-      logger.info(`Profile cleanup will remove foreign keys for ${deployments.length} deployments`)
-      await database.queryWithValues(
-        SQL`UPDATE deployments SET deleter_deployment = NULL WHERE deleter_deployment = ANY(${deployments})`,
-        'gc_old_profiles_update_deployments'
       )
 
       logger.info(`Profile cleanup will remove ${deployments.length} deployments`)
@@ -145,8 +179,27 @@ export function createGarbageCollectionComponent(
       )
     }, 'gc_old_profiles')
 
+    // Delete the files from storage only after the DB transaction commits: doing it first would leave
+    // live content_files rows referencing already-deleted files if the transaction failed. A leftover
+    // file after a successful commit is reclaimed by the next unused-hashes sweep.
+    // Re-verify right before deleting (same guard as gcUnusedHashes): the in-use check above ran before
+    // the transaction, so a concurrent deploy may have re-referenced one of these hashes since. This
+    // narrows — but does not fully close — the window; a truly atomic guard would need locking.
+    let hashesToDelete = hashes
+    if (hashesToDelete.length > 0) {
+      const stillReferenced = await components.contentFilesRepository.findReferencedHashes(
+        components.database,
+        hashesToDelete
+      )
+      hashesToDelete = hashesToDelete.filter((hash) => !stillReferenced.has(hash))
+    }
+    logger.info(`Profile cleanup will remove ${hashesToDelete.length} files from storage`)
+    if (hashesToDelete.length > 0) {
+      await components.storage.delete(hashesToDelete)
+    }
+
     return {
-      deletedHashes: hashesSet,
+      deletedHashes: new Set(hashesToDelete),
       deletedDeployments: deploymentsSet
     }
   }
@@ -192,7 +245,9 @@ export function createGarbageCollectionComponent(
       return
     }
 
-    const newTimeOfCollection: number = Date.now()
+    // Persist a watermark rewound by a safety margin so overwrites committed around the sweep's start
+    // (but stamped with a slightly older local_timestamp) are reconsidered next run instead of leaking.
+    const newTimeOfCollection: number = Date.now() - GC_WATERMARK_SAFETY_MARGIN_MS
     const { end: endTimer } = components.metrics.startTimer('dcl_content_garbage_collection_time')
     try {
       lastSweepResult.gcUnusedHashResult = await gcUnusedHashes()
@@ -251,7 +306,10 @@ export function createGarbageCollectionComponent(
     unreferencedLogger.info(`Deleting files...`)
     for await (const storageFileId of components.storage.allFileIds()) {
       if (!referencedHashesBloom.has(storageFileId)) {
-        await queue.add(async () => {
+        // Enqueue without awaiting each task so up to `concurrency` deletes run in parallel; awaiting
+        // `queue.add` here would serialize them and make the concurrency setting meaningless.
+        // Backpressure keeps the queue from growing unbounded ahead of the workers.
+        void queue.add(async () => {
           try {
             await components.storage.delete([storageFileId])
             numberOfDeletedFiles++
@@ -259,8 +317,14 @@ export function createGarbageCollectionComponent(
             unreferencedLogger.error(error as Error, { storageFileId })
           }
         })
+        // Backpressure: if the queued (not-yet-started) work grows too large, wait for it to drain
+        // before enqueuing more, so a multi-million-file sweep can't buffer every task in memory.
+        if (queue.size >= GC_DELETE_BATCH_SIZE * 2) {
+          await queue.onEmpty()
+        }
       }
     }
+    await queue.onIdle()
     unreferencedLogger.info(`Deleted ${numberOfDeletedFiles} files`)
   }
 

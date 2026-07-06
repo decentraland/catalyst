@@ -17,5 +17,10 @@ export interface IContentFilesRepository {
     lastGarbageCollectionTimestamp: number,
     options?: { batchSize?: number }
   ): AsyncIterable<string>
+  /**
+   * From a set of candidate hashes, return those still referenced (by an active deployment, a
+   * snapshot, or an entity id) and therefore unsafe to delete from storage.
+   */
+  findReferencedHashes(db: DatabaseClient, hashes: string[]): Promise<Set<string>>
   streamAllDistinctContentFileHashes(db: DatabaseClient): AsyncIterable<string>
 }

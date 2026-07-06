@@ -10,6 +10,18 @@ import { HistoricalDeployment, HistoricalDeploymentsRow, IDeploymentsRepository 
 
 const ALL_ENTITY_IDS_QUERY = SQL`SELECT DISTINCT entity_id FROM deployments;`
 
+// Cap on `/contents/:hashId/active-entities`: a content hash shared by very many entities (common
+// wearable models, or attacker-manufactured entities all referencing one file) would otherwise
+// return an unbounded, fully-buffered array. Generous enough for any legitimate shared asset.
+const MAX_ACTIVE_ENTITIES_BY_CONTENT_HASH = 15000
+
+// Pointers are stored and compared in lowercase throughout so the write path matches the normalized
+// form the read paths use; entities are content-addressed and can't be rewritten, so this is the
+// single normalization boundary. See the active-entities repository for the same rationale.
+function lowercasePointers(pointers: string[]): string[] {
+  return pointers.map((p) => p.toLowerCase())
+}
+
 async function deploymentExists(database: DatabaseClient, entityId: string): Promise<boolean> {
   const result = await database.queryWithValues(
     SQL`
@@ -58,8 +70,12 @@ export function getHistoricalDeploymentsQuery(
 ): SQLStatement {
   const sorting = Object.assign({ field: SortingField.LOCAL_TIMESTAMP, order: SortingOrder.DESCENDING }, sortBy)
 
-  const timestampField: string = sorting.field
-  const order: string = sorting.order
+  // Coerce to known enum literals at the repository boundary. Both are interpolated into the SQL as
+  // raw text (order after ORDER BY; field via escapeIdentifier), so constraining them here — rather
+  // than trusting every caller to validate — is what keeps this query injection-safe.
+  const timestampField: string =
+    sorting.field === SortingField.ENTITY_TIMESTAMP ? SortingField.ENTITY_TIMESTAMP : SortingField.LOCAL_TIMESTAMP
+  const order: string = sorting.order === SortingOrder.ASCENDING ? SortingOrder.ASCENDING : SortingOrder.DESCENDING
 
   // Generate the select according the info needed
   const query: SQLStatement = SQL`
@@ -95,7 +111,7 @@ export function getHistoricalDeploymentsQuery(
   }
 
   if (filters?.pointers && filters.pointers.length > 0) {
-    const pointers = filters.pointers.map((p) => p.toLowerCase())
+    const pointers = lowercasePointers(filters.pointers)
     whereClause.push(SQL`dep1.entity_pointers && ${pointers}`)
   }
 
@@ -219,8 +235,12 @@ export function createOrClause(
 }
 
 async function getActiveDeploymentsByContentHash(database: DatabaseClient, contentHash: string): Promise<string[]> {
+  // LIMIT bounds the result (a hash shared by very many entities would otherwise return an unbounded,
+  // fully-buffered array). No ORDER BY: it would change the endpoint's observable result order that
+  // callers depend on, and the cap is a DoS guard rather than a paginated contract.
   const query = SQL`SELECT deployment.entity_id FROM deployments as deployment INNER JOIN content_files ON content_files.deployment=deployment.id
-    WHERE content_hash=${contentHash} AND deployment.deleter_deployment IS NULL;`
+    WHERE content_hash=${contentHash} AND deployment.deleter_deployment IS NULL
+    LIMIT ${MAX_ACTIVE_ENTITIES_BY_CONTENT_HASH};`
 
   const queryResult = (await database.queryWithValues(query, 'active_deployments_by_hash')).rows
 
@@ -259,11 +279,11 @@ async function saveDeployment(
   const query = SQL`INSERT INTO deployments
   (deployer_address, version, entity_type, entity_id, entity_timestamp, entity_pointers, entity_metadata, local_timestamp, auth_chain, deleter_deployment)
   VALUES
-  (${deployer}, ${entity.version}, ${entity.type}, ${entity.id}, to_timestamp(${entity.timestamp} / 1000.0), ${
-    entity.pointers
-  }, ${metadata}, to_timestamp(${auditInfo.localTimestamp} / 1000.0), ${JSON.stringify(
-    auditInfo.authChain
-  )}, ${overwrittenBy})
+  (${deployer}, ${entity.version}, ${entity.type}, ${entity.id}, to_timestamp(${
+    entity.timestamp
+  } / 1000.0), ${lowercasePointers(entity.pointers)}, ${metadata}, to_timestamp(${
+    auditInfo.localTimestamp
+  } / 1000.0), ${JSON.stringify(auditInfo.authChain)}, ${overwrittenBy})
   RETURNING id`
   const queryResult = await database.queryWithValues<{ id: number }>(query, 'save_deployment')
   return queryResult.rows[0].id
@@ -300,9 +320,17 @@ async function calculateOverwrote(database: DatabaseClient, entity: Entity): Pro
           FROM deployments AS dep1
           LEFT JOIN deployments AS dep2 ON dep1.deleter_deployment = dep2.id
           WHERE dep1.entity_type = ${entity.type} AND
-              dep1.entity_pointers && ${entity.pointers} AND
-              (dep1.entity_timestamp < to_timestamp(${entity.timestamp} / 1000.0) OR (dep1.entity_timestamp = to_timestamp(${entity.timestamp} / 1000.0) AND dep1.entity_id < ${entity.id})) AND
-              (dep2.id IS NULL OR dep2.entity_timestamp > to_timestamp(${entity.timestamp} / 1000.0) OR (dep2.entity_timestamp = to_timestamp(${entity.timestamp} / 1000.0) AND dep2.entity_id > ${entity.id}))
+              dep1.entity_pointers && ${lowercasePointers(entity.pointers)} AND
+              (dep1.entity_timestamp < to_timestamp(${
+                entity.timestamp
+              } / 1000.0) OR (dep1.entity_timestamp = to_timestamp(${entity.timestamp} / 1000.0) AND dep1.entity_id < ${
+        entity.id
+      })) AND
+              (dep2.id IS NULL OR dep2.entity_timestamp > to_timestamp(${
+                entity.timestamp
+              } / 1000.0) OR (dep2.entity_timestamp = to_timestamp(${entity.timestamp} / 1000.0) AND dep2.entity_id > ${
+        entity.id
+      }))
           ORDER BY dep1.entity_timestamp DESC, dep1.entity_id DESC`
     )
   ).rows.map((row) => row.id)
@@ -314,8 +342,9 @@ async function calculateOverwrittenByManyFast(database: DatabaseClient, entity: 
   FROM active_pointers as ap
            INNER JOIN deployments on ap.entity_id = deployments.entity_id
   WHERE ap.pointer IN (`
-  const pointers = Array.from(entity.pointers).map((pointer, idx) =>
-    idx < entity.pointers.length - 1 ? SQL`${pointer},` : SQL`${pointer}`
+  const normalizedPointers = lowercasePointers(entity.pointers)
+  const pointers = normalizedPointers.map((pointer, idx) =>
+    idx < normalizedPointers.length - 1 ? SQL`${pointer},` : SQL`${pointer}`
   )
   pointers.forEach((pointer) => q.append(pointer))
   q.append(SQL`)
@@ -333,8 +362,12 @@ async function calculateOverwrittenBySlow(database: DatabaseClient, entity: Enti
     SELECT deployments.id
     FROM deployments
     WHERE deployments.entity_type = ${entity.type} AND
-        deployments.entity_pointers && ${entity.pointers} AND
-        (deployments.entity_timestamp > to_timestamp(${entity.timestamp} / 1000.0) OR (deployments.entity_timestamp = to_timestamp(${entity.timestamp} / 1000.0) AND deployments.entity_id > ${entity.id}))
+        deployments.entity_pointers && ${lowercasePointers(entity.pointers)} AND
+        (deployments.entity_timestamp > to_timestamp(${
+          entity.timestamp
+        } / 1000.0) OR (deployments.entity_timestamp = to_timestamp(${
+        entity.timestamp
+      } / 1000.0) AND deployments.entity_id > ${entity.id}))
     ORDER BY deployments.entity_timestamp, deployments.entity_id
     LIMIT 1`
     )

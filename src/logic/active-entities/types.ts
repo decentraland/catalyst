@@ -28,6 +28,21 @@ export type ActiveEntities = IBaseComponent & {
    */
   update(database: DatabaseClient, pointers: string[], entity: Entity | NotActiveEntity): Promise<void>
   /**
+   * Mutate only the in-memory cache. Use after a transaction commits so the cache is never updated
+   * for a deployment that ends up rolled back.
+   */
+  updateInCache(pointers: string[], entity: Entity | NotActiveEntity): void
+  /**
+   * Persist only the `active_pointers` rows. Takes the DB client so it can run inside a transaction.
+   */
+  updateInDatabase(database: DatabaseClient, pointers: string[], entity: Entity | NotActiveEntity): Promise<void>
+  /**
+   * Invalidate cached collection/third-party prefix listings affected by a deploy, so a newly deployed
+   * item shows up in `/entities/active/collections/:urn` and a cleared/overwritten-off one disappears,
+   * both without waiting for the TTL. `clearedPointers` are the pointers the deploy left inactive.
+   */
+  invalidatePrefixCaches(entity: Entity, clearedPointers?: string[]): void
+  /**
    * Set pointers and entity as NOT_ACTIVE
    */
   clear(database: DatabaseClient, pointers: string[]): Promise<void>

@@ -119,7 +119,7 @@ async function fixMissingProfilesContentFiles({
       } catch (e) {
         logger.warn(
           `Error processing deployment id ${deployment.id} for entity id ${
-            deployment.entityId
+            deployment.entity_id
           }. ContentFiles: ${JSON.stringify(contentFiles)}`
         )
       }

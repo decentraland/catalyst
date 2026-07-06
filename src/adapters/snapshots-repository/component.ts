@@ -47,6 +47,7 @@ async function findSnapshotsStrictlyContainedInTimeRange(
   FROM snapshots s
   WHERE init_timestamp >= to_timestamp(${timerange.initTimestamp} / 1000.0)
   AND end_timestamp <= to_timestamp(${timerange.endTimestamp} / 1000.0)
+  ORDER BY init_timestamp
   `
   return (
     await database.queryWithValues<{
@@ -136,7 +137,7 @@ async function deleteSnapshotsInTimeRange(
   const hashes = snapshotHashesToDelete.map((h, i) => (i < snapshotHashesToDelete.length - 1 ? SQL`${h},` : SQL`${h}`))
   hashes.forEach((hash) => query.append(hash))
   query.append(`);`)
-  await database.queryWithValues(query, 'save_snapshot')
+  await database.queryWithValues(query, 'delete_snapshots_in_timerange')
 }
 
 /**
@@ -150,7 +151,8 @@ async function snapshotIsOutdated(database: DatabaseClient, snapshot: SnapshotMe
   SELECT 1 FROM deployments
   WHERE deleter_deployment IS null
   AND entity_timestamp BETWEEN to_timestamp(${snapshot.timeRange.initTimestamp} / 1000.0) AND to_timestamp(${snapshot.timeRange.endTimestamp} / 1000.0)
-  AND local_timestamp > to_timestamp(${snapshot.generationTimestamp} / 1000.0);
+  AND local_timestamp > to_timestamp(${snapshot.generationTimestamp} / 1000.0)
+  LIMIT 1;
 
   `,
     'snapshot_is_outdated'
@@ -160,9 +162,11 @@ async function snapshotIsOutdated(database: DatabaseClient, snapshot: SnapshotMe
 
 async function getNumberOfActiveEntitiesInTimeRange(database: DatabaseClient, timeRange: TimeRange): Promise<number> {
   const result = await database.queryWithValues<{ numberOfEntities: number }>(
+    // Cast to int so node-postgres returns a JS number; a bare COUNT(*) is int8 and comes back as a
+    // string, which silently breaks the `number`-typed contract for any arithmetic/serialization.
     SQL`
   SELECT
-    COUNT(*) AS "numberOfEntities"
+    COUNT(*)::int AS "numberOfEntities"
   FROM deployments
   WHERE deleter_deployment IS NULL
   AND entity_timestamp BETWEEN to_timestamp(${timeRange.initTimestamp} / 1000.0) AND to_timestamp(${timeRange.endTimestamp} / 1000.0)
@@ -191,6 +195,10 @@ async function getProcessedSnapshots(
   database: DatabaseClient,
   processedSnapshotHashes: string[]
 ): Promise<Set<string>> {
+  // Guard the empty case: an empty IN list produces the invalid SQL `hash IN ()`.
+  if (processedSnapshotHashes.length === 0) {
+    return new Set()
+  }
   const query = SQL`
   SELECT hash
   FROM processed_snapshots

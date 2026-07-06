@@ -117,10 +117,12 @@ export function createActiveEntitiesComponent(
   }
 
   /**
-   * Save entityId for given pointer and store the entity in the cache,
-   * useful to retrieve entities by pointers
+   * Mutate only the in-memory cache for the given pointers/entity. Split out from the DB write so a
+   * caller inside a transaction can persist `active_pointers` atomically and update the cache *after*
+   * the transaction commits — mutating the shared cache inside the transaction would leave it serving
+   * a phantom entity (no matching deployment row) if the transaction later rolled back.
    */
-  async function update(database: DatabaseClient, pointers: string[], entity: Entity | NotActiveEntity): Promise<void> {
+  function updateInCache(pointers: string[], entity: Entity | NotActiveEntity): void {
     for (const pointer of pointers) {
       setPreviousEntityAsNone(pointer)
       entityIdByPointers.set(pointer, isEntityPresent(entity) ? entity.id : entity)
@@ -128,11 +130,55 @@ export function createActiveEntitiesComponent(
     if (isEntityPresent(entity)) {
       cache.set(entity.id, entity)
       components.metrics.increment('dcl_entities_cache_storage_size', { entity_type: entity.type })
-      // Store in the db the new entity pointed by pointers
+    }
+  }
+
+  /**
+   * Persist the `active_pointers` rows for the given pointers/entity. Takes the DB client so a
+   * transaction can thread its own client through and commit this write atomically with the deployment.
+   */
+  async function updateInDatabase(
+    database: DatabaseClient,
+    pointers: string[],
+    entity: Entity | NotActiveEntity
+  ): Promise<void> {
+    if (isEntityPresent(entity)) {
       await components.activeEntitiesRepository.updateActiveDeployments(database, pointers, entity.id)
     } else {
-      // Remove the row from active_pointers table
       await components.activeEntitiesRepository.removeActiveDeployments(database, pointers)
+    }
+  }
+
+  /**
+   * Save entityId for given pointer and store the entity in the cache,
+   * useful to retrieve entities by pointers
+   */
+  async function update(database: DatabaseClient, pointers: string[], entity: Entity | NotActiveEntity): Promise<void> {
+    updateInCache(pointers, entity)
+    await updateInDatabase(database, pointers, entity)
+  }
+
+  /**
+   * Drop any cached collection/third-party prefix listing that the given entity belongs to. The
+   * prefix caches have a 24h TTL and are otherwise only cleared on reset, so without this a freshly
+   * deployed wearable/emote is missing from `/entities/active/collections/:urn` until the TTL expires.
+   * A cached key is invalidated when it is a prefix of one of the entity's pointers.
+   */
+  function invalidatePrefixCaches(entity: Entity, clearedPointers: string[] = []): void {
+    // Only item entities can appear in these listings; skip the work for scenes/profiles/etc.
+    if (entity.type !== EntityType.WEARABLE && entity.type !== EntityType.EMOTE) return
+    // Only the collection-items prefix cache is invalidated: it is backed by the live `active_pointers`
+    // table, so re-querying after invalidation returns fresh results. The third-party prefix cache is
+    // backed by a materialized view that only refreshes on a schedule (materializedViewUpdateJob), so
+    // invalidating it would just force an expensive re-query that still returns stale data until the
+    // next refresh — the MV, not the cache TTL, is the freshness bound there.
+    // Invalidate for the entity's own pointers (a newly deployed item must appear) and the pointers
+    // this deploy cleared (a removed/overwritten-off item must disappear).
+    const affectedPointers = [...entity.pointers, ...clearedPointers].map((pointer) => pointer.toLowerCase())
+    for (const key of [...collectionItemsEntityIdsByPrefixCache.keys()]) {
+      if (affectedPointers.some((pointer) => pointer.startsWith(key.toLowerCase()))) {
+        collectionItemsEntityIdsByPrefixCache.delete(key)
+      }
     }
   }
 
@@ -192,7 +238,13 @@ export function createActiveEntitiesComponent(
     }
 
     const entities = mapDeploymentsToEntities(deployments)
-    void updateCache(database, entities, { pointers, entityIds })
+    // Fire-and-forget the cache write so this read (GET /entities/active) doesn't block on — or fail
+    // with — an `active_pointers` write: the caller already has its result in `entities`. `.catch`
+    // handles the rejection that would otherwise be unhandled; awaiting it instead would turn a
+    // transient write error (deadlock, read-only replica) into a 500 on an otherwise-successful read.
+    void updateCache(database, entities, { pointers, entityIds }).catch((error) =>
+      logger.error(`Failed to update the active entities cache: ${error}`)
+    )
 
     return entities
   }
@@ -348,6 +400,9 @@ export function createActiveEntitiesComponent(
     withPointers,
     withPrefix,
     update,
+    updateInCache,
+    updateInDatabase,
+    invalidatePrefixCaches,
     clear,
     clearPointers,
     getCachedEntity

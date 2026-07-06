@@ -1,0 +1,64 @@
+# Docker Compose to run the Catalyst content server locally for testing.
+# Use from repo root: docker compose up --build
+#
+# The content server will:
+# - Run migrations on Postgres on startup
+# - Resolve its identity by calling CONTENT_SERVER_ADDRESS/challenge (non-blocking)
+# - With DISABLE_SYNCHRONIZATION=true, it won't sync with other catalysts
+#
+# Access: http://localhost:6969/status and http://localhost:6969/challenge
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: content
+    # Bind to loopback only. The content service reaches the DB over the compose network, so there is
+    # no need to publish the superuser port on every host interface (where anyone on the same network
+    # could connect with these well-known local-test credentials).
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d content"]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+
+  content:
+    build: .
+    ports:
+      - "6969:6969"
+    environment:
+      # Server root URL so identity challenge hits /challenge (app serves at root, not under /content)
+      CONTENT_SERVER_ADDRESS: http://content:6969
+      # Postgres (use service name as host)
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_CONTENT_DB: content
+      POSTGRES_CONTENT_USER: postgres
+      POSTGRES_CONTENT_PASSWORD: postgres
+      # Single-server "DAO" so getContentServersFromDao doesn't fail (we filter ourselves out)
+      CUSTOM_DAO: http://content:6969
+      # Optional: avoid syncing with external catalysts
+      DISABLE_SYNCHRONIZATION: "true"
+      # Optional: reduce log noise
+      LOG_LEVEL: INFO
+      # Storage inside the container (ephemeral unless you mount a volume)
+      STORAGE_ROOT_FOLDER: /data/storage
+      # L1/L2 providers (required by components; use public RPC for local test)
+      ETH_NETWORK: mainnet
+      L1_HTTP_PROVIDER_URL: https://rpc.decentraland.org/mainnet?project=catalyst-content
+      L2_HTTP_PROVIDER_URL: https://rpc.decentraland.org/polygon?project=catalyst-content
+    volumes:
+      - content_storage:/data
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data: {}
+  content_storage: {}

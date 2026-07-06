@@ -59,6 +59,9 @@ export async function createFailedDeployments(
 
   async function saveSnapshotFailedDeployment(db: DatabaseClient, deployment: SnapshotFailedDeployment) {
     const { entityId, entityType, failureTimestamp, reason, authChain, errorDescription, snapshotHash } = deployment
+    // Upsert on the entity_id primary key: a plain INSERT throws on a duplicate, so a report that
+    // races with another report (or lands after a delete/re-report) would either crash or drop the
+    // record. `ON CONFLICT DO UPDATE` makes reporting a failure idempotent and race-free.
     await db.queryWithValues(
       SQL`
         INSERT INTO failed_deployments
@@ -66,6 +69,13 @@ export async function createFailedDeployments(
         VALUES
         (${entityId}, ${entityType}, to_timestamp(${failureTimestamp} / 1000.0), ${reason},
          ${JSON.stringify(authChain)}, ${errorDescription}, ${snapshotHash})
+        ON CONFLICT (entity_id) DO UPDATE SET
+          entity_type = EXCLUDED.entity_type,
+          failure_time = EXCLUDED.failure_time,
+          reason = EXCLUDED.reason,
+          auth_chain = EXCLUDED.auth_chain,
+          error_description = EXCLUDED.error_description,
+          snapshot_hash = EXCLUDED.snapshot_hash
         RETURNING entity_id`,
       'save_failed_deployment'
     )
@@ -112,21 +122,13 @@ export async function createFailedDeployments(
 
     async reportFailure(deployment: FailedDeployment) {
       if (isSnapshotFailedDeployment(deployment)) {
-        // Snapshot deployments are persisted. If the entity is already cached we re-report it
-        // by deleting and re-inserting inside a single transaction; otherwise a plain insert suffices.
-        const reported = failedDeploymentsByEntityId.get(deployment.entityId)
-        if (reported) {
-          await database.transaction(async (txDatabase) => {
-            await deleteFromTable(txDatabase, deployment.entityId)
-            await saveSnapshotFailedDeployment(txDatabase, deployment)
-          }, 'tx_failed_deployments')
-        } else {
-          await saveSnapshotFailedDeployment(database, deployment)
-        }
+        // Snapshot deployments are persisted. A single idempotent upsert replaces the former
+        // cache-driven delete-then-insert transaction, which could collide on the entity_id PK when
+        // interleaved with a concurrent removeFailedDeployment.
+        await saveSnapshotFailedDeployment(database, deployment)
       }
-      // Apply the cache update only after the SQL has fully committed. If we updated the
-      // cache inside the SQL methods, a multi-step transaction whose second statement
-      // throws would leave the cache out of sync with the rolled-back DB.
+      // Apply the cache update only after the SQL has committed, so the in-memory mirror never gets
+      // ahead of a write that failed.
       await cacheFailedDeployment(deployment)
     }
   }

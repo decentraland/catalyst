@@ -2,10 +2,21 @@ import SQL from 'sql-template-strings'
 import { DatabaseClient } from '../../adapters/database'
 import { IActiveEntitiesRepository } from './types'
 
+// Pointers are stored lowercased so they match the normalized form every read path uses
+// (`getHistoricalDeploymentsQuery`, the active-entities cache key). Entities are content-addressed
+// and cannot be rewritten, so normalization has to happen at this write boundary; otherwise a
+// mixed-case pointer produces a row that lowercased lookups never find and overwrites never displace.
+// Deduplication is required because the entity schema does not enforce unique pointers, and a repeated
+// pointer makes `ON CONFLICT(pointer) DO UPDATE` fail ("cannot affect row a second time").
+function normalizePointers(pointers: string[]): string[] {
+  return [...new Set(pointers.map((p) => p.toLowerCase()))]
+}
+
 async function updateActiveDeployments(database: DatabaseClient, pointers: string[], entityId: string): Promise<void> {
-  if (pointers.length === 0) return
-  const value_list = pointers.map((p, i) => {
-    if (i < pointers.length - 1) {
+  const normalizedPointers = normalizePointers(pointers)
+  if (normalizedPointers.length === 0) return
+  const value_list = normalizedPointers.map((p, i) => {
+    if (i < normalizedPointers.length - 1) {
       return SQL`(${p}, ${entityId}),`
     } else {
       return SQL`(${p}, ${entityId})`
@@ -20,9 +31,10 @@ async function updateActiveDeployments(database: DatabaseClient, pointers: strin
 }
 
 async function removeActiveDeployments(database: DatabaseClient, pointers: string[]): Promise<void> {
-  if (pointers.length === 0) return
-  const value_list = pointers.map((p, i) => {
-    if (i < pointers.length - 1) {
+  const normalizedPointers = normalizePointers(pointers)
+  if (normalizedPointers.length === 0) return
+  const value_list = normalizedPointers.map((p, i) => {
+    if (i < normalizedPointers.length - 1) {
       return SQL`${p},`
     } else {
       return SQL`${p}`

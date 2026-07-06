@@ -27,14 +27,31 @@ async function setupApiCoverage(server: IHttpServerComponent<GlobalContext>) {
 // this function wires the business logic (adapters & controllers) with the components (ports)
 export async function main(program: Lifecycle.EntryPointParameters<AppComponents>): Promise<void> {
   const { components, startComponents } = program
+  const logger = components.logs.getLogger('service')
   const globalContext: GlobalContext = {
     components
   }
 
-  await migrateContentFolderStructure(components)
+  // The WKC lifecycle only installs its SIGTERM/SIGINT handlers after main() resolves, so the
+  // long-running migrations below would otherwise run with no graceful termination. Install a
+  // temporary handler that exits in an orderly, logged way if a signal arrives during that window,
+  // and remove it once migrations are done so the lifecycle's own handlers take over.
+  const earlyShutdown = (signal: NodeJS.Signals) => {
+    logger.info(`Received ${signal} during startup migrations; exiting before components started.`)
+    process.exit(0)
+  }
+  process.once('SIGTERM', earlyShutdown)
+  process.once('SIGINT', earlyShutdown)
 
-  // first of all, run the migrations
-  await components.migrationManager.run()
+  try {
+    await migrateContentFolderStructure(components)
+
+    // first of all, run the migrations
+    await components.migrationManager.run()
+  } finally {
+    process.removeListener('SIGTERM', earlyShutdown)
+    process.removeListener('SIGINT', earlyShutdown)
+  }
 
   const router = await setupRouter(globalContext)
 

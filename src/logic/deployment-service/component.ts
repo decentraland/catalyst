@@ -188,6 +188,10 @@ export function createDeploymentService(
       // Store the entity's content
       await storeEntityContent(hashes)
 
+      // Hoisted so the in-memory cache can be updated *after* the transaction commits (see below).
+      let clearedPointers: string[] = []
+      let setPointers: string[] = []
+
       await components.database.transaction(async (database) => {
         // Calculate overwrites
         const { overwrote, overwrittenBy } = await calculateOverwrites(components, database, entity)
@@ -210,7 +214,7 @@ export function createDeploymentService(
         )
 
         // Update pointers and active entities
-        const { clearedPointers, setPointers } = Array.from(pointersFromEntity).reduce(
+        const reduced = Array.from(pointersFromEntity).reduce(
           (acc, current) => {
             if (current[1].after === pointerBookkeeping.DELTA_POINTER_RESULT.CLEARED)
               acc.clearedPointers.push(current[0])
@@ -219,20 +223,33 @@ export function createDeploymentService(
           },
           { clearedPointers: [] as string[], setPointers: [] as string[] }
         )
-        // invalidate pointers (points to an entity that is no longer active)
-        // this case happen when the entity is overwritten
-        if (clearedPointers.length > 0) {
-          await components.activeEntities.clear(database, clearedPointers)
-        }
+        clearedPointers = reduced.clearedPointers
+        setPointers = reduced.setPointers
 
-        // update pointer (points to the new entity that is active)
+        // Persist the active_pointers rows inside the transaction so they commit atomically with the
+        // deployment. The in-memory cache is updated only after commit (below), never here.
+        if (clearedPointers.length > 0) {
+          await components.activeEntities.updateInDatabase(database, clearedPointers, 'NOT_ACTIVE_ENTITY')
+        }
         if (setPointers.length > 0) {
-          await components.activeEntities.update(database, setPointers, entity)
+          await components.activeEntities.updateInDatabase(database, setPointers, entity)
         }
 
         // Set who overwrote who
         await components.deploymentsRepository.setEntitiesAsOverwritten(database, overwrote, deploymentId)
       }, 'tx_deploy_entity')
+
+      // Now that the transaction has committed, reflect the new active pointers in the in-memory cache.
+      // If the transaction had rolled back, none of this runs, so the cache never diverges from the DB.
+      if (clearedPointers.length > 0) {
+        components.activeEntities.updateInCache(clearedPointers, 'NOT_ACTIVE_ENTITY')
+      }
+      if (setPointers.length > 0) {
+        components.activeEntities.updateInCache(setPointers, entity)
+      }
+      // Refresh collection/third-party listings for both added and cleared item pointers, so a new
+      // item appears and an overwritten-off one disappears without waiting for the 24h TTL.
+      components.activeEntities.invalidatePrefixCaches(entity, clearedPointers)
     } else {
       logger.info(`Entity already deployed`, { entityId })
       auditInfoComplete.localTimestamp = deployedEntity.localTimestamp

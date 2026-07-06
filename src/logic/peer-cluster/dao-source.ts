@@ -56,7 +56,12 @@ export async function createDAOSource(
 }
 
 export function createCustomDAOSource(customDAOServers: string): DAOSource {
-  const servers = customDAOServers.split(',')
+  // Trim and drop empties so a trailing comma or padded entry ("a, b,") doesn't produce a garbage
+  // peer URL (e.g. "" → "/content") that the synchronizer then endlessly fails to fetch.
+  const servers = customDAOServers
+    .split(',')
+    .map((server) => server.trim())
+    .filter((server) => server.length > 0)
 
   async function getAllContentServers(): Promise<CatalystServerInfo[]> {
     const all = await getAllServers()

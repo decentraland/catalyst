@@ -78,6 +78,35 @@ async function* streamContentHashesNotBeingUsedAnymore(
   }
 }
 
+/**
+ * Given candidate hashes about to be garbage-collected, returns the subset that must NOT be deleted
+ * because they are still referenced. A hash is referenced if:
+ *  - a still-active deployment (deleter_deployment IS NULL) points to it via content_files — checking
+ *    this right before the delete narrows (but does not fully close, absent locking) the race where a
+ *    deployment re-references a hash between the sweep query and the delete;
+ *  - it is a snapshot file hash; or
+ *  - it is an entity id (i.e. the hash of an entity JSON stored in the shared content-addressed space).
+ * The three checks matter because storage is one namespace shared by content files, entity JSONs and
+ * snapshot files, and byte-identical files collide on hash.
+ */
+async function findReferencedHashes(database: DatabaseClient, hashes: string[]): Promise<Set<string>> {
+  if (hashes.length === 0) {
+    return new Set()
+  }
+  const query = SQL`
+    SELECT cf.content_hash AS hash
+      FROM content_files cf
+      INNER JOIN deployments d ON cf.deployment = d.id
+      WHERE d.deleter_deployment IS NULL AND cf.content_hash = ANY(${hashes})
+    UNION
+    SELECT hash FROM snapshots WHERE hash = ANY(${hashes})
+    UNION
+    SELECT entity_id AS hash FROM deployments WHERE entity_id = ANY(${hashes})
+  `
+  const result = await database.queryWithValues<{ hash: string }>(query, 'gc_recheck_referenced_hashes')
+  return new Set(result.rows.map((row) => row.hash))
+}
+
 async function* streamAllDistinctContentFileHashes(database: DatabaseClient): AsyncIterable<string> {
   for await (const row of database.streamQuery<{ content_hash: string }>(CONTENT_FILE_HASHES_QUERY, {
     batchSize: 10000
@@ -91,6 +120,7 @@ export function createContentFilesRepository(): IContentFilesRepository {
     getContentFiles,
     saveContentFiles,
     streamContentHashesNotBeingUsedAnymore,
+    findReferencedHashes,
     streamAllDistinctContentFileHashes
   }
 }
