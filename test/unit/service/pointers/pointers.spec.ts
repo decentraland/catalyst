@@ -37,6 +37,7 @@ describe('getPointerChanges', () => {
       getEntityById: jest.fn(),
       saveDeployment: jest.fn(),
       getDeployments: jest.fn(),
+      hasNewerDeploymentOnPointers: jest.fn(),
       setEntitiesAsOverwritten: jest.fn(),
       calculateOverwrote: jest.fn(),
       calculateOverwrittenByManyFast: jest.fn(),

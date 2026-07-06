@@ -7,6 +7,11 @@ import { AppComponents } from '../../types'
 import { getDeploymentsForActiveEntities, mapDeploymentsToEntities } from '../deployments'
 import { ActiveEntities, isEntityPresent, isPointingToEntity, NotActiveEntity } from './types'
 
+// Bounds for the collection/third-party prefix caches (each entry is an array of entity ids):
+// cap total cached ids (memory) and, secondarily, the number of distinct cached URNs.
+const PREFIX_CACHE_MAX_TOTAL_IDS = 1_000_000
+const PREFIX_CACHE_MAX_ENTRIES = 10_000
+
 /**
  * This component is in charge of:
  *  - retrieve active entities by ids or pointers
@@ -32,9 +37,14 @@ export function createActiveEntitiesComponent(
     max: components.env.getConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE)
   })
 
+  // These prefix caches map a collection/third-party URN to an ARRAY of matching entity ids, so bounding
+  // them by entry count (previously ENTITIES_CACHE_SIZE = 150k entries) allowed hundreds of MB. Bound by
+  // total cached ids via maxSize + sizeCalculation instead; the entry cap is a secondary guard.
   const collectionItemsEntityIdsByPrefixCache = new LRU<string, string[]>({
     ttl: 1000 * 60 * 60 * 24, // 24 hours
-    max: components.env.getConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE), //TODO
+    max: PREFIX_CACHE_MAX_ENTRIES,
+    maxSize: PREFIX_CACHE_MAX_TOTAL_IDS,
+    sizeCalculation: (entityIds) => Math.max(1, entityIds?.length ?? 0),
     fetchMethod: async (collectionUrn: string) =>
       components.pointersRepository.getItemEntitiesIdsThatMatchCollectionUrnPrefix(
         components.database,
@@ -44,7 +54,9 @@ export function createActiveEntitiesComponent(
 
   const thirdPartyItemsEntityIdsByPrefixCache = new LRU<string, string[]>({
     ttl: 1000 * 60 * 60 * 24, // 24 hours
-    max: components.env.getConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE), //TODO
+    max: PREFIX_CACHE_MAX_ENTRIES,
+    maxSize: PREFIX_CACHE_MAX_TOTAL_IDS,
+    sizeCalculation: (entityIds) => Math.max(1, entityIds?.length ?? 0),
     fetchMethod: async (thirdPartyUrn: string) =>
       components.pointersRepository.getThirdPartyCollectionItemsEntityIdsThatMatchUrnPrefix(
         components.database,

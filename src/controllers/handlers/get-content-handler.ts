@@ -23,16 +23,16 @@ export async function getContentHandler(context: HandlerContextWithPath<'storage
     throw new NotFoundError(`No content found with hash ${hash}`)
   }
 
-  const fileInfo = await context.components.storage.fileInfo(hash)
-  if (!fileInfo) {
-    throw new NotFoundError(`No content found with hash ${hash}`)
-  }
-
+  // Check conditional headers before touching storage: content is immutable and content-addressed, so
+  // a matching ETag means the client's cached copy is still valid. Returning 304 here costs zero
+  // storage round-trips on the hottest endpoint.
   const notModified = checkNotModified(context.request, hash)
   if (notModified) return notModified
 
   const rangeHeader = context.request.headers.get('range')
-  const result = await retrieveContentWithRange(context.components.storage, hash, rangeHeader, fileInfo)
+  // No preloaded fileInfo: retrieveContentWithRange fetches metadata only for range requests, and a
+  // plain GET/HEAD resolves existence via retrieve() (returns undefined -> 404 below).
+  const result = await retrieveContentWithRange(context.components.storage, hash, rangeHeader)
   if (!result) {
     throw new NotFoundError(`No content found with hash ${hash}`)
   }

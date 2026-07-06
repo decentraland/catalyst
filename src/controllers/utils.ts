@@ -164,6 +164,18 @@ export async function retrieveContentWithRange(
   | { content?: undefined; status: 416; rangeHeaders: Record<string, string> }
   | undefined
 > {
+  // Only range requests need file metadata: fileInfo opens the file to read the gzip trailer for
+  // contentSize, which is used solely to bound the range. A plain GET/HEAD uses retrieve() directly
+  // (it already returns undefined for missing content), avoiding that extra fs round-trip + file open
+  // on the hottest endpoint.
+  if (!rangeHeader) {
+    const content = await storage.retrieve(hash)
+    if (!content) {
+      return undefined
+    }
+    return { content, status: 200 }
+  }
+
   const fileInfo = preloadedFileInfo ?? (await storage.fileInfo(hash))
   if (!fileInfo) {
     return undefined

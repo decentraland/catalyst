@@ -214,8 +214,9 @@ async function getProcessedSnapshots(
 }
 
 async function* getAllSnapshotHashes(database: DatabaseClient): AsyncIterable<string> {
-  const queryResult = await database.queryWithValues<{ hash: string }>(SNAPSHOT_HASHES_QUERY)
-  for (const row of queryResult.rows) {
+  // Stream rather than buffer the whole table, matching the sibling hash/id streams that feed the same
+  // bloom-filter population in deleteUnreferencedFiles.
+  for await (const row of database.streamQuery<{ hash: string }>(SNAPSHOT_HASHES_QUERY, { batchSize: 10000 })) {
     yield row.hash
   }
 }
