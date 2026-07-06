@@ -1,4 +1,4 @@
-FROM node:24-alpine@sha256:5fa278c599dbba0c8f873d8717d50ecbb57c5ae6a53b7ab240c25135e0b65995 as base
+FROM node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd as base
 WORKDIR /app
 RUN apk add --no-cache git
 
@@ -22,7 +22,10 @@ RUN apk update && apk upgrade
 
 COPY --from=dependencies /app/node_modules ./node_modules/
 
-COPY --from=catalyst-builder /app/dist/src ./
+# Emit the runtime under /app/content so the entrypoint stays at
+# /app/content/entrypoints/run-server.js, matching the peer deployment's start
+# command. blocks-cache CSVs live at /app and are read relative to cwd (/app).
+COPY --from=catalyst-builder /app/dist/src content/
 COPY --from=catalyst-builder /app/blocks-cache-*.csv /app/
 
 # https://docs.docker.com/engine/reference/builder/#arg
@@ -46,4 +49,4 @@ RUN apk add --no-cache tini
 ENTRYPOINT ["/sbin/tini", "--"]
 
 # Run the program under Tini
-CMD [ "/usr/local/bin/node", "--max-old-space-size=8192", "entrypoints/run-server.js" ]
+CMD [ "/usr/local/bin/node", "--max-old-space-size=8192", "content/entrypoints/run-server.js" ]
