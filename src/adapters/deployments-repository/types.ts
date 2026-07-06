@@ -45,7 +45,8 @@ export interface IDeploymentsRepository {
     limit: number,
     filters?: DeploymentFilters,
     sortBy?: DeploymentSorting,
-    lastId?: string
+    lastId?: string,
+    includeMetadata?: boolean
   ): Promise<HistoricalDeployment[]>
   getActiveDeploymentsByContentHash(db: DatabaseClient, contentHash: string): Promise<string[]>
   getEntityById(db: DatabaseClient, entityId: string): Promise<{ entityId: string; localTimestamp: number } | undefined>
@@ -56,6 +57,11 @@ export interface IDeploymentsRepository {
     overwrittenBy: DeploymentId | null
   ): Promise<DeploymentId>
   getDeployments(db: DatabaseClient, deploymentIds: Set<number>): Promise<{ id: number; pointers: string[] }[]>
+  /**
+   * True if a deployment newer than `entity` (by entity_timestamp, then LOWER(entity_id)) already
+   * exists on any of its pointers for the same type. An EXISTS probe, not a full fetch.
+   */
+  hasNewerDeploymentOnPointers(db: DatabaseClient, entity: Entity): Promise<boolean>
   setEntitiesAsOverwritten(
     db: DatabaseTransactionalClient,
     allOverwritten: Set<DeploymentId>,

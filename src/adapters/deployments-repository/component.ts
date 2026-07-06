@@ -66,7 +66,8 @@ export function getHistoricalDeploymentsQuery(
   limit: number,
   filters?: DeploymentFilters,
   sortBy?: DeploymentSorting,
-  lastId?: string
+  lastId?: string,
+  includeMetadata = true
 ): SQLStatement {
   const sorting = Object.assign({ field: SortingField.LOCAL_TIMESTAMP, order: SortingOrder.DESCENDING }, sortBy)
 
@@ -77,7 +78,9 @@ export function getHistoricalDeploymentsQuery(
     sorting.field === SortingField.ENTITY_TIMESTAMP ? SortingField.ENTITY_TIMESTAMP : SortingField.LOCAL_TIMESTAMP
   const order: string = sorting.order === SortingOrder.ASCENDING ? SortingOrder.ASCENDING : SortingOrder.DESCENDING
 
-  // Generate the select according the info needed
+  // Generate the select according the info needed. Callers that don't consume metadata (pointer-changes)
+  // pass includeMetadata=false so the large entity_metadata (TOAST) JSON isn't read for every row; the
+  // column is kept in the projection as NULL so the row shape (and the mapper) stays identical.
   const query: SQLStatement = SQL`
               SELECT
                   dep1.id,
@@ -85,12 +88,14 @@ export function getHistoricalDeploymentsQuery(
                   dep1.entity_id,
                   dep1.entity_pointers,
                   date_part('epoch', dep1.entity_timestamp) * 1000 AS entity_timestamp,
-                  dep1.entity_metadata,
+                  `
+  query.append(includeMetadata ? SQL`dep1.entity_metadata` : SQL`NULL AS entity_metadata`)
+  query.append(SQL`,
                   dep1.deployer_address,
                   dep1.version,
                   dep1.auth_chain,
                   date_part('epoch', dep1.local_timestamp) * 1000 AS local_timestamp
-              FROM deployments AS dep1`
+              FROM deployments AS dep1`)
 
   const whereClause: SQLStatement[] = []
   // Configure sort and order
@@ -189,9 +194,10 @@ async function getHistoricalDeployments(
   limit: number,
   filters?: DeploymentFilters,
   sortBy?: DeploymentSorting,
-  lastId?: string
+  lastId?: string,
+  includeMetadata = true
 ): Promise<HistoricalDeployment[]> {
-  const query = getHistoricalDeploymentsQuery(offset, limit, filters, sortBy, lastId)
+  const query = getHistoricalDeploymentsQuery(offset, limit, filters, sortBy, lastId, includeMetadata)
 
   const historicalDeploymentsResponse = await database.queryWithValues(query, 'get_historical_deployments')
 
@@ -374,6 +380,29 @@ async function calculateOverwrittenBySlow(database: DatabaseClient, entity: Enti
   ).rows
 }
 
+// Existence probe for "is there already a newer deployment on these pointers" — mirrors
+// happenedBefore(entity, D) semantics (newer by entity_timestamp, then by LOWER(entity_id)). Replaces
+// fetching up to 500 full rows (with metadata + a content_files query) just to compare timestamps in JS.
+async function hasNewerDeploymentOnPointers(database: DatabaseClient, entity: Entity): Promise<boolean> {
+  const result = await database.queryWithValues<{ exists: boolean }>(
+    SQL`
+    SELECT EXISTS (
+      SELECT 1
+      FROM deployments
+      WHERE entity_type = ${entity.type}
+      AND entity_pointers && ${lowercasePointers(entity.pointers)}
+      AND (
+        entity_timestamp > to_timestamp(${entity.timestamp} / 1000.0)
+        OR (entity_timestamp = to_timestamp(${entity.timestamp} / 1000.0) AND LOWER(entity_id) > LOWER(${entity.id}))
+      )
+    ) AS "exists"`,
+    'has_newer_deployment_on_pointers'
+  )
+  // SELECT EXISTS always returns one row in Postgres; `?? false` only guards a degenerate empty result
+  // (e.g. a mocked client), defaulting to "no newer deployment" as the old fetch-and-scan path did.
+  return result.rows[0]?.exists ?? false
+}
+
 export function createDeploymentsRepository(): IDeploymentsRepository {
   return {
     deploymentExists,
@@ -384,6 +413,7 @@ export function createDeploymentsRepository(): IDeploymentsRepository {
     getEntityById,
     saveDeployment,
     getDeployments,
+    hasNewerDeploymentOnPointers,
     setEntitiesAsOverwritten,
     calculateOverwrote,
     calculateOverwrittenByManyFast,

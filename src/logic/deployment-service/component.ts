@@ -13,10 +13,9 @@ import {
   isInvalidDeployment
 } from '../../deployment-types'
 import { DatabaseClient } from '../../adapters/database'
-import { happenedBefore } from './time-sorting'
 import { AppComponents, EntityVersion } from '../../types'
 import { ICrypto } from '../crypto'
-import { calculateOverwrites, getDeployments, saveDeploymentAndContentFiles } from '../deployments'
+import { calculateOverwrites, saveDeploymentAndContentFiles } from '../deployments'
 import * as pointerBookkeeping from './pointer-bookkeeping'
 import { createDeployRateLimiter, IDeployRateLimiterComponent } from './rate-limiter'
 import * as serverValidator from './server-validator'
@@ -152,9 +151,12 @@ export function createDeploymentService(
     auditInfo: LocalDeploymentAuditInfo,
     hashes: Map<string, Uint8Array>,
     context: DeploymentContext,
-    isContentUnchanged: boolean
+    isContentUnchanged: boolean,
+    // Idempotency result from deployEntity's earlier getEntityById check, threaded in to avoid a second
+    // identical query per deploy. It is `undefined` on the normal path (deployEntity returns early when
+    // the entity already exists), and same-entity concurrent deploys are excluded by the pointer locks.
+    deployedEntity: { entityId: string; localTimestamp: number } | undefined
   ): Promise<InvalidResult | { auditInfoComplete: AuditInfo; wasEntityDeployed: boolean }> {
-    const deployedEntity = await components.deploymentsRepository.getEntityById(database, entityId)
     const isEntityAlreadyDeployed = !!deployedEntity
 
     const validationResult = await validateDeployment(
@@ -261,19 +263,17 @@ export function createDeploymentService(
     return { auditInfoComplete, wasEntityDeployed: !isEntityAlreadyDeployed }
   }
 
-  // todo: review if we can use entities cache to determine if there is a newer deployment
   /** Check if there are newer entities on the given entity's pointers */
   async function areThereNewerEntitiesOnPointers(entity: Entity): Promise<boolean> {
-    // Validate that pointers aren't referring to an entity with a higher timestamp
-    const { deployments: lastDeployments } = await getDeployments(components, components.database, {
-      filters: { entityTypes: [entity.type], pointers: entity.pointers }
-    })
-    for (const lastDeployment of lastDeployments) {
-      if (happenedBefore(entity, lastDeployment)) {
-        return true
-      }
-    }
-    return false
+    // Single EXISTS probe instead of fetching up to 500 full deployment rows (with metadata + a
+    // content_files query) only to compare timestamps in JS. The probe encodes the same
+    // happenedBefore(entity, D) ordering and also considers all rows, not just the first page.
+    //
+    // Unlike the old getDeployments path, this does not exclude denylisted deployments: a newer
+    // denylisted entity on the same pointers now blocks re-deploying an older one. That is intentional —
+    // deployment temporal ordering is a property of the history and must not depend on the
+    // content-serving denylist, which changes independently and is not part of happenedBefore.
+    return components.deploymentsRepository.hasNewerDeploymentOnPointers(components.database, entity)
   }
 
   async function storeEntityContent(hashes: Map<string, Uint8Array>): Promise<void> {
@@ -429,7 +429,8 @@ export function createDeploymentService(
           auditInfo,
           hashes,
           contextToDeploy,
-          isContentUnchanged
+          isContentUnchanged,
+          deployedEntity
         )
 
         if (!storeResult) {

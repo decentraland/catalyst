@@ -16,7 +16,12 @@ export type ActiveEntities = IBaseComponent & {
   /**
    * Retrieve active entities which their pointers match the given urn prefix
    */
-  withPrefix(collectionUrn: string, offset: number, limit: number): Promise<{ total: number; entities: Entity[] }>
+  withPrefix(
+    collectionUrn: string,
+    offset: number,
+    limit: number,
+    isThirdPartyCollectionHint?: boolean
+  ): Promise<{ total: number; entities: Entity[] }>
   /**
    * Retrieve active entities by their ids
    * Note: result is cached, even if the id has no active entity

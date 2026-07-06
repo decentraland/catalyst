@@ -35,6 +35,7 @@ describe('when referencing an entity from its pointers', () => {
       getEntityById: jest.fn(),
       saveDeployment: jest.fn(),
       getDeployments: jest.fn(),
+      hasNewerDeploymentOnPointers: jest.fn(),
       setEntitiesAsOverwritten: jest.fn(),
       calculateOverwrote: jest.fn(),
       calculateOverwrittenByManyFast: jest.fn(),

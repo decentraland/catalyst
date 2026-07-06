@@ -1,6 +1,8 @@
 import { Entity, EntityType, PointerChangesSyncDeployment } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
+import PQueue from 'p-queue'
 import SQL, { SQLStatement } from 'sql-template-strings'
+import { EnvironmentConfig } from '../../Environment'
 import { HistoricalDeployment, HistoricalDeploymentsRow } from '../../adapters/deployments-repository'
 import {
   AuditInfo,
@@ -14,7 +16,7 @@ import {
 import { FailedDeployment } from '../../adapters/failed-deployments'
 import { DatabaseClient, DatabaseTransactionalClient } from '../../adapters/database'
 import { IGNORING_FIX_ERROR } from '../deployment-service'
-import { AppComponents, DeploymentId, EntityVersion } from '../../types'
+import { AppComponents, DeploymentField, DeploymentId, EntityVersion } from '../../types'
 import { DeploymentPointerChanges, IDeploymentsComponent } from './types'
 
 export async function isEntityDeployed(
@@ -55,6 +57,7 @@ export async function retryFailedDeploymentExecution(
     | 'failedDeployments'
     | 'storage'
     | 'batchDeployer'
+    | 'env'
   >,
   logger?: ILoggerComponent.ILogger
 ): Promise<void> {
@@ -65,12 +68,27 @@ export async function retryFailedDeploymentExecution(
   // TODO: there may be chances that failed deployments are not part of all catalyst in cluster
   const contentServersUrls = components.contentCluster.getAllServersInCluster()
 
+  // Retry with bounded parallelism (same bound as sync deploys) instead of one-at-a-time, so a large
+  // failed-deployment backlog drains faster. Each retry still holds a DB connection for its deploy
+  // transaction, so the concurrency cap keeps them from starving foreground reads. Two retries for the
+  // same pointer just conflict on the in-process pointer lock — the loser re-fails and is retried next
+  // cycle, which is benign for a retry job.
+  // Registration floors this at 1 and defaults it to 10 (see Environment.ts), matching how the sync
+  // path reads the same config in components.ts — no extra guard needed here.
+  const concurrency = components.env.getConfig<number>(EnvironmentConfig.SYNC_DEPLOY_CONCURRENCY)
+  const queue = new PQueue({ concurrency })
+
   // TODO: Implement an exponential backoff for retrying
   for (const failedDeployment of failedDeployments) {
     // Build Deployment from other servers
     const { entityId, entityType, authChain } = failedDeployment
 
-    if (authChain) {
+    if (!authChain) {
+      logs.info(`Can't retry failed deployment. Because it lacks of authChain`, { entityId, entityType })
+      continue
+    }
+
+    void queue.add(async () => {
       logs.debug(`Will retry to deploy entity`, { entityId, entityType })
       try {
         await components.batchDeployer.deployEntityFromRemoteServer(
@@ -91,10 +109,10 @@ export async function retryFailedDeploymentExecution(
         logs.error(`Failed to fix deployment of entity`, { entityId, entityType, errorDescription })
         logs.error(error)
       }
-    } else {
-      logs.info(`Can't retry failed deployment. Because it lacks of authChain`, { entityId, entityType })
-    }
+    })
   }
+
+  await queue.onIdle()
 }
 
 export function mapDeploymentsToEntities(deployments: Deployment[]): Entity[] {
@@ -217,7 +235,13 @@ export async function getDeployments(
 
   const deploymentIds = deploymentsResult.map(({ deploymentId }) => deploymentId)
 
-  const content = await components.contentFilesRepository.getContentFiles(database, deploymentIds)
+  // Only fetch content_files when the caller actually wants CONTENT. Callers that pass explicit fields
+  // without CONTENT (e.g. /audit requests [AUDIT_INFO]) skip a per-request query whose result would be
+  // discarded. When fields is unset, the default includes CONTENT, so behavior is unchanged.
+  const wantsContent = !options?.fields || options.fields.includes(DeploymentField.CONTENT)
+  const content = wantsContent
+    ? await components.contentFilesRepository.getContentFiles(database, deploymentIds)
+    : new Map<DeploymentId, DeploymentContent[]>()
 
   if (!options?.includeDenylisted) {
     deploymentsResult = deploymentsResult.filter((result) => !components.denylist.isDenylisted(result.entityId))
@@ -292,13 +316,17 @@ export async function getPointerChanges(
   const curatedOffset = options?.offset && options?.offset >= 0 ? options?.offset : 0
   const curatedLimit =
     options?.limit && options?.limit > 0 && options?.limit <= MAX_HISTORY_LIMIT ? options?.limit : MAX_HISTORY_LIMIT
+  // Pointer-change deltas never read entity_metadata, so skip fetching the large TOAST JSON per row
+  // (up to MAX_HISTORY_LIMIT rows on this continuously cluster-polled endpoint).
+  const includeMetadata = false
   let deploymentsWithExtra: HistoricalDeployment[] = await components.deploymentsRepository.getHistoricalDeployments(
     database,
     curatedOffset,
     curatedLimit + 1,
     options?.filters,
     options?.sortBy,
-    options?.lastId
+    options?.lastId,
+    includeMetadata
   )
 
   // Note: moreData is checked before denylist filtering so pagination signals remain correct.

@@ -37,6 +37,7 @@ describe('getPointerChanges', () => {
       getEntityById: jest.fn(),
       saveDeployment: jest.fn(),
       getDeployments: jest.fn(),
+      hasNewerDeploymentOnPointers: jest.fn(),
       setEntitiesAsOverwritten: jest.fn(),
       calculateOverwrote: jest.fn(),
       calculateOverwrittenByManyFast: jest.fn(),
@@ -105,6 +106,23 @@ describe('getPointerChanges', () => {
 
     it('should set moreData to false', () => {
       expect(result.pagination.moreData).toBe(false)
+    })
+  })
+
+  describe('when requesting the historical deployments for the pointer changes', () => {
+    beforeEach(async () => {
+      getHistoricalDeploymentsSpy.mockResolvedValueOnce([])
+
+      await getPointerChanges(
+        { denylist, metrics: { increment: jest.fn() } as any, deploymentsRepository },
+        database as any,
+        { limit: 3 }
+      )
+    })
+
+    it('should not hydrate the entity metadata', () => {
+      const includeMetadataArg = getHistoricalDeploymentsSpy.mock.calls[0][6]
+      expect(includeMetadataArg).toBe(false)
     })
   })
 })

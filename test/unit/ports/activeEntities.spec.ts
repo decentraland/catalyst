@@ -442,6 +442,27 @@ describe('activeEntities', () => {
         })
       })
     })
+
+    describe('and a third-party hint is provided for a URN that is not a third-party collection', () => {
+      let entities: Entity[]
+
+      beforeEach(() => {
+        urn = 'urn:decentraland:mumbai:collections-v2:0x1a8a8c6b6d6e9e7b1c0a1e8f8d4b2e3c7f9a8b6c'
+        const deployments = [createDeploymentMock({ entityId: 'anEntityId' })]
+        entities = mapDeploymentsToEntities(deployments)
+        queryWithValuesMock.mockResolvedValueOnce({
+          rows: entities.map((e) => ({ entity_id: e.id })),
+          rowCount: entities.length
+        })
+        getDeploymentsForActiveThirdPartyItemsByEntityIdsMock.mockResolvedValueOnce(deployments)
+      })
+
+      it('should route through the third-party path chosen by the hint instead of parsing the URN', async () => {
+        await activeEntities.withPrefix(urn, 0, 100, true)
+
+        expect(getDeploymentsForActiveThirdPartyItemsByEntityIdsMock).toHaveBeenCalled()
+      })
+    })
   })
 })
 

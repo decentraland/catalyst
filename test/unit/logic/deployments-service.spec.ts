@@ -10,7 +10,7 @@ import {
 } from '../../../src/adapters/deployments-repository'
 import { getCuratedLimit, getCuratedOffset, getDeployments, MAX_HISTORY_LIMIT } from '../../../src/logic/deployments'
 import { metricsDeclaration } from '../../../src/metrics'
-import { AppComponents } from '../../../src/types'
+import { AppComponents, DeploymentField } from '../../../src/types'
 
 describe('deployments service', () => {
   describe('getDeployments', () => {
@@ -170,6 +170,64 @@ describe('deployments service', () => {
             filters: options.filters
           })
         )
+      })
+    })
+
+    describe('when the requested fields do not include content', () => {
+      let getContentFilesSpy: jest.SpyInstance
+
+      beforeEach(() => {
+        components = {
+          database: safe({ queryWithValues: () => {} }),
+          denylist: { isDenylisted: () => false, reload: jest.fn() },
+          metrics: createTestMetricsComponent(metricsDeclaration),
+          contentFilesRepository: createContentFilesRepository(),
+          deploymentsRepository: createDeploymentsRepository()
+        }
+        getContentFilesSpy = jest.spyOn(components.contentFilesRepository, 'getContentFiles')
+        jest
+          .spyOn(components.database, 'queryWithValues')
+          .mockResolvedValueOnce({ rows: historicalDeploymentsRows, rowCount: 2 })
+      })
+
+      afterEach(() => {
+        jest.restoreAllMocks()
+      })
+
+      it('should not query the content files whose result would be discarded', async () => {
+        await getDeployments(components, components.database, { ...options, fields: [DeploymentField.AUDIT_INFO] })
+
+        expect(getContentFilesSpy).not.toHaveBeenCalled()
+      })
+    })
+
+    describe('when the requested fields include content', () => {
+      let getContentFilesSpy: jest.SpyInstance
+
+      beforeEach(() => {
+        components = {
+          database: safe({ queryWithValues: () => {} }),
+          denylist: { isDenylisted: () => false, reload: jest.fn() },
+          metrics: createTestMetricsComponent(metricsDeclaration),
+          contentFilesRepository: createContentFilesRepository(),
+          deploymentsRepository: createDeploymentsRepository()
+        }
+        getContentFilesSpy = jest.spyOn(components.contentFilesRepository, 'getContentFiles')
+        jest
+          .spyOn(components.database, 'queryWithValues')
+          .mockResolvedValueOnce({ rows: historicalDeploymentsRows, rowCount: 2 })
+          .mockResolvedValueOnce({ rows: contentFiles, rowCount: 2 })
+      })
+
+      afterEach(() => {
+        jest.restoreAllMocks()
+      })
+
+      it('should query the content files for the returned deployments', async () => {
+        await getDeployments(components, components.database, { ...options, fields: [DeploymentField.CONTENT] })
+
+        expect(getContentFilesSpy).toHaveBeenCalledTimes(1)
+        expect(getContentFilesSpy.mock.calls[0][1]).toEqual(deploymentIds)
       })
     })
   })

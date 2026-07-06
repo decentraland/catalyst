@@ -78,7 +78,9 @@ export async function createDenylist(
     isDenylisted: (id: string): boolean => {
       const denied = deniedContentIdentifiers.has(id)
       if (denied) {
-        logger.info(`Processing denyListed entityId ${id}`)
+        // debug, not info: this runs per item on hot listing/serve paths, so a frequently-requested
+        // denylisted hash would otherwise emit a log line on every request.
+        logger.debug(`Processing denyListed entityId ${id}`)
       }
       return denied
     },

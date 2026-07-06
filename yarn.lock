@@ -325,10 +325,10 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@^7.3.2":
-  version "7.3.2"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-7.3.2.tgz#6540eb2c149594d7178e382690d93ca49b6a359f"
-  integrity sha512-WiyIGlLPiyMnvtS8G0x6Nqga73sRd56Em33yH64QjuQ2Q53HVFo/jDfhxm80FIAiNc/45JJ1f27rZijPZLETlg==
+"@dcl/content-validator@^7.3.3":
+  version "7.3.3"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-7.3.3.tgz#cae0ad676a91da39524471800c3d5843d59c3a57"
+  integrity sha512-Sxx7+plfYYtNUUnMzXLHOOtXzgTVTQtYfXXcylpIpZWGrUoW4vP4ACTRKT8cXvV+5phRxHVYz8LYHFN9DrO9NQ==
   dependencies:
     "@dcl/block-indexer" "^1.1.2"
     "@dcl/content-hash-tree" "^1.1.4"
@@ -4766,13 +4766,6 @@ node-cache@^5.1.2:
   dependencies:
     clone "2.x"
 
-node-fetch@2.7.0:
-  version "2.7.0"
-  resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.7.0.tgz#d0f0fa6e3e2dc1d27efcd8ad99d550bda94d187d"
-  integrity sha512-c4FRfUm/dbcWZ7U+1Wq0AwCyFL+3nt2bEw05wfxSz+DWpWsitgmSgYmy2dQdWyKC1694ELPqMs/YzUSNozLt8A==
-  dependencies:
-    whatwg-url "^5.0.0"
-
 node-int64@^0.4.0:
   version "0.4.0"
   resolved "https://registry.npmjs.org/node-int64/-/node-int64-0.4.0.tgz"
@@ -6003,11 +5996,6 @@ tr46@^2.1.0:
   dependencies:
     punycode "^2.1.1"
 
-tr46@~0.0.3:
-  version "0.0.3"
-  resolved "https://registry.npmjs.org/tr46/-/tr46-0.0.3.tgz"
-  integrity sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==
-
 ts-jest@27.1.5:
   version "27.1.5"
   resolved "https://registry.npmjs.org/ts-jest/-/ts-jest-27.1.5.tgz"
@@ -6265,11 +6253,6 @@ wcwidth@^1.0.0:
   dependencies:
     defaults "^1.0.3"
 
-webidl-conversions@^3.0.0:
-  version "3.0.1"
-  resolved "https://registry.npmjs.org/webidl-conversions/-/webidl-conversions-3.0.1.tgz"
-  integrity sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==
-
 webidl-conversions@^5.0.0:
   version "5.0.0"
   resolved "https://registry.npmjs.org/webidl-conversions/-/webidl-conversions-5.0.0.tgz"
@@ -6291,14 +6274,6 @@ whatwg-mimetype@^2.3.0:
   version "2.3.0"
   resolved "https://registry.npmjs.org/whatwg-mimetype/-/whatwg-mimetype-2.3.0.tgz"
   integrity sha512-M4yMwr6mAnQz76TbJm914+gPpB/nCwvZbJU28cUD6dR004SAxDLOOSUaB1JDRqLtaOV/vi0IC5lEAGFgrjGv/g==
-
-whatwg-url@^5.0.0:
-  version "5.0.0"
-  resolved "https://registry.npmjs.org/whatwg-url/-/whatwg-url-5.0.0.tgz"
-  integrity sha512-saE57nupxk6v3HY35+jzBwYa0rKSy0XR8JSxZPwgLr7ys0IBzhGviA1/TUGJLmSVqs8pb9AnvICXEuOHLprYTw==
-  dependencies:
-    tr46 "~0.0.3"
-    webidl-conversions "^3.0.0"
 
 whatwg-url@^8.0.0, whatwg-url@^8.5.0:
   version "8.7.0"
