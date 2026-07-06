@@ -268,6 +268,11 @@ export function createDeploymentService(
     // Single EXISTS probe instead of fetching up to 500 full deployment rows (with metadata + a
     // content_files query) only to compare timestamps in JS. The probe encodes the same
     // happenedBefore(entity, D) ordering and also considers all rows, not just the first page.
+    //
+    // Unlike the old getDeployments path, this does not exclude denylisted deployments: a newer
+    // denylisted entity on the same pointers now blocks re-deploying an older one. That is intentional —
+    // deployment temporal ordering is a property of the history and must not depend on the
+    // content-serving denylist, which changes independently and is not part of happenedBefore.
     return components.deploymentsRepository.hasNewerDeploymentOnPointers(components.database, entity)
   }
 

@@ -26,6 +26,11 @@ export async function getContentHandler(context: HandlerContextWithPath<'storage
   // Check conditional headers before touching storage: content is immutable and content-addressed, so
   // a matching ETag means the client's cached copy is still valid. Returning 304 here costs zero
   // storage round-trips on the hottest endpoint.
+  //
+  // Trade-off: this now answers 304 even for content the server has since GC'd or never synced, where
+  // the old fetch-first path returned 404. For content-addressed data a 304 is still correct — the ETag
+  // is derived from the hash, so a client presenting it already holds the exact, immutable bytes — and a
+  // client without a matching ETag still falls through to the normal 404 below.
   const notModified = checkNotModified(context.request, hash)
   if (notModified) return notModified
 

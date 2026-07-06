@@ -73,7 +73,9 @@ export async function retryFailedDeploymentExecution(
   // transaction, so the concurrency cap keeps them from starving foreground reads. Two retries for the
   // same pointer just conflict on the in-process pointer lock — the loser re-fails and is retried next
   // cycle, which is benign for a retry job.
-  const concurrency = Math.max(1, components.env.getConfig<number>(EnvironmentConfig.SYNC_DEPLOY_CONCURRENCY) ?? 10)
+  // Registration floors this at 1 and defaults it to 10 (see Environment.ts), matching how the sync
+  // path reads the same config in components.ts — no extra guard needed here.
+  const concurrency = components.env.getConfig<number>(EnvironmentConfig.SYNC_DEPLOY_CONCURRENCY)
   const queue = new PQueue({ concurrency })
 
   // TODO: Implement an exponential backoff for retrying

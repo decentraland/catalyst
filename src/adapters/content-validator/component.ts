@@ -68,7 +68,7 @@ async function createExternalCallsBag(
     },
     // How many size fetches calculateDeploymentSize may run at once (only the sync path fetches these).
     // Controlled by CONTENT_SIZE_FETCH_CONCURRENCY (default 10); set to 1 for the sequential behavior.
-    fetchContentFileSizeConcurrency: components.env.getConfig(EnvironmentConfig.CONTENT_SIZE_FETCH_CONCURRENCY),
+    fetchContentFileSizeConcurrency: components.env.getConfig<number>(EnvironmentConfig.CONTENT_SIZE_FETCH_CONCURRENCY),
     ownerAddress: (auditInfo) => Authenticator.ownerAddress(auditInfo.authChain),
     isAddressOwnedByDecentraland: (address: string) => components.crypto.isAddressOwnedByDecentraland(address),
     validateSignature: (entityId, auditInfo, timestamp) =>
