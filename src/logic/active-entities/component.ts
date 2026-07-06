@@ -205,12 +205,18 @@ export function createActiveEntitiesComponent(
     }
   }
 
-  async function updateCache(
-    database: DatabaseClient,
+  function updateCache(
     entities: Entity[],
     { pointers, entityIds }: { pointers?: string[]; entityIds?: string[] }
-  ): Promise<void> {
-    await Promise.all(entities.map((entity) => update(database, entity.pointers, entity)))
+  ): void {
+    // In-memory cache only — the read path does NOT write `active_pointers`. That table is a
+    // denormalized (active pointer → entity_id) index: it is backfilled at migration time and
+    // maintained transactionally by the deploy/sync write path, so re-writing it here was redundant
+    // and its fire-and-forget nature could clobber a concurrent deploy's fresh mapping with a stale
+    // one. Reads just refresh the in-process cache.
+    for (const entity of entities) {
+      updateInCache(entity.pointers, entity)
+    }
 
     // Check which pointers or ids doesn't have an active entity and set as NONE
     if (pointers) {
@@ -250,13 +256,9 @@ export function createActiveEntitiesComponent(
     }
 
     const entities = mapDeploymentsToEntities(deployments)
-    // Fire-and-forget the cache write so this read (GET /entities/active) doesn't block on — or fail
-    // with — an `active_pointers` write: the caller already has its result in `entities`. `.catch`
-    // handles the rejection that would otherwise be unhandled; awaiting it instead would turn a
-    // transient write error (deadlock, read-only replica) into a 500 on an otherwise-successful read.
-    void updateCache(database, entities, { pointers, entityIds }).catch((error) =>
-      logger.error(`Failed to update the active entities cache: ${error}`)
-    )
+    // Refresh the in-process cache only; the deploy/sync path owns `active_pointers` (see updateCache).
+    // This is synchronous and DB-free, so the read neither blocks on nor can fail from a cache write.
+    updateCache(entities, { pointers, entityIds })
 
     return entities
   }
