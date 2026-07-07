@@ -15,12 +15,14 @@ export interface IContentFilesRepository {
   streamContentHashesNotBeingUsedAnymore(
     db: DatabaseClient,
     lastGarbageCollectionTimestamp: number,
+    pendingDeploymentTtlMs: number,
     options?: { batchSize?: number }
   ): AsyncIterable<string>
   /**
    * From a set of candidate hashes, return those still referenced (by an active deployment, a
-   * snapshot, or an entity id) and therefore unsafe to delete from storage.
+   * snapshot, an entity id, or a non-expired pending partial deployment) and therefore unsafe to
+   * delete from storage.
    */
-  findReferencedHashes(db: DatabaseClient, hashes: string[]): Promise<Set<string>>
+  findReferencedHashes(db: DatabaseClient, hashes: string[], pendingDeploymentTtlMs: number): Promise<Set<string>>
   streamAllDistinctContentFileHashes(db: DatabaseClient): AsyncIterable<string>
 }

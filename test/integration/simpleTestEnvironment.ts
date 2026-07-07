@@ -55,7 +55,7 @@ export async function createDB() {
 
 export async function clearDatabase(server: TestProgram): Promise<void> {
   await server.components.database.query(
-    'TRUNCATE TABLE deployments, content_files, active_pointers, processed_snapshots, failed_deployments CASCADE'
+    'TRUNCATE TABLE deployments, content_files, active_pointers, processed_snapshots, failed_deployments, pending_deployments CASCADE'
   )
   // Refresh materialized view to reflect truncated data
   await server.components.database.query(

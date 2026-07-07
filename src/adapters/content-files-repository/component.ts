@@ -57,14 +57,25 @@ async function saveContentFiles(
 async function* streamContentHashesNotBeingUsedAnymore(
   database: DatabaseClient,
   lastGarbageCollectionTimestamp: number,
+  // A content hash referenced by a non-expired pending (partial) deployment must never become a GC
+  // candidate — its content is staged but not yet attached to any deployment. The findReferencedHashes
+  // re-check below is authoritative; this anti-join is defense in depth (both cover the byte-identical
+  // collision where the same hash is also referenced by an already-overwritten deployment).
+  pendingDeploymentTtlMs: number,
   options?: { batchSize?: number }
 ): AsyncIterable<string> {
+  const pendingCutoff = Date.now() - pendingDeploymentTtlMs
   const query = SQL`
     SELECT content_files.content_hash
     FROM content_files
     INNER JOIN deployments ON content_files.deployment=id
     LEFT JOIN deployments AS dd ON deployments.deleter_deployment=dd.id
-    WHERE dd.local_timestamp IS NULL OR dd.local_timestamp > to_timestamp(${lastGarbageCollectionTimestamp} / 1000.0)
+    WHERE (dd.local_timestamp IS NULL OR dd.local_timestamp > to_timestamp(${lastGarbageCollectionTimestamp} / 1000.0))
+    AND NOT EXISTS (
+      SELECT 1 FROM pending_deployments pd
+      WHERE pd.created_at > to_timestamp(${pendingCutoff} / 1000.0)
+      AND (pd.content_hashes @> ARRAY[content_files.content_hash] OR pd.entity_id = content_files.content_hash)
+    )
     GROUP BY content_files.content_hash
     HAVING bool_or(deployments.deleter_deployment IS NULL) = FALSE
   `
@@ -89,10 +100,15 @@ async function* streamContentHashesNotBeingUsedAnymore(
  * The three checks matter because storage is one namespace shared by content files, entity JSONs and
  * snapshot files, and byte-identical files collide on hash.
  */
-async function findReferencedHashes(database: DatabaseClient, hashes: string[]): Promise<Set<string>> {
+async function findReferencedHashes(
+  database: DatabaseClient,
+  hashes: string[],
+  pendingDeploymentTtlMs: number
+): Promise<Set<string>> {
   if (hashes.length === 0) {
     return new Set()
   }
+  const pendingCutoff = Date.now() - pendingDeploymentTtlMs
   const query = SQL`
     SELECT cf.content_hash AS hash
       FROM content_files cf
@@ -102,6 +118,12 @@ async function findReferencedHashes(database: DatabaseClient, hashes: string[]):
     SELECT hash FROM snapshots WHERE hash = ANY(${hashes})
     UNION
     SELECT entity_id AS hash FROM deployments WHERE entity_id = ANY(${hashes})
+    UNION
+    SELECT entity_id AS hash FROM pending_deployments
+      WHERE created_at > to_timestamp(${pendingCutoff} / 1000.0) AND entity_id = ANY(${hashes})
+    UNION
+    SELECT unnest(content_hashes) AS hash FROM pending_deployments
+      WHERE created_at > to_timestamp(${pendingCutoff} / 1000.0) AND content_hashes && ${hashes}
   `
   const result = await database.queryWithValues<{ hash: string }>(query, 'gc_recheck_referenced_hashes')
   return new Set(result.rows.map((row) => row.hash))

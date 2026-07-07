@@ -23,6 +23,7 @@ import { createPointersRepository } from '../../../src/adapters/pointers-reposit
 import { createActiveEntitiesRepository } from '../../../src/adapters/active-entities-repository'
 import { createContentFilesRepository } from '../../../src/adapters/content-files-repository'
 import { createDeploymentsRepository } from '../../../src/adapters/deployments-repository'
+import { createPendingDeploymentsRepository } from '../../../src/adapters/pending-deployments-repository'
 import * as deploymentLogic from '../../../src/logic/deployments'
 import * as deployments from '../../../src/logic/deployments'
 import { metricsDeclaration } from '../../../src/metrics'
@@ -264,6 +265,7 @@ describe('Deployer', function () {
       denylist,
       contentFilesRepository,
       deploymentsRepository,
+      pendingDeploymentsRepository: createPendingDeploymentsRepository(),
       entities: createEntities({ env })
     }
     const deployer = createDeploymentService(deployerComponents)

@@ -12,6 +12,7 @@ import { createMigrationExecutor } from '../migrations/migration-executor'
 import { createDatabaseComponent } from '../adapters/database'
 import { createContentFilesRepository } from '../adapters/content-files-repository'
 import { createDeploymentsRepository } from '../adapters/deployments-repository'
+import { createPendingDeploymentsRepository } from '../adapters/pending-deployments-repository'
 import { createSnapshotsRepository } from '../adapters/snapshots-repository'
 import { createSystemProperties } from '../adapters/system-properties'
 import { ActiveEntities } from '../logic/active-entities'
@@ -48,6 +49,7 @@ void Lifecycle.run({
     const migrationManager = createMigrationExecutor({ logs, env })
     const contentFilesRepository = createContentFilesRepository()
     const deploymentsRepository = createDeploymentsRepository()
+    const pendingDeploymentsRepository = createPendingDeploymentsRepository()
     const snapshotsRepository = createSnapshotsRepository()
     const systemProperties = createSystemProperties({ database })
     // `deleteUnreferencedFiles` is the only GC method this entrypoint invokes; the
@@ -63,12 +65,14 @@ void Lifecycle.run({
         storage,
         contentFilesRepository,
         deploymentsRepository,
+        pendingDeploymentsRepository,
         snapshotsRepository,
         systemProperties,
         activeEntities
       },
       false,
-      0
+      0,
+      env.getConfig(EnvironmentConfig.PENDING_DEPLOYMENT_TTL)
     )
     env.logConfigValues(logs.getLogger('Environment'))
     return {
@@ -81,6 +85,7 @@ void Lifecycle.run({
       storage,
       contentFilesRepository,
       deploymentsRepository,
+      pendingDeploymentsRepository,
       snapshotsRepository,
       garbageCollectionManager
     }

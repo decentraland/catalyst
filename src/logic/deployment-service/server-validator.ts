@@ -3,7 +3,9 @@ import ms from 'ms'
 import { IFailedDeploymentsComponent } from '../../adapters/failed-deployments'
 import { DeploymentContext } from '../../deployment-types'
 
-const REQUEST_TTL_FORWARDS: number = ms('15m')
+// Exported so the partial-deployment staging path can apply the identical "too far in the future" bound
+// without duplicating the constant.
+export const REQUEST_TTL_FORWARDS: number = ms('15m')
 
 export interface ServiceCalls {
   areThereNewerEntities(entity: Entity): boolean | Promise<boolean>

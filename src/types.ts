@@ -25,6 +25,7 @@ import { ActiveEntities } from './logic/active-entities'
 import { IContentFilesRepository } from './adapters/content-files-repository'
 import { Denylist } from './adapters/denylist'
 import { IDeploymentsRepository } from './adapters/deployments-repository'
+import { IPendingDeploymentsRepository } from './adapters/pending-deployments-repository'
 import { IPointersRepository } from './adapters/pointers-repository'
 import { ISnapshotsRepository } from './adapters/snapshots-repository'
 import { DeployedEntitiesBloomFilter } from './adapters/deployed-entities-bloom-filter'
@@ -37,6 +38,7 @@ import { IGarbageCollectionComponent } from './logic/garbage-collection'
 import { IContentClusterComponent } from './logic/peer-cluster'
 import { SnapshotStorage } from './adapters/snapshot-storage'
 import { IDeploymentsComponent } from './logic/deployments'
+import { IPartialDeployments } from './logic/partial-deployments'
 import { IQueryParams } from './logic/query-params'
 import { IEntities } from './logic/entities'
 import { ISnapshots } from './logic/snapshots'
@@ -87,10 +89,13 @@ export type AppComponents = {
   activeEntitiesRepository: IActiveEntitiesRepository
   contentFilesRepository: IContentFilesRepository
   deploymentsRepository: IDeploymentsRepository
+  pendingDeploymentsRepository: IPendingDeploymentsRepository
   pointersRepository: IPointersRepository
   snapshotsRepository: ISnapshotsRepository
   config: IConfigComponent
   deployer: Deployer
+  partialDeployments: IPartialDeployments
+  pendingDeploymentsCleanupJob: IJobComponent
   staticConfigs: {
     contentStorageFolder: string
     tmpDownloadFolder: string
@@ -139,6 +144,7 @@ export type MaintenanceComponents = {
   migrationManager: MigrationExecutor
   contentFilesRepository: IContentFilesRepository
   deploymentsRepository: IDeploymentsRepository
+  pendingDeploymentsRepository: IPendingDeploymentsRepository
   snapshotsRepository: ISnapshotsRepository
   garbageCollectionManager: IGarbageCollectionComponent
 }

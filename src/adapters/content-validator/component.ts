@@ -20,6 +20,20 @@ import { createOnChainAccessCheckValidateFns } from '@dcl/content-validator/dist
 import { createOnChainClient } from '@dcl/content-validator/dist/validations/access/on-chain/client'
 import { createSubgraphAccessCheckValidateFns } from '@dcl/content-validator/dist/validations/access/subgraph'
 import { createTheGraphClient } from '@dcl/content-validator/dist/validations/access/subgraph/the-graph-client'
+// Individual validation fns, composed into the partial-deployment staging subset (validateStagingScene).
+// The library already exposes these via deep imports (see the access/* imports above); we reuse the
+// content-independent ones so a staging request can be fully authenticated and access-checked without
+// requiring every content file to be present yet.
+import { validateAll } from '@dcl/content-validator/dist/validations/validations'
+import { entityStructureValidationFn } from '@dcl/content-validator/dist/validations/entity-structure'
+import { ipfsHashingValidateFn } from '@dcl/content-validator/dist/validations/ipfs-hashing'
+import { metadataValidateFn } from '@dcl/content-validator/dist/validations/metadata-schema'
+import { adr45ValidateFn } from '@dcl/content-validator/dist/validations/ADR45'
+import { createSignatureValidateFn } from '@dcl/content-validator/dist/validations/signature'
+import { sceneValidateFn } from '@dcl/content-validator/dist/validations/scene'
+import { allHashesInUploadedFilesAreReportedInTheEntityValidateFn } from '@dcl/content-validator/dist/validations/content'
+import { entityParameters } from '@dcl/content-validator/dist/validations/ADR51'
+import { EntityType } from '@dcl/schemas'
 import { toCoreFetcher } from '../../logic/to-core-fetcher'
 import { Authenticator } from '@dcl/crypto'
 import { hashV0, hashV1 } from '@dcl/hashing'
@@ -77,19 +91,14 @@ async function createExternalCallsBag(
   }
 }
 
-async function createIgnoreBlockchainAccessValidateFn(
-  components: Pick<AppComponents, 'logs'>,
-  externalCalls: ExternalCalls
-): Promise<ValidateFn> {
-  const { logs } = components
-  return createValidator({
-    logs,
-    externalCalls,
-    accessValidateFn: (_d: DeploymentToValidate) => Promise.resolve(OK)
-  })
+// Each of the three strategy helpers below returns the *access* validate fn (LAND/ownership/ACL check)
+// only. The caller composes it into the full validator via `createValidator` and — for staging — into
+// the content-independent subset via `validateAll`, so both paths run the identical access check.
+async function createIgnoreBlockchainAccessValidateFn(): Promise<ValidateFn> {
+  return (_d: DeploymentToValidate) => Promise.resolve(OK)
 }
 
-async function createOnChainValidateFn(
+async function createOnChainAccessValidateFn(
   components: Pick<AppComponents, 'env' | 'metrics' | 'logs'>,
   externalCalls: ExternalCalls,
   l1Provider: HTTPProvider,
@@ -181,14 +190,10 @@ async function createOnChainValidateFn(
     L2
   })
 
-  return createValidator({
-    logs,
-    externalCalls,
-    accessValidateFn: createAccessValidateFn({ externalCalls }, validateFns)
-  })
+  return createAccessValidateFn({ externalCalls }, validateFns)
 }
 
-async function createSubgraphValidateFn(
+async function createSubgraphAccessValidateFn(
   components: Pick<AppComponents, 'env' | 'metrics' | 'config' | 'logs' | 'fetcher'>,
   externalCalls: ExternalCalls
 ): Promise<ValidateFn> {
@@ -239,11 +244,32 @@ async function createSubgraphValidateFn(
     tokenAddresses
   })
 
-  return createValidator({
-    logs,
-    externalCalls,
-    accessValidateFn: createAccessValidateFn({ externalCalls }, validateFns)
-  })
+  return createAccessValidateFn({ externalCalls }, validateFns)
+}
+
+/**
+ * The content-independent validations that a partial (staging) scene deployment must pass on every
+ * request, before all of its content files are necessarily present. Excludes the size validation
+ * (replaced by a cumulative check in the partial-deployments component) and the content-completeness
+ * validation (only checkable at finalize). `accessValidateFn` runs last because it is the expensive
+ * on-chain / subgraph call.
+ */
+function createStagingSceneValidateFn(
+  components: Pick<AppComponents, 'logs'>,
+  externalCalls: ExternalCalls,
+  accessValidateFn: ValidateFn
+): ValidateFn {
+  const { logs } = components
+  return validateAll(
+    entityStructureValidationFn,
+    ipfsHashingValidateFn,
+    metadataValidateFn,
+    adr45ValidateFn,
+    createSignatureValidateFn({ logs, externalCalls, accessValidateFn }),
+    sceneValidateFn,
+    allHashesInUploadedFilesAreReportedInTheEntityValidateFn,
+    accessValidateFn
+  )
 }
 
 /**
@@ -264,7 +290,7 @@ export async function createContentValidator(components: ContentValidatorDeps): 
   const l2HttpProviderUrl: string | undefined = env.getConfig(EnvironmentConfig.L2_HTTP_PROVIDER_URL)
   const useOnChainValidator = !!(l1HttpProviderUrl && l2HttpProviderUrl)
 
-  let validate: ValidateFn
+  let accessValidateFn: ValidateFn
   if (ignoreBlockchainAccess) {
     // This bypasses all on-chain ownership/access checks, so any signed request can
     // deploy entities for pointers it does not own. It exists for tests/local dev only;
@@ -273,12 +299,19 @@ export async function createContentValidator(components: ContentValidatorDeps): 
       'IGNORE_BLOCKCHAIN_ACCESS_CHECKS is enabled: blockchain ownership/access validation is DISABLED. ' +
         'Deployments will NOT be checked for pointer ownership. This must never be set in production.'
     )
-    validate = await createIgnoreBlockchainAccessValidateFn(components, externalCalls)
+    accessValidateFn = await createIgnoreBlockchainAccessValidateFn()
   } else if (useOnChainValidator) {
-    validate = await createOnChainValidateFn(components, externalCalls, l1Provider, l2Provider)
+    accessValidateFn = await createOnChainAccessValidateFn(components, externalCalls, l1Provider, l2Provider)
   } else {
-    validate = await createSubgraphValidateFn(components, externalCalls)
+    accessValidateFn = await createSubgraphAccessValidateFn(components, externalCalls)
   }
 
-  return { validate }
+  const validate = createValidator({ logs, externalCalls, accessValidateFn })
+  const validateStagingScene = createStagingSceneValidateFn(components, externalCalls, accessValidateFn)
+
+  return {
+    validate,
+    validateStagingScene,
+    getMaxSizeInBytesPerPointer: (type: EntityType) => entityParameters[type].maxSizeInMB * 1024 * 1024
+  }
 }

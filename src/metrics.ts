@@ -72,6 +72,22 @@ export const metricsDeclaration = validateMetricsDeclaration({
     type: 'gauge',
     labelNames: ['entity_type']
   },
+  dcl_partial_deployments_staging_total: {
+    help: 'Partial (multi-request) deployment staging requests through HTTP',
+    type: 'counter',
+    // kind=(accepted|finalized|already_deployed|validation_error|error)
+    labelNames: ['kind']
+  },
+  dcl_pending_deployments_replaced_total: {
+    help: 'Pending deployments removed because a newer partial deployment overlapped their pointers',
+    type: 'counter',
+    labelNames: []
+  },
+  dcl_pending_deployments_expired_total: {
+    help: 'Pending deployments removed by the expiry cleanup job',
+    type: 'counter',
+    labelNames: []
+  },
   dcl_ignored_sync_deployments: {
     help: 'Entities ignored during the synchronization and bootstrapping',
     type: 'counter',

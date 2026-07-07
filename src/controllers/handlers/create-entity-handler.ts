@@ -2,8 +2,12 @@ import { PostEntity200, PostEntity400 } from '@dcl/catalyst-api-specs/lib/client
 import { Field } from '@well-known-components/multipart-wrapper'
 import { AuthChain, AuthLink, EthAddress } from '@dcl/crypto'
 import { DeploymentContext, isInvalidDeployment, isSuccessfulDeployment } from '../../deployment-types'
+import { InvalidPartialDeploymentError } from '../../logic/partial-deployments'
 import { FormHandlerContextWithPath } from '../../types'
 import { InvalidRequestError } from '../errors'
+
+/** Body of a 202 response to a partial deployment request: the content hashes not yet on the server. */
+type PostEntity202 = { missing: string[] }
 
 // A real auth chain has 2-3 links; cap generously. This bounds the index-parsing loop below so a
 // crafted `authChain[<huge>][...]` field name can't drive a large iteration count on the public,
@@ -15,13 +19,16 @@ type ContentFile = {
   content: Buffer
 }
 
-type Response = { status: 200; body: PostEntity200 } | { status: 400; body: PostEntity400 }
+type Response =
+  | { status: 200; body: PostEntity200 }
+  | { status: 202; body: PostEntity202 }
+  | { status: 400; body: PostEntity400 }
 
 // Method: POST
 export async function createEntity(
-  context: FormHandlerContextWithPath<'logs' | 'fs' | 'metrics' | 'deployer', '/entities'>
+  context: FormHandlerContextWithPath<'logs' | 'fs' | 'metrics' | 'deployer' | 'partialDeployments', '/entities'>
 ): Promise<Response> {
-  const { metrics, deployer, logs } = context.components
+  const { metrics, deployer, partialDeployments, logs } = context.components
 
   const logger = logs.getLogger('create-entity')
   // Guard the required field explicitly: without it a missing `entityId` throws a TypeError and the
@@ -48,6 +55,53 @@ export async function createEntity(
   }
   if (!AuthChain.validate(authChain)) {
     throw new InvalidRequestError('Invalid auth chain')
+  }
+
+  // A `partial=true` field marks a staging request of a multi-request (partial) deployment: the
+  // content may be uploaded across several requests and the entity only becomes live once all of it is
+  // present. Requests without the flag behave exactly as before.
+  if (context.formData.fields.partial?.value === 'true') {
+    // Preserve the field-name keys (content hashes): unlike the vanilla path, they are load-bearing.
+    const files = new Map<string, Uint8Array>()
+    for (const filename of Object.keys(context.formData.files)) {
+      files.set(filename, context.formData.files[filename].value)
+    }
+
+    try {
+      const result = await partialDeployments.stageDeployment({ entityId, authChain, files })
+      if (result.kind === 'deployed') {
+        metrics.increment('dcl_partial_deployments_staging_total', { kind: 'finalized' })
+        logger.info(`POST /entities - Partial deployment finalized`, { entityId, ethAddress, userAgent })
+        return { status: 200, body: { creationTimestamp: result.creationTimestamp } }
+      }
+      metrics.increment('dcl_partial_deployments_staging_total', { kind: 'accepted' })
+      logger.info(`POST /entities - Partial deployment staged`, {
+        entityId,
+        ethAddress,
+        userAgent,
+        missing: result.missing.length
+      })
+      return { status: 202, body: { missing: result.missing } }
+    } catch (error) {
+      if (error instanceof InvalidPartialDeploymentError) {
+        metrics.increment('dcl_partial_deployments_staging_total', { kind: 'validation_error' })
+        logger.error(`POST /entities - Partial deployment failed (${error.errors.join(',')})`, {
+          entityId,
+          ethAddress,
+          userAgent
+        })
+        return { status: 400, body: { errors: error.errors } }
+      }
+      metrics.increment('dcl_partial_deployments_staging_total', { kind: 'error' })
+      // Never log `authChain` or `signature`: they are cryptographic credentials.
+      logger.error(`POST /entities - Partial deployment internal server error '${error}'`, {
+        entityId,
+        ethAddress,
+        userAgent
+      })
+      logger.error(error)
+      throw error
+    }
   }
 
   const deployFiles: ContentFile[] = []

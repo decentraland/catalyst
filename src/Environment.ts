@@ -253,6 +253,8 @@ export enum EnvironmentConfig {
   PG_POOL_SIZE,
   GARBAGE_COLLECTION,
   GARBAGE_COLLECTION_INTERVAL,
+  PENDING_DEPLOYMENT_TTL,
+  PENDING_DEPLOYMENTS_CLEANUP_INTERVAL,
   BLOOM_FILTER_EXPECTED_ELEMENTS,
   SEQUENTIAL_TASK_CONCURRENCY,
   ENTITIES_CACHE_CONTROL_MAX_AGE,
@@ -494,6 +496,14 @@ export class EnvironmentBuilder {
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL, () =>
       parseMsEnv('GARBAGE_COLLECTION_INTERVAL', ms('6h'))
+    )
+    // How long a partial (multi-request) deployment may stay pending before it is reclaimed. Anchors
+    // both the deployment-TTL check for staged uploads and the expiry job that deletes stale rows.
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PENDING_DEPLOYMENT_TTL, () =>
+      parseMsEnv('PENDING_DEPLOYMENT_TTL', ms('24h'))
+    )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PENDING_DEPLOYMENTS_CLEANUP_INTERVAL, () =>
+      parseMsEnv('PENDING_DEPLOYMENTS_CLEANUP_INTERVAL', ms('1h'))
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.BLOOM_FILTER_EXPECTED_ELEMENTS, () => {
       const parsed = parseInt(process.env.BLOOM_FILTER_EXPECTED_ELEMENTS ?? '', 10)

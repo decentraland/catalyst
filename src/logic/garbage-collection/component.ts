@@ -30,10 +30,14 @@ export function createGarbageCollectionComponent(
     | 'activeEntities'
     | 'contentFilesRepository'
     | 'deploymentsRepository'
+    | 'pendingDeploymentsRepository'
     | 'snapshotsRepository'
   >,
   performGarbageCollection: boolean,
-  profileDuration: number
+  profileDuration: number,
+  // How long a partial (pending) deployment survives. Its entity id + content hashes are treated as
+  // referenced until it expires, so in-flight staged uploads are never reclaimed.
+  pendingDeploymentTtlMs: number
 ): IGarbageCollectionComponent {
   const logger = components.logs.getLogger('GarbageCollectionManager')
   let lastSweepResult: SweepResult | undefined = undefined
@@ -55,7 +59,11 @@ export function createGarbageCollectionComponent(
       // a concurrent deploy may have re-referenced a hash since; and because storage is a single
       // content-addressed namespace, a candidate hash may also be a snapshot file or an entity JSON
       // (byte-identical files collide on hash). Never delete anything that is still referenced.
-      const stillReferenced = await components.contentFilesRepository.findReferencedHashes(components.database, batch)
+      const stillReferenced = await components.contentFilesRepository.findReferencedHashes(
+        components.database,
+        batch,
+        pendingDeploymentTtlMs
+      )
       const toDelete = batch.filter((hash) => !stillReferenced.has(hash))
       batch = []
       if (toDelete.length === 0) {
@@ -75,6 +83,7 @@ export function createGarbageCollectionComponent(
     for await (const hash of components.contentFilesRepository.streamContentHashesNotBeingUsedAnymore(
       components.database,
       lastTimeOfCollection,
+      pendingDeploymentTtlMs,
       { batchSize: GC_DELETE_BATCH_SIZE }
     )) {
       batch.push(hash)
@@ -189,7 +198,8 @@ export function createGarbageCollectionComponent(
     if (hashesToDelete.length > 0) {
       const stillReferenced = await components.contentFilesRepository.findReferencedHashes(
         components.database,
-        hashesToDelete
+        hashesToDelete,
+        pendingDeploymentTtlMs
       )
       hashesToDelete = hashesToDelete.filter((hash) => !stillReferenced.has(hash))
     }
@@ -296,8 +306,24 @@ export function createGarbageCollectionComponent(
         'add of stream snapshot hashes to bloom filter',
         async () => await addAllToBloomFilter(components.snapshotsRepository.getAllSnapshotHashes(components.database))
       )
+
+      // Entity ids and content hashes of non-expired pending (partial) deployments are still referenced:
+      // their content is staged but not yet attached to any deployment, so it would otherwise look
+      // unreferenced and be swept. Expired pending rows are intentionally excluded so their staged
+      // content becomes reclaimable.
+      const totalPendingHashes = await runLoggingPerformance(
+        unreferencedLogger,
+        'add of stream pending deployment hashes to bloom filter',
+        async () =>
+          await addAllToBloomFilter(
+            components.pendingDeploymentsRepository.streamAllNonExpiredHashes(
+              components.database,
+              pendingDeploymentTtlMs
+            )
+          )
+      )
       unreferencedLogger.info(
-        `Created bloom filter with ${totalEntityIds} entity ids, ${totalContentFileHashes} content hashes and ${totalSnapshotHashes} snapshot hashes.`
+        `Created bloom filter with ${totalEntityIds} entity ids, ${totalContentFileHashes} content hashes, ${totalSnapshotHashes} snapshot hashes and ${totalPendingHashes} pending deployment hashes.`
       )
     })
 

@@ -78,11 +78,25 @@ export function createDeploymentService(
     | 'denylist'
     | 'deploymentsRepository'
     | 'contentFilesRepository'
+    | 'pendingDeploymentsRepository'
     | 'entities'
   >
 ): TestableDeploymentService {
   const logger = components.logs.getLogger('deployer')
   const LEGACY_CONTENT_MIGRATION_TIMESTAMP: Date = new Date(1582167600000) // DCL Launch Day
+  const pendingDeploymentTtlMs = components.env.getConfig<number>(EnvironmentConfig.PENDING_DEPLOYMENT_TTL)
+
+  // Anchor for the "request is not recent enough" (REQUEST_TTL_BACKWARDS) check. A partial (multi-request)
+  // upload can legitimately span longer than that TTL, so when the entity has a non-expired pending
+  // deployment we measure the entity timestamp against when the upload *started* (pending.created_at)
+  // rather than now. Normal deploys have no pending row and fall back to Date.now() — today's behavior.
+  async function getRequestTtlAnchor(entityId: string): Promise<number> {
+    const pending = await components.pendingDeploymentsRepository.getByEntityId(components.database, entityId)
+    if (pending && Date.now() - pending.createdAt.getTime() <= pendingDeploymentTtlMs) {
+      return pending.createdAt.getTime()
+    }
+    return Date.now()
+  }
 
   // In-process deploy rate limiter. Defaults to a real instance built from env config;
   // tests swap it via `setRateLimiter` (see TestableDeploymentService).
@@ -239,6 +253,11 @@ export function createDeploymentService(
 
         // Set who overwrote who
         await components.deploymentsRepository.setEntitiesAsOverwritten(database, overwrote, deploymentId)
+
+        // If this entity had a pending (partial) deployment, it is now fully deployed — drop its
+        // staging row atomically with the deployment. Covers both auto-finalize of a partial upload
+        // and a vanilla deploy of a previously-staged entity. No-op (single PK delete) otherwise.
+        await components.pendingDeploymentsRepository.deleteByEntityId(database, entity.id)
       }, 'tx_deploy_entity')
 
       // Now that the transaction has committed, reflect the new active pointers in the in-memory cache.
@@ -315,8 +334,10 @@ export function createDeploymentService(
           (entity.type === EntityType.PROFILE &&
             isContentUnchanged &&
             rateLimiter.isUnchangedDeploymentRateLimited(entity.type, entity.pointers)),
-        isRequestTtlBackwards: (entity) =>
-          Date.now() - entity.timestamp > components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
+        isRequestTtlBackwards: async (entity) => {
+          const anchor = await getRequestTtlAnchor(entity.id)
+          return anchor - entity.timestamp > components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
+        }
       }
     )
 
@@ -339,6 +360,11 @@ export function createDeploymentService(
   return {
     setRateLimiter(rl: IDeployRateLimiterComponent) {
       rateLimiter = rl
+    },
+    // Exposes the in-process rate-limiter to the partial-deployment staging path so a staging request
+    // is subject to the same limit as a full deploy, without duplicating limiter state.
+    isRateLimited(entityType: EntityType, pointers: string[]): boolean {
+      return rateLimiter.isRateLimited(entityType, pointers)
     },
     async deployEntity(
       files: DeploymentFiles,
