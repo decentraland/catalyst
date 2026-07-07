@@ -63,6 +63,11 @@ async function countPendingDeployments(server: TestProgram): Promise<number> {
   return parseInt(result.rows[0].count)
 }
 
+async function countDeployments(server: TestProgram, entityId: string): Promise<number> {
+  const result = await server.components.deploymentsRepository.getEntityById(server.components.database, entityId)
+  return result ? 1 : 0
+}
+
 describe('Integration - Partial deployments', () => {
   let server: TestProgram
   let identity: IdentityType
@@ -222,6 +227,56 @@ describe('Integration - Partial deployments', () => {
         buildPartialForm(deployment, [deployment.entityId, ...deployment.contentHashes], false)
       )
       expect(res.status).toBe(200)
+      expect(await countPendingDeployments(server)).toBe(0)
+    })
+  })
+
+  describe('when staging requests for the same entity run in parallel', () => {
+    it('should accept two distinct content batches uploaded concurrently and deploy the entity once', async () => {
+      const deployment = await prepareSceneDeployment(
+        ['7,7'],
+        { 'a.txt': Buffer.from('parallel a'.repeat(50)), 'b.txt': Buffer.from('parallel b'.repeat(60)) },
+        identity
+      )
+      const [hashA, hashB] = deployment.contentHashes
+
+      expect((await postForm(server, buildPartialForm(deployment, [deployment.entityId]))).status).toBe(202)
+
+      // Fire the two remaining content batches concurrently.
+      const [resA, resB] = await Promise.all([
+        postForm(server, buildPartialForm(deployment, [hashA])),
+        postForm(server, buildPartialForm(deployment, [hashB]))
+      ])
+
+      // No 500s: each request either finalizes (200) or reports remaining content (202), and exactly
+      // one completes the set. The entity is deployed exactly once, with no leftover pending row.
+      const statuses = [resA.status, resB.status].sort()
+      expect(statuses.every((status) => status === 200 || status === 202)).toBe(true)
+      expect(statuses).toContain(200)
+      expect(await countDeployments(server, deployment.entityId)).toBe(1)
+      expect(await countPendingDeployments(server)).toBe(0)
+    })
+
+    it('should deploy once when two requests complete the content set at the same time', async () => {
+      const deployment = await prepareSceneDeployment(
+        ['8,8'],
+        { 'a.txt': Buffer.from('finalize a'.repeat(50)), 'b.txt': Buffer.from('finalize b'.repeat(60)) },
+        identity
+      )
+      const [hashA, hashB] = deployment.contentHashes
+
+      // Stage entity + A, leaving only B missing.
+      expect((await postForm(server, buildPartialForm(deployment, [deployment.entityId, hashA]))).status).toBe(202)
+
+      // Two identical completing requests (both upload B) race to finalize.
+      const [res1, res2] = await Promise.all([
+        postForm(server, buildPartialForm(deployment, [hashB])),
+        postForm(server, buildPartialForm(deployment, [hashB]))
+      ])
+
+      expect(res1.status).toBe(200)
+      expect(res2.status).toBe(200)
+      expect(await countDeployments(server, deployment.entityId)).toBe(1)
       expect(await countPendingDeployments(server)).toBe(0)
     })
   })
