@@ -166,9 +166,12 @@ export function createPartialDeployments(
       ])
     }
     if (deployer.isRateLimited(entity.type, entity.pointers)) {
-      throw new InvalidPartialDeploymentError([
-        `Entity rate limited (entityId=${entity.id} pointers=${entity.pointers.join(',')}).`
-      ])
+      // 429: rate limiting is transient, so a client can resume once the window clears (the staged
+      // content is preserved server-side), rather than treating it as a terminal validation failure.
+      throw new InvalidPartialDeploymentError(
+        [`Entity rate limited (entityId=${entity.id} pointers=${entity.pointers.join(',')}).`],
+        429
+      )
     }
     // A partial upload can span longer than REQUEST_TTL_BACKWARDS, so anchor the freshness check on
     // when the upload started (the pending row's created_at) rather than now.

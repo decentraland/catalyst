@@ -280,4 +280,20 @@ describe('Integration - Partial deployments', () => {
       expect(await countPendingDeployments(server)).toBe(0)
     })
   })
+
+  describe('when a staging request is rate limited', () => {
+    it('should respond 429 (a transient, resumable status) rather than 400', async () => {
+      jest.spyOn(server.components.deployer, 'isRateLimited').mockReturnValue(true)
+
+      const deployment = await prepareSceneDeployment(
+        ['9,9'],
+        { 'a.txt': Buffer.from('rate limited content') },
+        identity
+      )
+      const res = await postForm(server, buildPartialForm(deployment, [deployment.entityId]))
+
+      expect(res.status).toBe(429)
+      expect(await countPendingDeployments(server)).toBe(0)
+    })
+  })
 })

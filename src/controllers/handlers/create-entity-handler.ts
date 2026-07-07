@@ -22,7 +22,7 @@ type ContentFile = {
 type Response =
   | { status: 200; body: PostEntity200 }
   | { status: 202; body: PostEntity202 }
-  | { status: 400; body: PostEntity400 }
+  | { status: 400 | 429; body: PostEntity400 }
 
 // Method: POST
 export async function createEntity(
@@ -90,7 +90,8 @@ export async function createEntity(
           ethAddress,
           userAgent
         })
-        return { status: 400, body: { errors: error.errors } }
+        // statusCode is 429 for transient conditions (rate limiting), 400 for validation errors.
+        return { status: error.statusCode, body: { errors: error.errors } }
       }
       metrics.increment('dcl_partial_deployments_staging_total', { kind: 'error' })
       // Never log `authChain` or `signature`: they are cryptographic credentials.
