@@ -1,27 +1,24 @@
 import { bufferToStream, streamToBuffer } from '@dcl/catalyst-storage/dist/content-item'
 import { Authenticator } from '@dcl/crypto'
 import { Entity, EntityType, IPFSv2 } from '@dcl/schemas'
-import SQL from 'sql-template-strings'
+import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { EnvironmentConfig } from '../../Environment'
 import { DeploymentContext, isInvalidDeployment } from '../../deployment-types'
 import { AppComponents } from '../../types'
+import { POINTERS_BEING_DEPLOYED_ERROR } from '../deployment-service'
 import { REQUEST_TTL_FORWARDS } from '../deployment-service/server-validator'
 import { InvalidPartialDeploymentError } from './errors'
 import { IPartialDeployments, StageDeploymentInput, StageDeploymentResult } from './types'
 
-// Fixed key for the transaction-scoped advisory lock that serializes the tiny "replace overlapping +
-// upsert" critical section across concurrent staging requests (and across processes). An arbitrary
-// distinctive constant, chosen not to collide with node-pg-migrate's migration lock.
-const PENDING_DEPLOYMENTS_ADVISORY_LOCK = 916352745601
+// Upper bound on concurrent content-file writes for a staging batch — matches the vanilla deploy path's
+// CONTENT_STORE_CONCURRENCY. Content files are content-addressed and independent, so they store in
+// bounded-parallel batches instead of one awaited write at a time.
+const CONTENT_STORE_CONCURRENCY = 10
 
 // Bounded retry for the rare case where two requests complete a partial upload at the same instant:
 // the loser of the in-memory pointer lock retries and hits deployEntity's idempotency fast path.
 const FINALIZE_POINTER_CONFLICT_RETRIES = 3
 const FINALIZE_POINTER_CONFLICT_DELAY_MS = 300
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
 
 export function createPartialDeployments(
   components: Pick<
@@ -66,12 +63,24 @@ export function createPartialDeployments(
         // number === creation timestamp; the pending row was deleted inside the deploy transaction.
         return result
       }
-      const isPointerConflict = result.errors.some((e) => e.includes('currently being deployed'))
+      const isPointerConflict = result.errors.some((e) => e.includes(POINTERS_BEING_DEPLOYED_ERROR))
       if (isPointerConflict && attempt < FINALIZE_POINTER_CONFLICT_RETRIES) {
-        await delay(FINALIZE_POINTER_CONFLICT_DELAY_MS)
+        await sleep(FINALIZE_POINTER_CONFLICT_DELAY_MS)
         continue
       }
       throw new InvalidPartialDeploymentError(result.errors)
+    }
+  }
+
+  async function storeMissing(uploadedFiles: Map<string, Uint8Array>): Promise<void> {
+    const alreadyStored = await storage.existMultiple(Array.from(uploadedFiles.keys()))
+    const toStore = Array.from(uploadedFiles).filter(([hash]) => !alreadyStored.get(hash))
+    for (let i = 0; i < toStore.length; i += CONTENT_STORE_CONCURRENCY) {
+      await Promise.all(
+        toStore
+          .slice(i, i + CONTENT_STORE_CONCURRENCY)
+          .map(([hash, content]) => storage.storeStream(hash, bufferToStream(content)))
+      )
     }
   }
 
@@ -176,14 +185,31 @@ export function createPartialDeployments(
     }
 
     // Cumulative size budget. Mirrors calculateDeploymentSize (the finalize-time check): sum uploaded
-    // bytes for files in this batch and stored sizes for files staged earlier; not-yet-uploaded files
-    // contribute 0. Checked before storing this batch so an over-budget upload is never persisted.
+    // bytes for files in this batch and stored sizes for files staged earlier. Checked before storing
+    // this batch so an over-budget upload is never persisted.
     const contentHashes = Array.from(new Set((entity.content ?? []).map((c) => c.hash)))
     const storedInfo = await storage.fileInfoMultiple(contentHashes)
     let totalSize = 0
     for (const hash of contentHashes) {
       const uploaded = uploadedFiles.get(hash)
-      totalSize += uploaded ? uploaded.byteLength : storedInfo.get(hash)?.contentSize ?? 0
+      if (uploaded) {
+        totalSize += uploaded.byteLength
+        continue
+      }
+      const info = storedInfo.get(hash)
+      if (info === undefined) {
+        // Not uploaded in this batch and not yet stored — it will arrive in a later request.
+        continue
+      }
+      if (info.contentSize == null) {
+        // Stored, but its size can't be determined. The finalize-time size validation fetches the same
+        // contentSize and fails with "Couldn't fetch content file"; fail fast now (on the first request
+        // that references it) instead of after the whole scene has been uploaded.
+        throw new InvalidPartialDeploymentError([
+          `Couldn't determine the size of the already-stored content file: ${hash}`
+        ])
+      }
+      totalSize += info.contentSize
     }
     const maxSizePerPointer = validator.getMaxSizeInBytesPerPointer(EntityType.SCENE)
     if (totalSize / entity.pointers.length > maxSizePerPointer) {
@@ -203,10 +229,7 @@ export function createPartialDeployments(
     // short transaction serialized by an advisory lock. Done BEFORE storing the batch so the staged
     // content is protected from the garbage collector as soon as it lands.
     await database.transaction(async (tx) => {
-      await tx.queryWithValues(
-        SQL`SELECT pg_advisory_xact_lock(${PENDING_DEPLOYMENTS_ADVISORY_LOCK})`,
-        'pending_deployment_advisory_lock'
-      )
+      await pendingDeploymentsRepository.acquireStagingLock(tx)
       const replaced = await pendingDeploymentsRepository.deleteOverlappingPointers(tx, entity.pointers, entityId)
       if (replaced.length > 0) {
         metrics.increment('dcl_pending_deployments_replaced_total', {}, replaced.length)
@@ -224,15 +247,13 @@ export function createPartialDeployments(
       })
     }, 'tx_stage_pending_deployment')
 
-    // Store the batch's files (content-addressed, so concurrent identical writes are idempotent).
-    const toStore = await storage.existMultiple(Array.from(uploadedFiles.keys()))
-    for (const [hash, content] of uploadedFiles) {
-      if (!toStore.get(hash)) {
-        await storage.storeStream(hash, bufferToStream(content))
-      }
-    }
+    // Store the batch's files (content-addressed, so concurrent identical writes are idempotent), in
+    // bounded-parallel batches, skipping anything already stored.
+    await storeMissing(uploadedFiles)
 
-    // Completeness check. If everything referenced by the entity is now present, auto-finalize.
+    // Completeness must be a fresh read (not derived from storedInfo): a concurrent partial request for
+    // the same entity may have stored the remaining content while this one ran, and whichever request
+    // observes the full set is the one that finalizes.
     const present = await storage.existMultiple(contentHashes)
     const missing = contentHashes.filter((hash) => !present.get(hash))
     if (missing.length > 0) {

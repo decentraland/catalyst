@@ -27,6 +27,11 @@ import { TestableDeploymentService } from './types'
 // many-file entity from fanning out into an unbounded number of simultaneous storage writes.
 const CONTENT_STORE_CONCURRENCY = 10
 
+// Stable fragment of the error returned when a concurrent deploy already holds one of the pointers.
+// Exported so callers (e.g. the partial-deployment finalize retry) can detect this transient condition
+// without coupling to the full, human-readable message text.
+export const POINTERS_BEING_DEPLOYED_ERROR = 'currently being deployed'
+
 export function isIPFSHash(hash: string): boolean {
   return IPFSv2.validate(hash)
 }
@@ -86,16 +91,32 @@ export function createDeploymentService(
   const LEGACY_CONTENT_MIGRATION_TIMESTAMP: Date = new Date(1582167600000) // DCL Launch Day
   const pendingDeploymentTtlMs = components.env.getConfig<number>(EnvironmentConfig.PENDING_DEPLOYMENT_TTL)
 
-  // Anchor for the "request is not recent enough" (REQUEST_TTL_BACKWARDS) check. A partial (multi-request)
-  // upload can legitimately span longer than that TTL, so when the entity has a non-expired pending
-  // deployment we measure the entity timestamp against when the upload *started* (pending.created_at)
-  // rather than now. Normal deploys have no pending row and fall back to Date.now() — today's behavior.
-  async function getRequestTtlAnchor(entityId: string): Promise<number> {
-    const pending = await components.pendingDeploymentsRepository.getByEntityId(components.database, entityId)
-    if (pending && Date.now() - pending.createdAt.getTime() <= pendingDeploymentTtlMs) {
-      return pending.createdAt.getTime()
+  // The "request is not recent enough" (REQUEST_TTL_BACKWARDS) check. A partial (multi-request) upload
+  // can legitimately span longer than that TTL, so a scene with a non-expired pending deployment is
+  // measured against when the upload *started* (pending.created_at) rather than now.
+  //
+  // The pending-deployment lookup is gated to keep it off the hot path: it runs only when the entity is
+  // already too old by wall clock (the common fresh deploy short-circuits with a pure comparison) and
+  // only for scenes (the only entity type that can be partially uploaded). So profiles and other
+  // high-volume deploys never touch pending_deployments here.
+  async function isRequestTtlBackwards(entity: Entity): Promise<boolean> {
+    const backwards = components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
+    // Anchoring on an earlier pending.created_at can only make this smaller, so if the entity is not
+    // already too old measured against now, no anchor changes the answer. This branch also covers the
+    // hot path (fresh deploys) and non-scene types, keeping the pending lookup off them entirely.
+    // (Comparison, not `<=`, so an unset TTL — `x > undefined` is false — behaves as before.)
+    if (!(Date.now() - entity.timestamp > backwards)) {
+      return false
     }
-    return Date.now()
+    // Too old by wall clock. Only scenes can be partial uploads, so only they can have a pending anchor.
+    if (entity.type !== EntityType.SCENE) {
+      return true
+    }
+    const pending = await components.pendingDeploymentsRepository.getByEntityId(components.database, entity.id)
+    if (pending && Date.now() - pending.createdAt.getTime() <= pendingDeploymentTtlMs) {
+      return pending.createdAt.getTime() - entity.timestamp > backwards
+    }
+    return true
   }
 
   // In-process deploy rate limiter. Defaults to a real instance built from env config;
@@ -334,10 +355,7 @@ export function createDeploymentService(
           (entity.type === EntityType.PROFILE &&
             isContentUnchanged &&
             rateLimiter.isUnchangedDeploymentRateLimited(entity.type, entity.pointers)),
-        isRequestTtlBackwards: async (entity) => {
-          const anchor = await getRequestTtlAnchor(entity.id)
-          return anchor - entity.timestamp > components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
-        }
+        isRequestTtlBackwards: (entity) => isRequestTtlBackwards(entity)
       }
     )
 
@@ -417,7 +435,7 @@ export function createDeploymentService(
       if (overlappingPointers.length > 0) {
         return InvalidResult({
           errors: [
-            `The following pointers are currently being deployed: '${overlappingPointers.join()}'. Please try again in a few seconds.`
+            `The following pointers are ${POINTERS_BEING_DEPLOYED_ERROR}: '${overlappingPointers.join()}'. Please try again in a few seconds.`
           ]
         })
       }

@@ -41,4 +41,9 @@ export interface IPendingDeploymentsRepository {
    * garbage-collection bloom sweep so staged content is never reclaimed while its upload is in flight.
    */
   streamAllNonExpiredHashes(db: DatabaseClient, ttlMs: number, options?: { batchSize?: number }): AsyncIterable<string>
+  /**
+   * Takes a transaction-scoped advisory lock serializing the pending-deployment "replace overlapping +
+   * upsert" critical section. Must be called inside a transaction; released automatically on commit.
+   */
+  acquireStagingLock(db: DatabaseClient): Promise<void>
 }

@@ -57,25 +57,19 @@ async function saveContentFiles(
 async function* streamContentHashesNotBeingUsedAnymore(
   database: DatabaseClient,
   lastGarbageCollectionTimestamp: number,
-  // A content hash referenced by a non-expired pending (partial) deployment must never become a GC
-  // candidate — its content is staged but not yet attached to any deployment. The findReferencedHashes
-  // re-check below is authoritative; this anti-join is defense in depth (both cover the byte-identical
-  // collision where the same hash is also referenced by an already-overwritten deployment).
-  pendingDeploymentTtlMs: number,
   options?: { batchSize?: number }
 ): AsyncIterable<string> {
-  const pendingCutoff = Date.now() - pendingDeploymentTtlMs
+  // This only produces GC *candidates*; pending (partial) deployments are not excluded here. The
+  // per-batch findReferencedHashes re-check (which includes non-expired pending entity ids and content
+  // hashes) runs immediately before deletion and is authoritative, so over-producing candidates is
+  // safe. A correlated pending_deployments anti-join here would run per content_files row across the
+  // whole table for no protection the re-check doesn't already provide.
   const query = SQL`
     SELECT content_files.content_hash
     FROM content_files
     INNER JOIN deployments ON content_files.deployment=id
     LEFT JOIN deployments AS dd ON deployments.deleter_deployment=dd.id
-    WHERE (dd.local_timestamp IS NULL OR dd.local_timestamp > to_timestamp(${lastGarbageCollectionTimestamp} / 1000.0))
-    AND NOT EXISTS (
-      SELECT 1 FROM pending_deployments pd
-      WHERE pd.created_at > to_timestamp(${pendingCutoff} / 1000.0)
-      AND (pd.content_hashes @> ARRAY[content_files.content_hash] OR pd.entity_id = content_files.content_hash)
-    )
+    WHERE dd.local_timestamp IS NULL OR dd.local_timestamp > to_timestamp(${lastGarbageCollectionTimestamp} / 1000.0)
     GROUP BY content_files.content_hash
     HAVING bool_or(deployments.deleter_deployment IS NULL) = FALSE
   `

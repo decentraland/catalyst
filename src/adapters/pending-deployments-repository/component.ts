@@ -2,6 +2,18 @@ import SQL from 'sql-template-strings'
 import { DatabaseClient } from '../../adapters/database'
 import { IPendingDeploymentsRepository, PendingDeploymentRow, UpsertPendingDeployment } from './types'
 
+// Fixed key for the transaction-scoped advisory lock that serializes the "replace overlapping + upsert"
+// critical section across staging requests (and processes). An arbitrary distinctive constant chosen
+// not to collide with node-pg-migrate's migration lock.
+const PENDING_DEPLOYMENTS_ADVISORY_LOCK = 916352745601
+
+async function acquireStagingLock(database: DatabaseClient): Promise<void> {
+  await database.queryWithValues(
+    SQL`SELECT pg_advisory_xact_lock(${PENDING_DEPLOYMENTS_ADVISORY_LOCK})`,
+    'pending_deployment_advisory_lock'
+  )
+}
+
 interface PendingDeploymentDbRow {
   entity_id: string
   entity_type: string
@@ -112,6 +124,7 @@ export function createPendingDeploymentsRepository(): IPendingDeploymentsReposit
     deleteByEntityId,
     deleteOverlappingPointers,
     deleteExpired,
-    streamAllNonExpiredHashes
+    streamAllNonExpiredHashes,
+    acquireStagingLock
   }
 }

@@ -83,7 +83,6 @@ export function createGarbageCollectionComponent(
     for await (const hash of components.contentFilesRepository.streamContentHashesNotBeingUsedAnymore(
       components.database,
       lastTimeOfCollection,
-      pendingDeploymentTtlMs,
       { batchSize: GC_DELETE_BATCH_SIZE }
     )) {
       batch.push(hash)

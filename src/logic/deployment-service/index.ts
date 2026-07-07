@@ -1,4 +1,10 @@
-export { createDeploymentService, isIPFSHash, isEntityContentUnchanged, hashFiles } from './component'
+export {
+  createDeploymentService,
+  isIPFSHash,
+  isEntityContentUnchanged,
+  hashFiles,
+  POINTERS_BEING_DEPLOYED_ERROR
+} from './component'
 export { DELTA_POINTER_RESULT, referenceEntityFromPointers } from './pointer-bookkeeping'
 export type { PointerDeltaMap } from './pointer-bookkeeping'
 export { createDeployRateLimiter } from './rate-limiter'

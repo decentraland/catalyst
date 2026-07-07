@@ -15,7 +15,6 @@ export interface IContentFilesRepository {
   streamContentHashesNotBeingUsedAnymore(
     db: DatabaseClient,
     lastGarbageCollectionTimestamp: number,
-    pendingDeploymentTtlMs: number,
     options?: { batchSize?: number }
   ): AsyncIterable<string>
   /**
