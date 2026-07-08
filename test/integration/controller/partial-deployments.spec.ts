@@ -2,6 +2,7 @@ import { Authenticator, IdentityType } from '@dcl/crypto'
 import { EntityType } from '@dcl/schemas'
 import { buildEntity } from 'dcl-catalyst-client/dist/client/utils/DeploymentBuilder'
 import FormData = require('form-data')
+import { EnvironmentConfig } from '../../../src/Environment'
 import { makeNoopValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import { createDefaultServer, resetServer } from '../simpleTestEnvironment'
 import { TestProgram } from '../TestProgram'
@@ -299,6 +300,61 @@ describe('Integration - Partial deployments', () => {
       // the two resume batches pass skipAccessCheck (finalize re-runs the full validation separately).
       const skipFlags = stagingSpy.mock.calls.map((call) => call[1]?.skipAccessCheck)
       expect(skipFlags).toEqual([false, true, true])
+    })
+  })
+
+  describe('when the deployer loses access to the parcels mid-upload (e.g. the LAND is sold)', () => {
+    let deployment: PreparedDeployment
+    let originalTtlBackwards: number
+
+    beforeEach(async () => {
+      // Unique content per test run: storage is content-addressed and survives resetServer, so reused
+      // bytes from a previous test would satisfy the completeness check and auto-finalize early.
+      const nonce = `${Date.now()}-${Math.random()}`
+      deployment = await prepareSceneDeployment(
+        ['11,11'],
+        { 'a.txt': Buffer.from(`sold land a ${nonce}`), 'b.txt': Buffer.from(`sold land b ${nonce}`) },
+        identity
+      )
+      originalTtlBackwards = server.components.env.getConfig(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
+
+      // Stage the entity and the first file while access is still valid.
+      const [hashA] = deployment.contentHashes
+      expect((await postForm(server, buildPartialForm(deployment, [deployment.entityId, hashA]))).status).toBe(202)
+
+      // Make the upload "long-running": shrink the vanilla freshness bound and let the entity age past
+      // it, so only the pending-upload TTL anchor lets the finalize through — the exact case where the
+      // current-access gate must fire. Then the "sale": the current-access check starts failing.
+      server.components.env.setConfig(EnvironmentConfig.REQUEST_TTL_BACKWARDS, 500)
+      await new Promise((resolve) => setTimeout(resolve, 700))
+      ;(server.components.validator.validateCurrentAccess as jest.Mock).mockResolvedValue({
+        ok: false,
+        errors: ['The provided Eth Address does not have access to the following parcel: (11,11)']
+      })
+    })
+
+    afterEach(() => {
+      server.components.env.setConfig(EnvironmentConfig.REQUEST_TTL_BACKWARDS, originalTtlBackwards)
+    })
+
+    it('should reject the completing request and not deploy the entity', async () => {
+      const [, hashB] = deployment.contentHashes
+      const res = await postForm(server, buildPartialForm(deployment, [hashB]))
+
+      expect(res.status).toBe(400)
+      expect(await countDeployments(server, deployment.entityId)).toBe(0)
+    })
+
+    it('should finalize once access is restored (e.g. the buyer grants operator rights back)', async () => {
+      const [, hashB] = deployment.contentHashes
+      expect((await postForm(server, buildPartialForm(deployment, [hashB]))).status).toBe(400)
+      ;(server.components.validator.validateCurrentAccess as jest.Mock).mockResolvedValue({ ok: true })
+
+      // All content is already staged; an empty resume request completes the upload.
+      const res = await postForm(server, buildPartialForm(deployment, []))
+
+      expect(res.status).toBe(200)
+      expect(await countDeployments(server, deployment.entityId)).toBe(1)
     })
   })
 

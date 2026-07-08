@@ -11,6 +11,9 @@ export class NoOpValidator {
   async validateStagingScene(_d: DeploymentToValidate): Promise<ValidationResponse> {
     return { ok: true }
   }
+  async validateCurrentAccess(_d: DeploymentToValidate): Promise<ValidationResponse> {
+    return { ok: true }
+  }
   getMaxSizeInBytesPerPointer(_type: EntityType): number {
     return 15 * 1024 * 1024
   }
@@ -19,6 +22,7 @@ export class NoOpValidator {
 export function makeNoopValidator(components: Pick<AppComponents, 'validator'>) {
   jest.spyOn(components.validator, 'validate').mockResolvedValue({ ok: true })
   jest.spyOn(components.validator, 'validateStagingScene').mockResolvedValue({ ok: true })
+  jest.spyOn(components.validator, 'validateCurrentAccess').mockResolvedValue({ ok: true })
 }
 
 export function makeNoopDeploymentValidator(components: Pick<AppComponents, 'syncOrchestrator'>) {

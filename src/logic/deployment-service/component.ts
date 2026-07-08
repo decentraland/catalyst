@@ -367,12 +367,45 @@ export function createDeploymentService(
       }
     }
 
-    return await components.validator.validate({
+    const protocolResult = await components.validator.validate({
       // TODO: remove as any after fixing content validator
       entity: entity as any,
       auditInfo,
       files: hashes
     })
+    if (!protocolResult.ok) {
+      return protocolResult
+    }
+
+    // The protocol access validation above is historical: it proves ownership at entity.timestamp's
+    // block (required for sync/replay). Vanilla deploys bound that staleness to REQUEST_TTL_BACKWARDS
+    // (~minutes), but a scene completing a partial upload may be up to PENDING_DEPLOYMENT_TTL (~24h)
+    // old — long enough for the LAND to have been sold mid-upload. When the entity is older than the
+    // vanilla bound (i.e. only a pending-upload anchor let it through the TTL check above), require
+    // access against the CURRENT chain state too, so a seller can't finalize onto land they no longer
+    // own. Fresh deploys never reach this (the wall-clock condition fails), so the hot path is
+    // unaffected; it covers both completion paths (auto-finalize and a vanilla POST of a pending
+    // entity) because both go through this pipeline.
+    if (context === DeploymentContext.LOCAL && entity.type === EntityType.SCENE) {
+      const requestTtlBackwards = components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
+      if (Date.now() - entity.timestamp > requestTtlBackwards) {
+        const currentAccessResult = await components.validator.validateCurrentAccess({
+          entity: entity as any,
+          auditInfo,
+          files: hashes
+        })
+        if (!currentAccessResult.ok) {
+          return {
+            ok: false,
+            errors: currentAccessResult.errors ?? [
+              'The deployer no longer has access to the entity pointers (access is required both when a partial upload starts and when it is finalized).'
+            ]
+          }
+        }
+      }
+    }
+
+    return protocolResult
   }
 
   return {

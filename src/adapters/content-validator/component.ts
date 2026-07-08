@@ -319,6 +319,11 @@ export async function createContentValidator(components: ContentValidatorDeps): 
     validate,
     validateStagingScene: (deployment, options) =>
       options?.skipAccessCheck ? validateStagingWithoutAccess(deployment) : validateStagingWithAccess(deployment),
+    // The access fns anchor their on-chain lookups on entity.timestamp; overriding it with "now" on a
+    // copy validates the deployer's access against the current chain state. Respects the configured
+    // access strategy, including the IGNORE_BLOCKCHAIN_ACCESS_CHECKS no-op.
+    validateCurrentAccess: (deployment) =>
+      accessValidateFn({ ...deployment, entity: { ...deployment.entity, timestamp: Date.now() } }),
     getMaxSizeInBytesPerPointer: (type: EntityType) => entityParameters[type].maxSizeInMB * 1024 * 1024
   }
 }

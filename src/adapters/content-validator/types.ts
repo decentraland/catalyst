@@ -18,6 +18,15 @@ export interface IContentValidator {
     deployment: DeploymentToValidate,
     options?: { skipAccessCheck?: boolean }
   ): Promise<ValidationResponse>
+  /**
+   * Runs ONLY the access check, validated against the CURRENT chain state instead of the block at
+   * `entity.timestamp`. The protocol's access validation is historical by design (required to sync and
+   * replay old deployments), which is safe for vanilla deploys because REQUEST_TTL_BACKWARDS bounds the
+   * entity's age to ~minutes. A partial upload relaxes that bound to PENDING_DEPLOYMENT_TTL, so the
+   * deploy pipeline additionally requires access *now* before such an entity goes live — otherwise land
+   * traded away mid-upload could still receive the seller's scene at finalize.
+   */
+  validateCurrentAccess(deployment: DeploymentToValidate): Promise<ValidationResponse>
   /** Per-pointer (per-parcel) size budget in bytes for an entity type, from ADR51. */
   getMaxSizeInBytesPerPointer(type: EntityType): number
 }
