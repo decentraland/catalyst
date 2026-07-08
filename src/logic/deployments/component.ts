@@ -107,7 +107,6 @@ export async function retryFailedDeploymentExecution(
         }
 
         logs.error(`Failed to fix deployment of entity`, { entityId, entityType, errorDescription })
-        logs.error(error)
       }
     })
   }
