@@ -75,9 +75,11 @@ export function createPartialDeployments(
     }
   }
 
-  async function storeMissing(uploadedFiles: Map<string, Uint8Array>): Promise<void> {
-    const alreadyStored = await storage.existMultiple(Array.from(uploadedFiles.keys()))
-    const toStore = Array.from(uploadedFiles).filter(([hash]) => !alreadyStored.get(hash))
+  async function storeMissing(
+    uploadedFiles: Map<string, Uint8Array>,
+    alreadyStored: (hash: string) => boolean
+  ): Promise<void> {
+    const toStore = Array.from(uploadedFiles).filter(([hash]) => !alreadyStored(hash))
     for (let i = 0; i < toStore.length; i += CONTENT_STORE_CONCURRENCY) {
       await Promise.all(
         toStore
@@ -252,7 +254,6 @@ export function createPartialDeployments(
     // resurrected row never carries a stale created_at.
     await database.transaction(async (tx) => {
       await pendingDeploymentsRepository.acquireStagingLock(tx)
-      await pendingDeploymentsRepository.deleteExpired(tx, pendingDeploymentTtlMs)
       const replaced = await pendingDeploymentsRepository.deleteOverlappingPointers(tx, entity.pointers, entityId)
       if (replaced.length > 0) {
         metrics.increment('dcl_pending_deployments_replaced_total', {}, replaced.length)
@@ -261,18 +262,26 @@ export function createPartialDeployments(
           replaced: replaced.join(',')
         })
       }
-      await pendingDeploymentsRepository.upsert(tx, {
-        entityId,
-        entityType: entity.type,
-        pointers: entity.pointers,
-        contentHashes,
-        deployerAddress: Authenticator.ownerAddress(authChain)
-      })
+      // The upsert resets an expired row's created_at itself (fresh TTL window), so no global expired
+      // sweep is needed here — that is the cleanup job's duty, not this per-request critical section's.
+      await pendingDeploymentsRepository.upsert(
+        tx,
+        {
+          entityId,
+          entityType: entity.type,
+          pointers: entity.pointers,
+          contentHashes,
+          deployerAddress: Authenticator.ownerAddress(authChain)
+        },
+        pendingDeploymentTtlMs
+      )
     }, 'tx_stage_pending_deployment')
 
     // Store the batch's files (content-addressed, so concurrent identical writes are idempotent), in
-    // bounded-parallel batches, skipping anything already stored.
-    await storeMissing(uploadedFiles)
+    // bounded-parallel batches. Presence is derived from the fileInfoMultiple lookup already performed
+    // for the size check — no extra storage round trip. The entity file (not part of contentHashes) is
+    // always (re)stored; it is small and this covers the first request.
+    await storeMissing(uploadedFiles, (hash) => hash !== entityId && storedInfo.get(hash) !== undefined)
 
     // Completeness must be a fresh read (not derived from storedInfo): a concurrent partial request for
     // the same entity may have stored the remaining content while this one ran, and whichever request

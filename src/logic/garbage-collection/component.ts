@@ -11,6 +11,12 @@ const PROFILE_CLEANUP_LIMIT = 10000
 // and the size of each storage.delete operation during a sweep.
 const GC_DELETE_BATCH_SIZE = 1000
 
+// How many delete batches deleteUnreferencedFiles keeps in flight at once. Each batch is one
+// findReferencedHashes query + one storage.delete; a small window keeps folder-based storage (which
+// unlinks serially inside delete()) from making the sweep fully sequential, without the unbounded
+// fan-out of per-file parallel deletes.
+const GC_DELETE_CONCURRENCY = 4
+
 // Safety margin subtracted from the stored garbage-collection watermark. The next sweep only
 // reconsiders hashes whose overwrite committed after the watermark; a deploy that assigned an older
 // local_timestamp but committed just after the sweep started would otherwise slip below a
@@ -327,18 +333,14 @@ export function createGarbageCollectionComponent(
 
     let numberOfDeletedFiles = 0
     let batch: string[] = []
+    const inFlight = new Set<Promise<void>>()
 
     // Delete in batches, re-verifying each batch against the database right before deletion. The bloom
     // filter was built once at the start of a potentially hours-long sweep, so anything referenced
     // AFTER that — most notably a partial (pending) upload that starts mid-sweep and stages files for
     // hours — is invisible to it. findReferencedHashes covers active deployments, snapshots, entity ids
     // and non-expired pending deployments at delete time.
-    const flushBatch = async (): Promise<void> => {
-      if (batch.length === 0) {
-        return
-      }
-      const candidates = batch
-      batch = []
+    const deleteBatch = async (candidates: string[]): Promise<void> => {
       try {
         const stillReferenced = await components.contentFilesRepository.findReferencedHashes(
           components.database,
@@ -356,6 +358,23 @@ export function createGarbageCollectionComponent(
       }
     }
 
+    // Batches run through a small window of concurrent workers so the next batch's reference re-check
+    // and deletes overlap the previous batch's I/O. On S3 each batch is a bulk DeleteObjects; on
+    // folder-based storage delete() unlinks serially, so without this overlap the whole sweep would
+    // degrade to fully serial unlinks interleaved with blocking DB queries.
+    const flushBatch = async (): Promise<void> => {
+      if (batch.length === 0) {
+        return
+      }
+      const candidates = batch
+      batch = []
+      const task: Promise<void> = deleteBatch(candidates).finally(() => inFlight.delete(task))
+      inFlight.add(task)
+      if (inFlight.size >= GC_DELETE_CONCURRENCY) {
+        await Promise.race(inFlight)
+      }
+    }
+
     unreferencedLogger.info(`Deleting files...`)
     for await (const storageFileId of components.storage.allFileIds()) {
       if (!referencedHashesBloom.has(storageFileId)) {
@@ -366,6 +385,7 @@ export function createGarbageCollectionComponent(
       }
     }
     await flushBatch()
+    await Promise.all(inFlight)
     unreferencedLogger.info(`Deleted ${numberOfDeletedFiles} files`)
   }
 

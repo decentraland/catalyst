@@ -23,10 +23,11 @@ export interface IPendingDeploymentsRepository {
   /** Returns the pending deployment for an entity id, or undefined if none exists. */
   getByEntityId(db: DatabaseClient, entityId: string): Promise<PendingDeploymentRow | undefined>
   /**
-   * Inserts or refreshes a pending deployment. On conflict only `updated_at` is bumped so `created_at`
-   * (the deployment-TTL anchor) stays stable across resume requests.
+   * Inserts or refreshes a pending deployment. On conflict `created_at` (the deployment-TTL anchor)
+   * stays stable across resume requests while the row is within `ttlMs`; an expired row is dead state,
+   * so its `created_at` is reset to now, starting a fresh window.
    */
-  upsert(db: DatabaseClient, row: UpsertPendingDeployment): Promise<void>
+  upsert(db: DatabaseClient, row: UpsertPendingDeployment, ttlMs: number): Promise<void>
   deleteByEntityId(db: DatabaseClient, entityId: string): Promise<void>
   /**
    * Deletes every pending deployment whose pointers overlap the given ones, except `excludeEntityId`.

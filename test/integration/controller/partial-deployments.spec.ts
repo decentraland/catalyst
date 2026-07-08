@@ -96,107 +96,172 @@ describe('Integration - Partial deployments', () => {
   })
 
   describe('when uploading a scene across multiple partial requests', () => {
-    it('should return 202 with the missing hashes until the last request, which returns 200 and makes the entity live', async () => {
-      const deployment = await prepareSceneDeployment(
-        ['0,0'],
-        { 'a.txt': Buffer.from('content of file a'), 'b.txt': Buffer.from('content of file b') },
-        identity
-      )
-      const [hashA, hashB] = deployment.contentHashes
+    describe('and each content file is uploaded in its own batch', () => {
+      let deployment: PreparedDeployment
+      let hashA: string
+      let hashB: string
+      let firstResponse: Response
 
-      // Request 1: entity file only.
-      const res1 = await postForm(server, buildPartialForm(deployment, [deployment.entityId]))
-      expect(res1.status).toBe(202)
-      const body1 = await res1.json()
-      expect(new Set(body1.missing)).toEqual(new Set([hashA, hashB]))
-      expect(await countPendingDeployments(server)).toBe(1)
+      beforeEach(async () => {
+        // Unique content per test run: storage is content-addressed and survives resetServer, so reused
+        // bytes from a previous run would satisfy the completeness check and auto-finalize early.
+        const nonce = `${Date.now()}-${Math.random()}`
+        deployment = await prepareSceneDeployment(
+          ['0,0'],
+          { 'a.txt': Buffer.from(`content of file a ${nonce}`), 'b.txt': Buffer.from(`content of file b ${nonce}`) },
+          identity
+        )
+        ;[hashA, hashB] = deployment.contentHashes
 
-      // Request 2: first content file.
-      const res2 = await postForm(server, buildPartialForm(deployment, [hashA]))
-      expect(res2.status).toBe(202)
-      expect(await res2.json()).toEqual({ missing: [hashB] })
+        // Request 1: entity file only.
+        firstResponse = await postForm(server, buildPartialForm(deployment, [deployment.entityId]))
+      })
 
-      // Request 3: last content file → auto-finalize.
-      const res3 = await postForm(server, buildPartialForm(deployment, [hashB]))
-      expect(res3.status).toBe(200)
-      expect(typeof (await res3.json()).creationTimestamp).toBe('number')
+      it('should respond 202 with both content hashes missing and create a single pending row', async () => {
+        expect(firstResponse.status).toBe(202)
+        expect(new Set((await firstResponse.json()).missing)).toEqual(new Set([hashA, hashB]))
+        expect(await countPendingDeployments(server)).toBe(1)
+      })
 
-      // The pending row is gone and the entity is deployed.
-      expect(await countPendingDeployments(server)).toBe(0)
-      const deployed = await server.components.deploymentsRepository.getEntityById(
-        server.components.database,
-        deployment.entityId
-      )
-      expect(deployed?.entityId).toBe(deployment.entityId)
+      describe('and the second batch uploads the first content file', () => {
+        let secondResponse: Response
+
+        beforeEach(async () => {
+          secondResponse = await postForm(server, buildPartialForm(deployment, [hashA]))
+        })
+
+        it('should respond 202 with only the remaining hash missing', async () => {
+          expect(secondResponse.status).toBe(202)
+          expect(await secondResponse.json()).toEqual({ missing: [hashB] })
+        })
+
+        describe('and the last batch uploads the remaining content file', () => {
+          let thirdResponse: Response
+
+          beforeEach(async () => {
+            // Last content file → auto-finalize.
+            thirdResponse = await postForm(server, buildPartialForm(deployment, [hashB]))
+          })
+
+          it('should finalize with 200 and a creation timestamp', async () => {
+            expect(thirdResponse.status).toBe(200)
+            expect(typeof (await thirdResponse.json()).creationTimestamp).toBe('number')
+          })
+
+          it('should delete the pending row and make the entity live', async () => {
+            expect(await countPendingDeployments(server)).toBe(0)
+            const deployed = await server.components.deploymentsRepository.getEntityById(
+              server.components.database,
+              deployment.entityId
+            )
+            expect(deployed?.entityId).toBe(deployment.entityId)
+          })
+        })
+      })
     })
 
-    it('should not require the entity file on requests after the first', async () => {
-      const deployment = await prepareSceneDeployment(
-        ['1,1'],
-        { 'a.txt': Buffer.from('another file a') },
-        identity
-      )
-      const [hashA] = deployment.contentHashes
+    describe('and requests after the first omit the entity file', () => {
+      let deployment: PreparedDeployment
+      let hashA: string
+      let firstResponse: Response
 
-      const res1 = await postForm(server, buildPartialForm(deployment, [deployment.entityId]))
-      expect(res1.status).toBe(202)
+      beforeEach(async () => {
+        // Unique content per test run: storage is content-addressed and survives resetServer.
+        const nonce = `${Date.now()}-${Math.random()}`
+        deployment = await prepareSceneDeployment(['1,1'], { 'a.txt': Buffer.from(`another file a ${nonce}`) }, identity)
+        ;[hashA] = deployment.contentHashes
+        firstResponse = await postForm(server, buildPartialForm(deployment, [deployment.entityId]))
+      })
 
-      // Second request omits the entity file entirely; the server reads it back from storage.
-      const res2 = await postForm(server, buildPartialForm(deployment, [hashA]))
-      expect(res2.status).toBe(200)
-      expect(await countPendingDeployments(server)).toBe(0)
+      it('should accept the first batch with 202', () => {
+        expect(firstResponse.status).toBe(202)
+      })
+
+      describe('and the content file is uploaded without the entity file', () => {
+        let secondResponse: Response
+
+        beforeEach(async () => {
+          // The request omits the entity file entirely; the server reads it back from storage.
+          secondResponse = await postForm(server, buildPartialForm(deployment, [hashA]))
+        })
+
+        it('should finalize with 200 and no pending row', async () => {
+          expect(secondResponse.status).toBe(200)
+          expect(await countPendingDeployments(server)).toBe(0)
+        })
+      })
     })
   })
 
   describe('when a single partial request already contains all the content', () => {
-    it('should finalize immediately and return 200', async () => {
+    let response: Response
+
+    beforeEach(async () => {
       const deployment = await prepareSceneDeployment(
         ['2,2'],
         { 'a.txt': Buffer.from('single batch file') },
         identity
       )
-      const res = await postForm(
+      response = await postForm(
         server,
         buildPartialForm(deployment, [deployment.entityId, ...deployment.contentHashes])
       )
-      expect(res.status).toBe(200)
+    })
+
+    it('should finalize immediately with 200 and no pending row', async () => {
+      expect(response.status).toBe(200)
       expect(await countPendingDeployments(server)).toBe(0)
     })
   })
 
   describe('when the same partial request is replayed', () => {
-    it('should respond idempotently with the same missing hashes and keep a single pending row', async () => {
-      const deployment = await prepareSceneDeployment(
+    let deployment: PreparedDeployment
+    let firstResponse: Response
+    let secondResponse: Response
+
+    beforeEach(async () => {
+      deployment = await prepareSceneDeployment(
         ['3,3'],
         { 'a.txt': Buffer.from('replay file a'), 'b.txt': Buffer.from('replay file b') },
         identity
       )
+      firstResponse = await postForm(server, buildPartialForm(deployment, [deployment.entityId]))
+      secondResponse = await postForm(server, buildPartialForm(deployment, [deployment.entityId]))
+    })
 
-      const first = await postForm(server, buildPartialForm(deployment, [deployment.entityId]))
-      const second = await postForm(server, buildPartialForm(deployment, [deployment.entityId]))
+    it('should respond 202 to both requests with the same missing hashes', async () => {
+      expect(firstResponse.status).toBe(202)
+      expect(secondResponse.status).toBe(202)
+      expect(new Set((await secondResponse.json()).missing)).toEqual(new Set(deployment.contentHashes))
+    })
 
-      expect(first.status).toBe(202)
-      expect(second.status).toBe(202)
-      expect(new Set((await second.json()).missing)).toEqual(new Set(deployment.contentHashes))
+    it('should keep a single pending row', async () => {
       expect(await countPendingDeployments(server)).toBe(1)
     })
   })
 
   describe('when the first partial request omits the entity file', () => {
-    it('should return 400', async () => {
+    let response: Response
+
+    beforeEach(async () => {
       const deployment = await prepareSceneDeployment(
         ['4,4'],
         { 'a.txt': Buffer.from('orphan content') },
         identity
       )
       const [hashA] = deployment.contentHashes
-      const res = await postForm(server, buildPartialForm(deployment, [hashA]))
-      expect(res.status).toBe(400)
+      response = await postForm(server, buildPartialForm(deployment, [hashA]))
+    })
+
+    it('should return 400', () => {
+      expect(response.status).toBe(400)
     })
   })
 
   describe('when an uploaded file does not match its declared hash key', () => {
-    it('should return 400', async () => {
+    let response: Response
+
+    beforeEach(async () => {
       const deployment = await prepareSceneDeployment(
         ['5,5'],
         { 'a.txt': Buffer.from('mismatch content') },
@@ -210,102 +275,192 @@ describe('Integration - Partial deployments', () => {
       form.append('bafyWrongKey0000000000000000000000000000000000000000000000', Buffer.from(deployment.files.get(deployment.entityId)!), {
         filename: 'wrong'
       })
-      const res = await postForm(server, form)
-      expect(res.status).toBe(400)
+      response = await postForm(server, form)
+    })
+
+    it('should return 400', () => {
+      expect(response.status).toBe(400)
     })
   })
 
   describe('when a non-partial request is missing content (legacy behavior)', () => {
-    it('should still reach the deployer and not create a pending row', async () => {
+    let response: Response
+
+    beforeEach(async () => {
       const deployment = await prepareSceneDeployment(
         ['6,6'],
         { 'a.txt': Buffer.from('legacy file a') },
         identity
       )
       // Full (non-partial) deploy with all content present → succeeds, no pending row involved.
-      const res = await postForm(
+      response = await postForm(
         server,
         buildPartialForm(deployment, [deployment.entityId, ...deployment.contentHashes], false)
       )
-      expect(res.status).toBe(200)
+    })
+
+    it('should still reach the deployer and not create a pending row', async () => {
+      expect(response.status).toBe(200)
       expect(await countPendingDeployments(server)).toBe(0)
     })
   })
 
   describe('when staging requests for the same entity run in parallel', () => {
-    it('should accept two distinct content batches uploaded concurrently and deploy the entity once', async () => {
-      const deployment = await prepareSceneDeployment(
-        ['7,7'],
-        { 'a.txt': Buffer.from('parallel a'.repeat(50)), 'b.txt': Buffer.from('parallel b'.repeat(60)) },
-        identity
-      )
-      const [hashA, hashB] = deployment.contentHashes
+    describe('and two distinct content batches are uploaded concurrently', () => {
+      let deployment: PreparedDeployment
+      let hashA: string
+      let hashB: string
+      let stagingResponse: Response
 
-      expect((await postForm(server, buildPartialForm(deployment, [deployment.entityId]))).status).toBe(202)
+      beforeEach(async () => {
+        // Unique content per test run: storage is content-addressed and survives resetServer.
+        const nonce = `${Date.now()}-${Math.random()}`
+        deployment = await prepareSceneDeployment(
+          ['7,7'],
+          { 'a.txt': Buffer.from(`parallel a ${nonce}`.repeat(50)), 'b.txt': Buffer.from(`parallel b ${nonce}`.repeat(60)) },
+          identity
+        )
+        ;[hashA, hashB] = deployment.contentHashes
+        stagingResponse = await postForm(server, buildPartialForm(deployment, [deployment.entityId]))
+      })
 
-      // Fire the two remaining content batches concurrently.
-      const [resA, resB] = await Promise.all([
-        postForm(server, buildPartialForm(deployment, [hashA])),
-        postForm(server, buildPartialForm(deployment, [hashB]))
-      ])
+      it('should accept the staging request with 202', () => {
+        expect(stagingResponse.status).toBe(202)
+      })
 
-      // No 500s: each request either finalizes (200) or reports remaining content (202), and exactly
-      // one completes the set. The entity is deployed exactly once, with no leftover pending row.
-      const statuses = [resA.status, resB.status].sort()
-      expect(statuses.every((status) => status === 200 || status === 202)).toBe(true)
-      expect(statuses).toContain(200)
-      expect(await countDeployments(server, deployment.entityId)).toBe(1)
-      expect(await countPendingDeployments(server)).toBe(0)
+      describe('and the two remaining batches are sent at the same time', () => {
+        let responseA: Response
+        let responseB: Response
+
+        beforeEach(async () => {
+          // Fire the two remaining content batches concurrently.
+          ;[responseA, responseB] = await Promise.all([
+            postForm(server, buildPartialForm(deployment, [hashA])),
+            postForm(server, buildPartialForm(deployment, [hashB]))
+          ])
+        })
+
+        it('should respond to each batch with 200 or 202 and finalize exactly one', () => {
+          // No 500s: each request either finalizes (200) or reports remaining content (202), and exactly
+          // one completes the set.
+          expect([responseA.status, responseB.status].every((status) => status === 200 || status === 202)).toBe(true)
+          expect([responseA.status, responseB.status]).toContain(200)
+        })
+
+        it('should deploy the entity exactly once with no leftover pending row', async () => {
+          expect(await countDeployments(server, deployment.entityId)).toBe(1)
+          expect(await countPendingDeployments(server)).toBe(0)
+        })
+      })
     })
 
-    it('should deploy once when two requests complete the content set at the same time', async () => {
-      const deployment = await prepareSceneDeployment(
-        ['8,8'],
-        { 'a.txt': Buffer.from('finalize a'.repeat(50)), 'b.txt': Buffer.from('finalize b'.repeat(60)) },
-        identity
-      )
-      const [hashA, hashB] = deployment.contentHashes
+    describe('and two identical completing requests race to finalize', () => {
+      let deployment: PreparedDeployment
+      let hashA: string
+      let hashB: string
+      let stagingResponse: Response
 
-      // Stage entity + A, leaving only B missing.
-      expect((await postForm(server, buildPartialForm(deployment, [deployment.entityId, hashA]))).status).toBe(202)
+      beforeEach(async () => {
+        // Unique content per test run: storage is content-addressed and survives resetServer.
+        const nonce = `${Date.now()}-${Math.random()}`
+        deployment = await prepareSceneDeployment(
+          ['8,8'],
+          { 'a.txt': Buffer.from(`finalize a ${nonce}`.repeat(50)), 'b.txt': Buffer.from(`finalize b ${nonce}`.repeat(60)) },
+          identity
+        )
+        ;[hashA, hashB] = deployment.contentHashes
+        // Stage entity + A, leaving only B missing.
+        stagingResponse = await postForm(server, buildPartialForm(deployment, [deployment.entityId, hashA]))
+      })
 
-      // Two identical completing requests (both upload B) race to finalize.
-      const [res1, res2] = await Promise.all([
-        postForm(server, buildPartialForm(deployment, [hashB])),
-        postForm(server, buildPartialForm(deployment, [hashB]))
-      ])
+      it('should accept the staging request with 202', () => {
+        expect(stagingResponse.status).toBe(202)
+      })
 
-      expect(res1.status).toBe(200)
-      expect(res2.status).toBe(200)
-      expect(await countDeployments(server, deployment.entityId)).toBe(1)
-      expect(await countPendingDeployments(server)).toBe(0)
+      describe('and both completing requests are sent at the same time', () => {
+        let firstResponse: Response
+        let secondResponse: Response
+
+        beforeEach(async () => {
+          // Two identical completing requests (both upload B) race to finalize.
+          ;[firstResponse, secondResponse] = await Promise.all([
+            postForm(server, buildPartialForm(deployment, [hashB])),
+            postForm(server, buildPartialForm(deployment, [hashB]))
+          ])
+        })
+
+        it('should return 200 to both requests', () => {
+          expect(firstResponse.status).toBe(200)
+          expect(secondResponse.status).toBe(200)
+        })
+
+        it('should deploy the entity exactly once with no leftover pending row', async () => {
+          expect(await countDeployments(server, deployment.entityId)).toBe(1)
+          expect(await countPendingDeployments(server)).toBe(0)
+        })
+      })
     })
   })
 
   describe('when uploading across multiple requests (resume fast-path)', () => {
-    it('should run the access check only on the request that creates the pending record', async () => {
-      const deployment = await prepareSceneDeployment(
+    let deployment: PreparedDeployment
+    let hashA: string
+    let hashB: string
+    let stagingSpy: jest.Mock
+    let firstResponse: Response
+
+    beforeEach(async () => {
+      // Unique content per test run: storage is content-addressed and survives resetServer.
+      const nonce = `${Date.now()}-${Math.random()}`
+      deployment = await prepareSceneDeployment(
         ['10,10'],
-        { 'a.txt': Buffer.from('fast path a'), 'b.txt': Buffer.from('fast path b') },
+        { 'a.txt': Buffer.from(`fast path a ${nonce}`), 'b.txt': Buffer.from(`fast path b ${nonce}`) },
         identity
       )
-      const [hashA, hashB] = deployment.contentHashes
-      const stagingSpy = server.components.validator.validateStagingScene as jest.Mock
+      ;[hashA, hashB] = deployment.contentHashes
+      stagingSpy = server.components.validator.validateStagingScene as jest.Mock
+      firstResponse = await postForm(server, buildPartialForm(deployment, [deployment.entityId]))
+    })
 
-      expect((await postForm(server, buildPartialForm(deployment, [deployment.entityId]))).status).toBe(202)
-      expect((await postForm(server, buildPartialForm(deployment, [hashA]))).status).toBe(202)
-      expect((await postForm(server, buildPartialForm(deployment, [hashB]))).status).toBe(200)
+    it('should accept the request that creates the pending record with 202', () => {
+      expect(firstResponse.status).toBe(202)
+    })
 
-      // First request creates the pending record with the full staging validation (access included);
-      // the two resume batches pass skipAccessCheck (finalize re-runs the full validation separately).
-      const skipFlags = stagingSpy.mock.calls.map((call) => call[1]?.skipAccessCheck)
-      expect(skipFlags).toEqual([false, true, true])
+    describe('and the first content batch is uploaded', () => {
+      let secondResponse: Response
+
+      beforeEach(async () => {
+        secondResponse = await postForm(server, buildPartialForm(deployment, [hashA]))
+      })
+
+      it('should accept the resume batch with 202', () => {
+        expect(secondResponse.status).toBe(202)
+      })
+
+      describe('and the last content batch is uploaded', () => {
+        let thirdResponse: Response
+
+        beforeEach(async () => {
+          thirdResponse = await postForm(server, buildPartialForm(deployment, [hashB]))
+        })
+
+        it('should finalize the upload with 200', () => {
+          expect(thirdResponse.status).toBe(200)
+        })
+
+        it('should run the access check only on the request that creates the pending record', () => {
+          // First request creates the pending record with the full staging validation (access included);
+          // the two resume batches pass skipAccessCheck (finalize re-runs the full validation separately).
+          expect(stagingSpy.mock.calls.map((call) => call[1]?.skipAccessCheck)).toEqual([false, true, true])
+        })
+      })
     })
   })
 
   describe('when the deployer loses access to the parcels mid-upload (e.g. the LAND is sold)', () => {
     let deployment: PreparedDeployment
     let originalTtlBackwards: number
+    let stagingResponse: Response
 
     beforeEach(async () => {
       // Unique content per test run: storage is content-addressed and survives resetServer, so reused
@@ -320,7 +475,7 @@ describe('Integration - Partial deployments', () => {
 
       // Stage the entity and the first file while access is still valid.
       const [hashA] = deployment.contentHashes
-      expect((await postForm(server, buildPartialForm(deployment, [deployment.entityId, hashA]))).status).toBe(202)
+      stagingResponse = await postForm(server, buildPartialForm(deployment, [deployment.entityId, hashA]))
 
       // Make the upload "long-running": shrink the vanilla freshness bound and let the entity age past
       // it, so only the pending-upload TTL anchor lets the finalize through — the exact case where the
@@ -337,29 +492,45 @@ describe('Integration - Partial deployments', () => {
       server.components.env.setConfig(EnvironmentConfig.REQUEST_TTL_BACKWARDS, originalTtlBackwards)
     })
 
-    it('should reject the completing request and not deploy the entity', async () => {
-      const [, hashB] = deployment.contentHashes
-      const res = await postForm(server, buildPartialForm(deployment, [hashB]))
-
-      expect(res.status).toBe(400)
-      expect(await countDeployments(server, deployment.entityId)).toBe(0)
+    it('should accept the staging request sent while access was still valid', () => {
+      expect(stagingResponse.status).toBe(202)
     })
 
-    it('should finalize once access is restored (e.g. the buyer grants operator rights back)', async () => {
-      const [, hashB] = deployment.contentHashes
-      expect((await postForm(server, buildPartialForm(deployment, [hashB]))).status).toBe(400)
-      ;(server.components.validator.validateCurrentAccess as jest.Mock).mockResolvedValue({ ok: true })
+    describe('and the completing request is sent after the sale', () => {
+      let completingResponse: Response
 
-      // All content is already staged; an empty resume request completes the upload.
-      const res = await postForm(server, buildPartialForm(deployment, []))
+      beforeEach(async () => {
+        const [, hashB] = deployment.contentHashes
+        completingResponse = await postForm(server, buildPartialForm(deployment, [hashB]))
+      })
 
-      expect(res.status).toBe(200)
-      expect(await countDeployments(server, deployment.entityId)).toBe(1)
+      it('should reject the completing request and not deploy the entity', async () => {
+        expect(completingResponse.status).toBe(400)
+        expect(await countDeployments(server, deployment.entityId)).toBe(0)
+      })
+
+      describe('and access is later restored (e.g. the buyer grants operator rights back)', () => {
+        let resumeResponse: Response
+
+        beforeEach(async () => {
+          ;(server.components.validator.validateCurrentAccess as jest.Mock).mockResolvedValue({ ok: true })
+
+          // All content is already staged; an empty resume request completes the upload.
+          resumeResponse = await postForm(server, buildPartialForm(deployment, []))
+        })
+
+        it('should finalize the upload and deploy the entity', async () => {
+          expect(resumeResponse.status).toBe(200)
+          expect(await countDeployments(server, deployment.entityId)).toBe(1)
+        })
+      })
     })
   })
 
   describe('when a staging request is rate limited', () => {
-    it('should respond 429 (a transient, resumable status) rather than 400', async () => {
+    let response: Response
+
+    beforeEach(async () => {
       jest.spyOn(server.components.deployer, 'isRateLimited').mockReturnValue(true)
 
       const deployment = await prepareSceneDeployment(
@@ -367,9 +538,11 @@ describe('Integration - Partial deployments', () => {
         { 'a.txt': Buffer.from('rate limited content') },
         identity
       )
-      const res = await postForm(server, buildPartialForm(deployment, [deployment.entityId]))
+      response = await postForm(server, buildPartialForm(deployment, [deployment.entityId]))
+    })
 
-      expect(res.status).toBe(429)
+    it('should respond 429 (a transient, resumable status) rather than 400', async () => {
+      expect(response.status).toBe(429)
       expect(await countPendingDeployments(server)).toBe(0)
     })
   })

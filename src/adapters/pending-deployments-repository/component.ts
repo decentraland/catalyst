@@ -50,16 +50,25 @@ async function getByEntityId(database: DatabaseClient, entityId: string): Promis
   return undefined
 }
 
-async function upsert(database: DatabaseClient, row: UpsertPendingDeployment): Promise<void> {
-  // ON CONFLICT bumps only `updated_at`: `created_at` is the deployment-TTL anchor and must stay
-  // stable so resuming an upload never extends the window. entity_id is content-addressed, so the
-  // other columns are immutable for a given id anyway.
+async function upsert(database: DatabaseClient, row: UpsertPendingDeployment, ttlMs: number): Promise<void> {
+  // ON CONFLICT bumps `updated_at` and keeps `created_at` STABLE while the row is within its TTL:
+  // `created_at` is the deployment-TTL anchor, so resuming an upload must never extend the window.
+  // An EXPIRED row is the exception — it is dead state (its content is GC-eligible and reads treat it
+  // as absent), so re-staging the same entity resets `created_at` to now, starting a fresh window
+  // instead of resurrecting a permanently-expired anchor. entity_id is content-addressed, so the other
+  // columns are immutable for a given id anyway.
+  const cutoff = Date.now() - ttlMs
   await database.queryWithValues(
     SQL`INSERT INTO pending_deployments
           (entity_id, entity_type, pointers, content_hashes, deployer_address, created_at, updated_at)
         VALUES
           (${row.entityId}, ${row.entityType}, ${row.pointers}, ${row.contentHashes}, ${row.deployerAddress}, now(), now())
-        ON CONFLICT (entity_id) DO UPDATE SET updated_at = now()`,
+        ON CONFLICT (entity_id) DO UPDATE SET
+          updated_at = now(),
+          created_at = CASE
+            WHEN pending_deployments.created_at < to_timestamp(${cutoff} / 1000.0) THEN now()
+            ELSE pending_deployments.created_at
+          END`,
     'pending_deployment_upsert'
   )
 }
