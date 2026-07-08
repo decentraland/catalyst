@@ -281,6 +281,27 @@ describe('Integration - Partial deployments', () => {
     })
   })
 
+  describe('when uploading across multiple requests (resume fast-path)', () => {
+    it('should run the access check only on the request that creates the pending record', async () => {
+      const deployment = await prepareSceneDeployment(
+        ['10,10'],
+        { 'a.txt': Buffer.from('fast path a'), 'b.txt': Buffer.from('fast path b') },
+        identity
+      )
+      const [hashA, hashB] = deployment.contentHashes
+      const stagingSpy = server.components.validator.validateStagingScene as jest.Mock
+
+      expect((await postForm(server, buildPartialForm(deployment, [deployment.entityId]))).status).toBe(202)
+      expect((await postForm(server, buildPartialForm(deployment, [hashA]))).status).toBe(202)
+      expect((await postForm(server, buildPartialForm(deployment, [hashB]))).status).toBe(200)
+
+      // First request creates the pending record with the full staging validation (access included);
+      // the two resume batches pass skipAccessCheck (finalize re-runs the full validation separately).
+      const skipFlags = stagingSpy.mock.calls.map((call) => call[1]?.skipAccessCheck)
+      expect(skipFlags).toEqual([false, true, true])
+    })
+  })
+
   describe('when a staging request is rate limited', () => {
     it('should respond 429 (a transient, resumable status) rather than 400', async () => {
       jest.spyOn(server.components.deployer, 'isRateLimited').mockReturnValue(true)

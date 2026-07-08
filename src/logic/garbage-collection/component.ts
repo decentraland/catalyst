@@ -1,5 +1,4 @@
 import * as bf from 'bloom-filters'
-import PQueue from 'p-queue'
 import SQL from 'sql-template-strings'
 import { SYSTEM_PROPERTIES } from '../../adapters/system-properties'
 import { runLoggingPerformance } from '../../instrument'
@@ -326,30 +325,47 @@ export function createGarbageCollectionComponent(
       )
     })
 
-    const queue = new PQueue({ concurrency: 1000 })
     let numberOfDeletedFiles = 0
+    let batch: string[] = []
+
+    // Delete in batches, re-verifying each batch against the database right before deletion. The bloom
+    // filter was built once at the start of a potentially hours-long sweep, so anything referenced
+    // AFTER that — most notably a partial (pending) upload that starts mid-sweep and stages files for
+    // hours — is invisible to it. findReferencedHashes covers active deployments, snapshots, entity ids
+    // and non-expired pending deployments at delete time.
+    const flushBatch = async (): Promise<void> => {
+      if (batch.length === 0) {
+        return
+      }
+      const candidates = batch
+      batch = []
+      try {
+        const stillReferenced = await components.contentFilesRepository.findReferencedHashes(
+          components.database,
+          candidates,
+          pendingDeploymentTtlMs
+        )
+        const toDelete = candidates.filter((hash) => !stillReferenced.has(hash))
+        if (toDelete.length === 0) {
+          return
+        }
+        await components.storage.delete(toDelete)
+        numberOfDeletedFiles += toDelete.length
+      } catch (error) {
+        unreferencedLogger.error(error as Error, { batchSize: String(candidates.length) })
+      }
+    }
+
     unreferencedLogger.info(`Deleting files...`)
     for await (const storageFileId of components.storage.allFileIds()) {
       if (!referencedHashesBloom.has(storageFileId)) {
-        // Enqueue without awaiting each task so up to `concurrency` deletes run in parallel; awaiting
-        // `queue.add` here would serialize them and make the concurrency setting meaningless.
-        // Backpressure keeps the queue from growing unbounded ahead of the workers.
-        void queue.add(async () => {
-          try {
-            await components.storage.delete([storageFileId])
-            numberOfDeletedFiles++
-          } catch (error) {
-            unreferencedLogger.error(error as Error, { storageFileId })
-          }
-        })
-        // Backpressure: if the queued (not-yet-started) work grows too large, wait for it to drain
-        // before enqueuing more, so a multi-million-file sweep can't buffer every task in memory.
-        if (queue.size >= GC_DELETE_BATCH_SIZE * 2) {
-          await queue.onEmpty()
+        batch.push(storageFileId)
+        if (batch.length >= GC_DELETE_BATCH_SIZE) {
+          await flushBatch()
         }
       }
     }
-    await queue.onIdle()
+    await flushBatch()
     unreferencedLogger.info(`Deleted ${numberOfDeletedFiles} files`)
   }
 

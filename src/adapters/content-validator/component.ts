@@ -252,24 +252,29 @@ async function createSubgraphAccessValidateFn(
  * request, before all of its content files are necessarily present. Excludes the size validation
  * (replaced by a cumulative check in the partial-deployments component) and the content-completeness
  * validation (only checkable at finalize). `accessValidateFn` runs last because it is the expensive
- * on-chain / subgraph call.
+ * on-chain / subgraph call; `includeAccessCheck: false` builds the resume variant that omits it (see
+ * IContentValidator.validateStagingScene for when that is safe).
  */
 function createStagingSceneValidateFn(
   components: Pick<AppComponents, 'logs'>,
   externalCalls: ExternalCalls,
-  accessValidateFn: ValidateFn
+  accessValidateFn: ValidateFn,
+  includeAccessCheck: boolean
 ): ValidateFn {
   const { logs } = components
-  return validateAll(
+  const validations = [
     entityStructureValidationFn,
     ipfsHashingValidateFn,
     metadataValidateFn,
     adr45ValidateFn,
     createSignatureValidateFn({ logs, externalCalls, accessValidateFn }),
     sceneValidateFn,
-    allHashesInUploadedFilesAreReportedInTheEntityValidateFn,
-    accessValidateFn
-  )
+    allHashesInUploadedFilesAreReportedInTheEntityValidateFn
+  ]
+  if (includeAccessCheck) {
+    validations.push(accessValidateFn)
+  }
+  return validateAll(...validations)
 }
 
 /**
@@ -307,11 +312,13 @@ export async function createContentValidator(components: ContentValidatorDeps): 
   }
 
   const validate = createValidator({ logs, externalCalls, accessValidateFn })
-  const validateStagingScene = createStagingSceneValidateFn(components, externalCalls, accessValidateFn)
+  const validateStagingWithAccess = createStagingSceneValidateFn(components, externalCalls, accessValidateFn, true)
+  const validateStagingWithoutAccess = createStagingSceneValidateFn(components, externalCalls, accessValidateFn, false)
 
   return {
     validate,
-    validateStagingScene,
+    validateStagingScene: (deployment, options) =>
+      options?.skipAccessCheck ? validateStagingWithoutAccess(deployment) : validateStagingWithAccess(deployment),
     getMaxSizeInBytesPerPointer: (type: EntityType) => entityParameters[type].maxSizeInMB * 1024 * 1024
   }
 }

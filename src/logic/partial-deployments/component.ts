@@ -68,7 +68,10 @@ export function createPartialDeployments(
         await sleep(FINALIZE_POINTER_CONFLICT_DELAY_MS)
         continue
       }
-      throw new InvalidPartialDeploymentError(result.errors)
+      // Exhausting the pointer-conflict retries is a transient condition (someone else is deploying on
+      // these pointers right now), not a validation failure: 429 tells the client to resume later —
+      // the staged content is intact.
+      throw new InvalidPartialDeploymentError(result.errors, isPointerConflict ? 429 : 400)
     }
   }
 
@@ -150,11 +153,23 @@ export function createPartialDeployments(
 
     // Content-independent validations: entity structure, IPFS hashing, metadata schema, ADR45,
     // signature, scene rules, "reject extra files", and the LAND access/ownership check.
-    const validationResult = await validator.validateStagingScene({
-      entity,
-      files: uploadedFiles,
-      auditInfo: { authChain }
-    })
+    //
+    // Resume batches skip the slow on-chain/subgraph access check, but only when the signer is the
+    // deployer who created the pending record: that creation required passing the access check, every
+    // uploaded byte is hash-verified against the staged manifest, and finalize re-runs the full
+    // validation (including access) before going live. Any other signer — authorized or not — goes
+    // through the full staging validation, so a third party can't ride an existing upload's fast path.
+    const isResumeBySameDeployer =
+      !!activePending &&
+      activePending.deployerAddress.toLowerCase() === Authenticator.ownerAddress(authChain).toLowerCase()
+    const validationResult = await validator.validateStagingScene(
+      {
+        entity,
+        files: uploadedFiles,
+        auditInfo: { authChain }
+      },
+      { skipAccessCheck: isResumeBySameDeployer }
+    )
     if (!validationResult.ok) {
       throw new InvalidPartialDeploymentError(validationResult.errors ?? ['The staging validation was not successful.'])
     }
@@ -229,10 +244,15 @@ export function createPartialDeployments(
     }
 
     // Record/refresh the pending deployment, replacing any pending upload on overlapping pointers, in a
-    // short transaction serialized by an advisory lock. Done BEFORE storing the batch so the staged
-    // content is protected from the garbage collector as soon as it lands.
+    // short transaction serialized by an advisory lock. This runs on EVERY batch (not only the first)
+    // and always BEFORE storing the batch's files: it is what protects the staged content from the
+    // garbage collector, and re-asserting it per batch resurrects the row if a competing overlapping
+    // upload replaced it between requests — otherwise this batch's files would be written with no GC
+    // protection for the remainder of the upload. Expired rows are purged in the same transaction so a
+    // resurrected row never carries a stale created_at.
     await database.transaction(async (tx) => {
       await pendingDeploymentsRepository.acquireStagingLock(tx)
+      await pendingDeploymentsRepository.deleteExpired(tx, pendingDeploymentTtlMs)
       const replaced = await pendingDeploymentsRepository.deleteOverlappingPointers(tx, entity.pointers, entityId)
       if (replaced.length > 0) {
         metrics.increment('dcl_pending_deployments_replaced_total', {}, replaced.length)
