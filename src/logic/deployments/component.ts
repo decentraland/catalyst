@@ -100,7 +100,7 @@ export async function retryFailedDeploymentExecution(
         )
       } catch (error) {
         // it failed again, override failed deployment error description
-        const errorDescription = error.message + ''
+        const errorDescription = error instanceof Error ? error.message : String(error)
 
         if (!errorDescription.includes(IGNORING_FIX_ERROR)) {
           await components.failedDeployments.reportFailure({ ...failedDeployment, errorDescription })
