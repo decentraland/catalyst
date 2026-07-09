@@ -75,11 +75,14 @@ export function createPartialDeployments(
     }
   }
 
-  async function storeMissing(
-    uploadedFiles: Map<string, Uint8Array>,
-    alreadyStored: (hash: string) => boolean
-  ): Promise<void> {
-    const toStore = Array.from(uploadedFiles).filter(([hash]) => !alreadyStored(hash))
+  async function storeUploaded(uploadedFiles: Map<string, Uint8Array>): Promise<void> {
+    // Store every file the client sent this batch, in bounded-parallel batches. We do NOT skip files a
+    // pre-request snapshot said were already stored: that snapshot is taken before the pending row (and
+    // its GC protection) is committed, so a file present then could be swept before we get here — and
+    // skipping it would discard bytes the client uploaded in this very batch. Storage is content-
+    // addressed so re-storing an already-present file is an idempotent no-op, and the client already
+    // omits files reported by /available-content, so this rarely re-sends present content anyway.
+    const toStore = Array.from(uploadedFiles)
     for (let i = 0; i < toStore.length; i += CONTENT_STORE_CONCURRENCY) {
       await Promise.all(
         toStore
@@ -250,8 +253,9 @@ export function createPartialDeployments(
     // and always BEFORE storing the batch's files: it is what protects the staged content from the
     // garbage collector, and re-asserting it per batch resurrects the row if a competing overlapping
     // upload replaced it between requests — otherwise this batch's files would be written with no GC
-    // protection for the remainder of the upload. Expired rows are purged in the same transaction so a
-    // resurrected row never carries a stale created_at.
+    // protection for the remainder of the upload. The upsert resets an expired row's created_at (see
+    // the repository), so a resurrected row never carries a stale TTL anchor; purging other entities'
+    // expired rows is the cleanup job's responsibility, not this per-request critical section's.
     await database.transaction(async (tx) => {
       await pendingDeploymentsRepository.acquireStagingLock(tx)
       const replaced = await pendingDeploymentsRepository.deleteOverlappingPointers(tx, entity.pointers, entityId)
@@ -277,11 +281,8 @@ export function createPartialDeployments(
       )
     }, 'tx_stage_pending_deployment')
 
-    // Store the batch's files (content-addressed, so concurrent identical writes are idempotent), in
-    // bounded-parallel batches. Presence is derived from the fileInfoMultiple lookup already performed
-    // for the size check — no extra storage round trip. The entity file (not part of contentHashes) is
-    // always (re)stored; it is small and this covers the first request.
-    await storeMissing(uploadedFiles, (hash) => hash !== entityId && storedInfo.get(hash) !== undefined)
+    // Store the batch's files (content-addressed, so concurrent identical writes are idempotent).
+    await storeUploaded(uploadedFiles)
 
     // Completeness must be a fresh read (not derived from storedInfo): a concurrent partial request for
     // the same entity may have stored the remaining content while this one ran, and whichever request
