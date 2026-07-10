@@ -1,8 +1,8 @@
-import { bufferToStream } from '@dcl/catalyst-storage/dist/content-item'
 import { AuthChain, Authenticator } from '@dcl/crypto'
 import { Entity, EntityType, IPFSv2 } from '@dcl/schemas'
 import { isDeepStrictEqual } from 'util'
 import { EnvironmentConfig } from '../../Environment'
+import { storeStreamsInBatches } from '../store-content'
 import {
   AuditInfo,
   DeploymentContext,
@@ -21,11 +21,6 @@ import { createDeployRateLimiter, IDeployRateLimiterComponent } from './rate-lim
 import * as serverValidator from './server-validator'
 import ms from 'ms'
 import { TestableDeploymentService } from './types'
-
-// Upper bound on concurrent content-file writes within a single deployment. Content files are
-// content-addressed and independent, so they can be written in parallel; the cap keeps a single
-// many-file entity from fanning out into an unbounded number of simultaneous storage writes.
-const CONTENT_STORE_CONCURRENCY = 10
 
 // Stable fragment of the error returned when a concurrent deploy already holds one of the pointers.
 // Exported so callers (e.g. the partial-deployment finalize retry) can detect this transient condition
@@ -99,13 +94,22 @@ export function createDeploymentService(
   // already too old by wall clock (the common fresh deploy short-circuits with a pure comparison) and
   // only for scenes (the only entity type that can be partially uploaded). So profiles and other
   // high-volume deploys never touch pending_deployments here.
+  // True when the entity is older, by wall clock, than the vanilla REQUEST_TTL_BACKWARDS bound — i.e.
+  // only a pending-upload anchor could have let it through the freshness check. The TTL-anchoring logic
+  // and the finalize current-access gate both key off this exact condition, so it is defined once here
+  // to keep them from drifting. (Comparison, not `<=`, so an unset TTL — `x > undefined` is false —
+  // behaves as before.)
+  function isOlderThanRequestTtlBackwards(entity: Entity): boolean {
+    const backwards = components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
+    return Date.now() - entity.timestamp > backwards
+  }
+
   async function isRequestTtlBackwards(entity: Entity): Promise<boolean> {
     const backwards = components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
     // Anchoring on an earlier pending.created_at can only make this smaller, so if the entity is not
     // already too old measured against now, no anchor changes the answer. This branch also covers the
     // hot path (fresh deploys) and non-scene types, keeping the pending lookup off them entirely.
-    // (Comparison, not `<=`, so an unset TTL — `x > undefined` is false — behaves as before.)
-    if (!(Date.now() - entity.timestamp > backwards)) {
+    if (!isOlderThanRequestTtlBackwards(entity)) {
       return false
     }
     // Too old by wall clock. Only scenes can be partial uploads, so only they can have a pending anchor.
@@ -320,16 +324,9 @@ export function createDeploymentService(
     // Check for if content is already stored
     const alreadyStoredHashes: Map<string, boolean> = await components.storage.existMultiple(Array.from(hashes.keys()))
 
-    // Store all the entity's not-already-stored content. The files are independent
-    // (content-addressed) and this runs before/outside the deployment transaction, so write
-    // them in bounded-parallel batches instead of one at a time to speed up multi-file deploys.
+    // Store all the entity's not-already-stored content, in bounded-parallel batches (see helper).
     const filesToStore = Array.from(hashes).filter(([fileHash]) => !alreadyStoredHashes.get(fileHash))
-    for (let i = 0; i < filesToStore.length; i += CONTENT_STORE_CONCURRENCY) {
-      const batch = filesToStore.slice(i, i + CONTENT_STORE_CONCURRENCY)
-      await Promise.all(
-        batch.map(([fileHash, content]) => components.storage.storeStream(fileHash, bufferToStream(content)))
-      )
-    }
+    await storeStreamsInBatches(components.storage, filesToStore)
   }
 
   async function validateDeployment(
@@ -387,8 +384,7 @@ export function createDeploymentService(
     // unaffected; it covers both completion paths (auto-finalize and a vanilla POST of a pending
     // entity) because both go through this pipeline.
     if (context === DeploymentContext.LOCAL && entity.type === EntityType.SCENE) {
-      const requestTtlBackwards = components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
-      if (Date.now() - entity.timestamp > requestTtlBackwards) {
+      if (isOlderThanRequestTtlBackwards(entity)) {
         const currentAccessResult = await components.validator.validateCurrentAccess({
           entity: entity as any,
           auditInfo,
@@ -467,6 +463,7 @@ export function createDeploymentService(
       const overlappingPointers = tryAcquirePointerLocks(entity.type, entity.pointers)
       if (overlappingPointers.length > 0) {
         return InvalidResult({
+          kind: 'pointer-conflict',
           errors: [
             `The following pointers are ${POINTERS_BEING_DEPLOYED_ERROR}: '${overlappingPointers.join()}'. Please try again in a few seconds.`
           ]

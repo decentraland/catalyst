@@ -255,6 +255,7 @@ export enum EnvironmentConfig {
   GARBAGE_COLLECTION_INTERVAL,
   PENDING_DEPLOYMENT_TTL,
   PENDING_DEPLOYMENTS_CLEANUP_INTERVAL,
+  MAX_PENDING_DEPLOYMENTS_PER_DEPLOYER,
   BLOOM_FILTER_EXPECTED_ELEMENTS,
   SEQUENTIAL_TASK_CONCURRENCY,
   ENTITIES_CACHE_CONTROL_MAX_AGE,
@@ -505,6 +506,11 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PENDING_DEPLOYMENTS_CLEANUP_INTERVAL, () =>
       parseMsEnv('PENDING_DEPLOYMENTS_CLEANUP_INTERVAL', ms('1h'))
     )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_PENDING_DEPLOYMENTS_PER_DEPLOYER, () => {
+      const parsed = parseInt(process.env.MAX_PENDING_DEPLOYMENTS_PER_DEPLOYER ?? '', 10)
+      // Max concurrent non-expired pending (partial) uploads one deployer may have in flight. Floor at 1.
+      return Number.isNaN(parsed) ? 10 : Math.max(parsed, 1)
+    })
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.BLOOM_FILTER_EXPECTED_ELEMENTS, () => {
       const parsed = parseInt(process.env.BLOOM_FILTER_EXPECTED_ELEMENTS ?? '', 10)
       // Floor at 1: a 0/negative value would make BloomFilter.create() a degenerate 0-size filter.

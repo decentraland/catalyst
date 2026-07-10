@@ -18,7 +18,8 @@ type PreparedDeployment = {
 async function prepareSceneDeployment(
   pointers: string[],
   contents: Record<string, Buffer>,
-  identity: IdentityType
+  identity: IdentityType,
+  timestamp: number = Date.now()
 ): Promise<PreparedDeployment> {
   const files = new Map<string, Uint8Array>(Object.entries(contents))
   const prepared = await buildEntity({
@@ -26,7 +27,7 @@ async function prepareSceneDeployment(
     pointers,
     files,
     metadata: { main: 'bin/main.js', scene: { base: pointers[0], parcels: pointers } },
-    timestamp: Date.now()
+    timestamp
   })
   const signature = Authenticator.createSignature(identity, prepared.entityId)
   const authChain = Authenticator.createSimpleAuthChain(prepared.entityId, identity.address, signature)
@@ -62,6 +63,13 @@ async function postForm(server: TestProgram, form: FormData): Promise<Response> 
 async function countPendingDeployments(server: TestProgram): Promise<number> {
   const result = await server.components.database.query<{ count: string }>('SELECT COUNT(*) as count FROM pending_deployments')
   return parseInt(result.rows[0].count)
+}
+
+async function pendingEntityIds(server: TestProgram): Promise<string[]> {
+  const result = await server.components.database.query<{ entity_id: string }>(
+    'SELECT entity_id FROM pending_deployments'
+  )
+  return result.rows.map((r) => r.entity_id)
 }
 
 async function countDeployments(server: TestProgram, entityId: string): Promise<number> {
@@ -544,6 +552,48 @@ describe('Integration - Partial deployments', () => {
     it('should respond 429 (a transient, resumable status) rather than 400', async () => {
       expect(response.status).toBe(429)
       expect(await countPendingDeployments(server)).toBe(0)
+    })
+  })
+
+  describe('when a second partial upload targets pointers held by a pending upload', () => {
+    let older: PreparedDeployment
+    let newer: PreparedDeployment
+
+    beforeEach(async () => {
+      // Unique content per run (content-addressed storage survives resetServer); the two entities differ
+      // by timestamp so they order deterministically on the same pointers.
+      const nonce = `${Date.now()}-${Math.random()}`
+      const now = Date.now()
+      older = await prepareSceneDeployment(['5,5'], { 'a.txt': Buffer.from(`older ${nonce}`) }, identity, now - 60_000)
+      newer = await prepareSceneDeployment(['5,5'], { 'a.txt': Buffer.from(`newer ${nonce}`) }, identity, now)
+    })
+
+    describe('and the incoming upload is newer than the pending one', () => {
+      let response: Response
+
+      beforeEach(async () => {
+        await postForm(server, buildPartialForm(older, [older.entityId]))
+        response = await postForm(server, buildPartialForm(newer, [newer.entityId]))
+      })
+
+      it('should accept it and replace the older pending upload', async () => {
+        expect(response.status).toBe(202)
+        expect(await pendingEntityIds(server)).toEqual([newer.entityId])
+      })
+    })
+
+    describe('and the incoming upload is older than the pending one', () => {
+      let response: Response
+
+      beforeEach(async () => {
+        await postForm(server, buildPartialForm(newer, [newer.entityId]))
+        response = await postForm(server, buildPartialForm(older, [older.entityId]))
+      })
+
+      it('should reject the older upload with 400 and keep the newer one pending', async () => {
+        expect(response.status).toBe(400)
+        expect(await pendingEntityIds(server)).toEqual([newer.entityId])
+      })
     })
   })
 })

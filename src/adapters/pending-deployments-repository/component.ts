@@ -1,6 +1,11 @@
 import SQL from 'sql-template-strings'
 import { DatabaseClient } from '../../adapters/database'
-import { IPendingDeploymentsRepository, PendingDeploymentRow, UpsertPendingDeployment } from './types'
+import {
+  IPendingDeploymentsRepository,
+  OverlappingPendingDeployment,
+  PendingDeploymentRow,
+  UpsertPendingDeployment
+} from './types'
 
 // Fixed key for the transaction-scoped advisory lock that serializes the "replace overlapping + upsert"
 // critical section across staging requests (and processes). An arbitrary distinctive constant chosen
@@ -20,6 +25,7 @@ interface PendingDeploymentDbRow {
   pointers: string[]
   content_hashes: string[]
   deployer_address: string
+  entity_timestamp: string
   created_at: Date
   updated_at: Date
 }
@@ -31,6 +37,8 @@ function toRow(row: PendingDeploymentDbRow): PendingDeploymentRow {
     pointers: row.pointers,
     contentHashes: row.content_hashes,
     deployerAddress: row.deployer_address,
+    // bigint columns come back as strings from node-pg.
+    entityTimestamp: parseInt(row.entity_timestamp, 10),
     createdAt: row.created_at,
     updatedAt: row.updated_at
   }
@@ -38,7 +46,7 @@ function toRow(row: PendingDeploymentDbRow): PendingDeploymentRow {
 
 async function getByEntityId(database: DatabaseClient, entityId: string): Promise<PendingDeploymentRow | undefined> {
   const result = await database.queryWithValues<PendingDeploymentDbRow>(
-    SQL`SELECT entity_id, entity_type, pointers, content_hashes, deployer_address, created_at, updated_at
+    SQL`SELECT entity_id, entity_type, pointers, content_hashes, deployer_address, entity_timestamp, created_at, updated_at
         FROM pending_deployments
         WHERE entity_id = ${entityId}
         LIMIT 1`,
@@ -60,9 +68,9 @@ async function upsert(database: DatabaseClient, row: UpsertPendingDeployment, tt
   const cutoff = Date.now() - ttlMs
   await database.queryWithValues(
     SQL`INSERT INTO pending_deployments
-          (entity_id, entity_type, pointers, content_hashes, deployer_address, created_at, updated_at)
+          (entity_id, entity_type, pointers, content_hashes, deployer_address, entity_timestamp, created_at, updated_at)
         VALUES
-          (${row.entityId}, ${row.entityType}, ${row.pointers}, ${row.contentHashes}, ${row.deployerAddress}, now(), now())
+          (${row.entityId}, ${row.entityType}, ${row.pointers}, ${row.contentHashes}, ${row.deployerAddress}, ${row.entityTimestamp}, now(), now())
         ON CONFLICT (entity_id) DO UPDATE SET
           updated_at = now(),
           created_at = CASE
@@ -80,6 +88,23 @@ async function deleteByEntityId(database: DatabaseClient, entityId: string): Pro
   )
 }
 
+async function getOverlappingPointers(
+  database: DatabaseClient,
+  pointers: string[],
+  excludeEntityId: string
+): Promise<OverlappingPendingDeployment[]> {
+  if (pointers.length === 0) {
+    return []
+  }
+  const result = await database.queryWithValues<{ entity_id: string; entity_timestamp: string }>(
+    SQL`SELECT entity_id, entity_timestamp
+        FROM pending_deployments
+        WHERE pointers && ${pointers} AND entity_id <> ${excludeEntityId}`,
+    'pending_deployment_get_overlapping'
+  )
+  return result.rows.map((r) => ({ entityId: r.entity_id, entityTimestamp: parseInt(r.entity_timestamp, 10) }))
+}
+
 async function deleteOverlappingPointers(
   database: DatabaseClient,
   pointers: string[],
@@ -95,6 +120,21 @@ async function deleteOverlappingPointers(
     'pending_deployment_delete_overlapping'
   )
   return result.rows.map((r) => r.entity_id)
+}
+
+async function countActiveByDeployer(
+  database: DatabaseClient,
+  deployerAddress: string,
+  ttlMs: number
+): Promise<number> {
+  const cutoff = Date.now() - ttlMs
+  const result = await database.queryWithValues<{ count: string }>(
+    SQL`SELECT COUNT(*) AS count FROM pending_deployments
+        WHERE LOWER(deployer_address) = ${deployerAddress.toLowerCase()}
+          AND created_at > to_timestamp(${cutoff} / 1000.0)`,
+    'pending_deployment_count_by_deployer'
+  )
+  return parseInt(result.rows[0].count, 10)
 }
 
 async function deleteExpired(database: DatabaseClient, ttlMs: number): Promise<number> {
@@ -131,7 +171,9 @@ export function createPendingDeploymentsRepository(): IPendingDeploymentsReposit
     getByEntityId,
     upsert,
     deleteByEntityId,
+    getOverlappingPointers,
     deleteOverlappingPointers,
+    countActiveByDeployer,
     deleteExpired,
     streamAllNonExpiredHashes,
     acquireStagingLock

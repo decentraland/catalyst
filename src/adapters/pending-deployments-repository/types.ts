@@ -7,6 +7,7 @@ export interface PendingDeploymentRow {
   pointers: string[]
   contentHashes: string[]
   deployerAddress: string
+  entityTimestamp: number
   createdAt: Date
   updatedAt: Date
 }
@@ -17,6 +18,13 @@ export interface UpsertPendingDeployment {
   pointers: string[]
   contentHashes: string[]
   deployerAddress: string
+  entityTimestamp: number
+}
+
+/** An overlapping pending deployment, used to resolve which of two uploads keeps the parcel-set slot. */
+export interface OverlappingPendingDeployment {
+  entityId: string
+  entityTimestamp: number
 }
 
 export interface IPendingDeploymentsRepository {
@@ -30,11 +38,22 @@ export interface IPendingDeploymentsRepository {
   upsert(db: DatabaseClient, row: UpsertPendingDeployment, ttlMs: number): Promise<void>
   deleteByEntityId(db: DatabaseClient, entityId: string): Promise<void>
   /**
+   * Returns the pending deployments whose pointers overlap the given ones, except `excludeEntityId`,
+   * with their entity timestamps — so the caller can decide whether the incoming upload is newer.
+   */
+  getOverlappingPointers(
+    db: DatabaseClient,
+    pointers: string[],
+    excludeEntityId: string
+  ): Promise<OverlappingPendingDeployment[]>
+  /**
    * Deletes every pending deployment whose pointers overlap the given ones, except `excludeEntityId`.
    * Returns the entity ids that were removed (for logging/metrics). Enforces the "one pending
    * deployment per parcel set" rule.
    */
   deleteOverlappingPointers(db: DatabaseClient, pointers: string[], excludeEntityId: string): Promise<string[]>
+  /** Counts a deployer's non-expired pending deployments. Used to cap concurrent staged uploads. */
+  countActiveByDeployer(db: DatabaseClient, deployerAddress: string, ttlMs: number): Promise<number>
   /** Deletes pending deployments older than `ttlMs`. Returns the number of rows removed. */
   deleteExpired(db: DatabaseClient, ttlMs: number): Promise<number>
   /**

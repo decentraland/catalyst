@@ -15,6 +15,9 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     pointers: { type: 'text[]', notNull: true },
     content_hashes: { type: 'text[]', notNull: true },
     deployer_address: { type: 'text', notNull: true },
+    // The entity's own timestamp (deployment ordering). Overlapping pending uploads resolve by this so
+    // the single per-parcel-set slot goes to the newest scene, not merely the last writer.
+    entity_timestamp: { type: 'bigint', notNull: true },
     created_at: { type: 'timestamptz', notNull: true, default: pgm.func('now()') },
     updated_at: { type: 'timestamptz', notNull: true, default: pgm.func('now()') }
   })
