@@ -106,7 +106,7 @@ export async function retryFailedDeploymentExecution(
           await components.failedDeployments.reportFailure({ ...failedDeployment, errorDescription })
         }
 
-        logs.error(`Failed to fix deployment of entity`, { entityId, entityType, errorDescription })
+        logs.warn(`Failed to fix deployment of entity`, { entityId, entityType, errorDescription })
       }
     })
   }
