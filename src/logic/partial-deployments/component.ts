@@ -250,23 +250,6 @@ export function createPartialDeployments(
     await database.transaction(async (tx) => {
       await pendingDeploymentsRepository.acquireStagingLock(tx)
 
-      // Cap concurrent staged uploads per deployer so one account can't pin storage across many
-      // pointer-sets for the full TTL. Enforced HERE, under the advisory lock (which serializes all
-      // staging), so concurrent new uploads can't each read a count below the cap and then all insert.
-      // Only NEW uploads count — a resume (activePending) reuses its existing slot.
-      if (!activePending) {
-        const activeCount = await pendingDeploymentsRepository.countActiveByDeployer(
-          tx,
-          Authenticator.ownerAddress(authChain),
-          pendingDeploymentTtlMs
-        )
-        if (activeCount >= maxPendingPerDeployer) {
-          throw new InvalidPartialDeploymentError([
-            `Too many partial uploads in progress for this account (max ${maxPendingPerDeployer}). Finalize or abandon an existing upload before starting another.`
-          ])
-        }
-      }
-
       // The single pending slot per pointer set goes to the NEWEST scene (deployment ordering: greater
       // entity.timestamp, tie broken by greater entity id). Reject rather than replace when a
       // strictly-newer overlapping upload is already in flight, so a stale/older upload can't evict a
@@ -290,6 +273,24 @@ export function createPartialDeployments(
           entityId,
           replaced: replaced.join(',')
         })
+      }
+
+      // Cap concurrent staged uploads per deployer so one account can't pin storage across many
+      // pointer-sets for the full TTL. Decided HERE — under the advisory lock (which serializes all
+      // staging) and AFTER the overlap-replace — on the NET row-count change: `others` excludes this
+      // entity id, so `others + 1` is the deployer's post-upsert total whether this is a fresh insert, a
+      // resume, or a newer scene that just replaced one of the deployer's own overlapping rows. That
+      // avoids both racing the cap and wrongly rejecting a resume/replacement that doesn't grow the count.
+      const others = await pendingDeploymentsRepository.countActiveByDeployer(
+        tx,
+        Authenticator.ownerAddress(authChain),
+        pendingDeploymentTtlMs,
+        entityId
+      )
+      if (others + 1 > maxPendingPerDeployer) {
+        throw new InvalidPartialDeploymentError([
+          `Too many partial uploads in progress for this account (max ${maxPendingPerDeployer}). Finalize or abandon an existing upload before starting another.`
+        ])
       }
       // The upsert resets an expired row's created_at itself (fresh TTL window), so no global expired
       // sweep is needed here — that is the cleanup job's duty, not this per-request critical section's.

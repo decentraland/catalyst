@@ -52,8 +52,17 @@ export interface IPendingDeploymentsRepository {
    * deployment per parcel set" rule.
    */
   deleteOverlappingPointers(db: DatabaseClient, pointers: string[], excludeEntityId: string): Promise<string[]>
-  /** Counts a deployer's non-expired pending deployments. Used to cap concurrent staged uploads. */
-  countActiveByDeployer(db: DatabaseClient, deployerAddress: string, ttlMs: number): Promise<number>
+  /**
+   * Counts a deployer's non-expired pending deployments, excluding `excludeEntityId` (the row this
+   * request is about to insert/update). `count + 1` is the deployer's post-upsert row total, used to
+   * enforce the concurrent-pending cap on the net change rather than a stale "is this new?" flag.
+   */
+  countActiveByDeployer(
+    db: DatabaseClient,
+    deployerAddress: string,
+    ttlMs: number,
+    excludeEntityId: string
+  ): Promise<number>
   /** Deletes pending deployments older than `ttlMs`. Returns the number of rows removed. */
   deleteExpired(db: DatabaseClient, ttlMs: number): Promise<number>
   /**

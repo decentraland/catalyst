@@ -125,13 +125,15 @@ async function deleteOverlappingPointers(
 async function countActiveByDeployer(
   database: DatabaseClient,
   deployerAddress: string,
-  ttlMs: number
+  ttlMs: number,
+  excludeEntityId: string
 ): Promise<number> {
   const cutoff = Date.now() - ttlMs
   const result = await database.queryWithValues<{ count: string }>(
     SQL`SELECT COUNT(*) AS count FROM pending_deployments
         WHERE LOWER(deployer_address) = ${deployerAddress.toLowerCase()}
-          AND created_at > to_timestamp(${cutoff} / 1000.0)`,
+          AND created_at > to_timestamp(${cutoff} / 1000.0)
+          AND entity_id <> ${excludeEntityId}`,
     'pending_deployment_count_by_deployer'
   )
   return parseInt(result.rows[0].count, 10)

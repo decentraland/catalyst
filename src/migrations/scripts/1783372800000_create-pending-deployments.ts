@@ -32,6 +32,12 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     name: 'pending_deployments_created_at_idx',
     ifNotExists: true
   })
+  // Backs the per-deployer concurrent-pending cap check, whose predicate is
+  // `LOWER(deployer_address) = $ AND created_at > $` — a functional index so the cap query doesn't
+  // scan all pending rows.
+  pgm.sql(
+    'CREATE INDEX pending_deployments_deployer_created_at_idx ON pending_deployments (LOWER(deployer_address), created_at)'
+  )
 }
 
 export async function down(pgm: MigrationBuilder): Promise<void> {
