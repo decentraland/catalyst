@@ -13,6 +13,7 @@ import {
   OK,
   TokenAddresses,
   ValidateFn,
+  createStagingValidator,
   createValidator
 } from '@dcl/content-validator'
 import { createAccessValidateFn } from '@dcl/content-validator/dist/validations/access'
@@ -20,18 +21,6 @@ import { createOnChainAccessCheckValidateFns } from '@dcl/content-validator/dist
 import { createOnChainClient } from '@dcl/content-validator/dist/validations/access/on-chain/client'
 import { createSubgraphAccessCheckValidateFns } from '@dcl/content-validator/dist/validations/access/subgraph'
 import { createTheGraphClient } from '@dcl/content-validator/dist/validations/access/subgraph/the-graph-client'
-// Individual validation fns, composed into the partial-deployment staging subset (validateStagingScene).
-// The library already exposes these via deep imports (see the access/* imports above); we reuse the
-// content-independent ones so a staging request can be fully authenticated and access-checked without
-// requiring every content file to be present yet.
-import { validateAll } from '@dcl/content-validator/dist/validations/validations'
-import { entityStructureValidationFn } from '@dcl/content-validator/dist/validations/entity-structure'
-import { ipfsHashingValidateFn } from '@dcl/content-validator/dist/validations/ipfs-hashing'
-import { metadataValidateFn } from '@dcl/content-validator/dist/validations/metadata-schema'
-import { adr45ValidateFn } from '@dcl/content-validator/dist/validations/ADR45'
-import { createSignatureValidateFn } from '@dcl/content-validator/dist/validations/signature'
-import { sceneValidateFn } from '@dcl/content-validator/dist/validations/scene'
-import { allHashesInUploadedFilesAreReportedInTheEntityValidateFn } from '@dcl/content-validator/dist/validations/content'
 import { entityParameters } from '@dcl/content-validator/dist/validations/ADR51'
 import { EntityType } from '@dcl/schemas'
 import { toCoreFetcher } from '../../logic/to-core-fetcher'
@@ -248,36 +237,6 @@ async function createSubgraphAccessValidateFn(
 }
 
 /**
- * The content-independent validations that a partial (staging) scene deployment must pass on every
- * request, before all of its content files are necessarily present. Excludes the size validation
- * (replaced by a cumulative check in the partial-deployments component) and the content-completeness
- * validation (only checkable at finalize). `accessValidateFn` runs last because it is the expensive
- * on-chain / subgraph call; `includeAccessCheck: false` builds the resume variant that omits it (see
- * IContentValidator.validateStagingScene for when that is safe).
- */
-function createStagingSceneValidateFn(
-  components: Pick<AppComponents, 'logs'>,
-  externalCalls: ExternalCalls,
-  accessValidateFn: ValidateFn,
-  includeAccessCheck: boolean
-): ValidateFn {
-  const { logs } = components
-  const validations = [
-    entityStructureValidationFn,
-    ipfsHashingValidateFn,
-    metadataValidateFn,
-    adr45ValidateFn,
-    createSignatureValidateFn({ logs, externalCalls, accessValidateFn }),
-    sceneValidateFn,
-    allHashesInUploadedFilesAreReportedInTheEntityValidateFn
-  ]
-  if (includeAccessCheck) {
-    validations.push(accessValidateFn)
-  }
-  return validateAll(...validations)
-}
-
-/**
  * Wraps `@dcl/content-validator` and selects the access-check strategy at construction time
  * based on env config:
  *  - `IGNORE_BLOCKCHAIN_ACCESS_CHECKS=true`     -> skip blockchain access checks
@@ -311,9 +270,15 @@ export async function createContentValidator(components: ContentValidatorDeps): 
     accessValidateFn = await createSubgraphAccessValidateFn(components, externalCalls)
   }
 
-  const validate = createValidator({ logs, externalCalls, accessValidateFn })
-  const validateStagingWithAccess = createStagingSceneValidateFn(components, externalCalls, accessValidateFn, true)
-  const validateStagingWithoutAccess = createStagingSceneValidateFn(components, externalCalls, accessValidateFn, false)
+  // Staging validators come from @dcl/content-validator's public createStagingValidator: the
+  // content-independent subset (structure, hashing, metadata, ADR-45, signature, scene rules,
+  // no-unreferenced-files), excluding size (a cumulative check in the partial-deployments component
+  // replaces it) and content completeness (only checkable at finalize). `includeAccessCheck: false`
+  // builds the resume variant that omits the expensive access check (see validateStagingScene).
+  const validatorComponents = { logs, externalCalls, accessValidateFn }
+  const validate = createValidator(validatorComponents)
+  const validateStagingWithAccess = createStagingValidator(validatorComponents, { includeAccessCheck: true })
+  const validateStagingWithoutAccess = createStagingValidator(validatorComponents, { includeAccessCheck: false })
 
   return {
     validate,
