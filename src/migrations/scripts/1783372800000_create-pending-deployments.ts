@@ -18,6 +18,11 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     // The entity's own timestamp (deployment ordering). Overlapping pending uploads resolve by this so
     // the single per-parcel-set slot goes to the newest scene, not merely the last writer.
     entity_timestamp: { type: 'bigint', notNull: true },
+    // Finalization lease: 'UPLOADING' while content is staged; a completing request flips it to
+    // 'FINALIZING' (recording finalizing_at) so only one request runs the expensive validation + deploy.
+    // A stale lease (finalizing_at older than the lease TTL) can be taken over after a crash.
+    status: { type: 'text', notNull: true, default: 'UPLOADING' },
+    finalizing_at: { type: 'timestamptz', notNull: false },
     created_at: { type: 'timestamptz', notNull: true, default: pgm.func('now()') },
     updated_at: { type: 'timestamptz', notNull: true, default: pgm.func('now()') }
   })

@@ -320,8 +320,31 @@ export function createPartialDeployments(
       return { kind: 'incomplete', missing }
     }
 
-    const creationTimestamp = await finalize(entityId, entityFile, authChain)
-    return { kind: 'deployed', creationTimestamp }
+    // Claim the finalization lease so only ONE completing request runs the expensive deploy pipeline
+    // (validation + on-chain access + deploy). The client's parallel worker pool and retries mean
+    // several completing requests can arrive at once.
+    const gotLease = await pendingDeploymentsRepository.acquireFinalizationLease(database, entityId)
+    if (!gotLease) {
+      // Another request is finalizing (or already did). If the entity is live now, report the
+      // idempotent success; otherwise report not-yet-complete so the client backs off and retries —
+      // it converges once the winner finishes (or its lease goes stale and this request takes over).
+      const alreadyDeployed = await deploymentsRepository.getEntityById(database, entityId)
+      if (alreadyDeployed) {
+        return { kind: 'deployed', creationTimestamp: alreadyDeployed.localTimestamp }
+      }
+      return { kind: 'incomplete', missing: [] }
+    }
+
+    try {
+      const creationTimestamp = await finalize(entityId, entityFile, authChain)
+      return { kind: 'deployed', creationTimestamp }
+    } catch (error) {
+      // Finalize failed without deploying: release the lease so a later request can retry. A successful
+      // deploy deletes the pending row inside its transaction, so this only runs on failure. Terminal
+      // errors (validation) still propagate; the row then expires via the TTL.
+      await pendingDeploymentsRepository.releaseFinalizationLease(database, entityId).catch(() => undefined)
+      throw error
+    }
   }
 
   async function cleanupExpired(): Promise<number> {

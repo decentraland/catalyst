@@ -63,6 +63,15 @@ export interface IPendingDeploymentsRepository {
     ttlMs: number,
     excludeEntityId: string
   ): Promise<number>
+  /**
+   * Atomically claims the finalization lease for a pending deployment (UPLOADING → FINALIZING, or takes
+   * over a stale FINALIZING lease). Returns true if this caller holds the lease and should run the
+   * finalization; false if another request is already finalizing. Ensures only one completing request
+   * runs the expensive validation + deploy.
+   */
+  acquireFinalizationLease(db: DatabaseClient, entityId: string): Promise<boolean>
+  /** Releases the finalization lease (FINALIZING → UPLOADING) when a finalize attempt fails without deploying. */
+  releaseFinalizationLease(db: DatabaseClient, entityId: string): Promise<void>
   /** Deletes pending deployments older than `ttlMs`. Returns the number of rows removed. */
   deleteExpired(db: DatabaseClient, ttlMs: number): Promise<number>
   /**
