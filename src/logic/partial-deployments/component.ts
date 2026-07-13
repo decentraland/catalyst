@@ -182,21 +182,8 @@ export function createPartialDeployments(
         429
       )
     }
-    // Cap concurrent staged uploads per deployer so one account can't pin storage across many
-    // pointer-sets for the full TTL. Only NEW uploads count against the cap — a resume (activePending)
-    // reuses its existing slot.
-    if (!activePending) {
-      const activeCount = await pendingDeploymentsRepository.countActiveByDeployer(
-        database,
-        Authenticator.ownerAddress(authChain),
-        pendingDeploymentTtlMs
-      )
-      if (activeCount >= maxPendingPerDeployer) {
-        throw new InvalidPartialDeploymentError([
-          `Too many partial uploads in progress for this account (max ${maxPendingPerDeployer}). Finalize or abandon an existing upload before starting another.`
-        ])
-      }
-    }
+    // (The per-deployer concurrent-pending cap is enforced inside the staging transaction below, under
+    // the advisory lock, so concurrent new uploads can't race past it.)
     // A partial upload can span longer than REQUEST_TTL_BACKWARDS, so anchor the freshness check on
     // when the upload started (the pending row's created_at) rather than now.
     const ttlAnchor = activePending ? activePending.createdAt.getTime() : Date.now()
@@ -262,6 +249,23 @@ export function createPartialDeployments(
     // expired rows is the cleanup job's responsibility, not this per-request critical section's.
     await database.transaction(async (tx) => {
       await pendingDeploymentsRepository.acquireStagingLock(tx)
+
+      // Cap concurrent staged uploads per deployer so one account can't pin storage across many
+      // pointer-sets for the full TTL. Enforced HERE, under the advisory lock (which serializes all
+      // staging), so concurrent new uploads can't each read a count below the cap and then all insert.
+      // Only NEW uploads count — a resume (activePending) reuses its existing slot.
+      if (!activePending) {
+        const activeCount = await pendingDeploymentsRepository.countActiveByDeployer(
+          tx,
+          Authenticator.ownerAddress(authChain),
+          pendingDeploymentTtlMs
+        )
+        if (activeCount >= maxPendingPerDeployer) {
+          throw new InvalidPartialDeploymentError([
+            `Too many partial uploads in progress for this account (max ${maxPendingPerDeployer}). Finalize or abandon an existing upload before starting another.`
+          ])
+        }
+      }
 
       // The single pending slot per pointer set goes to the NEWEST scene (deployment ordering: greater
       // entity.timestamp, tie broken by greater entity id). Reject rather than replace when a
