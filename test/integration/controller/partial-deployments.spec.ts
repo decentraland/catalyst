@@ -397,9 +397,10 @@ describe('Integration - Partial deployments', () => {
           ])
         })
 
-        it('should finalize exactly one and respond 200 or 202 to each (lease-gated)', () => {
-          // The finalization lease lets only one request run the deploy pipeline: the winner returns 200;
-          // the other returns 200 (idempotent, if the winner already committed) or 202 (in progress).
+        it('should finalize exactly one and respond 200 or 202 to each', () => {
+          // Concurrent completing requests race into the deploy pipeline; the deployments unique entity-id
+          // constraint plus finalize's pointer-conflict retry mean the winner returns 200 and the other
+          // returns 200 (idempotent, if the winner already committed) or 202 (its retries exhausted).
           expect([firstResponse.status, secondResponse.status].every((status) => status === 200 || status === 202)).toBe(
             true
           )
@@ -601,61 +602,4 @@ describe('Integration - Partial deployments', () => {
     })
   })
 
-  describe('when a completing request arrives while finalization is already in progress', () => {
-    let deployment: PreparedDeployment
-    let hashA: string
-    let hashB: string
-    let completingResponse: Response
-
-    beforeEach(async () => {
-      const nonce = `${Date.now()}-${Math.random()}`
-      deployment = await prepareSceneDeployment(
-        ['12,12'],
-        { 'a.txt': Buffer.from(`lease a ${nonce}`), 'b.txt': Buffer.from(`lease b ${nonce}`) },
-        identity
-      )
-      ;[hashA, hashB] = deployment.contentHashes
-      // Stage entity + first file (incomplete → pending row, status UPLOADING).
-      await postForm(server, buildPartialForm(deployment, [deployment.entityId, hashA]))
-      // Simulate another request holding a FRESH finalization lease on this upload.
-      await server.components.database.query(
-        `UPDATE pending_deployments SET status = 'FINALIZING', finalizing_at = now() WHERE entity_id = '${deployment.entityId}'`
-      )
-      // The completing request uploads the last file but can't claim the lease.
-      completingResponse = await postForm(server, buildPartialForm(deployment, [hashB]))
-    })
-
-    it('should respond 202 (finalization in progress) without deploying the entity', async () => {
-      expect(completingResponse.status).toBe(202)
-      expect(await countDeployments(server, deployment.entityId)).toBe(0)
-    })
-  })
-
-  describe('when a completing request finds a stale (crashed) finalization lease', () => {
-    let deployment: PreparedDeployment
-    let hashA: string
-    let hashB: string
-    let completingResponse: Response
-
-    beforeEach(async () => {
-      const nonce = `${Date.now()}-${Math.random()}`
-      deployment = await prepareSceneDeployment(
-        ['13,13'],
-        { 'a.txt': Buffer.from(`stale a ${nonce}`), 'b.txt': Buffer.from(`stale b ${nonce}`) },
-        identity
-      )
-      ;[hashA, hashB] = deployment.contentHashes
-      await postForm(server, buildPartialForm(deployment, [deployment.entityId, hashA]))
-      // A crashed finalizer left a lease older than the 2-minute TTL.
-      await server.components.database.query(
-        `UPDATE pending_deployments SET status = 'FINALIZING', finalizing_at = now() - interval '10 minutes' WHERE entity_id = '${deployment.entityId}'`
-      )
-      completingResponse = await postForm(server, buildPartialForm(deployment, [hashB]))
-    })
-
-    it('should take over the stale lease and finalize with 200', async () => {
-      expect(completingResponse.status).toBe(200)
-      expect(await countDeployments(server, deployment.entityId)).toBe(1)
-    })
-  })
 })

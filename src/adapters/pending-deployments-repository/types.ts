@@ -38,13 +38,15 @@ export interface IPendingDeploymentsRepository {
   upsert(db: DatabaseClient, row: UpsertPendingDeployment, ttlMs: number): Promise<void>
   deleteByEntityId(db: DatabaseClient, entityId: string): Promise<void>
   /**
-   * Returns the pending deployments whose pointers overlap the given ones, except `excludeEntityId`,
-   * with their entity timestamps — so the caller can decide whether the incoming upload is newer.
+   * Returns the non-expired pending deployments whose pointers overlap the given ones, except
+   * `excludeEntityId`, with their entity timestamps — so the caller can decide whether the incoming
+   * upload is newer. Rows past `ttlMs` are dead state and never surface here.
    */
   getOverlappingPointers(
     db: DatabaseClient,
     pointers: string[],
-    excludeEntityId: string
+    excludeEntityId: string,
+    ttlMs: number
   ): Promise<OverlappingPendingDeployment[]>
   /**
    * Deletes every pending deployment whose pointers overlap the given ones, except `excludeEntityId`.
@@ -63,15 +65,6 @@ export interface IPendingDeploymentsRepository {
     ttlMs: number,
     excludeEntityId: string
   ): Promise<number>
-  /**
-   * Atomically claims the finalization lease for a pending deployment (UPLOADING → FINALIZING, or takes
-   * over a stale FINALIZING lease). Returns true if this caller holds the lease and should run the
-   * finalization; false if another request is already finalizing. Ensures only one completing request
-   * runs the expensive validation + deploy.
-   */
-  acquireFinalizationLease(db: DatabaseClient, entityId: string): Promise<boolean>
-  /** Releases the finalization lease (FINALIZING → UPLOADING) when a finalize attempt fails without deploying. */
-  releaseFinalizationLease(db: DatabaseClient, entityId: string): Promise<void>
   /** Deletes pending deployments older than `ttlMs`. Returns the number of rows removed. */
   deleteExpired(db: DatabaseClient, ttlMs: number): Promise<number>
   /**

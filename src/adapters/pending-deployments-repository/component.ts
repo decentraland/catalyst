@@ -12,11 +12,6 @@ import {
 // not to collide with node-pg-migrate's migration lock.
 const PENDING_DEPLOYMENTS_ADVISORY_LOCK = 916352745601
 
-// How long a finalization lease is honored before it is considered stale and reclaimable. Must exceed
-// a real finalization (full validation + deploy) so a slow-but-alive finalizer isn't pre-empted, while
-// a crashed one doesn't wedge the upload for long.
-const FINALIZATION_LEASE_TTL_MS = 2 * 60 * 1000 // 2 minutes
-
 async function acquireStagingLock(database: DatabaseClient): Promise<void> {
   await database.queryWithValues(
     SQL`SELECT pg_advisory_xact_lock(${PENDING_DEPLOYMENTS_ADVISORY_LOCK})`,
@@ -93,44 +88,24 @@ async function deleteByEntityId(database: DatabaseClient, entityId: string): Pro
   )
 }
 
-async function acquireFinalizationLease(database: DatabaseClient, entityId: string): Promise<boolean> {
-  // Atomically flip the row to FINALIZING, but only if it isn't already being finalized by a live
-  // lease. The single UPDATE ... RETURNING is the whole critical section (the row lock serializes
-  // competing acquirers), so exactly one completing request runs the expensive deploy pipeline; others
-  // get `false`. A lease older than the TTL (a crashed finalizer) is reclaimable.
-  const staleCutoff = Date.now() - FINALIZATION_LEASE_TTL_MS
-  const result = await database.queryWithValues<{ entity_id: string }>(
-    SQL`UPDATE pending_deployments
-        SET status = 'FINALIZING', finalizing_at = now()
-        WHERE entity_id = ${entityId}
-          AND (status = 'UPLOADING' OR (status = 'FINALIZING' AND finalizing_at < to_timestamp(${staleCutoff} / 1000.0)))
-        RETURNING entity_id`,
-    'pending_deployment_acquire_lease'
-  )
-  return result.rowCount > 0
-}
-
-async function releaseFinalizationLease(database: DatabaseClient, entityId: string): Promise<void> {
-  // Return a still-present row to UPLOADING so a later request can finalize it (used when a finalize
-  // attempt fails without deploying). A successful deploy deletes the row instead, so this no-ops there.
-  await database.queryWithValues(
-    SQL`UPDATE pending_deployments SET status = 'UPLOADING', finalizing_at = NULL WHERE entity_id = ${entityId}`,
-    'pending_deployment_release_lease'
-  )
-}
-
 async function getOverlappingPointers(
   database: DatabaseClient,
   pointers: string[],
-  excludeEntityId: string
+  excludeEntityId: string,
+  ttlMs: number
 ): Promise<OverlappingPendingDeployment[]> {
   if (pointers.length === 0) {
     return []
   }
+  // Expired rows are dead state (every other read treats them as absent), so they must not surface
+  // here either — an expired overlapping upload must never cause a newer-conflict rejection.
+  const cutoff = Date.now() - ttlMs
   const result = await database.queryWithValues<{ entity_id: string; entity_timestamp: string }>(
     SQL`SELECT entity_id, entity_timestamp
         FROM pending_deployments
-        WHERE pointers && ${pointers} AND entity_id <> ${excludeEntityId}`,
+        WHERE pointers && ${pointers}
+          AND entity_id <> ${excludeEntityId}
+          AND created_at > to_timestamp(${cutoff} / 1000.0)`,
     'pending_deployment_get_overlapping'
   )
   return result.rows.map((r) => ({ entityId: r.entity_id, entityTimestamp: parseInt(r.entity_timestamp, 10) }))
@@ -207,8 +182,6 @@ export function createPendingDeploymentsRepository(): IPendingDeploymentsReposit
     getOverlappingPointers,
     deleteOverlappingPointers,
     countActiveByDeployer,
-    acquireFinalizationLease,
-    releaseFinalizationLease,
     deleteExpired,
     streamAllNonExpiredHashes,
     acquireStagingLock

@@ -81,8 +81,8 @@ async function createExternalCallsBag(
 }
 
 // Each of the three strategy helpers below returns the *access* validate fn (LAND/ownership/ACL check)
-// only. The caller composes it into the full validator via `createValidator` and — for staging — into
-// the content-independent subset via `validateAll`, so both paths run the identical access check.
+// only. The caller composes it into the full validator via `createValidator` and — for staging — via
+// `createStagingValidator` (@dcl/content-validator), so both paths run the identical access check.
 async function createIgnoreBlockchainAccessValidateFn(): Promise<ValidateFn> {
   return (_d: DeploymentToValidate) => Promise.resolve(OK)
 }
