@@ -11,6 +11,8 @@ export interface IDeploymentService {
   ): Promise<DeploymentResult>
   /** Whether a deployment of this entity type on these pointers is currently rate limited. */
   isRateLimited(entityType: EntityType, pointers: string[]): boolean
+  /** The rate-limit window (seconds) for an entity type, used as a Retry-After hint on a 429. */
+  getRateLimitTtlSeconds(entityType: EntityType): number
 }
 
 /**

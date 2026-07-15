@@ -413,6 +413,9 @@ export function createDeploymentService(
     isRateLimited(entityType: EntityType, pointers: string[]): boolean {
       return rateLimiter.isRateLimited(entityType, pointers)
     },
+    getRateLimitTtlSeconds(entityType: EntityType): number {
+      return rateLimiter.getRateLimitTtlSeconds(entityType)
+    },
     async deployEntity(
       files: DeploymentFiles,
       entityId: string,

@@ -7,7 +7,13 @@
  * rejection from a terminal validation error.
  */
 export class InvalidPartialDeploymentError extends Error {
-  constructor(public readonly errors: string[], public readonly statusCode: 400 | 429 = 400) {
+  constructor(
+    public readonly errors: string[],
+    public readonly statusCode: 400 | 429 = 400,
+    // For a 429, the window (seconds) after which the client should retry — surfaced as a Retry-After
+    // header so the client can wait the rate-limit window out instead of exhausting its resume budget.
+    public readonly retryAfterSeconds?: number
+  ) {
     super(errors.join(', '))
     this.name = 'InvalidPartialDeploymentError'
   }

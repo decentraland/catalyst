@@ -146,7 +146,7 @@ export function createPartialDeployments(
       // (c) Rate limited between staging and now (e.g. a vanilla deploy on these pointers marked the
       // limiter): transient, so 429 (resumable) — matching how the staging path already treats it.
       if (deployer.isRateLimited(entity.type, entity.pointers)) {
-        throw new InvalidPartialDeploymentError(result.errors, 429)
+        throw new InvalidPartialDeploymentError(result.errors, 429, deployer.getRateLimitTtlSeconds(entity.type))
       }
 
       // Otherwise: a genuine validation failure, or exhausted pointer-conflict retries (429, someone else
@@ -270,9 +270,11 @@ export function createPartialDeployments(
     if (deployer.isRateLimited(entity.type, entity.pointers)) {
       // 429: rate limiting is transient, so a client can resume once the window clears (the staged
       // content is preserved server-side), rather than treating it as a terminal validation failure.
+      // Hand back the rate-limit window as Retry-After so the client waits it out.
       throw new InvalidPartialDeploymentError(
         [`Entity rate limited (entityId=${entity.id} pointers=${entity.pointers.join(',')}).`],
-        429
+        429,
+        deployer.getRateLimitTtlSeconds(entity.type)
       )
     }
     // (The per-deployer concurrent-pending cap is enforced inside the staging transaction below, under
