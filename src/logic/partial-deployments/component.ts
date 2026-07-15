@@ -5,6 +5,7 @@ import { EnvironmentConfig } from '../../Environment'
 import { DeploymentContext, isInvalidDeployment } from '../../deployment-types'
 import { AppComponents } from '../../types'
 import { REQUEST_TTL_FORWARDS } from '../deployment-service/server-validator'
+import { happenedBefore } from '../deployment-service/time-sorting'
 import { storeStreamsInBatches } from '../store-content'
 import { InvalidPartialDeploymentError } from './errors'
 import { IPartialDeployments, StageDeploymentInput, StageDeploymentResult } from './types'
@@ -69,12 +70,30 @@ export function createPartialDeployments(
   const requestTtlBackwards = env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
   const maxPendingPerDeployer = env.getConfig<number>(EnvironmentConfig.MAX_PENDING_DEPLOYMENTS_PER_DEPLOYER)
 
+  async function deletePendingBestEffort(entityId: string): Promise<void> {
+    // deployEntity deletes the pending row inside tx_deploy_entity on the real-deploy path, but its
+    // already-deployed idempotency fast path returns WITHOUT running that delete — so a row re-created by
+    // a straggling resume (after a concurrent winner already committed) would linger and pin a cap slot
+    // for the full TTL. Deleting here on every successful finalize is idempotent (a no-op when the deploy
+    // tx already removed it) and closes that leak. Best-effort: the deploy has committed, so a failed
+    // cleanup must not fail the request — the row would otherwise expire via the TTL.
+    try {
+      await pendingDeploymentsRepository.deleteByEntityId(database, entityId)
+    } catch (error: any) {
+      logger.warn('Failed to delete pending deployment after finalize; it will expire via TTL', {
+        entityId,
+        error: error?.message ?? `${error}`
+      })
+    }
+  }
+
   async function finalize(
-    entityId: string,
+    entity: Entity,
     entityFile: Uint8Array,
     authChain: StageDeploymentInput['authChain'],
     contentHashes: string[]
   ): Promise<StageDeploymentResult> {
+    const entityId = entity.id
     // Re-verify content presence immediately before deploying. The completeness check ran before this
     // (slow) deploy pipeline, and a garbage-collection sweep whose snapshot predates the pending row
     // could have reclaimed a reused, already-stored file in that window. Committing a scene that
@@ -93,7 +112,7 @@ export function createPartialDeployments(
     for (let attempt = 0; ; attempt++) {
       const result = await deployer.deployEntity(finalizeFiles, entityId, { authChain }, DeploymentContext.LOCAL)
       if (!isInvalidDeployment(result)) {
-        // number === creation timestamp; the pending row was deleted inside the deploy transaction.
+        await deletePendingBestEffort(entityId)
         return { kind: 'deployed', creationTimestamp: result }
       }
       const isPointerConflict = result.kind === 'pointer-conflict'
@@ -101,9 +120,37 @@ export function createPartialDeployments(
         await sleep(FINALIZE_POINTER_CONFLICT_DELAY_MS)
         continue
       }
-      // Exhausting the pointer-conflict retries is a transient condition (someone else is deploying on
-      // these pointers right now), not a validation failure: 429 tells the client to resume later —
-      // the staged content is intact.
+
+      // The deploy returned an invalid result. deployEntity mints `kind: 'pointer-conflict'` at exactly
+      // one site (the in-memory pointer lock); every other failure is a kind-less InvalidResult that
+      // would otherwise become a terminal 400 the client cannot resume. Distinguish the transient/racy
+      // causes so a fully-staged upload isn't abandoned for a recoverable condition:
+
+      // (a) Already deployed: a concurrent finalize won — including on ANOTHER process, whose duplicate
+      // INSERT hit the deployments unique entity-id constraint and surfaced as a generic error here.
+      // The entity is live, so this is an idempotent success (and we clean up any pending row we own).
+      const alreadyDeployed = await deploymentsRepository.getEntityById(database, entityId)
+      if (alreadyDeployed) {
+        await deletePendingBestEffort(entityId)
+        return { kind: 'deployed', creationTimestamp: alreadyDeployed.localTimestamp }
+      }
+
+      // (b) A GC sweep reclaimed a reused, already-stored file DURING the deploy validation (the
+      // pre-check above passed, but the pipeline re-reads content). Resumable — the client re-uploads it.
+      const present = await storage.existMultiple(contentHashes)
+      const missingNow = contentHashes.filter((hash) => !present.get(hash))
+      if (missingNow.length > 0) {
+        return { kind: 'incomplete', missing: missingNow }
+      }
+
+      // (c) Rate limited between staging and now (e.g. a vanilla deploy on these pointers marked the
+      // limiter): transient, so 429 (resumable) — matching how the staging path already treats it.
+      if (deployer.isRateLimited(entity.type, entity.pointers)) {
+        throw new InvalidPartialDeploymentError(result.errors, 429)
+      }
+
+      // Otherwise: a genuine validation failure, or exhausted pointer-conflict retries (429, someone else
+      // is deploying on these pointers right now — the staged content is intact).
       throw new InvalidPartialDeploymentError(result.errors, isPointerConflict ? 429 : 400)
     }
   }
@@ -150,9 +197,18 @@ export function createPartialDeployments(
     }
 
     // The entity JSON must be present in the first request; later (resume) requests re-read it from
-    // storage, where it was stored under its own id on the first request.
+    // storage, where it was stored under its own id on the first request. Cap it on BOTH paths: the
+    // resume read-back caps while streaming, so the first request must reject an oversized manifest too
+    // — otherwise a >cap manifest would stage successfully on request 1 and then wedge on every resume
+    // (which can never read it back within the cap).
     let entityFile = uploadedFiles.get(entityId)
-    if (!entityFile) {
+    if (entityFile) {
+      if (entityFile.byteLength > MAX_ENTITY_FILE_SIZE_BYTES) {
+        throw new InvalidPartialDeploymentError([
+          `The entity file '${entityId}' is too large (${entityFile.byteLength} bytes, max ${MAX_ENTITY_FILE_SIZE_BYTES}).`
+        ])
+      }
+    } else {
       const stored = await storage.retrieve(entityId)
       if (!stored) {
         throw new InvalidPartialDeploymentError([
@@ -285,36 +341,42 @@ export function createPartialDeployments(
     // the repository), so a resurrected row never carries a stale TTL anchor; purging other entities'
     // expired rows is the cleanup job's responsibility, not this per-request critical section's.
     await database.transaction(async (tx) => {
-      await pendingDeploymentsRepository.acquireStagingLock(tx)
+      await pendingDeploymentsRepository.acquireStagingLocks(tx, entity.pointers, Authenticator.ownerAddress(authChain))
 
-      // The single pending slot per pointer set goes to the NEWEST scene (deployment ordering: greater
-      // entity.timestamp, tie broken by greater entity id). Reject rather than replace when a
-      // strictly-newer overlapping upload is already in flight, so a stale/older upload can't evict a
-      // newer competitor's staged content (and two clients can't ping-pong evicting each other). A
-      // resume (same entity id) is excluded from the overlap set and never conflicts with itself.
+      // The single pending slot per pointer set goes to the NEWEST scene. Reject rather than replace
+      // when a strictly-newer overlapping upload is already in flight, so a stale/older upload can't
+      // evict a newer competitor's staged content (and two clients can't ping-pong evicting each other).
+      // A resume (same entity id) is excluded from the overlap set and never conflicts with itself.
       const overlapping = await pendingDeploymentsRepository.getOverlappingPointers(
         tx,
         entity.pointers,
         entityId,
         pendingDeploymentTtlMs
       )
-      // Newest-wins, matching the deployments `happenedBefore` ordering: greater entity timestamp, ties
-      // broken by the LEXICOGRAPHICALLY-greater LOWERCASED entity id. Lowercasing keeps this consistent
-      // with the deployments comparator (which compares LOWER(entity_id)); a raw comparison could order
-      // two uploads differently here than at finalize.
-      const newer = overlapping.find(
-        (o) =>
-          o.entityTimestamp > entity.timestamp ||
-          (o.entityTimestamp === entity.timestamp && o.entityId.toLowerCase() > entityId.toLowerCase())
+      // Use the canonical `happenedBefore` ordering (greater timestamp, ties broken by LOWER(entity_id))
+      // so pending-slot arbitration can never diverge from how the deployments table orders the same two
+      // entities at finalize. `happenedBefore(entity, o)` is true when `entity` is OLDER than `o`.
+      const newer = overlapping.find((o) =>
+        happenedBefore(entity, { entityId: o.entityId, timestamp: o.entityTimestamp })
       )
       if (newer) {
+        // Deliberately generic: do NOT disclose the other upload's entity id. It is the content hash of
+        // an unreleased scene not yet in any public listing, and leaking it lets a caller confirm/ target
+        // a specific in-flight deployment (worlds returns the same generic message).
         throw new InvalidPartialDeploymentError([
-          `A newer partial upload (${newer.entityId}) is already in progress for one or more of these pointers.`
+          'A newer partial upload is already in progress for one or more of these pointers.'
         ])
       }
 
       // Having rejected the newer-conflict above, every overlapping row is strictly older — replace them.
-      const replaced = await pendingDeploymentsRepository.deleteOverlappingPointers(tx, entity.pointers, entityId)
+      // On the resume fast path (which skipped the access check) restrict the replace to this deployer's
+      // own rows, so a deployer who lost access mid-upload can't evict another deployer's staged upload.
+      const replaced = await pendingDeploymentsRepository.deleteOverlappingPointers(
+        tx,
+        entity.pointers,
+        entityId,
+        isResumeBySameDeployer ? Authenticator.ownerAddress(authChain) : undefined
+      )
       if (replaced.length > 0) {
         metrics.increment('dcl_pending_deployments_replaced_total', {}, replaced.length)
         logger.info(`Replaced ${replaced.length} pending deployment(s) overlapping the new one's pointers`, {
@@ -375,10 +437,10 @@ export function createPartialDeployments(
 
     // Everything is present — run the full deploy pipeline in this request. Concurrent completing
     // requests (the client's parallel worker pool, retries) may race here; the deployments unique
-    // entity-id constraint serializes them, and finalize's bounded pointer-conflict retry lets the
-    // loser fall through to deployEntity's idempotency fast path. The duplicated validation in that rare
-    // race is accepted — a lease to avoid it costs more in failure modes than the work it would save.
-    return await finalize(entityId, entityFile, authChain, contentHashes)
+    // entity-id constraint serializes them, and finalize maps the loser to an idempotent success. The
+    // duplicated validation in that rare race is accepted — a lease to avoid it costs more in failure
+    // modes than the work it would save.
+    return await finalize(entity, entityFile, authChain, contentHashes)
   }
 
   async function cleanupExpired(): Promise<number> {

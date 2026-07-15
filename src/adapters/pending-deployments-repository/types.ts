@@ -49,15 +49,21 @@ export interface IPendingDeploymentsRepository {
     ttlMs: number
   ): Promise<OverlappingPendingDeployment[]>
   /**
-   * Deletes every pending deployment whose pointers overlap the given ones, except `excludeEntityId`.
-   * Returns the entity ids that were removed (for logging/metrics). Enforces the "one pending
-   * deployment per parcel set" rule.
+   * Deletes every pending deployment whose pointers overlap the given ones, except `excludeEntityId`,
+   * enforcing the "one pending deployment per parcel set" rule. Returns the removed entity ids (for
+   * logging/metrics). When `onlyDeployer` is set the delete is restricted to that deployer's own rows —
+   * used on the access-check-skipping resume fast path so it can't evict another deployer's upload.
    */
-  deleteOverlappingPointers(db: DatabaseClient, pointers: string[], excludeEntityId: string): Promise<string[]>
+  deleteOverlappingPointers(
+    db: DatabaseClient,
+    pointers: string[],
+    excludeEntityId: string,
+    onlyDeployer?: string
+  ): Promise<string[]>
   /**
-   * Counts a deployer's non-expired pending deployments, excluding `excludeEntityId` (the row this
-   * request is about to insert/update). `count + 1` is the deployer's post-upsert row total, used to
-   * enforce the concurrent-pending cap on the net change rather than a stale "is this new?" flag.
+   * Counts a deployer's non-expired pending deployments (excluding `excludeEntityId`). `count + 1` is the
+   * deployer's post-upsert row total; the caller enforces the concurrent-pending cap with it, but only
+   * for a NEW upload (a resume is exempt, so lowering the cap can't wedge in-flight uploads).
    */
   countActiveByDeployer(
     db: DatabaseClient,
@@ -73,8 +79,11 @@ export interface IPendingDeploymentsRepository {
    */
   streamAllNonExpiredHashes(db: DatabaseClient, ttlMs: number, options?: { batchSize?: number }): AsyncIterable<string>
   /**
-   * Takes a transaction-scoped advisory lock serializing the pending-deployment "replace overlapping +
-   * upsert" critical section. Must be called inside a transaction; released automatically on commit.
+   * Takes the transaction-scoped advisory locks that serialize the pending-deployment "reject-newer /
+   * replace-overlapping + upsert" critical section: a per-deployer lock (guards the cap) plus one lock
+   * per pointer in sorted order (guards overlap, deadlock-free). Only contending requests serialize;
+   * uploads on disjoint pointers by different deployers proceed concurrently. Must be called inside a
+   * transaction; released automatically on commit.
    */
-  acquireStagingLock(db: DatabaseClient): Promise<void>
+  acquireStagingLocks(db: DatabaseClient, pointers: string[], deployerAddress: string): Promise<void>
 }

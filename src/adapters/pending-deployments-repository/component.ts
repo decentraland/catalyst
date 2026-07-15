@@ -7,16 +7,32 @@ import {
   UpsertPendingDeployment
 } from './types'
 
-// Fixed key for the transaction-scoped advisory lock that serializes the "replace overlapping + upsert"
-// critical section across staging requests (and processes). An arbitrary distinctive constant chosen
-// not to collide with node-pg-migrate's migration lock.
-const PENDING_DEPLOYMENTS_ADVISORY_LOCK = 916352745601
-
-async function acquireStagingLock(database: DatabaseClient): Promise<void> {
+async function acquireStagingLocks(
+  database: DatabaseClient,
+  pointers: string[],
+  deployerAddress: string
+): Promise<void> {
+  // Serialize only the staging requests that actually contend, instead of all of them on one global
+  // lock. Two transaction-scoped advisory locks, always in this order (a consistent global acquisition
+  // order → deadlock-free):
+  // 1. Per-deployer: serializes a single deployer's concurrent staging so the per-deployer cap can't be
+  //    raced. Different deployers never contend here.
   await database.queryWithValues(
-    SQL`SELECT pg_advisory_xact_lock(${PENDING_DEPLOYMENTS_ADVISORY_LOCK})`,
-    'pending_deployment_advisory_lock'
+    SQL`SELECT pg_advisory_xact_lock(hashtextextended(${'pending_deployer:' + deployerAddress.toLowerCase()}, 0))`,
+    'pending_deployment_deployer_lock'
   )
+  // 2. Per-pointer, taken in sorted order: serializes exactly the uploads whose pointer sets overlap
+  //    (protecting the "reject-newer / replace-overlapping" critical section) while letting uploads on
+  //    disjoint pointers run concurrently. Sorting guarantees any two requests acquire shared pointer
+  //    locks in the same order, so they can't deadlock.
+  if (pointers.length > 0) {
+    await database.queryWithValues(
+      SQL`SELECT pg_advisory_xact_lock(hashtextextended('pending_pointer:' || p, 0))
+          FROM unnest(${pointers}::text[]) AS p
+          ORDER BY p`,
+      'pending_deployment_pointer_locks'
+    )
+  }
 }
 
 interface PendingDeploymentDbRow {
@@ -114,17 +130,22 @@ async function getOverlappingPointers(
 async function deleteOverlappingPointers(
   database: DatabaseClient,
   pointers: string[],
-  excludeEntityId: string
+  excludeEntityId: string,
+  onlyDeployer?: string
 ): Promise<string[]> {
   if (pointers.length === 0) {
     return []
   }
-  const result = await database.queryWithValues<{ entity_id: string }>(
-    SQL`DELETE FROM pending_deployments
-        WHERE pointers && ${pointers} AND entity_id <> ${excludeEntityId}
-        RETURNING entity_id`,
-    'pending_deployment_delete_overlapping'
-  )
+  // `onlyDeployer` restricts the destructive replace to the caller's OWN pending rows. Used on the
+  // resume fast path, which skips the (slow) access check: without the restriction, a deployer who has
+  // since lost access to these pointers could still evict a DIFFERENT deployer's freshly-staged upload.
+  // A cross-deployer newest-wins replacement only happens on a request that ran the full access check.
+  const query = SQL`DELETE FROM pending_deployments WHERE pointers && ${pointers} AND entity_id <> ${excludeEntityId}`
+  if (onlyDeployer !== undefined) {
+    query.append(SQL` AND LOWER(deployer_address) = ${onlyDeployer.toLowerCase()}`)
+  }
+  query.append(SQL` RETURNING entity_id`)
+  const result = await database.queryWithValues<{ entity_id: string }>(query, 'pending_deployment_delete_overlapping')
   return result.rows.map((r) => r.entity_id)
 }
 
@@ -184,6 +205,6 @@ export function createPendingDeploymentsRepository(): IPendingDeploymentsReposit
     countActiveByDeployer,
     deleteExpired,
     streamAllNonExpiredHashes,
-    acquireStagingLock
+    acquireStagingLocks
   }
 }
