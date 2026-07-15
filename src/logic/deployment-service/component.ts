@@ -1,8 +1,8 @@
-import { bufferToStream } from '@dcl/catalyst-storage/dist/content-item'
 import { AuthChain, Authenticator } from '@dcl/crypto'
 import { Entity, EntityType, IPFSv2 } from '@dcl/schemas'
 import { isDeepStrictEqual } from 'util'
 import { EnvironmentConfig } from '../../Environment'
+import { storeStreamsInBatches } from '../store-content'
 import {
   AuditInfo,
   DeploymentContext,
@@ -22,10 +22,10 @@ import * as serverValidator from './server-validator'
 import ms from 'ms'
 import { TestableDeploymentService } from './types'
 
-// Upper bound on concurrent content-file writes within a single deployment. Content files are
-// content-addressed and independent, so they can be written in parallel; the cap keeps a single
-// many-file entity from fanning out into an unbounded number of simultaneous storage writes.
-const CONTENT_STORE_CONCURRENCY = 10
+// Stable fragment of the error returned when a concurrent deploy already holds one of the pointers.
+// Exported so callers (e.g. the partial-deployment finalize retry) can detect this transient condition
+// without coupling to the full, human-readable message text.
+export const POINTERS_BEING_DEPLOYED_ERROR = 'currently being deployed'
 
 export function isIPFSHash(hash: string): boolean {
   return IPFSv2.validate(hash)
@@ -78,11 +78,50 @@ export function createDeploymentService(
     | 'denylist'
     | 'deploymentsRepository'
     | 'contentFilesRepository'
+    | 'pendingDeploymentsRepository'
     | 'entities'
   >
 ): TestableDeploymentService {
   const logger = components.logs.getLogger('deployer')
   const LEGACY_CONTENT_MIGRATION_TIMESTAMP: Date = new Date(1582167600000) // DCL Launch Day
+  const pendingDeploymentTtlMs = components.env.getConfig<number>(EnvironmentConfig.PENDING_DEPLOYMENT_TTL)
+
+  // The "request is not recent enough" (REQUEST_TTL_BACKWARDS) check. A partial (multi-request) upload
+  // can legitimately span longer than that TTL, so a scene with a non-expired pending deployment is
+  // measured against when the upload *started* (pending.created_at) rather than now.
+  //
+  // The pending-deployment lookup is gated to keep it off the hot path: it runs only when the entity is
+  // already too old by wall clock (the common fresh deploy short-circuits with a pure comparison) and
+  // only for scenes (the only entity type that can be partially uploaded). So profiles and other
+  // high-volume deploys never touch pending_deployments here.
+  // True when the entity is older, by wall clock, than the vanilla REQUEST_TTL_BACKWARDS bound — i.e.
+  // only a pending-upload anchor could have let it through the freshness check. The TTL-anchoring logic
+  // and the finalize current-access gate both key off this exact condition, so it is defined once here
+  // to keep them from drifting. (Comparison, not `<=`, so an unset TTL — `x > undefined` is false —
+  // behaves as before.)
+  function isOlderThanRequestTtlBackwards(entity: Entity): boolean {
+    const backwards = components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
+    return Date.now() - entity.timestamp > backwards
+  }
+
+  async function isRequestTtlBackwards(entity: Entity): Promise<boolean> {
+    const backwards = components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
+    // Anchoring on an earlier pending.created_at can only make this smaller, so if the entity is not
+    // already too old measured against now, no anchor changes the answer. This branch also covers the
+    // hot path (fresh deploys) and non-scene types, keeping the pending lookup off them entirely.
+    if (!isOlderThanRequestTtlBackwards(entity)) {
+      return false
+    }
+    // Too old by wall clock. Only scenes can be partial uploads, so only they can have a pending anchor.
+    if (entity.type !== EntityType.SCENE) {
+      return true
+    }
+    const pending = await components.pendingDeploymentsRepository.getByEntityId(components.database, entity.id)
+    if (pending && Date.now() - pending.createdAt.getTime() <= pendingDeploymentTtlMs) {
+      return pending.createdAt.getTime() - entity.timestamp > backwards
+    }
+    return true
+  }
 
   // In-process deploy rate limiter. Defaults to a real instance built from env config;
   // tests swap it via `setRateLimiter` (see TestableDeploymentService).
@@ -239,6 +278,11 @@ export function createDeploymentService(
 
         // Set who overwrote who
         await components.deploymentsRepository.setEntitiesAsOverwritten(database, overwrote, deploymentId)
+
+        // If this entity had a pending (partial) deployment, it is now fully deployed — drop its
+        // staging row atomically with the deployment. Covers both auto-finalize of a partial upload
+        // and a vanilla deploy of a previously-staged entity. No-op (single PK delete) otherwise.
+        await components.pendingDeploymentsRepository.deleteByEntityId(database, entity.id)
       }, 'tx_deploy_entity')
 
       // Now that the transaction has committed, reflect the new active pointers in the in-memory cache.
@@ -280,16 +324,9 @@ export function createDeploymentService(
     // Check for if content is already stored
     const alreadyStoredHashes: Map<string, boolean> = await components.storage.existMultiple(Array.from(hashes.keys()))
 
-    // Store all the entity's not-already-stored content. The files are independent
-    // (content-addressed) and this runs before/outside the deployment transaction, so write
-    // them in bounded-parallel batches instead of one at a time to speed up multi-file deploys.
+    // Store all the entity's not-already-stored content, in bounded-parallel batches (see helper).
     const filesToStore = Array.from(hashes).filter(([fileHash]) => !alreadyStoredHashes.get(fileHash))
-    for (let i = 0; i < filesToStore.length; i += CONTENT_STORE_CONCURRENCY) {
-      const batch = filesToStore.slice(i, i + CONTENT_STORE_CONCURRENCY)
-      await Promise.all(
-        batch.map(([fileHash, content]) => components.storage.storeStream(fileHash, bufferToStream(content)))
-      )
-    }
+    await storeStreamsInBatches(components.storage, filesToStore)
   }
 
   async function validateDeployment(
@@ -315,8 +352,7 @@ export function createDeploymentService(
           (entity.type === EntityType.PROFILE &&
             isContentUnchanged &&
             rateLimiter.isUnchangedDeploymentRateLimited(entity.type, entity.pointers)),
-        isRequestTtlBackwards: (entity) =>
-          Date.now() - entity.timestamp > components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
+        isRequestTtlBackwards: (entity) => isRequestTtlBackwards(entity)
       }
     )
 
@@ -328,17 +364,57 @@ export function createDeploymentService(
       }
     }
 
-    return await components.validator.validate({
+    const protocolResult = await components.validator.validate({
       // TODO: remove as any after fixing content validator
       entity: entity as any,
       auditInfo,
       files: hashes
     })
+    if (!protocolResult.ok) {
+      return protocolResult
+    }
+
+    // The protocol access validation above is historical: it proves ownership at entity.timestamp's
+    // block (required for sync/replay). Vanilla deploys bound that staleness to REQUEST_TTL_BACKWARDS
+    // (~minutes), but a scene completing a partial upload may be up to PENDING_DEPLOYMENT_TTL (~24h)
+    // old — long enough for the LAND to have been sold mid-upload. When the entity is older than the
+    // vanilla bound (i.e. only a pending-upload anchor let it through the TTL check above), require
+    // access against the CURRENT chain state too, so a seller can't finalize onto land they no longer
+    // own. Fresh deploys never reach this (the wall-clock condition fails), so the hot path is
+    // unaffected; it covers both completion paths (auto-finalize and a vanilla POST of a pending
+    // entity) because both go through this pipeline.
+    if (context === DeploymentContext.LOCAL && entity.type === EntityType.SCENE) {
+      if (isOlderThanRequestTtlBackwards(entity)) {
+        const currentAccessResult = await components.validator.validateCurrentAccess({
+          entity: entity as any,
+          auditInfo,
+          files: hashes
+        })
+        if (!currentAccessResult.ok) {
+          return {
+            ok: false,
+            errors: currentAccessResult.errors ?? [
+              'The deployer no longer has access to the entity pointers (access is required both when a partial upload starts and when it is finalized).'
+            ]
+          }
+        }
+      }
+    }
+
+    return protocolResult
   }
 
   return {
     setRateLimiter(rl: IDeployRateLimiterComponent) {
       rateLimiter = rl
+    },
+    // Exposes the in-process rate-limiter to the partial-deployment staging path so a staging request
+    // is subject to the same limit as a full deploy, without duplicating limiter state.
+    isRateLimited(entityType: EntityType, pointers: string[]): boolean {
+      return rateLimiter.isRateLimited(entityType, pointers)
+    },
+    getRateLimitTtlSeconds(entityType: EntityType): number {
+      return rateLimiter.getRateLimitTtlSeconds(entityType)
     },
     async deployEntity(
       files: DeploymentFiles,
@@ -390,8 +466,9 @@ export function createDeploymentService(
       const overlappingPointers = tryAcquirePointerLocks(entity.type, entity.pointers)
       if (overlappingPointers.length > 0) {
         return InvalidResult({
+          kind: 'pointer-conflict',
           errors: [
-            `The following pointers are currently being deployed: '${overlappingPointers.join()}'. Please try again in a few seconds.`
+            `The following pointers are ${POINTERS_BEING_DEPLOYED_ERROR}: '${overlappingPointers.join()}'. Please try again in a few seconds.`
           ]
         })
       }

@@ -1,3 +1,4 @@
+import { EntityType } from '@dcl/schemas'
 import { DeploymentContext, DeploymentFiles, DeploymentResult, LocalDeploymentAuditInfo } from '../../deployment-types'
 import { IDeployRateLimiterComponent } from './rate-limiter'
 
@@ -8,6 +9,10 @@ export interface IDeploymentService {
     auditInfo: LocalDeploymentAuditInfo,
     context: DeploymentContext
   ): Promise<DeploymentResult>
+  /** Whether a deployment of this entity type on these pointers is currently rate limited. */
+  isRateLimited(entityType: EntityType, pointers: string[]): boolean
+  /** The rate-limit window (seconds) for an entity type, used as a Retry-After hint on a 429. */
+  getRateLimitTtlSeconds(entityType: EntityType): number
 }
 
 /**

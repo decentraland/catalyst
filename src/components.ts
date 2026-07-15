@@ -57,6 +57,8 @@ import { createCrypto } from './logic/crypto'
 import { createContentCluster, createCustomDAOSource, createDAOSource } from './logic/peer-cluster'
 import { createDeploymentsComponent, retryFailedDeploymentExecution } from './logic/deployments'
 import { createDeploymentService } from './logic/deployment-service'
+import { createPartialDeployments } from './logic/partial-deployments'
+import { createPendingDeploymentsRepository } from './adapters/pending-deployments-repository'
 import { createEntities } from './logic/entities'
 import { createGarbageCollectionComponent } from './logic/garbage-collection'
 import { createQueryParams } from './logic/query-params'
@@ -158,6 +160,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const activeEntitiesRepository = createActiveEntitiesRepository()
   const contentFilesRepository = createContentFilesRepository()
   const deploymentsRepository = createDeploymentsRepository()
+  const pendingDeploymentsRepository = createPendingDeploymentsRepository()
   const pointersRepository = createPointersRepository()
   const snapshotsRepository = createSnapshotsRepository()
 
@@ -253,7 +256,22 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     denylist,
     deploymentsRepository,
     contentFilesRepository,
+    pendingDeploymentsRepository,
     entities
+  })
+
+  const partialDeployments = createPartialDeployments({
+    logs,
+    metrics,
+    env,
+    storage,
+    database,
+    crypto,
+    validator,
+    deployer,
+    entities,
+    deploymentsRepository,
+    pendingDeploymentsRepository
   })
 
   // ---------------------------------------------------------------------------
@@ -269,10 +287,12 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       activeEntities,
       contentFilesRepository,
       deploymentsRepository,
+      pendingDeploymentsRepository,
       snapshotsRepository
     },
     env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION),
-    env.getConfig(EnvironmentConfig.PROFILE_DURATION)
+    env.getConfig(EnvironmentConfig.PROFILE_DURATION),
+    env.getConfig(EnvironmentConfig.PENDING_DEPLOYMENT_TTL)
   )
 
   const garbageCollectionJob = createJobComponent(
@@ -281,6 +301,17 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL),
     {
       onError: (err) => logs.getLogger('GarbageCollectionJob').error(err as Error)
+    }
+  )
+
+  // Expiry of stale partial (pending) deployments. Kept separate from the GC sweep, which short-circuits
+  // when GARBAGE_COLLECTION is disabled — expiry must run on every node so staged uploads can't linger.
+  const pendingDeploymentsCleanupJob = createJobComponent(
+    { logs },
+    partialDeployments.cleanupExpired,
+    env.getConfig(EnvironmentConfig.PENDING_DEPLOYMENTS_CLEANUP_INTERVAL),
+    {
+      onError: (err) => logs.getLogger('PendingDeploymentsCleanupJob').error(err as Error)
     }
   )
 
@@ -501,8 +532,11 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     denylistReloadJob,
     deployedEntitiesBloomFilter,
     deployer,
+    partialDeployments,
     deployments,
     deploymentsRepository,
+    pendingDeploymentsRepository,
+    pendingDeploymentsCleanupJob,
     downloadQueue,
     env,
     failedDeployments,

@@ -1,5 +1,4 @@
 import * as bf from 'bloom-filters'
-import PQueue from 'p-queue'
 import SQL from 'sql-template-strings'
 import { SYSTEM_PROPERTIES } from '../../adapters/system-properties'
 import { runLoggingPerformance } from '../../instrument'
@@ -11,6 +10,12 @@ const PROFILE_CLEANUP_LIMIT = 10000
 // How many unused content hashes to delete from storage per batch. Bounds both the in-memory list
 // and the size of each storage.delete operation during a sweep.
 const GC_DELETE_BATCH_SIZE = 1000
+
+// How many delete batches deleteUnreferencedFiles keeps in flight at once. Each batch is one
+// findReferencedHashes query + one storage.delete; a small window keeps folder-based storage (which
+// unlinks serially inside delete()) from making the sweep fully sequential, without the unbounded
+// fan-out of per-file parallel deletes.
+const GC_DELETE_CONCURRENCY = 4
 
 // Safety margin subtracted from the stored garbage-collection watermark. The next sweep only
 // reconsiders hashes whose overwrite committed after the watermark; a deploy that assigned an older
@@ -30,10 +35,14 @@ export function createGarbageCollectionComponent(
     | 'activeEntities'
     | 'contentFilesRepository'
     | 'deploymentsRepository'
+    | 'pendingDeploymentsRepository'
     | 'snapshotsRepository'
   >,
   performGarbageCollection: boolean,
-  profileDuration: number
+  profileDuration: number,
+  // How long a partial (pending) deployment survives. Its entity id + content hashes are treated as
+  // referenced until it expires, so in-flight staged uploads are never reclaimed.
+  pendingDeploymentTtlMs: number
 ): IGarbageCollectionComponent {
   const logger = components.logs.getLogger('GarbageCollectionManager')
   let lastSweepResult: SweepResult | undefined = undefined
@@ -55,7 +64,11 @@ export function createGarbageCollectionComponent(
       // a concurrent deploy may have re-referenced a hash since; and because storage is a single
       // content-addressed namespace, a candidate hash may also be a snapshot file or an entity JSON
       // (byte-identical files collide on hash). Never delete anything that is still referenced.
-      const stillReferenced = await components.contentFilesRepository.findReferencedHashes(components.database, batch)
+      const stillReferenced = await components.contentFilesRepository.findReferencedHashes(
+        components.database,
+        batch,
+        pendingDeploymentTtlMs
+      )
       const toDelete = batch.filter((hash) => !stillReferenced.has(hash))
       batch = []
       if (toDelete.length === 0) {
@@ -189,7 +202,8 @@ export function createGarbageCollectionComponent(
     if (hashesToDelete.length > 0) {
       const stillReferenced = await components.contentFilesRepository.findReferencedHashes(
         components.database,
-        hashesToDelete
+        hashesToDelete,
+        pendingDeploymentTtlMs
       )
       hashesToDelete = hashesToDelete.filter((hash) => !stillReferenced.has(hash))
     }
@@ -296,35 +310,82 @@ export function createGarbageCollectionComponent(
         'add of stream snapshot hashes to bloom filter',
         async () => await addAllToBloomFilter(components.snapshotsRepository.getAllSnapshotHashes(components.database))
       )
+
+      // Entity ids and content hashes of non-expired pending (partial) deployments are still referenced:
+      // their content is staged but not yet attached to any deployment, so it would otherwise look
+      // unreferenced and be swept. Expired pending rows are intentionally excluded so their staged
+      // content becomes reclaimable.
+      const totalPendingHashes = await runLoggingPerformance(
+        unreferencedLogger,
+        'add of stream pending deployment hashes to bloom filter',
+        async () =>
+          await addAllToBloomFilter(
+            components.pendingDeploymentsRepository.streamAllNonExpiredHashes(
+              components.database,
+              pendingDeploymentTtlMs
+            )
+          )
+      )
       unreferencedLogger.info(
-        `Created bloom filter with ${totalEntityIds} entity ids, ${totalContentFileHashes} content hashes and ${totalSnapshotHashes} snapshot hashes.`
+        `Created bloom filter with ${totalEntityIds} entity ids, ${totalContentFileHashes} content hashes, ${totalSnapshotHashes} snapshot hashes and ${totalPendingHashes} pending deployment hashes.`
       )
     })
 
-    const queue = new PQueue({ concurrency: 1000 })
     let numberOfDeletedFiles = 0
+    let batch: string[] = []
+    const inFlight = new Set<Promise<void>>()
+
+    // Delete in batches, re-verifying each batch against the database right before deletion. The bloom
+    // filter was built once at the start of a potentially hours-long sweep, so anything referenced
+    // AFTER that — most notably a partial (pending) upload that starts mid-sweep and stages files for
+    // hours — is invisible to it. findReferencedHashes covers active deployments, snapshots, entity ids
+    // and non-expired pending deployments at delete time.
+    const deleteBatch = async (candidates: string[]): Promise<void> => {
+      try {
+        const stillReferenced = await components.contentFilesRepository.findReferencedHashes(
+          components.database,
+          candidates,
+          pendingDeploymentTtlMs
+        )
+        const toDelete = candidates.filter((hash) => !stillReferenced.has(hash))
+        if (toDelete.length === 0) {
+          return
+        }
+        await components.storage.delete(toDelete)
+        numberOfDeletedFiles += toDelete.length
+      } catch (error) {
+        unreferencedLogger.error(error as Error, { batchSize: String(candidates.length) })
+      }
+    }
+
+    // Batches run through a small window of concurrent workers so the next batch's reference re-check
+    // and deletes overlap the previous batch's I/O. On S3 each batch is a bulk DeleteObjects; on
+    // folder-based storage delete() unlinks serially, so without this overlap the whole sweep would
+    // degrade to fully serial unlinks interleaved with blocking DB queries.
+    const flushBatch = async (): Promise<void> => {
+      if (batch.length === 0) {
+        return
+      }
+      const candidates = batch
+      batch = []
+      const task: Promise<void> = deleteBatch(candidates).finally(() => inFlight.delete(task))
+      inFlight.add(task)
+      if (inFlight.size >= GC_DELETE_CONCURRENCY) {
+        await Promise.race(inFlight)
+      }
+    }
+
     unreferencedLogger.info(`Deleting files...`)
     for await (const storageFileId of components.storage.allFileIds()) {
       if (!referencedHashesBloom.has(storageFileId)) {
-        // Enqueue without awaiting each task so up to `concurrency` deletes run in parallel; awaiting
-        // `queue.add` here would serialize them and make the concurrency setting meaningless.
-        // Backpressure keeps the queue from growing unbounded ahead of the workers.
-        void queue.add(async () => {
-          try {
-            await components.storage.delete([storageFileId])
-            numberOfDeletedFiles++
-          } catch (error) {
-            unreferencedLogger.error(error as Error, { storageFileId })
-          }
-        })
-        // Backpressure: if the queued (not-yet-started) work grows too large, wait for it to drain
-        // before enqueuing more, so a multi-million-file sweep can't buffer every task in memory.
-        if (queue.size >= GC_DELETE_BATCH_SIZE * 2) {
-          await queue.onEmpty()
+        batch.push(storageFileId)
+        if (batch.length >= GC_DELETE_BATCH_SIZE) {
+          await flushBatch()
         }
       }
     }
-    await queue.onIdle()
+    await flushBatch()
+    await Promise.all(inFlight)
     unreferencedLogger.info(`Deleted ${numberOfDeletedFiles} files`)
   }
 
