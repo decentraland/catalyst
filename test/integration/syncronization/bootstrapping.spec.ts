@@ -126,11 +126,8 @@ describe('Bootstrapping synchronization tests', function () {
     advanceTime(6 * timeRangeLogic.MS_PER_DAY)
     await server1.components.snapshots.runScheduledGeneration()
 
-    // now we start a new server 2 so it processes the 3 snapshots: the first one, the second one and the 5 empty ones (only one of these processed)
-    const markSnapshotAsProcessedSpy = jest.spyOn(
-      server2.components.snapshotStorage,
-      'markSnapshotAsProcessed'
-    )
+    // now we start a new server 2 so it processes the 3 distinct snapshots: the first, the second, and
+    // the shared empty-snapshot hash covering the other 5 days
     jest.spyOn(server2.components.snapshotStorage, 'has').mockResolvedValue(false)
     await startProgramAndWaitUntilBootstrapFinishes(server2)
     const sevenDaysSnapshots = await server1.components.snapshotsRepository.findSnapshotsStrictlyContainedInTimeRange(
@@ -141,13 +138,16 @@ describe('Bootstrapping synchronization tests', function () {
       }
     )
     expect(sevenDaysSnapshots).toHaveLength(7)
-    // Assert the SET of snapshots marked processed, not the exact call count: a transient bootstrap
-    // fetch failure schedules a retry that (with `has` mocked false) re-marks the same snapshots, so
-    // the call count varies across runs while the distinct set does not. Poll since marking settles
-    // asynchronously after the bootstrap-finished signal.
+    // Assert durable state — the set of snapshots server2 recorded as processed — not spy calls.
+    // Bootstrap retry work can keep re-marking after the finished signal, so the processed set (read
+    // from the DB) is the stable, idempotent thing to poll on, and it doesn't leak across phases.
+    const sevenDaysHashes = new Set(sevenDaysSnapshots.map((s) => s.hash))
     await awaitUntil(async () => {
-      const markedHashes = new Set(markSnapshotAsProcessedSpy.mock.calls.map((call) => call[0]))
-      expect(markedHashes).toEqual(new Set(sevenDaysSnapshots.map((s) => s.hash)))
+      const processed = await server2.components.snapshotsRepository.getProcessedSnapshots(
+        server2.components.database,
+        Array.from(sevenDaysHashes)
+      )
+      expect(processed).toEqual(sevenDaysHashes)
     }, 20, '1s')
 
     // now we deploy a new entity for the 8th day
@@ -162,7 +162,6 @@ describe('Bootstrapping synchronization tests', function () {
     // now we run the sync from snapshots again in server 2 (would be nice to have a mechanism to restart the server)
     // it should save the weekly snapshot as already processed as it already processed the 7 ones that it's replacing
     // it should process only the last empty daily snapshot
-    markSnapshotAsProcessedSpy.mockReset()
     // await server2.components.synchronizer.syncSnapshotsForSyncingServers()
     await (await server2.components.synchronizer.syncWithServers(new Set())).onSyncFinished()
     await (
@@ -184,9 +183,16 @@ describe('Bootstrapping synchronization tests', function () {
     for (const newSnapshotHash of eightDaysSnapshots) {
       expect(oldSnapshots.has(newSnapshotHash)).toBeFalsy()
     }
+    // The weekly snapshot (which replaces the already-processed 7) and the new 8th-day daily should
+    // both end up recorded as processed on server2. Asserting the durable set is retry-immune and
+    // doesn't depend on how many times marking was invoked.
+    const eightDaysHashes = new Set(eightDaysSnapshots.map((s) => s.hash))
     await awaitUntil(async () => {
-      const markedHashes = new Set(markSnapshotAsProcessedSpy.mock.calls.map((call) => call[0]))
-      expect(markedHashes).toEqual(new Set(eightDaysSnapshots.map((s) => s.hash)))
+      const processed = await server2.components.snapshotsRepository.getProcessedSnapshots(
+        server2.components.database,
+        Array.from(eightDaysHashes)
+      )
+      expect(processed).toEqual(eightDaysHashes)
     }, 20, '1s')
   })
 
