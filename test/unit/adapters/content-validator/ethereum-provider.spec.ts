@@ -6,7 +6,7 @@ import {
 } from '../../../../src/adapters/content-validator/ethereum-provider'
 
 // Make the backoff instant so retry tests don't wait on real timers.
-jest.mock('@dcl/snapshots-fetcher/dist/utils', () => ({
+jest.mock('../../../../src/logic/sleep', () => ({
   sleep: jest.fn().mockResolvedValue(undefined)
 }))
 

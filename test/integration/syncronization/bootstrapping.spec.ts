@@ -152,7 +152,7 @@ describe('Bootstrapping synchronization tests', function () {
     // now we run the sync from snapshots again in server 2 (would be nice to have a mechanism to restart the server)
     // it should save the weekly snapshot as already processed as it already processed the 7 ones that it's replacing
     // it should process only the last empty daily snapshot
-    markSnapshotAsProcessedSpy.mockReset()
+    markSnapshotAsProcessedSpy.mockClear()
     // await server2.components.synchronizer.syncSnapshotsForSyncingServers()
     await (await server2.components.synchronizer.syncWithServers(new Set())).onSyncFinished()
     await (

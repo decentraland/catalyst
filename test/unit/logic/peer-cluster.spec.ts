@@ -1,13 +1,12 @@
 import { CatalystServerInfo } from '@dcl/catalyst-contracts'
-import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { createConfigComponent } from '@well-known-components/env-config-provider'
 import { createLogComponent } from '@well-known-components/logger'
 import { Environment, EnvironmentConfig } from '../../../src/Environment'
 import { DAOSource } from '../../../src/logic/peer-cluster'
 import { createContentCluster, IContentClusterComponent } from '../../../src/logic/peer-cluster'
+import { sleep } from '../../../src/logic/sleep'
 
-jest.mock('@dcl/snapshots-fetcher/dist/utils', () => ({
-  ...jest.requireActual('@dcl/snapshots-fetcher/dist/utils'),
+jest.mock('../../../src/logic/sleep', () => ({
   sleep: jest.fn().mockResolvedValue(undefined)
 }))
 

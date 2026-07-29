@@ -7,8 +7,7 @@ import { createServerComponent, instrumentHttpServerWithPromClientRegistry } fro
 import { createJobComponent } from '@dcl/job-component'
 import { createMetricsComponent } from '@dcl/metrics'
 import { EthAddress } from '@dcl/schemas'
-import { createSynchronizer } from '@dcl/snapshots-fetcher'
-import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
+import { createJobQueue, createSynchronizer } from '@dcl/snapshots-fetcher'
 import { createTracedFetcherComponent } from '@dcl/traced-fetch-component'
 import { createFetchComponent } from '@dcl/fetch-component'
 import { toCoreFetcher } from './logic/to-core-fetcher'
@@ -335,7 +334,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     {
       logs,
       downloadQueue,
-      // snapshots-fetcher@10 types its fetcher via @dcl/core-commons; `fetcher` is the same native
+      // snapshots-fetcher@11 types its fetcher via @dcl/core-commons; `fetcher` is the same native
       // runtime value stored under the WKC type, so assert the core-commons type at this boundary.
       fetcher: toCoreFetcher(fetcher),
       metrics,

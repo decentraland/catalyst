@@ -5,6 +5,10 @@
   "license": "Apache-2.0",
   "author": "Decentraland Contributors",
   "private": true,
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "engineStrict": true,
   "scripts": {
     "build": "tsc -b",
     "build:watch": "tsc -b --watch",
@@ -41,7 +45,7 @@
     "@dcl/block-indexer": "^1.1.2",
     "@dcl/catalyst-api-specs": "^3.8.0",
     "@dcl/catalyst-contracts": "^4.4.2",
-    "@dcl/catalyst-storage": "4.6.1",
+    "@dcl/catalyst-storage": "5.0.0",
     "@dcl/content-validator": "^7.4.2",
     "@dcl/core-commons": "^0.10.1",
     "@dcl/crypto": "^3.7.0",
@@ -54,7 +58,7 @@
     "@dcl/metrics": "^1.0.1",
     "@dcl/schema-validator-component": "^1.0.2",
     "@dcl/schemas": "^26.5.0",
-    "@dcl/snapshots-fetcher": "10.0.0",
+    "@dcl/snapshots-fetcher": "11.0.0",
     "@dcl/thegraph-component": "^0.1.2",
     "@dcl/traced-fetch-component": "^1.0.8",
     "@dcl/urn-resolver": "^3.6.1",
@@ -115,7 +119,7 @@
     "typescript": "^4.7.4"
   },
   "resolutions": {
-    "@dcl/catalyst-storage": "4.6.1",
+    "@dcl/catalyst-storage": "5.0.0",
     "@dcl/core-commons": "0.10.1",
     "@dcl/http-server/path-to-regexp": "^6.2.1",
     "express/path-to-regexp": "0.1.7"

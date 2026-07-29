@@ -1,4 +1,4 @@
-import { bufferToStream } from '@dcl/catalyst-storage/dist/content-item'
+import { bufferToStream } from '@dcl/catalyst-storage'
 import { AuthChain, Authenticator } from '@dcl/crypto'
 import { Entity, EntityType, IPFSv2 } from '@dcl/schemas'
 import { isDeepStrictEqual } from 'util'
