@@ -1,10 +1,10 @@
 import { CatalystServerInfo } from '@dcl/catalyst-contracts'
-import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import future from 'fp-future'
 import { v4 as uuidv4 } from 'uuid'
 import { EnvironmentConfig } from '../../Environment'
 import { AppComponents } from '../../types'
+import { sleep } from '../sleep'
 import { DAOSource } from './dao-source'
 import { TestableContentClusterComponent } from './types'
 

@@ -8,7 +8,7 @@ import { stopAllComponents } from '../../../src/logic/components-lifecycle'
 import { ISnapshotsRepository } from '../../../src/adapters/snapshots-repository'
 import { createSnapshots } from '../../../src/logic/snapshots'
 import { DatabaseClient } from '../../../src/adapters/database'
-import { TimeRange } from '@dcl/snapshots-fetcher/dist/types'
+import { TimeRange } from '@dcl/snapshots-fetcher'
 import { AppComponents } from '../../../src/types'
 
 type SnapshotsDeps = Pick<

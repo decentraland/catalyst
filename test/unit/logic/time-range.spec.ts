@@ -1,4 +1,4 @@
-import { TimeRange } from '@dcl/snapshots-fetcher/dist/types'
+import { TimeRange } from '@dcl/snapshots-fetcher'
 import { divideTimeInYearsMonthsWeeksAndDays, intervalSizeLabel, isTimeRangeCoveredBy, joinOverlappedTimeRanges, MS_PER_DAY, MS_PER_MONTH, MS_PER_WEEK, MS_PER_YEAR, timeRangeSizeInMS } from '../../../src/logic/time-range'
 
 it('should return correct interval size labels', () => {

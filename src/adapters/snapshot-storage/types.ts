@@ -1,4 +1,4 @@
-import { IProcessedSnapshotStorageComponent, ISnapshotStorageComponent } from '@dcl/snapshots-fetcher/dist/types'
+import { IProcessedSnapshotStorageComponent, ISnapshotStorageComponent } from '@dcl/snapshots-fetcher'
 
 export type SnapshotStorage = ISnapshotStorageComponent &
   IProcessedSnapshotStorageComponent & {

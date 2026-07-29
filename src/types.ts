@@ -2,8 +2,7 @@ import { IContentStorageComponent, IFileSystemComponent } from '@dcl/catalyst-st
 import { IContentValidator } from './adapters/content-validator'
 import { ICrypto } from './logic/crypto'
 import { EntityType, SyncDeployment } from '@dcl/schemas'
-import { SynchronizerComponent } from '@dcl/snapshots-fetcher'
-import { IJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
+import { IJobQueue, SynchronizerComponent } from '@dcl/snapshots-fetcher'
 import {
   IConfigComponent,
   IFetchComponent,
