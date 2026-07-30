@@ -285,6 +285,9 @@ export enum EnvironmentConfig {
   // Sync throughput knobs (parallel remote-entity downloads / deploys during bootstrap and catch-up)
   SYNC_DOWNLOAD_CONCURRENCY,
   SYNC_DEPLOY_CONCURRENCY,
+  SYNC_CONTENT_DOWNLOAD_CONCURRENCY,
+  SYNC_SNAPSHOT_CONCURRENCY,
+  SYNC_SNAPSHOT_CHECK_CONCURRENCY,
 
   // Max concurrent content-file size fetches during deployment size validation (default 1 = sequential)
   CONTENT_SIZE_FETCH_CONCURRENCY,
@@ -678,6 +681,18 @@ export class EnvironmentBuilder {
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SYNC_DEPLOY_CONCURRENCY, () =>
       Math.max(1, parseNonNegativeIntEnv('SYNC_DEPLOY_CONCURRENCY', 10))
+    )
+    // One process-wide bound for content transfers. The old nested limit allowed each of the 10
+    // deployment workers to fetch 10 files, so 100 preserves its peak while making it explicit and
+    // preventing profile/content queues from multiplying it further.
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SYNC_CONTENT_DOWNLOAD_CONCURRENCY, () =>
+      Math.max(1, parseNonNegativeIntEnv('SYNC_CONTENT_DOWNLOAD_CONCURRENCY', 100))
+    )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SYNC_SNAPSHOT_CONCURRENCY, () =>
+      Math.max(1, parseNonNegativeIntEnv('SYNC_SNAPSHOT_CONCURRENCY', 10))
+    )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SYNC_SNAPSHOT_CHECK_CONCURRENCY, () =>
+      Math.max(1, parseNonNegativeIntEnv('SYNC_SNAPSHOT_CHECK_CONCURRENCY', 10))
     )
     // Concurrency for content-file size fetches during size validation. Default 10 (matching
     // CONTENT_STORE_CONCURRENCY): only the sync path fetches these sizes, so this parallelizes

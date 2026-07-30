@@ -1,5 +1,10 @@
 import LRU from 'lru-cache'
-import { createJobQueue, DeployableEntity, downloadEntityAndContentFiles, TimeRange } from '@dcl/snapshots-fetcher'
+import {
+  createJobQueue,
+  DeployableEntity,
+  downloadEntityAndContentFilesWithBuffer,
+  TimeRange
+} from '@dcl/snapshots-fetcher'
 import { toCoreFetcher } from '../to-core-fetcher'
 import { streamToBuffer } from '@dcl/catalyst-storage'
 import { AuthChain, EntityType } from '@dcl/schemas'
@@ -48,12 +53,17 @@ export function createBatchDeployerComponent(
   syncOptions: {
     ignoredTypes: Set<string>
     queueOptions: createJobQueue.Options
+    contentDownloadConcurrency?: number
     profileDuration: number
   }
 ): IBatchDeployer {
   const logs = components.logs.getLogger('DeployerComponent')
 
   const parallelDeploymentJobs = createJobQueue(syncOptions.queueOptions)
+  const contentDownloadQueue = createJobQueue({
+    autoStart: true,
+    concurrency: syncOptions.contentDownloadConcurrency ?? 100
+  })
 
   // Returned component, captured by closures so internal calls to public methods route
   // through the returned object. Otherwise `jest.spyOn(component, 'deployEntityFromRemoteServer')`
@@ -80,10 +90,10 @@ export function createBatchDeployerComponent(
   // tests get a fresh instance per component and the state can't drift between runs.
   const serverLru = new Map<string, number>()
 
-  async function downloadFullEntity(entityId: string, entityType: string, servers: string[]): Promise<unknown> {
+  async function downloadFullEntity(entityId: string, entityType: string, servers: string[]): Promise<Uint8Array> {
     components.metrics.increment('dcl_pending_download_gauge', { entity_type: entityType })
     try {
-      return await downloadEntityAndContentFiles(
+      const downloaded = await downloadEntityAndContentFilesWithBuffer(
         // snapshots-fetcher@11 types its fetcher via @dcl/core-commons (the same native runtime value
         // stored under the WKC type on `components.fetcher`); assert the core-commons type here.
         { ...components, fetcher: toCoreFetcher(components.fetcher) },
@@ -92,8 +102,12 @@ export function createBatchDeployerComponent(
         serverLru,
         components.staticConfigs.tmpDownloadFolder,
         REQUEST_MAX_RETRIES,
-        REQUEST_RETRY_WAIT_TIME
+        REQUEST_RETRY_WAIT_TIME,
+        10,
+        undefined,
+        contentDownloadQueue
       )
+      return downloaded.entityFile
     } finally {
       components.metrics.decrement('dcl_pending_download_gauge', { entity_type: entityType })
     }
@@ -103,16 +117,18 @@ export function createBatchDeployerComponent(
     entityId: string,
     entityType: string,
     auditInfo: LocalDeploymentAuditInfo,
-    context: DeploymentContext
+    context: DeploymentContext,
+    verifiedEntityFile?: Uint8Array
   ): Promise<void> {
     const deploymentTimeTimer = components.metrics.startTimer('dcl_deployment_time', { entity_type: entityType })
 
     try {
-      const entityInStorage = await components.storage.retrieve(entityId)
-
-      if (!entityInStorage) throw new Error('Entity ' + entityId + ' cannot be retrieved from storage')
-
-      const entityFile = await streamToBuffer(await entityInStorage.asStream())
+      let entityFile = verifiedEntityFile
+      if (!entityFile) {
+        const entityInStorage = await components.storage.retrieve(entityId)
+        if (!entityInStorage) throw new Error('Entity ' + entityId + ' cannot be retrieved from storage')
+        entityFile = await streamToBuffer(await entityInStorage.asStream())
+      }
 
       if (entityFile.length == 0) {
         throw new Error('Trying to deploy empty entityFile')
@@ -139,8 +155,8 @@ export function createBatchDeployerComponent(
     servers: string[],
     context: DeploymentContext
   ): Promise<void> {
-    await downloadFullEntity(entityId, entityType, servers)
-    await deployDownloadedEntity(entityId, entityType, { authChain }, context)
+    const entityFile = await downloadFullEntity(entityId, entityType, servers)
+    await deployDownloadedEntity(entityId, entityType, { authChain }, context, entityFile)
   }
 
   /**
@@ -300,11 +316,13 @@ export function createBatchDeployerComponent(
 
   self = {
     async stop() {
-      // stop will wait for the queue to end.
-      return parallelDeploymentJobs.onIdle()
+      // Stop accepting deployments first and drain those already queued. Their work may still enqueue
+      // content transfers, so the content queue must remain open until the deployment queue is quiescent.
+      await parallelDeploymentJobs.stop?.()
+      await contentDownloadQueue.stop?.()
     },
-    onIdle() {
-      return parallelDeploymentJobs.onIdle()
+    async onIdle() {
+      await Promise.all([parallelDeploymentJobs.onIdle(), contentDownloadQueue.onIdle()])
     },
     async scheduleEntityDeployment(entity: DeployableEntity, contentServers: string[]): Promise<void> {
       await handleDeploymentFromServers(entity, contentServers)
