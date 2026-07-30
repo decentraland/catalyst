@@ -1,10 +1,6 @@
 import LRU from 'lru-cache'
-import {
-  createJobQueue,
-  DeployableEntity,
-  downloadEntityAndContentFilesWithBuffer,
-  TimeRange
-} from '@dcl/snapshots-fetcher'
+import * as snapshotsFetcher from '@dcl/snapshots-fetcher'
+import { createJobQueue, DeployableEntity, downloadEntityAndContentFiles, TimeRange } from '@dcl/snapshots-fetcher'
 import { toCoreFetcher } from '../to-core-fetcher'
 import { streamToBuffer } from '@dcl/catalyst-storage'
 import { AuthChain, EntityType } from '@dcl/schemas'
@@ -17,6 +13,28 @@ import { IBatchDeployer } from './types'
 
 const REQUEST_MAX_RETRIES = 10
 const REQUEST_RETRY_WAIT_TIME = 1000
+
+type BufferedEntityDownloader = (
+  components: Parameters<typeof downloadEntityAndContentFiles>[0],
+  entityId: Parameters<typeof downloadEntityAndContentFiles>[1],
+  presentInServers: Parameters<typeof downloadEntityAndContentFiles>[2],
+  serverMapLRU: Parameters<typeof downloadEntityAndContentFiles>[3],
+  targetFolder: Parameters<typeof downloadEntityAndContentFiles>[4],
+  maxRetries: Parameters<typeof downloadEntityAndContentFiles>[5],
+  waitTimeBetweenRetries: Parameters<typeof downloadEntityAndContentFiles>[6],
+  contentFilesConcurrency?: Parameters<typeof downloadEntityAndContentFiles>[7],
+  transferLimits?: Parameters<typeof downloadEntityAndContentFiles>[8],
+  scheduler?: ReturnType<typeof createJobQueue>
+) => Promise<{ entityFile: Uint8Array }>
+
+// Keep Catalyst compatible with the currently published fetcher while the coordinated fetcher
+// change is released. Once available, this path also avoids reading the verified entity from
+// storage a second time and puts every content transfer behind the shared process-wide queue.
+const downloadEntityAndContentFilesWithBuffer = (
+  snapshotsFetcher as typeof snapshotsFetcher & {
+    downloadEntityAndContentFilesWithBuffer?: BufferedEntityDownloader
+  }
+).downloadEntityAndContentFilesWithBuffer
 
 // Bounds the in-process dedup cache of processed entity ids. It's a fast path in front of
 // isEntityDeployed, so an evicted entry just costs a re-check.
@@ -93,21 +111,35 @@ export function createBatchDeployerComponent(
   async function downloadFullEntity(entityId: string, entityType: string, servers: string[]): Promise<Uint8Array> {
     components.metrics.increment('dcl_pending_download_gauge', { entity_type: entityType })
     try {
-      const downloaded = await downloadEntityAndContentFilesWithBuffer(
-        // snapshots-fetcher@11 types its fetcher via @dcl/core-commons (the same native runtime value
-        // stored under the WKC type on `components.fetcher`); assert the core-commons type here.
-        { ...components, fetcher: toCoreFetcher(components.fetcher) },
+      const fetcherComponents = { ...components, fetcher: toCoreFetcher(components.fetcher) }
+      if (downloadEntityAndContentFilesWithBuffer) {
+        const downloaded = await downloadEntityAndContentFilesWithBuffer(
+          fetcherComponents,
+          entityId,
+          servers,
+          serverLru,
+          components.staticConfigs.tmpDownloadFolder,
+          REQUEST_MAX_RETRIES,
+          REQUEST_RETRY_WAIT_TIME,
+          10,
+          undefined,
+          contentDownloadQueue
+        )
+        return downloaded.entityFile
+      }
+
+      await downloadEntityAndContentFiles(
+        fetcherComponents,
         entityId,
         servers,
         serverLru,
         components.staticConfigs.tmpDownloadFolder,
         REQUEST_MAX_RETRIES,
-        REQUEST_RETRY_WAIT_TIME,
-        10,
-        undefined,
-        contentDownloadQueue
+        REQUEST_RETRY_WAIT_TIME
       )
-      return downloaded.entityFile
+      const entityInStorage = await components.storage.retrieve(entityId)
+      if (!entityInStorage) throw new Error('Entity ' + entityId + ' cannot be retrieved from storage')
+      return streamToBuffer(await entityInStorage.asStream())
     } finally {
       components.metrics.decrement('dcl_pending_download_gauge', { entity_type: entityType })
     }
