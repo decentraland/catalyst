@@ -17,6 +17,9 @@ export const DEFAULT_ENTITIES_CACHE_SIZE = 150000
 // concurrency (batch deployer = 10) so concurrent deploy transactions — each holding a connection
 // for its whole tx — can't starve the read endpoints of connections. pg's own default is 10.
 export const DEFAULT_PG_POOL_SIZE = 20
+const MAX_SYNC_CONTENT_DOWNLOAD_CONCURRENCY = 1000
+const MAX_SYNC_SNAPSHOT_CONCURRENCY = 100
+const MAX_SYNC_SNAPSHOT_CHECK_CONCURRENCY = 100
 
 /**
  * Parses the PG_POOL_SIZE env value: falls back to DEFAULT_PG_POOL_SIZE when unset or non-numeric,
@@ -70,6 +73,20 @@ function parseNonNegativeIntEnv(name: string, defaultValue: number): number {
   // precision, enforcing a cap different from what the operator typed.
   if (!Number.isSafeInteger(parsed)) {
     throw new Error(`Invalid ${name}: value "${raw}" is too large to represent exactly`)
+  }
+  return parsed
+}
+
+/**
+ * Parses a concurrency setting while preserving the existing zero-to-one floor and rejecting values
+ * above a deliberately generous operational ceiling. These values multiply sockets, open files, and
+ * in-flight buffers, so accepting any safe JavaScript integer would turn a configuration mistake into
+ * a startup-time resource exhaustion hazard.
+ */
+function parseBoundedConcurrencyEnv(name: string, defaultValue: number, maximum: number): number {
+  const parsed = Math.max(1, parseNonNegativeIntEnv(name, defaultValue))
+  if (parsed > maximum) {
+    throw new Error(`Invalid ${name}: expected a value between 1 and ${maximum} but got "${parsed}"`)
   }
   return parsed
 }
@@ -686,13 +703,13 @@ export class EnvironmentBuilder {
     // deployment workers to fetch 10 files, so 100 preserves its peak while making it explicit and
     // preventing profile/content queues from multiplying it further.
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SYNC_CONTENT_DOWNLOAD_CONCURRENCY, () =>
-      Math.max(1, parseNonNegativeIntEnv('SYNC_CONTENT_DOWNLOAD_CONCURRENCY', 100))
+      parseBoundedConcurrencyEnv('SYNC_CONTENT_DOWNLOAD_CONCURRENCY', 100, MAX_SYNC_CONTENT_DOWNLOAD_CONCURRENCY)
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SYNC_SNAPSHOT_CONCURRENCY, () =>
-      Math.max(1, parseNonNegativeIntEnv('SYNC_SNAPSHOT_CONCURRENCY', 10))
+      parseBoundedConcurrencyEnv('SYNC_SNAPSHOT_CONCURRENCY', 10, MAX_SYNC_SNAPSHOT_CONCURRENCY)
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SYNC_SNAPSHOT_CHECK_CONCURRENCY, () =>
-      Math.max(1, parseNonNegativeIntEnv('SYNC_SNAPSHOT_CHECK_CONCURRENCY', 10))
+      parseBoundedConcurrencyEnv('SYNC_SNAPSHOT_CHECK_CONCURRENCY', 10, MAX_SYNC_SNAPSHOT_CHECK_CONCURRENCY)
     )
     // Concurrency for content-file size fetches during size validation. Default 10 (matching
     // CONTENT_STORE_CONCURRENCY): only the sync path fetches these sizes, so this parallelizes
