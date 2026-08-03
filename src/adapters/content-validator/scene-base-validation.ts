@@ -2,17 +2,12 @@ import { EntityType } from '@dcl/schemas'
 import { ValidateFn, validationFailed } from '@dcl/content-validator'
 
 const PARCEL_COORDINATE_PATTERN = /^(?:0|-?[1-9]\d*),(?:0|-?[1-9]\d*)$/
-const MAX_SCENE_PARCELS = 1000
 
 function isCanonicalParcelList(value: unknown): value is string[] {
   return (
     Array.isArray(value) &&
     value.length > 0 &&
-    value.length <= MAX_SCENE_PARCELS &&
-    value.every(
-      (parcel): parcel is string =>
-        typeof parcel === 'string' && parcel.length <= 32 && PARCEL_COORDINATE_PATTERN.test(parcel)
-    ) &&
+    value.every((parcel): parcel is string => typeof parcel === 'string' && PARCEL_COORDINATE_PATTERN.test(parcel)) &&
     new Set(value).size === value.length
   )
 }

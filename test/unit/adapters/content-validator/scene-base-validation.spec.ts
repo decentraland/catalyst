@@ -81,4 +81,18 @@ describe('when validating scene access with a base-aware validator', () => {
       expect(result.ok).toBe(false)
     })
   })
+
+  describe('and more than one thousand unique canonical parcels match the pointers', () => {
+    beforeEach(() => {
+      const parcels = Array.from({ length: 1001 }, (_, index) => `${index},0`)
+      deployment.entity.pointers = parcels
+      deployment.entity.metadata.scene = { base: '0,0', parcels }
+    })
+
+    it('should delegate platform-specific parcel limits to the configured validator', async () => {
+      await validate(deployment)
+
+      expect(accessValidateFn).toHaveBeenCalledWith(deployment)
+    })
+  })
 })
