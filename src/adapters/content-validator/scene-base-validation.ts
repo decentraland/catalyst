@@ -1,15 +1,12 @@
-import { EntityType } from '@dcl/schemas'
+import { EntityType, SceneParcels } from '@dcl/schemas'
 import { ValidateFn, validationFailed } from '@dcl/content-validator'
 
-const PARCEL_COORDINATE_PATTERN = /^(?:0|-?[1-9]\d*),(?:0|-?[1-9]\d*)$/
-
 function isCanonicalParcelList(value: unknown): value is string[] {
-  return (
-    Array.isArray(value) &&
-    value.length > 0 &&
-    value.every((parcel): parcel is string => typeof parcel === 'string' && PARCEL_COORDINATE_PATTERN.test(parcel)) &&
-    new Set(value).size === value.length
-  )
+  if (!Array.isArray(value) || value.length === 0 || !value.every((parcel) => typeof parcel === 'string')) {
+    return false
+  }
+
+  return SceneParcels.validate({ base: value[0], parcels: value })
 }
 
 /**
@@ -23,21 +20,15 @@ export function createSceneBaseAwareAccessValidateFn(accessValidateFn: ValidateF
   return async (deployment) => {
     if (deployment.entity.type === EntityType.SCENE) {
       const scene = deployment.entity.metadata?.scene
-      const base = scene?.base
       const pointers = deployment.entity.pointers
-      const parcels = scene?.parcels
-      const sameParcels =
-        isCanonicalParcelList(pointers) &&
-        isCanonicalParcelList(parcels) &&
-        pointers.length === parcels.length &&
-        parcels.every((parcel) => pointers.includes(parcel))
+      if (!SceneParcels.validate(scene) || !isCanonicalParcelList(pointers)) {
+        return validationFailed(
+          'The scene base must be included in matching, unique canonical scene parcels and entity pointers.'
+        )
+      }
 
-      if (
-        typeof base !== 'string' ||
-        !PARCEL_COORDINATE_PATTERN.test(base) ||
-        !sameParcels ||
-        !parcels.includes(base)
-      ) {
+      const pointerSet = new Set(pointers)
+      if (pointerSet.size !== scene.parcels.length || scene.parcels.some((parcel) => !pointerSet.has(parcel))) {
         return validationFailed(
           'The scene base must be included in matching, unique canonical scene parcels and entity pointers.'
         )
