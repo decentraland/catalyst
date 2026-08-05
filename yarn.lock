@@ -711,10 +711,10 @@
     ajv-keywords "^5.1.0"
     mitt "^3.0.1"
 
-"@dcl/schemas@^26.5.0":
-  version "26.5.0"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-26.5.0.tgz#58beee57bfa8ab15797aa8c54053cdebd4aa250a"
-  integrity sha512-R7/IXI3g4SFGsVKtsLzwUk7romfV9vxWtI0A7pbwlNEyfPtIVgdIqpgHAXD06vDTAyrEZAWMyzhHxcBEoIXniQ==
+"@dcl/schemas@^27.0.0":
+  version "27.0.0"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-27.0.0.tgz#fbda0293c221db90b83cf89b300c43b4b6111cc6"
+  integrity sha512-KwW6ms2p2k8WW+167ta4AOLwQeqJGV1L8jrPcuRiw06kZhbDnlcnOkTqwBibigeIFtN5aoae9you0W3+SceAiA==
   dependencies:
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
