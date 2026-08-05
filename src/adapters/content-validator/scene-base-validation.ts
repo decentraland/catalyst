@@ -1,6 +1,9 @@
 import { EntityType, SceneParcels } from '@dcl/schemas'
 import { ValidateFn, validationFailed } from '@dcl/content-validator'
 
+const SCENE_PARCEL_INTEGRITY_ERROR =
+  'The scene base must be included in matching, unique canonical scene parcels and entity pointers.'
+
 function isCanonicalParcelList(value: unknown): value is string[] {
   if (!Array.isArray(value) || value.length === 0 || !value.every((parcel) => typeof parcel === 'string')) {
     return false
@@ -22,16 +25,12 @@ export function createSceneBaseAwareAccessValidateFn(accessValidateFn: ValidateF
       const scene = deployment.entity.metadata?.scene
       const pointers = deployment.entity.pointers
       if (!SceneParcels.validate(scene) || !isCanonicalParcelList(pointers)) {
-        return validationFailed(
-          'The scene base must be included in matching, unique canonical scene parcels and entity pointers.'
-        )
+        return validationFailed(SCENE_PARCEL_INTEGRITY_ERROR)
       }
 
       const pointerSet = new Set(pointers)
       if (pointerSet.size !== scene.parcels.length || scene.parcels.some((parcel) => !pointerSet.has(parcel))) {
-        return validationFailed(
-          'The scene base must be included in matching, unique canonical scene parcels and entity pointers.'
-        )
+        return validationFailed(SCENE_PARCEL_INTEGRITY_ERROR)
       }
     }
 

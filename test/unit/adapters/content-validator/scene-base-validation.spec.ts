@@ -40,6 +40,19 @@ describe('when validating scene access with a base-aware validator', () => {
     })
   })
 
+  describe('and the pointers and scene parcels contain the same parcels in a different order', () => {
+    beforeEach(() => {
+      deployment.entity.pointers = ['1,2', '1,1']
+      deployment.entity.metadata.scene = { base: '1,1', parcels: ['1,1', '1,2'] }
+    })
+
+    it('should delegate to the configured access validator', async () => {
+      await validate(deployment)
+
+      expect(accessValidateFn).toHaveBeenCalledWith(deployment)
+    })
+  })
+
   describe('and the base does not belong to the pointers or scene parcels', () => {
     beforeEach(() => {
       deployment.entity.metadata.scene.base = '2,2'
