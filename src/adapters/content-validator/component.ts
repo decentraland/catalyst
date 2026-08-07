@@ -32,7 +32,6 @@ import { createEthereumProvider } from './ethereum-provider'
 import { createThirdPartyItemChecker } from './third-party-item-checker'
 import { AppComponents } from '../../types'
 import { IContentValidator } from './types'
-import { createSceneBaseAwareAccessValidateFn } from './scene-base-validation'
 
 type ContentValidatorDeps = Pick<
   AppComponents,
@@ -86,7 +85,7 @@ async function createIgnoreBlockchainAccessValidateFn(
   return createValidator({
     logs,
     externalCalls,
-    accessValidateFn: createSceneBaseAwareAccessValidateFn((_d: DeploymentToValidate) => Promise.resolve(OK))
+    accessValidateFn: (_d: DeploymentToValidate) => Promise.resolve(OK)
   })
 }
 
@@ -185,7 +184,7 @@ async function createOnChainValidateFn(
   return createValidator({
     logs,
     externalCalls,
-    accessValidateFn: createSceneBaseAwareAccessValidateFn(createAccessValidateFn({ externalCalls }, validateFns))
+    accessValidateFn: createAccessValidateFn({ externalCalls }, validateFns)
   })
 }
 
@@ -243,7 +242,7 @@ async function createSubgraphValidateFn(
   return createValidator({
     logs,
     externalCalls,
-    accessValidateFn: createSceneBaseAwareAccessValidateFn(createAccessValidateFn({ externalCalls }, validateFns))
+    accessValidateFn: createAccessValidateFn({ externalCalls }, validateFns)
   })
 }
 
