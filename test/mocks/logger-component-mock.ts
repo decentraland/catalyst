@@ -1,6 +1,6 @@
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { HistoricalDeploymentsRow } from '../../src/adapters/deployments-repository'
-import { ThirdPartyItemDeploymentRow } from '../../src/logic/deployments'
+import { ThirdPartyItemDeploymentRow } from '../../src/logic/deployments/types'
 import { EntityType } from '@dcl/schemas'
 
 export function createLogsMockedComponent({

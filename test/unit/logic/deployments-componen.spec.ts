@@ -1,9 +1,6 @@
 import { ILoggerComponent } from '@well-known-components/interfaces'
-import {
-  createDeploymentsComponent,
-  IDeploymentsComponent,
-  ThirdPartyItemDeploymentRow
-} from '../../../src/logic/deployments'
+import { createDeploymentsComponent, IDeploymentsComponent } from '../../../src/logic/deployments'
+import { ThirdPartyItemDeploymentRow } from '../../../src/logic/deployments/types'
 import { IDatabaseComponent } from '../../../src/adapters/database'
 import { createDatabaseMockedComponent } from '../../mocks/database-component-mock'
 import { createThirdPartyItemDeploymentRowMock, createLogsMockedComponent } from '../../mocks/logger-component-mock'

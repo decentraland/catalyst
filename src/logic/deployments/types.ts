@@ -5,15 +5,6 @@ import { HistoricalDeploymentsRow } from '../../adapters/deployments-repository'
 import { DeploymentId } from '../../types'
 
 /**
- * A row of `active_third_party_collection_items_deployments_with_content`, listing the view's columns
- * exactly. It is deliberately spelled out rather than derived from `HistoricalDeploymentsRow`: the
- * view renames `deployments.id` to `deployment_id`, joins in the `active_pointers` pointer, inlines
- * the deployment's content files, and selects neither `deleter_deployment` nor `overwritten_by`
- * (every row is an active, non-deleted deployment by construction). Deriving the type would promise
- * columns that never arrive, which is what let a reader key its content map by a non-existent `id`.
- * Keep this in sync with the view definition in `src/migrations/scripts`.
- */
-/**
  * The columns `buildHistoricalDeploymentsFromRow` reads. Declared as a `Pick<>` rather than the whole
  * `HistoricalDeploymentsRow` (or an `Omit<>` of it) so the mapper's input is closed: a column added to
  * `HistoricalDeploymentsRow` later cannot silently become a required input of a mapper that never
@@ -34,6 +25,15 @@ export type MappableDeploymentRow = Pick<
   | 'overwritten_by'
 >
 
+/**
+ * A row of `active_third_party_collection_items_deployments_with_content`, listing the view's columns
+ * exactly. It is deliberately spelled out rather than derived from `HistoricalDeploymentsRow`: the
+ * view renames `deployments.id` to `deployment_id`, joins in the `active_pointers` pointer, inlines
+ * the deployment's content files, and selects neither `deleter_deployment` nor `overwritten_by`
+ * (every row is an active, non-deleted deployment by construction). Deriving the type would promise
+ * columns that never arrive, which is what let a reader key its content map by a non-existent `id`.
+ * Keep this in sync with the view definition in `src/migrations/scripts`.
+ */
 export type ThirdPartyItemDeploymentRow = {
   pointer: string
   entity_id: string

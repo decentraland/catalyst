@@ -14,10 +14,7 @@ export {
   getPointerChanges,
   createDeploymentsComponent
 } from './component'
-export type {
-  IDeploymentsComponent,
-  DeploymentPointerChanges,
-  PointerChangesFilters,
-  MappableDeploymentRow,
-  ThirdPartyItemDeploymentRow
-} from './types'
+// The row-shape types (MappableDeploymentRow, ThirdPartyItemDeploymentRow) are deliberately absent:
+// they describe SQL result shapes this component consumes internally, not its public surface. The
+// component and its tests import them from './types' directly.
+export type { IDeploymentsComponent, DeploymentPointerChanges, PointerChangesFilters } from './types'
