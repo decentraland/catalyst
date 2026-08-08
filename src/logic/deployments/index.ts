@@ -18,5 +18,6 @@ export type {
   IDeploymentsComponent,
   DeploymentPointerChanges,
   PointerChangesFilters,
+  MappableDeploymentRow,
   ThirdPartyItemDeploymentRow
 } from './types'

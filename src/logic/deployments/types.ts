@@ -1,6 +1,7 @@
 import { AuthChain } from '@dcl/crypto'
 import { EntityType, PointerChangesSyncDeployment } from '@dcl/schemas'
 import { Deployment, DeploymentFilters } from '../../deployment-types'
+import { HistoricalDeploymentsRow } from '../../adapters/deployments-repository'
 import { DeploymentId } from '../../types'
 
 /**
@@ -12,6 +13,27 @@ import { DeploymentId } from '../../types'
  * columns that never arrive, which is what let a reader key its content map by a non-existent `id`.
  * Keep this in sync with the view definition in `src/migrations/scripts`.
  */
+/**
+ * The columns `buildHistoricalDeploymentsFromRow` reads. Declared as a `Pick<>` rather than the whole
+ * `HistoricalDeploymentsRow` (or an `Omit<>` of it) so the mapper's input is closed: a column added to
+ * `HistoricalDeploymentsRow` later cannot silently become a required input of a mapper that never
+ * reads it, which would break callers whose source exposes only a subset of `deployments`.
+ */
+export type MappableDeploymentRow = Pick<
+  HistoricalDeploymentsRow,
+  | 'id'
+  | 'entity_type'
+  | 'entity_id'
+  | 'entity_pointers'
+  | 'entity_timestamp'
+  | 'entity_metadata'
+  | 'deployer_address'
+  | 'version'
+  | 'auth_chain'
+  | 'local_timestamp'
+  | 'overwritten_by'
+>
+
 export type ThirdPartyItemDeploymentRow = {
   pointer: string
   entity_id: string

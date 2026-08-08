@@ -17,7 +17,12 @@ import { FailedDeployment } from '../../adapters/failed-deployments'
 import { DatabaseClient, DatabaseTransactionalClient } from '../../adapters/database'
 import { IGNORING_FIX_ERROR } from '../deployment-service'
 import { AppComponents, DeploymentField, DeploymentId, EntityVersion } from '../../types'
-import { DeploymentPointerChanges, IDeploymentsComponent, ThirdPartyItemDeploymentRow } from './types'
+import {
+  DeploymentPointerChanges,
+  IDeploymentsComponent,
+  MappableDeploymentRow,
+  ThirdPartyItemDeploymentRow
+} from './types'
 
 export async function isEntityDeployed(
   database: DatabaseClient,
@@ -198,9 +203,7 @@ export function buildDeploymentFromHistoricalDeployment(
 // Takes only the columns it reads, so rows from sources that expose a subset of `deployments`
 // (such as the third-party materialized view, which has no `deleter_deployment`) can be mapped
 // without claiming columns they do not carry.
-export function buildHistoricalDeploymentsFromRow(
-  row: Omit<HistoricalDeploymentsRow, 'deleter_deployment'>
-): HistoricalDeployment {
+export function buildHistoricalDeploymentsFromRow(row: MappableDeploymentRow): HistoricalDeployment {
   return {
     deploymentId: row.id,
     entityType: row.entity_type,
