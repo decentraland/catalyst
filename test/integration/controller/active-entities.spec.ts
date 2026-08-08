@@ -442,6 +442,41 @@ describe('Integration - Get Active Entities', () => {
       expect(response.entities).toHaveLength(3)
     })
 
+    it('when fetching several entities by collection name, then each one keeps its own content', async () => {
+      const pointer1 = ['urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:1']
+      const deployResult1 = await buildDeployData(pointer1, {
+        metadata: { a: 'first item' },
+        contentPaths: [getIntegrationResourcePathFor('some-binary-file.png')]
+      })
+      const pointer2 = ['urn:decentraland:mumbai:collections-thirdparty:aThirdParty:winterCollection:2']
+      const deployResult2 = await buildDeployData(pointer2, {
+        metadata: { a: 'second item' },
+        contentPaths: [getIntegrationResourcePathFor('some-text-file.txt')]
+      })
+
+      await server.deployEntity(deployResult1.deployData)
+      await server.deployEntity(deployResult2.deployData)
+
+      // Deploying warms the in-process entity cache, which would serve these reads without ever
+      // touching the materialized view. Drop it so the listing is resolved from the DB, the way a
+      // server that restarted or evicted these entries resolves it.
+      server.components.activeEntities.reset()
+
+      const response = await fetchActiveEntityByUrnPrefix(
+        server,
+        'urn:decentraland:mumbai:collections-thirdparty:aThirdParty'
+      )
+
+      expect(response.total).toBe(2)
+      expect(response.entities).toHaveLength(2)
+
+      for (const deployResult of [deployResult1, deployResult2]) {
+        const entity = response.entities.find((e) => e.id === deployResult.entity.id)
+        expect(entity).toBeDefined()
+        expect(entity!.content).toEqual(deployResult.entity.content)
+      }
+    })
+
     it('when fetching entities by not matching urn prefix, then none is retrieved', async () => {
       const pointer = ['urn:dcl:collection:itemId']
       const deployResult = await buildDeployData(pointer, {
