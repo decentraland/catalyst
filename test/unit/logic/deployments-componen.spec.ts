@@ -1,19 +1,12 @@
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import {
-  buildDeploymentFromHistoricalDeployment,
-  buildHistoricalDeploymentsFromRow,
   createDeploymentsComponent,
-  IDeploymentsComponent
+  IDeploymentsComponent,
+  ThirdPartyItemDeploymentRow
 } from '../../../src/logic/deployments'
 import { IDatabaseComponent } from '../../../src/adapters/database'
 import { createDatabaseMockedComponent } from '../../mocks/database-component-mock'
-import {
-  createHistoricalDeploymentRowWithContentMock,
-  createLogsMockedComponent
-} from '../../mocks/logger-component-mock'
-import { HistoricalDeploymentsRow } from '../../../src/adapters/deployments-repository'
-import { DeploymentContent } from '../../../src/deployment-types'
-import { DeploymentId } from '../../../src/types'
+import { createThirdPartyItemDeploymentRowMock, createLogsMockedComponent } from '../../mocks/logger-component-mock'
 
 let deployments: IDeploymentsComponent
 let database: jest.Mocked<IDatabaseComponent>
@@ -43,36 +36,18 @@ describe('when getting the deployments for active third party collection items b
   })
 
   describe('when entity ids are found', () => {
-    let rowEntities: HistoricalDeploymentsRow[]
-    let contents: Map<DeploymentId, DeploymentContent[]>
+    let rowEntities: ThirdPartyItemDeploymentRow[]
 
     beforeEach(() => {
-      contents = new Map([
-        [
-          1,
-          [
-            { key: '1', hash: 'hash1' },
-            { key: '2', hash: 'hash2' }
-          ]
-        ],
-        [
-          2,
-          [
-            { key: '3', hash: 'hash3' },
-            { key: '4', hash: 'hash4' }
-          ]
-        ]
-      ])
-
       rowEntities = [
-        createHistoricalDeploymentRowWithContentMock({
-          id: 1,
+        createThirdPartyItemDeploymentRowMock({
+          deployment_id: 1,
           entity_id: '123',
           content_keys: ['1', '2'],
           content_hashes: ['hash1', 'hash2']
         }),
-        createHistoricalDeploymentRowWithContentMock({
-          id: 2,
+        createThirdPartyItemDeploymentRowMock({
+          deployment_id: 2,
           entity_id: '456',
           content_keys: ['3', '4'],
           content_hashes: ['hash3', 'hash4']
@@ -88,8 +63,20 @@ describe('when getting the deployments for active third party collection items b
     it('should return the deployments', async () => {
       const result = await deployments.getDeploymentsForActiveThirdPartyItemsByEntityIds(['123', '456'])
       expect(result).toEqual([
-        buildDeploymentFromHistoricalDeployment(buildHistoricalDeploymentsFromRow(rowEntities[0]), contents),
-        buildDeploymentFromHistoricalDeployment(buildHistoricalDeploymentsFromRow(rowEntities[1]), contents)
+        expect.objectContaining({ entityId: '123' }),
+        expect.objectContaining({ entityId: '456' })
+      ])
+    })
+
+    it('should return each deployment with its own content files', async () => {
+      const result = await deployments.getDeploymentsForActiveThirdPartyItemsByEntityIds(['123', '456'])
+      expect(result[0].content).toEqual([
+        { key: '1', hash: 'hash1' },
+        { key: '2', hash: 'hash2' }
+      ])
+      expect(result[1].content).toEqual([
+        { key: '3', hash: 'hash3' },
+        { key: '4', hash: 'hash4' }
       ])
     })
   })

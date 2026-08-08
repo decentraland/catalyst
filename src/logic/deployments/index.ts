@@ -14,4 +14,9 @@ export {
   getPointerChanges,
   createDeploymentsComponent
 } from './component'
-export type { IDeploymentsComponent, DeploymentPointerChanges, PointerChangesFilters } from './types'
+export type {
+  IDeploymentsComponent,
+  DeploymentPointerChanges,
+  PointerChangesFilters,
+  ThirdPartyItemDeploymentRow
+} from './types'

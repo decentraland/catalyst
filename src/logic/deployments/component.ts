@@ -17,7 +17,7 @@ import { FailedDeployment } from '../../adapters/failed-deployments'
 import { DatabaseClient, DatabaseTransactionalClient } from '../../adapters/database'
 import { IGNORING_FIX_ERROR } from '../deployment-service'
 import { AppComponents, DeploymentField, DeploymentId, EntityVersion } from '../../types'
-import { DeploymentPointerChanges, IDeploymentsComponent } from './types'
+import { DeploymentPointerChanges, IDeploymentsComponent, ThirdPartyItemDeploymentRow } from './types'
 
 export async function isEntityDeployed(
   database: DatabaseClient,
@@ -359,19 +359,26 @@ export const createDeploymentsComponent = (
       SELECT * FROM active_third_party_collection_items_deployments_with_content
       WHERE entity_id = ANY(${entityIds});
     `
-    const deployments = await database.queryWithValues<
-      HistoricalDeploymentsRow & { content_keys: string[]; content_hashes: string[] }
-    >(query, 'get_deployments_for_active_third_party_collection_items_by_entity_ids')
+    const deployments = await database.queryWithValues<ThirdPartyItemDeploymentRow>(
+      query,
+      'get_deployments_for_active_third_party_collection_items_by_entity_ids'
+    )
+    // The view exposes the deployment key as `deployment_id`, so rows must be keyed and looked up by
+    // that column. Keying by the absent `id` collapsed every row onto a single `undefined` entry and
+    // served the last row's files as the content of every entity in the batch.
     const contents = new Map<DeploymentId, DeploymentContent[]>(
       deployments.rows.map((row) => [
-        row.id,
+        row.deployment_id,
         row.content_keys.map((content_key, index) => ({ key: content_key, hash: row.content_hashes[index] }))
       ])
     )
 
     return deployments.rows.map(
-      (row: HistoricalDeploymentsRow & { content_keys: string[]; content_hashes: string[] }): Deployment =>
-        buildDeploymentFromHistoricalDeployment(buildHistoricalDeploymentsFromRow(row), contents)
+      (row: ThirdPartyItemDeploymentRow): Deployment =>
+        buildDeploymentFromHistoricalDeployment(
+          buildHistoricalDeploymentsFromRow({ ...row, id: row.deployment_id }),
+          contents
+        )
     )
   }
 

@@ -1,5 +1,6 @@
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { HistoricalDeploymentsRow } from '../../src/adapters/deployments-repository'
+import { ThirdPartyItemDeploymentRow } from '../../src/logic/deployments'
 import { EntityType } from '@dcl/schemas'
 
 export function createLogsMockedComponent({
@@ -38,10 +39,16 @@ export const createHistoricalDeploymentRowMock = (
   ...overrides
 })
 
-export const createHistoricalDeploymentRowWithContentMock = (
-  overrides?: Partial<jest.Mocked<HistoricalDeploymentsRow & { content_keys: string[]; content_hashes: string[] }>>
-): HistoricalDeploymentsRow & { content_keys: string[]; content_hashes: string[] } => ({
-  ...createHistoricalDeploymentRowMock(overrides),
-  content_keys: overrides?.content_keys ?? ['1', '2'],
-  content_hashes: overrides?.content_hashes ?? ['hash1', 'hash2']
-})
+// Mirrors the third-party materialized view, which exposes `deployment_id` rather than `id`. Keep the
+// column names in sync with the view: mocking an `id` here hides content-association bugs in its reader.
+export const createThirdPartyItemDeploymentRowMock = (
+  overrides?: Partial<jest.Mocked<ThirdPartyItemDeploymentRow>>
+): ThirdPartyItemDeploymentRow => {
+  const { id: _id, ...rowWithoutId } = createHistoricalDeploymentRowMock(overrides as Partial<HistoricalDeploymentsRow>)
+  return {
+    ...rowWithoutId,
+    deployment_id: overrides?.deployment_id ?? 123,
+    content_keys: overrides?.content_keys ?? ['1', '2'],
+    content_hashes: overrides?.content_hashes ?? ['hash1', 'hash2']
+  }
+}
