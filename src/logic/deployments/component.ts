@@ -195,7 +195,12 @@ export function buildDeploymentFromHistoricalDeployment(
   }
 }
 
-export function buildHistoricalDeploymentsFromRow(row: HistoricalDeploymentsRow): HistoricalDeployment {
+// Takes only the columns it reads, so rows from sources that expose a subset of `deployments`
+// (such as the third-party materialized view, which has no `deleter_deployment`) can be mapped
+// without claiming columns they do not carry.
+export function buildHistoricalDeploymentsFromRow(
+  row: Omit<HistoricalDeploymentsRow, 'deleter_deployment'>
+): HistoricalDeployment {
   return {
     deploymentId: row.id,
     entityType: row.entity_type,

@@ -39,16 +39,25 @@ export const createHistoricalDeploymentRowMock = (
   ...overrides
 })
 
-// Mirrors the third-party materialized view, which exposes `deployment_id` rather than `id`. Keep the
-// column names in sync with the view: mocking an `id` here hides content-association bugs in its reader.
+// Mirrors the third-party materialized view column for column. Built independently of
+// createHistoricalDeploymentRowMock on purpose: the view exposes `deployment_id` instead of `id` and
+// carries no `deleter_deployment`/`overwritten_by`, so reusing the deployments-row mock would hand the
+// reader columns production never returns and hide content-association bugs.
 export const createThirdPartyItemDeploymentRowMock = (
   overrides?: Partial<jest.Mocked<ThirdPartyItemDeploymentRow>>
-): ThirdPartyItemDeploymentRow => {
-  const { id: _id, ...rowWithoutId } = createHistoricalDeploymentRowMock(overrides as Partial<HistoricalDeploymentsRow>)
-  return {
-    ...rowWithoutId,
-    deployment_id: overrides?.deployment_id ?? 123,
-    content_keys: overrides?.content_keys ?? ['1', '2'],
-    content_hashes: overrides?.content_hashes ?? ['hash1', 'hash2']
-  }
-}
+): ThirdPartyItemDeploymentRow => ({
+  pointer: 'urn:decentraland:matic:collections-thirdparty:aThirdParty:aCollection:1',
+  entity_id: '123',
+  deployment_id: 123,
+  entity_type: EntityType.WEARABLE,
+  entity_pointers: ['urn:decentraland:matic:collections-thirdparty:aThirdParty:aCollection:1'],
+  entity_timestamp: 123,
+  entity_metadata: { v: { name: '123' } },
+  deployer_address: '123',
+  version: '123',
+  auth_chain: [],
+  local_timestamp: 123,
+  content_keys: ['1', '2'],
+  content_hashes: ['hash1', 'hash2'],
+  ...overrides
+})
