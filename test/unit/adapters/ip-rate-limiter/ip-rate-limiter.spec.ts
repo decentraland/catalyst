@@ -55,8 +55,10 @@ describe('createIpRateLimiter', () => {
 })
 
 describe('getClientIp', () => {
-  function makeHeaders(entries: Record<string, string>): Headers {
-    return new Headers(entries)
+  function makeHeaders(entries: Record<string, string>): Pick<Headers, 'get'> {
+    const lower: Record<string, string> = {}
+    for (const [k, v] of Object.entries(entries)) lower[k.toLowerCase()] = v
+    return { get: (name: string) => lower[name.toLowerCase()] ?? null } as any
   }
 
   it('returns the CF-Connecting-IP header when present', () => {

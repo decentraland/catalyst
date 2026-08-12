@@ -21,9 +21,5 @@ export function createIpRateLimiter(maxRequestsPerMinute: number): IIpRateLimite
 
 // Prefers CF-Connecting-IP (Cloudflare real client IP) over X-Forwarded-For.
 export function getClientIp(headers: Headers): string | undefined {
-  return (
-    headers.get('cf-connecting-ip') ??
-    headers.get('x-forwarded-for')?.split(',')[0].trim() ??
-    undefined
-  )
+  return headers.get('cf-connecting-ip') ?? headers.get('x-forwarded-for')?.split(',')[0].trim() ?? undefined
 }
