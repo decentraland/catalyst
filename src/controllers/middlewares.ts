@@ -5,6 +5,7 @@ import { State } from '../logic/sync-orchestrator'
 import { Error } from '@dcl/catalyst-api-specs/lib/client'
 import { InvalidRequestError, NotFoundError, PayloadTooLargeError } from './errors'
 import { Middleware } from '@dcl/http-server/dist/middleware'
+import { getClientIp } from '../adapters/ip-rate-limiter'
 
 export function preventExecutionIfBoostrapping({
   syncOrchestrator
@@ -23,6 +24,30 @@ export function preventExecutionIfBoostrapping({
       }
     }
 
+    return await next()
+  }
+}
+
+export function createIpRateLimitMiddleware({
+  ipRateLimiter,
+  metrics,
+  logs
+}: Pick<AppComponents, 'ipRateLimiter' | 'metrics' | 'logs'>): Middleware<IHttpServerComponent.DefaultContext<object>> {
+  const logger = logs.getLogger('ip-rate-limit')
+  return async (
+    ctx: IHttpServerComponent.DefaultContext<object>,
+    next: () => Promise<IHttpServerComponent.IResponse>
+  ): Promise<IHttpServerComponent.IResponse> => {
+    const clientIp = getClientIp(ctx.request.headers)
+    if (clientIp && ipRateLimiter.isRateLimited(clientIp)) {
+      metrics.increment('dcl_content_ip_rate_limited_requests_total', {})
+      logger.warn('POST /entities - IP rate limited', { ip: clientIp })
+      return {
+        status: 429,
+        body: { errors: ['Too many requests from this IP. Try again later.'] },
+        headers: { 'Retry-After': '60' }
+      }
+    }
     return await next()
   }
 }

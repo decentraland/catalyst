@@ -5,7 +5,7 @@ import { multipartParserWrapper } from './multipart'
 import { GlobalContext } from '../types'
 import { activeEntitiesBodySchema, getActiveEntitiesHandler } from './handlers/active-entities-handler'
 import { createEntity } from './handlers/create-entity-handler'
-import { createErrorHandler, preventExecutionIfBoostrapping } from './middlewares'
+import { createErrorHandler, createIpRateLimitMiddleware, preventExecutionIfBoostrapping } from './middlewares'
 import { getFailedDeploymentsHandler } from './handlers/failed-deployments-handler'
 import { getEntitiesByCollectionPointerPrefixHandler } from './handlers/filter-by-urn-handler'
 import { getEntityAuditInformationHandler } from './handlers/get-audit-handler'
@@ -41,6 +41,11 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
     router.post(
       '/entities',
       preventExecutionIfBoostrapping({ syncOrchestrator: components.syncOrchestrator }),
+      createIpRateLimitMiddleware({
+        ipRateLimiter: components.ipRateLimiter,
+        metrics: components.metrics,
+        logs: components.logs
+      }),
       multipartParserWrapper(createEntity, {
         maxFileSize: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FILE_SIZE),
         maxFiles: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FILE_COUNT),

@@ -4,8 +4,6 @@ import { AuthChain, AuthLink, EthAddress } from '@dcl/crypto'
 import { DeploymentContext, isInvalidDeployment, isSuccessfulDeployment } from '../../deployment-types'
 import { FormHandlerContextWithPath } from '../../types'
 import { InvalidRequestError } from '../errors'
-import { getClientIp } from '../../adapters/ip-rate-limiter'
-
 // A real auth chain has 2-3 links; cap generously. This bounds the index-parsing loop below so a
 // crafted `authChain[<huge>][...]` field name can't drive a large iteration count on the public,
 // unauthenticated POST /entities endpoint (issue #1936).
@@ -16,29 +14,15 @@ type ContentFile = {
   content: Buffer
 }
 
-type Response =
-  | { status: 200; body: PostEntity200 }
-  | { status: 400; body: PostEntity400 }
-  | { status: 429; body: PostEntity400; headers: Record<string, string> }
+type Response = { status: 200; body: PostEntity200 } | { status: 400; body: PostEntity400 }
 
 // Method: POST
 export async function createEntity(
-  context: FormHandlerContextWithPath<'logs' | 'fs' | 'metrics' | 'deployer' | 'ipRateLimiter', '/entities'>
+  context: FormHandlerContextWithPath<'logs' | 'fs' | 'metrics' | 'deployer', '/entities'>
 ): Promise<Response> {
-  const { metrics, deployer, logs, ipRateLimiter } = context.components
+  const { metrics, deployer, logs } = context.components
 
   const logger = logs.getLogger('create-entity')
-
-  const clientIp = getClientIp(context.request.headers)
-  if (clientIp && ipRateLimiter.isRateLimited(clientIp)) {
-    metrics.increment('dcl_content_ip_rate_limited_requests_total', {})
-    logger.warn('POST /entities - IP rate limited', { ip: clientIp })
-    return {
-      status: 429,
-      body: { errors: ['Too many requests from this IP. Try again later.'] },
-      headers: { 'Retry-After': '60' }
-    }
-  }
 
   // Guard the required field explicitly: without it a missing `entityId` throws a TypeError and the
   // request fails with a 500 (and an error log) instead of a 400 — trivially abusable on this public

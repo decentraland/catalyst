@@ -41,7 +41,6 @@ describe('createIpRateLimiter', () => {
       for (let i = 0; i < 10; i++) {
         limiter.isRateLimited('1.2.3.4')
       }
-      // 1.2.3.4 is now at the limit; a different IP should still be allowed
       expect(limiter.isRateLimited('5.6.7.8')).toBe(false)
     })
 
@@ -86,6 +85,21 @@ describe('getClientIp', () => {
 
   it('returns undefined when neither header is present', () => {
     const headers = makeHeaders({})
+    expect(getClientIp(headers)).toBeUndefined()
+  })
+
+  it('supports IPv6 addresses', () => {
+    const headers = makeHeaders({ 'cf-connecting-ip': '2001:db8::1' })
+    expect(getClientIp(headers)).toBe('2001:db8::1')
+  })
+
+  it('rejects non-IP values to prevent cache-key poisoning', () => {
+    const headers = makeHeaders({ 'x-forwarded-for': 'not-an-ip, 1.2.3.4' })
+    expect(getClientIp(headers)).toBeUndefined()
+  })
+
+  it('rejects header injection attempts', () => {
+    const headers = makeHeaders({ 'x-forwarded-for': '1.2.3.4\r\nX-Injected: true' })
     expect(getClientIp(headers)).toBeUndefined()
   })
 })
