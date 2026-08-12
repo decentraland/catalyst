@@ -301,7 +301,10 @@ export enum EnvironmentConfig {
   STORAGE_DECOMPRESS_CACHE_EVICTION_INTERVAL,
   // Max bytes a single gzip content file may inflate to (decompression-bomb guard).
   // Undefined falls back to the library default (256MB).
-  STORAGE_DECOMPRESS_MAX_FILE_SIZE
+  STORAGE_DECOMPRESS_MAX_FILE_SIZE,
+
+  // Per-IP rate limit for POST /entities. 0 = disabled (default).
+  IP_RATE_LIMIT_MAX_PER_MINUTE
 }
 export class EnvironmentBuilder {
   private baseEnv: Environment
@@ -699,6 +702,10 @@ export class EnvironmentBuilder {
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.STORAGE_DECOMPRESS_MAX_FILE_SIZE, () =>
       parseOptionalNonNegativeIntEnv('STORAGE_DECOMPRESS_MAX_FILE_SIZE')
+    )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.IP_RATE_LIMIT_MAX_PER_MINUTE, () =>
+      parseNonNegativeIntEnv('IP_RATE_LIMIT_MAX_PER_MINUTE', 0)
     )
 
     return env

@@ -55,6 +55,12 @@ export const metricsDeclaration = validateMetricsDeclaration({
     labelNames: ['entity_type']
   },
 
+  dcl_content_ip_rate_limited_requests_total: {
+    help: 'Total POST /entities requests blocked by the per-IP rate limiter',
+    type: 'counter',
+    labelNames: [] as const
+  },
+
   dcl_deployments_endpoint_counter: {
     help: 'Total deployments through HTTP',
     type: 'counter',

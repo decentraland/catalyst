@@ -62,6 +62,7 @@ import { createQueryParams } from './logic/query-params'
 import { createSequentialTaskExecutor } from './logic/sequential-task-executor'
 import { createSnapshots } from './logic/snapshots'
 import { createSyncOrchestrator } from './logic/sync-orchestrator'
+import { createIpRateLimiter } from './adapters/ip-rate-limiter'
 
 // =============================================================================
 // Types
@@ -484,6 +485,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   await instrumentHttpServerWithPromClientRegistry({ server, metrics, config, registry: metrics.registry! })
 
+  const ipRateLimiter = createIpRateLimiter(env.getConfig(EnvironmentConfig.IP_RATE_LIMIT_MAX_PER_MINUTE))
+
   // ---------------------------------------------------------------------------
   // Return
   // ---------------------------------------------------------------------------
@@ -529,6 +532,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     validator,
     queryParams,
     entities,
-    snapshots
+    snapshots,
+    ipRateLimiter
   }
 }

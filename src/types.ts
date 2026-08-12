@@ -42,6 +42,7 @@ import { ISnapshots } from './logic/snapshots'
 import { ISyncOrchestrator } from './logic/sync-orchestrator'
 import { IBatchDeployer } from './logic/batch-deployer'
 import { IJobComponent } from '@dcl/job-component'
+import { IIpRateLimiterComponent } from './adapters/ip-rate-limiter'
 
 // Minimum amount of needed stuff to make the sync work
 
@@ -122,6 +123,7 @@ export type AppComponents = {
   queryParams: IQueryParams
   entities: IEntities
   snapshots: ISnapshots
+  ipRateLimiter: IIpRateLimiterComponent
 }
 
 export type GlobalContext = {
