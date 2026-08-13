@@ -560,10 +560,10 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@^8.0.0":
-  version "8.0.0"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-8.0.0.tgz#3827c466df930b60c8c75c8e64d0ec6657e79725"
-  integrity sha512-/uN09neoHIPPFonwozSTiyHsvmKl0/tgmLd54LXa3+bmkp8Bsy9XEOBqxCknVFgMog2TCfyU6cHDRN0bbR8RoA==
+"@dcl/content-validator@^8.1.0":
+  version "8.1.0"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-8.1.0.tgz#2207cd414cc14c3cb1effae37676d5d4b516b62c"
+  integrity sha512-viWvoolSis/lwQXXotFyQ9ycLdmORkahzIIlqXuUO9HoOKuZlg0H+yjnA6da6Hk7Om6fzUjAvTiRf8k2UAHilw==
   dependencies:
     "@dcl/block-indexer" "^1.1.2"
     "@dcl/content-hash-tree" "^1.1.4"
