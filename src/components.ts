@@ -86,6 +86,7 @@ import { AppComponents, GlobalContext } from './types'
  *   9. Background workers (GC, batch deployer, snapshot generator, retry)
  *   10. Synchronizer + sync state
  *   11. HTTP server
+ *   12. Rate limiting
  */
 
 // One key per (bucket, window, client), so this bounds how many distinct clients can be tracked at
@@ -487,9 +488,18 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     [STOP_COMPONENT]: stopServer
   }
 
+  // ---------------------------------------------------------------------------
+  // 12. Rate limiting
+  // ---------------------------------------------------------------------------
   // Its own cache instance: counter churn would otherwise share an LRU with whatever else is cached
   // and each would evict the other. Only `max` is set — the limiter passes a per-call TTL (in
   // seconds) for every counter, so the constructor's `ttl` (milliseconds) would never apply.
+  //
+  // Held privately by the limiter rather than added to AppComponents, matching how the deploy rate
+  // limiter's caches and the DAO source are constructed. There is no lifecycle to manage: the cache
+  // exposes no start/stop (neither the methods nor the WKC symbols), and lru-cache registers no
+  // timers — 200 TTL writes and 200 TTL increments leave the active-handle count at zero and the
+  // process still exits on its own.
   const trustedClientIpHeader = env.getConfig<string | undefined>(EnvironmentConfig.TRUSTED_CLIENT_IP_HEADER)
   const rateLimiterLogger = logs.getLogger('rate-limiter')
   const rateLimiter = createRateLimiterComponent<GlobalContext>(

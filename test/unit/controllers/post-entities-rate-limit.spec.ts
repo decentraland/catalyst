@@ -19,6 +19,38 @@ import {
 import { metricsDeclaration } from '../../../src/metrics'
 import { GlobalContext } from '../../../src/types'
 
+/** What the limiter reads off the context, which is far less than a routed request carries. */
+type RateLimitedRequestContext = IHttpServerComponent.DefaultContext<GlobalContext> & {
+  routerPath: string
+  remoteAddress?: string
+}
+
+/** The 429 the limiter builds, and the handler response it passes through. */
+type RateLimitedResponse = {
+  status: number
+  body?: unknown
+  headers: Headers
+}
+
+/**
+ * Builds the context the router would hand the middleware. Only the fields the limiter reads are
+ * populated, so the cast is to the context type rather than to `any` — a field the limiter starts
+ * depending on then fails to compile here instead of silently reading `undefined`.
+ */
+function buildContext(
+  path: string,
+  remoteAddress: string | undefined,
+  headers: Record<string, string> = {}
+): RateLimitedRequestContext {
+  return {
+    request: new Request(`http://localhost${path}`, { method: 'POST', headers }),
+    url: new URL(`http://localhost${path}`),
+    routerPath: path,
+    remoteAddress,
+    params: {}
+  } as unknown as RateLimitedRequestContext
+}
+
 /** A logger that records nothing: these tests assert on behaviour, not on log output. */
 function createSilentLogs() {
   return {
@@ -166,20 +198,16 @@ describe('when reading the POST /entities rate limit configuration', () => {
 
 describe('when a client posts entities through the rate limit middleware', () => {
   let rateLimiter: IRateLimiterComponent<GlobalContext>
-  let middleware: IHttpServerComponent.IRequestHandler<any>
+  let middleware: IHttpServerComponent.IRequestHandler<RateLimitedRequestContext>
   let next: jest.Mock
   let max: number
 
   /** Drives the middleware the way the router does, with the route the limiter buckets on. */
-  const post = (remoteAddress: string | undefined, headers: Record<string, string> = {}) =>
-    middleware({
-      request: new Request('http://localhost/entities', { method: 'POST', headers }),
-      url: new URL('http://localhost/entities'),
-      routerPath: '/entities',
-      remoteAddress,
-      components: {} as any,
-      params: {}
-    } as any, next as any)
+  const post = async (
+    remoteAddress: string | undefined,
+    headers: Record<string, string> = {}
+  ): Promise<RateLimitedResponse> =>
+    (await middleware(buildContext('/entities', remoteAddress, headers), next)) as RateLimitedResponse
 
   beforeEach(() => {
     max = 3
@@ -187,8 +215,8 @@ describe('when a client posts entities through the rate limit middleware', () =>
     rateLimiter = createRateLimiterComponent<GlobalContext>(
       {
         cache: createInMemoryCacheComponent({ max: 100 }),
-        logs: createSilentLogs() as any,
-        metrics: createTestMetricsComponent(metricsDeclaration) as any
+        logs: createSilentLogs(),
+        metrics: createTestMetricsComponent(metricsDeclaration)
       },
       // Split the way production splits it: the process-wide settings and this server's error shape
       // on the component, the endpoint's budget at the mount.
@@ -197,7 +225,7 @@ describe('when a client posts entities through the rate limit middleware', () =>
         buildLimitExceededResponse: () => ({ status: 429, body: { error: 'Too many requests' } })
       }
     )
-    middleware = rateLimiter.withRateLimitMiddleware({ max, windowSeconds: 60 }) as any
+    middleware = rateLimiter.withRateLimitMiddleware({ max, windowSeconds: 60 })
   })
 
   afterEach(() => {
@@ -210,7 +238,7 @@ describe('when a client posts entities through the rate limit middleware', () =>
     beforeEach(async () => {
       statuses = []
       for (let i = 0; i < max; i++) {
-        statuses.push(((await post('203.0.113.7')) as any).status)
+        statuses.push((await post('203.0.113.7')).status)
       }
     })
 
@@ -250,23 +278,16 @@ describe('when a client posts entities through the rate limit middleware', () =>
     let statuses: number[]
 
     beforeEach(async () => {
-      const otherMiddleware = rateLimiter.withRateLimitMiddleware() as any
+      const otherMiddleware = rateLimiter.withRateLimitMiddleware()
       statuses = []
       // One more request than POST /entities allows. Nothing is rejected, because this mount falls
       // back to the component's neutral default instead of inheriting the deployment endpoint's.
       for (let i = 0; i < max + 1; i++) {
-        const response = await otherMiddleware(
-          {
-            request: new Request('http://localhost/other', { method: 'POST' }),
-            url: new URL('http://localhost/other'),
-            routerPath: '/other',
-            remoteAddress: '203.0.113.7',
-            components: {} as any,
-            params: {}
-          } as any,
-          next as any
-        )
-        statuses.push((response as any).status)
+        const response = (await otherMiddleware(
+          buildContext('/other', '203.0.113.7'),
+          next
+        )) as RateLimitedResponse
+        statuses.push(response.status)
       }
     })
 
@@ -297,7 +318,7 @@ describe('when a client posts entities through the rate limit middleware', () =>
       statuses = []
       // fallbackMaxDivisor defaults to 10, so max(1, floor(3/10)) === 1 request per window.
       for (let i = 0; i < 2; i++) {
-        statuses.push(((await post(undefined)) as any).status)
+        statuses.push((await post(undefined)).status)
       }
     })
 
@@ -309,30 +330,23 @@ describe('when a client posts entities through the rate limit middleware', () =>
 
 describe('when the catalyst sits behind a proxy that sets a trusted client IP header', () => {
   let rateLimiter: IRateLimiterComponent<GlobalContext>
-  let middleware: IHttpServerComponent.IRequestHandler<any>
+  let middleware: IHttpServerComponent.IRequestHandler<RateLimitedRequestContext>
   let next: jest.Mock
 
-  const postFromProxy = (clientIp: string) =>
-    middleware({
-      request: new Request('http://localhost/entities', {
-        method: 'POST',
-        headers: { 'x-real-ip': clientIp }
-      }),
-      url: new URL('http://localhost/entities'),
-      routerPath: '/entities',
-      // Every request arrives from the proxy, so the socket address is useless for keying.
-      remoteAddress: '172.18.0.2',
-      components: {} as any,
-      params: {}
-    } as any, next as any)
+  // Every request arrives from the proxy, so the socket address is useless for keying.
+  const postFromProxy = async (clientIp: string): Promise<RateLimitedResponse> =>
+    (await middleware(
+      buildContext('/entities', '172.18.0.2', { 'x-real-ip': clientIp }),
+      next
+    )) as RateLimitedResponse
 
   beforeEach(() => {
     next = jest.fn().mockResolvedValue({ status: 200 })
     rateLimiter = createRateLimiterComponent<GlobalContext>(
       {
         cache: createInMemoryCacheComponent({ max: 100 }),
-        logs: createSilentLogs() as any,
-        metrics: createTestMetricsComponent(metricsDeclaration) as any
+        logs: createSilentLogs(),
+        metrics: createTestMetricsComponent(metricsDeclaration)
       },
       {
         keyPrefix: 'catalyst-content:rl',
@@ -342,7 +356,7 @@ describe('when the catalyst sits behind a proxy that sets a trusted client IP he
         buildLimitExceededResponse: () => ({ status: 429, body: { error: 'Too many requests' } })
       }
     )
-    middleware = rateLimiter.withRateLimitMiddleware() as any
+    middleware = rateLimiter.withRateLimitMiddleware()
   })
 
   afterEach(() => {
@@ -354,10 +368,10 @@ describe('when the catalyst sits behind a proxy that sets a trusted client IP he
 
     beforeEach(async () => {
       statuses = []
-      statuses.push(((await postFromProxy('203.0.113.7')) as any).status)
-      statuses.push(((await postFromProxy('203.0.113.7')) as any).status)
-      statuses.push(((await postFromProxy('203.0.113.7')) as any).status)
-      statuses.push(((await postFromProxy('198.51.100.4')) as any).status)
+      statuses.push((await postFromProxy('203.0.113.7')).status)
+      statuses.push((await postFromProxy('203.0.113.7')).status)
+      statuses.push((await postFromProxy('203.0.113.7')).status)
+      statuses.push((await postFromProxy('198.51.100.4')).status)
     })
 
     it('should limit each client separately instead of collapsing them onto the proxy address', () => {
