@@ -498,7 +498,13 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       keyPrefix: 'catalyst-content:rl',
       trustedClientIpHeader,
       max: env.getConfig<number>(EnvironmentConfig.POST_ENTITIES_RATE_LIMIT_MAX),
-      windowSeconds: env.getConfig<number>(EnvironmentConfig.POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS)
+      windowSeconds: env.getConfig<number>(EnvironmentConfig.POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS),
+      // Only to match this server's error shape: every other error body here is `{ error }` (see the
+      // error middleware and the 413), while the component's built-in 429 is `{ ok: false, message }`,
+      // which would make this the one response a client parsing our errors uniformly breaks on. The
+      // component still adds `Retry-After` to a custom response, so nothing is lost by overriding —
+      // and this is not needed for the status or the headers, which the built-in already provides.
+      buildLimitExceededResponse: () => ({ status: 429, body: { error: 'Too many requests' } })
     }
   )
 

@@ -671,6 +671,14 @@
   dependencies:
     prom-client "^15.1.0"
 
+"@dcl/rate-limiter-component@^0.2.0":
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/@dcl/rate-limiter-component/-/rate-limiter-component-0.2.0.tgz#ddaab3a74d6143275549d836c1bdbd11bc000f96"
+  integrity sha512-D9aFfkJJq0q3Kqk58slHwpJlYljlj9tAZ6md5mhxSjxN4wyuKiXwPJB/9hJpF12uzY1+3oYxFWGYiCcmYwj0nQ==
+  dependencies:
+    "@dcl/core-commons" "0.11.0"
+    "@well-known-components/interfaces" "^1.5.2"
+
 "@dcl/schema-validator-component@^1.0.2":
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/@dcl/schema-validator-component/-/schema-validator-component-1.0.2.tgz#b0a773f6d8a27858971c17de4d643330232f9f15"
