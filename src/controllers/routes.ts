@@ -40,15 +40,7 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
   } else {
     router.post(
       '/entities',
-      // Before the multipart parser: it buffers the whole upload into memory, so counting after it
-      // would let a throttled client spend the memory anyway. This is the only guard here that is
-      // per-client — the DEPLOYMENT_RATE_LIMIT_* knobs throttle redeployments of a pointer (after
-      // validation), and nginx's limit_req zones are keyed on $uri, bounding the endpoint's total
-      // rate rather than any one client's share.
-      //
-      // The budget is set here rather than component-wide because it is this endpoint's, the way the
-      // upload caps below are: a component-wide policy is the default for every other mount and for
-      // `consume()`, so a limit named after POST /entities would quietly become theirs too.
+      // Must stay ahead of the multipart parser, which buffers the whole upload into memory.
       components.rateLimiter.withRateLimitMiddleware({
         max: env.getConfig<number>(EnvironmentConfig.POST_ENTITIES_RATE_LIMIT_MAX),
         windowSeconds: env.getConfig<number>(EnvironmentConfig.POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS)
