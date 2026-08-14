@@ -28,6 +28,7 @@ export type IBatchDeployer = IDeployerComponent &
       entityId: string,
       entityType: string,
       auditInfo: LocalDeploymentAuditInfo,
-      context: DeploymentContext
+      context: DeploymentContext,
+      verifiedEntityFile?: Uint8Array
     ): Promise<void>
   }

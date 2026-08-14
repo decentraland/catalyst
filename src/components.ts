@@ -314,6 +314,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
         concurrency: env.getConfig<number>(EnvironmentConfig.SYNC_DEPLOY_CONCURRENCY),
         timeout: 100000
       },
+      contentDownloadConcurrency: env.getConfig<number>(EnvironmentConfig.SYNC_CONTENT_DOWNLOAD_CONCURRENCY),
       profileDuration: env.getConfig(EnvironmentConfig.PROFILE_DURATION)
     }
   )
@@ -361,6 +362,10 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       // download entities retry
       requestMaxRetries: 10,
       requestRetryWaitTime: 5000,
+      concurrency: {
+        snapshotDeployments: env.getConfig<number>(EnvironmentConfig.SYNC_SNAPSHOT_CONCURRENCY),
+        snapshotChecks: env.getConfig<number>(EnvironmentConfig.SYNC_SNAPSHOT_CHECK_CONCURRENCY)
+      },
 
       // pointer chagnes stream options
       // time between every poll to /pointer-changes

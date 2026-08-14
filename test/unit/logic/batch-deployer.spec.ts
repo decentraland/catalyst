@@ -1,6 +1,9 @@
 import ms from 'ms'
 import { createBatchDeployerComponent } from '../../../src/logic/batch-deployer'
 import * as deployments from '../../../src/logic/deployments'
+import { DeploymentContext } from '../../../src/deployment-types'
+
+const snapshotsFetcher = jest.requireActual<typeof import('@dcl/snapshots-fetcher')>('@dcl/snapshots-fetcher')
 
 function createMockComponents() {
   return {
@@ -136,6 +139,87 @@ describe('createBatchDeployerComponent', () => {
 
         expect(deploySpy).toHaveBeenCalled()
       })
+    })
+  })
+
+  describe('when verified entity bytes are supplied by the fetcher', () => {
+    let components: ReturnType<typeof createMockComponents>
+    let batchDeployer: ReturnType<typeof createBatchDeployerComponent>
+    let verifiedEntityFile: Uint8Array
+
+    beforeEach(() => {
+      components = createMockComponents()
+      batchDeployer = createBatchDeployerComponent(components, {
+        ignoredTypes: new Set(),
+        queueOptions: { autoStart: true, concurrency: 1, timeout: 10000 },
+        contentDownloadConcurrency: 1,
+        profileDuration: ms('1 year')
+      })
+      verifiedEntityFile = Buffer.from('{"type":"scene"}')
+    })
+
+    it('should deploy without retrieving the entity from storage again', async () => {
+      await batchDeployer.deployDownloadedEntity(
+        'entity-id',
+        'scene',
+        { authChain: [] },
+        DeploymentContext.SYNCED,
+        verifiedEntityFile
+      )
+
+      expect(components.storage.retrieve).not.toHaveBeenCalled()
+    })
+
+    it('should pass the exact verified bytes to the entity deployer', async () => {
+      await batchDeployer.deployDownloadedEntity(
+        'entity-id',
+        'scene',
+        { authChain: [] },
+        DeploymentContext.SYNCED,
+        verifiedEntityFile
+      )
+
+      expect(components.deployer.deployEntity).toHaveBeenCalledWith(
+        [verifiedEntityFile],
+        'entity-id',
+        { authChain: [] },
+        DeploymentContext.SYNCED
+      )
+    })
+  })
+
+  describe('when the component stops with owned queues', () => {
+    let stopOrder: string[]
+    let batchDeployer: ReturnType<typeof createBatchDeployerComponent>
+
+    beforeEach(() => {
+      stopOrder = []
+      const deploymentQueue = {
+        stop: jest.fn(async () => {
+          stopOrder.push('deployments')
+        })
+      }
+      const contentQueue = {
+        stop: jest.fn(async () => {
+          stopOrder.push('content')
+        })
+      }
+      jest
+        .spyOn(snapshotsFetcher, 'createJobQueue')
+        .mockReturnValueOnce(deploymentQueue as any)
+        .mockReturnValueOnce(contentQueue as any)
+      batchDeployer = createBatchDeployerComponent(createMockComponents(), {
+        ignoredTypes: new Set(),
+        queueOptions: { autoStart: true, concurrency: 1 },
+        contentDownloadConcurrency: 1,
+        profileDuration: ms('1 year')
+      })
+    })
+
+    it('should terminate deployment work before terminating its content queue', async () => {
+      await batchDeployer.stop?.()
+
+      expect(stopOrder).toEqual(['deployments', 'content'])
     })
   })
 })
