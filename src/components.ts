@@ -437,12 +437,13 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     {
       cors: {
         // Requests are authenticated by signature (auth-chain), not cookies/sessions, so credentialed
-        // CORS is unnecessary — and `origin: true` + `credentials: true` is the wildcard-with-credentials
-        // pattern that would let any site ride a user's credentials the moment cookie auth is added.
-        origin: true,
-        methods: ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-        allowedHeaders: ['Cache-Control', 'Content-Type', 'Origin', 'Accept', 'User-Agent', 'X-Upload-Origin'],
-        maxAge: 86400
+        // CORS is unnecessary — and `*` + `credentials: true` is the wildcard-with-credentials pattern
+        // that would let any site ride a user's credentials the moment cookie auth is added.
+        origin: '*',
+        methods: ['GET', 'HEAD', 'POST', 'OPTIONS'],
+        // No `allowedHeaders` on purpose: the preflight reflects whatever was requested. ADR-44 sends
+        // `X-Identity-Auth-Chain-<N>` for an open-ended N, so any fixed list has to guess a chain depth.
+        maxAge: 600
       }
     }
   )
