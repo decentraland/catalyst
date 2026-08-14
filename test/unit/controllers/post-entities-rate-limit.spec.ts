@@ -152,6 +152,16 @@ describe('when reading the POST /entities rate limit configuration', () => {
       expect(env.getConfig(EnvironmentConfig.TRUSTED_CLIENT_IP_HEADER)).toBeUndefined()
     })
   })
+
+  describe('and the trusted client IP header is not a valid HTTP header name', () => {
+    beforeEach(() => {
+      process.env.TRUSTED_CLIENT_IP_HEADER = 'x real ip'
+    })
+
+    it('should fail at startup rather than throw on every POST /entities request', async () => {
+      await expect(new EnvironmentBuilder().build()).rejects.toThrow('Invalid TRUSTED_CLIENT_IP_HEADER')
+    })
+  })
 })
 
 describe('when a client posts entities through the rate limit middleware', () => {
@@ -180,7 +190,12 @@ describe('when a client posts entities through the rate limit middleware', () =>
         logs: createSilentLogs() as any,
         metrics: createTestMetricsComponent(metricsDeclaration) as any
       },
-      { keyPrefix: 'catalyst-content:rl', max, windowSeconds: 60 }
+      {
+        keyPrefix: 'catalyst-content:rl',
+        max,
+        windowSeconds: 60,
+        buildLimitExceededResponse: () => ({ status: 429, body: { error: 'Too many requests' } })
+      }
     )
     middleware = rateLimiter.withRateLimitMiddleware() as any
   })
@@ -223,8 +238,8 @@ describe('when a client posts entities through the rate limit middleware', () =>
       expect(Number(lastResponse.headers.get('Retry-After'))).toBeGreaterThan(0)
     })
 
-    it('should not restate the retry delay in the body, keeping one authoritative source for it', () => {
-      expect(lastResponse.body).toEqual({ ok: false, message: 'Too many requests' })
+    it('should use the same error response shape as the rest of the Catalyst API', () => {
+      expect(lastResponse.body).toEqual({ error: 'Too many requests' })
     })
   })
 
@@ -287,7 +302,13 @@ describe('when the catalyst sits behind a proxy that sets a trusted client IP he
         logs: createSilentLogs() as any,
         metrics: createTestMetricsComponent(metricsDeclaration) as any
       },
-      { keyPrefix: 'catalyst-content:rl', trustedClientIpHeader: 'x-real-ip', max: 2, windowSeconds: 60 }
+      {
+        keyPrefix: 'catalyst-content:rl',
+        trustedClientIpHeader: 'x-real-ip',
+        max: 2,
+        windowSeconds: 60,
+        buildLimitExceededResponse: () => ({ status: 429, body: { error: 'Too many requests' } })
+      }
     )
     middleware = rateLimiter.withRateLimitMiddleware() as any
   })

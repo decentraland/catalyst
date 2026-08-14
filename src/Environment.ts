@@ -103,7 +103,13 @@ function parsePositiveIntEnv(name: string, defaultValue: number): number {
  */
 function parseOptionalHeaderNameEnv(name: string): string | undefined {
   const trimmed = process.env[name]?.trim()
-  return trimmed === undefined || trimmed === '' ? undefined : trimmed
+  if (trimmed === undefined || trimmed === '') {
+    return undefined
+  }
+  if (!/^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/.test(trimmed)) {
+    throw new Error(`Invalid ${name}: expected an HTTP header name but got "${process.env[name]}"`)
+  }
+  return trimmed
 }
 
 /**

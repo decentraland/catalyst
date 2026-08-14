@@ -451,6 +451,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
         origin: true,
         methods: ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
         allowedHeaders: ['Cache-Control', 'Content-Type', 'Origin', 'Accept', 'User-Agent', 'X-Upload-Origin'],
+        exposedHeaders: ['Retry-After'],
         maxAge: 86400
       }
     }
@@ -489,7 +490,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       keyPrefix: 'catalyst-content:rl',
       trustedClientIpHeader,
       max: env.getConfig<number>(EnvironmentConfig.POST_ENTITIES_RATE_LIMIT_MAX),
-      windowSeconds: env.getConfig<number>(EnvironmentConfig.POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS)
+      windowSeconds: env.getConfig<number>(EnvironmentConfig.POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS),
+      buildLimitExceededResponse: () => ({ status: 429, body: { error: 'Too many requests' } })
     }
   )
 
