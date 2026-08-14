@@ -495,10 +495,13 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const rateLimiter = createRateLimiterComponent<GlobalContext>(
     { cache: createInMemoryCacheComponent({ max: RATE_LIMITER_CACHE_MAX_KEYS }), logs, metrics },
     {
+      // Only what describes this process and its storage. `max` and `windowSeconds` belong to the
+      // endpoint, so they are passed where the middleware is mounted (`controllers/routes.ts`) — set
+      // here they would also become the default for every future mount and for `consume()`, which is
+      // not what a limit named after POST /entities should mean. Anything mounted without its own
+      // budget therefore gets the component's neutral default rather than this endpoint's.
       keyPrefix: 'catalyst-content:rl',
       trustedClientIpHeader,
-      max: env.getConfig<number>(EnvironmentConfig.POST_ENTITIES_RATE_LIMIT_MAX),
-      windowSeconds: env.getConfig<number>(EnvironmentConfig.POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS),
       // Only to match this server's error shape: every other error body here is `{ error }` (see the
       // error middleware and the 413), while the component's built-in 429 is `{ ok: false, message }`,
       // which would make this the one response a client parsing our errors uniformly breaks on. The

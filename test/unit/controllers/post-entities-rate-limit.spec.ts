@@ -190,14 +190,14 @@ describe('when a client posts entities through the rate limit middleware', () =>
         logs: createSilentLogs() as any,
         metrics: createTestMetricsComponent(metricsDeclaration) as any
       },
+      // Split the way production splits it: the process-wide settings and this server's error shape
+      // on the component, the endpoint's budget at the mount.
       {
         keyPrefix: 'catalyst-content:rl',
-        max,
-        windowSeconds: 60,
         buildLimitExceededResponse: () => ({ status: 429, body: { error: 'Too many requests' } })
       }
     )
-    middleware = rateLimiter.withRateLimitMiddleware() as any
+    middleware = rateLimiter.withRateLimitMiddleware({ max, windowSeconds: 60 }) as any
   })
 
   afterEach(() => {
@@ -238,8 +238,40 @@ describe('when a client posts entities through the rate limit middleware', () =>
       expect(Number(lastResponse.headers.get('Retry-After'))).toBeGreaterThan(0)
     })
 
+    // The endpoint's budget is an override on top of the component-wide options, so this also pins
+    // that the override merges rather than replaces: the component-wide response builder must still
+    // apply, or the 429 silently reverts to the component's own `{ ok, message }` body.
     it('should use the same error response shape as the rest of the Catalyst API', () => {
       expect(lastResponse.body).toEqual({ error: 'Too many requests' })
+    })
+  })
+
+  describe('and a second endpoint is mounted without its own budget', () => {
+    let statuses: number[]
+
+    beforeEach(async () => {
+      const otherMiddleware = rateLimiter.withRateLimitMiddleware() as any
+      statuses = []
+      // One more request than POST /entities allows. Nothing is rejected, because this mount falls
+      // back to the component's neutral default instead of inheriting the deployment endpoint's.
+      for (let i = 0; i < max + 1; i++) {
+        const response = await otherMiddleware(
+          {
+            request: new Request('http://localhost/other', { method: 'POST' }),
+            url: new URL('http://localhost/other'),
+            routerPath: '/other',
+            remoteAddress: '203.0.113.7',
+            components: {} as any,
+            params: {}
+          } as any,
+          next as any
+        )
+        statuses.push((response as any).status)
+      }
+    })
+
+    it('should not inherit the deployment endpoint budget', () => {
+      expect(statuses).toEqual([200, 200, 200, 200])
     })
   })
 

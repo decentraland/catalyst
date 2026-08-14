@@ -45,7 +45,14 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
       // per-client — the DEPLOYMENT_RATE_LIMIT_* knobs throttle redeployments of a pointer (after
       // validation), and nginx's limit_req zones are keyed on $uri, bounding the endpoint's total
       // rate rather than any one client's share.
-      components.rateLimiter.withRateLimitMiddleware(),
+      //
+      // The budget is set here rather than component-wide because it is this endpoint's, the way the
+      // upload caps below are: a component-wide policy is the default for every other mount and for
+      // `consume()`, so a limit named after POST /entities would quietly become theirs too.
+      components.rateLimiter.withRateLimitMiddleware({
+        max: env.getConfig<number>(EnvironmentConfig.POST_ENTITIES_RATE_LIMIT_MAX),
+        windowSeconds: env.getConfig<number>(EnvironmentConfig.POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS)
+      }),
       preventExecutionIfBoostrapping({ syncOrchestrator: components.syncOrchestrator }),
       multipartParserWrapper(createEntity, {
         maxFileSize: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FILE_SIZE),
