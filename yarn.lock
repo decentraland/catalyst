@@ -655,12 +655,12 @@
     "@well-known-components/interfaces" "^1.5.2"
     cron-parser "^5.0.0"
 
-"@dcl/memory-cache-component@^2.4.3":
-  version "2.4.3"
-  resolved "https://registry.yarnpkg.com/@dcl/memory-cache-component/-/memory-cache-component-2.4.3.tgz#cc2d54bd0481e39bc8633a7bcea1d1eb37f52c1b"
-  integrity sha512-++67KaWks/gRwYlOdfUiSRVNB9WnI0FJVyYaXlyYf1u64qY5UopTrwcU1UQiPzMuGKpyZOXK0V+ZgldGiumOeg==
+"@dcl/memory-cache-component@^2.5.0":
+  version "2.5.0"
+  resolved "https://registry.yarnpkg.com/@dcl/memory-cache-component/-/memory-cache-component-2.5.0.tgz#7fa2309d1d76206f94bf8811cfb1f2cb769d5fa2"
+  integrity sha512-Z0CHSeuRTkYRU/3FLKo0Htfk3OSa4wTDVcXB0hTT8LGk6s5XKogdtSlUHhJR1OS5xOspcZ1oiJyiJoA7ReO4tw==
   dependencies:
-    "@dcl/core-commons" "0.10.1"
+    "@dcl/core-commons" "0.11.0"
     "@well-known-components/interfaces" "^1.5.1"
     lru-cache "~11.2.2"
 
@@ -670,6 +670,14 @@
   integrity sha512-ZiDHlEVDhPy30UtvsLsUtefOsvDjD2TaR5KIkLTgPXtelqmhOWs26qD8Ldudky34nnqOjlLcokJYmyHltpsxbQ==
   dependencies:
     prom-client "^15.1.0"
+
+"@dcl/rate-limiter-component@^0.2.0":
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/@dcl/rate-limiter-component/-/rate-limiter-component-0.2.0.tgz#ddaab3a74d6143275549d836c1bdbd11bc000f96"
+  integrity sha512-D9aFfkJJq0q3Kqk58slHwpJlYljlj9tAZ6md5mhxSjxN4wyuKiXwPJB/9hJpF12uzY1+3oYxFWGYiCcmYwj0nQ==
+  dependencies:
+    "@dcl/core-commons" "0.11.0"
+    "@well-known-components/interfaces" "^1.5.2"
 
 "@dcl/schema-validator-component@^1.0.2":
   version "1.0.2"

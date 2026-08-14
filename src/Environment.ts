@@ -49,6 +49,14 @@ export const DEFAULT_MAX_UPLOAD_TOTAL_SIZE = 2 * 1024 * 1024 * 1024 // 2 GiB tot
 // and OOM the process. 10 MB comfortably fits 1000 pointer/id strings.
 export const DEFAULT_MAX_ACTIVE_ENTITIES_BODY_SIZE = 10 * 1024 * 1024 // 10 MB
 
+// Per-client request budget for POST /entities. This is the only unauthenticated endpoint that
+// buffers a multi-MB upload into memory before anything can reject it, and neither existing guard
+// covers the case: the `DEPLOYMENT_RATE_LIMIT_*` knobs below throttle redeployments of the same
+// *pointer* (after validation, per entity type), and nginx's `limit_req` zones are keyed on `$uri`,
+// so they bound an endpoint's total rate rather than any one client's share of it.
+export const DEFAULT_POST_ENTITIES_RATE_LIMIT_MAX = 200
+export const DEFAULT_POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS = 60
+
 /**
  * Parse a non-negative integer env var, falling back to `defaultValue` when it is unset/empty.
  * Throws on an invalid value (including partial parses like "256MB") rather than letting `parseInt`
@@ -72,6 +80,36 @@ function parseNonNegativeIntEnv(name: string, defaultValue: number): number {
     throw new Error(`Invalid ${name}: value "${raw}" is too large to represent exactly`)
   }
   return parsed
+}
+
+/**
+ * Like `parseNonNegativeIntEnv` but rejects `0`. For a rate limit neither bound may be zero: a `max`
+ * of 0 rejects every request and a window of 0 is not a window at all. Flooring up to 1 (as
+ * `ENTITIES_CACHE_SIZE` does) would turn a typo into a 1-request-per-window outage that looks like
+ * working configuration, so a bad value fails startup while it is still cheap to notice.
+ */
+function parsePositiveIntEnv(name: string, defaultValue: number): number {
+  const parsed = parseNonNegativeIntEnv(name, defaultValue)
+  if (parsed === 0) {
+    throw new Error(`Invalid ${name}: expected a positive integer but got "${process.env[name]}"`)
+  }
+  return parsed
+}
+
+/**
+ * Reads an optional HTTP header name, returning `undefined` when unset/empty so the consumer keeps
+ * its own default. Trimmed because a padded header name is not merely unmatched — `Headers.get`
+ * rejects it outright.
+ */
+function parseOptionalHeaderNameEnv(name: string): string | undefined {
+  const trimmed = process.env[name]?.trim()
+  if (trimmed === undefined || trimmed === '') {
+    return undefined
+  }
+  if (!/^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/.test(trimmed)) {
+    throw new Error(`Invalid ${name}: expected an HTTP header name but got "${process.env[name]}"`)
+  }
+  return trimmed
 }
 
 /**
@@ -279,6 +317,13 @@ export enum EnvironmentConfig {
   MAX_UPLOAD_FIELD_SIZE,
   MAX_UPLOAD_TOTAL_SIZE,
   MAX_ACTIVE_ENTITIES_BODY_SIZE,
+
+  // Per-client rate limit on POST /entities. The header is deliberately not scoped to this endpoint:
+  // it describes where this process sits in the network, so any future limiter reads the same one.
+  POST_ENTITIES_RATE_LIMIT_MAX,
+  POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS,
+  TRUSTED_CLIENT_IP_HEADER,
+
   SUBGRAPH_COMPONENT_RETRIES,
   SUBGRAPH_COMPONENT_QUERY_TIMEOUT,
 
@@ -631,6 +676,20 @@ export class EnvironmentBuilder {
       // No flooring: createBodySizeLimitMiddleware rejects a value < 1 loudly at startup. Flooring a
       // mistaken 0 up to 1 would instead install a silent 1-byte cap that rejects every request.
       parseNonNegativeIntEnv('MAX_ACTIVE_ENTITIES_BODY_SIZE', DEFAULT_MAX_ACTIVE_ENTITIES_BODY_SIZE)
+    )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.POST_ENTITIES_RATE_LIMIT_MAX, () =>
+      parsePositiveIntEnv('POST_ENTITIES_RATE_LIMIT_MAX', DEFAULT_POST_ENTITIES_RATE_LIMIT_MAX)
+    )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS, () =>
+      parsePositiveIntEnv('POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS', DEFAULT_POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS)
+    )
+
+    // Unset is correct for a directly exposed server. Behind a proxy it must name the header that
+    // proxy writes, or every client shares one bucket — see the startup warning in `components.ts`.
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.TRUSTED_CLIENT_IP_HEADER, () =>
+      parseOptionalHeaderNameEnv('TRUSTED_CLIENT_IP_HEADER')
     )
 
     this.registerConfigIfNotAlreadySet(

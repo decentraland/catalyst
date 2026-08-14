@@ -13,6 +13,7 @@ import {
 // `@dcl/http-server` v2 produces native-fetch request/response types, defined in `@dcl/core-commons`.
 // Source `IHttpServerComponent` from there so handler context types match what the server provides.
 import { IHttpServerComponent } from '@dcl/core-commons'
+import { IRateLimiterComponent } from '@dcl/rate-limiter-component'
 import { Field, File } from '@well-known-components/multipart-wrapper'
 import { HTTPProvider } from 'eth-connect'
 import qs from 'qs'
@@ -111,6 +112,8 @@ export type AppComponents = {
   garbageCollectionManager: IGarbageCollectionComponent
   systemProperties: SystemProperties
   server: IHttpServerComponent<GlobalContext>
+  /** Per-client request budget, currently mounted only on POST /entities. */
+  rateLimiter: IRateLimiterComponent<GlobalContext>
   activeEntities: ActiveEntities
   sequentialExecutor: ISequentialTaskExecutorComponent
   denylist: Denylist

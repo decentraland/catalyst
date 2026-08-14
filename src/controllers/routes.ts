@@ -40,6 +40,11 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
   } else {
     router.post(
       '/entities',
+      // Must stay ahead of the multipart parser, which buffers the whole upload into memory.
+      components.rateLimiter.withRateLimitMiddleware({
+        max: env.getConfig<number>(EnvironmentConfig.POST_ENTITIES_RATE_LIMIT_MAX),
+        windowSeconds: env.getConfig<number>(EnvironmentConfig.POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS)
+      }),
       preventExecutionIfBoostrapping({ syncOrchestrator: components.syncOrchestrator }),
       multipartParserWrapper(createEntity, {
         maxFileSize: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FILE_SIZE),
