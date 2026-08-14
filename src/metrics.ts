@@ -4,6 +4,7 @@ import { metricDeclarations as loggerMetricDeclarations } from '@well-known-comp
 import { validateMetricsDeclaration } from '@dcl/metrics'
 import { getDefaultHttpMetrics } from '@dcl/http-server'
 import { metricDeclarations as theGraphMetricDeclarations } from '@dcl/thegraph-component'
+import { metricDeclarations as rateLimiterMetricDeclarations } from '@dcl/rate-limiter-component'
 import { sequentialJobMetrics } from './logic/sequential-task-executor'
 
 export const metricsDeclaration = validateMetricsDeclaration({
@@ -13,6 +14,9 @@ export const metricsDeclaration = validateMetricsDeclaration({
   ...sequentialJobMetrics,
   ...theGraphMetricDeclarations,
   ...loggerMetricDeclarations,
+  // The rate limiter reports every decision here instead of logging it: a throttled client retries,
+  // so a line per rejection is write amplification driven by the abuse being blocked.
+  ...rateLimiterMetricDeclarations,
   total_deployments_count: {
     help: 'Total number of deployments made to the content server',
     type: 'counter',

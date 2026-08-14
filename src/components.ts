@@ -5,7 +5,9 @@ import { createFolderBasedFileSystemContentStorage, createFsComponent } from '@d
 import type { L1Network } from '@dcl/catalyst-contracts'
 import { createServerComponent, instrumentHttpServerWithPromClientRegistry } from '@dcl/http-server'
 import { createJobComponent } from '@dcl/job-component'
+import { createInMemoryCacheComponent } from '@dcl/memory-cache-component'
 import { createMetricsComponent } from '@dcl/metrics'
+import { createRateLimiterComponent } from '@dcl/rate-limiter-component'
 import { EthAddress } from '@dcl/schemas'
 import { createJobQueue, createSynchronizer } from '@dcl/snapshots-fetcher'
 import { createTracedFetcherComponent } from '@dcl/traced-fetch-component'
@@ -85,6 +87,13 @@ import { AppComponents, GlobalContext } from './types'
  *   10. Synchronizer + sync state
  *   11. HTTP server
  */
+
+// One key per (bucket, window, client), so this bounds how many distinct clients can be tracked at
+// once — comfortably above the number of addresses that deploy in a window, and small enough that the
+// counters stay a few MB. Not operator-tunable on purpose. Overflow evicts by LRU, which fails *open*
+// (an evicted counter restarts at zero), so the value only needs to be generous, never exact.
+const RATE_LIMITER_CACHE_MAX_KEYS = 50_000
+
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
   // ---------------------------------------------------------------------------
   // 1. Bootstrap primitives
@@ -469,6 +478,33 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     [STOP_COMPONENT]: stopServer
   }
 
+  // Its own cache instance: counter churn would otherwise share an LRU with whatever else is cached
+  // and each would evict the other. Only `max` is set — the limiter passes a per-call TTL (in
+  // seconds) for every counter, so the constructor's `ttl` (milliseconds) would never apply.
+  const trustedClientIpHeader = env.getConfig<string | undefined>(EnvironmentConfig.TRUSTED_CLIENT_IP_HEADER)
+  const rateLimiterLogger = logs.getLogger('rate-limiter')
+  const rateLimiter = createRateLimiterComponent<GlobalContext>(
+    { cache: createInMemoryCacheComponent({ max: RATE_LIMITER_CACHE_MAX_KEYS }), logs, metrics },
+    {
+      keyPrefix: 'catalyst-content:rl',
+      trustedClientIpHeader,
+      max: env.getConfig<number>(EnvironmentConfig.POST_ENTITIES_RATE_LIMIT_MAX),
+      windowSeconds: env.getConfig<number>(EnvironmentConfig.POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS)
+    }
+  )
+
+  // A config-time warning, not a request-driven one: the limiter cannot tell a directly exposed
+  // server from a proxied one, and any client can send a forwarding header, so reporting on the
+  // header's presence would let an outsider raise this. Behind a proxy the socket peer is the proxy
+  // for every request, which silently collapses the per-client budget into one global one.
+  if (!trustedClientIpHeader) {
+    rateLimiterLogger.warn(
+      'TRUSTED_CLIENT_IP_HEADER is unset, so POST /entities is rate limited by socket address. That is ' +
+        'correct only if this process is reached directly; behind a proxy every client shares one budget. ' +
+        'Watch the key_source label on rate_limiter_requests_total to tell which is happening.'
+    )
+  }
+
   const buildInfo = {
     version: CURRENT_VERSION,
     commitHash: CURRENT_COMMIT_HASH,
@@ -515,6 +551,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     metrics,
     migrationManager,
     pointersRepository,
+    rateLimiter,
     sequentialExecutor,
     server,
     snapshotGenerationJob,

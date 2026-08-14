@@ -40,6 +40,12 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
   } else {
     router.post(
       '/entities',
+      // Before the multipart parser: it buffers the whole upload into memory, so counting after it
+      // would let a throttled client spend the memory anyway. This is the only guard here that is
+      // per-client — the DEPLOYMENT_RATE_LIMIT_* knobs throttle redeployments of a pointer (after
+      // validation), and nginx's limit_req zones are keyed on $uri, bounding the endpoint's total
+      // rate rather than any one client's share.
+      components.rateLimiter.withRateLimitMiddleware(),
       preventExecutionIfBoostrapping({ syncOrchestrator: components.syncOrchestrator }),
       multipartParserWrapper(createEntity, {
         maxFileSize: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FILE_SIZE),
