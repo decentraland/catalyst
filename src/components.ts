@@ -89,10 +89,7 @@ import { AppComponents, GlobalContext } from './types'
  *   12. Rate limiting
  */
 
-// One key per (bucket, window, client), so this bounds how many distinct clients can be tracked at
-// once — comfortably above the number of addresses that deploy in a window, and small enough that the
-// counters stay a few MB. Not operator-tunable on purpose. Overflow evicts by LRU, which fails *open*
-// (an evicted counter restarts at zero), so the value only needs to be generous, never exact.
+// Bounds how many distinct clients are tracked at once. Overflow evicts by LRU, which fails open.
 const RATE_LIMITER_CACHE_MAX_KEYS = 50_000
 
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
@@ -491,40 +488,25 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   // ---------------------------------------------------------------------------
   // 12. Rate limiting
   // ---------------------------------------------------------------------------
-  // Its own cache instance: counter churn would otherwise share an LRU with whatever else is cached
-  // and each would evict the other. Only `max` is set — the limiter passes a per-call TTL (in
-  // seconds) for every counter, so the constructor's `ttl` (milliseconds) would never apply.
-  //
-  // Held privately by the limiter rather than added to AppComponents, matching how the deploy rate
-  // limiter's caches and the DAO source are constructed. There is no lifecycle to manage: the cache
-  // exposes no start/stop (neither the methods nor the WKC symbols), and lru-cache registers no
-  // timers — 200 TTL writes and 200 TTL increments leave the active-handle count at zero and the
-  // process still exits on its own.
+  // Its own cache instance: counter churn would evict whatever else shared the LRU. It has no
+  // lifecycle (no start/stop), so there is nothing to register for shutdown.
   const trustedClientIpHeader = env.getConfig<string | undefined>(EnvironmentConfig.TRUSTED_CLIENT_IP_HEADER)
   const rateLimiterLogger = logs.getLogger('rate-limiter')
   const rateLimiter = createRateLimiterComponent<GlobalContext>(
     { cache: createInMemoryCacheComponent({ max: RATE_LIMITER_CACHE_MAX_KEYS }), logs, metrics },
     {
-      // Only what describes this process and its storage. `max` and `windowSeconds` belong to the
-      // endpoint, so they are passed where the middleware is mounted (`controllers/routes.ts`) — set
-      // here they would also become the default for every future mount and for `consume()`, which is
-      // not what a limit named after POST /entities should mean. Anything mounted without its own
-      // budget therefore gets the component's neutral default rather than this endpoint's.
+      // Process-level only. A budget set here would become the default for every mount and for
+      // `consume()`, so the endpoint's own lives at its mount in `controllers/routes.ts`.
       keyPrefix: 'catalyst-content:rl',
       trustedClientIpHeader,
-      // Only to match this server's error shape: every other error body here is `{ error }` (see the
-      // error middleware and the 413), while the component's built-in 429 is `{ ok: false, message }`,
-      // which would make this the one response a client parsing our errors uniformly breaks on. The
-      // component still adds `Retry-After` to a custom response, so nothing is lost by overriding —
-      // and this is not needed for the status or the headers, which the built-in already provides.
+      // Only to match this server's error shape: everything else returns `{ error }` while the
+      // component's built-in 429 is `{ ok, message }`. It still adds `Retry-After` to a custom body.
       buildLimitExceededResponse: () => ({ status: 429, body: { error: 'Too many requests' } })
     }
   )
 
-  // A config-time warning, not a request-driven one: the limiter cannot tell a directly exposed
-  // server from a proxied one, and any client can send a forwarding header, so reporting on the
-  // header's presence would let an outsider raise this. Behind a proxy the socket peer is the proxy
-  // for every request, which silently collapses the per-client budget into one global one.
+  // Warn at startup rather than per request: any client can send a forwarding header, so its
+  // presence proves nothing and would let an outsider raise this.
   if (!trustedClientIpHeader) {
     rateLimiterLogger.warn(
       'TRUSTED_CLIENT_IP_HEADER is unset, so POST /entities is rate limited by socket address. That is ' +
