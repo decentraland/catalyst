@@ -105,5 +105,11 @@ describe('Integration - CORS', () => {
     it('should allow any origin to read the response', () => {
       expect(response.headers.get('access-control-allow-origin')).toBe('*')
     })
+
+    // Without this the browser hides every response header outside the six CORS-safelisted ones, so
+    // ETag, Retry-After and the RateLimit-* triplet would be unreadable to JS despite being sent.
+    it('should expose every response header so JS can read the ones outside the safelist', () => {
+      expect(response.headers.get('access-control-expose-headers')).toBe('*')
+    })
   })
 })

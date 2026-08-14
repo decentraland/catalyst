@@ -452,6 +452,14 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
         methods: ['GET', 'HEAD', 'POST', 'OPTIONS'],
         // No `allowedHeaders` on purpose: the preflight reflects whatever was requested. ADR-44 sends
         // `X-Identity-Auth-Chain-<N>` for an open-ended N, so any fixed list has to guess a chain depth.
+        //
+        // Without this a browser can read only the six CORS-safelisted response headers, so `ETag`
+        // (conditional requests), `Retry-After` and the `RateLimit-*` triplet (a throttled deployer
+        // pacing itself) are all invisible to JS even though we send them. `*` avoids a list that has
+        // to be extended every time a response grows a header. It works because this API is
+        // signature-authenticated rather than cookie-authenticated: the wildcard is ignored for a
+        // credentialed request, so enabling `credentials` would silently hide these again.
+        exposedHeaders: ['*'],
         maxAge: 600
       }
     }
