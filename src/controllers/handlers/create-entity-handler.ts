@@ -1,9 +1,12 @@
 import { PostEntity200, PostEntity400 } from '@dcl/catalyst-api-specs/lib/client'
 import { Field } from '@well-known-components/multipart-wrapper'
 import { AuthChain, AuthLink, EthAddress } from '@dcl/crypto'
+import { EntityType } from '@dcl/schemas'
 import { DeploymentContext, isInvalidDeployment, isSuccessfulDeployment } from '../../deployment-types'
+import { DeploymentQuotaExceededError } from '../../logic/deployment-quota'
+import { hashFiles } from '../../logic/deployment-service'
 import { FormHandlerContextWithPath } from '../../types'
-import { InvalidRequestError } from '../errors'
+import { InvalidRequestError, TooManyRequestsError } from '../errors'
 
 // A real auth chain has 2-3 links; cap generously. This bounds the index-parsing loop below so a
 // crafted `authChain[<huge>][...]` field name can't drive a large iteration count on the public,
@@ -17,11 +20,15 @@ type ContentFile = {
 
 type Response = { status: 200; body: PostEntity200 } | { status: 400; body: PostEntity400 }
 
+/** The components a deploy needs beyond the response itself. */
+type CreateEntityContext = FormHandlerContextWithPath<
+  'logs' | 'fs' | 'metrics' | 'deployer' | 'crypto' | 'entities' | 'deploymentQuota',
+  '/entities'
+>
+
 // Method: POST
-export async function createEntity(
-  context: FormHandlerContextWithPath<'logs' | 'fs' | 'metrics' | 'deployer', '/entities'>
-): Promise<Response> {
-  const { metrics, deployer, logs } = context.components
+export async function createEntity(context: CreateEntityContext): Promise<Response> {
+  const { metrics, deployer, crypto, logs } = context.components
 
   const logger = logs.getLogger('create-entity')
   // Guard the required field explicitly: without it a missing `entityId` throws a TypeError and the
@@ -57,14 +64,18 @@ export async function createEntity(
       deployFiles.push({ path: filename, content: file.value })
     }
 
+    // Hashed here so the quota can read the entity type, which exists only inside the entity file.
+    // `deployEntity` takes the map as-is, so nothing is hashed twice.
+    const hashes = await hashFiles(
+      crypto,
+      deployFiles.map(({ content }) => content),
+      entityId
+    )
+    await enforceDeploymentQuota(context, hashes, entityId)
+
     const auditInfo = { authChain, version: 'v3' }
 
-    const deploymentResult = await deployer.deployEntity(
-      deployFiles.map(({ content }) => content),
-      entityId,
-      auditInfo,
-      DeploymentContext.LOCAL
-    )
+    const deploymentResult = await deployer.deployEntity(hashes, entityId, auditInfo, DeploymentContext.LOCAL)
 
     if (isSuccessfulDeployment(deploymentResult)) {
       metrics.increment('dcl_deployments_endpoint_counter', { kind: 'success' })
@@ -89,6 +100,11 @@ export async function createEntity(
       throw new Error('deploymentResult is invalid')
     }
   } catch (error) {
+    // A rejected caller is not an internal failure: counting and logging it here would let the abuse
+    // the quota exists to stop drive the error metric and the log volume.
+    if (error instanceof TooManyRequestsError) {
+      throw error
+    }
     metrics.increment('dcl_deployments_endpoint_counter', { kind: 'error' })
     // Never log `authChain` or `signature`: they are cryptographic credentials and
     // must not end up in logs/aggregation. `entityId` + `ethAddress` are enough to debug.
@@ -98,6 +114,52 @@ export async function createEntity(
       userAgent
     })
     logger.error(error)
+    throw error
+  }
+}
+
+/**
+ * Counts this attempt against the client's budget for the entity's type.
+ *
+ * The entity is located by its *computed* hash: the multipart field names are the caller's to choose,
+ * so trusting them would let anyone skip the quota by renaming the entity file.
+ *
+ * An entity file that is missing or unparseable is left to `deployEntity`, which already answers 400
+ * for it. Rejecting here instead would change that response's shape, and a caller gains nothing —
+ * the deployment fails either way, and its request still counts against POST_ENTITIES_RATE_LIMIT_MAX.
+ */
+async function enforceDeploymentQuota(
+  context: CreateEntityContext,
+  hashes: Map<string, Uint8Array>,
+  entityId: string
+): Promise<void> {
+  const { entities, deploymentQuota } = context.components
+
+  const entityFile = hashes.get(entityId)
+  if (!entityFile) {
+    return
+  }
+
+  let entityType: EntityType
+  try {
+    const entity = entities.parse(entityFile, entityId)
+    if (!entity) {
+      return
+    }
+    entityType = entity.type
+  } catch {
+    return
+  }
+
+  try {
+    await deploymentQuota.assertWithinQuota(context, entityType)
+  } catch (error) {
+    if (error instanceof DeploymentQuotaExceededError) {
+      throw new TooManyRequestsError(
+        `Too many deployments from this address. Retry in ${error.retryAfterSeconds} seconds.`,
+        error.retryAfterSeconds
+      )
+    }
     throw error
   }
 }

@@ -3,7 +3,7 @@ import { IHttpServerComponent } from '@dcl/core-commons'
 import { AppComponents } from '../types'
 import { State } from '../logic/sync-orchestrator'
 import { Error } from '@dcl/catalyst-api-specs/lib/client'
-import { InvalidRequestError, NotFoundError, PayloadTooLargeError } from './errors'
+import { InvalidRequestError, NotFoundError, PayloadTooLargeError, TooManyRequestsError } from './errors'
 import { Middleware } from '@dcl/http-server/dist/middleware'
 
 export function preventExecutionIfBoostrapping({
@@ -27,7 +27,9 @@ export function preventExecutionIfBoostrapping({
   }
 }
 
-function handleError(logger: ILoggerComponent.ILogger, error: any): { status: number; body: Error } {
+type ErrorResponse = { status: number; body: Error; headers?: Record<string, string> }
+
+function handleError(logger: ILoggerComponent.ILogger, error: any): ErrorResponse {
   // Handlers throw HTTP-shaped errors (defined in `./errors.ts`) when they
   // want to surface a specific status. Add a new branch when a new HTTP error
   // class is introduced. Anything else is treated as an unexpected failure
@@ -40,6 +42,16 @@ function handleError(logger: ILoggerComponent.ILogger, error: any): { status: nu
   }
   if (error instanceof PayloadTooLargeError) {
     return { status: 413, body: { error: error.message } }
+  }
+  if (error instanceof TooManyRequestsError) {
+    return {
+      status: 429,
+      body: { error: error.message },
+      // `Access-Control-Expose-Headers: *` is set on this API, so a browser deployer can read this.
+      ...(error.retryAfterSeconds !== undefined
+        ? { headers: { 'Retry-After': error.retryAfterSeconds.toString() } }
+        : {})
+    }
   }
 
   logger.error(error)

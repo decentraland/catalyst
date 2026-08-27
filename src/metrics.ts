@@ -41,6 +41,15 @@ export const metricsDeclaration = validateMetricsDeclaration({
     labelNames: []
   },
 
+  // One series per window rather than the rate limiter's `rate_limiter_requests_total`: the quota
+  // counts against the cache directly (that component refuses a window longer than a day), and its
+  // bucket label carries no entity type, which is the dimension a quota is tuned on.
+  dcl_content_deployment_quota_attempts_total: {
+    help: 'Deploy attempts counted against the per-client-address, per-entity-type quota',
+    type: 'counter',
+    labelNames: ['entity_type', 'window', 'outcome'] // outcome=(allowed|limited|degraded)
+  },
+
   dcl_content_rate_limited_deployments_total: {
     help: 'Total failed deployments due rate limit',
     type: 'counter',

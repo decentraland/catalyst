@@ -34,3 +34,18 @@ export class PayloadTooLargeError extends Error {
     Error.captureStackTrace(this, this.constructor)
   }
 }
+
+/**
+ * Rejects a caller that has spent a budget. `retryAfterSeconds` becomes the `Retry-After` header.
+ *
+ * Deliberately says only *when* to come back: naming the limit, the window or the remaining budget is
+ * itself disclosure, and this matches the default of `@dcl/rate-limiter-component` that the rest of
+ * the fleet follows.
+ */
+export class TooManyRequestsError extends Error {
+  constructor(message: string, public readonly retryAfterSeconds?: number) {
+    super(message)
+    this.name = 'TooManyRequestsError'
+    Error.captureStackTrace(this, this.constructor)
+  }
+}
