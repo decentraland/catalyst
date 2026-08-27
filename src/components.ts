@@ -58,6 +58,7 @@ import { createCrypto } from './logic/crypto'
 import { createContentCluster, createCustomDAOSource, createDAOSource } from './logic/peer-cluster'
 import { createDeploymentsComponent, retryFailedDeploymentExecution } from './logic/deployments'
 import { createDeploymentService } from './logic/deployment-service'
+import { createDeploymentQuota } from './logic/deployment-quota'
 import { createEntities } from './logic/entities'
 import { createGarbageCollectionComponent } from './logic/garbage-collection'
 import { createQueryParams } from './logic/query-params'
@@ -509,11 +510,20 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   // presence proves nothing and would let an outsider raise this.
   if (!trustedClientIpHeader) {
     rateLimiterLogger.warn(
-      'TRUSTED_CLIENT_IP_HEADER is unset, so POST /entities is rate limited by socket address. That is ' +
-        'correct only if this process is reached directly; behind a proxy every client shares one budget. ' +
-        'Watch the key_source label on rate_limiter_requests_total to tell which is happening.'
+      'TRUSTED_CLIENT_IP_HEADER is unset, so the POST /entities rate limit and the deployment quota are ' +
+        'both keyed on the socket address. That is correct only if this process is reached directly; ' +
+        'behind a proxy every client shares one budget. The key_source label on ' +
+        'rate_limiter_requests_total tells which is happening, and it speaks for the quota too: both ' +
+        'resolve the client address from the same header with the same precedence.'
     )
   }
+
+  // ---------------------------------------------------------------------------
+  // 13. Deployment quota
+  // ---------------------------------------------------------------------------
+  // Enforced in the POST /entities handler rather than at its mount: the entity type it buckets on
+  // only exists inside the uploaded entity file, so it cannot be known before the multipart parse.
+  const deploymentQuota = createDeploymentQuota({ env, logs, metrics })
 
   const buildInfo = {
     version: CURRENT_VERSION,
@@ -546,6 +556,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     denylistReloadJob,
     deployedEntitiesBloomFilter,
     deployer,
+    deploymentQuota,
     deployments,
     deploymentsRepository,
     downloadQueue,

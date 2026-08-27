@@ -57,6 +57,19 @@ export const DEFAULT_MAX_ACTIVE_ENTITIES_BODY_SIZE = 10 * 1024 * 1024 // 10 MB
 export const DEFAULT_POST_ENTITIES_RATE_LIMIT_MAX = 200
 export const DEFAULT_POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS = 60
 
+// Per-client, per-entity-type deployment budget over four horizons. Neither guard above bounds it:
+// `POST_ENTITIES_RATE_LIMIT_*` is a request budget over one 60s window and is blind to entity type,
+// and `DEPLOYMENT_RATE_LIMIT_*` throttles redeployments of one *pointer* rather than one caller's
+// total. Sized well above a creator iterating from a single address; a shared-IP aggregator that
+// deploys for many users belongs in `DEPLOYMENT_QUOTA_EXEMPT_IPS` rather than driving these up.
+export const DEFAULT_DEPLOYMENT_QUOTA_MAX_PER_MINUTE = 60
+export const DEFAULT_DEPLOYMENT_QUOTA_MAX_PER_HOUR = 600
+export const DEFAULT_DEPLOYMENT_QUOTA_MAX_PER_DAY = 3000
+export const DEFAULT_DEPLOYMENT_QUOTA_MAX_PER_WEEK = 10000
+// Bounds the counters' memory. Keys are (window, entity type, address), so the week's windows are what
+// dominate. An LRU eviction resets one client's budget rather than failing a deploy.
+export const DEFAULT_DEPLOYMENT_QUOTA_CACHE_MAX_KEYS = 100000
+
 /**
  * Parse a non-negative integer env var, falling back to `defaultValue` when it is unset/empty.
  * Throws on an invalid value (including partial parses like "256MB") rather than letting `parseInt`
@@ -94,6 +107,41 @@ function parsePositiveIntEnv(name: string, defaultValue: number): number {
     throw new Error(`Invalid ${name}: expected a positive integer but got "${process.env[name]}"`)
   }
   return parsed
+}
+
+/**
+ * Reads the per-entity-type overrides of one deployment quota window, configured as
+ * `DEPLOYMENT_QUOTA_MAX_PER_{WINDOW}_{ENTITY_TYPE}` (e.g. `DEPLOYMENT_QUOTA_MAX_PER_HOUR_SCENE`).
+ *
+ * The suffix must be an entity type's exact name. An unknown one throws instead of becoming an
+ * `undefined` key nothing will ever read — the failure mode of the `DEPLOYMENT_RATE_LIMIT_MAX_*` scan
+ * below, where a typo silently leaves the entity type on its default.
+ */
+function parseQuotaOverridesEnv(window: string): Map<EntityType, number> {
+  const prefix = `DEPLOYMENT_QUOTA_MAX_PER_${window}_`
+  const overrides: Map<EntityType, number> = new Map()
+  for (const [name, value] of Object.entries(process.env)) {
+    if (!name.startsWith(prefix) || !value) {
+      continue
+    }
+    const suffix = name.slice(prefix.length)
+    const entityType = parseEntityType(suffix)
+    if (!entityType) {
+      throw new Error(
+        `Invalid ${name}: "${suffix}" is not an entity type. Expected one of ${Object.keys(EntityType).join(', ')}`
+      )
+    }
+    overrides.set(entityType, parsePositiveIntEnv(name, 0))
+  }
+  return overrides
+}
+
+/** Splits a comma-separated list, dropping empty entries. Each entry is validated by its consumer. */
+function parseCommaSeparatedEnv(name: string): string[] {
+  return (process.env[name] ?? '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0)
 }
 
 /**
@@ -323,6 +371,19 @@ export enum EnvironmentConfig {
   POST_ENTITIES_RATE_LIMIT_MAX,
   POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS,
   TRUSTED_CLIENT_IP_HEADER,
+
+  // Per-client, per-entity-type deployment quota over four fixed windows. The `*_BY_ENTITY_TYPE`
+  // entries hold the per-type overrides of the window above them.
+  DEPLOYMENT_QUOTA_MAX_PER_MINUTE,
+  DEPLOYMENT_QUOTA_MAX_PER_MINUTE_BY_ENTITY_TYPE,
+  DEPLOYMENT_QUOTA_MAX_PER_HOUR,
+  DEPLOYMENT_QUOTA_MAX_PER_HOUR_BY_ENTITY_TYPE,
+  DEPLOYMENT_QUOTA_MAX_PER_DAY,
+  DEPLOYMENT_QUOTA_MAX_PER_DAY_BY_ENTITY_TYPE,
+  DEPLOYMENT_QUOTA_MAX_PER_WEEK,
+  DEPLOYMENT_QUOTA_MAX_PER_WEEK_BY_ENTITY_TYPE,
+  DEPLOYMENT_QUOTA_EXEMPT_IPS,
+  DEPLOYMENT_QUOTA_CACHE_MAX_KEYS,
 
   SUBGRAPH_COMPONENT_RETRIES,
   SUBGRAPH_COMPONENT_QUERY_TIMEOUT,
@@ -690,6 +751,43 @@ export class EnvironmentBuilder {
     // proxy writes, or every client shares one bucket — see the startup warning in `components.ts`.
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.TRUSTED_CLIENT_IP_HEADER, () =>
       parseOptionalHeaderNameEnv('TRUSTED_CLIENT_IP_HEADER')
+    )
+
+    // Per-client, per-entity-type deployment quota. A zero fails startup for the same reason a zero
+    // POST_ENTITIES_RATE_LIMIT_MAX does: it is an outage that looks like working configuration.
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DEPLOYMENT_QUOTA_MAX_PER_MINUTE, () =>
+      parsePositiveIntEnv('DEPLOYMENT_QUOTA_MAX_PER_MINUTE', DEFAULT_DEPLOYMENT_QUOTA_MAX_PER_MINUTE)
+    )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DEPLOYMENT_QUOTA_MAX_PER_MINUTE_BY_ENTITY_TYPE, () =>
+      parseQuotaOverridesEnv('MINUTE')
+    )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DEPLOYMENT_QUOTA_MAX_PER_HOUR, () =>
+      parsePositiveIntEnv('DEPLOYMENT_QUOTA_MAX_PER_HOUR', DEFAULT_DEPLOYMENT_QUOTA_MAX_PER_HOUR)
+    )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DEPLOYMENT_QUOTA_MAX_PER_HOUR_BY_ENTITY_TYPE, () =>
+      parseQuotaOverridesEnv('HOUR')
+    )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DEPLOYMENT_QUOTA_MAX_PER_DAY, () =>
+      parsePositiveIntEnv('DEPLOYMENT_QUOTA_MAX_PER_DAY', DEFAULT_DEPLOYMENT_QUOTA_MAX_PER_DAY)
+    )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DEPLOYMENT_QUOTA_MAX_PER_DAY_BY_ENTITY_TYPE, () =>
+      parseQuotaOverridesEnv('DAY')
+    )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DEPLOYMENT_QUOTA_MAX_PER_WEEK, () =>
+      parsePositiveIntEnv('DEPLOYMENT_QUOTA_MAX_PER_WEEK', DEFAULT_DEPLOYMENT_QUOTA_MAX_PER_WEEK)
+    )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DEPLOYMENT_QUOTA_MAX_PER_WEEK_BY_ENTITY_TYPE, () =>
+      parseQuotaOverridesEnv('WEEK')
+    )
+
+    // Addresses and CIDRs that skip the quota, for a backend deploying on behalf of many users from one
+    // address. Parsed into matchers (and rejected if malformed) by the deployment-quota component.
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DEPLOYMENT_QUOTA_EXEMPT_IPS, () =>
+      parseCommaSeparatedEnv('DEPLOYMENT_QUOTA_EXEMPT_IPS')
+    )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DEPLOYMENT_QUOTA_CACHE_MAX_KEYS, () =>
+      parsePositiveIntEnv('DEPLOYMENT_QUOTA_CACHE_MAX_KEYS', DEFAULT_DEPLOYMENT_QUOTA_CACHE_MAX_KEYS)
     )
 
     this.registerConfigIfNotAlreadySet(

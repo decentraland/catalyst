@@ -42,6 +42,7 @@ import { IEntities } from './logic/entities'
 import { ISnapshots } from './logic/snapshots'
 import { ISyncOrchestrator } from './logic/sync-orchestrator'
 import { IBatchDeployer } from './logic/batch-deployer'
+import { IDeploymentQuota } from './logic/deployment-quota'
 import { IJobComponent } from '@dcl/job-component'
 
 // Minimum amount of needed stuff to make the sync work
@@ -114,6 +115,8 @@ export type AppComponents = {
   server: IHttpServerComponent<GlobalContext>
   /** Per-client request budget, currently mounted only on POST /entities. */
   rateLimiter: IRateLimiterComponent<GlobalContext>
+  /** Per-client-address, per-entity-type deployment budget over a minute, hour, day and week. */
+  deploymentQuota: IDeploymentQuota
   activeEntities: ActiveEntities
   sequentialExecutor: ISequentialTaskExecutorComponent
   denylist: Denylist
