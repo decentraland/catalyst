@@ -57,6 +57,11 @@ export const DEFAULT_MAX_ACTIVE_ENTITIES_BODY_SIZE = 10 * 1024 * 1024 // 10 MB
 export const DEFAULT_POST_ENTITIES_RATE_LIMIT_MAX = 200
 export const DEFAULT_POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS = 60
 
+// Daily quota for POST /entities. A second, independent rate-limit bucket that caps the total
+// number of deployments a single IP can make in a 24-hour rolling window. This catches attackers
+// who stay just below the per-minute burst limit but sustain high volume over hours.
+export const DEFAULT_POST_ENTITIES_DAILY_QUOTA_MAX = 300
+
 /**
  * Parse a non-negative integer env var, falling back to `defaultValue` when it is unset/empty.
  * Throws on an invalid value (including partial parses like "256MB") rather than letting `parseInt`
@@ -322,6 +327,7 @@ export enum EnvironmentConfig {
   // it describes where this process sits in the network, so any future limiter reads the same one.
   POST_ENTITIES_RATE_LIMIT_MAX,
   POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS,
+  POST_ENTITIES_DAILY_QUOTA_MAX,
   TRUSTED_CLIENT_IP_HEADER,
 
   SUBGRAPH_COMPONENT_RETRIES,
@@ -684,6 +690,10 @@ export class EnvironmentBuilder {
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS, () =>
       parsePositiveIntEnv('POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS', DEFAULT_POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS)
+    )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.POST_ENTITIES_DAILY_QUOTA_MAX, () =>
+      parsePositiveIntEnv('POST_ENTITIES_DAILY_QUOTA_MAX', DEFAULT_POST_ENTITIES_DAILY_QUOTA_MAX)
     )
 
     // Unset is correct for a directly exposed server. Behind a proxy it must name the header that
