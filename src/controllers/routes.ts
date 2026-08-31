@@ -40,10 +40,17 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
   } else {
     router.post(
       '/entities',
-      // Must stay ahead of the multipart parser, which buffers the whole upload into memory.
+      // Both limiters must stay ahead of the multipart parser, which buffers the whole upload
+      // into memory. They use separate `name`s so they count in independent buckets.
       components.rateLimiter.withRateLimitMiddleware({
+        name: '/entities burst',
         max: env.getConfig<number>(EnvironmentConfig.POST_ENTITIES_RATE_LIMIT_MAX),
         windowSeconds: env.getConfig<number>(EnvironmentConfig.POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS)
+      }),
+      components.rateLimiter.withRateLimitMiddleware({
+        name: '/entities daily-quota',
+        max: env.getConfig<number>(EnvironmentConfig.POST_ENTITIES_DAILY_QUOTA_MAX),
+        windowSeconds: 86400
       }),
       preventExecutionIfBoostrapping({ syncOrchestrator: components.syncOrchestrator }),
       multipartParserWrapper(createEntity, {
