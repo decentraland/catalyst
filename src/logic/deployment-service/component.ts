@@ -443,7 +443,7 @@ export function createDeploymentService(
           })
           return InvalidResult({ errors: ['An internal server error occurred. This will raise an automatic alarm.'] })
         } else if (isInvalidDeployment(storeResult)) {
-          logger.error(`Error deploying entity`, {
+          logger.warn(`Error deploying entity`, {
             entityId,
             pointers: entity.pointers.join(' '),
             errors: storeResult.errors.join(' ')
