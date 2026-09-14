@@ -91,6 +91,7 @@
     "@types/faker": "5.5.9",
     "@types/jest": "27.4.1",
     "@types/lru-cache": "7.6.1",
+    "@types/ms": "^0.7.31",
     "@types/node": "^24.13.1",
     "@types/pg": "^8",
     "@types/uuid": "^8",
@@ -117,7 +118,7 @@
     "ts-mockito": "2.6.1",
     "ts-node": "10.7.0",
     "tsc": "2.0.4",
-    "typescript": "^4.7.4"
+    "typescript": "4.9.5"
   },
   "resolutions": {
     "@dcl/catalyst-storage": "5.0.0",

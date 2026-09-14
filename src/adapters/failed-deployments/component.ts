@@ -59,14 +59,14 @@ export async function createFailedDeployments(
     )
   }
 
-  async function saveSnapshotFailedDeployment(db: DatabaseClient, deployment: SnapshotFailedDeployment) {
+  async function saveSnapshotFailedDeployment(
+    db: DatabaseClient,
+    deployment: SnapshotFailedDeployment
+  ): Promise<{ retryCount: number; nextRetryAt: number }> {
     const { entityId, entityType, failureTimestamp, reason, authChain, errorDescription, snapshotHash } = deployment
     const retryCount = deployment.retryCount ?? 0
     const nextRetryAt = deployment.nextRetryAt ?? 0
-    // Upsert on the entity_id primary key: a plain INSERT throws on a duplicate, so a report that
-    // races with another report (or lands after a delete/re-report) would either crash or drop the
-    // record. `ON CONFLICT DO UPDATE` makes reporting a failure idempotent and race-free.
-    await db.queryWithValues(
+    const { rows } = await db.queryWithValues<{ retryCount: number; nextRetryAt: number }>(
       SQL`
         INSERT INTO failed_deployments
         (entity_id, entity_type, failure_time, reason, auth_chain, error_description, snapshot_hash, retry_count, next_retry_at)
@@ -81,11 +81,14 @@ export async function createFailedDeployments(
           auth_chain = EXCLUDED.auth_chain,
           error_description = EXCLUDED.error_description,
           snapshot_hash = EXCLUDED.snapshot_hash,
-          retry_count = EXCLUDED.retry_count,
-          next_retry_at = EXCLUDED.next_retry_at
-        RETURNING entity_id`,
+          retry_count = GREATEST(failed_deployments.retry_count, EXCLUDED.retry_count),
+          next_retry_at = GREATEST(failed_deployments.next_retry_at, EXCLUDED.next_retry_at)
+        RETURNING
+          retry_count AS "retryCount",
+          date_part('epoch', next_retry_at) * 1000 AS "nextRetryAt"`,
       'save_failed_deployment'
     )
+    return rows[0]
   }
 
   async function cacheFailedDeployment(deployment: FailedDeployment) {
@@ -135,7 +138,9 @@ export async function createFailedDeployments(
         nextRetryAt: deployment.nextRetryAt ?? existing?.nextRetryAt ?? 0
       }
       if (isSnapshotFailedDeployment(merged)) {
-        await saveSnapshotFailedDeployment(database, merged)
+        const canonical = await saveSnapshotFailedDeployment(database, merged)
+        merged.retryCount = canonical.retryCount
+        merged.nextRetryAt = canonical.nextRetryAt
       }
       await cacheFailedDeployment(merged)
     }

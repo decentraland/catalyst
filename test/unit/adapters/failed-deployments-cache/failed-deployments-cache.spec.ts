@@ -66,7 +66,7 @@ describe('when using the merged failed-deployments adapter', () => {
       adapter = await createFailedDeployments({ metrics, database })
       await adapter.start()
       txClient = createDatabaseMockedComponent()
-      txClient.queryWithValues.mockResolvedValue({ rows: [], rowCount: 0 } as any)
+      txClient.queryWithValues.mockResolvedValue({ rows: [{ retryCount: 0, nextRetryAt: 0 }], rowCount: 1 } as any)
       await adapter.saveSnapshotFailedDeployment(txClient, baseDeployment)
     })
 
@@ -191,6 +191,7 @@ describe('when using the merged failed-deployments adapter', () => {
       adapter = await createFailedDeployments({ metrics, database })
       await adapter.start()
       database.queryWithValues.mockClear()
+      database.queryWithValues.mockResolvedValueOnce({ rows: [{ retryCount: 0, nextRetryAt: 0 }], rowCount: 1 } as any)
       await adapter.reportFailure(baseDeployment)
     })
 
@@ -222,6 +223,7 @@ describe('when using the merged failed-deployments adapter', () => {
       adapter = await createFailedDeployments({ metrics, database })
       await adapter.start()
       database.queryWithValues.mockClear()
+      database.queryWithValues.mockResolvedValueOnce({ rows: [{ retryCount: 0, nextRetryAt: 0 }], rowCount: 1 } as any)
       await adapter.reportFailure(reReportedDeployment)
     })
 
@@ -297,6 +299,10 @@ describe('when using the merged failed-deployments adapter', () => {
       adapter = await createFailedDeployments({ metrics, database })
       await adapter.start()
       database.queryWithValues.mockClear()
+      database.queryWithValues.mockResolvedValueOnce({
+        rows: [{ retryCount: 5, nextRetryAt: 9999999999999 }],
+        rowCount: 1
+      } as any)
       await adapter.reportFailure({
         ...existingDeployment,
         errorDescription: 'new-error-from-sync',
@@ -321,6 +327,10 @@ describe('when using the merged failed-deployments adapter', () => {
       adapter = await createFailedDeployments({ metrics, database })
       await adapter.start()
       database.queryWithValues.mockClear()
+      database.queryWithValues.mockResolvedValueOnce({
+        rows: [{ retryCount: 3, nextRetryAt: 5000000000000 }],
+        rowCount: 1
+      } as any)
       await adapter.reportFailure({
         ...baseDeployment,
         retryCount: 3,

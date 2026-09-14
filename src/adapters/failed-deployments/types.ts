@@ -45,7 +45,10 @@ export type IFailedDeploymentsComponent = {
   // `cacheFailedDeployment` after the transaction has committed. See the component
   // jsdoc for why this split is load-bearing.
   /** Persist a snapshot-failed deployment via SQL. Does not update the cache. */
-  saveSnapshotFailedDeployment(db: DatabaseClient, deployment: SnapshotFailedDeployment): Promise<void>
+  saveSnapshotFailedDeployment(
+    db: DatabaseClient,
+    deployment: SnapshotFailedDeployment
+  ): Promise<{ retryCount: number; nextRetryAt: number }>
   /** Delete a failed deployment via SQL. Does not update the cache. */
   deleteFailedDeployment(db: DatabaseClient, entityId: string): Promise<void>
 
