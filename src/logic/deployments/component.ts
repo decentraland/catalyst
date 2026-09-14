@@ -129,14 +129,17 @@ export async function retryFailedDeploymentExecution(
         const errorDescription = error instanceof Error ? error.message : String(error)
 
         if (!errorDescription.includes(IGNORING_FIX_ERROR)) {
-          const newRetryCount = retryCount + 1
-          const backoffMs = Math.min(BASE_RETRY_INTERVAL_MS * 2 ** retryCount, MAX_RETRY_INTERVAL_MS)
-          await components.failedDeployments.reportFailure({
-            ...failedDeployment,
-            errorDescription,
-            retryCount: newRetryCount,
-            nextRetryAt: Date.now() + backoffMs
-          })
+          const isTransientConflict = errorDescription.includes('currently being deployed')
+          if (!isTransientConflict) {
+            const newRetryCount = retryCount + 1
+            const backoffMs = Math.min(BASE_RETRY_INTERVAL_MS * 2 ** retryCount, MAX_RETRY_INTERVAL_MS)
+            await components.failedDeployments.reportFailure({
+              ...failedDeployment,
+              errorDescription,
+              retryCount: newRetryCount,
+              nextRetryAt: Date.now() + backoffMs
+            })
+          }
         }
 
         logs.error(`Failed to fix deployment of entity`, { entityId, entityType, retryCount, errorDescription })

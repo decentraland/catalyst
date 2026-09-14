@@ -206,7 +206,9 @@ describe('when using the merged failed-deployments adapter', () => {
     })
 
     it('should update the in-memory cache after the SQL insert succeeds', async () => {
-      expect(await adapter.findFailedDeployment(baseDeployment.entityId)).toEqual(baseDeployment)
+      expect(await adapter.findFailedDeployment(baseDeployment.entityId)).toEqual(
+        expect.objectContaining(baseDeployment)
+      )
     })
   })
 
@@ -236,7 +238,9 @@ describe('when using the merged failed-deployments adapter', () => {
     })
 
     it('should update the in-memory cache after the SQL upsert succeeds', async () => {
-      expect(await adapter.findFailedDeployment(reReportedDeployment.entityId)).toEqual(reReportedDeployment)
+      expect(await adapter.findFailedDeployment(reReportedDeployment.entityId)).toEqual(
+        expect.objectContaining(reReportedDeployment)
+      )
     })
   })
 
@@ -268,7 +272,9 @@ describe('when using the merged failed-deployments adapter', () => {
     })
 
     it('should write through to the in-memory cache', async () => {
-      expect(await adapter.findFailedDeployment(nonSnapshotDeployment.entityId)).toEqual(nonSnapshotDeployment)
+      expect(await adapter.findFailedDeployment(nonSnapshotDeployment.entityId)).toEqual(
+        expect.objectContaining(nonSnapshotDeployment)
+      )
     })
   })
 

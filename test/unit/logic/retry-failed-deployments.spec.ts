@@ -111,6 +111,18 @@ describe('retryFailedDeploymentExecution', () => {
     expect(reportedFailures[0].nextRetryAt).toBeGreaterThan(Date.now())
   })
 
+  it('should not increment retryCount for transient pointer-lock conflicts', async () => {
+    const deployment = makeDeployment({ retryCount: 2, nextRetryAt: 0 })
+    const { components, reportedFailures } = makeComponents([deployment])
+    ;(components.batchDeployer.deployEntityFromRemoteServer as jest.Mock).mockRejectedValue(
+      new Error("Errors deploying entity(entity-1):\n - The following pointers are currently being deployed: '0,0'. Please try again in a few seconds.")
+    )
+
+    await retryFailedDeploymentExecution(components)
+
+    expect(reportedFailures).toHaveLength(0)
+  })
+
   it('should apply exponential backoff capped at 24 hours', async () => {
     const deployment = makeDeployment({ retryCount: 8, nextRetryAt: 0 })
     const { components, reportedFailures } = makeComponents([deployment], true)
