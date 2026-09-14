@@ -24,6 +24,9 @@ import {
   ThirdPartyItemDeploymentRow
 } from './types'
 
+const BASE_RETRY_INTERVAL_MS = 15 * 60 * 1000 // 15 minutes
+const MAX_RETRY_INTERVAL_MS = 24 * 60 * 60 * 1000 // 24 hours
+
 export async function isEntityDeployed(
   database: DatabaseClient,
   components: Pick<AppComponents, 'deployedEntitiesBloomFilter' | 'metrics' | 'deploymentsRepository'>,
@@ -126,7 +129,14 @@ export async function retryFailedDeploymentExecution(
         const errorDescription = error instanceof Error ? error.message : String(error)
 
         if (!errorDescription.includes(IGNORING_FIX_ERROR)) {
-          await components.failedDeployments.reportFailure({ ...failedDeployment, errorDescription })
+          const newRetryCount = retryCount + 1
+          const backoffMs = Math.min(BASE_RETRY_INTERVAL_MS * 2 ** retryCount, MAX_RETRY_INTERVAL_MS)
+          await components.failedDeployments.reportFailure({
+            ...failedDeployment,
+            errorDescription,
+            retryCount: newRetryCount,
+            nextRetryAt: Date.now() + backoffMs
+          })
         }
 
         logs.error(`Failed to fix deployment of entity`, { entityId, entityType, retryCount, errorDescription })

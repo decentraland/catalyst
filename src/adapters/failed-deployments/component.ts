@@ -9,8 +9,6 @@ import {
 } from './types'
 
 const FAILED_DEPLOYMENTS_METRIC = 'dcl_content_server_failed_deployments'
-const BASE_RETRY_INTERVAL_MS = 15 * 60 * 1000 // 15 minutes
-const MAX_RETRY_INTERVAL_MS = 24 * 60 * 60 * 1000 // 24 hours
 
 /**
  * Owns both the failed-deployments table (SQL) and an in-process mirror of it (Map).
@@ -130,20 +128,15 @@ export async function createFailedDeployments(
     },
 
     async reportFailure(deployment: FailedDeployment) {
-      const updated: FailedDeployment = {
-        ...deployment,
-        retryCount: (deployment.retryCount ?? 0) + 1,
-        nextRetryAt: Date.now() + Math.min(BASE_RETRY_INTERVAL_MS * 2 ** (deployment.retryCount ?? 0), MAX_RETRY_INTERVAL_MS)
-      }
-      if (isSnapshotFailedDeployment(updated)) {
+      if (isSnapshotFailedDeployment(deployment)) {
         // Snapshot deployments are persisted. A single idempotent upsert replaces the former
         // cache-driven delete-then-insert transaction, which could collide on the entity_id PK when
         // interleaved with a concurrent removeFailedDeployment.
-        await saveSnapshotFailedDeployment(database, updated)
+        await saveSnapshotFailedDeployment(database, deployment)
       }
       // Apply the cache update only after the SQL has committed, so the in-memory mirror never gets
       // ahead of a write that failed.
-      await cacheFailedDeployment(updated)
+      await cacheFailedDeployment(deployment)
     }
   }
 }

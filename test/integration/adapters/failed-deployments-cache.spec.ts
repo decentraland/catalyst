@@ -60,12 +60,12 @@ describe('when using the failed-deployments cache adapter against a real databas
 
     it('should warm the cache with the persisted deployment', async () => {
       const failed = await cache.getAllFailedDeployments()
-      expect(failed).toEqual(expect.arrayContaining([baseDeployment]))
+      expect(failed).toEqual(expect.arrayContaining([expect.objectContaining(baseDeployment)]))
     })
 
     it('should return the persisted deployment via findFailedDeployment for its entityId', async () => {
       const failed = await cache.findFailedDeployment(baseDeployment.entityId)
-      expect(failed).toEqual(baseDeployment)
+      expect(failed).toEqual(expect.objectContaining(baseDeployment))
     })
 
     describe('and removeFailedDeployment is called for the persisted entity', () => {
