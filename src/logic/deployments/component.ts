@@ -87,7 +87,9 @@ export async function retryFailedDeploymentExecution(
   const now = Date.now()
 
   for (const failedDeployment of failedDeployments) {
-    const { entityId, entityType, authChain, retryCount, nextRetryAt } = failedDeployment
+    const { entityId, entityType, authChain } = failedDeployment
+    const retryCount = failedDeployment.retryCount ?? 0
+    const nextRetryAt = failedDeployment.nextRetryAt ?? 0
 
     if (!authChain) {
       logs.info(`Can't retry failed deployment. Because it lacks of authChain`, { entityId, entityType })
