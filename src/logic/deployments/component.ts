@@ -83,18 +83,35 @@ export async function retryFailedDeploymentExecution(
   const concurrency = components.env.getConfig<number>(EnvironmentConfig.SYNC_DEPLOY_CONCURRENCY)
   const queue = new PQueue({ concurrency })
 
-  // TODO: Implement an exponential backoff for retrying
+  const maxRetries = components.env.getConfig<number>(EnvironmentConfig.MAX_FAILED_DEPLOYMENT_RETRIES)
+  const now = Date.now()
+
   for (const failedDeployment of failedDeployments) {
-    // Build Deployment from other servers
-    const { entityId, entityType, authChain } = failedDeployment
+    const { entityId, entityType, authChain, retryCount, nextRetryAt } = failedDeployment
 
     if (!authChain) {
       logs.info(`Can't retry failed deployment. Because it lacks of authChain`, { entityId, entityType })
       continue
     }
 
+    if (retryCount >= maxRetries) {
+      logs.warn(`Permanently giving up on failed deployment after ${retryCount} attempts`, { entityId, entityType })
+      await components.failedDeployments.removeFailedDeployment(entityId)
+      continue
+    }
+
+    if (nextRetryAt > now) {
+      logs.debug(`Skipping failed deployment until backoff expires`, {
+        entityId,
+        entityType,
+        retryCount,
+        nextRetryInSeconds: Math.round((nextRetryAt - now) / 1000)
+      })
+      continue
+    }
+
     void queue.add(async () => {
-      logs.debug(`Will retry to deploy entity`, { entityId, entityType })
+      logs.debug(`Will retry to deploy entity`, { entityId, entityType, retryCount })
       try {
         await components.batchDeployer.deployEntityFromRemoteServer(
           entityId,
@@ -104,14 +121,13 @@ export async function retryFailedDeploymentExecution(
           DeploymentContext.FIX_ATTEMPT
         )
       } catch (error) {
-        // it failed again, override failed deployment error description
         const errorDescription = error instanceof Error ? error.message : String(error)
 
         if (!errorDescription.includes(IGNORING_FIX_ERROR)) {
           await components.failedDeployments.reportFailure({ ...failedDeployment, errorDescription })
         }
 
-        logs.error(`Failed to fix deployment of entity`, { entityId, entityType, errorDescription })
+        logs.error(`Failed to fix deployment of entity`, { entityId, entityType, retryCount, errorDescription })
       }
     })
   }

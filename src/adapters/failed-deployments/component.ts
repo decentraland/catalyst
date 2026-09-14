@@ -9,6 +9,8 @@ import {
 } from './types'
 
 const FAILED_DEPLOYMENTS_METRIC = 'dcl_content_server_failed_deployments'
+const BASE_RETRY_INTERVAL_MS = 15 * 60 * 1000 // 15 minutes
+const MAX_RETRY_INTERVAL_MS = 24 * 60 * 60 * 1000 // 24 hours
 
 /**
  * Owns both the failed-deployments table (SQL) and an in-process mirror of it (Map).
@@ -44,7 +46,9 @@ export async function createFailedDeployments(
           reason,
           auth_chain AS "authChain",
           error_description AS "errorDescription",
-          snapshot_hash AS "snapshotHash"
+          snapshot_hash AS "snapshotHash",
+          retry_count AS "retryCount",
+          date_part('epoch', next_retry_at) * 1000 AS "nextRetryAt"
       FROM failed_deployments`
     const { rows } = await db.queryWithValues<SnapshotFailedDeployment>(query, 'get_failed_deployments')
     return rows
@@ -59,23 +63,28 @@ export async function createFailedDeployments(
 
   async function saveSnapshotFailedDeployment(db: DatabaseClient, deployment: SnapshotFailedDeployment) {
     const { entityId, entityType, failureTimestamp, reason, authChain, errorDescription, snapshotHash } = deployment
+    const retryCount = deployment.retryCount ?? 0
+    const nextRetryAt = deployment.nextRetryAt ?? Date.now()
     // Upsert on the entity_id primary key: a plain INSERT throws on a duplicate, so a report that
     // races with another report (or lands after a delete/re-report) would either crash or drop the
     // record. `ON CONFLICT DO UPDATE` makes reporting a failure idempotent and race-free.
     await db.queryWithValues(
       SQL`
         INSERT INTO failed_deployments
-        (entity_id, entity_type, failure_time, reason, auth_chain, error_description, snapshot_hash)
+        (entity_id, entity_type, failure_time, reason, auth_chain, error_description, snapshot_hash, retry_count, next_retry_at)
         VALUES
         (${entityId}, ${entityType}, to_timestamp(${failureTimestamp} / 1000.0), ${reason},
-         ${JSON.stringify(authChain)}, ${errorDescription}, ${snapshotHash})
+         ${JSON.stringify(authChain)}, ${errorDescription}, ${snapshotHash}, ${retryCount},
+         to_timestamp(${nextRetryAt} / 1000.0))
         ON CONFLICT (entity_id) DO UPDATE SET
           entity_type = EXCLUDED.entity_type,
           failure_time = EXCLUDED.failure_time,
           reason = EXCLUDED.reason,
           auth_chain = EXCLUDED.auth_chain,
           error_description = EXCLUDED.error_description,
-          snapshot_hash = EXCLUDED.snapshot_hash
+          snapshot_hash = EXCLUDED.snapshot_hash,
+          retry_count = EXCLUDED.retry_count,
+          next_retry_at = EXCLUDED.next_retry_at
         RETURNING entity_id`,
       'save_failed_deployment'
     )
@@ -121,15 +130,20 @@ export async function createFailedDeployments(
     },
 
     async reportFailure(deployment: FailedDeployment) {
-      if (isSnapshotFailedDeployment(deployment)) {
+      const updated: FailedDeployment = {
+        ...deployment,
+        retryCount: (deployment.retryCount ?? 0) + 1,
+        nextRetryAt: Date.now() + Math.min(BASE_RETRY_INTERVAL_MS * 2 ** (deployment.retryCount ?? 0), MAX_RETRY_INTERVAL_MS)
+      }
+      if (isSnapshotFailedDeployment(updated)) {
         // Snapshot deployments are persisted. A single idempotent upsert replaces the former
         // cache-driven delete-then-insert transaction, which could collide on the entity_id PK when
         // interleaved with a concurrent removeFailedDeployment.
-        await saveSnapshotFailedDeployment(database, deployment)
+        await saveSnapshotFailedDeployment(database, updated)
       }
       // Apply the cache update only after the SQL has committed, so the in-memory mirror never gets
       // ahead of a write that failed.
-      await cacheFailedDeployment(deployment)
+      await cacheFailedDeployment(updated)
     }
   }
 }

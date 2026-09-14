@@ -20,6 +20,8 @@ export type FailedDeployment = {
   authChain: AuthChain
   errorDescription: string
   snapshotHash?: string
+  retryCount?: number
+  nextRetryAt?: number
 }
 
 export type SnapshotFailedDeployment = FailedDeployment & Required<Pick<FailedDeployment, 'snapshotHash'>>
