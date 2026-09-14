@@ -91,8 +91,31 @@ export async function createFailedDeployments(
     return rows[0]
   }
 
+  /**
+   * Upserts into the in-memory mirror, clamping the retry state so it can only move forward.
+   *
+   * `reportFailure` reads the current retry state, awaits the SQL round-trip and only then
+   * writes the cache, so two concurrent reports for the same entity (the retry worker runs
+   * with `SYNC_DEPLOY_CONCURRENCY` parallelism alongside the sync path, and both call
+   * `reportFailure`) can resolve out of order and let the older canonical snapshot land last.
+   * The SQL upsert already clamps the durable row with `GREATEST`; mirroring that here keeps
+   * the cache from regressing below it. That matters because the retry loop schedules off
+   * this cache, so a regression would retry before the durable deadline and need extra
+   * attempts to reach the max-retry cap.
+   *
+   * Entries that are legitimately reset go through `removeFailedDeployment`, which evicts the
+   * key — so a genuinely fresh failure starts from its own values rather than an old ceiling.
+   */
   async function cacheFailedDeployment(deployment: FailedDeployment) {
-    failedDeploymentsByEntityId.set(deployment.entityId, deployment)
+    const existing = failedDeploymentsByEntityId.get(deployment.entityId)
+    const monotonic: FailedDeployment = existing
+      ? {
+          ...deployment,
+          retryCount: Math.max(deployment.retryCount ?? 0, existing.retryCount ?? 0),
+          nextRetryAt: Math.max(deployment.nextRetryAt ?? 0, existing.nextRetryAt ?? 0)
+        }
+      : deployment
+    failedDeploymentsByEntityId.set(deployment.entityId, monotonic)
     observeSize()
   }
 

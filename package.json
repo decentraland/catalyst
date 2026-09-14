@@ -91,7 +91,7 @@
     "@types/faker": "5.5.9",
     "@types/jest": "27.4.1",
     "@types/lru-cache": "7.6.1",
-    "@types/ms": "^0.7.31",
+    "@types/ms": "0.7.34",
     "@types/node": "^24.13.1",
     "@types/pg": "^8",
     "@types/uuid": "^8",

@@ -134,4 +134,28 @@ describe('retryFailedDeploymentExecution', () => {
     expect(reportedFailures[0].nextRetryAt! - before).toBeLessThanOrEqual(maxInterval + 1000)
     expect(reportedFailures[0].nextRetryAt! - before).toBeGreaterThanOrEqual(maxInterval - 1000)
   })
+
+  it('should remove the failed deployment after a successful retry', async () => {
+    // deployEntity() treats an already-deployed entity as an idempotent no-op and returns
+    // before its own removeFailedDeployment() cleanup, so a retry can resolve successfully
+    // while leaving the row behind. Without an explicit removal the entry stays due and is
+    // retried every cycle until it burns through the max-retry cap.
+    const deployment = makeDeployment({ retryCount: 2, nextRetryAt: Date.now() - 1000 })
+    const { components, removedIds, reportedFailures } = makeComponents([deployment])
+
+    await retryFailedDeploymentExecution(components)
+
+    expect(components.batchDeployer.deployEntityFromRemoteServer).toHaveBeenCalled()
+    expect(removedIds).toEqual([deployment.entityId])
+    expect(reportedFailures).toHaveLength(0)
+  })
+
+  it('should not remove the failed deployment when the retry fails', async () => {
+    const deployment = makeDeployment({ retryCount: 2, nextRetryAt: Date.now() - 1000 })
+    const { components, removedIds } = makeComponents([deployment], true)
+
+    await retryFailedDeploymentExecution(components)
+
+    expect(removedIds).toEqual([])
+  })
 })

@@ -344,4 +344,64 @@ describe('when using the merged failed-deployments adapter', () => {
       expect(cached?.nextRetryAt).toBe(5000000000000)
     })
   })
+
+  describe('and two concurrent reportFailure calls for the same entity resolve out of order', () => {
+    // The retry worker runs with SYNC_DEPLOY_CONCURRENCY parallelism alongside the sync path
+    // and both call reportFailure. Each awaits its SQL round-trip before writing the cache, so
+    // the older canonical snapshot can land last. The durable row is already clamped by the
+    // GREATEST upsert; the cache must not drift below it, because the retry loop schedules off
+    // the cache and would otherwise retry before the durable deadline.
+    const STALE = { retryCount: 5, nextRetryAt: 5_000_000_000_000 }
+    const LATEST = { retryCount: 6, nextRetryAt: 6_000_000_000_000 }
+
+    let adapter: IFailedDeploymentsComponent
+
+    beforeEach(async () => {
+      database.queryWithValues.mockResolvedValueOnce({ rows: [baseDeployment], rowCount: 1 } as any)
+      adapter = await createFailedDeployments({ metrics, database })
+      await adapter.start()
+      database.queryWithValues.mockClear()
+
+      // The first upsert commits first but its continuation resumes last.
+      let releaseStale: (value: unknown) => void = () => undefined
+      const staleInFlight = new Promise((resolve) => {
+        releaseStale = resolve
+      })
+      database.queryWithValues
+        .mockImplementationOnce(async () => {
+          await staleInFlight
+          return { rows: [STALE], rowCount: 1 } as any
+        })
+        .mockResolvedValueOnce({ rows: [LATEST], rowCount: 1 } as any)
+
+      const staleReport = adapter.reportFailure({ ...baseDeployment, ...STALE })
+      const latestReport = adapter.reportFailure({ ...baseDeployment, ...LATEST })
+
+      // Force the out-of-order completion: the newer snapshot caches first, the older one after.
+      await latestReport
+      releaseStale(undefined)
+      await staleReport
+    })
+
+    it('should keep the cached retry state at the latest canonical values', async () => {
+      const cached = await adapter.findFailedDeployment(baseDeployment.entityId)
+      expect(cached?.retryCount).toBe(LATEST.retryCount)
+      expect(cached?.nextRetryAt).toBe(LATEST.nextRetryAt)
+    })
+
+    it('should match what a fresh adapter reloads from the database', async () => {
+      const reloadDatabase = createDatabaseMockedComponent()
+      reloadDatabase.queryWithValues.mockResolvedValueOnce({
+        rows: [{ ...baseDeployment, ...LATEST }],
+        rowCount: 1
+      } as any)
+      const reloaded = await createFailedDeployments({ metrics, database: reloadDatabase })
+      await reloaded.start()
+
+      const fromDb = await reloaded.findFailedDeployment(baseDeployment.entityId)
+      const fromCache = await adapter.findFailedDeployment(baseDeployment.entityId)
+      expect(fromCache?.retryCount).toBe(fromDb?.retryCount)
+      expect(fromCache?.nextRetryAt).toBe(fromDb?.nextRetryAt)
+    })
+  })
 })

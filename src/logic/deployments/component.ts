@@ -125,6 +125,14 @@ export async function retryFailedDeploymentExecution(
           contentServersUrls,
           DeploymentContext.FIX_ATTEMPT
         )
+
+        // A retry can succeed without the deploy path clearing the row: `deployEntity()`
+        // treats an already-deployed entity as an idempotent no-op and returns before
+        // reaching its `removeFailedDeployment()` cleanup. Without this the entry stays
+        // due forever and is retried every cycle until it hits the max-retry cap, even
+        // though nothing is actually failing. Removing here is idempotent — on the normal
+        // success path the deploy already evicted it and this is a cheap cache-miss bail.
+        await components.failedDeployments.removeFailedDeployment(entityId)
       } catch (error) {
         const errorDescription = error instanceof Error ? error.message : String(error)
 
