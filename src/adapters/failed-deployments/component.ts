@@ -62,7 +62,7 @@ export async function createFailedDeployments(
   async function saveSnapshotFailedDeployment(db: DatabaseClient, deployment: SnapshotFailedDeployment) {
     const { entityId, entityType, failureTimestamp, reason, authChain, errorDescription, snapshotHash } = deployment
     const retryCount = deployment.retryCount ?? 0
-    const nextRetryAt = deployment.nextRetryAt ?? Date.now()
+    const nextRetryAt = deployment.nextRetryAt ?? 0
     // Upsert on the entity_id primary key: a plain INSERT throws on a duplicate, so a report that
     // races with another report (or lands after a delete/re-report) would either crash or drop the
     // record. `ON CONFLICT DO UPDATE` makes reporting a failure idempotent and race-free.
@@ -128,15 +128,16 @@ export async function createFailedDeployments(
     },
 
     async reportFailure(deployment: FailedDeployment) {
-      if (isSnapshotFailedDeployment(deployment)) {
-        // Snapshot deployments are persisted. A single idempotent upsert replaces the former
-        // cache-driven delete-then-insert transaction, which could collide on the entity_id PK when
-        // interleaved with a concurrent removeFailedDeployment.
-        await saveSnapshotFailedDeployment(database, deployment)
+      const existing = failedDeploymentsByEntityId.get(deployment.entityId)
+      const merged: FailedDeployment = {
+        ...deployment,
+        retryCount: deployment.retryCount ?? existing?.retryCount ?? 0,
+        nextRetryAt: deployment.nextRetryAt ?? existing?.nextRetryAt ?? 0
       }
-      // Apply the cache update only after the SQL has committed, so the in-memory mirror never gets
-      // ahead of a write that failed.
-      await cacheFailedDeployment(deployment)
+      if (isSnapshotFailedDeployment(merged)) {
+        await saveSnapshotFailedDeployment(database, merged)
+      }
+      await cacheFailedDeployment(merged)
     }
   }
 }

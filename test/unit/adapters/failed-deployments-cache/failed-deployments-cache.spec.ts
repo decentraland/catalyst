@@ -271,4 +271,61 @@ describe('when using the merged failed-deployments adapter', () => {
       expect(await adapter.findFailedDeployment(nonSnapshotDeployment.entityId)).toEqual(nonSnapshotDeployment)
     })
   })
+
+  describe('and reportFailure is called without retry fields for an entity that already has backoff state', () => {
+    let adapter: IFailedDeploymentsComponent
+    const existingDeployment: SnapshotFailedDeployment = {
+      entityType: EntityType.PROFILE,
+      entityId: 'backed-off-entity',
+      failureTimestamp: 100,
+      reason: FailureReason.DEPLOYMENT_ERROR,
+      authChain: [],
+      errorDescription: 'first-error',
+      snapshotHash: 'hash1',
+      retryCount: 5,
+      nextRetryAt: 9999999999999
+    }
+
+    beforeEach(async () => {
+      database.queryWithValues.mockResolvedValueOnce({ rows: [existingDeployment], rowCount: 1 } as any)
+      adapter = await createFailedDeployments({ metrics, database })
+      await adapter.start()
+      database.queryWithValues.mockClear()
+      await adapter.reportFailure({
+        ...existingDeployment,
+        errorDescription: 'new-error-from-sync',
+        retryCount: undefined,
+        nextRetryAt: undefined
+      })
+    })
+
+    it('should preserve the existing retryCount and nextRetryAt', async () => {
+      const cached = await adapter.findFailedDeployment(existingDeployment.entityId)
+      expect(cached?.retryCount).toBe(5)
+      expect(cached?.nextRetryAt).toBe(9999999999999)
+      expect(cached?.errorDescription).toBe('new-error-from-sync')
+    })
+  })
+
+  describe('and reportFailure is called with explicit retry fields', () => {
+    let adapter: IFailedDeploymentsComponent
+
+    beforeEach(async () => {
+      database.queryWithValues.mockResolvedValueOnce({ rows: [baseDeployment], rowCount: 1 } as any)
+      adapter = await createFailedDeployments({ metrics, database })
+      await adapter.start()
+      database.queryWithValues.mockClear()
+      await adapter.reportFailure({
+        ...baseDeployment,
+        retryCount: 3,
+        nextRetryAt: 5000000000000
+      })
+    })
+
+    it('should use the provided retry fields', async () => {
+      const cached = await adapter.findFailedDeployment(baseDeployment.entityId)
+      expect(cached?.retryCount).toBe(3)
+      expect(cached?.nextRetryAt).toBe(5000000000000)
+    })
+  })
 })
