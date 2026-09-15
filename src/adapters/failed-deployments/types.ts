@@ -67,6 +67,14 @@ export type IFailedDeploymentsComponent = {
    */
   removeFailedDeployment(entityId: string): Promise<void>
   /**
+   * Batched give-up: deletes the rows for `entityIds` that are still at or above `minRetryCount`,
+   * one DELETE per chunk instead of a round-trip each. The guard means a decision taken against an
+   * earlier snapshot can't wipe an entry that was cleared and has since failed afresh with a lower
+   * count. The cache evicts exactly the rows the DELETE reports, so it tracks the table even when
+   * the guard spares a row; a rejected chunk leaves its entries in both.
+   */
+  removeExhaustedFailedDeployments(entityIds: string[], minRetryCount: number): Promise<void>
+  /**
    * High-level: report a deployment failure. For snapshot deployments, persists to SQL
    * (in a transaction if the entity is already failed, otherwise plain insert). For
    * non-snapshot deployments, only the in-memory cache is updated. The cache mutation

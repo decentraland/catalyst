@@ -88,6 +88,7 @@ export async function retryFailedDeploymentExecution(
 
   const maxRetries = components.env.getConfig<number>(EnvironmentConfig.MAX_FAILED_DEPLOYMENT_RETRIES)
   const now = Date.now()
+  const exhaustedEntityIds: string[] = []
 
   for (const failedDeployment of failedDeployments) {
     const { entityId, entityType, authChain } = failedDeployment
@@ -101,7 +102,7 @@ export async function retryFailedDeploymentExecution(
 
     if (retryCount >= maxRetries) {
       logs.warn(`Permanently giving up on failed deployment after ${retryCount} attempts`, { entityId, entityType })
-      await components.failedDeployments.removeFailedDeployment(entityId)
+      exhaustedEntityIds.push(entityId)
       continue
     }
 
@@ -115,47 +116,66 @@ export async function retryFailedDeploymentExecution(
       continue
     }
 
-    void queue.add(async () => {
-      logs.debug(`Will retry to deploy entity`, { entityId, entityType, retryCount })
-      try {
-        await components.batchDeployer.deployEntityFromRemoteServer(
+    // `.catch` is load-bearing, not defensive: the task's own catch block awaits `reportFailure`,
+    // which writes to the database and can throw. A rejection on a discarded promise takes the
+    // process down under Node's default unhandled-rejection policy.
+    void queue
+      .add(async () => {
+        logs.debug(`Will retry to deploy entity`, { entityId, entityType, retryCount })
+        try {
+          await components.batchDeployer.deployEntityFromRemoteServer(
+            entityId,
+            entityType,
+            authChain,
+            contentServersUrls,
+            DeploymentContext.FIX_ATTEMPT
+          )
+
+          // A retry can succeed without the deploy path clearing the row: `deployEntity()`
+          // treats an already-deployed entity as an idempotent no-op and returns before
+          // reaching its `removeFailedDeployment()` cleanup. Without this the entry stays
+          // due forever and is retried every cycle until it hits the max-retry cap, even
+          // though nothing is actually failing. Removing here is idempotent — on the normal
+          // success path the deploy already evicted it and this is a cheap cache-miss bail.
+          await components.failedDeployments.removeFailedDeployment(entityId)
+        } catch (error) {
+          const errorDescription = error instanceof Error ? error.message : String(error)
+
+          if (!errorDescription.includes(IGNORING_FIX_ERROR)) {
+            const isTransientConflict = errorDescription.includes('currently being deployed')
+            if (!isTransientConflict) {
+              const newRetryCount = retryCount + 1
+              const backoffMs = Math.min(BASE_RETRY_INTERVAL_MS * 2 ** retryCount, MAX_RETRY_INTERVAL_MS)
+              await components.failedDeployments.reportFailure({
+                ...failedDeployment,
+                errorDescription,
+                retryCount: newRetryCount,
+                nextRetryAt: Date.now() + backoffMs
+              })
+            }
+          }
+
+          logs.error(`Failed to fix deployment of entity`, { entityId, entityType, retryCount, errorDescription })
+        }
+      })
+      .catch((error) =>
+        logs.error(`Unexpected error while retrying deployment`, {
           entityId,
           entityType,
-          authChain,
-          contentServersUrls,
-          DeploymentContext.FIX_ATTEMPT
-        )
-
-        // A retry can succeed without the deploy path clearing the row: `deployEntity()`
-        // treats an already-deployed entity as an idempotent no-op and returns before
-        // reaching its `removeFailedDeployment()` cleanup. Without this the entry stays
-        // due forever and is retried every cycle until it hits the max-retry cap, even
-        // though nothing is actually failing. Removing here is idempotent — on the normal
-        // success path the deploy already evicted it and this is a cheap cache-miss bail.
-        await components.failedDeployments.removeFailedDeployment(entityId)
-      } catch (error) {
-        const errorDescription = error instanceof Error ? error.message : String(error)
-
-        if (!errorDescription.includes(IGNORING_FIX_ERROR)) {
-          const isTransientConflict = errorDescription.includes('currently being deployed')
-          if (!isTransientConflict) {
-            const newRetryCount = retryCount + 1
-            const backoffMs = Math.min(BASE_RETRY_INTERVAL_MS * 2 ** retryCount, MAX_RETRY_INTERVAL_MS)
-            await components.failedDeployments.reportFailure({
-              ...failedDeployment,
-              errorDescription,
-              retryCount: newRetryCount,
-              nextRetryAt: Date.now() + backoffMs
-            })
-          }
-        }
-
-        logs.error(`Failed to fix deployment of entity`, { entityId, entityType, retryCount, errorDescription })
-      }
-    })
+          errorDescription: error instanceof Error ? error.message : String(error)
+        })
+      )
   }
 
-  await queue.onIdle()
+  // Batched after the scan so give-up deletes never block scheduling, and overlap with the retries
+  // already running. `finally` so a rejected DELETE still drains the in-flight retries.
+  try {
+    if (exhaustedEntityIds.length > 0) {
+      await components.failedDeployments.removeExhaustedFailedDeployments(exhaustedEntityIds, maxRetries)
+    }
+  } finally {
+    await queue.onIdle()
+  }
 }
 
 export function mapDeploymentsToEntities(deployments: Deployment[]): Entity[] {

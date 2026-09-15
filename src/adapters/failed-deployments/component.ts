@@ -10,6 +10,10 @@ import {
 
 const FAILED_DEPLOYMENTS_METRIC = 'dcl_content_server_failed_deployments'
 
+// Entity ids per batched DELETE. `ANY($1)` binds the whole chunk as one parameter, so this is not
+// about the bind-parameter ceiling — it bounds each statement's payload, lock footprint and duration.
+const DELETE_BATCH_SIZE = 1000
+
 /**
  * Owns both the failed-deployments table (SQL) and an in-process mirror of it (Map).
  *
@@ -20,9 +24,9 @@ const FAILED_DEPLOYMENTS_METRIC = 'dcl_content_server_failed_deployments'
  * of sync with the rolled-back DB.
  *
  * Callers are responsible for the matching cache update via `cacheFailedDeployment`
- * (upsert) once the transaction has been committed. The single-step convenience
- * `removeFailedDeployment` colocates the SQL+evict because it isn't composed with
- * any other transactional statement.
+ * (upsert) once the transaction has been committed. The conveniences `removeFailedDeployment`
+ * and `removeExhaustedFailedDeployments` colocate the SQL+evict because they aren't composed with
+ * any other transactional statement; the batched form evicts per chunk, after that chunk's DELETE.
  */
 export async function createFailedDeployments(
   components: Pick<AppComponents, 'metrics' | 'database'>
@@ -57,6 +61,21 @@ export async function createFailedDeployments(
       SQL`DELETE FROM failed_deployments WHERE entity_id = ${entityId}`,
       'delete_failed_deployment'
     )
+  }
+
+  /** Deletes the rows still at or above `minRetryCount` and reports which ones actually went. */
+  async function deleteExhaustedFromTable(
+    db: DatabaseClient,
+    entityIds: string[],
+    minRetryCount: number
+  ): Promise<string[]> {
+    const { rows } = await db.queryWithValues<{ entityId: string }>(
+      SQL`DELETE FROM failed_deployments
+          WHERE entity_id = ANY(${entityIds}) AND retry_count >= ${minRetryCount}
+          RETURNING entity_id AS "entityId"`,
+      'delete_failed_deployments'
+    )
+    return rows.map(({ entityId }) => entityId)
   }
 
   async function saveSnapshotFailedDeployment(
@@ -150,6 +169,27 @@ export async function createFailedDeployments(
       await deleteFromTable(database, entityId)
       if (failedDeploymentsByEntityId.delete(entityId)) {
         observeSize()
+      }
+    },
+
+    async removeExhaustedFailedDeployments(entityIds: string[], minRetryCount: number) {
+      // De-duplicated so a repeated id can't inflate a chunk.
+      const unique = Array.from(new Set(entityIds))
+
+      // Chunked so no single statement grows unbounded on a large backlog. The chunks are not atomic
+      // as a group, but each one evicts only after its own DELETE returned, so a rejected chunk
+      // leaves its entries in both the table and the cache, to be removed next pass.
+      for (let i = 0; i < unique.length; i += DELETE_BATCH_SIZE) {
+        const chunk = unique.slice(i, i + DELETE_BATCH_SIZE)
+        // Evicting exactly what the DELETE reports — rather than the whole chunk — is what keeps the
+        // cache from diverging when the guard spares a row.
+        const deleted = await deleteExhaustedFromTable(database, chunk, minRetryCount)
+        for (const entityId of deleted) {
+          failedDeploymentsByEntityId.delete(entityId)
+        }
+        if (deleted.length > 0) {
+          observeSize()
+        }
       }
     },
 

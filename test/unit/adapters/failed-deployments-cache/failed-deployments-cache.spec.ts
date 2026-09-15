@@ -11,6 +11,22 @@ import { FailedDeployment } from '../../../../src/adapters/failed-deployments'
 import { metricsDeclaration } from '../../../../src/metrics'
 import { createDatabaseMockedComponent } from '../../../mocks/database-component-mock'
 
+const MIN_RETRY_COUNT = 10
+
+/** Shapes a `DELETE ... RETURNING entity_id` result for the ids the guard actually matched. */
+function deleteResult(entityIds: string[]) {
+  return { rows: entityIds.map((entityId) => ({ entityId })), rowCount: entityIds.length } as any
+}
+
+async function readFailedDeploymentsGauge(
+  metrics: ReturnType<typeof createTestMetricsComponent>
+): Promise<number | undefined> {
+  const reported = (await metrics.registry.getMetricsAsJSON()).find(
+    ({ name }) => name === 'dcl_content_server_failed_deployments'
+  )
+  return (reported?.values[0] as { value: number } | undefined)?.value
+}
+
 describe('when using the merged failed-deployments adapter', () => {
   let baseDeployment: SnapshotFailedDeployment
   let metrics: ReturnType<typeof createTestMetricsComponent>
@@ -142,6 +158,230 @@ describe('when using the merged failed-deployments adapter', () => {
 
     it('should not issue any SQL', () => {
       expect(database.queryWithValues).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('and removeExhaustedFailedDeployments is called for several exhausted entities', () => {
+    let adapter: IFailedDeploymentsComponent
+    let cachedDeployments: SnapshotFailedDeployment[]
+    let reportedGaugeValue: number | undefined
+
+    beforeEach(async () => {
+      cachedDeployments = ['entity-a', 'entity-b', 'entity-c'].map((entityId) => ({ ...baseDeployment, entityId }))
+      database.queryWithValues.mockResolvedValueOnce({ rows: cachedDeployments, rowCount: 3 } as any)
+      adapter = await createFailedDeployments({ metrics, database })
+      await adapter.start()
+      database.queryWithValues.mockClear()
+      database.queryWithValues.mockResolvedValueOnce(deleteResult(['entity-a', 'entity-b', 'entity-c']))
+      await adapter.removeExhaustedFailedDeployments(['entity-a', 'entity-b', 'entity-c'], MIN_RETRY_COUNT)
+      reportedGaugeValue = await readFailedDeploymentsGauge(metrics)
+    })
+
+    it('should issue one batched DELETE rather than a round-trip per entity', () => {
+      expect(database.queryWithValues).toHaveBeenCalledTimes(1)
+    })
+
+    it('should send every entity id and the retry-count guard in the single statement', () => {
+      expect(database.queryWithValues).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('DELETE FROM failed_deployments'),
+          values: [['entity-a', 'entity-b', 'entity-c'], MIN_RETRY_COUNT]
+        }),
+        'delete_failed_deployments'
+      )
+    })
+
+    it('should guard the statement on the retry count, so a re-reported entry survives', () => {
+      expect(database.queryWithValues.mock.calls[0][0].text).toContain('retry_count >=')
+    })
+
+    it('should not open a database transaction', () => {
+      expect(database.transaction).not.toHaveBeenCalled()
+    })
+
+    it('should evict every deleted entity from the cache', async () => {
+      expect(await adapter.getAllFailedDeployments()).toEqual([])
+    })
+
+    it('should report the emptied cache on the failed-deployments gauge', () => {
+      expect(reportedGaugeValue).toBe(0)
+    })
+  })
+
+  describe('and the database spares an entity whose retry count dropped before the removal ran', () => {
+    let adapter: IFailedDeploymentsComponent
+    let cachedDeployments: SnapshotFailedDeployment[]
+
+    beforeEach(async () => {
+      cachedDeployments = ['entity-a', 'entity-b', 'entity-c'].map((entityId) => ({ ...baseDeployment, entityId }))
+      database.queryWithValues.mockResolvedValueOnce({ rows: cachedDeployments, rowCount: 3 } as any)
+      adapter = await createFailedDeployments({ metrics, database })
+      await adapter.start()
+      database.queryWithValues.mockClear()
+      // The guard matched only two rows: 'entity-b' was cleared and has failed afresh since.
+      database.queryWithValues.mockResolvedValueOnce(deleteResult(['entity-a', 'entity-c']))
+      await adapter.removeExhaustedFailedDeployments(['entity-a', 'entity-b', 'entity-c'], MIN_RETRY_COUNT)
+    })
+
+    it('should keep the spared entity in the cache, so it stays retryable', async () => {
+      expect(await adapter.getAllFailedDeployments()).toEqual([expect.objectContaining({ entityId: 'entity-b' })])
+    })
+  })
+
+  describe('and removeExhaustedFailedDeployments is called with the same entity id more than once', () => {
+    let adapter: IFailedDeploymentsComponent
+
+    beforeEach(async () => {
+      database.queryWithValues.mockResolvedValueOnce({ rows: [baseDeployment], rowCount: 1 } as any)
+      adapter = await createFailedDeployments({ metrics, database })
+      await adapter.start()
+      database.queryWithValues.mockClear()
+      database.queryWithValues.mockResolvedValueOnce(deleteResult([baseDeployment.entityId]))
+      await adapter.removeExhaustedFailedDeployments(
+        [baseDeployment.entityId, baseDeployment.entityId],
+        MIN_RETRY_COUNT
+      )
+    })
+
+    it('should send the entity id a single time', () => {
+      expect(database.queryWithValues.mock.calls[0][0].values[0]).toEqual([baseDeployment.entityId])
+    })
+  })
+
+  describe('and removeExhaustedFailedDeployments is called with entity ids that are not cached', () => {
+    let adapter: IFailedDeploymentsComponent
+
+    beforeEach(async () => {
+      adapter = await createFailedDeployments({ metrics, database })
+      await adapter.start()
+      database.queryWithValues.mockClear()
+      database.queryWithValues.mockResolvedValueOnce(deleteResult([]))
+      await adapter.removeExhaustedFailedDeployments(['not-in-cache'], MIN_RETRY_COUNT)
+    })
+
+    it('should still ask the database, so a row the cache never mirrored is still removable', () => {
+      expect(database.queryWithValues).toHaveBeenCalledTimes(1)
+    })
+
+    it('should leave the cache untouched', async () => {
+      expect(await adapter.getAllFailedDeployments()).toEqual([])
+    })
+  })
+
+  describe('and removeExhaustedFailedDeployments is called with an empty list', () => {
+    let adapter: IFailedDeploymentsComponent
+
+    beforeEach(async () => {
+      database.queryWithValues.mockResolvedValueOnce({ rows: [baseDeployment], rowCount: 1 } as any)
+      adapter = await createFailedDeployments({ metrics, database })
+      await adapter.start()
+      database.queryWithValues.mockClear()
+      await adapter.removeExhaustedFailedDeployments([], MIN_RETRY_COUNT)
+    })
+
+    it('should not issue a DELETE with an empty array', () => {
+      expect(database.queryWithValues).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('and removeExhaustedFailedDeployments is called with more entity ids than fit in one batch', () => {
+    let adapter: IFailedDeploymentsComponent
+    let cachedDeployments: SnapshotFailedDeployment[]
+    let entityIds: string[]
+
+    beforeEach(async () => {
+      cachedDeployments = Array.from({ length: 1001 }, (_, index) => ({
+        ...baseDeployment,
+        entityId: `entity-${index}`
+      }))
+      entityIds = cachedDeployments.map(({ entityId }) => entityId)
+      database.queryWithValues.mockResolvedValueOnce({ rows: cachedDeployments, rowCount: 1001 } as any)
+      adapter = await createFailedDeployments({ metrics, database })
+      await adapter.start()
+      database.queryWithValues.mockClear()
+      database.queryWithValues.mockResolvedValueOnce(deleteResult(entityIds.slice(0, 1000)))
+      database.queryWithValues.mockResolvedValueOnce(deleteResult(entityIds.slice(1000)))
+      await adapter.removeExhaustedFailedDeployments(entityIds, MIN_RETRY_COUNT)
+    })
+
+    it('should split the deletion into one statement per batch', () => {
+      expect(database.queryWithValues).toHaveBeenCalledTimes(2)
+    })
+
+    it('should cap the first statement at the batch size', () => {
+      expect(database.queryWithValues.mock.calls[0][0].values[0]).toEqual(entityIds.slice(0, 1000))
+    })
+
+    it('should send the remainder in the last statement', () => {
+      expect(database.queryWithValues.mock.calls[1][0].values[0]).toEqual(entityIds.slice(1000))
+    })
+
+    it('should evict every entity from the cache', async () => {
+      expect(await adapter.getAllFailedDeployments()).toEqual([])
+    })
+  })
+
+  describe('and removeExhaustedFailedDeployments is called with exactly one batch worth of entity ids', () => {
+    let adapter: IFailedDeploymentsComponent
+    let cachedDeployments: SnapshotFailedDeployment[]
+
+    beforeEach(async () => {
+      cachedDeployments = Array.from({ length: 1000 }, (_, index) => ({
+        ...baseDeployment,
+        entityId: `entity-${index}`
+      }))
+      database.queryWithValues.mockResolvedValueOnce({ rows: cachedDeployments, rowCount: 1000 } as any)
+      adapter = await createFailedDeployments({ metrics, database })
+      await adapter.start()
+      database.queryWithValues.mockClear()
+      database.queryWithValues.mockResolvedValueOnce(deleteResult(cachedDeployments.map(({ entityId }) => entityId)))
+      await adapter.removeExhaustedFailedDeployments(
+        cachedDeployments.map(({ entityId }) => entityId),
+        MIN_RETRY_COUNT
+      )
+    })
+
+    it('should not split it into a second statement', () => {
+      expect(database.queryWithValues).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('and a batched DELETE fails after an earlier batch already committed', () => {
+    let adapter: IFailedDeploymentsComponent
+    let cachedDeployments: SnapshotFailedDeployment[]
+    let entityIds: string[]
+    let raisedError: Error | undefined
+
+    beforeEach(async () => {
+      cachedDeployments = Array.from({ length: 1001 }, (_, index) => ({
+        ...baseDeployment,
+        entityId: `entity-${index}`
+      }))
+      entityIds = cachedDeployments.map(({ entityId }) => entityId)
+      database.queryWithValues.mockResolvedValueOnce({ rows: cachedDeployments, rowCount: 1001 } as any)
+      adapter = await createFailedDeployments({ metrics, database })
+      await adapter.start()
+      database.queryWithValues.mockClear()
+      database.queryWithValues.mockResolvedValueOnce(deleteResult(entityIds.slice(0, 1000)))
+      database.queryWithValues.mockRejectedValueOnce(new Error('connection terminated'))
+      raisedError = undefined
+      try {
+        await adapter.removeExhaustedFailedDeployments(entityIds, MIN_RETRY_COUNT)
+      } catch (error) {
+        raisedError = error as Error
+      }
+    })
+
+    it('should surface the database error to the caller', () => {
+      expect(raisedError?.message).toBe('connection terminated')
+    })
+
+    it('should keep the entities of the failed batch in the cache, so they are retried next cycle', async () => {
+      expect(await adapter.getAllFailedDeployments()).toEqual([expect.objectContaining({ entityId: entityIds[1000] })])
+    })
+
+    it('should report what actually survived on the failed-deployments gauge', async () => {
+      expect(await readFailedDeploymentsGauge(metrics)).toBe(1)
     })
   })
 
