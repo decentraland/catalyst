@@ -71,7 +71,8 @@ export type IFailedDeploymentsComponent = {
    * one DELETE per chunk instead of a round-trip each. The guard means a decision taken against an
    * earlier snapshot can't wipe an entry that was cleared and has since failed afresh with a lower
    * count. The cache evicts exactly the rows the DELETE reports, so it tracks the table even when
-   * the guard spares a row; a rejected chunk leaves its entries in both.
+   * the guard spares a row; a rejected chunk leaves its entries in both. Like every write here it is
+   * serialized per entity, so a report that overlaps the delete runs after the eviction.
    */
   removeExhaustedFailedDeployments(entityIds: string[], minRetryCount: number): Promise<void>
   /**

@@ -39,6 +39,48 @@ export async function createFailedDeployments(
     metrics.observe(FAILED_DEPLOYMENTS_METRIC, {}, failedDeploymentsByEntityId.size)
   }
 
+  // Every write here is read-mirror → await SQL → write-mirror, and two of them for the same entity
+  // can interleave across that await: the retry worker and the sync path both report, and the batched
+  // give-up deletes alongside. Chaining them per entity makes each transition observe the previous
+  // one's final state in both the table and the mirror, which no after-the-fact clamp can guarantee.
+  const transitionsByEntityId = new Map<string, Promise<unknown>>()
+
+  function serialized<T>(entityId: string, transition: () => Promise<T>): Promise<T> {
+    const previous = transitionsByEntityId.get(entityId) ?? Promise.resolve()
+    const current = previous.then(transition, transition)
+    transitionsByEntityId.set(entityId, current)
+    const release = () => {
+      if (transitionsByEntityId.get(entityId) === current) {
+        transitionsByEntityId.delete(entityId)
+      }
+    }
+    current.then(release, release)
+    return current
+  }
+
+  /**
+   * Parks the transition chain of every listed entity until the returned function is called. Resolves
+   * once all of them are parked, i.e. once whatever was already in flight for them has finished.
+   */
+  async function holdEntities(entityIds: string[]): Promise<() => void> {
+    let release: () => void = () => undefined
+    const held = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    await Promise.all(
+      entityIds.map(
+        (entityId) =>
+          new Promise<void>((parked) => {
+            void serialized(entityId, () => {
+              parked()
+              return held
+            })
+          })
+      )
+    )
+    return release
+  }
+
   async function getAllSnapshotFailedDeployments(db: DatabaseClient): Promise<SnapshotFailedDeployment[]> {
     const query = SQL`
       SELECT
@@ -111,16 +153,9 @@ export async function createFailedDeployments(
   }
 
   /**
-   * Upserts into the in-memory mirror, clamping the retry state so it can only move forward.
-   *
-   * `reportFailure` reads the current retry state, awaits the SQL round-trip and only then
-   * writes the cache, so two concurrent reports for the same entity (the retry worker runs
-   * with `SYNC_DEPLOY_CONCURRENCY` parallelism alongside the sync path, and both call
-   * `reportFailure`) can resolve out of order and let the older canonical snapshot land last.
-   * The SQL upsert already clamps the durable row with `GREATEST`; mirroring that here keeps
-   * the cache from regressing below it. That matters because the retry loop schedules off
-   * this cache, so a regression would retry before the durable deadline and need extra
-   * attempts to reach the max-retry cap.
+   * Upserts into the in-memory mirror, clamping the retry state so it can only move forward —
+   * the same `GREATEST` rule the durable row applies. Per-entity serialization already keeps
+   * reports from landing out of order; the clamp is the backstop for any write that bypasses it.
    *
    * Entries that are legitimately reset go through `removeFailedDeployment`, which evicts the
    * key — so a genuinely fresh failure starts from its own values rather than an old ceiling.
@@ -161,15 +196,17 @@ export async function createFailedDeployments(
 
     cacheFailedDeployment,
 
-    async removeFailedDeployment(entityId: string) {
-      // Hot path called after every successful deployment; bail before touching the DB
-      // if the entity was never marked as failed. Single statement — no transaction
-      // composition risk, so the cache evict can safely follow the SQL.
-      if (!failedDeploymentsByEntityId.has(entityId)) return
-      await deleteFromTable(database, entityId)
-      if (failedDeploymentsByEntityId.delete(entityId)) {
-        observeSize()
-      }
+    removeFailedDeployment(entityId: string) {
+      return serialized(entityId, async () => {
+        // Hot path called after every successful deployment; bail before touching the DB
+        // if the entity was never marked as failed. Single statement — no transaction
+        // composition risk, so the cache evict can safely follow the SQL.
+        if (!failedDeploymentsByEntityId.has(entityId)) return
+        await deleteFromTable(database, entityId)
+        if (failedDeploymentsByEntityId.delete(entityId)) {
+          observeSize()
+        }
+      })
     },
 
     async removeExhaustedFailedDeployments(entityIds: string[], minRetryCount: number) {
@@ -181,31 +218,41 @@ export async function createFailedDeployments(
       // leaves its entries in both the table and the cache, to be removed next pass.
       for (let i = 0; i < unique.length; i += DELETE_BATCH_SIZE) {
         const chunk = unique.slice(i, i + DELETE_BATCH_SIZE)
-        // Evicting exactly what the DELETE reports — rather than the whole chunk — is what keeps the
-        // cache from diverging when the guard spares a row.
-        const deleted = await deleteExhaustedFromTable(database, chunk, minRetryCount)
-        for (const entityId of deleted) {
-          failedDeploymentsByEntityId.delete(entityId)
-        }
-        if (deleted.length > 0) {
-          observeSize()
+        // Held for the whole DELETE → evict step, so a report for one of these entities that arrives
+        // meanwhile runs after the eviction and starts from a clean slate instead of inheriting the
+        // exhausted count or being evicted by a response that predates it.
+        const release = await holdEntities(chunk)
+        try {
+          // Evicting exactly what the DELETE reports — rather than the whole chunk — is what keeps
+          // the cache from diverging when the guard spares a row.
+          const deleted = await deleteExhaustedFromTable(database, chunk, minRetryCount)
+          for (const entityId of deleted) {
+            failedDeploymentsByEntityId.delete(entityId)
+          }
+          if (deleted.length > 0) {
+            observeSize()
+          }
+        } finally {
+          release()
         }
       }
     },
 
-    async reportFailure(deployment: FailedDeployment) {
-      const existing = failedDeploymentsByEntityId.get(deployment.entityId)
-      const merged: FailedDeployment = {
-        ...deployment,
-        retryCount: deployment.retryCount ?? existing?.retryCount ?? 0,
-        nextRetryAt: deployment.nextRetryAt ?? existing?.nextRetryAt ?? 0
-      }
-      if (isSnapshotFailedDeployment(merged)) {
-        const canonical = await saveSnapshotFailedDeployment(database, merged)
-        merged.retryCount = canonical.retryCount
-        merged.nextRetryAt = canonical.nextRetryAt
-      }
-      await cacheFailedDeployment(merged)
+    reportFailure(deployment: FailedDeployment) {
+      return serialized(deployment.entityId, async () => {
+        const existing = failedDeploymentsByEntityId.get(deployment.entityId)
+        const merged: FailedDeployment = {
+          ...deployment,
+          retryCount: deployment.retryCount ?? existing?.retryCount ?? 0,
+          nextRetryAt: deployment.nextRetryAt ?? existing?.nextRetryAt ?? 0
+        }
+        if (isSnapshotFailedDeployment(merged)) {
+          const canonical = await saveSnapshotFailedDeployment(database, merged)
+          merged.retryCount = canonical.retryCount
+          merged.nextRetryAt = canonical.nextRetryAt
+        }
+        await cacheFailedDeployment(merged)
+      })
     }
   }
 }

@@ -12,6 +12,13 @@ import { metricsDeclaration } from '../../../../src/metrics'
 import { createDatabaseMockedComponent } from '../../../mocks/database-component-mock'
 
 const MIN_RETRY_COUNT = 10
+const FIRST_REPORT = { retryCount: 5, nextRetryAt: 5_000_000_000_000 }
+const SECOND_REPORT = { retryCount: 6, nextRetryAt: 6_000_000_000_000 }
+
+/** Lets every already-scheduled microtask run before the assertions look at the mocks. */
+async function flushPendingJobs(): Promise<void> {
+  await new Promise((resolve) => setImmediate(resolve))
+}
 
 /** Shapes a `DELETE ... RETURNING entity_id` result for the ids the guard actually matched. */
 function deleteResult(entityIds: string[]) {
@@ -225,6 +232,51 @@ describe('when using the merged failed-deployments adapter', () => {
 
     it('should keep the spared entity in the cache, so it stays retryable', async () => {
       expect(await adapter.getAllFailedDeployments()).toEqual([expect.objectContaining({ entityId: 'entity-b' })])
+    })
+  })
+
+  describe('and a fresh failure for one of the entities is reported while the batched DELETE is in flight', () => {
+    let adapter: IFailedDeploymentsComponent
+    let cachedDeployments: SnapshotFailedDeployment[]
+    let freshReport: Promise<void>
+    let insertedRetryCount: number | undefined
+
+    beforeEach(async () => {
+      cachedDeployments = ['entity-a', 'entity-b', 'entity-c'].map((entityId) => ({
+        ...baseDeployment,
+        entityId,
+        retryCount: MIN_RETRY_COUNT
+      }))
+      freshReport = Promise.resolve()
+      database.queryWithValues.mockResolvedValueOnce({ rows: cachedDeployments, rowCount: 3 } as any)
+      adapter = await createFailedDeployments({ metrics, database })
+      await adapter.start()
+      database.queryWithValues.mockClear()
+      database.queryWithValues
+        // The DELETE is in flight when the sync path reports 'entity-b' afresh, without a retry count.
+        .mockImplementationOnce(async () => {
+          freshReport = adapter.reportFailure({ ...baseDeployment, entityId: 'entity-b', failureTimestamp: 999 })
+          await flushPendingJobs()
+          return deleteResult(['entity-a', 'entity-b', 'entity-c'])
+        })
+        // The upsert hands back the count it was given, as GREATEST does for a row that no longer exists.
+        .mockImplementationOnce(async (statement) => ({
+          rows: [{ retryCount: statement.values[7], nextRetryAt: 0 }],
+          rowCount: 1
+        }))
+      await adapter.removeExhaustedFailedDeployments(['entity-a', 'entity-b', 'entity-c'], MIN_RETRY_COUNT)
+      await freshReport
+      insertedRetryCount = database.queryWithValues.mock.calls[1]?.[0]?.values[7]
+    })
+
+    it('should run the report only after the eviction, so it does not inherit the exhausted count', () => {
+      expect(insertedRetryCount).toBe(0)
+    })
+
+    it('should end with the fresh entry in the cache rather than evicting it with the old one', async () => {
+      expect(await adapter.getAllFailedDeployments()).toEqual([
+        expect.objectContaining({ entityId: 'entity-b', retryCount: 0 })
+      ])
     })
   })
 
@@ -585,16 +637,9 @@ describe('when using the merged failed-deployments adapter', () => {
     })
   })
 
-  describe('and two concurrent reportFailure calls for the same entity resolve out of order', () => {
-    // The retry worker runs with SYNC_DEPLOY_CONCURRENCY parallelism alongside the sync path
-    // and both call reportFailure. Each awaits its SQL round-trip before writing the cache, so
-    // the older canonical snapshot can land last. The durable row is already clamped by the
-    // GREATEST upsert; the cache must not drift below it, because the retry loop schedules off
-    // the cache and would otherwise retry before the durable deadline.
-    const STALE = { retryCount: 5, nextRetryAt: 5_000_000_000_000 }
-    const LATEST = { retryCount: 6, nextRetryAt: 6_000_000_000_000 }
-
+  describe('and two reportFailure calls for the same entity overlap', () => {
     let adapter: IFailedDeploymentsComponent
+    let upsertsIssuedWhileFirstInFlight: number
 
     beforeEach(async () => {
       database.queryWithValues.mockResolvedValueOnce({ rows: [baseDeployment], rowCount: 1 } as any)
@@ -602,37 +647,39 @@ describe('when using the merged failed-deployments adapter', () => {
       await adapter.start()
       database.queryWithValues.mockClear()
 
-      // The first upsert commits first but its continuation resumes last.
-      let releaseStale: (value: unknown) => void = () => undefined
-      const staleInFlight = new Promise((resolve) => {
-        releaseStale = resolve
+      let releaseFirst: () => void = () => undefined
+      const firstInFlight = new Promise<void>((resolve) => {
+        releaseFirst = resolve
       })
       database.queryWithValues
         .mockImplementationOnce(async () => {
-          await staleInFlight
-          return { rows: [STALE], rowCount: 1 } as any
+          await firstInFlight
+          return { rows: [FIRST_REPORT], rowCount: 1 } as any
         })
-        .mockResolvedValueOnce({ rows: [LATEST], rowCount: 1 } as any)
+        .mockResolvedValueOnce({ rows: [SECOND_REPORT], rowCount: 1 } as any)
 
-      const staleReport = adapter.reportFailure({ ...baseDeployment, ...STALE })
-      const latestReport = adapter.reportFailure({ ...baseDeployment, ...LATEST })
-
-      // Force the out-of-order completion: the newer snapshot caches first, the older one after.
-      await latestReport
-      releaseStale(undefined)
-      await staleReport
+      const firstReport = adapter.reportFailure({ ...baseDeployment, ...FIRST_REPORT })
+      const secondReport = adapter.reportFailure({ ...baseDeployment, ...SECOND_REPORT })
+      await flushPendingJobs()
+      upsertsIssuedWhileFirstInFlight = database.queryWithValues.mock.calls.length
+      releaseFirst()
+      await Promise.all([firstReport, secondReport])
     })
 
-    it('should keep the cached retry state at the latest canonical values', async () => {
-      const cached = await adapter.findFailedDeployment(baseDeployment.entityId)
-      expect(cached?.retryCount).toBe(LATEST.retryCount)
-      expect(cached?.nextRetryAt).toBe(LATEST.nextRetryAt)
+    it('should not issue the second upsert while the first is still in flight', () => {
+      expect(upsertsIssuedWhileFirstInFlight).toBe(1)
+    })
+
+    it('should end with the second report values in the cache', async () => {
+      expect(await adapter.findFailedDeployment(baseDeployment.entityId)).toEqual(
+        expect.objectContaining(SECOND_REPORT)
+      )
     })
 
     it('should match what a fresh adapter reloads from the database', async () => {
       const reloadDatabase = createDatabaseMockedComponent()
       reloadDatabase.queryWithValues.mockResolvedValueOnce({
-        rows: [{ ...baseDeployment, ...LATEST }],
+        rows: [{ ...baseDeployment, ...SECOND_REPORT }],
         rowCount: 1
       } as any)
       const reloaded = await createFailedDeployments({ metrics, database: reloadDatabase })
@@ -642,6 +689,52 @@ describe('when using the merged failed-deployments adapter', () => {
       const fromCache = await adapter.findFailedDeployment(baseDeployment.entityId)
       expect(fromCache?.retryCount).toBe(fromDb?.retryCount)
       expect(fromCache?.nextRetryAt).toBe(fromDb?.nextRetryAt)
+    })
+  })
+
+  describe('and removeFailedDeployment is called while a reportFailure for the same entity is in flight', () => {
+    let adapter: IFailedDeploymentsComponent
+    let deletesIssuedWhileReportInFlight: number
+
+    beforeEach(async () => {
+      adapter = await createFailedDeployments({ metrics, database })
+      await adapter.start()
+      database.queryWithValues.mockClear()
+
+      let releaseReport: () => void = () => undefined
+      const reportInFlight = new Promise<void>((resolve) => {
+        releaseReport = resolve
+      })
+      database.queryWithValues
+        .mockImplementationOnce(async () => {
+          await reportInFlight
+          return { rows: [{ retryCount: 0, nextRetryAt: 0 }], rowCount: 1 } as any
+        })
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 } as any)
+
+      const report = adapter.reportFailure(baseDeployment)
+      const removal = adapter.removeFailedDeployment(baseDeployment.entityId)
+      await flushPendingJobs()
+      deletesIssuedWhileReportInFlight = database.queryWithValues.mock.calls.filter(
+        ([, label]) => label === 'delete_failed_deployment'
+      ).length
+      releaseReport()
+      await Promise.all([report, removal])
+    })
+
+    it('should not issue the DELETE while the report is still in flight', () => {
+      expect(deletesIssuedWhileReportInFlight).toBe(0)
+    })
+
+    it('should delete the row the report wrote instead of missing it on a stale cache check', () => {
+      expect(database.queryWithValues).toHaveBeenCalledWith(
+        expect.objectContaining({ text: expect.stringContaining('DELETE FROM failed_deployments') }),
+        'delete_failed_deployment'
+      )
+    })
+
+    it('should leave the cache empty', async () => {
+      expect(await adapter.getAllFailedDeployments()).toEqual([])
     })
   })
 })
