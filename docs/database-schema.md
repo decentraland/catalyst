@@ -203,6 +203,8 @@ Tracks deployment attempts that failed validation or processing, preventing re-p
 | `auth_chain`        | JSON      | NULL     | Authentication chain from the failed deployment (added in migration 1638045153758). |
 | `error_description` | TEXT      | NOT NULL | Human-readable error description.                                                   |
 | `snapshot_hash`     | TEXT      | NOT NULL | Hash of the snapshot that contained this failed deployment.                         |
+| `retry_count`       | INTEGER   | NOT NULL | Failed retry attempts so far. Defaults to 0.                                        |
+| `next_retry_at`     | TIMESTAMPTZ | NOT NULL | Earliest time the entry may be retried again. Defaults to `NOW()`.                |
 
 ### Indexes
 
@@ -214,6 +216,10 @@ Tracks deployment attempts that failed validation or processing, preventing re-p
 1. Failed deployments are stored to prevent re-processing during synchronization
 2. The `snapshot_hash` links failures to specific synchronization snapshots
 3. `auth_chain` may be NULL for older failed deployments (added in migration 1638045153758)
+4. Retries back off exponentially: each failure sets `next_retry_at` to `min(15min x 2^retry_count, 24h)` ahead, and an entry is skipped until that time passes
+5. Both retry columns only move forward on re-report (`GREATEST` in the upsert), so a duplicate failure report cannot rewind a backoff deadline
+6. Once `retry_count` reaches `MAX_FAILED_DEPLOYMENT_RETRIES` (default 10) the entry is given up on and its row deleted. The delete is guarded on `retry_count >= <cap>`, so an entry that was cleared by a successful deployment and has since failed afresh is not removed by a stale decision
+7. `next_retry_at` is `TIMESTAMPTZ`, unlike `failure_time`: it is an absolute deadline, and a timezone-less column would shift it by the session's UTC offset on every read and write
 
 ---
 
