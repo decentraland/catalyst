@@ -311,6 +311,7 @@ export enum EnvironmentConfig {
   VALIDATE_API,
   FOLDER_MIGRATION_MAX_CONCURRENCY,
   RETRY_FAILED_DEPLOYMENTS_DELAY_TIME,
+  MAX_FAILED_DEPLOYMENT_RETRIES,
   DEPLOYMENT_RATE_LIMIT_TTL,
   DEPLOYMENT_RATE_LIMIT_MAX,
   DENYLIST_FILE_NAME,
@@ -654,6 +655,10 @@ export class EnvironmentBuilder {
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.RETRY_FAILED_DEPLOYMENTS_DELAY_TIME, () =>
       parseMsEnv('RETRY_FAILED_DEPLOYMENTS_DELAY_TIME', ms('15m'))
+    )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_FAILED_DEPLOYMENT_RETRIES, () =>
+      parseNonNegativeIntEnv('MAX_FAILED_DEPLOYMENT_RETRIES', 10)
     )
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.READ_ONLY, () => process.env.READ_ONLY == 'true')

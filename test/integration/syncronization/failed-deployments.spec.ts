@@ -1,4 +1,5 @@
 import { Entity } from '@dcl/schemas'
+import { STOP_COMPONENT } from '@well-known-components/interfaces'
 import { DeploymentData } from 'dcl-catalyst-client/dist/client/utils/DeploymentBuilder'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { retryFailedDeploymentExecution } from '../../../src/logic/deployments'
@@ -60,6 +61,11 @@ describe('Errors during sync', () => {
         .mockResolvedValueOnce({ ok: true })
         .mockResolvedValueOnce({ ok: true })
         .mockResolvedValueOnce({ ok: true })
+
+      // This spec drives retries explicitly. The retry job's immediate post-bootstrap run would race the
+      // deploys below on the pointer lock and, since a conflict defers the entry, hide it from the explicit
+      // pass. Stopping the job before the orchestrator starts it makes its run loop exit at once.
+      await server2.components.syncOrchestrator[STOP_COMPONENT]()
 
       // Start server2
       await startProgramAndWaitUntilBootstrapFinishes(server2)
