@@ -8,7 +8,11 @@ import { metricsDeclaration } from '../../../src/metrics'
 
 const CONTENT_SERVERS = ['http://server1']
 const MAX_RETRIES = 10
+const BASE_RETRY_INTERVAL_MS = 15 * 60 * 1000
 const MAX_RETRY_INTERVAL_MS = 24 * 60 * 60 * 1000
+// Message produced by the deployment service when a pointer lock is already held.
+const POINTER_LOCK_CONFLICT =
+  "Errors deploying entity(entity-1):\n - The following pointers are currently being deployed: '0,0'. Please try again in a few seconds."
 
 /** The slice of the component the retry loop uses, typed so a renamed method fails to compile. */
 type FailedDeploymentsMock = Pick<
@@ -408,18 +412,49 @@ describe('when retrying failed deployments', () => {
   })
 
   describe('and the deployment of an entry fails because its pointers are already being deployed', () => {
+    let deployment: FailedDeployment
+    let scheduledBackoffMs: number
+
     beforeEach(async () => {
-      failedDeployments = [makeDeployment({ retryCount: 2, nextRetryAt: 0 })]
-      deployEntityFromRemoteServer.mockRejectedValue(
-        new Error(
-          "Errors deploying entity(entity-1):\n - The following pointers are currently being deployed: '0,0'. Please try again in a few seconds."
-        )
-      )
+      deployment = makeDeployment({ retryCount: 2, nextRetryAt: 0 })
+      failedDeployments = [deployment]
+      deployEntityFromRemoteServer.mockRejectedValue(new Error(POINTER_LOCK_CONFLICT))
+      const startedAt = Date.now()
       await retryFailedDeploymentExecution(components)
+      scheduledBackoffMs = reportFailure.mock.calls[0][0].nextRetryAt - startedAt
     })
 
-    it('should not spend a retry on the transient conflict', () => {
-      expect(reportFailure).not.toHaveBeenCalled()
+    it('should not consume an attempt, since the entity was never evaluated', () => {
+      expect(reportFailure).toHaveBeenCalledWith(expect.objectContaining({ retryCount: 2 }))
+    })
+
+    it('should defer the entry by the same backoff a failure at this stage gets', () => {
+      expect(scheduledBackoffMs).toBeGreaterThanOrEqual(BASE_RETRY_INTERVAL_MS * 2 ** 2 - 1000)
+      expect(scheduledBackoffMs).toBeLessThanOrEqual(BASE_RETRY_INTERVAL_MS * 2 ** 2 + 1000)
+    })
+
+    it('should keep the original failure description rather than the conflict message', () => {
+      expect(reportFailure).toHaveBeenCalledWith(
+        expect.objectContaining({ errorDescription: deployment.errorDescription })
+      )
+    })
+  })
+
+  describe('and an entry that hit a pointer-lock conflict is scanned again in the next cycle', () => {
+    let deploysAfterSecondCycle: number
+
+    beforeEach(async () => {
+      failedDeployments = [makeDeployment({ retryCount: 0, nextRetryAt: 0 })]
+      deployEntityFromRemoteServer.mockRejectedValue(new Error(POINTER_LOCK_CONFLICT))
+      await retryFailedDeploymentExecution(components)
+      // The next cycle scans what the conflict just persisted.
+      failedDeployments = [reportFailure.mock.calls[0][0]]
+      await retryFailedDeploymentExecution(components)
+      deploysAfterSecondCycle = deployEntityFromRemoteServer.mock.calls.length
+    })
+
+    it('should not dispatch it again before the deferred deadline', () => {
+      expect(deploysAfterSecondCycle).toBe(1)
     })
   })
 

@@ -142,15 +142,19 @@ export async function retryFailedDeploymentExecution(
           const errorDescription = error instanceof Error ? error.message : String(error)
 
           if (!errorDescription.includes(IGNORING_FIX_ERROR)) {
-            const isTransientConflict = errorDescription.includes('currently being deployed')
-            if (!isTransientConflict) {
-              const newRetryCount = retryCount + 1
-              const backoffMs = Math.min(BASE_RETRY_INTERVAL_MS * 2 ** retryCount, MAX_RETRY_INTERVAL_MS)
+            const nextRetryAt = Date.now() + Math.min(BASE_RETRY_INTERVAL_MS * 2 ** retryCount, MAX_RETRY_INTERVAL_MS)
+            if (errorDescription.includes('currently being deployed')) {
+              // Another deploy held the pointer at that instant, so the entity was never evaluated.
+              // Defer it like a failure at this stage but keep the count: the cap must only evict
+              // entities that were actually rejected, and the failing side backs off faster than the
+              // conflicting side, so two entries colliding on a pointer drift apart within a few cycles.
+              await components.failedDeployments.reportFailure({ ...failedDeployment, nextRetryAt })
+            } else {
               await components.failedDeployments.reportFailure({
                 ...failedDeployment,
                 errorDescription,
-                retryCount: newRetryCount,
-                nextRetryAt: Date.now() + backoffMs
+                retryCount: retryCount + 1,
+                nextRetryAt
               })
             }
           }
