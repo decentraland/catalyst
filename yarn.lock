@@ -709,10 +709,10 @@
     ajv-keywords "^5.1.0"
     mitt "^3.0.1"
 
-"@dcl/schemas@^27.0.0":
-  version "27.0.0"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-27.0.0.tgz#fbda0293c221db90b83cf89b300c43b4b6111cc6"
-  integrity sha512-KwW6ms2p2k8WW+167ta4AOLwQeqJGV1L8jrPcuRiw06kZhbDnlcnOkTqwBibigeIFtN5aoae9you0W3+SceAiA==
+"@dcl/schemas@^27.0.0", "@dcl/schemas@^27.2.0":
+  version "27.2.0"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-27.2.0.tgz#451b2483159b1dc1676643953b03fd13efd42f75"
+  integrity sha512-VoiwWqskTa9bXAp4X64yyYhZCfVcE77NyHP/1C746DA5IhA1OkCDn6JSrDzgRfkxmFcWOU7j3VVNtGBllYCYlw==
   dependencies:
     ajv "^8.11.0"
     ajv-errors "^3.0.0"

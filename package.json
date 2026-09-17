@@ -58,7 +58,7 @@
     "@dcl/metrics": "^1.0.1",
     "@dcl/rate-limiter-component": "^0.2.0",
     "@dcl/schema-validator-component": "^1.0.2",
-    "@dcl/schemas": "^27.0.0",
+    "@dcl/schemas": "^27.2.0",
     "@dcl/snapshots-fetcher": "11.0.0",
     "@dcl/thegraph-component": "^0.1.2",
     "@dcl/traced-fetch-component": "^1.0.8",
