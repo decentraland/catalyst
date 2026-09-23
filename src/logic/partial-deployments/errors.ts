@@ -1,17 +1,14 @@
 /**
- * Thrown by the partial-deployments component when a staging request is invalid (bad hash, unsupported
- * entity type, over budget, failed validation, ...). The controller maps it to a response carrying the
- * `errors` array with `statusCode` (default 400, mirroring a failed full deployment).
- *
- * `statusCode` is 429 for transient conditions (rate limiting) so a client can tell a retryable
- * rejection from a terminal validation error.
+ * Thrown by the partial-deployments component when a staging request is rejected. The controller maps
+ * it to a response carrying `errors` with `statusCode`: 400 for validation, expiry and quota failures;
+ * 429 (with `retryAfterSeconds`) only for the per-pointer deploy rate limiter and in-process pointer
+ * conflicts.
  */
 export class InvalidPartialDeploymentError extends Error {
   constructor(
     public readonly errors: string[],
     public readonly statusCode: 400 | 429 = 400,
-    // For a 429, the window (seconds) after which the client should retry — surfaced as a Retry-After
-    // header so the client can wait the rate-limit window out instead of exhausting its resume budget.
+    // Surfaced as Retry-After on a 429.
     public readonly retryAfterSeconds?: number
   ) {
     super(errors.join(', '))

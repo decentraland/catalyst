@@ -26,6 +26,7 @@ import { IContentFilesRepository } from './adapters/content-files-repository'
 import { Denylist } from './adapters/denylist'
 import { IDeploymentsRepository } from './adapters/deployments-repository'
 import { IPendingDeploymentsRepository } from './adapters/pending-deployments-repository'
+import { IContentLocks } from './adapters/content-locks'
 import { IPointersRepository } from './adapters/pointers-repository'
 import { ISnapshotsRepository } from './adapters/snapshots-repository'
 import { DeployedEntitiesBloomFilter } from './adapters/deployed-entities-bloom-filter'
@@ -90,6 +91,7 @@ export type AppComponents = {
   contentFilesRepository: IContentFilesRepository
   deploymentsRepository: IDeploymentsRepository
   pendingDeploymentsRepository: IPendingDeploymentsRepository
+  contentLocks: IContentLocks
   pointersRepository: IPointersRepository
   snapshotsRepository: ISnapshotsRepository
   config: IConfigComponent
@@ -147,6 +149,7 @@ export type MaintenanceComponents = {
   contentFilesRepository: IContentFilesRepository
   deploymentsRepository: IDeploymentsRepository
   pendingDeploymentsRepository: IPendingDeploymentsRepository
+  contentLocks: IContentLocks
   snapshotsRepository: ISnapshotsRepository
   garbageCollectionManager: IGarbageCollectionComponent
 }

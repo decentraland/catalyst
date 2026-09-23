@@ -11,10 +11,7 @@ const PROFILE_CLEANUP_LIMIT = 10000
 // and the size of each storage.delete operation during a sweep.
 const GC_DELETE_BATCH_SIZE = 1000
 
-// How many delete batches deleteUnreferencedFiles keeps in flight at once. Each batch is one
-// findReferencedHashes query + one storage.delete; a small window keeps folder-based storage (which
-// unlinks serially inside delete()) from making the sweep fully sequential, without the unbounded
-// fan-out of per-file parallel deletes.
+// Delete batches deleteUnreferencedFiles keeps queued at once. Each holds a content-lock connection.
 const GC_DELETE_CONCURRENCY = 4
 
 // Safety margin subtracted from the stored garbage-collection watermark. The next sweep only
@@ -37,6 +34,7 @@ export function createGarbageCollectionComponent(
     | 'deploymentsRepository'
     | 'pendingDeploymentsRepository'
     | 'snapshotsRepository'
+    | 'contentLocks'
   >,
   performGarbageCollection: boolean,
   profileDuration: number,
@@ -47,6 +45,26 @@ export function createGarbageCollectionComponent(
   const logger = components.logs.getLogger('GarbageCollectionManager')
   let lastSweepResult: SweepResult | undefined = undefined
   let lastTimeOfCollection = 0
+
+  /**
+   * Re-checks candidates against the database and deletes the unreferenced ones, both under the
+   * exclusive content lock so no deployment can store or reuse them in between.
+   * @returns The deleted hashes.
+   */
+  async function deleteUnreferenced(candidates: string[]): Promise<string[]> {
+    return components.contentLocks.withWrite(async () => {
+      const stillReferenced = await components.contentFilesRepository.findReferencedHashes(
+        components.database,
+        candidates,
+        pendingDeploymentTtlMs
+      )
+      const toDelete = candidates.filter((hash) => !stillReferenced.has(hash))
+      if (toDelete.length > 0) {
+        await components.storage.delete(toDelete)
+      }
+      return toDelete
+    })
+  }
 
   /**
    * When it is time, we will calculate the hashes of all the overwritten deployments, and check if they are not being used by another deployment.
@@ -64,17 +82,12 @@ export function createGarbageCollectionComponent(
       // a concurrent deploy may have re-referenced a hash since; and because storage is a single
       // content-addressed namespace, a candidate hash may also be a snapshot file or an entity JSON
       // (byte-identical files collide on hash). Never delete anything that is still referenced.
-      const stillReferenced = await components.contentFilesRepository.findReferencedHashes(
-        components.database,
-        batch,
-        pendingDeploymentTtlMs
-      )
-      const toDelete = batch.filter((hash) => !stillReferenced.has(hash))
+      const candidates = batch
       batch = []
+      const toDelete = await deleteUnreferenced(candidates)
       if (toDelete.length === 0) {
         return
       }
-      await components.storage.delete(toDelete)
       // Emit the metric per batch (after the delete) so progress is observable during a long sweep
       // and a crash mid-sweep still records what was already deleted.
       components.metrics.increment('dcl_content_garbage_collection_items_total', {}, toDelete.length)
@@ -195,22 +208,9 @@ export function createGarbageCollectionComponent(
     // Delete the files from storage only after the DB transaction commits: doing it first would leave
     // live content_files rows referencing already-deleted files if the transaction failed. A leftover
     // file after a successful commit is reclaimed by the next unused-hashes sweep.
-    // Re-verify right before deleting (same guard as gcUnusedHashes): the in-use check above ran before
-    // the transaction, so a concurrent deploy may have re-referenced one of these hashes since. This
-    // narrows — but does not fully close — the window; a truly atomic guard would need locking.
-    let hashesToDelete = hashes
-    if (hashesToDelete.length > 0) {
-      const stillReferenced = await components.contentFilesRepository.findReferencedHashes(
-        components.database,
-        hashesToDelete,
-        pendingDeploymentTtlMs
-      )
-      hashesToDelete = hashesToDelete.filter((hash) => !stillReferenced.has(hash))
-    }
-    logger.info(`Profile cleanup will remove ${hashesToDelete.length} files from storage`)
-    if (hashesToDelete.length > 0) {
-      await components.storage.delete(hashesToDelete)
-    }
+    // Re-verify under the exclusive content lock: the in-use check above ran before the transaction.
+    const hashesToDelete = hashes.length > 0 ? await deleteUnreferenced(hashes) : []
+    logger.info(`Profile cleanup removed ${hashesToDelete.length} files from storage`)
 
     return {
       deletedHashes: new Set(hashesToDelete),
@@ -342,26 +342,14 @@ export function createGarbageCollectionComponent(
     // and non-expired pending deployments at delete time.
     const deleteBatch = async (candidates: string[]): Promise<void> => {
       try {
-        const stillReferenced = await components.contentFilesRepository.findReferencedHashes(
-          components.database,
-          candidates,
-          pendingDeploymentTtlMs
-        )
-        const toDelete = candidates.filter((hash) => !stillReferenced.has(hash))
-        if (toDelete.length === 0) {
-          return
-        }
-        await components.storage.delete(toDelete)
-        numberOfDeletedFiles += toDelete.length
+        numberOfDeletedFiles += (await deleteUnreferenced(candidates)).length
       } catch (error) {
         unreferencedLogger.error(error as Error, { batchSize: String(candidates.length) })
       }
     }
 
-    // Batches run through a small window of concurrent workers so the next batch's reference re-check
-    // and deletes overlap the previous batch's I/O. On S3 each batch is a bulk DeleteObjects; on
-    // folder-based storage delete() unlinks serially, so without this overlap the whole sweep would
-    // degrade to fully serial unlinks interleaved with blocking DB queries.
+    // Batches serialize on the exclusive content lock; the small window only keeps the storage listing
+    // advancing while a batch deletes.
     const flushBatch = async (): Promise<void> => {
       if (batch.length === 0) {
         return

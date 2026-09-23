@@ -1,67 +1,22 @@
 import { Authenticator, IdentityType } from '@dcl/crypto'
-import { EntityType } from '@dcl/schemas'
-import { buildEntity } from 'dcl-catalyst-client/dist/client/utils/DeploymentBuilder'
 import FormData = require('form-data')
 import { EnvironmentConfig } from '../../../src/Environment'
 import { makeNoopValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import { createDefaultServer, resetServer } from '../simpleTestEnvironment'
 import { TestProgram } from '../TestProgram'
 import { createIdentity } from '../E2ETestUtils'
-
-type PreparedDeployment = {
-  entityId: string
-  authChain: ReturnType<typeof Authenticator.createSimpleAuthChain>
-  files: Map<string, Uint8Array>
-  contentHashes: string[]
-}
-
-async function prepareSceneDeployment(
-  pointers: string[],
-  contents: Record<string, Buffer>,
-  identity: IdentityType,
-  timestamp: number = Date.now()
-): Promise<PreparedDeployment> {
-  const files = new Map<string, Uint8Array>(Object.entries(contents))
-  const prepared = await buildEntity({
-    type: EntityType.SCENE,
-    pointers,
-    files,
-    metadata: { main: 'bin/main.js', scene: { base: pointers[0], parcels: pointers } },
-    timestamp
-  })
-  const signature = Authenticator.createSignature(identity, prepared.entityId)
-  const authChain = Authenticator.createSimpleAuthChain(prepared.entityId, identity.address, signature)
-  const contentHashes = Array.from(prepared.files.keys()).filter((k) => k !== prepared.entityId)
-  return { entityId: prepared.entityId, authChain, files: prepared.files, contentHashes }
-}
-
-function buildPartialForm(deployment: PreparedDeployment, keysToInclude: string[], partial = true): FormData {
-  const form = new FormData()
-  form.append('entityId', deployment.entityId)
-  if (partial) {
-    form.append('partial', 'true')
-  }
-  form.append('authChain', JSON.stringify(deployment.authChain))
-  for (const key of keysToInclude) {
-    const content = deployment.files.get(key)
-    if (!content) {
-      throw new Error(`Test setup error: no file for key ${key}`)
-    }
-    form.append(key, Buffer.from(content), { filename: key })
-  }
-  return form
-}
-
-async function postForm(server: TestProgram, form: FormData): Promise<Response> {
-  return fetch(server.getUrl() + '/entities', {
-    method: 'POST',
-    body: form.getBuffer(),
-    headers: form.getHeaders()
-  })
-}
+import {
+  buildPartialForm,
+  postForm,
+  PreparedDeployment,
+  prepareSceneDeployment
+} from '../../helpers/partial-deployments'
+import { partialDeploymentContract } from '../../contracts/partial-deployment'
 
 async function countPendingDeployments(server: TestProgram): Promise<number> {
-  const result = await server.components.database.query<{ count: string }>('SELECT COUNT(*) as count FROM pending_deployments')
+  const result = await server.components.database.query<{ count: string }>(
+    'SELECT COUNT(*) as count FROM pending_deployments'
+  )
   return parseInt(result.rows[0].count)
 }
 
@@ -176,7 +131,11 @@ describe('Integration - Partial deployments', () => {
       beforeEach(async () => {
         // Unique content per test run: storage is content-addressed and survives resetServer.
         const nonce = `${Date.now()}-${Math.random()}`
-        deployment = await prepareSceneDeployment(['1,1'], { 'a.txt': Buffer.from(`another file a ${nonce}`) }, identity)
+        deployment = await prepareSceneDeployment(
+          ['1,1'],
+          { 'a.txt': Buffer.from(`another file a ${nonce}`) },
+          identity
+        )
         ;[hashA] = deployment.contentHashes
         firstResponse = await postForm(server, buildPartialForm(deployment, [deployment.entityId]))
       })
@@ -205,11 +164,7 @@ describe('Integration - Partial deployments', () => {
     let response: Response
 
     beforeEach(async () => {
-      const deployment = await prepareSceneDeployment(
-        ['2,2'],
-        { 'a.txt': Buffer.from('single batch file') },
-        identity
-      )
+      const deployment = await prepareSceneDeployment(['2,2'], { 'a.txt': Buffer.from('single batch file') }, identity)
       response = await postForm(
         server,
         buildPartialForm(deployment, [deployment.entityId, ...deployment.contentHashes])
@@ -252,11 +207,7 @@ describe('Integration - Partial deployments', () => {
     let response: Response
 
     beforeEach(async () => {
-      const deployment = await prepareSceneDeployment(
-        ['4,4'],
-        { 'a.txt': Buffer.from('orphan content') },
-        identity
-      )
+      const deployment = await prepareSceneDeployment(['4,4'], { 'a.txt': Buffer.from('orphan content') }, identity)
       const [hashA] = deployment.contentHashes
       response = await postForm(server, buildPartialForm(deployment, [hashA]))
     })
@@ -270,19 +221,19 @@ describe('Integration - Partial deployments', () => {
     let response: Response
 
     beforeEach(async () => {
-      const deployment = await prepareSceneDeployment(
-        ['5,5'],
-        { 'a.txt': Buffer.from('mismatch content') },
-        identity
-      )
+      const deployment = await prepareSceneDeployment(['5,5'], { 'a.txt': Buffer.from('mismatch content') }, identity)
       const form = new FormData()
       form.append('entityId', deployment.entityId)
       form.append('partial', 'true')
       form.append('authChain', JSON.stringify(deployment.authChain))
       // Entity file uploaded under a wrong key: its computed hash won't equal the key.
-      form.append('bafyWrongKey0000000000000000000000000000000000000000000000', Buffer.from(deployment.files.get(deployment.entityId)!), {
-        filename: 'wrong'
-      })
+      form.append(
+        'bafyWrongKey0000000000000000000000000000000000000000000000',
+        Buffer.from(deployment.files.get(deployment.entityId)!),
+        {
+          filename: 'wrong'
+        }
+      )
       response = await postForm(server, form)
     })
 
@@ -295,11 +246,7 @@ describe('Integration - Partial deployments', () => {
     let response: Response
 
     beforeEach(async () => {
-      const deployment = await prepareSceneDeployment(
-        ['6,6'],
-        { 'a.txt': Buffer.from('legacy file a') },
-        identity
-      )
+      const deployment = await prepareSceneDeployment(['6,6'], { 'a.txt': Buffer.from('legacy file a') }, identity)
       // Full (non-partial) deploy with all content present → succeeds, no pending row involved.
       response = await postForm(
         server,
@@ -325,7 +272,10 @@ describe('Integration - Partial deployments', () => {
         const nonce = `${Date.now()}-${Math.random()}`
         deployment = await prepareSceneDeployment(
           ['7,7'],
-          { 'a.txt': Buffer.from(`parallel a ${nonce}`.repeat(50)), 'b.txt': Buffer.from(`parallel b ${nonce}`.repeat(60)) },
+          {
+            'a.txt': Buffer.from(`parallel a ${nonce}`.repeat(50)),
+            'b.txt': Buffer.from(`parallel b ${nonce}`.repeat(60))
+          },
           identity
         )
         ;[hashA, hashB] = deployment.contentHashes
@@ -373,7 +323,10 @@ describe('Integration - Partial deployments', () => {
         const nonce = `${Date.now()}-${Math.random()}`
         deployment = await prepareSceneDeployment(
           ['8,8'],
-          { 'a.txt': Buffer.from(`finalize a ${nonce}`.repeat(50)), 'b.txt': Buffer.from(`finalize b ${nonce}`.repeat(60)) },
+          {
+            'a.txt': Buffer.from(`finalize a ${nonce}`.repeat(50)),
+            'b.txt': Buffer.from(`finalize b ${nonce}`.repeat(60))
+          },
           identity
         )
         ;[hashA, hashB] = deployment.contentHashes
@@ -401,9 +354,9 @@ describe('Integration - Partial deployments', () => {
           // Concurrent completing requests race into the deploy pipeline; the deployments unique entity-id
           // constraint plus finalize's pointer-conflict retry mean the winner returns 200 and the other
           // returns 200 (idempotent, if the winner already committed) or 202 (its retries exhausted).
-          expect([firstResponse.status, secondResponse.status].every((status) => status === 200 || status === 202)).toBe(
-            true
-          )
+          expect(
+            [firstResponse.status, secondResponse.status].every((status) => status === 200 || status === 202)
+          ).toBe(true)
           expect([firstResponse.status, secondResponse.status]).toContain(200)
         })
 
@@ -560,46 +513,143 @@ describe('Integration - Partial deployments', () => {
     })
   })
 
-  describe('when a second partial upload targets pointers held by a pending upload', () => {
+  describe('when two partial uploads target the same pointers', () => {
     let older: PreparedDeployment
     let newer: PreparedDeployment
 
     beforeEach(async () => {
-      // Unique content per run (content-addressed storage survives resetServer); the two entities differ
-      // by timestamp so they order deterministically on the same pointers.
       const nonce = `${Date.now()}-${Math.random()}`
       const now = Date.now()
       older = await prepareSceneDeployment(['5,5'], { 'a.txt': Buffer.from(`older ${nonce}`) }, identity, now - 60_000)
       newer = await prepareSceneDeployment(['5,5'], { 'a.txt': Buffer.from(`newer ${nonce}`) }, identity, now)
     })
 
-    describe('and the incoming upload is newer than the pending one', () => {
-      let response: Response
+    describe('and both are staged', () => {
+      let statuses: number[]
 
       beforeEach(async () => {
-        await postForm(server, buildPartialForm(older, [older.entityId]))
-        response = await postForm(server, buildPartialForm(newer, [newer.entityId]))
+        const first = await postForm(server, buildPartialForm(newer, [newer.entityId]))
+        const second = await postForm(server, buildPartialForm(older, [older.entityId]))
+        statuses = [first.status, second.status]
       })
 
-      it('should accept it and replace the older pending upload', async () => {
-        expect(response.status).toBe(202)
-        expect(await pendingEntityIds(server)).toEqual([newer.entityId])
+      it('should accept both uploads with 202', () => {
+        expect(statuses).toEqual([202, 202])
+      })
+
+      it('should keep both uploads pending without replacing either', async () => {
+        expect((await pendingEntityIds(server)).sort()).toEqual([older.entityId, newer.entityId].sort())
       })
     })
 
-    describe('and the incoming upload is older than the pending one', () => {
-      let response: Response
+    describe('and the newer upload is published before the older one completes', () => {
+      let olderCompletion: Response
 
       beforeEach(async () => {
-        await postForm(server, buildPartialForm(newer, [newer.entityId]))
-        response = await postForm(server, buildPartialForm(older, [older.entityId]))
+        await postForm(server, buildPartialForm(older, [older.entityId]))
+        await postForm(server, buildPartialForm(newer, [newer.entityId, ...newer.contentHashes]))
+        olderCompletion = await postForm(server, buildPartialForm(older, older.contentHashes))
       })
 
-      it('should reject the older upload with 400 and keep the newer one pending', async () => {
-        expect(response.status).toBe(400)
-        expect(await pendingEntityIds(server)).toEqual([newer.entityId])
+      it('should reject the older completion with 400', () => {
+        expect(olderCompletion.status).toBe(400)
+      })
+
+      it('should not deploy the older entity', async () => {
+        expect(await countDeployments(server, older.entityId)).toBe(0)
       })
     })
   })
 
+  describe('when a batch arrives for an expired upload', () => {
+    let response: Response
+
+    beforeEach(async () => {
+      const deployment = await prepareSceneDeployment(
+        ['6,6'],
+        { 'a.txt': Buffer.from(`expired ${Date.now()}-${Math.random()}`) },
+        identity
+      )
+      await postForm(server, buildPartialForm(deployment, [deployment.entityId]))
+      await server.components.database.query(`UPDATE pending_deployments SET created_at = now() - interval '2 days'`)
+      response = await postForm(
+        server,
+        buildPartialForm(deployment, [deployment.entityId, ...deployment.contentHashes])
+      )
+    })
+
+    it('should reject the batch with 400 and ask for a newly signed entity', async () => {
+      expect({ status: response.status, body: await response.json() }).toEqual({
+        status: 400,
+        body: { errors: ['This upload expired. Create a new entity with a fresh timestamp.'] }
+      })
+    })
+  })
+
+  describe('when another signer sends a batch without the entity file', () => {
+    let response: Response
+
+    beforeEach(async () => {
+      const deployment = await prepareSceneDeployment(
+        ['7,7'],
+        { 'a.txt': Buffer.from(`read back ${Date.now()}-${Math.random()}`) },
+        identity
+      )
+      await postForm(server, buildPartialForm(deployment, [deployment.entityId]))
+      const otherIdentity = createIdentity()
+      const otherSignature = Authenticator.createSignature(otherIdentity, deployment.entityId)
+      const otherChain = Authenticator.createSimpleAuthChain(deployment.entityId, otherIdentity.address, otherSignature)
+      response = await postForm(
+        server,
+        buildPartialForm({ ...deployment, authChain: otherChain }, deployment.contentHashes)
+      )
+    })
+
+    it('should respond with a 400 asking for the entity file', () => {
+      expect(response.status).toBe(400)
+    })
+  })
+
+  describe('when recording progress over several batches', () => {
+    let inventoryCalls: number[]
+
+    beforeEach(async () => {
+      const nonce = `${Date.now()}-${Math.random()}`
+      const deployment = await prepareSceneDeployment(
+        ['8,8'],
+        { 'a.txt': Buffer.from(`progress a ${nonce}`), 'b.txt': Buffer.from(`progress b ${nonce}`) },
+        identity
+      )
+      const metadataSpy = jest.spyOn(server.components.storage, 'fileInfoMultiple')
+      inventoryCalls = []
+      await postForm(server, buildPartialForm(deployment, [deployment.entityId]))
+      inventoryCalls.push(metadataSpy.mock.calls.length)
+      metadataSpy.mockClear()
+      await postForm(server, buildPartialForm(deployment, [deployment.contentHashes[0]]))
+      inventoryCalls.push(metadataSpy.mock.calls.length)
+    })
+
+    it('should inventory storage on the first batch and not on intermediate ones', () => {
+      expect(inventoryCalls).toEqual([1, 0])
+    })
+  })
+
+  describe('when running the shared partial-deployment contract', () => {
+    let deployment: PreparedDeployment
+
+    beforeEach(async () => {
+      const nonce = `${Date.now()}-${Math.random()}`
+      deployment = await prepareSceneDeployment(
+        ['11,11'],
+        { 'a.txt': Buffer.from(`contract a ${nonce}`), 'b.txt': Buffer.from(`contract b ${nonce}`) },
+        identity
+      )
+    })
+
+    partialDeploymentContract(() => ({
+      entityId: deployment.entityId,
+      contentHashes: deployment.contentHashes,
+      send: (keys) => postForm(server, buildPartialForm(deployment, keys))
+    }))
+  })
 })

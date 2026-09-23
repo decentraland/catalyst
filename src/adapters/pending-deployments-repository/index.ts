@@ -1,2 +1,8 @@
 export { createPendingDeploymentsRepository } from './component'
-export type { IPendingDeploymentsRepository, PendingDeploymentRow, UpsertPendingDeployment } from './types'
+export type {
+  FileReceipt,
+  InsertPendingDeployment,
+  IPendingDeploymentsRepository,
+  PendingDeploymentRow,
+  ReservationTotals
+} from './types'

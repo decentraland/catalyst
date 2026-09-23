@@ -299,6 +299,10 @@ export enum EnvironmentConfig {
   PENDING_DEPLOYMENT_TTL,
   PENDING_DEPLOYMENTS_CLEANUP_INTERVAL,
   MAX_PENDING_DEPLOYMENTS_PER_DEPLOYER,
+  MAX_PENDING_BYTES_PER_DEPLOYER,
+  MAX_PENDING_BYTES,
+  MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE,
+  CONTENT_LOCK_CONNECTIONS,
   BLOOM_FILTER_EXPECTED_ELEMENTS,
   SEQUENTIAL_TASK_CONCURRENCY,
   ENTITIES_CACHE_CONTROL_MAX_AGE,
@@ -558,11 +562,25 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PENDING_DEPLOYMENTS_CLEANUP_INTERVAL, () =>
       parseMsEnv('PENDING_DEPLOYMENTS_CLEANUP_INTERVAL', ms('1h'))
     )
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_PENDING_DEPLOYMENTS_PER_DEPLOYER, () => {
-      const parsed = parseInt(process.env.MAX_PENDING_DEPLOYMENTS_PER_DEPLOYER ?? '', 10)
-      // Max concurrent non-expired pending (partial) uploads one deployer may have in flight. Floor at 1.
-      return Number.isNaN(parsed) ? 10 : Math.max(parsed, 1)
-    })
+    // Max pending (partial) uploads per deployer, including expired ones awaiting cleanup.
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_PENDING_DEPLOYMENTS_PER_DEPLOYER, () =>
+      parsePositiveIntEnv('MAX_PENDING_DEPLOYMENTS_PER_DEPLOYER', 10)
+    )
+    // Staged/reserved bytes per deployer and per server; expired uploads stay charged until cleanup.
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_PENDING_BYTES_PER_DEPLOYER, () =>
+      parsePositiveIntEnv('MAX_PENDING_BYTES_PER_DEPLOYER', 1024 ** 3)
+    )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_PENDING_BYTES, () =>
+      parsePositiveIntEnv('MAX_PENDING_BYTES', 50 * 1024 ** 3)
+    )
+    // Accepted partial batch bytes per deployer per fixed one-minute window, retries included.
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE, () =>
+      parsePositiveIntEnv('MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE', 512 * 1024 ** 2)
+    )
+    // Connections of the dedicated upload/GC advisory-lock pool, on top of PG_POOL_SIZE.
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CONTENT_LOCK_CONNECTIONS, () =>
+      parsePositiveIntEnv('CONTENT_LOCK_CONNECTIONS', 16)
+    )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.BLOOM_FILTER_EXPECTED_ELEMENTS, () => {
       const parsed = parseInt(process.env.BLOOM_FILTER_EXPECTED_ELEMENTS ?? '', 10)
       // Floor at 1: a 0/negative value would make BloomFilter.create() a degenerate 0-size filter.

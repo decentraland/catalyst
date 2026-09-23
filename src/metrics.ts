@@ -82,14 +82,30 @@ export const metricsDeclaration = validateMetricsDeclaration({
     // kind=(accepted|finalized|already_deployed|validation_error|error)
     labelNames: ['kind']
   },
-  dcl_pending_deployments_replaced_total: {
-    help: 'Pending deployments removed because a newer partial deployment overlapped their pointers',
+  dcl_pending_deployments_expired_total: {
+    help: 'Expired pending deployments reclaimed by the cleanup job',
     type: 'counter',
     labelNames: []
   },
-  dcl_pending_deployments_expired_total: {
-    help: 'Pending deployments removed by the expiry cleanup job',
+  dcl_partial_upload_metadata_checks_total: {
+    help: 'Content metadata checks performed by partial uploads',
     type: 'counter',
+    labelNames: []
+  },
+  dcl_partial_upload_batches_total: {
+    help: 'Accepted partial upload batches',
+    type: 'counter',
+    // outcome=(incomplete|finalizing)
+    labelNames: ['outcome']
+  },
+  dcl_partial_upload_reserved_bytes: {
+    help: 'Staging bytes reserved, including expired uploads awaiting cleanup',
+    type: 'gauge',
+    labelNames: []
+  },
+  dcl_partial_upload_cleanup_backlog_bytes: {
+    help: 'Expired staging bytes awaiting successful cleanup',
+    type: 'gauge',
     labelNames: []
   },
   dcl_ignored_sync_deployments: {

@@ -42,6 +42,7 @@ import { createSnapshotsRepository } from './adapters/snapshots-repository'
 // =============================================================================
 import { createContentValidator } from './adapters/content-validator'
 import { createDatabaseComponent } from './adapters/database'
+import { createContentLocks } from './adapters/content-locks'
 import { createDenylist } from './adapters/denylist'
 import { createDeployedEntitiesBloomFilter } from './adapters/deployed-entities-bloom-filter'
 import { createFailedDeployments } from './adapters/failed-deployments'
@@ -162,6 +163,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   // 4. Database + per-domain repositories
   // ---------------------------------------------------------------------------
   const database = await createDatabaseComponent({ logs, env, metrics })
+  const contentLocks = createContentLocks({ logs, env })
 
   const activeEntitiesRepository = createActiveEntitiesRepository()
   const contentFilesRepository = createContentFilesRepository()
@@ -277,7 +279,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     deployer,
     entities,
     deploymentsRepository,
-    pendingDeploymentsRepository
+    pendingDeploymentsRepository,
+    contentFilesRepository,
+    contentLocks
   })
 
   // ---------------------------------------------------------------------------
@@ -294,7 +298,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       contentFilesRepository,
       deploymentsRepository,
       pendingDeploymentsRepository,
-      snapshotsRepository
+      snapshotsRepository,
+      contentLocks
     },
     env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION),
     env.getConfig(EnvironmentConfig.PROFILE_DURATION),
@@ -565,6 +570,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   // Return
   // ---------------------------------------------------------------------------
   return {
+    contentLocks,
     activeEntities,
     activeEntitiesRepository,
     batchDeployer,

@@ -4,42 +4,56 @@ import { MigrationBuilder, ColumnDefinitions } from 'node-pg-migrate'
 export const shorthands: ColumnDefinitions | undefined = undefined
 
 export async function up(pgm: MigrationBuilder): Promise<void> {
-  // Staging area for partial (multi-request) deployments: an entity's content is uploaded across
-  // several POST /entities requests and lives here until every referenced file is present, at which
-  // point the row is deleted and the entity is deployed for real into `deployments`/`active_pointers`.
-  // This table is intentionally invisible to every sync/replication read path (snapshots,
-  // /pointer-changes, batchDeployer) — those only read `deployments`.
+  // Staging for partial (multi-request) deployments, keyed by entity id. Invisible to every sync and
+  // replication read path (snapshots, /pointer-changes, batchDeployer), which only read `deployments`.
   pgm.createTable('pending_deployments', {
     entity_id: { type: 'text', primaryKey: true },
     entity_type: { type: 'text', notNull: true },
     pointers: { type: 'text[]', notNull: true },
     content_hashes: { type: 'text[]', notNull: true },
+    // Stored lowercased.
     deployer_address: { type: 'text', notNull: true },
-    // The entity's own timestamp (deployment ordering). Overlapping pending uploads resolve by this so
-    // the single per-parcel-set slot goes to the newest scene, not merely the last writer.
-    entity_timestamp: { type: 'bigint', notNull: true },
     created_at: { type: 'timestamptz', notNull: true, default: pgm.func('now()') },
-    updated_at: { type: 'timestamptz', notNull: true, default: pgm.func('now()') }
+    updated_at: { type: 'timestamptz', notNull: true, default: pgm.func('now()') },
+    // True once the initial inventory of already-stored content has been recorded.
+    initialized: { type: 'boolean', notNull: true, default: false },
+    // Cached sum of pending_deployment_files.size, so admission scans uploads instead of receipts.
+    reserved_bytes: { type: 'bigint', notNull: true, default: 0 }
+  })
+  // Backs the GC referenced-hash check (`content_hashes && $1`).
+  pgm.sql('CREATE INDEX pending_deployments_content_hashes_gin_idx ON pending_deployments USING GIN (content_hashes)')
+  // Backs expiry sweeps and live-upload filters.
+  pgm.createIndex('pending_deployments', 'created_at', { name: 'pending_deployments_created_at_idx' })
+  // Backs the per-deployer upload count cap.
+  pgm.createIndex('pending_deployments', 'deployer_address', { name: 'pending_deployments_deployer_idx' })
+
+  // Byte reservations per staged file. `stored` separates completed writes and verified reused content
+  // from reservations; failed writes stay charged.
+  pgm.createTable('pending_deployment_files', {
+    entity_id: {
+      type: 'text',
+      notNull: true,
+      references: 'pending_deployments(entity_id)',
+      onDelete: 'CASCADE'
+    },
+    hash: { type: 'text', notNull: true },
+    size: { type: 'bigint', notNull: true, check: 'size >= 0' },
+    stored: { type: 'boolean', notNull: true, default: false }
+  })
+  pgm.addConstraint('pending_deployment_files', 'pending_deployment_files_pkey', {
+    primaryKey: ['entity_id', 'hash']
   })
 
-  // GIN on pointers backs the `pointers && $1` overlap query used to enforce "at most one pending
-  // deployment per parcel set" (a new partial deploy replaces overlapping ones).
-  pgm.sql('CREATE INDEX pending_deployments_pointers_gin_idx ON pending_deployments USING GIN (pointers)')
-  // GIN on content_hashes backs the garbage-collection referenced-hash check (`content_hashes && $1`).
-  pgm.sql('CREATE INDEX pending_deployments_content_hashes_gin_idx ON pending_deployments USING GIN (content_hashes)')
-  // B-tree on created_at backs expiry filters/deletes.
-  pgm.createIndex('pending_deployments', 'created_at', {
-    name: 'pending_deployments_created_at_idx',
-    ifNotExists: true
+  // Per-deployer accepted batch bytes in a fixed one-minute window, retries included.
+  pgm.createTable('partial_upload_rates', {
+    deployer_address: { type: 'text', primaryKey: true },
+    window_started: { type: 'timestamptz', notNull: true },
+    bytes: { type: 'bigint', notNull: true }
   })
-  // Backs the per-deployer concurrent-pending cap check, whose predicate is
-  // `LOWER(deployer_address) = $ AND created_at > $` — a functional index so the cap query doesn't
-  // scan all pending rows.
-  pgm.sql(
-    'CREATE INDEX pending_deployments_deployer_created_at_idx ON pending_deployments (LOWER(deployer_address), created_at)'
-  )
 }
 
 export async function down(pgm: MigrationBuilder): Promise<void> {
+  pgm.dropTable('partial_upload_rates')
+  pgm.dropTable('pending_deployment_files')
   pgm.dropTable('pending_deployments')
 }

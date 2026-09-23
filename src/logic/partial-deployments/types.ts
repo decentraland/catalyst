@@ -13,15 +13,14 @@ export type StageDeploymentResult =
 
 export interface IPartialDeployments {
   /**
-   * Stage one request's worth of a partial (multi-request) scene deployment. Authenticates and
-   * validates everything that doesn't require the full content set, stores the uploaded files, and
-   * records/refreshes the pending deployment. When the request completes the content set, it runs the
-   * full validation + deploy pipeline and returns `{ kind: 'deployed' }`; otherwise it returns
-   * `{ kind: 'incomplete' }` with the hashes still missing.
+   * Stages one batch of a partial (multi-request) scene deployment, keyed by entity id. Validates what
+   * doesn't need the full content set, reserves bytes, stores the batch and records progress. The batch
+   * that completes the content set is verified, deployed and returns `{ kind: 'deployed' }`; otherwise
+   * `{ kind: 'incomplete' }` lists the hashes still missing. Must run under the content lock.
    *
-   * Throws {@link InvalidPartialDeploymentError} for client errors (mapped to HTTP 400).
+   * Throws {@link InvalidPartialDeploymentError} for client errors.
    */
   stageDeployment(input: StageDeploymentInput): Promise<StageDeploymentResult>
-  /** Deletes pending deployments older than PENDING_DEPLOYMENT_TTL. Returns the number removed. */
+  /** Deletes expired uploads' unreferenced staged content, then releases their accounting. */
   cleanupExpired(): Promise<number>
 }
