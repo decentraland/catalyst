@@ -1,11 +1,11 @@
 import { EntityType } from '@dcl/schemas'
-import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import assert from 'assert'
 import ms from 'ms'
 import SQL from 'sql-template-strings'
 import { EnvironmentBuilder, EnvironmentConfig } from '../../../../src/Environment'
 import { stopAllComponents } from '../../../../src/logic/components-lifecycle'
 import { AppComponents } from '../../../../src/types'
+import { sleep } from '../../../../src/logic/sleep'
 import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/logic/server-validator/NoOpValidator'
 import { setupTestEnvironment } from '../../E2ETestEnvironment'
 import {

@@ -17,7 +17,15 @@ import { FailedDeployment } from '../../adapters/failed-deployments'
 import { DatabaseClient, DatabaseTransactionalClient } from '../../adapters/database'
 import { IGNORING_FIX_ERROR } from '../deployment-service'
 import { AppComponents, DeploymentField, DeploymentId, EntityVersion } from '../../types'
-import { DeploymentPointerChanges, IDeploymentsComponent } from './types'
+import {
+  DeploymentPointerChanges,
+  IDeploymentsComponent,
+  MappableDeploymentRow,
+  ThirdPartyItemDeploymentRow
+} from './types'
+
+const BASE_RETRY_INTERVAL_MS = 15 * 60 * 1000 // 15 minutes
+const MAX_RETRY_INTERVAL_MS = 24 * 60 * 60 * 1000 // 24 hours
 
 export async function isEntityDeployed(
   database: DatabaseClient,
@@ -78,40 +86,100 @@ export async function retryFailedDeploymentExecution(
   const concurrency = components.env.getConfig<number>(EnvironmentConfig.SYNC_DEPLOY_CONCURRENCY)
   const queue = new PQueue({ concurrency })
 
-  // TODO: Implement an exponential backoff for retrying
+  const maxRetries = components.env.getConfig<number>(EnvironmentConfig.MAX_FAILED_DEPLOYMENT_RETRIES)
+  const now = Date.now()
+  const exhaustedEntityIds: string[] = []
+
   for (const failedDeployment of failedDeployments) {
-    // Build Deployment from other servers
     const { entityId, entityType, authChain } = failedDeployment
+    const retryCount = failedDeployment.retryCount ?? 0
+    const nextRetryAt = failedDeployment.nextRetryAt ?? 0
 
     if (!authChain) {
       logs.info(`Can't retry failed deployment. Because it lacks of authChain`, { entityId, entityType })
       continue
     }
 
-    void queue.add(async () => {
-      logs.debug(`Will retry to deploy entity`, { entityId, entityType })
-      try {
-        await components.batchDeployer.deployEntityFromRemoteServer(
+    if (retryCount >= maxRetries) {
+      logs.warn(`Permanently giving up on failed deployment after ${retryCount} attempts`, { entityId, entityType })
+      exhaustedEntityIds.push(entityId)
+      continue
+    }
+
+    if (nextRetryAt > now) {
+      logs.debug(`Skipping failed deployment until backoff expires`, {
+        entityId,
+        entityType,
+        retryCount,
+        nextRetryInSeconds: Math.round((nextRetryAt - now) / 1000)
+      })
+      continue
+    }
+
+    // `.catch` is load-bearing, not defensive: the task's own catch block awaits `reportFailure`,
+    // which writes to the database and can throw. A rejection on a discarded promise takes the
+    // process down under Node's default unhandled-rejection policy.
+    void queue
+      .add(async () => {
+        logs.debug(`Will retry to deploy entity`, { entityId, entityType, retryCount })
+        try {
+          await components.batchDeployer.deployEntityFromRemoteServer(
+            entityId,
+            entityType,
+            authChain,
+            contentServersUrls,
+            DeploymentContext.FIX_ATTEMPT
+          )
+
+          // A retry can succeed without the deploy path clearing the row: `deployEntity()`
+          // treats an already-deployed entity as an idempotent no-op and returns before
+          // reaching its `removeFailedDeployment()` cleanup. Without this the entry stays
+          // due forever and is retried every cycle until it hits the max-retry cap, even
+          // though nothing is actually failing. Removing here is idempotent — on the normal
+          // success path the deploy already evicted it and this is a cheap cache-miss bail.
+          await components.failedDeployments.removeFailedDeployment(entityId)
+        } catch (error) {
+          const errorDescription = error instanceof Error ? error.message : String(error)
+
+          if (!errorDescription.includes(IGNORING_FIX_ERROR)) {
+            const nextRetryAt = Date.now() + Math.min(BASE_RETRY_INTERVAL_MS * 2 ** retryCount, MAX_RETRY_INTERVAL_MS)
+            if (errorDescription.includes('currently being deployed')) {
+              // Another deploy held the pointer at that instant, so the entity was never evaluated.
+              // Defer it like a failure at this stage but keep the count: the cap must only evict
+              // entities that were actually rejected, and the failing side backs off faster than the
+              // conflicting side, so two entries colliding on a pointer drift apart within a few cycles.
+              await components.failedDeployments.reportFailure({ ...failedDeployment, nextRetryAt })
+            } else {
+              await components.failedDeployments.reportFailure({
+                ...failedDeployment,
+                errorDescription,
+                retryCount: retryCount + 1,
+                nextRetryAt
+              })
+            }
+          }
+
+          logs.error(`Failed to fix deployment of entity`, { entityId, entityType, retryCount, errorDescription })
+        }
+      })
+      .catch((error) =>
+        logs.error(`Unexpected error while retrying deployment`, {
           entityId,
           entityType,
-          authChain,
-          contentServersUrls,
-          DeploymentContext.FIX_ATTEMPT
-        )
-      } catch (error) {
-        // it failed again, override failed deployment error description
-        const errorDescription = error instanceof Error ? error.message : String(error)
-
-        if (!errorDescription.includes(IGNORING_FIX_ERROR)) {
-          await components.failedDeployments.reportFailure({ ...failedDeployment, errorDescription })
-        }
-
-        logs.error(`Failed to fix deployment of entity`, { entityId, entityType, errorDescription })
-      }
-    })
+          errorDescription: error instanceof Error ? error.message : String(error)
+        })
+      )
   }
 
-  await queue.onIdle()
+  // Batched after the scan so give-up deletes never block scheduling, and overlap with the retries
+  // already running. `finally` so a rejected DELETE still drains the in-flight retries.
+  try {
+    if (exhaustedEntityIds.length > 0) {
+      await components.failedDeployments.removeExhaustedFailedDeployments(exhaustedEntityIds, maxRetries)
+    }
+  } finally {
+    await queue.onIdle()
+  }
 }
 
 export function mapDeploymentsToEntities(deployments: Deployment[]): Entity[] {
@@ -195,7 +263,10 @@ export function buildDeploymentFromHistoricalDeployment(
   }
 }
 
-export function buildHistoricalDeploymentsFromRow(row: HistoricalDeploymentsRow): HistoricalDeployment {
+// Takes only the columns it reads, so rows from sources that expose a subset of `deployments`
+// (such as the third-party materialized view, which has no `deleter_deployment`) can be mapped
+// without claiming columns they do not carry.
+export function buildHistoricalDeploymentsFromRow(row: MappableDeploymentRow): HistoricalDeployment {
   return {
     deploymentId: row.id,
     entityType: row.entity_type,
@@ -359,19 +430,26 @@ export const createDeploymentsComponent = (
       SELECT * FROM active_third_party_collection_items_deployments_with_content
       WHERE entity_id = ANY(${entityIds});
     `
-    const deployments = await database.queryWithValues<
-      HistoricalDeploymentsRow & { content_keys: string[]; content_hashes: string[] }
-    >(query, 'get_deployments_for_active_third_party_collection_items_by_entity_ids')
+    const deployments = await database.queryWithValues<ThirdPartyItemDeploymentRow>(
+      query,
+      'get_deployments_for_active_third_party_collection_items_by_entity_ids'
+    )
+    // The view exposes the deployment key as `deployment_id`, so rows must be keyed and looked up by
+    // that column. Keying by the absent `id` collapsed every row onto a single `undefined` entry and
+    // served the last row's files as the content of every entity in the batch.
     const contents = new Map<DeploymentId, DeploymentContent[]>(
       deployments.rows.map((row) => [
-        row.id,
+        row.deployment_id,
         row.content_keys.map((content_key, index) => ({ key: content_key, hash: row.content_hashes[index] }))
       ])
     )
 
     return deployments.rows.map(
-      (row: HistoricalDeploymentsRow & { content_keys: string[]; content_hashes: string[] }): Deployment =>
-        buildDeploymentFromHistoricalDeployment(buildHistoricalDeploymentsFromRow(row), contents)
+      (row: ThirdPartyItemDeploymentRow): Deployment =>
+        buildDeploymentFromHistoricalDeployment(
+          buildHistoricalDeploymentsFromRow({ ...row, id: row.deployment_id }),
+          contents
+        )
     )
   }
 

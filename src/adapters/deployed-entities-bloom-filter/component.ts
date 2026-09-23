@@ -1,4 +1,4 @@
-import { TimeRange } from '@dcl/snapshots-fetcher/dist/types'
+import { TimeRange } from '@dcl/snapshots-fetcher'
 import { IBaseComponent } from '@well-known-components/interfaces'
 import * as bf from 'bloom-filters'
 import future from 'fp-future'

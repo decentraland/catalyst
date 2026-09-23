@@ -1,6 +1,6 @@
 import { AuthChain } from '@dcl/crypto'
 import { Entity, EntityType, SnapshotSyncDeployment } from '@dcl/schemas'
-import { TimeRange } from '@dcl/snapshots-fetcher/dist/types'
+import { TimeRange } from '@dcl/snapshots-fetcher'
 import { AuditInfo, DeploymentFilters, DeploymentSorting } from '../../deployment-types'
 import { DatabaseClient, DatabaseTransactionalClient } from '../../adapters/database'
 import { DeploymentId } from '../../types'

@@ -1,4 +1,4 @@
-import { SnapshotMetadata, TimeRange } from '@dcl/snapshots-fetcher/dist/types'
+import { SnapshotMetadata, TimeRange } from '@dcl/snapshots-fetcher'
 import { createFileWriter, IFile } from '../../adapters/content-file-writer'
 import { DatabaseClient } from '../../adapters/database'
 import { AppComponents } from '../../types'

@@ -5,10 +5,11 @@ import { createFolderBasedFileSystemContentStorage, createFsComponent } from '@d
 import type { L1Network } from '@dcl/catalyst-contracts'
 import { createServerComponent, instrumentHttpServerWithPromClientRegistry } from '@dcl/http-server'
 import { createJobComponent } from '@dcl/job-component'
+import { createInMemoryCacheComponent } from '@dcl/memory-cache-component'
 import { createMetricsComponent } from '@dcl/metrics'
+import { createRateLimiterComponent } from '@dcl/rate-limiter-component'
 import { EthAddress } from '@dcl/schemas'
-import { createSynchronizer } from '@dcl/snapshots-fetcher'
-import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
+import { createJobQueue, createSynchronizer } from '@dcl/snapshots-fetcher'
 import { createTracedFetcherComponent } from '@dcl/traced-fetch-component'
 import { createFetchComponent } from '@dcl/fetch-component'
 import { toCoreFetcher } from './logic/to-core-fetcher'
@@ -87,7 +88,12 @@ import { AppComponents, GlobalContext } from './types'
  *   9. Background workers (GC, batch deployer, snapshot generator, retry)
  *   10. Synchronizer + sync state
  *   11. HTTP server
+ *   12. Rate limiting
  */
+
+// Bounds how many distinct clients are tracked at once. Overflow evicts by LRU, which fails open.
+const RATE_LIMITER_CACHE_MAX_KEYS = 50_000
+
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
   // ---------------------------------------------------------------------------
   // 1. Bootstrap primitives
@@ -366,7 +372,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     {
       logs,
       downloadQueue,
-      // snapshots-fetcher@10 types its fetcher via @dcl/core-commons; `fetcher` is the same native
+      // snapshots-fetcher@11 types its fetcher via @dcl/core-commons; `fetcher` is the same native
       // runtime value stored under the WKC type, so assert the core-commons type at this boundary.
       fetcher: toCoreFetcher(fetcher),
       metrics,
@@ -469,12 +475,21 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     {
       cors: {
         // Requests are authenticated by signature (auth-chain), not cookies/sessions, so credentialed
-        // CORS is unnecessary — and `origin: true` + `credentials: true` is the wildcard-with-credentials
-        // pattern that would let any site ride a user's credentials the moment cookie auth is added.
-        origin: true,
-        methods: ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-        allowedHeaders: ['Cache-Control', 'Content-Type', 'Origin', 'Accept', 'User-Agent', 'X-Upload-Origin'],
-        maxAge: 86400
+        // CORS is unnecessary — and `*` + `credentials: true` is the wildcard-with-credentials pattern
+        // that would let any site ride a user's credentials the moment cookie auth is added.
+        origin: '*',
+        methods: ['GET', 'HEAD', 'POST', 'OPTIONS'],
+        // No `allowedHeaders` on purpose: the preflight reflects whatever was requested. ADR-44 sends
+        // `X-Identity-Auth-Chain-<N>` for an open-ended N, so any fixed list has to guess a chain depth.
+        //
+        // Without this a browser can read only the six CORS-safelisted response headers, so `ETag`
+        // (conditional requests), `Retry-After` and the `RateLimit-*` triplet (a throttled deployer
+        // pacing itself) are all invisible to JS even though we send them. `*` avoids a list that has
+        // to be extended every time a response grows a header. It works because this API is
+        // signature-authenticated rather than cookie-authenticated: the wildcard is ignored for a
+        // credentialed request, so enabling `credentials` would silently hide these again.
+        exposedHeaders: ['*'],
+        maxAge: 600
       }
     }
   )
@@ -499,6 +514,36 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     stop: stopServer,
     [START_COMPONENT]: startServer,
     [STOP_COMPONENT]: stopServer
+  }
+
+  // ---------------------------------------------------------------------------
+  // 12. Rate limiting
+  // ---------------------------------------------------------------------------
+  // Its own cache instance: counter churn would evict whatever else shared the LRU. It has no
+  // lifecycle (no start/stop), so there is nothing to register for shutdown.
+  const trustedClientIpHeader = env.getConfig<string | undefined>(EnvironmentConfig.TRUSTED_CLIENT_IP_HEADER)
+  const rateLimiterLogger = logs.getLogger('rate-limiter')
+  const rateLimiter = createRateLimiterComponent<GlobalContext>(
+    { cache: createInMemoryCacheComponent({ max: RATE_LIMITER_CACHE_MAX_KEYS }), logs, metrics },
+    {
+      // Process-level only. A budget set here would become the default for every mount and for
+      // `consume()`, so the endpoint's own lives at its mount in `controllers/routes.ts`.
+      keyPrefix: 'catalyst-content:rl',
+      trustedClientIpHeader,
+      // Only to match this server's error shape: everything else returns `{ error }` while the
+      // component's built-in 429 is `{ ok, message }`. It still adds `Retry-After` to a custom body.
+      buildLimitExceededResponse: () => ({ status: 429, body: { error: 'Too many requests' } })
+    }
+  )
+
+  // Warn at startup rather than per request: any client can send a forwarding header, so its
+  // presence proves nothing and would let an outsider raise this.
+  if (!trustedClientIpHeader) {
+    rateLimiterLogger.warn(
+      'TRUSTED_CLIENT_IP_HEADER is unset, so POST /entities is rate limited by socket address. That is ' +
+        'correct only if this process is reached directly; behind a proxy every client shares one budget. ' +
+        'Watch the key_source label on rate_limiter_requests_total to tell which is happening.'
+    )
   }
 
   const buildInfo = {
@@ -550,6 +595,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     metrics,
     migrationManager,
     pointersRepository,
+    rateLimiter,
     sequentialExecutor,
     server,
     snapshotGenerationJob,

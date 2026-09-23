@@ -1,6 +1,6 @@
 import { EthereumProvider } from '@dcl/block-indexer'
-import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import RequestManager, { HTTPProvider } from 'eth-connect'
+import { sleep } from '../../logic/sleep'
 
 // Block lookups during validation hit a single RPC provider that has no built-in retry. A
 // transient RPC error, or a momentarily-lagging replica that hasn't indexed the block yet,

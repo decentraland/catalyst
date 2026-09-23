@@ -1,4 +1,4 @@
-import { SimpleContentItem } from '@dcl/catalyst-storage/dist/content-item'
+import { SimpleContentItem } from '@dcl/catalyst-storage'
 import { Entity, EntityType, PointerChangesSyncDeployment } from '@dcl/schemas'
 import { random } from 'faker'
 import { randomEntity } from '../helpers/entity-tests-helper'

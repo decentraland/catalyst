@@ -1,6 +1,6 @@
 import { Authenticator } from '@dcl/crypto'
 import { Entity } from '@dcl/schemas'
-import { TimeRange } from '@dcl/snapshots-fetcher/dist/types'
+import { TimeRange } from '@dcl/snapshots-fetcher'
 import pg from 'pg'
 import SQL, { SQLStatement } from 'sql-template-strings'
 import { AuditInfo, DeploymentFilters, DeploymentSorting, SortingField, SortingOrder } from '../../deployment-types'

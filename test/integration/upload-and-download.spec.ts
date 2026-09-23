@@ -1,5 +1,4 @@
 import { Entity } from '@dcl/schemas'
-import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { DeploymentData } from 'dcl-catalyst-client/dist/client/utils/DeploymentBuilder'
 import { makeNoopValidator } from '../helpers/logic/server-validator/NoOpValidator'
 import { assertDeploymentsAreReported, buildDeployment } from './E2EAssertions'
@@ -8,6 +7,7 @@ import { getIntegrationResourcePathFor } from './resources/get-resource-path'
 import { TestProgram } from './TestProgram'
 import LeakDetector from 'jest-leak-detector'
 import { createDefaultServer, resetServer } from './simpleTestEnvironment'
+import { sleep } from '../../src/logic/sleep'
 
 const POINTER0 = 'X0,Y0'
 const POINTER1 = 'X1,Y1'

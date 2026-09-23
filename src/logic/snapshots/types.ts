@@ -1,4 +1,4 @@
-import { SnapshotMetadata, TimeRange } from '@dcl/snapshots-fetcher/dist/types'
+import { SnapshotMetadata, TimeRange } from '@dcl/snapshots-fetcher'
 import { DatabaseClient } from '../../adapters/database'
 
 export interface ISnapshots {

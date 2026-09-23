@@ -20,6 +20,8 @@ export type FailedDeployment = {
   authChain: AuthChain
   errorDescription: string
   snapshotHash?: string
+  retryCount?: number
+  nextRetryAt?: number
 }
 
 export type SnapshotFailedDeployment = FailedDeployment & Required<Pick<FailedDeployment, 'snapshotHash'>>
@@ -43,7 +45,10 @@ export type IFailedDeploymentsComponent = {
   // `cacheFailedDeployment` after the transaction has committed. See the component
   // jsdoc for why this split is load-bearing.
   /** Persist a snapshot-failed deployment via SQL. Does not update the cache. */
-  saveSnapshotFailedDeployment(db: DatabaseClient, deployment: SnapshotFailedDeployment): Promise<void>
+  saveSnapshotFailedDeployment(
+    db: DatabaseClient,
+    deployment: SnapshotFailedDeployment
+  ): Promise<{ retryCount: number; nextRetryAt: number }>
   /** Delete a failed deployment via SQL. Does not update the cache. */
   deleteFailedDeployment(db: DatabaseClient, entityId: string): Promise<void>
 
@@ -61,6 +66,15 @@ export type IFailedDeploymentsComponent = {
    * evict can safely follow the SQL. Skips work if the entity isn't currently cached.
    */
   removeFailedDeployment(entityId: string): Promise<void>
+  /**
+   * Batched give-up: deletes the rows for `entityIds` that are still at or above `minRetryCount`,
+   * one DELETE per chunk instead of a round-trip each. The guard means a decision taken against an
+   * earlier snapshot can't wipe an entry that was cleared and has since failed afresh with a lower
+   * count. The cache evicts exactly the rows the DELETE reports, so it tracks the table even when
+   * the guard spares a row; a rejected chunk leaves its entries in both. Like every write here it is
+   * serialized per entity, so a report that overlaps the delete runs after the eviction.
+   */
+  removeExhaustedFailedDeployments(entityIds: string[], minRetryCount: number): Promise<void>
   /**
    * High-level: report a deployment failure. For snapshot deployments, persists to SQL
    * (in a transaction if the entity is already failed, otherwise plain insert). For

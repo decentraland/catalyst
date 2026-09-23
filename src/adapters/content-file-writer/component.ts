@@ -1,5 +1,4 @@
 import { hashV1 } from '@dcl/hashing'
-import { checkFileExists } from '@dcl/snapshots-fetcher/dist/utils'
 import crypto from 'crypto'
 import path from 'path'
 import { AppComponents } from '../../types'
@@ -15,7 +14,7 @@ export async function createFileWriter(
 
   // if the process failed while creating the snapshot last time the file may still exists
   // deleting the staging tmpFile just in case
-  if (await checkFileExists(filePath)) {
+  if (await components.fs.existPath(filePath)) {
     await components.fs.unlink(filePath)
   }
 
@@ -51,7 +50,7 @@ export async function createFileWriter(
   }
 
   async function deleteFile() {
-    if (await checkFileExists(filePath)) {
+    if (await components.fs.existPath(filePath)) {
       try {
         await components.fs.unlink(filePath)
       } catch (err) {

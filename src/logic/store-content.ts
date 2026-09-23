@@ -1,5 +1,4 @@
-import { IContentStorageComponent } from '@dcl/catalyst-storage'
-import { bufferToStream } from '@dcl/catalyst-storage/dist/content-item'
+import { bufferToStream, IContentStorageComponent } from '@dcl/catalyst-storage'
 
 // How many content files to write to storage at once. They are independent content-addressed objects,
 // so storing them in bounded-parallel batches (rather than one awaited PUT at a time) speeds up

@@ -1,4 +1,4 @@
-import { bufferToStream } from '@dcl/catalyst-storage/dist/content-item'
+import { bufferToStream } from '@dcl/catalyst-storage'
 import { IBaseComponent } from '@well-known-components/interfaces'
 import { mkdirSync, mkdtempSync, rmSync } from 'fs'
 import os from 'os'

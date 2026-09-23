@@ -1,4 +1,3 @@
-import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { IDatabase } from '@well-known-components/interfaces'
 import { ClientConfig, Pool, PoolClient, PoolConfig } from 'pg'
 import QueryStream from 'pg-query-stream'
@@ -6,6 +5,7 @@ import { SQLStatement } from 'sql-template-strings'
 import { EnvironmentConfig } from '../../Environment'
 import { AppComponents } from '../../types'
 import { DatabaseTransactionalClient, IDatabaseComponent } from './types'
+import { sleep } from '../../logic/sleep'
 
 // Max connections for the dedicated streaming pool. Kept small: stream queries are few and
 // long-lived, and each generator holds one connection for its whole duration.

@@ -51,7 +51,9 @@ describe('when reporting a failure end-to-end against a real database', () => {
 
     it('should persist the new deployment so a fresh cache reload sees both rows', async () => {
       const failed = await reReadCache.getAllFailedDeployments()
-      expect(failed).toEqual(expect.arrayContaining([baseDeployment, newDeployment]))
+      expect(failed).toEqual(
+        expect.arrayContaining([expect.objectContaining(baseDeployment), expect.objectContaining(newDeployment)])
+      )
     })
   })
 
@@ -69,7 +71,7 @@ describe('when reporting a failure end-to-end against a real database', () => {
     it('should leave a single row in the database with the updated failure timestamp', async () => {
       const failed = await reReadCache.getAllFailedDeployments()
       expect(failed).toHaveLength(1)
-      expect(failed[0]).toEqual(updatedDeployment)
+      expect(failed[0]).toEqual(expect.objectContaining(updatedDeployment))
     })
   })
 })

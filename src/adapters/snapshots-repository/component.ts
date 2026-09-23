@@ -1,5 +1,5 @@
 import { SnapshotSyncDeployment } from '@dcl/schemas'
-import { SnapshotMetadata, TimeRange } from '@dcl/snapshots-fetcher/dist/types'
+import { SnapshotMetadata, TimeRange } from '@dcl/snapshots-fetcher'
 import SQL from 'sql-template-strings'
 import { DatabaseClient } from '../../adapters/database'
 import { ISnapshotsRepository } from './types'
