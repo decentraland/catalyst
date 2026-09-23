@@ -1,3 +1,4 @@
+import { STOP_COMPONENT } from '@well-known-components/interfaces'
 import { IdentityType } from '@dcl/crypto'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { makeNoopValidator } from '../../helpers/logic/server-validator/NoOpValidator'
@@ -53,6 +54,8 @@ describe('Integration - Partial upload accounting', () => {
       [EnvironmentConfig.MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE]: 100_000,
       [EnvironmentConfig.MAX_PENDING_DEPLOYMENTS_PER_DEPLOYER]: 3
     })
+    // The scheduled cleanup runs once at startup and could reclaim an upload a test just expired.
+    await server.components.pendingDeploymentsCleanupJob[STOP_COMPONENT]?.()
     await resetServer(server)
     makeNoopValidator(server.components)
     identity = createIdentity()
@@ -182,7 +185,14 @@ describe('Integration - Partial upload accounting', () => {
       let response: Response
 
       beforeEach(async () => {
-        jest.spyOn(server.components.storage, 'delete').mockRejectedValueOnce(new Error('storage unavailable'))
+        // Fail only this upload's deletes: background jobs (e.g. snapshot generation) also call delete.
+        const deleteContent = server.components.storage.delete.bind(server.components.storage)
+        jest.spyOn(server.components.storage, 'delete').mockImplementation(async (keys: string[]) => {
+          if (keys.includes(largeHash(expired))) {
+            throw new Error('storage unavailable')
+          }
+          return deleteContent(keys)
+        })
         cleanupError = await server.components.partialDeployments.cleanupExpired().then(
           () => undefined,
           (error: Error) => error.message
