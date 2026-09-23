@@ -3,7 +3,7 @@ import { IHttpServerComponent } from '@dcl/core-commons'
 import { AppComponents } from '../types'
 import { State } from '../logic/sync-orchestrator'
 import { Error } from '@dcl/catalyst-api-specs/lib/client'
-import { InvalidRequestError, NotFoundError, PayloadTooLargeError } from './errors'
+import { InvalidRequestError, NotFoundError, PayloadTooLargeError, ServiceUnavailableError } from './errors'
 import { Middleware } from '@dcl/http-server/dist/middleware'
 
 export function preventExecutionIfBoostrapping({
@@ -40,6 +40,9 @@ function handleError(logger: ILoggerComponent.ILogger, error: any): { status: nu
   }
   if (error instanceof PayloadTooLargeError) {
     return { status: 413, body: { error: error.message } }
+  }
+  if (error instanceof ServiceUnavailableError) {
+    return { status: 503, body: { error: error.message } }
   }
 
   logger.error(error)

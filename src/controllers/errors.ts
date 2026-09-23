@@ -34,3 +34,11 @@ export class PayloadTooLargeError extends Error {
     Error.captureStackTrace(this, this.constructor)
   }
 }
+
+export class ServiceUnavailableError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'ServiceUnavailableError'
+    Error.captureStackTrace(this, this.constructor)
+  }
+}

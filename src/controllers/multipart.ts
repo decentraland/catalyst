@@ -4,7 +4,8 @@ import busboy from 'busboy'
 import { Readable } from 'stream'
 import { pipeline } from 'stream/promises'
 import { FormDataContext } from '../types'
-import { InvalidRequestError, PayloadTooLargeError } from './errors'
+import { IUploadBudget, UploadBudgetExceededError, UploadBudgetLease } from '../adapters/upload-budget'
+import { InvalidRequestError, PayloadTooLargeError, ServiceUnavailableError } from './errors'
 
 /**
  * Limits applied to a multipart request before its contents are buffered into memory.
@@ -35,7 +36,8 @@ export type MultipartLimits = {
 
 export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T extends IHttpServerComponent.IResponse>(
   handler: (ctx: Ctx) => Promise<T>,
-  limits: MultipartLimits = {}
+  limits: MultipartLimits = {},
+  uploadBudget?: IUploadBudget
 ): (ctx: IHttpServerComponent.DefaultContext<U>) => Promise<T> {
   return async function (ctx: IHttpServerComponent.DefaultContext<U>): Promise<T> {
     const { maxTotalSize } = limits
@@ -43,14 +45,38 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
     // Reject an upload whose declared Content-Length already exceeds the total budget, before we read
     // (and buffer) any of the body. A request that lies about or omits Content-Length is still bounded
     // by the cumulative `totalBytes` guard below, which stops once the buffered bytes exceed the cap.
-    if (maxTotalSize !== undefined) {
-      const declaredSize = parseInt(ctx.request.headers.get('content-length') || '', 10)
-      if (!isNaN(declaredSize) && declaredSize > maxTotalSize) {
-        throw new PayloadTooLargeError(
-          `The request body is too large. The maximum allowed total upload size is ${maxTotalSize} bytes.`
-        )
-      }
+    const declaredSize = parseInt(ctx.request.headers.get('content-length') || '', 10)
+    if (maxTotalSize !== undefined && !isNaN(declaredSize) && declaredSize > maxTotalSize) {
+      throw new PayloadTooLargeError(
+        `The request body is too large. The maximum allowed total upload size is ${maxTotalSize} bytes.`
+      )
     }
+
+    // Reserve the declared size before reading the body, so a full budget sheds the upload unread.
+    const initialReservation = Number.isSafeInteger(declaredSize) && declaredSize > 0 ? declaredSize : 0
+    let lease: UploadBudgetLease | undefined
+    try {
+      lease = uploadBudget?.acquire(initialReservation)
+    } catch (error) {
+      if (error instanceof UploadBudgetExceededError) {
+        throw new ServiceUnavailableError(error.message)
+      }
+      throw error
+    }
+    try {
+      return await parseAndHandle(ctx, lease, initialReservation)
+    } finally {
+      // Files stay buffered until the handler returns.
+      lease?.release()
+    }
+  }
+
+  async function parseAndHandle(
+    ctx: IHttpServerComponent.DefaultContext<U>,
+    lease: UploadBudgetLease | undefined,
+    initialReservation: number
+  ): Promise<T> {
+    const { maxTotalSize } = limits
 
     let formDataParser: ReturnType<typeof busboy>
     try {
@@ -91,7 +117,16 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       aborted = true
       formDataParser.destroy(error)
     }
+    let reservedBytes = initialReservation
     const rejectIfOverTotal = (): boolean => {
+      // A body larger than its declared size (or without one) grows the reservation as it arrives.
+      if (lease && totalBytes > reservedBytes) {
+        if (!lease.resize(totalBytes)) {
+          abort(new ServiceUnavailableError('Server is buffering too many uploads, please retry shortly.'))
+          return true
+        }
+        reservedBytes = totalBytes
+      }
       if (maxTotalSize !== undefined && totalBytes > maxTotalSize) {
         abort(
           new PayloadTooLargeError(
@@ -183,7 +218,7 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       // Our own size-limit rejections keep their 413 status. Any other failure means we couldn't
       // parse the request body (a malformed, truncated, or empty multipart body, or a mid-upload
       // disconnect) — that's a client error (400), not an internal 500.
-      if (error instanceof PayloadTooLargeError) {
+      if (error instanceof PayloadTooLargeError || error instanceof ServiceUnavailableError) {
         throw error
       }
       throw new InvalidRequestError('Invalid multipart/form-data request')

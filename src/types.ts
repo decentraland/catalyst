@@ -26,6 +26,7 @@ import { IContentFilesRepository } from './adapters/content-files-repository'
 import { Denylist } from './adapters/denylist'
 import { IDeploymentsRepository } from './adapters/deployments-repository'
 import { IPendingDeploymentsRepository } from './adapters/pending-deployments-repository'
+import { IUploadBudget } from './adapters/upload-budget'
 import { IContentLocks } from './adapters/content-locks'
 import { IPointersRepository } from './adapters/pointers-repository'
 import { ISnapshotsRepository } from './adapters/snapshots-repository'
@@ -119,8 +120,9 @@ export type AppComponents = {
   garbageCollectionManager: IGarbageCollectionComponent
   systemProperties: SystemProperties
   server: IHttpServerComponent<GlobalContext>
-  /** Per-client request budget, currently mounted only on POST /entities. */
+  /** Per-client request budget for regular (non-partial) POST /entities deployments. */
   rateLimiter: IRateLimiterComponent<GlobalContext>
+  uploadBudget: IUploadBudget
   activeEntities: ActiveEntities
   sequentialExecutor: ISequentialTaskExecutorComponent
   denylist: Denylist

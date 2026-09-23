@@ -43,6 +43,7 @@ import { createSnapshotsRepository } from './adapters/snapshots-repository'
 import { createContentValidator } from './adapters/content-validator'
 import { createDatabaseComponent } from './adapters/database'
 import { createContentLocks } from './adapters/content-locks'
+import { createUploadBudget } from './adapters/upload-budget'
 import { createDenylist } from './adapters/denylist'
 import { createDeployedEntitiesBloomFilter } from './adapters/deployed-entities-bloom-filter'
 import { createFailedDeployments } from './adapters/failed-deployments'
@@ -541,6 +542,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     }
   )
 
+  // Bounds POST /entities bodies buffered at once; partial batches count only against this.
+  const uploadBudget = createUploadBudget({ env, metrics })
+
   // Warn at startup rather than per request: any client can send a forwarding header, so its
   // presence proves nothing and would let an outsider raise this.
   if (!trustedClientIpHeader) {
@@ -613,6 +617,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     syncOrchestrator,
     systemProperties,
     tracer,
+    uploadBudget,
     validator,
     queryParams,
     entities,
