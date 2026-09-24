@@ -28,6 +28,7 @@ import { Denylist } from './adapters/denylist'
 import { IDeploymentsRepository } from './adapters/deployments-repository'
 import { IPendingDeploymentsRepository } from './adapters/pending-deployments-repository'
 import { IUploadBudget } from './adapters/upload-budget'
+import { IUploadSpool } from './adapters/upload-spool'
 import { IContentLocks } from './adapters/content-locks'
 import { IPointersRepository } from './adapters/pointers-repository'
 import { ISnapshotsRepository } from './adapters/snapshots-repository'
@@ -137,6 +138,8 @@ export type AppComponents = {
   uploadBudget: IUploadBudget
   /** Bounds regular deployment files read into memory. */
   deploymentMemoryBudget: IUploadBudget
+  /** This process's leased folder for POST /entities spools. */
+  uploadSpool: IUploadSpool
   activeEntities: ActiveEntities
   sequentialExecutor: ISequentialTaskExecutorComponent
   denylist: Denylist

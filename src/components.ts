@@ -44,7 +44,7 @@ import { createContentValidator } from './adapters/content-validator'
 import { createDatabaseComponent } from './adapters/database'
 import { createContentLocks } from './adapters/content-locks'
 import { createUploadBudget } from './adapters/upload-budget'
-import { prepareUploadSpool } from './logic/upload-spool'
+import { createUploadSpool } from './adapters/upload-spool'
 import { createDenylist } from './adapters/denylist'
 import { createDeployedEntitiesBloomFilter } from './adapters/deployed-entities-bloom-filter'
 import { createFailedDeployments } from './adapters/failed-deployments'
@@ -139,8 +139,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const contentStorageFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
   const tmpDownloadFolder = path.join(contentStorageFolder, '_tmp')
   await fs.mkdir(tmpDownloadFolder, { recursive: true })
-  // Per-request spools of POST /entities bodies, in a folder unique to this process.
-  const uploadTmpFolder = await prepareUploadSpool(path.join(contentStorageFolder, '_uploads'))
+  // Per-request spools of POST /entities bodies, in a folder this process holds under a lease.
+  const uploadSpool = await createUploadSpool(path.join(contentStorageFolder, '_uploads'))
+  const uploadTmpFolder = uploadSpool.folder
   const staticConfigs = {
     contentStorageFolder,
     tmpDownloadFolder,
@@ -624,6 +625,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     tracer,
     uploadBudget,
     deploymentMemoryBudget,
+    uploadSpool,
     validator,
     queryParams,
     entities,
