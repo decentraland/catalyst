@@ -162,7 +162,7 @@ export function createPartialDeployments(
     ])
     // The read-back is outside the multipart byte budget, so gate it before any storage I/O: a locally
     // valid signature (any key can sign any id) AND a live upload created by this same signer.
-    const signature = await Authenticator.validateSignature(entityId, authChain, null, Date.now())
+    const signature = await crypto.validateSignature(entityId, authChain, Date.now())
     if (!signature.ok) {
       throw mustInclude
     }
