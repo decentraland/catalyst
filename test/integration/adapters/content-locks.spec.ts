@@ -55,4 +55,43 @@ describe('Integration - content locks', () => {
       })
     })
   })
+
+  describe('when deployments arrive while garbage collection holds the exclusive lock', () => {
+    let locks: IContentLocks
+    let gc: Promise<string>
+    let deployments: Promise<string[]>
+    let lockWaiters: number
+
+    beforeEach(async () => {
+      const env = new Environment(server.components.env).setConfig(EnvironmentConfig.CONTENT_LOCK_CONNECTIONS, 2)
+      locks = createContentLocks({ env, logs: server.components.logs })
+      let releaseGc!: () => void
+      const held = new Promise<void>((resolve) => (releaseGc = resolve))
+      gc = locks.withWrite(async () => {
+        await held
+        return 'gc'
+      })
+      await new Promise((resolve) => setTimeout(resolve, 100))
+      deployments = Promise.all([1, 2, 3].map((i) => locks.withRead(async () => `deployment ${i}`)))
+      await new Promise((resolve) => setTimeout(resolve, 300))
+      const waiting = await server.components.database.query<{ count: string }>(
+        `SELECT COUNT(*) AS count FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND wait_event = 'advisory'`
+      )
+      lockWaiters = Number(waiting.rows[0].count)
+      releaseGc()
+    })
+
+    afterEach(async () => {
+      await Promise.allSettled([gc, deployments])
+      await locks[STOP_COMPONENT]?.()
+    })
+
+    it('should not hold connections waiting on the lock and run every deployment once GC finishes', async () => {
+      expect({ lockWaiters, gc: await gc, deployments: await deployments }).toEqual({
+        lockWaiters: 0,
+        gc: 'gc',
+        deployments: ['deployment 1', 'deployment 2', 'deployment 3']
+      })
+    })
+  })
 })

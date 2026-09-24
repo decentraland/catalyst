@@ -216,13 +216,23 @@ export function createPartialDeployments(
     maxSceneBytes: bigint,
     incomingBytes: number
   ): Promise<void> {
+    const upload = await pendingDeploymentsRepository.getByEntityId(database, entityId)
+    if (!upload) {
+      throw new InvalidPartialDeploymentError(['Upload no longer exists; resend its manifest.'])
+    }
+    // Committed on its own, before admission: the batch was received and processed even if it is then
+    // rejected, so repeating rejected batches can't escape the rate limit.
+    const windowBytes = await pendingDeploymentsRepository.addIncomingBytes(
+      database,
+      upload.deployerAddress,
+      incomingBytes
+    )
+    if (windowBytes > bytesPerMinute) {
+      throw new InvalidPartialDeploymentError(['Partial upload byte rate exceeded. Retry after one minute.'])
+    }
     await database.transaction(async (tx) => {
       // One short global critical section makes both aggregate budgets atomic; no storage I/O under it.
       await pendingDeploymentsRepository.acquireBudgetLock(tx)
-      const upload = await pendingDeploymentsRepository.getByEntityId(tx, entityId)
-      if (!upload) {
-        throw new InvalidPartialDeploymentError(['Upload no longer exists; resend its manifest.'])
-      }
       await pendingDeploymentsRepository.upsertFileReceipts(tx, entityId, receipts)
       await pendingDeploymentsRepository.refreshReservedBytes(tx, entityId)
       const totals = await pendingDeploymentsRepository.getReservationTotals(tx, entityId, upload.deployerAddress)
@@ -233,10 +243,6 @@ export function createPartialDeployments(
         throw new InvalidPartialDeploymentError([
           'Partial upload storage budget exceeded. Complete uploads or wait for cleanup.'
         ])
-      }
-      const windowBytes = await pendingDeploymentsRepository.addIncomingBytes(tx, upload.deployerAddress, incomingBytes)
-      if (windowBytes > bytesPerMinute) {
-        throw new InvalidPartialDeploymentError(['Partial upload byte rate exceeded. Retry after one minute.'])
       }
       metrics.observe('dcl_partial_upload_reserved_bytes', {}, Number(totals.total))
     }, 'tx_reserve_pending_deployment')
@@ -373,7 +379,13 @@ export function createPartialDeployments(
     }
 
     await createUpload(entity, contentHashes, deployerAddress)
-    await reserve(entityId, Array.from(receipts.values()), maxSceneBytes, incomingBytes)
+    try {
+      await reserve(entityId, Array.from(receipts.values()), maxSceneBytes, incomingBytes)
+    } catch (error) {
+      // A first batch that isn't admitted must not keep its new upload holding a slot of the cap.
+      if (!pending) await pendingDeploymentsRepository.deleteUnadmitted(database, entityId).catch(() => undefined)
+      throw error
+    }
 
     await storeStreamsInBatches(storage, Array.from(uploadedFiles))
     await database.transaction(async (tx) => {

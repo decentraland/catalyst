@@ -8,7 +8,7 @@ import { EntityLockTimeoutError } from './errors'
 import { IContentLocks } from './types'
 
 const CONTENT_LOCK_KEY = 'catalyst-content-gc'
-// Backoff while another request holds the entity lock, up to a bounded total wait.
+// Backoff while GC or another request holds a lock, up to a bounded total wait.
 const ENTITY_LOCK_RETRY_MIN_MS = 25
 const ENTITY_LOCK_RETRY_MAX_MS = 500
 const ENTITY_LOCK_MAX_WAIT_MS = 60_000
@@ -35,8 +35,8 @@ export function createContentLocks(components: Pick<AppComponents, 'env' | 'logs
   })
   pool.on('error', (error) => logger.error(error))
 
-  // One attempt: the shared/exclusive gate blocks only behind a GC batch, while a busy entity is
-  // reported back instead of awaited so waiters never hold a pool connection.
+  // One attempt. Only GC blocks on the exclusive gate; deployments report a GC batch or a busy entity
+  // back instead of waiting, so they never hold a pool connection while waiting.
   async function attempt<T>(
     exclusive: boolean,
     operation: () => Promise<T>,
@@ -45,11 +45,16 @@ export function createContentLocks(components: Pick<AppComponents, 'env' | 'logs
     const client: PoolClient = await pool.connect()
     let failed = false
     try {
-      await client.query(
-        exclusive
-          ? SQL`SELECT pg_advisory_lock(hashtextextended(${CONTENT_LOCK_KEY}, 0))`
-          : SQL`SELECT pg_advisory_lock_shared(hashtextextended(${CONTENT_LOCK_KEY}, 0))`
-      )
+      if (exclusive) {
+        await client.query(SQL`SELECT pg_advisory_lock(hashtextextended(${CONTENT_LOCK_KEY}, 0))`)
+      } else {
+        const gate = await client.query<{ acquired: boolean }>(
+          SQL`SELECT pg_try_advisory_lock_shared(hashtextextended(${CONTENT_LOCK_KEY}, 0)) AS acquired`
+        )
+        if (!gate.rows[0]?.acquired) {
+          return { acquired: false }
+        }
+      }
       if (entityId) {
         const entityLock = await client.query<{ acquired: boolean }>(
           SQL`SELECT pg_try_advisory_lock(hashtextextended(${'partial-entity:' + entityId}, 0)) AS acquired`
@@ -79,7 +84,7 @@ export function createContentLocks(components: Pick<AppComponents, 'env' | 'logs
         return result.value
       }
       if (Date.now() + delayMs > deadline) {
-        throw new EntityLockTimeoutError(entityId!)
+        throw new EntityLockTimeoutError(entityId ?? 'content')
       }
       await sleep(delayMs)
     }

@@ -115,6 +115,37 @@ describe('when parsing a multipart request under an upload budget', () => {
     })
   })
 
+  describe('and a file is concatenated within the budget', () => {
+    let declaredSize: number
+
+    beforeEach(async () => {
+      declaredSize = form.getBuffer().length
+      await wrapped(buildContext(form.getBuffer(), { ...form.getHeaders(), 'content-length': String(declaredSize) }))
+    })
+
+    it('should reserve the extra copy while concatenating and return it afterwards', () => {
+      expect(lease.resize.mock.calls).toEqual([[declaredSize + 100], [declaredSize]])
+    })
+  })
+
+  describe('and the budget cannot fit the copy made while concatenating a file', () => {
+    let error: unknown
+
+    beforeEach(async () => {
+      lease.resize.mockReturnValue(false)
+      error = await wrapped(
+        buildContext(form.getBuffer(), { ...form.getHeaders(), 'content-length': String(form.getBuffer().length) })
+      ).catch((e) => e)
+    })
+
+    it('should reject with a ServiceUnavailableError without running the handler', () => {
+      expect({ error, handled: handler.mock.calls.length }).toEqual({
+        error: new ServiceUnavailableError('Server is buffering too many uploads, please retry shortly.'),
+        handled: 0
+      })
+    })
+  })
+
   describe('and the handler fails', () => {
     let error: unknown
 

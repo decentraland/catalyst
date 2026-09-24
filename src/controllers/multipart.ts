@@ -200,7 +200,18 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
         abort(err)
       })
       stream.on('end', function () {
+        if (aborted) {
+          return
+        }
+        // Concatenating briefly holds a second copy of the file, so reserve it for the copy's duration.
+        const fileBytes = chunks.reduce((sum, chunk) => sum + chunk.length, 0)
+        if (lease && !lease.resize(reservedBytes + fileBytes)) {
+          abort(new ServiceUnavailableError('Server is buffering too many uploads, please retry shortly.'))
+          return
+        }
         files[name] = Object.assign(Object.assign({}, info), { fieldname: name, value: Buffer.concat(chunks) })
+        chunks.length = 0
+        lease?.resize(reservedBytes)
       })
     })
 

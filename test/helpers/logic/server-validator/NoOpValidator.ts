@@ -19,7 +19,13 @@ export class NoOpValidator {
   }
 }
 
-export function makeNoopValidator(components: Pick<AppComponents, 'validator'>) {
+export function makeNoopValidator(
+  components: Pick<AppComponents, 'validator'> & Partial<Pick<AppComponents, 'crypto'>>
+) {
+  // POST /entities checks the signature before taking a content lock, ahead of the validator.
+  if (components.crypto) {
+    jest.spyOn(components.crypto, 'validateSignature').mockResolvedValue({ ok: true })
+  }
   jest.spyOn(components.validator, 'validate').mockResolvedValue({ ok: true })
   jest.spyOn(components.validator, 'validateStagingScene').mockResolvedValue({ ok: true })
   jest.spyOn(components.validator, 'validateCurrentAccess').mockResolvedValue({ ok: true })
