@@ -3,6 +3,7 @@ import { access, mkdir, mkdtemp, readdir, rm, stat, utimes, writeFile } from 'fs
 import { tmpdir } from 'os'
 import path from 'path'
 import { createUploadSpool, IUploadSpool } from '../../../src/adapters/upload-spool'
+import { DEFAULT_SPOOL_LEASE_TTL_MS, reclaimIfStale } from '../../../src/adapters/upload-spool/component'
 
 const DAY_AGO = new Date(Date.now() - 24 * 60 * 60 * 1000)
 
@@ -74,5 +75,61 @@ describe('when the upload spool runs', () => {
 
   it('should keep renewing its lease and remove its idle folder when stopped', () => {
     expect({ leaseRenewed, folderRemovedOnStop }).toEqual({ leaseRenewed: true, folderRemovedOnStop: true })
+  })
+})
+
+describe('when an owner renews its lease while its folder is being reclaimed', () => {
+  let root: string
+  let folder: string
+  let reclaimed: boolean
+  let spoolFileKept: boolean
+
+  beforeEach(async () => {
+    root = await mkdtemp(path.join(tmpdir(), 'upload-spool-'))
+    await makeProcessFolder(root, 'stalled-process', DAY_AGO)
+    folder = path.join(root, 'stalled-process')
+    reclaimed = await reclaimIfStale(folder, DEFAULT_SPOOL_LEASE_TTL_MS, async () => {
+      const renewedAt = new Date()
+      await utimes(path.join(folder, '.lease'), renewedAt, renewedAt)
+    })
+    spoolFileKept = await access(path.join(folder, 'upload-1')).then(
+      () => true,
+      () => false
+    )
+  })
+
+  afterEach(async () => {
+    await rm(root, { recursive: true, force: true })
+  })
+
+  it('should give the folder back to its owner untouched', () => {
+    expect({ reclaimed, spoolFileKept }).toEqual({ reclaimed: false, spoolFileKept: true })
+  })
+})
+
+describe('when the upload spool stops while a request still holds spooled files', () => {
+  let root: string
+  let folderKept: boolean
+  let leaseKept: boolean
+
+  beforeEach(async () => {
+    root = await mkdtemp(path.join(tmpdir(), 'upload-spool-'))
+    const spool = await createUploadSpool(root)
+    await spool[START_COMPONENT]?.({} as any)
+    await mkdir(path.join(spool.folder, 'upload-in-flight'))
+    await spool[STOP_COMPONENT]?.()
+    folderKept = (await readdir(root)).includes(path.basename(spool.folder))
+    leaseKept = await access(path.join(spool.folder, '.lease')).then(
+      () => true,
+      () => false
+    )
+  })
+
+  afterEach(async () => {
+    await rm(root, { recursive: true, force: true })
+  })
+
+  it('should keep the folder under its lease so it is reclaimed only once the lease expires', () => {
+    expect({ folderKept, leaseKept }).toEqual({ folderKept: true, leaseKept: true })
   })
 })
