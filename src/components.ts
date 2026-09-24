@@ -278,6 +278,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     logs,
     metrics,
     env,
+    crypto,
     storage,
     database,
     validator,

@@ -50,6 +50,7 @@ export function createPartialDeployments(
     | 'logs'
     | 'metrics'
     | 'env'
+    | 'crypto'
     | 'storage'
     | 'database'
     | 'validator'
@@ -65,6 +66,7 @@ export function createPartialDeployments(
     logs,
     metrics,
     env,
+    crypto,
     storage,
     database,
     validator,
