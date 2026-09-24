@@ -43,10 +43,13 @@ export const DEFAULT_MAX_UPLOAD_FIELD_SIZE = 100 * 1024 // 100 KB per field valu
 // disk (instead of buffering) would remove the memory exposure entirely and is the proper follow-up.
 export const DEFAULT_MAX_UPLOAD_TOTAL_SIZE = 2 * 1024 * 1024 * 1024 // 2 GiB total per request
 
-// Aggregate bound on POST /entities bodies buffered at once across all clients. It must fit one
-// MAX_UPLOAD_TOTAL_SIZE request. Partial batches are exempt from the per-IP request limits below and
-// are bounded by this budget instead.
+// Aggregate bound on POST /entities bodies spooled to temporary files at once across all clients. It
+// must fit one MAX_UPLOAD_TOTAL_SIZE request. Partial batches are exempt from the per-IP request
+// limits below and are bounded by this budget instead.
 export const DEFAULT_MAX_IN_FLIGHT_UPLOAD_BYTES = 4 * 1024 * 1024 * 1024 // 4 GiB
+// Aggregate bound on regular deployment files read into memory at once. Partial batches stream from
+// disk and never count against it. It must fit one MAX_UPLOAD_TOTAL_SIZE request.
+export const DEFAULT_MAX_IN_MEMORY_DEPLOYMENT_BYTES = DEFAULT_MAX_UPLOAD_TOTAL_SIZE
 export const DEFAULT_MAX_CONCURRENT_UPLOADS = 40
 // A body still arriving after this is aborted with 408, so slow senders can't hold upload slots.
 export const DEFAULT_MULTIPART_UPLOAD_TIMEOUT_MS = 5 * 60 * 1000
@@ -338,6 +341,7 @@ export enum EnvironmentConfig {
   MAX_UPLOAD_FIELD_SIZE,
   MAX_UPLOAD_TOTAL_SIZE,
   MAX_IN_FLIGHT_UPLOAD_BYTES,
+  MAX_IN_MEMORY_DEPLOYMENT_BYTES,
   MAX_CONCURRENT_UPLOADS,
   MULTIPART_UPLOAD_TIMEOUT_MS,
   MAX_ACTIVE_ENTITIES_BODY_SIZE,
@@ -732,6 +736,10 @@ export class EnvironmentBuilder {
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_IN_FLIGHT_UPLOAD_BYTES, () =>
       parsePositiveIntEnv('MAX_IN_FLIGHT_UPLOAD_BYTES', DEFAULT_MAX_IN_FLIGHT_UPLOAD_BYTES)
+    )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_IN_MEMORY_DEPLOYMENT_BYTES, () =>
+      parsePositiveIntEnv('MAX_IN_MEMORY_DEPLOYMENT_BYTES', DEFAULT_MAX_IN_MEMORY_DEPLOYMENT_BYTES)
     )
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_CONCURRENT_UPLOADS, () =>

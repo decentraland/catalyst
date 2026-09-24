@@ -20,6 +20,7 @@ import { createTracerComponent } from '@well-known-components/tracer-component'
 import { HTTPProvider } from 'eth-connect'
 import ms from 'ms'
 import path from 'path'
+import { rm } from 'fs/promises'
 
 // =============================================================================
 // Infrastructure / config
@@ -138,9 +139,14 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const contentStorageFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
   const tmpDownloadFolder = path.join(contentStorageFolder, '_tmp')
   await fs.mkdir(tmpDownloadFolder, { recursive: true })
+  // Per-request spools of POST /entities bodies. Anything left here is from a previous process.
+  const uploadTmpFolder = path.join(contentStorageFolder, '_uploads')
+  await rm(uploadTmpFolder, { recursive: true, force: true })
+  await fs.mkdir(uploadTmpFolder, { recursive: true })
   const staticConfigs = {
     contentStorageFolder,
-    tmpDownloadFolder
+    tmpDownloadFolder,
+    uploadTmpFolder
   }
 
   // ---------------------------------------------------------------------------
@@ -275,7 +281,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     env,
     storage,
     database,
-    crypto,
     validator,
     deployer,
     entities,
@@ -542,8 +547,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     }
   )
 
-  // Bounds POST /entities bodies buffered at once; partial batches count only against this.
-  const uploadBudget = createUploadBudget({ env, metrics })
+  // Bound POST /entities bodies on disk and regular deployments in memory; partial batches only use disk.
+  const uploadBudget = createUploadBudget({ env, metrics }, 'disk')
+  const deploymentMemoryBudget = createUploadBudget({ env, metrics }, 'memory')
 
   // Warn at startup rather than per request: any client can send a forwarding header, so its
   // presence proves nothing and would let an outsider raise this.
@@ -618,6 +624,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     systemProperties,
     tracer,
     uploadBudget,
+    deploymentMemoryBudget,
     validator,
     queryParams,
     entities,

@@ -77,7 +77,7 @@ describe('generate snapshot', () => {
   const database = createTestDatabaseComponent()
   const fs = createFsComponent()
   const metrics = createTestMetricsComponent(metricsDeclaration)
-  const staticConfigs = { contentStorageFolder: '', tmpDownloadFolder: '' }
+  const staticConfigs = { contentStorageFolder: '', tmpDownloadFolder: '', uploadTmpFolder: '' }
   const denylist: Denylist = { isDenylisted: jest.fn(), reload: jest.fn() }
   const aTimeRange = { initTimestamp: 1, endTimestamp: 2 }
   const storage: IContentStorageComponent = {
@@ -174,7 +174,7 @@ describe('generate snapshot in multiple', () => {
   const database = createTestDatabaseComponent()
   const fs = createFsComponent()
   const metrics = createTestMetricsComponent(metricsDeclaration)
-  const staticConfigs = { contentStorageFolder: '', tmpDownloadFolder: '' }
+  const staticConfigs = { contentStorageFolder: '', tmpDownloadFolder: '', uploadTmpFolder: '' }
   const denylist: Denylist = { isDenylisted: jest.fn(), reload: jest.fn() }
   const storage: IContentStorageComponent = {
     storeStream: jest.fn(),

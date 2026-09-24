@@ -1,4 +1,7 @@
 import FormData from 'form-data'
+import { mkdtemp, rm } from 'fs/promises'
+import { tmpdir } from 'os'
+import path from 'path'
 import { Readable } from 'stream'
 import { IHttpServerComponent } from '@dcl/core-commons'
 import { multipartParserWrapper } from '../../../src/controllers/multipart'
@@ -25,8 +28,10 @@ describe('when parsing a multipart request under an upload budget', () => {
   let budget: { acquire: jest.Mock }
   let form: FormData
   let wrapped: Wrapped
+  let tmpFolder: string
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    tmpFolder = await mkdtemp(path.join(tmpdir(), 'multipart-'))
     handler = jest.fn().mockResolvedValue({ status: 200, body: {} })
     lease = { resize: jest.fn().mockReturnValue(true), release: jest.fn() }
     budget = { acquire: jest.fn().mockReturnValue(lease) }
@@ -36,12 +41,13 @@ describe('when parsing a multipart request under an upload budget', () => {
     wrapped = multipartParserWrapper(
       handler as any,
       { maxFileSize: 1024, maxFiles: 10 },
-      budget as unknown as IUploadBudget
+      { tmpFolder, uploadBudget: budget as unknown as IUploadBudget }
     )
   })
 
-  afterEach(() => {
+  afterEach(async () => {
     jest.resetAllMocks()
+    await rm(tmpFolder, { recursive: true, force: true })
   })
 
   describe('and the budget admits it with its declared size', () => {

@@ -1,4 +1,7 @@
 import FormData from 'form-data'
+import { mkdtemp, rm } from 'fs/promises'
+import { tmpdir } from 'os'
+import path from 'path'
 import { Readable } from 'stream'
 import { IHttpServerComponent } from '@dcl/core-commons'
 import { multipartParserWrapper } from '../../../src/controllers/multipart'
@@ -21,19 +24,26 @@ describe('when parsing a multipart request with an upload timeout', () => {
   let lease: { resize: jest.Mock; release: jest.Mock }
   let form: FormData
   let wrapped: Wrapped
+  let tmpFolder: string
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    tmpFolder = await mkdtemp(path.join(tmpdir(), 'multipart-'))
     handler = jest.fn().mockResolvedValue({ status: 200, body: {} })
     lease = { resize: jest.fn().mockReturnValue(true), release: jest.fn() }
     const budget = { acquire: jest.fn().mockReturnValue(lease) } as unknown as IUploadBudget
     form = new FormData()
     form.append('entityId', 'an-entity-id')
     form.append('file1', Buffer.alloc(100, 1), { filename: 'file1' })
-    wrapped = multipartParserWrapper(handler as any, { maxFileSize: 1024, uploadTimeoutMs: 50 }, budget)
+    wrapped = multipartParserWrapper(
+      handler as any,
+      { maxFileSize: 1024, uploadTimeoutMs: 50 },
+      { tmpFolder, uploadBudget: budget }
+    )
   })
 
-  afterEach(() => {
+  afterEach(async () => {
     jest.resetAllMocks()
+    await rm(tmpFolder, { recursive: true, force: true })
   })
 
   describe('and the body stops arriving before it is complete', () => {

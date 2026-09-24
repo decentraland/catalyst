@@ -11,6 +11,7 @@ type BudgetConfig = { capacityBytes: number; maxUploads: number; maxRequestBytes
 function buildComponents({ capacityBytes, maxUploads, maxRequestBytes }: BudgetConfig) {
   const values: Partial<Record<EnvironmentConfig, number>> = {
     [EnvironmentConfig.MAX_IN_FLIGHT_UPLOAD_BYTES]: capacityBytes,
+    [EnvironmentConfig.MAX_IN_MEMORY_DEPLOYMENT_BYTES]: capacityBytes,
     [EnvironmentConfig.MAX_CONCURRENT_UPLOADS]: maxUploads,
     [EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE]: maxRequestBytes
   }
@@ -30,15 +31,29 @@ function captureError(operation: () => unknown): unknown {
 }
 
 describe('when creating the upload budget', () => {
-  describe('and the byte budget cannot fit a single maximum-size request', () => {
+  describe('and the disk budget cannot fit a single maximum-size request', () => {
     let creation: () => IUploadBudget
 
     beforeEach(() => {
-      creation = () => createUploadBudget(buildComponents({ capacityBytes: 100, maxUploads: 2, maxRequestBytes: 101 }))
+      creation = () =>
+        createUploadBudget(buildComponents({ capacityBytes: 100, maxUploads: 2, maxRequestBytes: 101 }), 'disk')
     })
 
     it('should fail at startup naming both settings', () => {
       expect(creation).toThrow('MAX_IN_FLIGHT_UPLOAD_BYTES (100) must be at least MAX_UPLOAD_TOTAL_SIZE (101).')
+    })
+  })
+
+  describe('and the memory budget cannot fit a single maximum-size request', () => {
+    let creation: () => IUploadBudget
+
+    beforeEach(() => {
+      creation = () =>
+        createUploadBudget(buildComponents({ capacityBytes: 100, maxUploads: 2, maxRequestBytes: 101 }), 'memory')
+    })
+
+    it('should fail at startup naming both settings', () => {
+      expect(creation).toThrow('MAX_IN_MEMORY_DEPLOYMENT_BYTES (100) must be at least MAX_UPLOAD_TOTAL_SIZE (101).')
     })
   })
 })
@@ -47,7 +62,7 @@ describe('when acquiring from the upload budget', () => {
   let budget: IUploadBudget
 
   beforeEach(() => {
-    budget = createUploadBudget(buildComponents({ capacityBytes: 100, maxUploads: 2, maxRequestBytes: 100 }))
+    budget = createUploadBudget(buildComponents({ capacityBytes: 100, maxUploads: 2, maxRequestBytes: 100 }), 'disk')
   })
 
   describe('and the upload fits the byte and concurrency budgets', () => {
@@ -125,7 +140,7 @@ describe('when resizing an upload budget lease', () => {
   let lease: UploadBudgetLease
 
   beforeEach(() => {
-    budget = createUploadBudget(buildComponents({ capacityBytes: 100, maxUploads: 3, maxRequestBytes: 100 }))
+    budget = createUploadBudget(buildComponents({ capacityBytes: 100, maxUploads: 3, maxRequestBytes: 100 }), 'disk')
     lease = budget.acquire(10)
   })
 

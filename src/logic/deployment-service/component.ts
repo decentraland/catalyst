@@ -1,6 +1,8 @@
 import { AuthChain, Authenticator } from '@dcl/crypto'
 import { Entity, EntityType, IPFSv2 } from '@dcl/schemas'
 import { isDeepStrictEqual } from 'util'
+import { Readable } from 'stream'
+import { bufferToStream } from '@dcl/catalyst-storage'
 import { EnvironmentConfig } from '../../Environment'
 import { storeStreamsInBatches } from '../store-content'
 import {
@@ -325,7 +327,9 @@ export function createDeploymentService(
     const alreadyStoredHashes: Map<string, boolean> = await components.storage.existMultiple(Array.from(hashes.keys()))
 
     // Store all the entity's not-already-stored content, in bounded-parallel batches (see helper).
-    const filesToStore = Array.from(hashes).filter(([fileHash]) => !alreadyStoredHashes.get(fileHash))
+    const filesToStore = Array.from(hashes)
+      .filter(([fileHash]) => !alreadyStoredHashes.get(fileHash))
+      .map(([fileHash, content]): [string, () => Readable] => [fileHash, () => bufferToStream(content)])
     await storeStreamsInBatches(components.storage, filesToStore)
   }
 

@@ -50,7 +50,7 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
       max: env.getConfig<number>(EnvironmentConfig.POST_ENTITIES_DAILY_QUOTA_MAX),
       windowSeconds: 86400
     })
-    // Memory is bounded by the upload budget ahead of the parser, so the per-IP request limits can run
+    // Bodies are bounded by the upload budget ahead of the parser, so the per-IP request limits can run
     // after it: they count regular deployments only, since a partial upload is many batches.
     const createEntityWithRequestLimits = async (
       ctx: IHttpServerComponent.PathAwareContext<FormDataContext<GlobalContext>, '/entities'>
@@ -71,7 +71,7 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
           maxTotalSize: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE),
           uploadTimeoutMs: env.getConfig<number>(EnvironmentConfig.MULTIPART_UPLOAD_TIMEOUT_MS)
         },
-        components.uploadBudget
+        { tmpFolder: components.staticConfigs.uploadTmpFolder, uploadBudget: components.uploadBudget }
       )
     )
   }

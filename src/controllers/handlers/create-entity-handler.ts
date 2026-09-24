@@ -2,9 +2,12 @@ import { PostEntity200, PostEntity400 } from '@dcl/catalyst-api-specs/lib/client
 import { Field } from '@well-known-components/multipart-wrapper'
 import { AuthChain, AuthLink, EthAddress } from '@dcl/crypto'
 import { DeploymentContext, isInvalidDeployment, isSuccessfulDeployment } from '../../deployment-types'
-import { InvalidPartialDeploymentError } from '../../logic/partial-deployments'
-import { FormHandlerContextWithPath } from '../../types'
-import { InvalidRequestError } from '../errors'
+import { createReadStream } from 'fs'
+import { readFile } from 'fs/promises'
+import { UploadBudgetExceededError, UploadBudgetLease } from '../../adapters/upload-budget'
+import { InvalidPartialDeploymentError, StagedFile } from '../../logic/partial-deployments'
+import { FormHandlerContextWithPath, SpooledFile } from '../../types'
+import { InvalidRequestError, ServiceUnavailableError } from '../errors'
 
 /** Body of a 202 response to a partial deployment request: the content hashes not yet on the server. */
 type PostEntity202 = { missing: string[] }
@@ -27,11 +30,11 @@ type Response =
 // Method: POST
 export async function createEntity(
   context: FormHandlerContextWithPath<
-    'logs' | 'fs' | 'metrics' | 'deployer' | 'partialDeployments' | 'contentLocks',
+    'logs' | 'fs' | 'metrics' | 'deployer' | 'partialDeployments' | 'contentLocks' | 'deploymentMemoryBudget',
     '/entities'
   >
 ): Promise<Response> {
-  const { metrics, deployer, partialDeployments, logs, contentLocks } = context.components
+  const { metrics, deployer, partialDeployments, logs, contentLocks, deploymentMemoryBudget } = context.components
 
   const logger = logs.getLogger('create-entity')
   // Guard the required field explicitly: without it a missing `entityId` throws a TypeError and the
@@ -68,9 +71,10 @@ export async function createEntity(
     // present. Requests without the flag behave exactly as before.
     if (context.formData.fields.partial?.value === 'true') {
       // Preserve the field-name keys (content hashes): unlike the vanilla path, they are load-bearing.
-      const files = new Map<string, Uint8Array>()
+      // The files stay on disk; staging streams them.
+      const files = new Map<string, StagedFile>()
       for (const filename of Object.keys(context.formData.files)) {
-        files.set(filename, context.formData.files[filename].value)
+        files.set(filename, toStagedFile(context.formData.files[filename]))
       }
 
       try {
@@ -117,11 +121,22 @@ export async function createEntity(
       }
     }
 
+    // The regular deploy pipeline validates from memory, so reading the files in takes a memory budget
+    // share, released once the deployment settles.
+    const uploaded = Object.keys(context.formData.files).map((filename) => context.formData.files[filename])
+    let memoryLease: UploadBudgetLease
+    try {
+      memoryLease = deploymentMemoryBudget.acquire(uploaded.reduce((sum, file) => sum + file.size, 0))
+    } catch (error) {
+      if (error instanceof UploadBudgetExceededError) {
+        throw new ServiceUnavailableError(error.message)
+      }
+      throw error
+    }
     const deployFiles: ContentFile[] = []
     try {
-      for (const filename of Object.keys(context.formData.files)) {
-        const file = context.formData.files[filename]
-        deployFiles.push({ path: filename, content: file.value })
+      for (const file of uploaded) {
+        deployFiles.push({ path: file.fieldname, content: await readFile(file.path) })
       }
 
       const auditInfo = { authChain, version: 'v3' }
@@ -166,8 +181,18 @@ export async function createEntity(
       })
       logger.error(error)
       throw error
+    } finally {
+      memoryLease.release()
     }
   }, entityId)
+}
+
+function toStagedFile(file: SpooledFile): StagedFile {
+  return {
+    size: file.size,
+    openStream: () => createReadStream(file.path),
+    read: () => readFile(file.path)
+  }
 }
 
 function requireString(val: string): string {

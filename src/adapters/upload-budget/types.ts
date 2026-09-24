@@ -6,10 +6,12 @@ export interface UploadBudgetLease {
   release(): void
 }
 
+/** The resource a budget bounds: temporary upload files on disk, or deployment files read into memory. */
+export type UploadBudgetKind = 'disk' | 'memory'
+
 /**
- * Aggregate bound on uploads buffered in memory at once, across all clients. POST /entities buffers
- * each request body before any authentication, so this bounds memory by bytes and concurrent uploads
- * rather than by request count.
+ * Aggregate bound on uploads held at once across all clients, by bytes and concurrent uploads rather
+ * than by request count. POST /entities receives each body before any authentication.
  */
 export interface IUploadBudget {
   /**
