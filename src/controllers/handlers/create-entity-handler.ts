@@ -2,9 +2,10 @@ import { PostEntity200, PostEntity400 } from '@dcl/catalyst-api-specs/lib/client
 import { Field } from '@well-known-components/multipart-wrapper'
 import { AuthChain, AuthLink, EthAddress } from '@dcl/crypto'
 import { DeploymentContext, isInvalidDeployment, isSuccessfulDeployment } from '../../deployment-types'
+import { EntityLockTimeoutError } from '../../adapters/content-locks'
 import { InvalidPartialDeploymentError } from '../../logic/partial-deployments'
 import { FormHandlerContextWithPath } from '../../types'
-import { InvalidRequestError } from '../errors'
+import { InvalidRequestError, ServiceUnavailableError } from '../errors'
 
 /** Body of a 202 response to a partial deployment request: the content hashes not yet on the server. */
 type PostEntity202 = { missing: string[] }
@@ -27,11 +28,11 @@ type Response =
 // Method: POST
 export async function createEntity(
   context: FormHandlerContextWithPath<
-    'logs' | 'fs' | 'metrics' | 'deployer' | 'partialDeployments' | 'contentLocks',
+    'logs' | 'fs' | 'metrics' | 'deployer' | 'partialDeployments' | 'contentLocks' | 'crypto',
     '/entities'
   >
 ): Promise<Response> {
-  const { metrics, deployer, partialDeployments, logs, contentLocks } = context.components
+  const { metrics, deployer, partialDeployments, logs, contentLocks, crypto } = context.components
 
   const logger = logs.getLogger('create-entity')
   // Guard the required field explicitly: without it a missing `entityId` throws a TypeError and the
@@ -60,13 +61,23 @@ export async function createEntity(
     throw new InvalidRequestError('Invalid auth chain')
   }
 
+  // Authenticate partial batches before taking any lock, so requests that can't be authenticated never
+  // queue on another upload's entity lock.
+  const isPartial = context.formData.fields.partial?.value === 'true'
+  if (isPartial) {
+    const signature = await crypto.validateSignature(entityId, authChain, Date.now())
+    if (!signature.ok) {
+      return { status: 400, body: { errors: [`Invalid auth chain: ${signature.message}`] } }
+    }
+  }
+
   // Every deployment holds the shared content lock through publication, so garbage collection can't
   // delete content it stores or reuses; batches of one entity are serialized.
-  return contentLocks.withRead(async (): Promise<Response> => {
+  return withContentLock(async (): Promise<Response> => {
     // A `partial=true` field marks a staging request of a multi-request (partial) deployment: the
     // content may be uploaded across several requests and the entity only becomes live once all of it is
     // present. Requests without the flag behave exactly as before.
-    if (context.formData.fields.partial?.value === 'true') {
+    if (isPartial) {
       // Preserve the field-name keys (content hashes): unlike the vanilla path, they are load-bearing.
       const files = new Map<string, Uint8Array>()
       for (const filename of Object.keys(context.formData.files)) {
@@ -168,6 +179,17 @@ export async function createEntity(
       throw error
     }
   }, entityId)
+
+  async function withContentLock(operation: () => Promise<Response>, lockedEntityId: string): Promise<Response> {
+    try {
+      return await contentLocks.withRead(operation, lockedEntityId)
+    } catch (error) {
+      if (error instanceof EntityLockTimeoutError) {
+        throw new ServiceUnavailableError(error.message)
+      }
+      throw error
+    }
+  }
 }
 
 function requireString(val: string): string {
