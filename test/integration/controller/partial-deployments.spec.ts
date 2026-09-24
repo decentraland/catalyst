@@ -610,6 +610,48 @@ describe('Integration - Partial deployments', () => {
     })
   })
 
+  describe('when another signer sends a batch with the entity file for a live upload', () => {
+    let response: Response
+    let body: unknown
+    let reservedBefore: string
+    let reservedAfter: string
+
+    async function reservedBytes(entityId: string): Promise<string> {
+      const result = await server.components.database.query<{ reserved_bytes: string }>(
+        `SELECT reserved_bytes FROM pending_deployments WHERE entity_id = '${entityId}'`
+      )
+      return result.rows[0].reserved_bytes
+    }
+
+    beforeEach(async () => {
+      const nonce = `${Date.now()}-${Math.random()}`
+      const deployment = await prepareSceneDeployment(
+        ['8,8'],
+        { 'a.txt': Buffer.from(`owned a ${nonce}`), 'b.txt': Buffer.from(`owned b ${nonce}`) },
+        identity
+      )
+      await postForm(server, buildPartialForm(deployment, [deployment.entityId]))
+      reservedBefore = await reservedBytes(deployment.entityId)
+      const otherIdentity = createIdentity()
+      const otherSignature = Authenticator.createSignature(otherIdentity, deployment.entityId)
+      const otherChain = Authenticator.createSimpleAuthChain(deployment.entityId, otherIdentity.address, otherSignature)
+      response = await postForm(
+        server,
+        buildPartialForm({ ...deployment, authChain: otherChain }, [deployment.entityId, deployment.contentHashes[0]])
+      )
+      body = await response.json()
+      reservedAfter = await reservedBytes(deployment.entityId)
+    })
+
+    it('should reject it without charging the upload owner', () => {
+      expect({ status: response.status, body, unchanged: reservedAfter === reservedBefore }).toEqual({
+        status: 400,
+        body: { errors: ['This upload was started by another account.'] },
+        unchanged: true
+      })
+    })
+  })
+
   describe('when recording progress over several batches', () => {
     let inventoryCalls: number[]
 

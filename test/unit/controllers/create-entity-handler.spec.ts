@@ -40,6 +40,7 @@ function buildContext(files: SpooledFile[], partial: boolean, components: Record
       logs: { getLogger: () => ({ info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() }) },
       metrics: { increment: jest.fn() },
       contentLocks: { withRead: (operation: () => Promise<unknown>) => operation() },
+      crypto: { validateSignature: jest.fn().mockResolvedValue({ ok: true }) },
       ...components
     }
   } as unknown as Context

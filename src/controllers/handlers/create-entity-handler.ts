@@ -4,6 +4,7 @@ import { AuthChain, AuthLink, EthAddress } from '@dcl/crypto'
 import { DeploymentContext, isInvalidDeployment, isSuccessfulDeployment } from '../../deployment-types'
 import { createReadStream } from 'fs'
 import { readFile } from 'fs/promises'
+import { EntityLockTimeoutError } from '../../adapters/content-locks'
 import { UploadBudgetExceededError, UploadBudgetLease } from '../../adapters/upload-budget'
 import { InvalidPartialDeploymentError, StagedFile } from '../../logic/partial-deployments'
 import { FormHandlerContextWithPath, SpooledFile } from '../../types'
@@ -30,11 +31,19 @@ type Response =
 // Method: POST
 export async function createEntity(
   context: FormHandlerContextWithPath<
-    'logs' | 'fs' | 'metrics' | 'deployer' | 'partialDeployments' | 'contentLocks' | 'deploymentMemoryBudget',
+    | 'logs'
+    | 'fs'
+    | 'metrics'
+    | 'deployer'
+    | 'partialDeployments'
+    | 'contentLocks'
+    | 'deploymentMemoryBudget'
+    | 'crypto',
     '/entities'
   >
 ): Promise<Response> {
-  const { metrics, deployer, partialDeployments, logs, contentLocks, deploymentMemoryBudget } = context.components
+  const { metrics, deployer, partialDeployments, logs, contentLocks, deploymentMemoryBudget, crypto } =
+    context.components
 
   const logger = logs.getLogger('create-entity')
   // Guard the required field explicitly: without it a missing `entityId` throws a TypeError and the
@@ -63,13 +72,23 @@ export async function createEntity(
     throw new InvalidRequestError('Invalid auth chain')
   }
 
+  // Authenticate partial batches before taking any lock, so requests that can't be authenticated never
+  // queue on another upload's entity lock.
+  const isPartial = context.formData.fields.partial?.value === 'true'
+  if (isPartial) {
+    const signature = await crypto.validateSignature(entityId, authChain, Date.now())
+    if (!signature.ok) {
+      return { status: 400, body: { errors: [`Invalid auth chain: ${signature.message}`] } }
+    }
+  }
+
   // Every deployment holds the shared content lock through publication, so garbage collection can't
   // delete content it stores or reuses; batches of one entity are serialized.
-  return contentLocks.withRead(async (): Promise<Response> => {
+  return withContentLock(async (): Promise<Response> => {
     // A `partial=true` field marks a staging request of a multi-request (partial) deployment: the
     // content may be uploaded across several requests and the entity only becomes live once all of it is
     // present. Requests without the flag behave exactly as before.
-    if (context.formData.fields.partial?.value === 'true') {
+    if (isPartial) {
       // Preserve the field-name keys (content hashes): unlike the vanilla path, they are load-bearing.
       // The files stay on disk; staging streams them.
       const files = new Map<string, StagedFile>()
@@ -185,6 +204,17 @@ export async function createEntity(
       memoryLease.release()
     }
   }, entityId)
+
+  async function withContentLock(operation: () => Promise<Response>, lockedEntityId: string): Promise<Response> {
+    try {
+      return await contentLocks.withRead(operation, lockedEntityId)
+    } catch (error) {
+      if (error instanceof EntityLockTimeoutError) {
+        throw new ServiceUnavailableError(error.message)
+      }
+      throw error
+    }
+  }
 }
 
 function toStagedFile(file: SpooledFile): StagedFile {

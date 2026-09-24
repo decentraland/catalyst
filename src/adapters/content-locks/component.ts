@@ -1,11 +1,17 @@
 import { START_COMPONENT, STOP_COMPONENT } from '@well-known-components/interfaces'
 import { Pool, PoolClient } from 'pg'
 import SQL from 'sql-template-strings'
+import { setTimeout as sleep } from 'timers/promises'
 import { EnvironmentConfig } from '../../Environment'
 import { AppComponents } from '../../types'
+import { EntityLockTimeoutError } from './errors'
 import { IContentLocks } from './types'
 
 const CONTENT_LOCK_KEY = 'catalyst-content-gc'
+// Backoff while another request holds the entity lock, up to a bounded total wait.
+const ENTITY_LOCK_RETRY_MIN_MS = 25
+const ENTITY_LOCK_RETRY_MAX_MS = 500
+const ENTITY_LOCK_MAX_WAIT_MS = 60_000
 
 /**
  * Creates the storage/GC gate on a dedicated connection pool, shared by every process using this
@@ -29,7 +35,13 @@ export function createContentLocks(components: Pick<AppComponents, 'env' | 'logs
   })
   pool.on('error', (error) => logger.error(error))
 
-  async function run<T>(exclusive: boolean, operation: () => Promise<T>, entityId?: string): Promise<T> {
+  // One attempt: the shared/exclusive gate blocks only behind a GC batch, while a busy entity is
+  // reported back instead of awaited so waiters never hold a pool connection.
+  async function attempt<T>(
+    exclusive: boolean,
+    operation: () => Promise<T>,
+    entityId?: string
+  ): Promise<{ acquired: false } | { acquired: true; value: T }> {
     const client: PoolClient = await pool.connect()
     let failed = false
     try {
@@ -39,9 +51,14 @@ export function createContentLocks(components: Pick<AppComponents, 'env' | 'logs
           : SQL`SELECT pg_advisory_lock_shared(hashtextextended(${CONTENT_LOCK_KEY}, 0))`
       )
       if (entityId) {
-        await client.query(SQL`SELECT pg_advisory_lock(hashtextextended(${'partial-entity:' + entityId}, 0))`)
+        const entityLock = await client.query<{ acquired: boolean }>(
+          SQL`SELECT pg_try_advisory_lock(hashtextextended(${'partial-entity:' + entityId}, 0)) AS acquired`
+        )
+        if (!entityLock.rows[0]?.acquired) {
+          return { acquired: false }
+        }
       }
-      return await operation()
+      return { acquired: true, value: await operation() }
     } finally {
       // Unlock explicitly so a healthy connection can be reused; a broken one is destroyed, which
       // releases its session locks.
@@ -51,6 +68,20 @@ export function createContentLocks(components: Pick<AppComponents, 'env' | 'logs
         failed = true
       }
       client.release(failed)
+    }
+  }
+
+  async function run<T>(exclusive: boolean, operation: () => Promise<T>, entityId?: string): Promise<T> {
+    const deadline = Date.now() + ENTITY_LOCK_MAX_WAIT_MS
+    for (let delayMs = ENTITY_LOCK_RETRY_MIN_MS; ; delayMs = Math.min(delayMs * 2, ENTITY_LOCK_RETRY_MAX_MS)) {
+      const result = await attempt(exclusive, operation, entityId)
+      if (result.acquired) {
+        return result.value
+      }
+      if (Date.now() + delayMs > deadline) {
+        throw new EntityLockTimeoutError(entityId!)
+      }
+      await sleep(delayMs)
     }
   }
 

@@ -44,6 +44,7 @@ export function createBatchDeployerComponent(
     | 'storage'
     | 'failedDeployments'
     | 'deploymentsRepository'
+    | 'contentLocks'
   >,
   syncOptions: {
     ignoredTypes: Set<string>
@@ -118,7 +119,13 @@ export function createBatchDeployerComponent(
         throw new Error('Trying to deploy empty entityFile')
       }
 
-      const deploymentResult = await components.deployer.deployEntity([entityFile], entityId, auditInfo, context)
+      // Validation checks every referenced file is stored; the shared content lock keeps GC from deleting
+      // any of them between that check and the commit. Content GC removed during the download fails
+      // validation here and the deployment is retried.
+      const deploymentResult = await components.contentLocks.withRead(
+        () => components.deployer.deployEntity([entityFile], entityId, auditInfo, context),
+        entityId
+      )
       if (isInvalidDeployment(deploymentResult)) {
         throw new Error(
           `Errors deploying entity(${entityId}):\n${deploymentResult.errors.map(($) => ' - ' + $).join('\n')}`

@@ -189,6 +189,10 @@ export function createPartialDeployments(
         if (!isLive(existing)) {
           throw new InvalidPartialDeploymentError(['This upload expired. Create a new entity with a fresh timestamp.'])
         }
+        // Reservations are charged to the upload's creator, so nobody else may add batches to it.
+        if (existing.deployerAddress !== deployerAddress) {
+          throw new InvalidPartialDeploymentError(['This upload was started by another account.'])
+        }
         return
       }
       if ((await pendingDeploymentsRepository.countByDeployer(tx, deployerAddress)) >= maxPendingPerDeployer) {

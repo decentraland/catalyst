@@ -354,7 +354,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       deployedEntitiesBloomFilter,
       storage,
       failedDeployments,
-      deploymentsRepository
+      deploymentsRepository,
+      contentLocks
     },
     {
       ignoredTypes: new Set(ignoredTypes),
