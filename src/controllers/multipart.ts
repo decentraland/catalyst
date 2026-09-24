@@ -5,7 +5,7 @@ import { Readable } from 'stream'
 import { pipeline } from 'stream/promises'
 import { FormDataContext } from '../types'
 import { IUploadBudget, UploadBudgetExceededError, UploadBudgetLease } from '../adapters/upload-budget'
-import { InvalidRequestError, PayloadTooLargeError, ServiceUnavailableError } from './errors'
+import { InvalidRequestError, PayloadTooLargeError, RequestTimeoutError, ServiceUnavailableError } from './errors'
 
 /**
  * Limits applied to a multipart request before its contents are buffered into memory.
@@ -32,6 +32,8 @@ export type MultipartLimits = {
   maxFieldSize?: number
   /** Maximum cumulative size, in bytes, across every file and field in a single request. */
   maxTotalSize?: number
+  /** Maximum time, in milliseconds, to receive the whole body. */
+  uploadTimeoutMs?: number
 }
 
 export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T extends IHttpServerComponent.IResponse>(
@@ -212,16 +214,26 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
     // (destroying the parser) the request body (a web stream) is cancelled and the upload is aborted,
     // and a client that disconnects mid-upload rejects here — instead of leaving the parser and an
     // unsettled promise dangling (a slow resource leak).
+    const timeout =
+      limits.uploadTimeoutMs === undefined
+        ? undefined
+        : setTimeout(() => abort(new RequestTimeoutError('The multipart upload timed out.')), limits.uploadTimeoutMs)
     try {
       await pipeline(source, formDataParser)
     } catch (error) {
       // Our own size-limit rejections keep their 413 status. Any other failure means we couldn't
       // parse the request body (a malformed, truncated, or empty multipart body, or a mid-upload
       // disconnect) — that's a client error (400), not an internal 500.
-      if (error instanceof PayloadTooLargeError || error instanceof ServiceUnavailableError) {
+      if (
+        error instanceof PayloadTooLargeError ||
+        error instanceof ServiceUnavailableError ||
+        error instanceof RequestTimeoutError
+      ) {
         throw error
       }
       throw new InvalidRequestError('Invalid multipart/form-data request')
+    } finally {
+      clearTimeout(timeout)
     }
 
     const newContext = Object.assign(Object.create(ctx), { formData: { fields, files } })

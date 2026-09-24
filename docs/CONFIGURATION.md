@@ -15,4 +15,5 @@ The content server can be configured by environment variables.
 - `CONTENT_LOCK_CONNECTIONS`: Connections of the dedicated pool holding the advisory lock shared by deployments and excluded by garbage collection, in addition to `PG_POOL_SIZE`. Default: "16"
 - `MAX_IN_FLIGHT_UPLOAD_BYTES`: Max POST /entities body bytes buffered in memory at once across all clients; excess uploads get a `503`. Partial batches are exempt from the per-IP request limits and bounded by this instead. Must be at least `MAX_UPLOAD_TOTAL_SIZE`. Default: "4294967296" (4 GiB)
 - `MAX_CONCURRENT_UPLOADS`: Max POST /entities bodies buffered at once across all clients; excess uploads get a `503`. Default: "40"
+- `MULTIPART_UPLOAD_TIMEOUT_MS`: Max time to receive a POST /entities body; a slower upload is aborted with a `408` and its upload slot released. Default: "300000" (5 min)
 - `PENDING_DEPLOYMENTS_CLEANUP_INTERVAL`: How often the job that reclaims expired pending deployments (their unreferenced staged content, then their accounting) runs, in milliseconds. Default: "3600000" (1h)

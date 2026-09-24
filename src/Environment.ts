@@ -48,6 +48,8 @@ export const DEFAULT_MAX_UPLOAD_TOTAL_SIZE = 2 * 1024 * 1024 * 1024 // 2 GiB tot
 // are bounded by this budget instead.
 export const DEFAULT_MAX_IN_FLIGHT_UPLOAD_BYTES = 4 * 1024 * 1024 * 1024 // 4 GiB
 export const DEFAULT_MAX_CONCURRENT_UPLOADS = 40
+// A body still arriving after this is aborted with 408, so slow senders can't hold upload slots.
+export const DEFAULT_MULTIPART_UPLOAD_TIMEOUT_MS = 5 * 60 * 1000
 
 // Body cap for the JSON endpoints that buffer the whole request into memory before validating it
 // (POST /entities/active). The schema's `maxItems: 1000` can't help because JSON parsing happens
@@ -337,6 +339,7 @@ export enum EnvironmentConfig {
   MAX_UPLOAD_TOTAL_SIZE,
   MAX_IN_FLIGHT_UPLOAD_BYTES,
   MAX_CONCURRENT_UPLOADS,
+  MULTIPART_UPLOAD_TIMEOUT_MS,
   MAX_ACTIVE_ENTITIES_BODY_SIZE,
 
   // Per-client rate limit on POST /entities. The header is deliberately not scoped to this endpoint:
@@ -731,6 +734,10 @@ export class EnvironmentBuilder {
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_CONCURRENT_UPLOADS, () =>
       parsePositiveIntEnv('MAX_CONCURRENT_UPLOADS', DEFAULT_MAX_CONCURRENT_UPLOADS)
+    )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MULTIPART_UPLOAD_TIMEOUT_MS, () =>
+      parsePositiveIntEnv('MULTIPART_UPLOAD_TIMEOUT_MS', DEFAULT_MULTIPART_UPLOAD_TIMEOUT_MS)
     )
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_ACTIVE_ENTITIES_BODY_SIZE, () =>
