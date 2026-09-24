@@ -65,6 +65,8 @@ export interface IPendingDeploymentsRepository {
   /** Storage keys an upload may own: its receipts plus its entity file. */
   getStagedKeys(db: DatabaseClient, entityId: string): Promise<string[]>
   deleteByEntityId(db: DatabaseClient, entityId: string): Promise<void>
+  /** Removes an upload whose first batch was never admitted, so it doesn't hold a slot of its deployer's cap. */
+  deleteUnadmitted(db: DatabaseClient, entityId: string): Promise<void>
   /** Returns up to `limit` expired upload ids. */
   listExpired(db: DatabaseClient, ttlMs: number, limit: number): Promise<string[]>
   /** Deletes an upload only if it is still expired, releasing its accounting. */

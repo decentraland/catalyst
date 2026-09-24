@@ -72,15 +72,13 @@ export async function createEntity(
     throw new InvalidRequestError('Invalid auth chain')
   }
 
-  // Authenticate partial batches before taking any lock, so requests that can't be authenticated never
-  // queue on another upload's entity lock.
-  const isPartial = context.formData.fields.partial?.value === 'true'
-  if (isPartial) {
-    const signature = await crypto.validateSignature(entityId, authChain, Date.now())
-    if (!signature.ok) {
-      return { status: 400, body: { errors: [`Invalid auth chain: ${signature.message}`] } }
-    }
+  // Authenticate before taking any lock, so a request that can't be authenticated never holds a lock
+  // connection. Same check and message as the deployment validator's signature validation.
+  const signature = await crypto.validateSignature(entityId, authChain, Date.now())
+  if (!signature.ok) {
+    return { status: 400, body: { errors: [`The signature is invalid. ${signature.message}`] } }
   }
+  const isPartial = context.formData.fields.partial?.value === 'true'
 
   // Every deployment holds the shared content lock through publication, so garbage collection can't
   // delete content it stores or reuses; batches of one entity are serialized.

@@ -1,5 +1,6 @@
 import { STOP_COMPONENT } from '@well-known-components/interfaces'
 import { IdentityType } from '@dcl/crypto'
+import { EntityType } from '@dcl/schemas'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { makeNoopValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import {
@@ -67,10 +68,12 @@ describe('Integration - Partial upload accounting', () => {
   })
 
   describe('when one account stages overlapping uploads beyond its byte budget', () => {
+    let first: PreparedDeployment
     let second: Response
 
     beforeEach(async () => {
-      await stageLarge(server, await prepareUpload(identity, 'first'))
+      first = await prepareUpload(identity, 'first')
+      await stageLarge(server, first)
       second = await stageLarge(server, await prepareUpload(identity, 'second'))
     })
 
@@ -81,8 +84,13 @@ describe('Integration - Partial upload accounting', () => {
       })
     })
 
-    it('should keep both uploads without replacing either', async () => {
-      expect(await pendingEntityIds(server)).toHaveLength(2)
+    it('should keep the admitted upload and discard the rejected one so it holds no upload slot', async () => {
+      expect(await pendingEntityIds(server)).toEqual([first.entityId])
+    })
+
+    it('should still charge the rejected batch against the byte rate', async () => {
+      const result = await server.components.database.query<{ bytes: string }>('SELECT bytes FROM partial_upload_rates')
+      expect(Number(result.rows[0].bytes)).toBeGreaterThanOrEqual(2 * CONTENT_SIZE)
     })
   })
 
@@ -214,7 +222,15 @@ describe('Integration - Partial upload accounting', () => {
           { 'large.bin': Buffer.from(expired.files.get(largeHash(expired))!), 'other.txt': Buffer.from('other') },
           identity
         )
-        await postForm(server, buildPartialForm(sharing, [sharing.entityId]))
+        // Admission would count the expired upload's bytes against this one, so the live upload is
+        // recorded directly: the case under test is cleanup honoring its reference.
+        await server.components.pendingDeploymentsRepository.insert(server.components.database, {
+          entityId: sharing.entityId,
+          entityType: EntityType.SCENE,
+          pointers: ['4,4'],
+          contentHashes: sharing.contentHashes,
+          deployerAddress: identity.address.toLowerCase()
+        })
         await server.components.partialDeployments.cleanupExpired()
       })
 

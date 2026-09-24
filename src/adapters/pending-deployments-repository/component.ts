@@ -181,6 +181,14 @@ async function deleteByEntityId(database: DatabaseClient, entityId: string): Pro
   )
 }
 
+async function deleteUnadmitted(database: DatabaseClient, entityId: string): Promise<void> {
+  await database.queryWithValues(
+    SQL`DELETE FROM pending_deployments WHERE entity_id = ${entityId} AND reserved_bytes = 0
+      AND NOT EXISTS (SELECT 1 FROM pending_deployment_files WHERE entity_id = ${entityId})`,
+    'pending_deployment_delete_unadmitted'
+  )
+}
+
 async function listExpired(database: DatabaseClient, ttlMs: number, limit: number): Promise<string[]> {
   const result = await database.queryWithValues<{ entity_id: string }>(
     SQL`SELECT entity_id FROM pending_deployments WHERE created_at < `
@@ -252,6 +260,7 @@ export function createPendingDeploymentsRepository(): IPendingDeploymentsReposit
     getStoredFiles,
     getStagedKeys,
     deleteByEntityId,
+    deleteUnadmitted,
     listExpired,
     deleteExpiredByEntityId,
     deleteElapsedRateWindows,

@@ -50,7 +50,23 @@ describe('when creating an entity under the content lock', () => {
 
     it('should reject it with a 400 without taking any content lock', () => {
       expect({ response, locks: withRead.mock.calls.length }).toEqual({
-        response: { status: 400, body: { errors: ['Invalid auth chain: bad signature'] } },
+        response: { status: 400, body: { errors: ['The signature is invalid. bad signature'] } },
+        locks: 0
+      })
+    })
+  })
+
+  describe('and a regular deployment is not validly signed', () => {
+    let response: Awaited<ReturnType<typeof createEntity>>
+
+    beforeEach(async () => {
+      validateSignature.mockResolvedValueOnce({ ok: false, message: 'bad signature' })
+      response = await createEntity(buildContext(false, { contentLocks: { withRead }, crypto: { validateSignature } }))
+    })
+
+    it('should reject it with a 400 without taking any content lock', () => {
+      expect({ response, locks: withRead.mock.calls.length }).toEqual({
+        response: { status: 400, body: { errors: ['The signature is invalid. bad signature'] } },
         locks: 0
       })
     })
@@ -60,6 +76,7 @@ describe('when creating an entity under the content lock', () => {
     let error: unknown
 
     beforeEach(async () => {
+      validateSignature.mockResolvedValueOnce({ ok: true })
       withRead.mockRejectedValueOnce(new EntityLockTimeoutError(ENTITY_ID))
       error = await createEntity(
         buildContext(false, { contentLocks: { withRead }, crypto: { validateSignature } })
