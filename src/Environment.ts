@@ -563,7 +563,8 @@ export class EnvironmentBuilder {
       () => process.env.GARBAGE_COLLECTION === 'true'
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL, () =>
-      parseMsEnv('GARBAGE_COLLECTION_INTERVAL', ms('6h'))
+      // The sweep is incremental (overwrites since its watermark), so its cost tracks deploy volume.
+      parseMsEnv('GARBAGE_COLLECTION_INTERVAL', ms('1h'))
     )
     // How long a partial (multi-request) deployment may stay pending before it is reclaimed. Anchors
     // both the deployment-TTL check for staged uploads and the expiry job that deletes stale rows.
@@ -571,7 +572,8 @@ export class EnvironmentBuilder {
       parseMsEnv('PENDING_DEPLOYMENT_TTL', ms('24h'))
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PENDING_DEPLOYMENTS_CLEANUP_INTERVAL, () =>
-      parseMsEnv('PENDING_DEPLOYMENTS_CLEANUP_INTERVAL', ms('1h'))
+      // Expired uploads stay charged against quotas until reclaimed, so reclaim them soon after expiry.
+      parseMsEnv('PENDING_DEPLOYMENTS_CLEANUP_INTERVAL', ms('10m'))
     )
     // Max pending (partial) uploads per deployer, including expired ones awaiting cleanup.
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_PENDING_DEPLOYMENTS_PER_DEPLOYER, () =>
