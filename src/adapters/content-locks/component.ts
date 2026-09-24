@@ -16,8 +16,15 @@ const ENTITY_LOCK_MAX_WAIT_MS = 60_000
 const WRITER_LOCK_TIMEOUT_MS = 10_000
 const LOCK_NOT_AVAILABLE = '55P03'
 
+// node-postgres reports a pool-connect timeout with one of two messages, depending on whether it was
+// waiting for a free connection or still opening a new one.
+const POOL_TIMEOUT_MESSAGES = [
+  'timeout exceeded when trying to connect',
+  'Connection terminated due to connection timeout'
+]
+
 function isPoolTimeout(error: unknown): boolean {
-  return error instanceof Error && error.message.includes('timeout exceeded when trying to connect')
+  return error instanceof Error && POOL_TIMEOUT_MESSAGES.some((message) => error.message.includes(message))
 }
 
 /**
