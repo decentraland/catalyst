@@ -1,10 +1,10 @@
 import { IHttpServerComponent } from '@dcl/core-commons'
 import { Field } from '@well-known-components/multipart-wrapper'
 import busboy from 'busboy'
-import { createWriteStream, WriteStream } from 'fs'
-import { mkdtemp, rm } from 'fs/promises'
+import { createWriteStream } from 'fs'
+import { mkdir, mkdtemp, rm } from 'fs/promises'
 import path from 'path'
-import { Readable } from 'stream'
+import { Readable, Writable } from 'stream'
 import { pipeline } from 'stream/promises'
 import { FormDataContext, SpooledFile } from '../types'
 import { IUploadBudget, UploadBudgetExceededError, UploadBudgetLease } from '../adapters/upload-budget'
@@ -43,7 +43,13 @@ export type MultipartOptions = {
   tmpFolder: string
   /** Bounds the bytes spooled across concurrent requests. */
   uploadBudget?: IUploadBudget
+  /** Opens a temporary file for writing. */
+  createWriteStream?: (filePath: string) => Writable
 }
+
+// Temporary files a request writes at once: busboy moves to the next part while earlier files are
+// still flushing, so without a cap one request could hold a descriptor per part.
+export const MAX_OPEN_SPOOL_FILES = 8
 
 export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T extends IHttpServerComponent.IResponse>(
   handler: (ctx: Ctx) => Promise<T>,
@@ -108,8 +114,13 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       throw new InvalidRequestError('Invalid request: expected a multipart/form-data body')
     }
 
+    // Recreated if an overlapping process's startup removed it while this one was idle.
+    await mkdir(options.tmpFolder, { recursive: true })
     const directory = await mkdtemp(path.join(options.tmpFolder, 'upload-'))
-    const writers = new Set<WriteStream>()
+    const openWriter = options.createWriteStream ?? createWriteStream
+    const writers = new Set<Writable>()
+    // Parts paused until a temporary file slot frees up.
+    const waitingParts: Array<() => void> = []
     const writes: Promise<void>[] = []
     try {
       // Null-prototype maps so that an attacker-controlled field/file name such as `__proto__` or
@@ -133,6 +144,7 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
           return
         }
         aborted = true
+        waitingParts.length = 0
         formDataParser.destroy(error)
         for (const writer of writers) {
           writer.destroy()
@@ -194,41 +206,51 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       })
 
       let fileCount = 0
+      // The last part sent under a field name wins, whichever file finishes flushing last.
+      const latestPart: Record<string, number> = Object.create(null)
       formDataParser.on('file', function (name, stream, info) {
         if (aborted) {
           stream.resume()
           return
         }
-        // Temporary names are sequence numbers: field names are client-controlled.
-        const filePath = path.join(directory, String(fileCount++))
-        const writer = createWriteStream(filePath)
-        writers.add(writer)
-        let size = 0
-        writes.push(
-          new Promise<void>((resolve) => {
-            writer.on('finish', function () {
-              if (!aborted) {
-                files[name] = Object.assign({}, info, { fieldname: name, path: filePath, size })
-              }
+        const part = fileCount++
+        latestPart[name] = part
+        const spool = (): void => {
+          // Temporary names are sequence numbers: field names are client-controlled.
+          const filePath = path.join(directory, String(part))
+          const writer = openWriter(filePath)
+          writers.add(writer)
+          let size = 0
+          writes.push(
+            new Promise<void>((resolve) => {
+              writer.on('finish', function () {
+                if (!aborted && latestPart[name] === part) {
+                  files[name] = Object.assign({}, info, { fieldname: name, path: filePath, size })
+                }
+              })
+              writer.on('error', function (error: Error) {
+                writeError = writeError ?? error
+                abort(error)
+              })
+              writer.on('close', function () {
+                writers.delete(writer)
+                resolve()
+                if (!aborted) {
+                  waitingParts.shift()?.()
+                }
+              })
             })
-            writer.on('error', function (error: Error) {
-              writeError = writeError ?? error
-              abort(error)
-            })
-            writer.on('close', function () {
-              writers.delete(writer)
-              resolve()
-            })
+          )
+          stream.on('data', function (data: Buffer) {
+            if (aborted) {
+              return
+            }
+            size += data.length
+            totalBytes += data.length
+            rejectIfOverTotal()
           })
-        )
-        stream.on('data', function (data: Buffer) {
-          if (aborted) {
-            return
-          }
-          size += data.length
-          totalBytes += data.length
-          rejectIfOverTotal()
-        })
+          stream.pipe(writer)
+        }
         // Emitted when the file exceeds `maxFileSize`. busboy truncates the stream, so we
         // must reject rather than store partial (and therefore wrong-hash) content.
         stream.on('limit', function () {
@@ -241,7 +263,13 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
         stream.on('error', function (err: Error) {
           abort(err)
         })
-        stream.pipe(writer)
+        if (writers.size >= MAX_OPEN_SPOOL_FILES) {
+          // Pausing the part backpressures busboy and the request body until a file closes.
+          stream.pause()
+          waitingParts.push(spool)
+        } else {
+          spool()
+        }
       })
 
       // @dcl/http-server v2 hands handlers a native `Request`, whose `body` is a web `ReadableStream`

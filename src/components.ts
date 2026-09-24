@@ -20,7 +20,6 @@ import { createTracerComponent } from '@well-known-components/tracer-component'
 import { HTTPProvider } from 'eth-connect'
 import ms from 'ms'
 import path from 'path'
-import { rm } from 'fs/promises'
 
 // =============================================================================
 // Infrastructure / config
@@ -45,6 +44,7 @@ import { createContentValidator } from './adapters/content-validator'
 import { createDatabaseComponent } from './adapters/database'
 import { createContentLocks } from './adapters/content-locks'
 import { createUploadBudget } from './adapters/upload-budget'
+import { prepareUploadSpool } from './logic/upload-spool'
 import { createDenylist } from './adapters/denylist'
 import { createDeployedEntitiesBloomFilter } from './adapters/deployed-entities-bloom-filter'
 import { createFailedDeployments } from './adapters/failed-deployments'
@@ -139,10 +139,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const contentStorageFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
   const tmpDownloadFolder = path.join(contentStorageFolder, '_tmp')
   await fs.mkdir(tmpDownloadFolder, { recursive: true })
-  // Per-request spools of POST /entities bodies. Anything left here is from a previous process.
-  const uploadTmpFolder = path.join(contentStorageFolder, '_uploads')
-  await rm(uploadTmpFolder, { recursive: true, force: true })
-  await fs.mkdir(uploadTmpFolder, { recursive: true })
+  // Per-request spools of POST /entities bodies, in a folder unique to this process.
+  const uploadTmpFolder = await prepareUploadSpool(path.join(contentStorageFolder, '_uploads'))
   const staticConfigs = {
     contentStorageFolder,
     tmpDownloadFolder,
