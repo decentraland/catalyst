@@ -133,6 +133,43 @@ describe('Integration - content locks', () => {
     })
   })
 
+  describe('when a writer waits behind a deployment that keeps the shared lock past the bounded wait', () => {
+    let locks: IContentLocks
+    let deployment: Promise<string>
+    let writerError: unknown
+    let laterDeployment: string
+
+    beforeEach(async () => {
+      const env = new Environment(server.components.env).setConfig(EnvironmentConfig.CONTENT_LOCK_CONNECTIONS, 3)
+      locks = createContentLocks({ env, logs: server.components.logs }, { maxWaitMs: 1_000, writerLockTimeoutMs: 200 })
+      let releaseDeployment!: () => void
+      const held = new Promise<void>((resolve) => (releaseDeployment = resolve))
+      deployment = locks.withRead(async () => {
+        await held
+        return 'deployment'
+      })
+      await new Promise((resolve) => setTimeout(resolve, 100))
+      writerError = await locks.withWrite(async () => 'writer').catch((e) => e)
+      laterDeployment = await Promise.race([
+        locks.withRead(async () => 'later deployment'),
+        new Promise<string>((resolve) => setTimeout(() => resolve('blocked'), 3000))
+      ])
+      releaseDeployment()
+    })
+
+    afterEach(async () => {
+      await Promise.allSettled([deployment])
+      await locks[STOP_COMPONENT]?.()
+    })
+
+    it('should fail the writer with the typed busy error and leave the gate open to later deployments', () => {
+      expect({ writerError, laterDeployment }).toEqual({
+        writerError: new EntityLockTimeoutError(),
+        laterDeployment: 'later deployment'
+      })
+    })
+  })
+
   describe('when the lock pool stays saturated past the bounded wait', () => {
     let locks: IContentLocks
     let holder: Promise<string>

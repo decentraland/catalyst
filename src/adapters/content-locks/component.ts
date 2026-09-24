@@ -12,6 +12,9 @@ const CONTENT_LOCK_KEY = 'catalyst-content-gc'
 const ENTITY_LOCK_RETRY_MIN_MS = 25
 const ENTITY_LOCK_RETRY_MAX_MS = 500
 const ENTITY_LOCK_MAX_WAIT_MS = 60_000
+// How long one writer attempt queues for the gate, and pauses after failing, so deployments get turns.
+const WRITER_LOCK_TIMEOUT_MS = 10_000
+const LOCK_NOT_AVAILABLE = '55P03'
 
 function isPoolTimeout(error: unknown): boolean {
   return error instanceof Error && error.message.includes('timeout exceeded when trying to connect')
@@ -31,6 +34,7 @@ export function createContentLocks(
 ): IContentLocks {
   const { env, logs } = components
   const maxWaitMs = options.maxWaitMs ?? ENTITY_LOCK_MAX_WAIT_MS
+  const writerLockTimeoutMs = options.writerLockTimeoutMs ?? WRITER_LOCK_TIMEOUT_MS
   const logger = logs.getLogger('content-locks')
   const pool = new Pool({
     port: env.getConfig<number>(EnvironmentConfig.PSQL_PORT),
@@ -44,8 +48,8 @@ export function createContentLocks(
   })
   pool.on('error', (error) => logger.error(error))
 
-  // One attempt. Only GC blocks on the exclusive gate; deployments report a GC batch or a busy entity
-  // back instead of waiting, so they never hold a pool connection while waiting.
+  // One attempt. Only GC queues on the exclusive gate, bounded by lock_timeout; deployments report a GC
+  // batch or a busy entity back instead of waiting, so they never hold a pool connection while waiting.
   async function attempt<T>(
     exclusive: boolean,
     operation: () => Promise<T>,
@@ -64,7 +68,15 @@ export function createContentLocks(
     let failed = false
     try {
       if (exclusive) {
-        await client.query(SQL`SELECT pg_advisory_lock(hashtextextended(${CONTENT_LOCK_KEY}, 0))`)
+        await client.query(`SET lock_timeout = ${Math.ceil(writerLockTimeoutMs)}`)
+        try {
+          await client.query(SQL`SELECT pg_advisory_lock(hashtextextended(${CONTENT_LOCK_KEY}, 0))`)
+        } catch (error) {
+          if ((error as { code?: string }).code === LOCK_NOT_AVAILABLE) {
+            return { acquired: false }
+          }
+          throw error
+        }
       } else {
         const gate = await client.query<{ acquired: boolean }>(
           SQL`SELECT pg_try_advisory_lock_shared(hashtextextended(${CONTENT_LOCK_KEY}, 0)) AS acquired`
@@ -87,6 +99,9 @@ export function createContentLocks(
       // releases its session locks.
       try {
         await client.query('SELECT pg_advisory_unlock_all()')
+        if (exclusive) {
+          await client.query('RESET lock_timeout')
+        }
       } catch {
         failed = true
       }
@@ -101,10 +116,11 @@ export function createContentLocks(
       if (result.acquired) {
         return result.value
       }
-      if (Date.now() + delayMs > deadline) {
+      const pauseMs = exclusive ? writerLockTimeoutMs : delayMs
+      if (Date.now() + pauseMs > deadline) {
         throw new EntityLockTimeoutError(entityId)
       }
-      await sleep(delayMs)
+      await sleep(pauseMs)
     }
   }
 

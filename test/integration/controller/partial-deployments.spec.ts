@@ -586,6 +586,31 @@ describe('Integration - Partial deployments', () => {
     })
   })
 
+  describe('when a contract wallet resumes its upload without the entity file', () => {
+    let response: Response
+
+    beforeEach(async () => {
+      const deployment = await prepareSceneDeployment(
+        ['6,6'],
+        { 'a.txt': Buffer.from(`contract wallet ${Date.now()}-${Math.random()}`) },
+        identity
+      )
+      // Signed for a contract address: only the provider-backed verifier (stubbed to accept) can validate it.
+      const contractChain = Authenticator.createSimpleAuthChain(
+        deployment.entityId,
+        createIdentity().address,
+        Authenticator.createSignature(identity, deployment.entityId)
+      )
+      const contractDeployment = { ...deployment, authChain: contractChain }
+      await postForm(server, buildPartialForm(contractDeployment, [deployment.entityId]))
+      response = await postForm(server, buildPartialForm(contractDeployment, deployment.contentHashes))
+    })
+
+    it('should validate the signature with the configured verifier and publish the entity', () => {
+      expect(response.status).toBe(200)
+    })
+  })
+
   describe('when another signer sends a batch without the entity file', () => {
     let response: Response
 
