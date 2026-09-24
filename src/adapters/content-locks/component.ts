@@ -5,7 +5,7 @@ import { setTimeout as sleep } from 'timers/promises'
 import { EnvironmentConfig } from '../../Environment'
 import { AppComponents } from '../../types'
 import { EntityLockTimeoutError } from './errors'
-import { IContentLocks } from './types'
+import { ContentLocksOptions, IContentLocks } from './types'
 
 const CONTENT_LOCK_KEY = 'catalyst-content-gc'
 // Backoff while GC or another request holds a lock, up to a bounded total wait.
@@ -13,15 +13,24 @@ const ENTITY_LOCK_RETRY_MIN_MS = 25
 const ENTITY_LOCK_RETRY_MAX_MS = 500
 const ENTITY_LOCK_MAX_WAIT_MS = 60_000
 
+function isPoolTimeout(error: unknown): boolean {
+  return error instanceof Error && error.message.includes('timeout exceeded when trying to connect')
+}
+
 /**
  * Creates the storage/GC gate on a dedicated connection pool, shared by every process using this
- * database. Deployments share it; garbage collection takes it exclusively. Lock waits are not bounded
- * by a query timeout, so an exclusive request waits for in-flight deployments to settle.
+ * database. Deployments share it; garbage collection takes it exclusively, one writer per process at a
+ * time so waiting writers hold at most one connection.
  * @param components Environment and logging.
+ * @param options Bounded wait and pool connection timeout.
  * @returns Lifecycle-managed content locks.
  */
-export function createContentLocks(components: Pick<AppComponents, 'env' | 'logs'>): IContentLocks {
+export function createContentLocks(
+  components: Pick<AppComponents, 'env' | 'logs'>,
+  options: ContentLocksOptions = {}
+): IContentLocks {
   const { env, logs } = components
+  const maxWaitMs = options.maxWaitMs ?? ENTITY_LOCK_MAX_WAIT_MS
   const logger = logs.getLogger('content-locks')
   const pool = new Pool({
     port: env.getConfig<number>(EnvironmentConfig.PSQL_PORT),
@@ -31,7 +40,7 @@ export function createContentLocks(components: Pick<AppComponents, 'env' | 'logs
     password: env.getConfig<string>(EnvironmentConfig.PSQL_PASSWORD),
     idleTimeoutMillis: env.getConfig<number>(EnvironmentConfig.PG_IDLE_TIMEOUT),
     max: env.getConfig<number>(EnvironmentConfig.CONTENT_LOCK_CONNECTIONS),
-    connectionTimeoutMillis: 10_000
+    connectionTimeoutMillis: options.connectionTimeoutMs ?? 10_000
   })
   pool.on('error', (error) => logger.error(error))
 
@@ -42,7 +51,16 @@ export function createContentLocks(components: Pick<AppComponents, 'env' | 'logs
     operation: () => Promise<T>,
     entityId?: string
   ): Promise<{ acquired: false } | { acquired: true; value: T }> {
-    const client: PoolClient = await pool.connect()
+    let client: PoolClient
+    try {
+      client = await pool.connect()
+    } catch (error) {
+      // A saturated pool is busy like a held lock: retried, then reported as a typed timeout.
+      if (isPoolTimeout(error)) {
+        return { acquired: false }
+      }
+      throw error
+    }
     let failed = false
     try {
       if (exclusive) {
@@ -77,17 +95,26 @@ export function createContentLocks(components: Pick<AppComponents, 'env' | 'logs
   }
 
   async function run<T>(exclusive: boolean, operation: () => Promise<T>, entityId?: string): Promise<T> {
-    const deadline = Date.now() + ENTITY_LOCK_MAX_WAIT_MS
+    const deadline = Date.now() + maxWaitMs
     for (let delayMs = ENTITY_LOCK_RETRY_MIN_MS; ; delayMs = Math.min(delayMs * 2, ENTITY_LOCK_RETRY_MAX_MS)) {
       const result = await attempt(exclusive, operation, entityId)
       if (result.acquired) {
         return result.value
       }
       if (Date.now() + delayMs > deadline) {
-        throw new EntityLockTimeoutError(entityId ?? 'content')
+        throw new EntityLockTimeoutError(entityId)
       }
       await sleep(delayMs)
     }
+  }
+
+  // Writers are rare (GC and expired-upload cleanup). Queuing them in-process keeps a waiting writer from
+  // holding more than one connection while it waits behind in-flight deployments.
+  let writers: Promise<unknown> = Promise.resolve()
+  function withWrite<T>(operation: () => Promise<T>): Promise<T> {
+    const turn = writers.then(() => run(true, operation))
+    writers = turn.catch(() => undefined)
+    return turn
   }
 
   return {
@@ -99,6 +126,6 @@ export function createContentLocks(components: Pick<AppComponents, 'env' | 'logs
       await pool.end()
     },
     withRead: (operation, entityId) => run(false, operation, entityId),
-    withWrite: (operation) => run(true, operation)
+    withWrite
   }
 }

@@ -11,3 +11,10 @@ export interface IContentLocks extends IBaseComponent {
   /** Runs a reference check plus physical delete excluding every in-flight storage mutation. */
   withWrite<T>(operation: () => Promise<T>): Promise<T>
 }
+
+export type ContentLocksOptions = {
+  /** Longest a request retries a busy lock or a saturated pool before failing, in milliseconds. */
+  maxWaitMs?: number
+  /** How long one attempt waits for a pool connection, in milliseconds. */
+  connectionTimeoutMs?: number
+}

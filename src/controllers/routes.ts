@@ -50,19 +50,19 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
       max: env.getConfig<number>(EnvironmentConfig.POST_ENTITIES_DAILY_QUOTA_MAX),
       windowSeconds: 86400
     })
-    // Bodies are bounded by the upload budget ahead of the parser, so the per-IP request limits can run
-    // after it: they count regular deployments only, since a partial upload is many batches.
-    const createEntityWithRequestLimits = async (
+    // The burst limit admits every request before its body is read. The daily quota runs after parsing
+    // and counts regular deployments only: a partial upload is many batches, bounded by its account's
+    // byte quotas instead.
+    const createEntityWithDailyQuota = async (
       ctx: IHttpServerComponent.PathAwareContext<FormDataContext<GlobalContext>, '/entities'>
     ): Promise<IHttpServerComponent.IResponse> =>
-      ctx.formData.fields.partial?.value === 'true'
-        ? createEntity(ctx)
-        : burstLimit(ctx, () => dailyQuota(ctx, () => createEntity(ctx)))
+      ctx.formData.fields.partial?.value === 'true' ? createEntity(ctx) : dailyQuota(ctx, () => createEntity(ctx))
     router.post(
       '/entities',
+      burstLimit,
       preventExecutionIfBoostrapping({ syncOrchestrator: components.syncOrchestrator }),
       multipartParserWrapper(
-        createEntityWithRequestLimits,
+        createEntityWithDailyQuota,
         {
           maxFileSize: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FILE_SIZE),
           maxFiles: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FILE_COUNT),
