@@ -44,8 +44,8 @@ export const DEFAULT_MAX_UPLOAD_FIELD_SIZE = 100 * 1024 // 100 KB per field valu
 export const DEFAULT_MAX_UPLOAD_TOTAL_SIZE = 2 * 1024 * 1024 * 1024 // 2 GiB total per request
 
 // Aggregate bound on POST /entities bodies buffered at once across all clients. It must fit one
-// MAX_UPLOAD_TOTAL_SIZE request. Partial batches are exempt from the per-IP request limits below and
-// are bounded by this budget instead.
+// MAX_UPLOAD_TOTAL_SIZE request. Partial batches are exempt from the per-IP daily quota below and are
+// bounded by this budget and their account's byte quotas instead.
 export const DEFAULT_MAX_IN_FLIGHT_UPLOAD_BYTES = 4 * 1024 * 1024 * 1024 // 4 GiB
 export const DEFAULT_MAX_CONCURRENT_UPLOADS = 40
 // A body still arriving after this is aborted with 408, so slow senders can't hold upload slots.
