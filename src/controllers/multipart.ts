@@ -130,14 +130,22 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       formDataParser.destroy(error)
     }
     let reservedBytes = initialReservation
+    // With a declared size, files are copied into one buffer of that size, so the reservation is the peak.
+    const declaredBody = initialReservation > 0 ? createDeclaredBodyBuffer(initialReservation) : undefined
     const rejectIfOverTotal = (): boolean => {
-      // A body larger than its declared size (or without one) grows the reservation as it arrives.
-      if (lease && totalBytes > reservedBytes) {
-        if (!lease.resize(totalBytes)) {
-          abort(new ServiceUnavailableError('Server is buffering too many uploads, please retry shortly.'))
+      if (totalBytes > reservedBytes) {
+        if (declaredBody) {
+          abort(new InvalidRequestError('The request body is larger than its declared Content-Length.'))
           return true
         }
-        reservedBytes = totalBytes
+        // A body without a declared size grows the reservation as it arrives.
+        if (lease) {
+          if (!lease.resize(totalBytes)) {
+            abort(new ServiceUnavailableError('Server is buffering too many uploads, please retry shortly.'))
+            return true
+          }
+          reservedBytes = totalBytes
+        }
       }
       if (maxTotalSize !== undefined && totalBytes > maxTotalSize) {
         abort(
@@ -195,6 +203,7 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
         stream.on('error', () => undefined).resume()
         return
       }
+      const declaredFile = declaredBody?.openFile()
       const chunks: Buffer[] = []
       stream.on('data', function (data: Buffer) {
         if (aborted) {
@@ -204,7 +213,11 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
         if (rejectIfOverTotal()) {
           return
         }
-        chunks.push(data)
+        if (!declaredFile) {
+          chunks.push(data)
+        } else if (!declaredFile.write(data)) {
+          abort(new Error('Multipart file data arrived out of order'))
+        }
       })
       // Emitted when the file exceeds `maxFileSize`. busboy truncates the stream, so we
       // must reject rather than store partial (and therefore wrong-hash) content.
@@ -222,7 +235,11 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
         if (aborted) {
           return
         }
-        // Concatenating briefly holds a second copy of the file, so reserve it for the copy's duration.
+        if (declaredFile) {
+          files[name] = Object.assign(Object.assign({}, info), { fieldname: name, value: declaredFile.contents() })
+          return
+        }
+        // Without a declared size, concatenating briefly holds a second copy, so reserve it meanwhile.
         const fileBytes = chunks.reduce((sum, chunk) => sum + chunk.length, 0)
         if (lease && !lease.resize(reservedBytes + fileBytes)) {
           abort(new ServiceUnavailableError('Server is buffering too many uploads, please retry shortly.'))
@@ -269,5 +286,41 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
 
     const newContext = Object.assign(Object.create(ctx), { formData: { fields, files } })
     return handler(newContext as Ctx)
+  }
+}
+
+/**
+ * One allocation of a request's declared size that its files are copied into back to back, so they
+ * never hold more memory than was reserved for the request.
+ */
+function createDeclaredBodyBuffer(capacity: number) {
+  let buffer: Buffer | undefined
+  let used = 0
+  return {
+    /** Starts a file. Its bytes must all arrive before the next file's, as busboy parses parts in order. */
+    openFile() {
+      let start = -1
+      let end = -1
+      return {
+        /** Appends a chunk. Returns false when another file wrote in between or the capacity is exceeded. */
+        write(chunk: Buffer): boolean {
+          if (start === -1) {
+            start = end = used
+          }
+          if (end !== used || used + chunk.length > capacity) {
+            return false
+          }
+          buffer ??= Buffer.allocUnsafe(capacity)
+          chunk.copy(buffer, used)
+          used += chunk.length
+          end = used
+          return true
+        },
+        /** The file's bytes, a view into the shared buffer. */
+        contents(): Buffer {
+          return buffer && start !== -1 ? buffer.subarray(start, end) : Buffer.alloc(0)
+        }
+      }
+    }
   }
 }

@@ -308,6 +308,41 @@ describe('when parsing a multipart request with upload limits', () => {
     })
   })
 
+  describe('and the request declares its content length and carries several files', () => {
+    let files: Record<string, { value: Buffer }>
+
+    beforeEach(async () => {
+      const form = new FormData()
+      form.append('entityId', 'an-entity-id')
+      form.append('a', Buffer.alloc(3000, 1), { filename: 'a' })
+      form.append('empty', Buffer.alloc(0), { filename: 'empty' })
+      form.append('b', Buffer.from('second file'), { filename: 'b' })
+      handler.mockImplementationOnce(async (ctx: any) => {
+        files = ctx.formData.files
+        return { status: 200, body: {} }
+      })
+      const wrapped = multipartParserWrapper(handler as any, { maxFileSize: 4096, maxFiles: 10 })
+      const headers: Record<string, string> = {
+        ...form.getHeaders(),
+        'content-length': String(form.getBuffer().length)
+      }
+      await wrapped({
+        request: {
+          headers: { get: (name: string) => headers[name.toLowerCase()] },
+          body: Readable.toWeb(Readable.from(form.getBuffer()))
+        }
+      } as any)
+    })
+
+    it('should hand the handler each file with its own bytes', () => {
+      expect({ a: files.a.value, empty: files.empty.value, b: files.b.value.toString() }).toEqual({
+        a: Buffer.alloc(3000, 1),
+        empty: Buffer.alloc(0),
+        b: 'second file'
+      })
+    })
+  })
+
   describe('and two files share the same field name', () => {
     let error: unknown
 

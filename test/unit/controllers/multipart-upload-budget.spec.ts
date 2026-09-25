@@ -2,8 +2,9 @@ import FormData from 'form-data'
 import { Readable } from 'stream'
 import { IHttpServerComponent } from '@dcl/core-commons'
 import { multipartParserWrapper } from '../../../src/controllers/multipart'
-import { ServiceUnavailableError } from '../../../src/controllers/errors'
-import { IUploadBudget, UploadBudgetExceededError } from '../../../src/adapters/upload-budget'
+import { InvalidRequestError, ServiceUnavailableError } from '../../../src/controllers/errors'
+import { createUploadBudget, IUploadBudget, UploadBudgetExceededError } from '../../../src/adapters/upload-budget'
+import { EnvironmentConfig } from '../../../src/Environment'
 
 type Wrapped = (ctx: IHttpServerComponent.DefaultContext<any>) => Promise<IHttpServerComponent.IResponse>
 
@@ -96,14 +97,51 @@ describe('when parsing a multipart request under an upload budget', () => {
     })
   })
 
-  describe('and the body outgrows its reservation beyond what the budget can fit', () => {
+  describe('and the request declares its content length', () => {
+    let files: Record<string, { value: Buffer }>
+
+    beforeEach(async () => {
+      handler.mockImplementationOnce(async (ctx: any) => {
+        files = ctx.formData.files
+        return { status: 200, body: {} }
+      })
+      await wrapped(
+        buildContext(form.getBuffer(), { ...form.getHeaders(), 'content-length': String(form.getBuffer().length) })
+      )
+    })
+
+    it('should hold the files within the declared reservation without growing it', () => {
+      expect({ resized: lease.resize.mock.calls, file: files.file1.value }).toEqual({
+        resized: [],
+        file: Buffer.alloc(100, 1)
+      })
+    })
+  })
+
+  describe('and the body is larger than its declared content length', () => {
+    let error: unknown
+
+    beforeEach(async () => {
+      error = await wrapped(buildContext(form.getBuffer(), { ...form.getHeaders(), 'content-length': '10' })).catch(
+        (e) => e
+      )
+    })
+
+    it('should reject with an InvalidRequestError, skip the handler and release the reservation', () => {
+      expect({ error, handled: handler.mock.calls.length, released: lease.release.mock.calls.length }).toEqual({
+        error: new InvalidRequestError('The request body is larger than its declared Content-Length.'),
+        handled: 0,
+        released: 1
+      })
+    })
+  })
+
+  describe('and a body without a declared size outgrows what the budget can fit', () => {
     let error: unknown
 
     beforeEach(async () => {
       lease.resize.mockReturnValue(false)
-      error = await wrapped(buildContext(form.getBuffer(), { ...form.getHeaders(), 'content-length': '10' })).catch(
-        (e) => e
-      )
+      error = await wrapped(buildContext(form.getBuffer(), form.getHeaders())).catch((e) => e)
     })
 
     it('should reject with a ServiceUnavailableError, skip the handler and release the reservation', () => {
@@ -115,27 +153,26 @@ describe('when parsing a multipart request under an upload budget', () => {
     })
   })
 
-  describe('and a file is concatenated within the budget', () => {
-    let declaredSize: number
+  describe('and a file of a body without a declared size is concatenated within the budget', () => {
+    let bodyBytes: number
 
     beforeEach(async () => {
-      declaredSize = form.getBuffer().length
-      await wrapped(buildContext(form.getBuffer(), { ...form.getHeaders(), 'content-length': String(declaredSize) }))
+      bodyBytes = 'an-entity-id'.length + 100
+      await wrapped(buildContext(form.getBuffer(), form.getHeaders()))
     })
 
     it('should reserve the extra copy while concatenating and return it afterwards', () => {
-      expect(lease.resize.mock.calls).toEqual([[declaredSize + 100], [declaredSize]])
+      expect(lease.resize.mock.calls.slice(-2)).toEqual([[bodyBytes + 100], [bodyBytes]])
     })
   })
 
-  describe('and the budget cannot fit the copy made while concatenating a file', () => {
+  describe('and the budget cannot fit the copy made while concatenating a file of a body without a declared size', () => {
     let error: unknown
 
     beforeEach(async () => {
-      lease.resize.mockReturnValue(false)
-      error = await wrapped(
-        buildContext(form.getBuffer(), { ...form.getHeaders(), 'content-length': String(form.getBuffer().length) })
-      ).catch((e) => e)
+      const bodyBytes = 'an-entity-id'.length + 100
+      lease.resize.mockImplementation((bytes: number) => bytes <= bodyBytes)
+      error = await wrapped(buildContext(form.getBuffer(), form.getHeaders())).catch((e) => e)
     })
 
     it('should reject with a ServiceUnavailableError without running the handler', () => {
@@ -175,5 +212,40 @@ describe('when parsing a multipart request under an upload budget', () => {
         released: 1
       })
     })
+  })
+})
+
+describe('when parsing multipart requests that together fill the upload budget', () => {
+  let outcomes: Array<number | string>
+
+  beforeEach(async () => {
+    const form = new FormData()
+    form.append('entityId', 'an-entity-id')
+    form.append('file1', Buffer.alloc(1000, 1), { filename: 'file1' })
+    const body = form.getBuffer()
+    const headers = { ...form.getHeaders(), 'content-length': String(body.length) }
+    const values: Partial<Record<EnvironmentConfig, number>> = {
+      [EnvironmentConfig.MAX_IN_FLIGHT_UPLOAD_BYTES]: 2 * body.length,
+      [EnvironmentConfig.MAX_CONCURRENT_UPLOADS]: 2,
+      [EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE]: body.length
+    }
+    const budget = createUploadBudget({
+      env: { getConfig: (key: EnvironmentConfig) => values[key] },
+      metrics: { observe: jest.fn(), increment: jest.fn() }
+    } as any)
+    const wrapped: Wrapped = multipartParserWrapper(
+      jest.fn().mockResolvedValue({ status: 200, body: {} }) as any,
+      { maxFileSize: 4096, maxFiles: 10, maxTotalSize: body.length },
+      budget
+    )
+    const responses = await Promise.all([
+      wrapped(buildContext(body, headers)).catch((e) => e),
+      wrapped(buildContext(body, headers)).catch((e) => e)
+    ])
+    outcomes = responses.map((response) => (response instanceof Error ? response.name : response.status))
+  })
+
+  it('should complete every admitted request', () => {
+    expect(outcomes).toEqual([200, 200])
   })
 })
