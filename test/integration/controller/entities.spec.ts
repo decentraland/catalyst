@@ -1,3 +1,4 @@
+import { Entity } from '@dcl/schemas'
 import { makeNoopValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import { createDefaultServer } from '../simpleTestEnvironment'
 import { TestProgram } from '../TestProgram'
@@ -21,6 +22,9 @@ describe('Integration - Entities', () => {
   })
 
   it('returns 500 when there is an exception while deploying the entity', async () => {
+    jest
+      .spyOn(server.components.deployer, 'readDeployment')
+      .mockResolvedValue({ hashes: [], entity: { timestamp: Date.now() } as Entity })
     jest.spyOn(server.components.deployer, 'deployEntity').mockRejectedValue({ error: 'error' })
 
     // Send a well-formed multipart body so the request actually reaches the deployer; the mocked

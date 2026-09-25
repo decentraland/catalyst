@@ -45,6 +45,7 @@ import { createDatabaseComponent } from './adapters/database'
 import { createContentLocks } from './adapters/content-locks'
 import { createUploadBudget } from './adapters/upload-budget'
 import { createUploadSpool } from './adapters/upload-spool'
+import { createDeploymentQuota } from './logic/deployment-quota'
 import { createDenylist } from './adapters/denylist'
 import { createDeployedEntitiesBloomFilter } from './adapters/deployed-entities-bloom-filter'
 import { createFailedDeployments } from './adapters/failed-deployments'
@@ -548,6 +549,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     }
   )
 
+  const deploymentQuota = createDeploymentQuota({ env, rateLimiter })
+
   // Bound POST /entities bodies on disk and regular deployments in memory; partial batches only use disk.
   const uploadBudget = createUploadBudget({ env, metrics }, 'disk')
   const deploymentMemoryBudget = createUploadBudget({ env, metrics }, 'memory')
@@ -613,6 +616,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     migrationManager,
     pointersRepository,
     rateLimiter,
+    deploymentQuota,
     sequentialExecutor,
     server,
     snapshotGenerationJob,

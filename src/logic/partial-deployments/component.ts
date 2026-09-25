@@ -17,7 +17,7 @@ const FINALIZE_POINTER_CONFLICT_RETRIES = 3
 const FINALIZE_POINTER_CONFLICT_DELAY_MS = 300
 
 // Caps the manifest on both paths: a resume reads it back from storage outside the multipart budget.
-const MAX_ENTITY_FILE_SIZE_BYTES = 10 * 1024 * 1024 // 10 MB
+export const MAX_ENTITY_FILE_SIZE_BYTES = 10 * 1024 * 1024 // 10 MB
 const EMPTY_FILE = new Uint8Array(0)
 
 // Expired uploads reclaimed per cleanup run, and storage keys per exclusive delete batch.

@@ -1,5 +1,6 @@
 import { AuthChain, Authenticator } from '@dcl/crypto'
 import { Entity, EntityType, IPFSv2 } from '@dcl/schemas'
+import { hashV0, hashV1 } from '@dcl/hashing'
 import { isDeepStrictEqual } from 'util'
 import { Readable } from 'stream'
 import { bufferToStream } from '@dcl/catalyst-storage'
@@ -22,7 +23,7 @@ import * as pointerBookkeeping from './pointer-bookkeeping'
 import { createDeployRateLimiter, IDeployRateLimiterComponent } from './rate-limiter'
 import * as serverValidator from './server-validator'
 import ms from 'ms'
-import { DeployEntityOptions, TestableDeploymentService } from './types'
+import { DeployEntityOptions, DeploymentFileSource, ReadDeployment, TestableDeploymentService } from './types'
 
 // Stable fragment of the error returned when a concurrent deploy already holds one of the pointers.
 // Exported so callers (e.g. the partial-deployment finalize retry) can detect this transient condition
@@ -387,7 +388,38 @@ export function createDeploymentService(
     return protocolResult
   }
 
+  function parseEntityFile(entityFile: Uint8Array | undefined, entityId: string): Entity | InvalidResult {
+    if (!entityFile) {
+      return InvalidResult({ errors: [`Failed to find the entity file.`] })
+    }
+    try {
+      const entity = components.entities.parse(entityFile, entityId)
+      if (!entity) {
+        return InvalidResult({ errors: ['There was a problem parsing the entity, it was null'] })
+      }
+      return entity
+    } catch (error) {
+      logger.warn(`There was an error parsing the entity: ${error}`)
+      return InvalidResult({ errors: ['There was a problem parsing the entity'] })
+    }
+  }
+
+  async function readDeployment(
+    files: DeploymentFileSource[],
+    entityId: string
+  ): Promise<ReadDeployment | InvalidResult> {
+    const hash = isIPFSHash(entityId) ? hashV1 : hashV0
+    const hashes: string[] = []
+    for (const file of files) {
+      hashes.push(await hash(file.openStream()))
+    }
+    const entityIndex = hashes.indexOf(entityId)
+    const entity = parseEntityFile(entityIndex === -1 ? undefined : await files[entityIndex].read(), entityId)
+    return isInvalidDeployment(entity) ? entity : { hashes, entity }
+  }
+
   return {
+    readDeployment,
     setRateLimiter(rl: IDeployRateLimiterComponent) {
       rateLimiter = rl
     },
@@ -421,25 +453,10 @@ export function createDeploymentService(
         return deployedEntity.localTimestamp
       }
 
-      // Hash all files
       const hashes: Map<string, Uint8Array> = await hashFiles(components.crypto, files, entityId)
-
-      // Find entity file
-      const entityFile = hashes.get(entityId)
-      if (!entityFile) {
-        return InvalidResult({ errors: [`Failed to find the entity file.`] })
-      }
-
-      // Parse entity file into an Entity
-      let entity: Entity
-      try {
-        entity = components.entities.parse(entityFile, entityId)
-        if (!entity) {
-          return InvalidResult({ errors: ['There was a problem parsing the entity, it was null'] })
-        }
-      } catch (error) {
-        logger.warn(`There was an error parsing the entity: ${error}`)
-        return InvalidResult({ errors: ['There was a problem parsing the entity'] })
+      const entity = parseEntityFile(hashes.get(entityId), entityId)
+      if (isInvalidDeployment(entity)) {
+        return entity
       }
 
       // Reject entities without pointers up front (before claiming any pointer locks)

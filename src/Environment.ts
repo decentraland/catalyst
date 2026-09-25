@@ -75,7 +75,9 @@ export const DEFAULT_POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS = 60
 
 // Daily quota for POST /entities. A second, independent rate-limit bucket that caps the total
 // number of deployments a single IP can make in a 24-hour rolling window. This catches attackers
-// who stay just below the per-minute burst limit but sustain high volume over hours.
+// who stay just below the per-minute burst limit but sustain high volume over hours. It counts regular
+// deployments; once an IP has spent it, its requests are rejected before their body is read unless
+// they declare a partial batch with `POST /entities?partial=true`.
 export const DEFAULT_POST_ENTITIES_DAILY_QUOTA_MAX = 300
 
 /**

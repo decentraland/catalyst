@@ -6,6 +6,7 @@ import { createEntity } from '../../../src/controllers/handlers/create-entity-ha
 import { ServiceUnavailableError } from '../../../src/controllers/errors'
 import { UploadBudgetExceededError } from '../../../src/adapters/upload-budget'
 import { SpooledFile } from '../../../src/types'
+import { DeploymentFileSource } from '../../../src/logic/deployment-service/types'
 
 type Context = Parameters<typeof createEntity>[0]
 
@@ -53,6 +54,8 @@ describe('when creating an entity from spooled upload files', () => {
   let deploymentMemoryBudget: { acquire: jest.Mock }
   let deployEntity: jest.Mock
   let getDeployedEntityTimestamp: jest.Mock
+  let readDeployment: jest.Mock
+  let streamedContents: string[]
   let stageDeployment: jest.Mock
 
   beforeEach(async () => {
@@ -62,6 +65,17 @@ describe('when creating an entity from spooled upload files', () => {
     deploymentMemoryBudget = { acquire: jest.fn().mockReturnValue(lease) }
     deployEntity = jest.fn().mockResolvedValue(1234)
     getDeployedEntityTimestamp = jest.fn().mockResolvedValue(undefined)
+    streamedContents = []
+    // Hashes every file from its stream and reads the first one in as the entity file.
+    readDeployment = jest.fn(async (sources: DeploymentFileSource[]) => {
+      for (const source of sources) {
+        const chunks: Buffer[] = []
+        for await (const chunk of source.openStream()) chunks.push(chunk)
+        streamedContents.push(Buffer.concat(chunks).toString())
+      }
+      await sources[0].read()
+      return { hashes: sources.map((_, i) => `hash-${i}`), entity: { timestamp: 1000 } }
+    })
     stageDeployment = jest.fn().mockResolvedValue({ kind: 'incomplete', missing: ['other-hash'] })
   })
 
@@ -71,17 +85,19 @@ describe('when creating an entity from spooled upload files', () => {
   })
 
   describe('and it is a regular deployment', () => {
-    let deployedContents: string[]
+    let deployedContents: Record<string, string>
     let status: number
 
     beforeEach(async () => {
-      deployEntity.mockImplementationOnce(async (contents: Uint8Array[]) => {
-        deployedContents = contents.map((content) => Buffer.from(content).toString())
+      deployEntity.mockImplementationOnce(async (contents: Map<string, Uint8Array>) => {
+        deployedContents = Object.fromEntries(
+          Array.from(contents).map(([hash, content]) => [hash, Buffer.from(content).toString()])
+        )
         return 1234
       })
       const response = await createEntity(
         buildContext(files, false, {
-          deployer: { deployEntity, getDeployedEntityTimestamp },
+          deployer: { deployEntity, getDeployedEntityTimestamp, readDeployment },
           deploymentMemoryBudget,
           partialDeployments: {}
         })
@@ -89,17 +105,19 @@ describe('when creating an entity from spooled upload files', () => {
       status = response.status
     })
 
-    it('should deploy the files read from disk under a memory budget share sized to them, then release it', () => {
+    it('should hash the files from disk, read the entity file and then every file under memory budget shares, and release them', () => {
       expect({
         status,
+        streamedContents,
         deployedContents,
         reserved: deploymentMemoryBudget.acquire.mock.calls,
         released: lease.release.mock.calls.length
       }).toEqual({
         status: 200,
-        deployedContents: ['{"entity":true}', 'scene content'],
-        reserved: [[files[0].size + files[1].size]],
-        released: 1
+        streamedContents: ['{"entity":true}', 'scene content'],
+        deployedContents: { 'hash-0': '{"entity":true}', 'hash-1': 'scene content' },
+        reserved: [[files[0].size], [files[0].size + files[1].size]],
+        released: 2
       })
     })
   })
@@ -113,7 +131,7 @@ describe('when creating an entity from spooled upload files', () => {
       })
       error = await createEntity(
         buildContext(files, false, {
-          deployer: { deployEntity, getDeployedEntityTimestamp },
+          deployer: { deployEntity, getDeployedEntityTimestamp, readDeployment },
           deploymentMemoryBudget,
           partialDeployments: {}
         })
@@ -141,7 +159,7 @@ describe('when creating an entity from spooled upload files', () => {
       })
       const response = await createEntity(
         buildContext(files, true, {
-          deployer: { deployEntity, getDeployedEntityTimestamp },
+          deployer: { deployEntity, getDeployedEntityTimestamp, readDeployment },
           deploymentMemoryBudget,
           partialDeployments: { stageDeployment }
         })
@@ -149,15 +167,20 @@ describe('when creating an entity from spooled upload files', () => {
       status = response.status
     })
 
-    it('should stage the files from disk without taking a memory budget share', () => {
-      expect({ status, stagedContent, stagedSize, reserved: deploymentMemoryBudget.acquire.mock.calls.length }).toEqual(
-        {
-          status: 202,
-          stagedContent: 'scene content',
-          stagedSize: 'scene content'.length,
-          reserved: 0
-        }
-      )
+    it('should read only its entity file to authenticate and stage the files from disk without taking a memory budget share', () => {
+      expect({
+        status,
+        streamedContents,
+        stagedContent,
+        stagedSize,
+        reserved: deploymentMemoryBudget.acquire.mock.calls.length
+      }).toEqual({
+        status: 202,
+        streamedContents: ['{"entity":true}'],
+        stagedContent: 'scene content',
+        stagedSize: 'scene content'.length,
+        reserved: 0
+      })
     })
   })
 })

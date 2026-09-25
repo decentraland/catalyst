@@ -707,6 +707,35 @@ describe('Integration - Partial deployments', () => {
       })
     })
 
+    describe.each([
+      ['a regular deployment', false],
+      ['a partial deployment', true]
+    ])('and %s of an entity created before its auth chain expired arrives after the expiry', (_, partial) => {
+      let response: Response
+      let deployed: number
+
+      beforeEach(async () => {
+        const deployment = withExpiredAuthChain(
+          await prepareSceneDeployment(
+            [partial ? '16,16' : '17,17'],
+            { 'a.txt': Buffer.from(`expired after creation ${Date.now()}-${Math.random()}`) },
+            identity,
+            Date.now() - 5 * 60 * 1000
+          ),
+          identity
+        )
+        response = await postForm(
+          server,
+          buildPartialForm(deployment, [deployment.entityId, ...deployment.contentHashes], partial)
+        )
+        deployed = await countDeployments(server, deployment.entityId)
+      })
+
+      it('should accept it, as the chain was valid at the entity timestamp', () => {
+        expect({ status: response.status, deployed }).toEqual({ status: 200, deployed: 1 })
+      })
+    })
+
     describe('and an unpublished entity is deployed with an expired auth chain', () => {
       let response: Response
       let body: any

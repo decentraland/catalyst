@@ -1,9 +1,9 @@
 import { Router, createBodySizeLimitMiddleware } from '@dcl/http-server'
-import { IHttpServerComponent } from '@dcl/core-commons'
 import { createSchemaValidatorComponent } from '@dcl/schema-validator-component'
 import { EnvironmentConfig } from '../Environment'
 import { multipartParserWrapper } from './multipart'
-import { FormDataContext, GlobalContext } from '../types'
+import { createDeploymentQuotaAdmission, withDeploymentQuota } from './deployment-quota'
+import { GlobalContext } from '../types'
 import { activeEntitiesBodySchema, getActiveEntitiesHandler } from './handlers/active-entities-handler'
 import { createEntity } from './handlers/create-entity-handler'
 import { createErrorHandler, preventExecutionIfBoostrapping } from './middlewares'
@@ -45,24 +45,16 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
       max: env.getConfig<number>(EnvironmentConfig.POST_ENTITIES_RATE_LIMIT_MAX),
       windowSeconds: env.getConfig<number>(EnvironmentConfig.POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS)
     })
-    const dailyQuota = components.rateLimiter.withRateLimitMiddleware({
-      name: '/entities daily-quota',
-      max: env.getConfig<number>(EnvironmentConfig.POST_ENTITIES_DAILY_QUOTA_MAX),
-      windowSeconds: 86400
-    })
-    // The burst limit admits every request before its body is read. The daily quota runs after parsing
-    // and counts regular deployments only: a partial upload is many batches, bounded by its account's
-    // byte quotas instead.
-    const createEntityWithDailyQuota = async (
-      ctx: IHttpServerComponent.PathAwareContext<FormDataContext<GlobalContext>, '/entities'>
-    ): Promise<IHttpServerComponent.IResponse> =>
-      ctx.formData.fields.partial?.value === 'true' ? createEntity(ctx) : dailyQuota(ctx, () => createEntity(ctx))
+    // The daily quota counts regular deployments after parsing; a source that has spent it is turned
+    // away before its body is read unless the request declares itself partial with `?partial=true`.
+    // Partial uploads are many batches, bounded by their account's byte quotas instead.
     router.post(
       '/entities',
       burstLimit,
       preventExecutionIfBoostrapping({ syncOrchestrator: components.syncOrchestrator }),
+      createDeploymentQuotaAdmission(components),
       multipartParserWrapper(
-        createEntityWithDailyQuota,
+        withDeploymentQuota(components, createEntity),
         {
           maxFileSize: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FILE_SIZE),
           maxFiles: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FILE_COUNT),

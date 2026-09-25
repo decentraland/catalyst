@@ -6,7 +6,8 @@ import { createReadStream } from 'fs'
 import { readFile } from 'fs/promises'
 import { EntityLockTimeoutError } from '../../adapters/content-locks'
 import { UploadBudgetExceededError, UploadBudgetLease } from '../../adapters/upload-budget'
-import { InvalidPartialDeploymentError, StagedFile } from '../../logic/partial-deployments'
+import { InvalidPartialDeploymentError, MAX_ENTITY_FILE_SIZE_BYTES, StagedFile } from '../../logic/partial-deployments'
+import { DeploymentFileSource, ReadDeployment } from '../../logic/deployment-service/types'
 import { FormHandlerContextWithPath, SpooledFile } from '../../types'
 import { InvalidRequestError, ServiceUnavailableError } from '../errors'
 
@@ -17,11 +18,6 @@ type PostEntity202 = { missing: string[] }
 // crafted `authChain[<huge>][...]` field name can't drive a large iteration count on the public,
 // unauthenticated POST /entities endpoint (issue #1936).
 const MAX_AUTH_CHAIN_LENGTH = 10
-
-type ContentFile = {
-  path?: string
-  content: Buffer
-}
 
 type Response =
   | { status: 200; body: PostEntity200 }
@@ -88,8 +84,46 @@ export async function createEntity(
   }
 
   // Authenticate before taking any lock, so a request that can't be authenticated never holds a lock
-  // connection. Same check and message as the deployment validator's signature validation.
-  const signature = await crypto.validateSignature(entityId, authChain, Date.now())
+  // connection. Same check, expiry date (the entity's timestamp) and message as the deployment validator.
+  const uploaded = Object.values(context.formData.files)
+  let regularDeployment: ReadDeployment | undefined
+  let signatureDate: number
+  if (isPartial) {
+    // Only an entity file within staging's size cap is read, as staging itself does.
+    const entityFile = context.formData.files[entityId]
+    const read =
+      entityFile && entityFile.size <= MAX_ENTITY_FILE_SIZE_BYTES
+        ? await deployer.readDeployment([toStagedFile(entityFile)], entityId)
+        : undefined
+    // A batch without a readable entity file is a resume, whose storage read-back needs a chain valid now.
+    signatureDate = read && !isInvalidDeployment(read) ? read.entity.timestamp : Date.now()
+  } else {
+    // Files are hashed from disk; reading the entity file in takes a memory budget share meanwhile.
+    const entityReadLeases: UploadBudgetLease[] = []
+    const sources = uploaded.map(
+      (file): DeploymentFileSource => ({
+        openStream: () => createReadStream(file.path),
+        read: () => {
+          entityReadLeases.push(acquireMemory(file.size))
+          return readFile(file.path)
+        }
+      })
+    )
+    let read: Awaited<ReturnType<typeof deployer.readDeployment>>
+    try {
+      read = await deployer.readDeployment(sources, entityId)
+    } finally {
+      entityReadLeases.forEach((lease) => lease.release())
+    }
+    if (isInvalidDeployment(read)) {
+      metrics.increment('dcl_deployments_endpoint_counter', { kind: 'validation_error' })
+      logger.error(`POST /entities - Deployment failed (${read.errors.join(',')})`, { entityId, ethAddress, userAgent })
+      return { status: 400, body: { errors: read.errors } }
+    }
+    regularDeployment = read
+    signatureDate = read.entity.timestamp
+  }
+  const signature = await crypto.validateSignature(entityId, authChain, signatureDate)
   if (!signature.ok) {
     return { status: 400, body: { errors: [`The signature is invalid. ${signature.message}`] } }
   }
@@ -154,30 +188,18 @@ export async function createEntity(
 
     // The regular deploy pipeline validates from memory, so reading the files in takes a memory budget
     // share, released once the deployment settles.
-    const uploaded = Object.keys(context.formData.files).map((filename) => context.formData.files[filename])
-    let memoryLease: UploadBudgetLease
+    const memoryLease = acquireMemory(uploaded.reduce((sum, file) => sum + file.size, 0))
     try {
-      memoryLease = deploymentMemoryBudget.acquire(uploaded.reduce((sum, file) => sum + file.size, 0))
-    } catch (error) {
-      if (error instanceof UploadBudgetExceededError) {
-        throw new ServiceUnavailableError(error.message)
-      }
-      throw error
-    }
-    const deployFiles: ContentFile[] = []
-    try {
-      for (const file of uploaded) {
-        deployFiles.push({ path: file.fieldname, content: await readFile(file.path) })
+      // Keyed by the hashes computed from disk while authenticating, so they aren't hashed again.
+      const { hashes } = regularDeployment!
+      const deployFiles = new Map<string, Uint8Array>()
+      for (let i = 0; i < uploaded.length; i++) {
+        deployFiles.set(hashes[i], await readFile(uploaded[i].path))
       }
 
       const auditInfo = { authChain, version: 'v3' }
 
-      const deploymentResult = await deployer.deployEntity(
-        deployFiles.map(({ content }) => content),
-        entityId,
-        auditInfo,
-        DeploymentContext.LOCAL
-      )
+      const deploymentResult = await deployer.deployEntity(deployFiles, entityId, auditInfo, DeploymentContext.LOCAL)
 
       if (isSuccessfulDeployment(deploymentResult)) {
         metrics.increment('dcl_deployments_endpoint_counter', { kind: 'success' })
@@ -216,6 +238,17 @@ export async function createEntity(
       memoryLease.release()
     }
   }, entityId)
+
+  function acquireMemory(bytes: number): UploadBudgetLease {
+    try {
+      return deploymentMemoryBudget.acquire(bytes)
+    } catch (error) {
+      if (error instanceof UploadBudgetExceededError) {
+        throw new ServiceUnavailableError(error.message)
+      }
+      throw error
+    }
+  }
 
   async function withContentLock(operation: () => Promise<Response>, lockedEntityId: string): Promise<Response> {
     try {

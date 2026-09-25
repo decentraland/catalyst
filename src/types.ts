@@ -14,6 +14,7 @@ import {
 // Source `IHttpServerComponent` from there so handler context types match what the server provides.
 import { IHttpServerComponent } from '@dcl/core-commons'
 import { IRateLimiterComponent } from '@dcl/rate-limiter-component'
+import { IDeploymentQuotaComponent } from './logic/deployment-quota'
 import { Field } from '@well-known-components/multipart-wrapper'
 import type { FileInfo } from 'busboy'
 import { HTTPProvider } from 'eth-connect'
@@ -134,6 +135,7 @@ export type AppComponents = {
   server: IHttpServerComponent<GlobalContext>
   /** Per-client request budget for regular (non-partial) POST /entities deployments. */
   rateLimiter: IRateLimiterComponent<GlobalContext>
+  deploymentQuota: IDeploymentQuotaComponent
   /** Bounds POST /entities bodies spooled to temporary files. */
   uploadBudget: IUploadBudget
   /** Bounds regular deployment files read into memory. */
