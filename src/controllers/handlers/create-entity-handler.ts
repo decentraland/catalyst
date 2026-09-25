@@ -72,13 +72,27 @@ export async function createEntity(
     throw new InvalidRequestError('Invalid auth chain')
   }
 
+  const isPartial = context.formData.fields.partial?.value === 'true'
+
+  // Deployments are idempotent: a replay of a published entity gets its original timestamp without
+  // re-authentication (its chain may have expired since), as deployEntity has always answered.
+  const deployedTimestamp = await deployer.getDeployedEntityTimestamp(entityId)
+  if (deployedTimestamp !== undefined) {
+    if (isPartial) {
+      metrics.increment('dcl_partial_deployments_staging_total', { kind: 'finalized' })
+    } else {
+      metrics.increment('dcl_deployments_endpoint_counter', { kind: 'success' })
+    }
+    logger.info(`POST /entities - Entity already deployed`, { entityId, ethAddress, userAgent })
+    return { status: 200, body: { creationTimestamp: deployedTimestamp } }
+  }
+
   // Authenticate before taking any lock, so a request that can't be authenticated never holds a lock
   // connection. Same check and message as the deployment validator's signature validation.
   const signature = await crypto.validateSignature(entityId, authChain, Date.now())
   if (!signature.ok) {
     return { status: 400, body: { errors: [`The signature is invalid. ${signature.message}`] } }
   }
-  const isPartial = context.formData.fields.partial?.value === 'true'
 
   // Every deployment holds the shared content lock through publication, so garbage collection can't
   // delete content it stores or reuses; batches of one entity are serialized.

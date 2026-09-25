@@ -399,6 +399,10 @@ export function createDeploymentService(
     getRateLimitTtlSeconds(entityType: EntityType): number {
       return rateLimiter.getRateLimitTtlSeconds(entityType)
     },
+    async getDeployedEntityTimestamp(entityId: string): Promise<number | undefined> {
+      const deployedEntity = await components.deploymentsRepository.getEntityById(components.database, entityId)
+      return deployedEntity?.localTimestamp
+    },
     async deployEntity(
       files: DeploymentFiles,
       entityId: string,

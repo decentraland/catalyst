@@ -9,7 +9,8 @@ import {
   buildPartialForm,
   postForm,
   PreparedDeployment,
-  prepareSceneDeployment
+  prepareSceneDeployment,
+  withExpiredAuthChain
 } from '../../helpers/partial-deployments'
 import { partialDeploymentContract } from '../../contracts/partial-deployment'
 
@@ -655,6 +656,85 @@ describe('Integration - Partial deployments', () => {
       expect({ status: response.status, body: await response.json() }).toEqual({
         status: 400,
         body: { errors: ['This upload expired. Create a new entity with a fresh timestamp.'] }
+      })
+    })
+  })
+
+  describe('when requests are authenticated with the real signature check', () => {
+    beforeEach(() => {
+      jest.mocked(server.components.crypto.validateSignature).mockRestore()
+    })
+
+    describe('and a published entity is replayed after its auth chain expired', () => {
+      let deployment: PreparedDeployment
+      let originalTimestamp: number
+
+      beforeEach(async () => {
+        deployment = await prepareSceneDeployment(
+          ['14,14'],
+          { 'a.txt': Buffer.from(`replayed after expiry ${Date.now()}-${Math.random()}`) },
+          identity
+        )
+        const published = await postForm(
+          server,
+          buildPartialForm(deployment, [deployment.entityId, ...deployment.contentHashes], false)
+        )
+        originalTimestamp = (await published.json()).creationTimestamp
+      })
+
+      describe.each([
+        ['a regular deployment', false],
+        ['a partial batch', true]
+      ])('and the replay is %s', (_, partial) => {
+        let response: Response
+        let body: unknown
+
+        beforeEach(async () => {
+          const replay = withExpiredAuthChain(deployment, identity)
+          response = await postForm(
+            server,
+            buildPartialForm(replay, [replay.entityId, ...replay.contentHashes], partial)
+          )
+          body = await response.json()
+        })
+
+        it('should answer 200 with the original creation timestamp', () => {
+          expect({ status: response.status, body }).toEqual({
+            status: 200,
+            body: { creationTimestamp: originalTimestamp }
+          })
+        })
+      })
+    })
+
+    describe('and an unpublished entity is deployed with an expired auth chain', () => {
+      let response: Response
+      let body: any
+      let deployed: number
+
+      beforeEach(async () => {
+        const deployment = withExpiredAuthChain(
+          await prepareSceneDeployment(
+            ['15,15'],
+            { 'a.txt': Buffer.from(`expired chain ${Date.now()}-${Math.random()}`) },
+            identity
+          ),
+          identity
+        )
+        response = await postForm(
+          server,
+          buildPartialForm(deployment, [deployment.entityId, ...deployment.contentHashes], false)
+        )
+        body = await response.json()
+        deployed = await countDeployments(server, deployment.entityId)
+      })
+
+      it('should reject it with a 400 and not deploy the entity', () => {
+        expect({ status: response.status, errors: body.errors, deployed }).toEqual({
+          status: 400,
+          errors: [expect.stringContaining('The signature is invalid.')],
+          deployed: 0
+        })
       })
     })
   })

@@ -52,6 +52,7 @@ describe('when creating an entity from spooled upload files', () => {
   let lease: { resize: jest.Mock; release: jest.Mock }
   let deploymentMemoryBudget: { acquire: jest.Mock }
   let deployEntity: jest.Mock
+  let getDeployedEntityTimestamp: jest.Mock
   let stageDeployment: jest.Mock
 
   beforeEach(async () => {
@@ -60,6 +61,7 @@ describe('when creating an entity from spooled upload files', () => {
     lease = { resize: jest.fn(), release: jest.fn() }
     deploymentMemoryBudget = { acquire: jest.fn().mockReturnValue(lease) }
     deployEntity = jest.fn().mockResolvedValue(1234)
+    getDeployedEntityTimestamp = jest.fn().mockResolvedValue(undefined)
     stageDeployment = jest.fn().mockResolvedValue({ kind: 'incomplete', missing: ['other-hash'] })
   })
 
@@ -78,7 +80,11 @@ describe('when creating an entity from spooled upload files', () => {
         return 1234
       })
       const response = await createEntity(
-        buildContext(files, false, { deployer: { deployEntity }, deploymentMemoryBudget, partialDeployments: {} })
+        buildContext(files, false, {
+          deployer: { deployEntity, getDeployedEntityTimestamp },
+          deploymentMemoryBudget,
+          partialDeployments: {}
+        })
       )
       status = response.status
     })
@@ -106,7 +112,11 @@ describe('when creating an entity from spooled upload files', () => {
         throw new UploadBudgetExceededError('bytes')
       })
       error = await createEntity(
-        buildContext(files, false, { deployer: { deployEntity }, deploymentMemoryBudget, partialDeployments: {} })
+        buildContext(files, false, {
+          deployer: { deployEntity, getDeployedEntityTimestamp },
+          deploymentMemoryBudget,
+          partialDeployments: {}
+        })
       ).catch((e) => e)
     })
 
@@ -131,7 +141,7 @@ describe('when creating an entity from spooled upload files', () => {
       })
       const response = await createEntity(
         buildContext(files, true, {
-          deployer: { deployEntity },
+          deployer: { deployEntity, getDeployedEntityTimestamp },
           deploymentMemoryBudget,
           partialDeployments: { stageDeployment }
         })
