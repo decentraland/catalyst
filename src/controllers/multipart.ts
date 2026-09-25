@@ -161,14 +161,7 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
         }
       }
       const rejectIfOverTotal = (): boolean => {
-        // A body larger than its declared size (or without one) grows the reservation as it arrives.
-        if (lease && totalBytes > reservedBytes) {
-          if (!lease.resize(totalBytes)) {
-            abort(new ServiceUnavailableError('Server is buffering too many uploads, please retry shortly.'))
-            return true
-          }
-          reservedBytes = totalBytes
-        }
+        // Checked before growing the reservation: an oversize body gets a final 413, never a retryable 503.
         if (maxTotalSize !== undefined && totalBytes > maxTotalSize) {
           abort(
             new PayloadTooLargeError(
@@ -176,6 +169,14 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
             )
           )
           return true
+        }
+        // A body larger than its declared size (or without one) grows the reservation as it arrives.
+        if (lease && totalBytes > reservedBytes) {
+          if (!lease.resize(totalBytes)) {
+            abort(new ServiceUnavailableError('Server is buffering too many uploads, please retry shortly.'))
+            return true
+          }
+          reservedBytes = totalBytes
         }
         return false
       }
