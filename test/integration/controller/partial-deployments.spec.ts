@@ -449,6 +449,53 @@ describe('Integration - Partial deployments', () => {
     })
   })
 
+  describe('when a stale entity with a live pending upload is deployed without the partial flag', () => {
+    let deployment: PreparedDeployment
+    let originalTtlBackwards: number
+    let response: Response
+    let body: unknown
+    let deployed: number
+
+    beforeEach(async () => {
+      const tenMinutesAgo = Date.now() - 10 * 60 * 1000
+      deployment = await prepareSceneDeployment(
+        ['13,13'],
+        { 'a.txt': Buffer.from(`stale vanilla ${Date.now()}-${Math.random()}`) },
+        identity,
+        tenMinutesAgo
+      )
+      originalTtlBackwards = server.components.env.getConfig(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
+      // The upload was admitted along with the entity, ten minutes ago.
+      await postForm(server, buildPartialForm(deployment, [deployment.entityId]))
+      await server.components.database.query(
+        `UPDATE pending_deployments SET created_at = now() - interval '10 minutes'`
+      )
+      server.components.env.setConfig(EnvironmentConfig.REQUEST_TTL_BACKWARDS, 5 * 60 * 1000)
+      response = await postForm(
+        server,
+        buildPartialForm(deployment, [deployment.entityId, ...deployment.contentHashes], false)
+      )
+      body = await response.json()
+      deployed = await countDeployments(server, deployment.entityId)
+    })
+
+    afterEach(() => {
+      server.components.env.setConfig(EnvironmentConfig.REQUEST_TTL_BACKWARDS, originalTtlBackwards)
+    })
+
+    it('should reject it as not recent enough, measured from now, and not deploy the entity', () => {
+      expect({ status: response.status, body, deployed }).toEqual({
+        status: 400,
+        body: {
+          errors: [
+            `The request is not recent enough, please submit it again with a new timestamp (entityId=${deployment.entityId} pointers=13,13).`
+          ]
+        },
+        deployed: 0
+      })
+    })
+  })
+
   describe('when the deployer loses access to the parcels mid-upload (e.g. the LAND is sold)', () => {
     let deployment: PreparedDeployment
     let originalTtlBackwards: number
