@@ -7,7 +7,12 @@ import path from 'path'
 import { Readable, Writable } from 'stream'
 import { pipeline } from 'stream/promises'
 import { FormDataContext, SpooledFile } from '../types'
-import { IUploadBudget, UploadBudgetExceededError, UploadBudgetLease } from '../adapters/upload-budget'
+import {
+  IUploadBudget,
+  SPOOL_FILE_OVERHEAD_BYTES,
+  UploadBudgetExceededError,
+  UploadBudgetLease
+} from '../adapters/upload-budget'
 import { InvalidRequestError, PayloadTooLargeError, RequestTimeoutError, ServiceUnavailableError } from './errors'
 
 /**
@@ -41,7 +46,7 @@ export type MultipartLimits = {
 export type MultipartOptions = {
   /** Folder that holds each request's temporary files; they are removed once the handler returns. */
   tmpFolder: string
-  /** Bounds the bytes spooled across concurrent requests. */
+  /** Bounds the bytes spooled across concurrent requests, each file charged SPOOL_FILE_OVERHEAD_BYTES. */
   uploadBudget?: IUploadBudget
   /** Opens a temporary file for writing. */
   createWriteStream?: (filePath: string) => Writable
@@ -142,6 +147,7 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       // sum (a request may carry many files/fields), so track the total and reject once it crosses
       // `maxTotalSize`.
       let totalBytes = 0
+      let spooledFiles = 0
       let reservedBytes = initialReservation
       // Set once any limit is hit. `abort` destroys the parser exactly once, and the field/file
       // handlers short-circuit on `aborted` — so in-flight chunks aren't counted after a rejection
@@ -170,15 +176,24 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
           )
           return true
         }
-        // A body larger than its declared size (or without one) grows the reservation as it arrives.
-        if (lease && totalBytes > reservedBytes) {
-          if (!lease.resize(totalBytes)) {
-            abort(new ServiceUnavailableError('Server is buffering too many uploads, please retry shortly.'))
+        return rejectIfOverBudget()
+      }
+      // Grows the reservation to the spool's disk footprint when it outgrows the declared size (or lack of one).
+      const rejectIfOverBudget = (): boolean => {
+        const footprint = totalBytes + spooledFiles * SPOOL_FILE_OVERHEAD_BYTES
+        if (lease && footprint > reservedBytes) {
+          if (!lease.resize(footprint)) {
+            abort(new ServiceUnavailableError('Server is handling too many uploads, please retry shortly.'))
             return true
           }
-          reservedBytes = totalBytes
+          reservedBytes = footprint
         }
         return false
+      }
+      // Charged on the part's headers, before its temporary file exists.
+      const rejectIfNoRoomForFile = (): boolean => {
+        spooledFiles++
+        return rejectIfOverBudget()
       }
 
       // Emitted once more files than `maxFiles` are seen. Reject instead of dropping them silently.
@@ -219,15 +234,14 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
         fields[name] = Object.assign({ fieldname: name, value }, info)
       })
 
-      let fileCount = 0
       formDataParser.on('file', function (name, stream, info) {
         // Checked on the part's headers, before a temporary file is opened for it.
-        if (aborted || rejectIfDuplicate(name)) {
+        if (aborted || rejectIfDuplicate(name) || rejectIfNoRoomForFile()) {
           // Destroying the parser errors the open part's stream too.
           stream.on('error', () => undefined).resume()
           return
         }
-        const part = fileCount++
+        const part = spooledFiles - 1
         const spool = (): void => {
           // Temporary names are sequence numbers: field names are client-controlled.
           const filePath = path.join(directory, String(part))

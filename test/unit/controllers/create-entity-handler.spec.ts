@@ -122,7 +122,7 @@ describe('when creating an entity from spooled upload files', () => {
 
     it('should reject with a ServiceUnavailableError without deploying', () => {
       expect({ error, deployed: deployEntity.mock.calls.length }).toEqual({
-        error: new ServiceUnavailableError('Server is buffering too many uploads, please retry shortly.'),
+        error: new ServiceUnavailableError('Server is handling too many uploads, please retry shortly.'),
         deployed: 0
       })
     })

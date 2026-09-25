@@ -29,8 +29,8 @@ export function parsePgPoolSize(raw: string | undefined): number {
   return Number.isNaN(parsed) ? DEFAULT_PG_POOL_SIZE : Math.max(parsed, 1)
 }
 // HTTP-layer DoS guard for POST /entities uploads. The per-entity business limits live in
-// `@dcl/content-validator` (e.g. 15 MB/parcel for scenes) and run *after* the body is buffered,
-// so these caps only bound how much an unauthenticated client can stream into memory per request.
+// `@dcl/content-validator` (e.g. 15 MB/parcel for scenes) and run *after* the body is received,
+// so these caps only bound how much an unauthenticated client can make the server spool per request.
 // Generous on purpose; tune via env on catalysts that accept very large multi-parcel scenes.
 export const DEFAULT_MAX_UPLOAD_FILE_SIZE = 100 * 1024 * 1024 // 100 MB per file
 export const DEFAULT_MAX_UPLOAD_FILE_COUNT = 3000
@@ -38,15 +38,15 @@ export const DEFAULT_MAX_UPLOAD_FIELD_COUNT = 100 // non-file form fields (e.g. 
 export const DEFAULT_MAX_UPLOAD_FIELD_SIZE = 100 * 1024 // 100 KB per field value
 // Cumulative cap across every file + field in a single upload. `MAX_UPLOAD_FILE_SIZE` bounds one
 // file and `MAX_UPLOAD_FILE_COUNT` bounds the count, but their product (the only implicit ceiling)
-// is huge, and this wrapper buffers files in memory — so without a total cap one request could try
-// to buffer hundreds of GB. The validator's size check is *per pointer*, so a legitimate multi-parcel
-// scene can be several GB; this default is deliberately generous (and `MAX_UPLOAD_TOTAL_SIZE`-tunable)
-// to bound the pathological case without rejecting large estate deployments. Streaming uploads to
-// disk (instead of buffering) would remove the memory exposure entirely and is the proper follow-up.
+// is huge, so without a total cap one request could try to spool hundreds of GB. The validator's size
+// check is *per pointer*, so a legitimate multi-parcel scene can be several GB; this default is
+// deliberately generous (and `MAX_UPLOAD_TOTAL_SIZE`-tunable) to bound the pathological case without
+// rejecting large estate deployments.
 export const DEFAULT_MAX_UPLOAD_TOTAL_SIZE = 2 * 1024 * 1024 * 1024 // 2 GiB total per request
 
-// Aggregate bound on POST /entities bodies spooled to temporary files at once across all clients. It
-// must fit one MAX_UPLOAD_TOTAL_SIZE request. Partial batches are exempt from the per-IP daily quota
+// Aggregate bound on POST /entities bodies spooled to temporary files at once across all clients, each
+// file charged 16 KiB on top of its bytes so it also bounds inodes. It must fit one maximum-size request
+// (MAX_UPLOAD_TOTAL_SIZE plus the charge for MAX_UPLOAD_FILE_COUNT files). Partial batches are exempt from the per-IP daily quota
 // below and are bounded by this budget and their account's byte quotas instead.
 export const DEFAULT_MAX_IN_FLIGHT_UPLOAD_BYTES = 4 * 1024 * 1024 * 1024 // 4 GiB
 // Aggregate bound on regular deployment files read into memory at once. Partial batches stream from
