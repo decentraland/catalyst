@@ -242,6 +242,32 @@ describe('Integration - Partial deployments', () => {
     })
   })
 
+  describe('when a partial request repeats a content file under the same hash', () => {
+    let response: Response
+    let body: unknown
+    let pending: number
+    let repeatedHash: string
+
+    beforeEach(async () => {
+      const deployment = await prepareSceneDeployment(['5,6'], { 'a.txt': Buffer.from('repeated content') }, identity)
+      repeatedHash = deployment.contentHashes[0]
+      response = await postForm(
+        server,
+        buildPartialForm(deployment, [deployment.entityId, repeatedHash, repeatedHash, repeatedHash])
+      )
+      body = await response.json()
+      pending = await countPendingDeployments(server)
+    })
+
+    it('should reject it with a 400 before staging anything', () => {
+      expect({ status: response.status, body, pending }).toEqual({
+        status: 400,
+        body: { error: `Duplicate form field '${repeatedHash}'` },
+        pending: 0
+      })
+    })
+  })
+
   describe('when a non-partial request is missing content (legacy behavior)', () => {
     let response: Response
 

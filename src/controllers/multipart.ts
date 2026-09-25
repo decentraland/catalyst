@@ -103,6 +103,16 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
     // `constructor` is stored as a plain key instead of mutating the object's prototype.
     const fields: Record<string, Field> = Object.create(null)
     const files: Record<string, File> = Object.create(null)
+    // Every form name may appear once: a repeated part would be buffered but only one copy kept.
+    const seenNames = new Set<string>()
+    const rejectIfDuplicate = (name: string): boolean => {
+      if (seenNames.has(name)) {
+        abort(new InvalidRequestError(`Duplicate form field '${name}'`))
+        return true
+      }
+      seenNames.add(name)
+      return false
+    }
 
     // Cumulative bytes seen across every file and field. The per-file/per-field caps don't bound the
     // sum (a request may carry many files/fields), and this wrapper buffers everything in memory, so
@@ -168,6 +178,9 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
         )
         return
       }
+      if (rejectIfDuplicate(name)) {
+        return
+      }
       totalBytes += Buffer.byteLength(value)
       if (rejectIfOverTotal()) {
         return
@@ -176,6 +189,12 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
     })
 
     formDataParser.on('file', function (name, stream, info) {
+      // Checked on the part's headers, before any of its bytes are buffered.
+      if (aborted || rejectIfDuplicate(name)) {
+        // Destroying the parser errors the open part's stream too.
+        stream.on('error', () => undefined).resume()
+        return
+      }
       const chunks: Buffer[] = []
       stream.on('data', function (data: Buffer) {
         if (aborted) {
@@ -232,10 +251,11 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
     try {
       await pipeline(source, formDataParser)
     } catch (error) {
-      // Our own size-limit rejections keep their 413 status. Any other failure means we couldn't
+      // Our own rejections keep their status (400, 413, 503, 408). Any other failure means we couldn't
       // parse the request body (a malformed, truncated, or empty multipart body, or a mid-upload
       // disconnect) — that's a client error (400), not an internal 500.
       if (
+        error instanceof InvalidRequestError ||
         error instanceof PayloadTooLargeError ||
         error instanceof ServiceUnavailableError ||
         error instanceof RequestTimeoutError
