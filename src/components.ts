@@ -44,6 +44,7 @@ import { createContentValidator } from './adapters/content-validator'
 import { createDatabaseComponent } from './adapters/database'
 import { createContentLocks } from './adapters/content-locks'
 import { createUploadBudget } from './adapters/upload-budget'
+import { createDeploymentQuota } from './logic/deployment-quota'
 import { createDenylist } from './adapters/denylist'
 import { createDeployedEntitiesBloomFilter } from './adapters/deployed-entities-bloom-filter'
 import { createFailedDeployments } from './adapters/failed-deployments'
@@ -543,6 +544,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     }
   )
 
+  const deploymentQuota = createDeploymentQuota({ env, rateLimiter })
+
   // Bounds POST /entities bodies buffered at once; partial batches count only against this.
   const uploadBudget = createUploadBudget({ env, metrics })
 
@@ -607,6 +610,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     migrationManager,
     pointersRepository,
     rateLimiter,
+    deploymentQuota,
     sequentialExecutor,
     server,
     snapshotGenerationJob,

@@ -14,6 +14,7 @@ import {
 // Source `IHttpServerComponent` from there so handler context types match what the server provides.
 import { IHttpServerComponent } from '@dcl/core-commons'
 import { IRateLimiterComponent } from '@dcl/rate-limiter-component'
+import { IDeploymentQuotaComponent } from './logic/deployment-quota'
 import { Field, File } from '@well-known-components/multipart-wrapper'
 import { HTTPProvider } from 'eth-connect'
 import qs from 'qs'
@@ -122,6 +123,7 @@ export type AppComponents = {
   server: IHttpServerComponent<GlobalContext>
   /** Per-client request budget for regular (non-partial) POST /entities deployments. */
   rateLimiter: IRateLimiterComponent<GlobalContext>
+  deploymentQuota: IDeploymentQuotaComponent
   uploadBudget: IUploadBudget
   activeEntities: ActiveEntities
   sequentialExecutor: ISequentialTaskExecutorComponent

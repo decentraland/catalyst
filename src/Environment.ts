@@ -44,8 +44,9 @@ export const DEFAULT_MAX_UPLOAD_FIELD_SIZE = 100 * 1024 // 100 KB per field valu
 export const DEFAULT_MAX_UPLOAD_TOTAL_SIZE = 2 * 1024 * 1024 * 1024 // 2 GiB total per request
 
 // Aggregate bound on POST /entities bodies buffered at once across all clients. It must fit one
-// maximum-size request's peak: MAX_UPLOAD_TOTAL_SIZE plus a copy of one file (up to MAX_UPLOAD_FILE_SIZE). Partial batches are exempt from the per-IP daily quota below and are
-// bounded by this budget and their account's byte quotas instead.
+// maximum-size request's peak: MAX_UPLOAD_TOTAL_SIZE plus a copy of one file (up to
+// MAX_UPLOAD_FILE_SIZE). Partial batches are exempt from the per-IP daily quota below and are bounded
+// by this budget and their account's byte quotas instead.
 export const DEFAULT_MAX_IN_FLIGHT_UPLOAD_BYTES = 4 * 1024 * 1024 * 1024 // 4 GiB
 export const DEFAULT_MAX_CONCURRENT_UPLOADS = 40
 // A body still arriving after this is aborted with 408, so slow senders can't hold upload slots.
@@ -67,7 +68,9 @@ export const DEFAULT_POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS = 60
 
 // Daily quota for POST /entities. A second, independent rate-limit bucket that caps the total
 // number of deployments a single IP can make in a 24-hour rolling window. This catches attackers
-// who stay just below the per-minute burst limit but sustain high volume over hours.
+// who stay just below the per-minute burst limit but sustain high volume over hours. It counts regular
+// deployments; once an IP has spent it, its requests are rejected before their body is read unless
+// they declare a partial batch with `POST /entities?partial=true`.
 export const DEFAULT_POST_ENTITIES_DAILY_QUOTA_MAX = 300
 
 /**
