@@ -2,7 +2,7 @@ import FormData from 'form-data'
 import { Readable } from 'stream'
 import { IHttpServerComponent } from '@dcl/core-commons'
 import { multipartParserWrapper } from '../../../src/controllers/multipart'
-import { InvalidRequestError, ServiceUnavailableError } from '../../../src/controllers/errors'
+import { InvalidRequestError, PayloadTooLargeError, ServiceUnavailableError } from '../../../src/controllers/errors'
 import { createUploadBudget, IUploadBudget, UploadBudgetExceededError } from '../../../src/adapters/upload-budget'
 import { EnvironmentConfig } from '../../../src/Environment'
 
@@ -178,6 +178,31 @@ describe('when parsing a multipart request under an upload budget', () => {
     it('should reject with a ServiceUnavailableError without running the handler', () => {
       expect({ error, handled: handler.mock.calls.length }).toEqual({
         error: new ServiceUnavailableError('Server is buffering too many uploads, please retry shortly.'),
+        handled: 0
+      })
+    })
+  })
+
+  describe('and a body without a declared size exceeds the total allowed while the budget is full at that total', () => {
+    let maxTotalSize: number
+    let error: unknown
+
+    beforeEach(async () => {
+      maxTotalSize = 50
+      lease.resize.mockImplementation((size: number) => size <= maxTotalSize)
+      wrapped = multipartParserWrapper(
+        handler as any,
+        { maxFileSize: 1024, maxFiles: 10, maxTotalSize },
+        budget as unknown as IUploadBudget
+      )
+      error = await wrapped(buildContext(form.getBuffer(), form.getHeaders())).catch((e) => e)
+    })
+
+    it('should reject with a PayloadTooLargeError without running the handler', () => {
+      expect({ error, handled: handler.mock.calls.length }).toEqual({
+        error: new PayloadTooLargeError(
+          `The request body is too large. The maximum allowed total upload size is ${maxTotalSize} bytes.`
+        ),
         handled: 0
       })
     })

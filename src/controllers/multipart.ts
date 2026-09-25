@@ -133,6 +133,15 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
     // With a declared size, files are copied into one buffer of that size, so the reservation is the peak.
     const declaredBody = initialReservation > 0 ? createDeclaredBodyBuffer(initialReservation) : undefined
     const rejectIfOverTotal = (): boolean => {
+      // Over the limit is final (413), so check it before a full budget could answer a retryable 503.
+      if (maxTotalSize !== undefined && totalBytes > maxTotalSize) {
+        abort(
+          new PayloadTooLargeError(
+            `The request body is too large. The maximum allowed total upload size is ${maxTotalSize} bytes.`
+          )
+        )
+        return true
+      }
       if (totalBytes > reservedBytes) {
         if (declaredBody) {
           abort(new InvalidRequestError('The request body is larger than its declared Content-Length.'))
@@ -146,14 +155,6 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
           }
           reservedBytes = totalBytes
         }
-      }
-      if (maxTotalSize !== undefined && totalBytes > maxTotalSize) {
-        abort(
-          new PayloadTooLargeError(
-            `The request body is too large. The maximum allowed total upload size is ${maxTotalSize} bytes.`
-          )
-        )
-        return true
       }
       return false
     }
