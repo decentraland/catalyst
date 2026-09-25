@@ -6,13 +6,14 @@ import {
   UploadBudgetLease
 } from '../../../src/adapters/upload-budget'
 
-type BudgetConfig = { capacityBytes: number; maxUploads: number; maxRequestBytes: number }
+type BudgetConfig = { capacityBytes: number; maxUploads: number; maxRequestBytes: number; maxFileBytes: number }
 
-function buildComponents({ capacityBytes, maxUploads, maxRequestBytes }: BudgetConfig) {
+function buildComponents({ capacityBytes, maxUploads, maxRequestBytes, maxFileBytes }: BudgetConfig) {
   const values: Partial<Record<EnvironmentConfig, number>> = {
     [EnvironmentConfig.MAX_IN_FLIGHT_UPLOAD_BYTES]: capacityBytes,
     [EnvironmentConfig.MAX_CONCURRENT_UPLOADS]: maxUploads,
-    [EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE]: maxRequestBytes
+    [EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE]: maxRequestBytes,
+    [EnvironmentConfig.MAX_UPLOAD_FILE_SIZE]: maxFileBytes
   }
   return {
     env: { getConfig: jest.fn((key: EnvironmentConfig) => values[key]) },
@@ -30,15 +31,35 @@ function captureError(operation: () => unknown): unknown {
 }
 
 describe('when creating the upload budget', () => {
-  describe('and the byte budget cannot fit a single maximum-size request', () => {
+  describe('and the byte budget cannot fit the peak of a single maximum-size request', () => {
     let creation: () => IUploadBudget
 
     beforeEach(() => {
-      creation = () => createUploadBudget(buildComponents({ capacityBytes: 100, maxUploads: 2, maxRequestBytes: 101 }))
+      creation = () =>
+        createUploadBudget(
+          buildComponents({ capacityBytes: 100, maxUploads: 2, maxRequestBytes: 60, maxFileBytes: 41 })
+        )
     })
 
-    it('should fail at startup naming both settings', () => {
-      expect(creation).toThrow('MAX_IN_FLIGHT_UPLOAD_BYTES (100) must be at least MAX_UPLOAD_TOTAL_SIZE (101).')
+    it('should fail at startup naming the settings and the peak', () => {
+      expect(creation).toThrow(
+        'MAX_IN_FLIGHT_UPLOAD_BYTES (100) must fit one maximum-size upload: MAX_UPLOAD_TOTAL_SIZE plus up to MAX_UPLOAD_FILE_SIZE (101).'
+      )
+    })
+  })
+
+  describe('and the byte budget fits the peak of a maximum-size request whose files are smaller than it', () => {
+    let creation: () => IUploadBudget
+
+    beforeEach(() => {
+      creation = () =>
+        createUploadBudget(
+          buildComponents({ capacityBytes: 100, maxUploads: 2, maxRequestBytes: 60, maxFileBytes: 40 })
+        )
+    })
+
+    it('should create the budget', () => {
+      expect(creation).not.toThrow()
     })
   })
 })
@@ -47,7 +68,9 @@ describe('when acquiring from the upload budget', () => {
   let budget: IUploadBudget
 
   beforeEach(() => {
-    budget = createUploadBudget(buildComponents({ capacityBytes: 100, maxUploads: 2, maxRequestBytes: 100 }))
+    budget = createUploadBudget(
+      buildComponents({ capacityBytes: 100, maxUploads: 2, maxRequestBytes: 60, maxFileBytes: 40 })
+    )
   })
 
   describe('and the upload fits the byte and concurrency budgets', () => {
@@ -125,7 +148,9 @@ describe('when resizing an upload budget lease', () => {
   let lease: UploadBudgetLease
 
   beforeEach(() => {
-    budget = createUploadBudget(buildComponents({ capacityBytes: 100, maxUploads: 3, maxRequestBytes: 100 }))
+    budget = createUploadBudget(
+      buildComponents({ capacityBytes: 100, maxUploads: 3, maxRequestBytes: 60, maxFileBytes: 40 })
+    )
     lease = budget.acquire(10)
   })
 

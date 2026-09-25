@@ -2,7 +2,12 @@ import FormData from 'form-data'
 import { Readable } from 'stream'
 import { IHttpServerComponent } from '@dcl/core-commons'
 import { multipartParserWrapper } from '../../../src/controllers/multipart'
-import { InvalidRequestError, PayloadTooLargeError, ServiceUnavailableError } from '../../../src/controllers/errors'
+import {
+  InvalidRequestError,
+  PayloadTooLargeError,
+  RequestTimeoutError,
+  ServiceUnavailableError
+} from '../../../src/controllers/errors'
 import { createUploadBudget, IUploadBudget, UploadBudgetExceededError } from '../../../src/adapters/upload-budget'
 import { EnvironmentConfig } from '../../../src/Environment'
 
@@ -56,13 +61,74 @@ describe('when parsing a multipart request under an upload budget', () => {
       )
     })
 
-    it('should reserve the declared size, run the handler and release the reservation afterwards', () => {
+    it('should reserve the declared size plus a copy of it, run the handler and release the reservation afterwards', () => {
       expect({
         reserved: budget.acquire.mock.calls,
         status: response.status,
         released: lease.release.mock.calls.length,
         releasedAfterHandler: lease.release.mock.invocationCallOrder[0] > handler.mock.invocationCallOrder[0]
-      }).toEqual({ reserved: [[declaredSize]], status: 200, released: 1, releasedAfterHandler: true })
+      }).toEqual({ reserved: [[2 * declaredSize]], status: 200, released: 1, releasedAfterHandler: true })
+    })
+  })
+
+  describe('and its declared size is larger than the maximum file size', () => {
+    let declaredSize: number
+
+    beforeEach(async () => {
+      declaredSize = form.getBuffer().length
+      wrapped = multipartParserWrapper(
+        handler as any,
+        { maxFileSize: 150, maxFiles: 10 },
+        budget as unknown as IUploadBudget
+      )
+      await wrapped(buildContext(form.getBuffer(), { ...form.getHeaders(), 'content-length': String(declaredSize) }))
+    })
+
+    it('should reserve the declared size plus a copy of the largest file allowed', () => {
+      expect(budget.acquire.mock.calls).toEqual([[declaredSize + 150]])
+    })
+  })
+
+  describe('and it declares a large size but sends only the start of its body', () => {
+    let declaredSize: number
+    let allocatedSizes: number[]
+    let error: unknown
+
+    beforeEach(async () => {
+      declaredSize = 64 * 1024 * 1024
+      const body = form.getBuffer()
+      const start = body.subarray(0, body.indexOf('file1') + 200)
+      allocatedSizes = []
+      const record = (size: number) => allocatedSizes.push(size)
+      const { alloc, allocUnsafe, allocUnsafeSlow } = Buffer
+      jest.spyOn(Buffer, 'alloc').mockImplementation((size, ...rest) => (record(size), alloc(size, ...rest)))
+      jest.spyOn(Buffer, 'allocUnsafe').mockImplementation((size) => (record(size), allocUnsafe(size)))
+      jest.spyOn(Buffer, 'allocUnsafeSlow').mockImplementation((size) => (record(size), allocUnsafeSlow(size)))
+      // Never ends: the client keeps the connection open after its first bytes.
+      const stalled = new Readable({ read() {} })
+      stalled.push(start)
+      wrapped = multipartParserWrapper(
+        handler as any,
+        { maxFileSize: declaredSize, maxFiles: 10, uploadTimeoutMs: 50 },
+        budget as unknown as IUploadBudget
+      )
+      error = await wrapped({
+        request: {
+          headers: { get: (name: string) => ({ ...form.getHeaders(), 'content-length': String(declaredSize) }[name]) },
+          body: Readable.toWeb(stalled)
+        }
+      } as any).catch((e) => e)
+    })
+
+    afterEach(() => {
+      jest.restoreAllMocks()
+    })
+
+    it('should only allocate memory for the bytes received before timing out', () => {
+      expect({ error, largestAllocation: Math.max(0, ...allocatedSizes) < 1024 * 1024 }).toEqual({
+        error: new RequestTimeoutError('The multipart upload timed out.'),
+        largestAllocation: true
+      })
     })
   })
 
@@ -110,7 +176,7 @@ describe('when parsing a multipart request under an upload budget', () => {
       )
     })
 
-    it('should hold the files within the declared reservation without growing it', () => {
+    it('should hold the files, including their concatenated copies, within the declared reservation', () => {
       expect({ resized: lease.resize.mock.calls, file: files.file1.value }).toEqual({
         resized: [],
         file: Buffer.alloc(100, 1)
@@ -250,9 +316,11 @@ describe('when parsing multipart requests that together fill the upload budget',
     const body = form.getBuffer()
     const headers = { ...form.getHeaders(), 'content-length': String(body.length) }
     const values: Partial<Record<EnvironmentConfig, number>> = {
-      [EnvironmentConfig.MAX_IN_FLIGHT_UPLOAD_BYTES]: 2 * body.length,
+      // Each request's peak is its body plus a copy of its largest file (bounded by the body).
+      [EnvironmentConfig.MAX_IN_FLIGHT_UPLOAD_BYTES]: 2 * (2 * body.length),
       [EnvironmentConfig.MAX_CONCURRENT_UPLOADS]: 2,
-      [EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE]: body.length
+      [EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE]: body.length,
+      [EnvironmentConfig.MAX_UPLOAD_FILE_SIZE]: 4096
     }
     const budget = createUploadBudget({
       env: { getConfig: (key: EnvironmentConfig) => values[key] },

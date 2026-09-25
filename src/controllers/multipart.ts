@@ -4,7 +4,7 @@ import busboy from 'busboy'
 import { Readable } from 'stream'
 import { pipeline } from 'stream/promises'
 import { FormDataContext } from '../types'
-import { IUploadBudget, UploadBudgetExceededError, UploadBudgetLease } from '../adapters/upload-budget'
+import { IUploadBudget, peakUploadBytes, UploadBudgetExceededError, UploadBudgetLease } from '../adapters/upload-budget'
 import { InvalidRequestError, PayloadTooLargeError, RequestTimeoutError, ServiceUnavailableError } from './errors'
 
 /**
@@ -54,8 +54,9 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       )
     }
 
-    // Reserve the declared size before reading the body, so a full budget sheds the upload unread.
-    const initialReservation = Number.isSafeInteger(declaredSize) && declaredSize > 0 ? declaredSize : 0
+    // Reserve the declared body's peak before reading it, so a full budget sheds the upload unread.
+    const declaredBodyBytes = Number.isSafeInteger(declaredSize) && declaredSize > 0 ? declaredSize : 0
+    const initialReservation = declaredBodyBytes > 0 ? peakUploadBytes(declaredBodyBytes, limits.maxFileSize) : 0
     let lease: UploadBudgetLease | undefined
     try {
       lease = uploadBudget?.acquire(initialReservation)
@@ -66,7 +67,7 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       throw error
     }
     try {
-      return await parseAndHandle(ctx, lease, initialReservation)
+      return await parseAndHandle(ctx, lease, declaredBodyBytes, initialReservation)
     } finally {
       // Files stay buffered until the handler returns.
       lease?.release()
@@ -76,6 +77,7 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
   async function parseAndHandle(
     ctx: IHttpServerComponent.DefaultContext<U>,
     lease: UploadBudgetLease | undefined,
+    declaredBodyBytes: number,
     initialReservation: number
   ): Promise<T> {
     const { maxTotalSize } = limits
@@ -130,8 +132,6 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       formDataParser.destroy(error)
     }
     let reservedBytes = initialReservation
-    // With a declared size, files are copied into one buffer of that size, so the reservation is the peak.
-    const declaredBody = initialReservation > 0 ? createDeclaredBodyBuffer(initialReservation) : undefined
     const rejectIfOverTotal = (): boolean => {
       // Over the limit is final (413), so check it before a full budget could answer a retryable 503.
       if (maxTotalSize !== undefined && totalBytes > maxTotalSize) {
@@ -142,11 +142,13 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
         )
         return true
       }
-      if (totalBytes > reservedBytes) {
-        if (declaredBody) {
+      if (declaredBodyBytes > 0) {
+        // The declared body's peak is already reserved, so it must not outgrow its declaration.
+        if (totalBytes > declaredBodyBytes) {
           abort(new InvalidRequestError('The request body is larger than its declared Content-Length.'))
           return true
         }
+      } else if (totalBytes > reservedBytes) {
         // A body without a declared size grows the reservation as it arrives.
         if (lease) {
           if (!lease.resize(totalBytes)) {
@@ -204,7 +206,7 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
         stream.on('error', () => undefined).resume()
         return
       }
-      const declaredFile = declaredBody?.openFile()
+      // Chunks as received, so memory tracks the bytes that actually arrived rather than any declaration.
       const chunks: Buffer[] = []
       stream.on('data', function (data: Buffer) {
         if (aborted) {
@@ -214,11 +216,7 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
         if (rejectIfOverTotal()) {
           return
         }
-        if (!declaredFile) {
-          chunks.push(data)
-        } else if (!declaredFile.write(data)) {
-          abort(new Error('Multipart file data arrived out of order'))
-        }
+        chunks.push(data)
       })
       // Emitted when the file exceeds `maxFileSize`. busboy truncates the stream, so we
       // must reject rather than store partial (and therefore wrong-hash) content.
@@ -236,19 +234,17 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
         if (aborted) {
           return
         }
-        if (declaredFile) {
-          files[name] = Object.assign(Object.assign({}, info), { fieldname: name, value: declaredFile.contents() })
-          return
-        }
-        // Without a declared size, concatenating briefly holds a second copy, so reserve it meanwhile.
+        // Concatenating briefly holds a second copy of the file: a declared body reserved it up front,
+        // one without a declared size reserves it meanwhile.
+        const growingLease = declaredBodyBytes === 0 ? lease : undefined
         const fileBytes = chunks.reduce((sum, chunk) => sum + chunk.length, 0)
-        if (lease && !lease.resize(reservedBytes + fileBytes)) {
+        if (growingLease && !growingLease.resize(reservedBytes + fileBytes)) {
           abort(new ServiceUnavailableError('Server is buffering too many uploads, please retry shortly.'))
           return
         }
         files[name] = Object.assign(Object.assign({}, info), { fieldname: name, value: Buffer.concat(chunks) })
         chunks.length = 0
-        lease?.resize(reservedBytes)
+        growingLease?.resize(reservedBytes)
       })
     })
 
@@ -287,41 +283,5 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
 
     const newContext = Object.assign(Object.create(ctx), { formData: { fields, files } })
     return handler(newContext as Ctx)
-  }
-}
-
-/**
- * One allocation of a request's declared size that its files are copied into back to back, so they
- * never hold more memory than was reserved for the request.
- */
-function createDeclaredBodyBuffer(capacity: number) {
-  let buffer: Buffer | undefined
-  let used = 0
-  return {
-    /** Starts a file. Its bytes must all arrive before the next file's, as busboy parses parts in order. */
-    openFile() {
-      let start = -1
-      let end = -1
-      return {
-        /** Appends a chunk. Returns false when another file wrote in between or the capacity is exceeded. */
-        write(chunk: Buffer): boolean {
-          if (start === -1) {
-            start = end = used
-          }
-          if (end !== used || used + chunk.length > capacity) {
-            return false
-          }
-          buffer ??= Buffer.allocUnsafe(capacity)
-          chunk.copy(buffer, used)
-          used += chunk.length
-          end = used
-          return true
-        },
-        /** The file's bytes, a view into the shared buffer. */
-        contents(): Buffer {
-          return buffer && start !== -1 ? buffer.subarray(start, end) : Buffer.alloc(0)
-        }
-      }
-    }
   }
 }

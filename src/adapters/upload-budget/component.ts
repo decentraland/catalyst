@@ -4,19 +4,32 @@ import { UploadBudgetExceededError } from './errors'
 import { IUploadBudget, UploadBudgetLease } from './types'
 
 /**
+ * Peak memory of a buffered upload whose files and fields total `bodyBytes`: the received bytes, plus
+ * the copy of the one file being joined into a single buffer when it ends.
+ * @param bodyBytes Bytes of the upload's files and fields.
+ * @param maxFileBytes Largest file the upload may carry, if bounded.
+ * @returns The bytes to reserve for the upload.
+ */
+export function peakUploadBytes(bodyBytes: number, maxFileBytes?: number): number {
+  return bodyBytes + Math.min(bodyBytes, maxFileBytes ?? bodyBytes)
+}
+
+/**
  * Creates the in-flight upload budget shared by every POST /entities request of this process.
  * @param components Environment and metrics.
  * @returns The upload budget.
- * @throws Error when the byte budget cannot fit a single maximum-size request.
+ * @throws Error when the byte budget cannot fit the peak of a single maximum-size request.
  */
 export function createUploadBudget(components: Pick<AppComponents, 'env' | 'metrics'>): IUploadBudget {
   const { env, metrics } = components
   const capacityBytes = env.getConfig<number>(EnvironmentConfig.MAX_IN_FLIGHT_UPLOAD_BYTES)
   const maxUploads = env.getConfig<number>(EnvironmentConfig.MAX_CONCURRENT_UPLOADS)
   const maxRequestBytes = env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE)
-  if (capacityBytes < maxRequestBytes) {
+  const maxFileBytes = env.getConfig<number | undefined>(EnvironmentConfig.MAX_UPLOAD_FILE_SIZE)
+  const maxRequestPeakBytes = peakUploadBytes(maxRequestBytes, maxFileBytes)
+  if (capacityBytes < maxRequestPeakBytes) {
     throw new Error(
-      `MAX_IN_FLIGHT_UPLOAD_BYTES (${capacityBytes}) must be at least MAX_UPLOAD_TOTAL_SIZE (${maxRequestBytes}).`
+      `MAX_IN_FLIGHT_UPLOAD_BYTES (${capacityBytes}) must fit one maximum-size upload: MAX_UPLOAD_TOTAL_SIZE plus up to MAX_UPLOAD_FILE_SIZE (${maxRequestPeakBytes}).`
     )
   }
 
