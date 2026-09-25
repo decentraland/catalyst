@@ -2,12 +2,21 @@ import { EntityType } from '@dcl/schemas'
 import { DeploymentContext, DeploymentFiles, DeploymentResult, LocalDeploymentAuditInfo } from '../../deployment-types'
 import { IDeployRateLimiterComponent } from './rate-limiter'
 
+export type DeployEntityOptions = {
+  /**
+   * When, in ms, the REQUEST_TTL_BACKWARDS freshness bound is measured from. Defaults to now; only a
+   * partial upload's finalization passes its admission time.
+   */
+  requestTtlAnchor?: number
+}
+
 export interface IDeploymentService {
   deployEntity(
     files: DeploymentFiles,
     entityId: string,
     auditInfo: LocalDeploymentAuditInfo,
-    context: DeploymentContext
+    context: DeploymentContext,
+    options?: DeployEntityOptions
   ): Promise<DeploymentResult>
   /** Whether a deployment of this entity type on these pointers is currently rate limited. */
   isRateLimited(entityType: EntityType, pointers: string[]): boolean

@@ -6,7 +6,8 @@ import { Readable } from 'stream'
 import { IHttpServerComponent } from '@dcl/core-commons'
 import { multipartParserWrapper } from '../../../src/controllers/multipart'
 import { ServiceUnavailableError } from '../../../src/controllers/errors'
-import { IUploadBudget, UploadBudgetExceededError } from '../../../src/adapters/upload-budget'
+import { createUploadBudget, IUploadBudget, UploadBudgetExceededError } from '../../../src/adapters/upload-budget'
+import { EnvironmentConfig } from '../../../src/Environment'
 
 type Wrapped = (ctx: IHttpServerComponent.DefaultContext<any>) => Promise<IHttpServerComponent.IResponse>
 
@@ -150,5 +151,49 @@ describe('when parsing a multipart request under an upload budget', () => {
         released: 1
       })
     })
+  })
+})
+
+describe('when parsing multipart requests that together fill the upload budget', () => {
+  let tmpFolder: string
+  let outcomes: Array<number | string>
+
+  beforeEach(async () => {
+    tmpFolder = await mkdtemp(path.join(tmpdir(), 'multipart-'))
+    const form = new FormData()
+    form.append('entityId', 'an-entity-id')
+    form.append('file1', Buffer.alloc(1000, 1), { filename: 'file1' })
+    const body = form.getBuffer()
+    const headers = { ...form.getHeaders(), 'content-length': String(body.length) }
+    const values: Partial<Record<EnvironmentConfig, number>> = {
+      [EnvironmentConfig.MAX_IN_FLIGHT_UPLOAD_BYTES]: 2 * body.length,
+      [EnvironmentConfig.MAX_CONCURRENT_UPLOADS]: 2,
+      [EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE]: body.length
+    }
+    const budget = createUploadBudget(
+      {
+        env: { getConfig: (key: EnvironmentConfig) => values[key] },
+        metrics: { observe: jest.fn(), increment: jest.fn() }
+      } as any,
+      'disk'
+    )
+    const wrapped: Wrapped = multipartParserWrapper(
+      jest.fn().mockResolvedValue({ status: 200, body: {} }) as any,
+      { maxFileSize: 4096, maxFiles: 10, maxTotalSize: body.length },
+      { tmpFolder, uploadBudget: budget }
+    )
+    const responses = await Promise.all([
+      wrapped(buildContext(body, headers)).catch((e) => e),
+      wrapped(buildContext(body, headers)).catch((e) => e)
+    ])
+    outcomes = responses.map((response) => (response instanceof Error ? response.name : response.status))
+  })
+
+  afterEach(async () => {
+    await rm(tmpFolder, { recursive: true, force: true })
+  })
+
+  it('should complete every admitted request', () => {
+    expect(outcomes).toEqual([200, 200])
   })
 })

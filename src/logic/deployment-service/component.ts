@@ -22,7 +22,7 @@ import * as pointerBookkeeping from './pointer-bookkeeping'
 import { createDeployRateLimiter, IDeployRateLimiterComponent } from './rate-limiter'
 import * as serverValidator from './server-validator'
 import ms from 'ms'
-import { TestableDeploymentService } from './types'
+import { DeployEntityOptions, TestableDeploymentService } from './types'
 
 // Stable fragment of the error returned when a concurrent deploy already holds one of the pointers.
 // Exported so callers (e.g. the partial-deployment finalize retry) can detect this transient condition
@@ -86,43 +86,20 @@ export function createDeploymentService(
 ): TestableDeploymentService {
   const logger = components.logs.getLogger('deployer')
   const LEGACY_CONTENT_MIGRATION_TIMESTAMP: Date = new Date(1582167600000) // DCL Launch Day
-  const pendingDeploymentTtlMs = components.env.getConfig<number>(EnvironmentConfig.PENDING_DEPLOYMENT_TTL)
 
-  // The "request is not recent enough" (REQUEST_TTL_BACKWARDS) check. A partial (multi-request) upload
-  // can legitimately span longer than that TTL, so a scene with a non-expired pending deployment is
-  // measured against when the upload *started* (pending.created_at) rather than now.
-  //
-  // The pending-deployment lookup is gated to keep it off the hot path: it runs only when the entity is
-  // already too old by wall clock (the common fresh deploy short-circuits with a pure comparison) and
-  // only for scenes (the only entity type that can be partially uploaded). So profiles and other
-  // high-volume deploys never touch pending_deployments here.
   // True when the entity is older, by wall clock, than the vanilla REQUEST_TTL_BACKWARDS bound — i.e.
-  // only a pending-upload anchor could have let it through the freshness check. The TTL-anchoring logic
-  // and the finalize current-access gate both key off this exact condition, so it is defined once here
-  // to keep them from drifting. (Comparison, not `<=`, so an unset TTL — `x > undefined` is false —
-  // behaves as before.)
+  // only a partial upload's admission-time anchor could have let it through the freshness check. The
+  // finalize current-access gate keys off this condition. (Comparison, not `<=`, so an unset TTL —
+  // `x > undefined` is false — behaves as before.)
   function isOlderThanRequestTtlBackwards(entity: Entity): boolean {
     const backwards = components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
     return Date.now() - entity.timestamp > backwards
   }
 
-  async function isRequestTtlBackwards(entity: Entity): Promise<boolean> {
+  // The "request is not recent enough" check, measured from `anchor` (now, or a partial upload's admission).
+  function isRequestTtlBackwards(entity: Entity, anchor: number): boolean {
     const backwards = components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
-    // Anchoring on an earlier pending.created_at can only make this smaller, so if the entity is not
-    // already too old measured against now, no anchor changes the answer. This branch also covers the
-    // hot path (fresh deploys) and non-scene types, keeping the pending lookup off them entirely.
-    if (!isOlderThanRequestTtlBackwards(entity)) {
-      return false
-    }
-    // Too old by wall clock. Only scenes can be partial uploads, so only they can have a pending anchor.
-    if (entity.type !== EntityType.SCENE) {
-      return true
-    }
-    const pending = await components.pendingDeploymentsRepository.getByEntityId(components.database, entity.id)
-    if (pending && Date.now() - pending.createdAt.getTime() <= pendingDeploymentTtlMs) {
-      return pending.createdAt.getTime() - entity.timestamp > backwards
-    }
-    return true
+    return anchor - entity.timestamp > backwards
   }
 
   // In-process deploy rate limiter. Defaults to a real instance built from env config;
@@ -196,7 +173,8 @@ export function createDeploymentService(
     // Idempotency result from deployEntity's earlier getEntityById check, threaded in to avoid a second
     // identical query per deploy. It is `undefined` on the normal path (deployEntity returns early when
     // the entity already exists), and same-entity concurrent deploys are excluded by the pointer locks.
-    deployedEntity: { entityId: string; localTimestamp: number } | undefined
+    deployedEntity: { entityId: string; localTimestamp: number } | undefined,
+    requestTtlAnchor: number | undefined
   ): Promise<InvalidResult | { auditInfoComplete: AuditInfo; wasEntityDeployed: boolean }> {
     const isEntityAlreadyDeployed = !!deployedEntity
 
@@ -206,7 +184,8 @@ export function createDeploymentService(
       isEntityAlreadyDeployed,
       auditInfo,
       hashes,
-      isContentUnchanged
+      isContentUnchanged,
+      requestTtlAnchor
     )
 
     if (!validationResult.ok) {
@@ -339,7 +318,8 @@ export function createDeploymentService(
     isEntityDeployedAlready: boolean,
     auditInfo: LocalDeploymentAuditInfo,
     hashes: Map<string, Uint8Array>,
-    isContentUnchanged: boolean
+    isContentUnchanged: boolean,
+    requestTtlAnchor: number | undefined
   ): Promise<{ ok: boolean; errors?: string[] }> {
     // When deploying a new entity in some context which is not sync, we run some server side checks
     const serverValidationResult = await serverValidator.validateForServer(
@@ -356,7 +336,7 @@ export function createDeploymentService(
           (entity.type === EntityType.PROFILE &&
             isContentUnchanged &&
             rateLimiter.isUnchangedDeploymentRateLimited(entity.type, entity.pointers)),
-        isRequestTtlBackwards: (entity) => isRequestTtlBackwards(entity)
+        isRequestTtlBackwards: (entity) => isRequestTtlBackwards(entity, requestTtlAnchor ?? Date.now())
       }
     )
 
@@ -382,11 +362,10 @@ export function createDeploymentService(
     // block (required for sync/replay). Vanilla deploys bound that staleness to REQUEST_TTL_BACKWARDS
     // (~minutes), but a scene completing a partial upload may be up to PENDING_DEPLOYMENT_TTL (~24h)
     // old — long enough for the LAND to have been sold mid-upload. When the entity is older than the
-    // vanilla bound (i.e. only a pending-upload anchor let it through the TTL check above), require
-    // access against the CURRENT chain state too, so a seller can't finalize onto land they no longer
-    // own. Fresh deploys never reach this (the wall-clock condition fails), so the hot path is
-    // unaffected; it covers both completion paths (auto-finalize and a vanilla POST of a pending
-    // entity) because both go through this pipeline.
+    // vanilla bound (i.e. only a partial upload's admission anchor let it through the TTL check above),
+    // require access against the CURRENT chain state too, so a seller can't finalize onto land they no
+    // longer own. Fresh deploys never reach this (the wall-clock condition fails), so the hot path is
+    // unaffected.
     if (context === DeploymentContext.LOCAL && entity.type === EntityType.SCENE) {
       if (isOlderThanRequestTtlBackwards(entity)) {
         const currentAccessResult = await components.validator.validateCurrentAccess({
@@ -424,7 +403,8 @@ export function createDeploymentService(
       files: DeploymentFiles,
       entityId: string,
       auditInfo: LocalDeploymentAuditInfo,
-      context: DeploymentContext
+      context: DeploymentContext,
+      options: DeployEntityOptions = {}
     ): Promise<DeploymentResult> {
       const deployedEntity = await components.deploymentsRepository.getEntityById(components.database, entityId)
       // entity deployments are idempotent operations
@@ -511,7 +491,8 @@ export function createDeploymentService(
           hashes,
           contextToDeploy,
           isContentUnchanged,
-          deployedEntity
+          deployedEntity,
+          options.requestTtlAnchor
         )
 
         if (!storeResult) {

@@ -115,13 +115,17 @@ export function createPartialDeployments(
     entity: Entity,
     entityFile: Uint8Array,
     authChain: StageDeploymentInput['authChain'],
-    contentHashes: string[]
+    contentHashes: string[],
+    admittedAt: number
   ): Promise<StageDeploymentResult> {
     const entityId = entity.id
     // The deploy pipeline re-reads content from storage, so only the entity file needs to be in the map.
     const finalizeFiles = new Map<string, Uint8Array>([[entityId, entityFile]])
     for (let attempt = 0; ; attempt++) {
-      const result = await deployer.deployEntity(finalizeFiles, entityId, { authChain }, DeploymentContext.LOCAL)
+      // Freshness is measured from the upload's admission, as when staging it.
+      const result = await deployer.deployEntity(finalizeFiles, entityId, { authChain }, DeploymentContext.LOCAL, {
+        requestTtlAnchor: admittedAt
+      })
       if (!isInvalidDeployment(result)) {
         await deletePendingBestEffort(entityId)
         return { kind: 'deployed', creationTimestamp: result }
@@ -422,7 +426,7 @@ export function createPartialDeployments(
       return { kind: 'incomplete', missing: nowMissing }
     }
 
-    return await finalize(entity, entityFile, authChain, contentHashes)
+    return await finalize(entity, entityFile, authChain, contentHashes, ttlAnchor)
   }
 
   async function cleanupExpired(): Promise<number> {
