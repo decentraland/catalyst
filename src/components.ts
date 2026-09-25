@@ -139,8 +139,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const contentStorageFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
   const tmpDownloadFolder = path.join(contentStorageFolder, '_tmp')
   await fs.mkdir(tmpDownloadFolder, { recursive: true })
-  // Per-request spools of POST /entities bodies, in a folder this process holds under a lease.
-  const uploadSpool = await createUploadSpool(path.join(contentStorageFolder, '_uploads'))
+  // Per-request spools of POST /entities bodies, in a node-local folder this process owns.
+  const uploadSpool = await createUploadSpool({ env })
   const uploadTmpFolder = uploadSpool.folder
   const staticConfigs = {
     contentStorageFolder,

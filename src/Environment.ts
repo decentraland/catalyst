@@ -1,6 +1,8 @@
 import { EntityType, EthAddress } from '@dcl/schemas'
 import { IConfigComponent, ILoggerComponent } from '@well-known-components/interfaces'
 import ms from 'ms'
+import os from 'os'
+import path from 'path'
 import { initComponentsWithEnv } from './components'
 import { AppComponents, parseEntityType } from './types'
 
@@ -53,6 +55,8 @@ export const DEFAULT_MAX_IN_MEMORY_DEPLOYMENT_BYTES = DEFAULT_MAX_UPLOAD_TOTAL_S
 export const DEFAULT_MAX_CONCURRENT_UPLOADS = 40
 // A body still arriving after this is aborted with 408, so slow senders can't hold upload slots.
 export const DEFAULT_MULTIPART_UPLOAD_TIMEOUT_MS = 5 * 60 * 1000
+// POST /entities bodies are spooled on node-local disk: spool ownership is only provable within one host.
+export const DEFAULT_UPLOAD_SPOOL_FOLDER = path.join(os.tmpdir(), 'catalyst-uploads')
 
 // Body cap for the JSON endpoints that buffer the whole request into memory before validating it
 // (POST /entities/active). The schema's `maxItems: 1000` can't help because JSON parsing happens
@@ -344,6 +348,7 @@ export enum EnvironmentConfig {
   MAX_IN_MEMORY_DEPLOYMENT_BYTES,
   MAX_CONCURRENT_UPLOADS,
   MULTIPART_UPLOAD_TIMEOUT_MS,
+  UPLOAD_SPOOL_FOLDER,
   MAX_ACTIVE_ENTITIES_BODY_SIZE,
 
   // Per-client rate limit on POST /entities. The header is deliberately not scoped to this endpoint:
@@ -748,6 +753,12 @@ export class EnvironmentBuilder {
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MULTIPART_UPLOAD_TIMEOUT_MS, () =>
       parsePositiveIntEnv('MULTIPART_UPLOAD_TIMEOUT_MS', DEFAULT_MULTIPART_UPLOAD_TIMEOUT_MS)
+    )
+
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.UPLOAD_SPOOL_FOLDER,
+      () => process.env.UPLOAD_SPOOL_FOLDER || DEFAULT_UPLOAD_SPOOL_FOLDER
     )
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_ACTIVE_ENTITIES_BODY_SIZE, () =>

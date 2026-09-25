@@ -1,58 +1,69 @@
-import { START_COMPONENT, STOP_COMPONENT } from '@well-known-components/interfaces'
-import { spawn } from 'child_process'
-import { access, mkdir, mkdtemp, readdir, rm, stat, utimes, writeFile } from 'fs/promises'
+import { STOP_COMPONENT } from '@well-known-components/interfaces'
+import { ChildProcess, spawn } from 'child_process'
+import { access, mkdir, mkdtemp, readdir, rm, utimes } from 'fs/promises'
 import { tmpdir } from 'os'
 import path from 'path'
-import { createUploadSpool, IUploadSpool } from '../../../src/adapters/upload-spool'
+import { createUploadSpool, IUploadSpool, UploadSpoolFolderTooLongError } from '../../../src/adapters/upload-spool'
+import { Environment, EnvironmentBuilder, EnvironmentConfig } from '../../../src/Environment'
 
 const DAY_AGO = new Date(Date.now() - 24 * 60 * 60 * 1000)
 
-async function makeProcessFolder(root: string, name: string, lease: Date | undefined, folderTime?: Date) {
+function envWithSpoolFolder(root: string): Environment {
+  const env = new Environment()
+  env.setConfig(EnvironmentConfig.UPLOAD_SPOOL_FOLDER, root)
+  return env
+}
+
+async function makeProcessFolder(root: string, name: string, folderTime?: Date): Promise<string> {
   const folder = path.join(root, name)
   await mkdir(path.join(folder, 'upload-1'), { recursive: true })
-  await utimes(path.join(folder, 'upload-1'), DAY_AGO, DAY_AGO)
-  if (lease) {
-    await writeFile(path.join(folder, '.lease'), '')
-    await utimes(path.join(folder, '.lease'), lease, lease)
-  }
   if (folderTime) {
     await utimes(folder, folderTime, folderTime)
   }
+  return folder
 }
 
-// Leaves the owner socket behind the way a crashed process does: listening, then killed.
-async function crashOwnerOf(folder: string): Promise<void> {
+// Starts a process that owns `folder` by listening on its owner socket.
+async function listenAsOwnerOf(folder: string): Promise<ChildProcess> {
   const child = spawn(
     process.execPath,
     ['-e', "require('net').createServer().listen('.owner', () => console.log('ready'))"],
     { cwd: folder, stdio: ['ignore', 'pipe', 'inherit'] }
   )
-  await new Promise((resolve) => child.stdout.once('data', resolve))
-  child.kill('SIGKILL')
-  await new Promise((resolve) => child.once('exit', resolve))
+  await new Promise((resolve) => child.stdout!.once('data', resolve))
+  return child
+}
+
+async function kill(child: ChildProcess): Promise<void> {
+  if (child.exitCode === null && child.signalCode === null) {
+    const exited = new Promise((resolve) => child.once('exit', resolve))
+    child.kill('SIGKILL')
+    await exited
+  }
+}
+
+function exists(filePath: string): Promise<boolean> {
+  return access(filePath).then(
+    () => true,
+    () => false
+  )
 }
 
 describe('when creating the upload spool', () => {
   let root: string
   let spool: IUploadSpool
   let remaining: string[]
-  let ownLease: boolean
+  let ownSocket: boolean
 
   beforeEach(async () => {
     root = await mkdtemp(path.join(tmpdir(), 'upload-spool-'))
-    await makeProcessFolder(root, 'expired-lease', DAY_AGO)
-    await makeProcessFolder(root, 'long-running-upload', new Date())
-    await makeProcessFolder(root, 'starting-without-lease', undefined)
-    await makeProcessFolder(root, 'crashed-without-lease', undefined, DAY_AGO)
-    await makeProcessFolder(root, 'crashed-with-owner-socket', DAY_AGO)
-    await crashOwnerOf(path.join(root, 'crashed-with-owner-socket'))
-    await utimes(path.join(root, 'crashed-with-owner-socket', '.lease'), DAY_AGO, DAY_AGO)
-    spool = await createUploadSpool(root)
+    const crashed = await makeProcessFolder(root, 'crashed-owner')
+    await kill(await listenAsOwnerOf(crashed))
+    await makeProcessFolder(root, 'starting-without-socket')
+    await makeProcessFolder(root, 'crashed-before-listening', DAY_AGO)
+    spool = await createUploadSpool({ env: envWithSpoolFolder(root) })
     remaining = (await readdir(root)).sort()
-    ownLease = await access(path.join(spool.folder, '.lease')).then(
-      () => true,
-      () => false
-    )
+    ownSocket = await exists(path.join(spool.folder, '.owner'))
   })
 
   afterEach(async () => {
@@ -60,119 +71,133 @@ describe('when creating the upload spool', () => {
     await rm(root, { recursive: true, force: true })
   })
 
-  it('should reclaim only folders whose lease or age has lapsed and lease a folder for this process', () => {
-    expect({ remaining, ownLease }).toEqual({
-      remaining: ['long-running-upload', 'starting-without-lease', path.basename(spool.folder)].sort(),
-      ownLease: true
+  it('should reclaim the folders of exited processes and listen on its own owner socket', () => {
+    expect({ remaining, ownSocket }).toEqual({
+      remaining: ['starting-without-socket', path.basename(spool.folder)].sort(),
+      ownSocket: true
     })
   })
 })
 
-describe('when the upload spool runs', () => {
+describe('when a process of the same host is stalled while another process starts', () => {
   let root: string
-  let leaseRenewed: boolean
-  let folderRemovedOnStop: boolean
-
-  beforeEach(async () => {
-    root = await mkdtemp(path.join(tmpdir(), 'upload-spool-'))
-    const spool = await createUploadSpool(root, { heartbeatMs: 20 })
-    const leasePath = path.join(spool.folder, '.lease')
-    await utimes(leasePath, DAY_AGO, DAY_AGO)
-    await spool[START_COMPONENT]?.({} as any)
-    await new Promise((resolve) => setTimeout(resolve, 100))
-    leaseRenewed = (await stat(leasePath)).mtimeMs > Date.now() - 60_000
-    await spool[STOP_COMPONENT]?.()
-    folderRemovedOnStop = !(await readdir(root)).includes(path.basename(spool.folder))
-  })
-
-  afterEach(async () => {
-    await rm(root, { recursive: true, force: true })
-  })
-
-  it('should keep renewing its lease and remove its idle folder when stopped', () => {
-    expect({ leaseRenewed, folderRemovedOnStop }).toEqual({ leaseRenewed: true, folderRemovedOnStop: true })
-  })
-})
-
-describe('when a live process stalls past its lease while another process starts', () => {
-  let root: string
-  let stalled: IUploadSpool
+  let stalledOwner: ChildProcess
   let other: IUploadSpool
   let spoolFileKept: boolean
 
   beforeEach(async () => {
     root = await mkdtemp(path.join(tmpdir(), 'upload-spool-'))
-    stalled = await createUploadSpool(root)
-    await mkdir(path.join(stalled.folder, 'upload-in-flight'))
-    await utimes(path.join(stalled.folder, '.lease'), DAY_AGO, DAY_AGO)
-    await utimes(stalled.folder, DAY_AGO, DAY_AGO)
-    other = await createUploadSpool(root)
-    spoolFileKept = await access(path.join(stalled.folder, 'upload-in-flight')).then(
-      () => true,
-      () => false
-    )
+    const folder = await makeProcessFolder(root, 'stalled-owner')
+    stalledOwner = await listenAsOwnerOf(folder)
+    stalledOwner.kill('SIGSTOP')
+    await utimes(folder, DAY_AGO, DAY_AGO)
+    other = await createUploadSpool({ env: envWithSpoolFolder(root) })
+    spoolFileKept = await exists(path.join(folder, 'upload-1'))
   })
 
   afterEach(async () => {
+    await kill(stalledOwner)
     await other[STOP_COMPONENT]?.()
     await rm(root, { recursive: true, force: true })
   })
 
-  it('should keep the folder of the process that still listens on its owner socket', () => {
+  it('should keep the folder of the process that still owns its socket', () => {
     expect(spoolFileKept).toBe(true)
   })
 })
 
-describe('when the upload spool stops while a request still holds spooled files', () => {
+describe('when another host owns a live spool in the shared content storage', () => {
+  let storageRoot: string
+  let remoteFolder: string
+  let spool: IUploadSpool
+  let remoteSpoolKept: boolean
+  let spoolInStorage: boolean
+
+  beforeEach(async () => {
+    storageRoot = await mkdtemp(path.join(tmpdir(), 's-'))
+    // Seen from this host, a remote owner's socket has no listener, exactly like a crashed one.
+    remoteFolder = await makeProcessFolder(path.join(storageRoot, 'contents', '_uploads'), 'remote-owner')
+    await kill(await listenAsOwnerOf(remoteFolder))
+    await utimes(remoteFolder, DAY_AGO, DAY_AGO)
+    const env = await new EnvironmentBuilder().withConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, storageRoot).build()
+    spool = await createUploadSpool({ env })
+    remoteSpoolKept = await exists(path.join(remoteFolder, 'upload-1'))
+    spoolInStorage = !path.relative(storageRoot, spool.folder).startsWith('..')
+  })
+
+  afterEach(async () => {
+    await spool[STOP_COMPONENT]?.()
+    await rm(storageRoot, { recursive: true, force: true })
+  })
+
+  it('should spool on node-local disk and leave the remote spool untouched', () => {
+    expect({ remoteSpoolKept, spoolInStorage }).toEqual({ remoteSpoolKept: true, spoolInStorage: false })
+  })
+})
+
+describe('when the upload spool stops', () => {
   let root: string
-  let other: IUploadSpool
-  let folderKept: boolean
+  let spool: IUploadSpool
 
   beforeEach(async () => {
     root = await mkdtemp(path.join(tmpdir(), 'upload-spool-'))
-    const spool = await createUploadSpool(root)
-    await spool[START_COMPONENT]?.({} as any)
-    await mkdir(path.join(spool.folder, 'upload-in-flight'))
-    await spool[STOP_COMPONENT]?.()
-    await utimes(path.join(spool.folder, '.lease'), DAY_AGO, DAY_AGO)
-    other = await createUploadSpool(root)
-    folderKept = (await readdir(root)).includes(path.basename(spool.folder))
+    spool = await createUploadSpool({ env: envWithSpoolFolder(root) })
   })
 
   afterEach(async () => {
-    await other[STOP_COMPONENT]?.()
     await rm(root, { recursive: true, force: true })
   })
 
-  it('should keep the folder owned until the process exits, even once its lease lapses', () => {
-    expect(folderKept).toBe(true)
+  describe('and its folder is idle', () => {
+    let folderRemoved: boolean
+
+    beforeEach(async () => {
+      await spool[STOP_COMPONENT]?.()
+      folderRemoved = !(await readdir(root)).includes(path.basename(spool.folder))
+    })
+
+    it('should remove its folder', () => {
+      expect(folderRemoved).toBe(true)
+    })
+  })
+
+  describe('and a request still holds spooled files', () => {
+    let other: IUploadSpool
+    let folderKept: boolean
+
+    beforeEach(async () => {
+      await mkdir(path.join(spool.folder, 'upload-in-flight'))
+      await spool[STOP_COMPONENT]?.()
+      await utimes(spool.folder, DAY_AGO, DAY_AGO)
+      other = await createUploadSpool({ env: envWithSpoolFolder(root) })
+      folderKept = await exists(path.join(spool.folder, 'upload-in-flight'))
+    })
+
+    afterEach(async () => {
+      await other[STOP_COMPONENT]?.()
+    })
+
+    it('should keep the folder owned until the process exits', () => {
+      expect(folderKept).toBe(true)
+    })
   })
 })
 
-describe('when the spool root is longer than a socket path allows', () => {
+describe('when the spool folder is too long to hold the owner socket', () => {
   let root: string
-  let stalled: IUploadSpool
-  let other: IUploadSpool
-  let spoolFileKept: boolean
+  let creation: Promise<IUploadSpool>
 
   beforeEach(async () => {
-    root = path.join(await mkdtemp(path.join(tmpdir(), 'upload-spool-')), 'a'.repeat(120))
-    stalled = await createUploadSpool(root)
-    await mkdir(path.join(stalled.folder, 'upload-in-flight'))
-    await utimes(path.join(stalled.folder, '.lease'), DAY_AGO, DAY_AGO)
-    other = await createUploadSpool(root)
-    spoolFileKept = await access(path.join(stalled.folder, 'upload-in-flight')).then(
-      () => true,
-      () => false
-    )
+    root = await mkdtemp(path.join(tmpdir(), 'upload-spool-'))
+    creation = createUploadSpool({ env: envWithSpoolFolder(path.join(root, 'a'.repeat(100))) })
+    await creation.catch(() => undefined)
   })
 
   afterEach(async () => {
-    await other[STOP_COMPONENT]?.()
-    await rm(path.dirname(root), { recursive: true, force: true })
+    await rm(root, { recursive: true, force: true })
   })
 
-  it('should still reach the owner socket and keep the live owner folder', () => {
-    expect(spoolFileKept).toBe(true)
+  it('should fail with an UploadSpoolFolderTooLongError', async () => {
+    await expect(creation).rejects.toBeInstanceOf(UploadSpoolFolderTooLongError)
   })
 })

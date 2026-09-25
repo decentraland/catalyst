@@ -114,7 +114,7 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       throw new InvalidRequestError('Invalid request: expected a multipart/form-data body')
     }
 
-    // Recreated if an overlapping process's startup removed it while this one was idle.
+    // Recreated if a temp-folder cleaner removed it while this process was idle.
     await mkdir(options.tmpFolder, { recursive: true })
     const directory = await mkdtemp(path.join(options.tmpFolder, 'upload-'))
     const openWriter = options.createWriteStream ?? createWriteStream

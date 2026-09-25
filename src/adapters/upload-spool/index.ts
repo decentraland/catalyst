@@ -1,2 +1,3 @@
 export { createUploadSpool } from './component'
-export type { IUploadSpool, UploadSpoolOptions } from './types'
+export { UploadSpoolFolderTooLongError } from './errors'
+export type { IUploadSpool } from './types'

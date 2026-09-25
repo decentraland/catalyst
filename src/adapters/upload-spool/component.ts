@@ -1,70 +1,63 @@
-import { START_COMPONENT, STOP_COMPONENT } from '@well-known-components/interfaces'
-import { randomUUID } from 'crypto'
-import { mkdir, mkdtemp, readdir, rm, stat, symlink, utimes, writeFile } from 'fs/promises'
+import { STOP_COMPONENT } from '@well-known-components/interfaces'
+import { randomBytes } from 'crypto'
+import { mkdir, readdir, rm, stat } from 'fs/promises'
 import net from 'net'
-import { tmpdir } from 'os'
 import path from 'path'
-import { IUploadSpool, UploadSpoolOptions } from './types'
+import { EnvironmentConfig } from '../../Environment'
+import { AppComponents } from '../../types'
+import { UploadSpoolFolderTooLongError } from './errors'
+import { IUploadSpool } from './types'
 
-const LEASE_FILE = '.lease'
 const OWNER_SOCKET = '.owner'
-// Connection errors that prove nobody listens on a folder's owner socket.
-const NO_OWNER_ERRORS = new Set(['ECONNREFUSED', 'ENOENT', 'ENOTDIR', 'ENOTSOCK'])
-const OWNER_PROBE_TIMEOUT_MS = 1000
 // Unix socket paths are capped at 104 bytes on macOS and 108 on Linux.
 const MAX_SOCKET_PATH = 100
-export const DEFAULT_SPOOL_HEARTBEAT_MS = 60 * 1000
-export const DEFAULT_SPOOL_LEASE_TTL_MS = 10 * 60 * 1000
+const OWNER_PROBE_TIMEOUT_MS = 1000
+// Probe errors meaning a folder has no owner socket (yet): only its age tells a crash from a startup.
+const NO_SOCKET_ERRORS = new Set(['ENOENT', 'ENOTDIR', 'ENOTSOCK'])
+// How long a folder without an owner socket is left to the process that is still creating it.
+export const SPOOL_STARTUP_GRACE_MS = 10 * 60 * 1000
+
+type OwnerState = 'alive' | 'dead' | 'missing'
 
 /**
- * Creates this process's spool folder under `root` and reclaims folders whose owner process is gone.
- * The owner listens on a socket in its folder for as long as it lives, so a stalled but live process
- * keeps its folder; the renewed lease additionally protects owners the socket can't reach.
- * @param root Folder shared by every process using the same storage.
- * @param options Heartbeat and lease durations.
- * @returns The lifecycle-managed spool; the lease is renewed between start and stop.
+ * Creates this process's spool folder under UPLOAD_SPOOL_FOLDER and reclaims folders of exited processes.
+ * The owner listens on a unix socket in its folder until it exits, so the kernel answers for a live
+ * process even while it stalls. That proof only holds between processes of one host, so the spool root
+ * must be node-local: never a folder shared with other hosts, such as the content storage.
+ * @param components Reads UPLOAD_SPOOL_FOLDER from `env`.
+ * @returns The lifecycle-managed spool; its folder stays owned until stop, or exit if spools remain.
+ * @throws UploadSpoolFolderTooLongError when the folder path can't hold the owner socket.
  */
-export async function createUploadSpool(root: string, options: UploadSpoolOptions = {}): Promise<IUploadSpool> {
-  const heartbeatMs = options.heartbeatMs ?? DEFAULT_SPOOL_HEARTBEAT_MS
-  const leaseTtlMs = options.leaseTtlMs ?? DEFAULT_SPOOL_LEASE_TTL_MS
+export async function createUploadSpool(components: Pick<AppComponents, 'env'>): Promise<IUploadSpool> {
+  const { env } = components
+  const root = path.resolve(env.getConfig<string>(EnvironmentConfig.UPLOAD_SPOOL_FOLDER))
+  const folder = path.join(root, randomBytes(8).toString('hex'))
+  const socketPath = path.join(folder, OWNER_SOCKET)
+  if (Buffer.byteLength(socketPath) > MAX_SOCKET_PATH) {
+    throw new UploadSpoolFolderTooLongError(root)
+  }
 
   await mkdir(root, { recursive: true })
   for (const entry of await readdir(root)) {
-    await reclaimIfAbandoned(path.join(root, entry), leaseTtlMs)
+    await reclaimIfAbandoned(path.join(root, entry))
   }
-  const folder = path.join(root, randomUUID())
   await mkdir(folder)
-  const leasePath = path.join(folder, LEASE_FILE)
-  await writeFile(leasePath, '')
   const owner = net.createServer((connection) => connection.destroy())
-  await withSocketPath(
-    folder,
-    (socketPath) =>
-      new Promise<void>((resolve, reject) => {
-        owner.once('error', reject)
-        owner.listen(socketPath, () => {
-          owner.off('error', reject)
-          resolve()
-        })
-      })
-  )
+  await new Promise<void>((resolve, reject) => {
+    owner.once('error', reject)
+    owner.listen(socketPath, () => {
+      owner.off('error', reject)
+      resolve()
+    })
+  })
   owner.unref()
 
-  let heartbeat: NodeJS.Timeout | undefined
   return {
     folder,
-    async [START_COMPONENT]() {
-      heartbeat = setInterval(() => {
-        const renewedAt = new Date()
-        void utimes(leasePath, renewedAt, renewedAt).catch(() => writeFile(leasePath, '').catch(() => undefined))
-      }, heartbeatMs)
-      heartbeat.unref()
-    },
     async [STOP_COMPONENT]() {
-      clearInterval(heartbeat)
       // A folder still holding spools stays owned until this process exits.
       const entries = await readdir(folder).catch(() => [])
-      if (entries.every((entry) => entry === LEASE_FILE || entry === OWNER_SOCKET)) {
+      if (entries.every((entry) => entry === OWNER_SOCKET)) {
         await new Promise<void>((resolve) => owner.close(() => resolve()))
         await rm(folder, { recursive: true, force: true }).catch(() => undefined)
       }
@@ -72,65 +65,41 @@ export async function createUploadSpool(root: string, options: UploadSpoolOption
   }
 }
 
-/**
- * Removes a folder whose lease lapsed and whose owner socket has no listener.
- * @param entryPath Folder under the spool root.
- * @param leaseTtlMs How long an unrenewed lease protects the folder, in milliseconds.
- * @returns Whether the folder was removed.
- */
-export async function reclaimIfAbandoned(entryPath: string, leaseTtlMs: number): Promise<boolean> {
-  if ((await leaseRenewedAt(entryPath)) >= Date.now() - leaseTtlMs) {
-    return false
+// Reclaims a folder whose owner socket refuses connections, or that got no socket within the startup grace.
+async function reclaimIfAbandoned(entryPath: string): Promise<void> {
+  const state = await probeOwner(path.join(entryPath, OWNER_SOCKET))
+  if (state === 'alive') {
+    return
   }
-  if (await ownerIsAlive(entryPath)) {
-    return false
+  if (state === 'missing') {
+    const entry = await stat(entryPath).catch(() => undefined)
+    if (!entry || entry.mtimeMs >= Date.now() - SPOOL_STARTUP_GRACE_MS) {
+      return
+    }
   }
   await rm(entryPath, { recursive: true, force: true })
-  return true
-}
-
-// A folder without a lease is a process that stopped between creating it and writing the lease.
-async function leaseRenewedAt(entryPath: string): Promise<number> {
-  const lease = await stat(path.join(entryPath, LEASE_FILE)).catch(() => undefined)
-  if (lease) {
-    return lease.mtimeMs
-  }
-  const folder = await stat(entryPath).catch(() => undefined)
-  return folder ? folder.mtimeMs : Number.POSITIVE_INFINITY
 }
 
 // Anything but a refused or missing socket counts as alive, so an unexpected error never deletes.
-function ownerIsAlive(entryPath: string): Promise<boolean> {
-  return withSocketPath(entryPath, (socketPath) => probeOwner(socketPath)).catch(() => true)
-}
-
-function probeOwner(socketPath: string): Promise<boolean> {
+function probeOwner(socketPath: string): Promise<OwnerState> {
+  if (Buffer.byteLength(socketPath) > MAX_SOCKET_PATH) {
+    return Promise.resolve('alive')
+  }
   return new Promise((resolve) => {
     const probe = net.connect(socketPath)
-    const settle = (alive: boolean): void => {
+    const settle = (state: OwnerState): void => {
       clearTimeout(timer)
       probe.destroy()
-      resolve(alive)
+      resolve(state)
     }
-    const timer = setTimeout(() => settle(true), OWNER_PROBE_TIMEOUT_MS)
-    probe.once('connect', () => settle(true))
-    probe.once('error', (error: NodeJS.ErrnoException) => settle(!NO_OWNER_ERRORS.has(error.code ?? '')))
+    const timer = setTimeout(() => settle('alive'), OWNER_PROBE_TIMEOUT_MS)
+    probe.once('connect', () => settle('alive'))
+    probe.once('error', (error: NodeJS.ErrnoException) => {
+      if (error.code === 'ECONNREFUSED') {
+        settle('dead')
+      } else {
+        settle(NO_SOCKET_ERRORS.has(error.code ?? '') ? 'missing' : 'alive')
+      }
+    })
   })
-}
-
-// A folder whose socket path is too long is reached through a short symlink, which binds and connects to
-// the same socket file inside the folder.
-async function withSocketPath<T>(folder: string, use: (socketPath: string) => Promise<T>): Promise<T> {
-  const socketPath = path.join(folder, OWNER_SOCKET)
-  if (Buffer.byteLength(socketPath) <= MAX_SOCKET_PATH) {
-    return use(socketPath)
-  }
-  const linkRoot = await mkdtemp(path.join(tmpdir(), 'spool-'))
-  try {
-    const link = path.join(linkRoot, 'f')
-    await symlink(folder, link)
-    return await use(path.join(link, OWNER_SOCKET))
-  } finally {
-    await rm(linkRoot, { recursive: true, force: true })
-  }
 }

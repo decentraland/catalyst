@@ -138,7 +138,7 @@ export type AppComponents = {
   uploadBudget: IUploadBudget
   /** Bounds regular deployment files read into memory. */
   deploymentMemoryBudget: IUploadBudget
-  /** This process's leased folder for POST /entities spools. */
+  /** This process's node-local folder for POST /entities spools. */
   uploadSpool: IUploadSpool
   activeEntities: ActiveEntities
   sequentialExecutor: ISequentialTaskExecutorComponent
