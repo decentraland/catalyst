@@ -44,6 +44,7 @@ import { createContentValidator } from './adapters/content-validator'
 import { createDatabaseComponent } from './adapters/database'
 import { createContentLocks } from './adapters/content-locks'
 import { createUploadBudget } from './adapters/upload-budget'
+import { createUploadSpool } from './adapters/upload-spool'
 import { createDeploymentQuota } from './logic/deployment-quota'
 import { createDenylist } from './adapters/denylist'
 import { createDeployedEntitiesBloomFilter } from './adapters/deployed-entities-bloom-filter'
@@ -139,9 +140,13 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const contentStorageFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
   const tmpDownloadFolder = path.join(contentStorageFolder, '_tmp')
   await fs.mkdir(tmpDownloadFolder, { recursive: true })
+  // Per-request spools of POST /entities bodies, in a node-local folder this process owns.
+  const uploadSpool = await createUploadSpool({ env })
+  const uploadTmpFolder = uploadSpool.folder
   const staticConfigs = {
     contentStorageFolder,
-    tmpDownloadFolder
+    tmpDownloadFolder,
+    uploadTmpFolder
   }
 
   // ---------------------------------------------------------------------------
@@ -274,9 +279,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     logs,
     metrics,
     env,
+    crypto,
     storage,
     database,
-    crypto,
     validator,
     deployer,
     entities,
@@ -546,8 +551,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const deploymentQuota = createDeploymentQuota({ env, rateLimiter })
 
-  // Bounds POST /entities bodies buffered at once; partial batches count only against this.
-  const uploadBudget = createUploadBudget({ env, metrics })
+  // Bound POST /entities bodies on disk and regular deployments in memory; partial batches only use disk.
+  const uploadBudget = createUploadBudget({ env, metrics }, 'disk')
+  const deploymentMemoryBudget = createUploadBudget({ env, metrics }, 'memory')
 
   // Warn at startup rather than per request: any client can send a forwarding header, so its
   // presence proves nothing and would let an outsider raise this.
@@ -623,6 +629,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     systemProperties,
     tracer,
     uploadBudget,
+    deploymentMemoryBudget,
+    uploadSpool,
     validator,
     queryParams,
     entities,

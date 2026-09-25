@@ -1,6 +1,8 @@
 import { EntityType, EthAddress } from '@dcl/schemas'
 import { IConfigComponent, ILoggerComponent } from '@well-known-components/interfaces'
 import ms from 'ms'
+import os from 'os'
+import path from 'path'
 import { initComponentsWithEnv } from './components'
 import { AppComponents, parseEntityType } from './types'
 
@@ -27,8 +29,8 @@ export function parsePgPoolSize(raw: string | undefined): number {
   return Number.isNaN(parsed) ? DEFAULT_PG_POOL_SIZE : Math.max(parsed, 1)
 }
 // HTTP-layer DoS guard for POST /entities uploads. The per-entity business limits live in
-// `@dcl/content-validator` (e.g. 15 MB/parcel for scenes) and run *after* the body is buffered,
-// so these caps only bound how much an unauthenticated client can stream into memory per request.
+// `@dcl/content-validator` (e.g. 15 MB/parcel for scenes) and run *after* the body is received,
+// so these caps only bound how much an unauthenticated client can make the server spool per request.
 // Generous on purpose; tune via env on catalysts that accept very large multi-parcel scenes.
 export const DEFAULT_MAX_UPLOAD_FILE_SIZE = 100 * 1024 * 1024 // 100 MB per file
 export const DEFAULT_MAX_UPLOAD_FILE_COUNT = 3000
@@ -36,21 +38,26 @@ export const DEFAULT_MAX_UPLOAD_FIELD_COUNT = 100 // non-file form fields (e.g. 
 export const DEFAULT_MAX_UPLOAD_FIELD_SIZE = 100 * 1024 // 100 KB per field value
 // Cumulative cap across every file + field in a single upload. `MAX_UPLOAD_FILE_SIZE` bounds one
 // file and `MAX_UPLOAD_FILE_COUNT` bounds the count, but their product (the only implicit ceiling)
-// is huge, and this wrapper buffers files in memory — so without a total cap one request could try
-// to buffer hundreds of GB. The validator's size check is *per pointer*, so a legitimate multi-parcel
-// scene can be several GB; this default is deliberately generous (and `MAX_UPLOAD_TOTAL_SIZE`-tunable)
-// to bound the pathological case without rejecting large estate deployments. Streaming uploads to
-// disk (instead of buffering) would remove the memory exposure entirely and is the proper follow-up.
+// is huge, so without a total cap one request could try to spool hundreds of GB. The validator's size
+// check is *per pointer*, so a legitimate multi-parcel scene can be several GB; this default is
+// deliberately generous (and `MAX_UPLOAD_TOTAL_SIZE`-tunable) to bound the pathological case without
+// rejecting large estate deployments.
 export const DEFAULT_MAX_UPLOAD_TOTAL_SIZE = 2 * 1024 * 1024 * 1024 // 2 GiB total per request
 
-// Aggregate bound on POST /entities bodies buffered at once across all clients. It must fit one
-// maximum-size request's peak: MAX_UPLOAD_TOTAL_SIZE plus a copy of one file (up to
-// MAX_UPLOAD_FILE_SIZE). Partial batches are exempt from the per-IP daily quota below and are bounded
-// by this budget and their account's byte quotas instead.
+// Aggregate bound on POST /entities bodies spooled to temporary files at once across all clients, each
+// file charged 16 KiB on top of its bytes so it also bounds inodes. It must fit one maximum-size request
+// (MAX_UPLOAD_TOTAL_SIZE plus the charge for MAX_UPLOAD_FILE_COUNT files). Partial batches are exempt from the per-IP daily quota
+// below and are bounded by this budget and their account's byte quotas instead.
 export const DEFAULT_MAX_IN_FLIGHT_UPLOAD_BYTES = 4 * 1024 * 1024 * 1024 // 4 GiB
+// Aggregate bound on regular deployment files read into memory at once. Partial batches stream from
+// disk and never count against it. It must fit one MAX_UPLOAD_TOTAL_SIZE request.
+export const DEFAULT_MAX_IN_MEMORY_DEPLOYMENT_BYTES = DEFAULT_MAX_UPLOAD_TOTAL_SIZE
 export const DEFAULT_MAX_CONCURRENT_UPLOADS = 40
 // A body still arriving after this is aborted with 408, so slow senders can't hold upload slots.
 export const DEFAULT_MULTIPART_UPLOAD_TIMEOUT_MS = 5 * 60 * 1000
+// POST /entities bodies are spooled on node-local disk: spool ownership is only provable within one host.
+// Its contents are managed by the upload spool; only the marked process folders it creates are ever reclaimed.
+export const DEFAULT_UPLOAD_SPOOL_FOLDER = path.join(os.tmpdir(), 'catalyst-uploads')
 
 // Body cap for the JSON endpoints that buffer the whole request into memory before validating it
 // (POST /entities/active). The schema's `maxItems: 1000` can't help because JSON parsing happens
@@ -341,8 +348,10 @@ export enum EnvironmentConfig {
   MAX_UPLOAD_FIELD_SIZE,
   MAX_UPLOAD_TOTAL_SIZE,
   MAX_IN_FLIGHT_UPLOAD_BYTES,
+  MAX_IN_MEMORY_DEPLOYMENT_BYTES,
   MAX_CONCURRENT_UPLOADS,
   MULTIPART_UPLOAD_TIMEOUT_MS,
+  UPLOAD_SPOOL_FOLDER,
   MAX_ACTIVE_ENTITIES_BODY_SIZE,
 
   // Per-client rate limit on POST /entities. The header is deliberately not scoped to this endpoint:
@@ -737,12 +746,22 @@ export class EnvironmentBuilder {
       parsePositiveIntEnv('MAX_IN_FLIGHT_UPLOAD_BYTES', DEFAULT_MAX_IN_FLIGHT_UPLOAD_BYTES)
     )
 
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_IN_MEMORY_DEPLOYMENT_BYTES, () =>
+      parsePositiveIntEnv('MAX_IN_MEMORY_DEPLOYMENT_BYTES', DEFAULT_MAX_IN_MEMORY_DEPLOYMENT_BYTES)
+    )
+
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_CONCURRENT_UPLOADS, () =>
       parsePositiveIntEnv('MAX_CONCURRENT_UPLOADS', DEFAULT_MAX_CONCURRENT_UPLOADS)
     )
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MULTIPART_UPLOAD_TIMEOUT_MS, () =>
       parsePositiveIntEnv('MULTIPART_UPLOAD_TIMEOUT_MS', DEFAULT_MULTIPART_UPLOAD_TIMEOUT_MS)
+    )
+
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.UPLOAD_SPOOL_FOLDER,
+      () => process.env.UPLOAD_SPOOL_FOLDER || DEFAULT_UPLOAD_SPOOL_FOLDER
     )
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_ACTIVE_ENTITIES_BODY_SIZE, () =>

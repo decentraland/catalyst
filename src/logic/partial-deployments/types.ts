@@ -1,10 +1,20 @@
 import { AuthChain } from '@dcl/crypto'
+import { Readable } from 'stream'
+
+/** One uploaded file of a staging batch, read from wherever the request put it. */
+export type StagedFile = {
+  size: number
+  /** Opens a new stream over the file's bytes. */
+  openStream(): Readable
+  /** Reads the whole file into memory. Only for small files such as the entity file. */
+  read(): Promise<Uint8Array>
+}
 
 export type StageDeploymentInput = {
   entityId: string
   authChain: AuthChain
   /** Uploaded files keyed by their multipart field name (the content hash, or the entity id). */
-  files: Map<string, Uint8Array>
+  files: Map<string, StagedFile>
 }
 
 export type StageDeploymentResult =

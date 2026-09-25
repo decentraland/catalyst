@@ -1,48 +1,58 @@
 import { EnvironmentConfig } from '../../Environment'
 import { AppComponents } from '../../types'
 import { UploadBudgetExceededError } from './errors'
-import { IUploadBudget, UploadBudgetLease } from './types'
+import { IUploadBudget, UploadBudgetKind, UploadBudgetLease } from './types'
 
-/**
- * Peak memory of a buffered upload whose files and fields total `bodyBytes`: the received bytes, plus
- * the copy of the one file being joined into a single buffer when it ends.
- * @param bodyBytes Bytes of the upload's files and fields.
- * @param maxFileBytes Largest file the upload may carry, if bounded.
- * @returns The bytes to reserve for the upload.
- */
-export function peakUploadBytes(bodyBytes: number, maxFileBytes?: number): number {
-  return bodyBytes + Math.min(bodyBytes, maxFileBytes ?? bodyBytes)
+const CAPACITY_SETTING: Record<UploadBudgetKind, keyof typeof EnvironmentConfig> = {
+  disk: 'MAX_IN_FLIGHT_UPLOAD_BYTES',
+  memory: 'MAX_IN_MEMORY_DEPLOYMENT_BYTES'
 }
 
+// Disk charged per spooled file on top of its bytes (block rounding, directory entry, inode), so the byte
+// budget also caps in-flight files at one per 16 KiB: ext4's default inode ratio for a volume of that size.
+export const SPOOL_FILE_OVERHEAD_BYTES = 16 * 1024
+
 /**
- * Creates the in-flight upload budget shared by every POST /entities request of this process.
+ * Creates a byte and concurrency budget shared by every POST /entities request of this process: `disk`
+ * bounds bodies spooled to temporary files, each file charged SPOOL_FILE_OVERHEAD_BYTES on top of its
+ * size, and `memory` bounds regular deployments read into memory.
  * @param components Environment and metrics.
+ * @param kind Which resource the budget bounds.
  * @returns The upload budget.
- * @throws Error when the byte budget cannot fit the peak of a single maximum-size request.
+ * @throws Error when the byte budget cannot fit a single maximum-size request.
  */
-export function createUploadBudget(components: Pick<AppComponents, 'env' | 'metrics'>): IUploadBudget {
+export function createUploadBudget(
+  components: Pick<AppComponents, 'env' | 'metrics'>,
+  kind: UploadBudgetKind
+): IUploadBudget {
   const { env, metrics } = components
-  const capacityBytes = env.getConfig<number>(EnvironmentConfig.MAX_IN_FLIGHT_UPLOAD_BYTES)
+  const setting = CAPACITY_SETTING[kind]
+  const capacityBytes = env.getConfig<number>(EnvironmentConfig[setting])
   const maxUploads = env.getConfig<number>(EnvironmentConfig.MAX_CONCURRENT_UPLOADS)
-  const maxRequestBytes = env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE)
-  const maxFileBytes = env.getConfig<number | undefined>(EnvironmentConfig.MAX_UPLOAD_FILE_SIZE)
-  const maxRequestPeakBytes = peakUploadBytes(maxRequestBytes, maxFileBytes)
-  if (capacityBytes < maxRequestPeakBytes) {
-    throw new Error(
-      `MAX_IN_FLIGHT_UPLOAD_BYTES (${capacityBytes}) must fit one maximum-size upload: MAX_UPLOAD_TOTAL_SIZE plus up to MAX_UPLOAD_FILE_SIZE (${maxRequestPeakBytes}).`
-    )
+  const maxTotalSize = env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE)
+  if (kind === 'disk') {
+    const maxFiles = env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FILE_COUNT)
+    const maxRequestBytes = maxTotalSize + maxFiles * SPOOL_FILE_OVERHEAD_BYTES
+    if (capacityBytes < maxRequestBytes) {
+      throw new Error(
+        `${setting} (${capacityBytes}) must be at least MAX_UPLOAD_TOTAL_SIZE plus ${SPOOL_FILE_OVERHEAD_BYTES} ` +
+          `bytes per MAX_UPLOAD_FILE_COUNT file (${maxRequestBytes}).`
+      )
+    }
+  } else if (capacityBytes < maxTotalSize) {
+    throw new Error(`${setting} (${capacityBytes}) must be at least MAX_UPLOAD_TOTAL_SIZE (${maxTotalSize}).`)
   }
 
   let reservedBytes = 0
   let activeUploads = 0
 
   function report(): void {
-    metrics.observe('dcl_multipart_upload_reserved_bytes', {}, reservedBytes)
-    metrics.observe('dcl_multipart_upload_active', {}, activeUploads)
+    metrics.observe('dcl_multipart_upload_reserved_bytes', { budget: kind }, reservedBytes)
+    metrics.observe('dcl_multipart_upload_active', { budget: kind }, activeUploads)
   }
 
   function reject(reason: 'bytes' | 'concurrency'): never {
-    metrics.increment('dcl_multipart_upload_rejections_total', { reason })
+    metrics.increment('dcl_multipart_upload_rejections_total', { budget: kind, reason })
     throw new UploadBudgetExceededError(reason)
   }
 
@@ -65,7 +75,7 @@ export function createUploadBudget(components: Pick<AppComponents, 'env' | 'metr
           return false
         }
         if (next > current && reservedBytes + next - current > capacityBytes) {
-          metrics.increment('dcl_multipart_upload_rejections_total', { reason: 'bytes' })
+          metrics.increment('dcl_multipart_upload_rejections_total', { budget: kind, reason: 'bytes' })
           return false
         }
         reservedBytes += next - current

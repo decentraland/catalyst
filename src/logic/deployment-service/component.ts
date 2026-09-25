@@ -1,6 +1,9 @@
 import { AuthChain, Authenticator } from '@dcl/crypto'
 import { Entity, EntityType, IPFSv2 } from '@dcl/schemas'
+import { hashV0, hashV1 } from '@dcl/hashing'
 import { isDeepStrictEqual } from 'util'
+import { Readable } from 'stream'
+import { bufferToStream } from '@dcl/catalyst-storage'
 import { EnvironmentConfig } from '../../Environment'
 import { storeStreamsInBatches } from '../store-content'
 import {
@@ -20,7 +23,7 @@ import * as pointerBookkeeping from './pointer-bookkeeping'
 import { createDeployRateLimiter, IDeployRateLimiterComponent } from './rate-limiter'
 import * as serverValidator from './server-validator'
 import ms from 'ms'
-import { DeployEntityOptions, ReadDeployment, TestableDeploymentService } from './types'
+import { DeployEntityOptions, DeploymentFileSource, ReadDeployment, TestableDeploymentService } from './types'
 
 // Stable fragment of the error returned when a concurrent deploy already holds one of the pointers.
 // Exported so callers (e.g. the partial-deployment finalize retry) can detect this transient condition
@@ -304,7 +307,9 @@ export function createDeploymentService(
     const alreadyStoredHashes: Map<string, boolean> = await components.storage.existMultiple(Array.from(hashes.keys()))
 
     // Store all the entity's not-already-stored content, in bounded-parallel batches (see helper).
-    const filesToStore = Array.from(hashes).filter(([fileHash]) => !alreadyStoredHashes.get(fileHash))
+    const filesToStore = Array.from(hashes)
+      .filter(([fileHash]) => !alreadyStoredHashes.get(fileHash))
+      .map(([fileHash, content]): [string, () => Readable] => [fileHash, () => bufferToStream(content)])
     await storeStreamsInBatches(components.storage, filesToStore)
   }
 
@@ -383,25 +388,34 @@ export function createDeploymentService(
     return protocolResult
   }
 
-  async function readDeployment(files: DeploymentFiles, entityId: string): Promise<ReadDeployment | InvalidResult> {
-    const hashes: Map<string, Uint8Array> = await hashFiles(components.crypto, files, entityId)
-
-    const entityFile = hashes.get(entityId)
+  function parseEntityFile(entityFile: Uint8Array | undefined, entityId: string): Entity | InvalidResult {
     if (!entityFile) {
       return InvalidResult({ errors: [`Failed to find the entity file.`] })
     }
-
-    let entity: Entity
     try {
-      entity = components.entities.parse(entityFile, entityId)
+      const entity = components.entities.parse(entityFile, entityId)
       if (!entity) {
         return InvalidResult({ errors: ['There was a problem parsing the entity, it was null'] })
       }
+      return entity
     } catch (error) {
       logger.warn(`There was an error parsing the entity: ${error}`)
       return InvalidResult({ errors: ['There was a problem parsing the entity'] })
     }
-    return { files: hashes, entity }
+  }
+
+  async function readDeployment(
+    files: DeploymentFileSource[],
+    entityId: string
+  ): Promise<ReadDeployment | InvalidResult> {
+    const hash = isIPFSHash(entityId) ? hashV1 : hashV0
+    const hashes: string[] = []
+    for (const file of files) {
+      hashes.push(await hash(file.openStream()))
+    }
+    const entityIndex = hashes.indexOf(entityId)
+    const entity = parseEntityFile(entityIndex === -1 ? undefined : await files[entityIndex].read(), entityId)
+    return isInvalidDeployment(entity) ? entity : { hashes, entity }
   }
 
   return {
@@ -439,11 +453,11 @@ export function createDeploymentService(
         return deployedEntity.localTimestamp
       }
 
-      const read = await readDeployment(files, entityId)
-      if (isInvalidDeployment(read)) {
-        return read
+      const hashes: Map<string, Uint8Array> = await hashFiles(components.crypto, files, entityId)
+      const entity = parseEntityFile(hashes.get(entityId), entityId)
+      if (isInvalidDeployment(entity)) {
+        return entity
       }
-      const { files: hashes, entity } = read
 
       // Reject entities without pointers up front (before claiming any pointer locks)
       if (entity.pointers.length === 0)

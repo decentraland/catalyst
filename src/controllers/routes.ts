@@ -63,7 +63,7 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
           maxTotalSize: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE),
           uploadTimeoutMs: env.getConfig<number>(EnvironmentConfig.MULTIPART_UPLOAD_TIMEOUT_MS)
         },
-        components.uploadBudget
+        { tmpFolder: components.staticConfigs.uploadTmpFolder, uploadBudget: components.uploadBudget }
       )
     )
   }

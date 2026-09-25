@@ -15,7 +15,8 @@ import {
 import { IHttpServerComponent } from '@dcl/core-commons'
 import { IRateLimiterComponent } from '@dcl/rate-limiter-component'
 import { IDeploymentQuotaComponent } from './logic/deployment-quota'
-import { Field, File } from '@well-known-components/multipart-wrapper'
+import { Field } from '@well-known-components/multipart-wrapper'
+import type { FileInfo } from 'busboy'
 import { HTTPProvider } from 'eth-connect'
 import qs from 'qs'
 import { Environment } from './Environment'
@@ -28,6 +29,7 @@ import { Denylist } from './adapters/denylist'
 import { IDeploymentsRepository } from './adapters/deployments-repository'
 import { IPendingDeploymentsRepository } from './adapters/pending-deployments-repository'
 import { IUploadBudget } from './adapters/upload-budget'
+import { IUploadSpool } from './adapters/upload-spool'
 import { IContentLocks } from './adapters/content-locks'
 import { IPointersRepository } from './adapters/pointers-repository'
 import { ISnapshotsRepository } from './adapters/snapshots-repository'
@@ -69,8 +71,17 @@ export type HandlerContextWithPath<
 export type FormDataContext<T> = IHttpServerComponent.DefaultContext<T> & {
   formData: {
     fields: Record<string, Field>
-    files: Record<string, File>
+    files: Record<string, SpooledFile>
   }
+}
+
+/** An uploaded file part, spooled to a temporary file that exists only until the handler returns. */
+export type SpooledFile = FileInfo & {
+  fieldname: string
+  /** Absolute path of the temporary file. */
+  path: string
+  /** Size of the file, in bytes. */
+  size: number
 }
 
 export type FormHandlerContextWithPath<
@@ -103,6 +114,7 @@ export type AppComponents = {
   staticConfigs: {
     contentStorageFolder: string
     tmpDownloadFolder: string
+    uploadTmpFolder: string
   }
   batchDeployer: IBatchDeployer
   synchronizer: SynchronizerComponent
@@ -124,7 +136,12 @@ export type AppComponents = {
   /** Per-client request budget for regular (non-partial) POST /entities deployments. */
   rateLimiter: IRateLimiterComponent<GlobalContext>
   deploymentQuota: IDeploymentQuotaComponent
+  /** Bounds POST /entities bodies spooled to temporary files. */
   uploadBudget: IUploadBudget
+  /** Bounds regular deployment files read into memory. */
+  deploymentMemoryBudget: IUploadBudget
+  /** This process's node-local folder for POST /entities spools. */
+  uploadSpool: IUploadSpool
   activeEntities: ActiveEntities
   sequentialExecutor: ISequentialTaskExecutorComponent
   denylist: Denylist

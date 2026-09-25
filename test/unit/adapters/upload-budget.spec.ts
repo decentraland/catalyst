@@ -2,18 +2,20 @@ import { EnvironmentConfig } from '../../../src/Environment'
 import {
   createUploadBudget,
   IUploadBudget,
+  SPOOL_FILE_OVERHEAD_BYTES,
   UploadBudgetExceededError,
   UploadBudgetLease
 } from '../../../src/adapters/upload-budget'
 
-type BudgetConfig = { capacityBytes: number; maxUploads: number; maxRequestBytes: number; maxFileBytes: number }
+type BudgetConfig = { capacityBytes: number; maxUploads: number; maxRequestBytes: number; maxFiles?: number }
 
-function buildComponents({ capacityBytes, maxUploads, maxRequestBytes, maxFileBytes }: BudgetConfig) {
+function buildComponents({ capacityBytes, maxUploads, maxRequestBytes, maxFiles = 0 }: BudgetConfig) {
   const values: Partial<Record<EnvironmentConfig, number>> = {
     [EnvironmentConfig.MAX_IN_FLIGHT_UPLOAD_BYTES]: capacityBytes,
+    [EnvironmentConfig.MAX_IN_MEMORY_DEPLOYMENT_BYTES]: capacityBytes,
     [EnvironmentConfig.MAX_CONCURRENT_UPLOADS]: maxUploads,
     [EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE]: maxRequestBytes,
-    [EnvironmentConfig.MAX_UPLOAD_FILE_SIZE]: maxFileBytes
+    [EnvironmentConfig.MAX_UPLOAD_FILE_COUNT]: maxFiles
   }
   return {
     env: { getConfig: jest.fn((key: EnvironmentConfig) => values[key]) },
@@ -31,35 +33,68 @@ function captureError(operation: () => unknown): unknown {
 }
 
 describe('when creating the upload budget', () => {
-  describe('and the byte budget cannot fit the peak of a single maximum-size request', () => {
+  describe('and the disk budget cannot fit a single maximum-size request', () => {
     let creation: () => IUploadBudget
 
     beforeEach(() => {
       creation = () =>
-        createUploadBudget(
-          buildComponents({ capacityBytes: 100, maxUploads: 2, maxRequestBytes: 60, maxFileBytes: 41 })
-        )
+        createUploadBudget(buildComponents({ capacityBytes: 100, maxUploads: 2, maxRequestBytes: 101 }), 'disk')
     })
 
-    it('should fail at startup naming the settings and the peak', () => {
+    it('should fail at startup naming the settings', () => {
       expect(creation).toThrow(
-        'MAX_IN_FLIGHT_UPLOAD_BYTES (100) must fit one maximum-size upload: MAX_UPLOAD_TOTAL_SIZE plus up to MAX_UPLOAD_FILE_SIZE (101).'
+        `MAX_IN_FLIGHT_UPLOAD_BYTES (100) must be at least MAX_UPLOAD_TOTAL_SIZE plus ${SPOOL_FILE_OVERHEAD_BYTES} bytes per MAX_UPLOAD_FILE_COUNT file (101).`
       )
     })
   })
 
-  describe('and the byte budget fits the peak of a maximum-size request whose files are smaller than it', () => {
+  describe('and the disk budget fits a maximum-size request but not the overhead of its maximum file count', () => {
     let creation: () => IUploadBudget
 
     beforeEach(() => {
       creation = () =>
         createUploadBudget(
-          buildComponents({ capacityBytes: 100, maxUploads: 2, maxRequestBytes: 60, maxFileBytes: 40 })
+          buildComponents({
+            capacityBytes: 100 + 2 * SPOOL_FILE_OVERHEAD_BYTES,
+            maxUploads: 2,
+            maxRequestBytes: 100,
+            maxFiles: 3
+          }),
+          'disk'
         )
     })
 
-    it('should create the budget', () => {
+    it('should fail at startup with the capacity a maximum-size request needs', () => {
+      expect(creation).toThrow(`(${100 + 3 * SPOOL_FILE_OVERHEAD_BYTES}).`)
+    })
+  })
+
+  describe('and the memory budget fits a maximum-size request with its maximum file count', () => {
+    let creation: () => IUploadBudget
+
+    beforeEach(() => {
+      creation = () =>
+        createUploadBudget(
+          buildComponents({ capacityBytes: 100, maxUploads: 2, maxRequestBytes: 100, maxFiles: 3 }),
+          'memory'
+        )
+    })
+
+    it('should not charge the spool file overhead', () => {
       expect(creation).not.toThrow()
+    })
+  })
+
+  describe('and the memory budget cannot fit a single maximum-size request', () => {
+    let creation: () => IUploadBudget
+
+    beforeEach(() => {
+      creation = () =>
+        createUploadBudget(buildComponents({ capacityBytes: 100, maxUploads: 2, maxRequestBytes: 101 }), 'memory')
+    })
+
+    it('should fail at startup naming both settings', () => {
+      expect(creation).toThrow('MAX_IN_MEMORY_DEPLOYMENT_BYTES (100) must be at least MAX_UPLOAD_TOTAL_SIZE (101).')
     })
   })
 })
@@ -68,9 +103,7 @@ describe('when acquiring from the upload budget', () => {
   let budget: IUploadBudget
 
   beforeEach(() => {
-    budget = createUploadBudget(
-      buildComponents({ capacityBytes: 100, maxUploads: 2, maxRequestBytes: 60, maxFileBytes: 40 })
-    )
+    budget = createUploadBudget(buildComponents({ capacityBytes: 100, maxUploads: 2, maxRequestBytes: 100 }), 'disk')
   })
 
   describe('and the upload fits the byte and concurrency budgets', () => {
@@ -148,9 +181,7 @@ describe('when resizing an upload budget lease', () => {
   let lease: UploadBudgetLease
 
   beforeEach(() => {
-    budget = createUploadBudget(
-      buildComponents({ capacityBytes: 100, maxUploads: 3, maxRequestBytes: 60, maxFileBytes: 40 })
-    )
+    budget = createUploadBudget(buildComponents({ capacityBytes: 100, maxUploads: 3, maxRequestBytes: 100 }), 'disk')
     lease = budget.acquire(10)
   })
 

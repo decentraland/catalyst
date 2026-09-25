@@ -88,20 +88,21 @@ export const metricsDeclaration = validateMetricsDeclaration({
     labelNames: []
   },
   dcl_multipart_upload_reserved_bytes: {
-    help: 'POST /entities body bytes reserved in the in-flight upload budget',
+    help: 'POST /entities bytes reserved in an upload budget',
     type: 'gauge',
-    labelNames: []
+    // budget=(disk|memory)
+    labelNames: ['budget']
   },
   dcl_multipart_upload_active: {
-    help: 'POST /entities bodies being buffered',
+    help: 'POST /entities uploads holding an upload budget',
     type: 'gauge',
-    labelNames: []
+    labelNames: ['budget']
   },
   dcl_multipart_upload_rejections_total: {
-    help: 'POST /entities uploads shed because the in-flight upload budget was full',
+    help: 'POST /entities uploads shed because an upload budget was full',
     type: 'counter',
     // reason=(bytes|concurrency)
-    labelNames: ['reason']
+    labelNames: ['budget', 'reason']
   },
   dcl_partial_upload_metadata_checks_total: {
     help: 'Content metadata checks performed by partial uploads',

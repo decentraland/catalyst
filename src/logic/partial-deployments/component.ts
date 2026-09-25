@@ -1,14 +1,15 @@
 import { Authenticator } from '@dcl/crypto'
 import { Entity, EntityType, IPFSv2 } from '@dcl/schemas'
+import { hashV1 } from '@dcl/hashing'
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { FileReceipt, PendingDeploymentRow } from '../../adapters/pending-deployments-repository'
 import { EnvironmentConfig } from '../../Environment'
 import { DeploymentContext, isInvalidDeployment } from '../../deployment-types'
 import { AppComponents } from '../../types'
 import { REQUEST_TTL_FORWARDS } from '../deployment-service/server-validator'
-import { storeStreamsInBatches } from '../store-content'
+import { CONTENT_STORE_CONCURRENCY, storeStreamsInBatches } from '../store-content'
 import { InvalidPartialDeploymentError } from './errors'
-import { IPartialDeployments, StageDeploymentInput, StageDeploymentResult } from './types'
+import { IPartialDeployments, StagedFile, StageDeploymentInput, StageDeploymentResult } from './types'
 
 // Bounded retry for two requests completing the same upload at once: the loser of the in-memory
 // pointer lock retries and hits deployEntity's idempotency fast path.
@@ -16,7 +17,8 @@ const FINALIZE_POINTER_CONFLICT_RETRIES = 3
 const FINALIZE_POINTER_CONFLICT_DELAY_MS = 300
 
 // Caps the manifest on both paths: a resume reads it back from storage outside the multipart budget.
-const MAX_ENTITY_FILE_SIZE_BYTES = 10 * 1024 * 1024 // 10 MB
+export const MAX_ENTITY_FILE_SIZE_BYTES = 10 * 1024 * 1024 // 10 MB
+const EMPTY_FILE = new Uint8Array(0)
 
 // Expired uploads reclaimed per cleanup run, and storage keys per exclusive delete batch.
 const EXPIRED_UPLOADS_PER_CLEANUP = 100
@@ -48,9 +50,9 @@ export function createPartialDeployments(
     | 'logs'
     | 'metrics'
     | 'env'
+    | 'crypto'
     | 'storage'
     | 'database'
-    | 'crypto'
     | 'validator'
     | 'deployer'
     | 'entities'
@@ -64,9 +66,9 @@ export function createPartialDeployments(
     logs,
     metrics,
     env,
+    crypto,
     storage,
     database,
-    crypto,
     validator,
     deployer,
     entities,
@@ -265,28 +267,32 @@ export function createPartialDeployments(
       ])
     }
 
-    // In partial mode the field-name keys are load-bearing, so every file must hash to its key.
+    // In partial mode the field-name keys are load-bearing, so every file must hash to its key. Files are
+    // hashed from their streams so a batch is never held in memory.
     const entries = Array.from(files.entries())
-    const hashed = await crypto.calculateIPFSHashes(entries.map(([, buf]) => buf))
-    const uploadedFiles = new Map<string, Uint8Array>()
-    for (let i = 0; i < entries.length; i++) {
-      const declaredKey = entries[i][0]
-      const computedHash = hashed[i].hash
-      if (declaredKey !== computedHash) {
-        throw new InvalidPartialDeploymentError([
-          `The uploaded file '${declaredKey}' does not match its content hash (computed ${computedHash}).`
-        ])
-      }
-      uploadedFiles.set(computedHash, hashed[i].file)
+    for (let i = 0; i < entries.length; i += CONTENT_STORE_CONCURRENCY) {
+      await Promise.all(
+        entries.slice(i, i + CONTENT_STORE_CONCURRENCY).map(async ([declaredKey, file]) => {
+          const computedHash = await hashV1(file.openStream())
+          if (declaredKey !== computedHash) {
+            throw new InvalidPartialDeploymentError([
+              `The uploaded file '${declaredKey}' does not match its content hash (computed ${computedHash}).`
+            ])
+          }
+        })
+      )
     }
+    const uploadedFiles: Map<string, StagedFile> = files
 
-    let entityFile = uploadedFiles.get(entityId)
-    if (entityFile) {
-      if (entityFile.byteLength > MAX_ENTITY_FILE_SIZE_BYTES) {
+    let entityFile: Uint8Array
+    const uploadedEntityFile = uploadedFiles.get(entityId)
+    if (uploadedEntityFile) {
+      if (uploadedEntityFile.size > MAX_ENTITY_FILE_SIZE_BYTES) {
         throw new InvalidPartialDeploymentError([
-          `The entity file '${entityId}' is too large (${entityFile.byteLength} bytes, max ${MAX_ENTITY_FILE_SIZE_BYTES}).`
+          `The entity file '${entityId}' is too large (${uploadedEntityFile.size} bytes, max ${MAX_ENTITY_FILE_SIZE_BYTES}).`
         ])
       }
+      entityFile = await uploadedEntityFile.read()
     } else {
       entityFile = await readBackEntityFile(entityId, authChain)
     }
@@ -315,8 +321,13 @@ export function createPartialDeployments(
     // Resume batches by the upload's creator skip the slow access check: creating the upload passed
     // it, bytes are hash-verified against the manifest, and finalize re-runs the full validation.
     const isResumeBySameDeployer = !!pending && pending.deployerAddress === deployerAddress
+    // The staging validations only read which files were uploaded, not their bytes (size and content
+    // checks run at finalize against storage), so content files are passed as empty placeholders.
+    const stagingFiles = new Map<string, Uint8Array>(
+      Array.from(uploadedFiles.keys(), (key) => [key, key === entityId ? entityFile : EMPTY_FILE])
+    )
     const validationResult = await validator.validateStagingScene(
-      { entity, files: uploadedFiles, auditInfo: { authChain } },
+      { entity, files: stagingFiles, auditInfo: { authChain } },
       { skipAccessCheck: isResumeBySameDeployer }
     )
     if (!validationResult.ok) {
@@ -372,8 +383,8 @@ export function createPartialDeployments(
     }
     let incomingBytes = 0
     for (const [hash, file] of uploadedFiles) {
-      incomingBytes += file.byteLength
-      receipts.set(hash, { hash, size: file.byteLength, stored: receipts.get(hash)?.stored ?? false })
+      incomingBytes += file.size
+      receipts.set(hash, { hash, size: file.size, stored: receipts.get(hash)?.stored ?? false })
     }
     const knownSceneBytes = Array.from(receipts.values())
       .filter((receipt) => receipt.hash !== entityId)
@@ -391,7 +402,10 @@ export function createPartialDeployments(
       throw error
     }
 
-    await storeStreamsInBatches(storage, Array.from(uploadedFiles))
+    await storeStreamsInBatches(
+      storage,
+      Array.from(uploadedFiles, ([hash, file]) => [hash, () => file.openStream()])
+    )
     await database.transaction(async (tx) => {
       await pendingDeploymentsRepository.markStored(tx, entityId, Array.from(uploadedFiles.keys()))
       await pendingDeploymentsRepository.markInitialized(tx, entityId)

@@ -1,14 +1,18 @@
 import FormData from 'form-data'
+import { createWriteStream as createFileWriteStream } from 'fs'
+import { mkdtemp, rm } from 'fs/promises'
+import { tmpdir } from 'os'
+import path from 'path'
 import { Readable } from 'stream'
 import { IHttpServerComponent } from '@dcl/core-commons'
 import { multipartParserWrapper } from '../../../src/controllers/multipart'
+import { PayloadTooLargeError, ServiceUnavailableError } from '../../../src/controllers/errors'
 import {
-  InvalidRequestError,
-  PayloadTooLargeError,
-  RequestTimeoutError,
-  ServiceUnavailableError
-} from '../../../src/controllers/errors'
-import { createUploadBudget, IUploadBudget, UploadBudgetExceededError } from '../../../src/adapters/upload-budget'
+  createUploadBudget,
+  IUploadBudget,
+  SPOOL_FILE_OVERHEAD_BYTES,
+  UploadBudgetExceededError
+} from '../../../src/adapters/upload-budget'
 import { EnvironmentConfig } from '../../../src/Environment'
 
 type Wrapped = (ctx: IHttpServerComponent.DefaultContext<any>) => Promise<IHttpServerComponent.IResponse>
@@ -31,23 +35,28 @@ describe('when parsing a multipart request under an upload budget', () => {
   let budget: { acquire: jest.Mock }
   let form: FormData
   let wrapped: Wrapped
+  let tmpFolder: string
+  let createWriteStream: jest.Mock
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    tmpFolder = await mkdtemp(path.join(tmpdir(), 'multipart-'))
     handler = jest.fn().mockResolvedValue({ status: 200, body: {} })
     lease = { resize: jest.fn().mockReturnValue(true), release: jest.fn() }
     budget = { acquire: jest.fn().mockReturnValue(lease) }
+    createWriteStream = jest.fn((filePath: string) => createFileWriteStream(filePath))
     form = new FormData()
     form.append('entityId', 'an-entity-id')
     form.append('file1', Buffer.alloc(100, 1), { filename: 'file1' })
     wrapped = multipartParserWrapper(
       handler as any,
       { maxFileSize: 1024, maxFiles: 10 },
-      budget as unknown as IUploadBudget
+      { tmpFolder, uploadBudget: budget as unknown as IUploadBudget, createWriteStream }
     )
   })
 
-  afterEach(() => {
+  afterEach(async () => {
     jest.resetAllMocks()
+    await rm(tmpFolder, { recursive: true, force: true })
   })
 
   describe('and the budget admits it with its declared size', () => {
@@ -61,74 +70,13 @@ describe('when parsing a multipart request under an upload budget', () => {
       )
     })
 
-    it('should reserve the declared size plus a copy of it, run the handler and release the reservation afterwards', () => {
+    it('should reserve the declared size, run the handler and release the reservation afterwards', () => {
       expect({
         reserved: budget.acquire.mock.calls,
         status: response.status,
         released: lease.release.mock.calls.length,
         releasedAfterHandler: lease.release.mock.invocationCallOrder[0] > handler.mock.invocationCallOrder[0]
-      }).toEqual({ reserved: [[2 * declaredSize]], status: 200, released: 1, releasedAfterHandler: true })
-    })
-  })
-
-  describe('and its declared size is larger than the maximum file size', () => {
-    let declaredSize: number
-
-    beforeEach(async () => {
-      declaredSize = form.getBuffer().length
-      wrapped = multipartParserWrapper(
-        handler as any,
-        { maxFileSize: 150, maxFiles: 10 },
-        budget as unknown as IUploadBudget
-      )
-      await wrapped(buildContext(form.getBuffer(), { ...form.getHeaders(), 'content-length': String(declaredSize) }))
-    })
-
-    it('should reserve the declared size plus a copy of the largest file allowed', () => {
-      expect(budget.acquire.mock.calls).toEqual([[declaredSize + 150]])
-    })
-  })
-
-  describe('and it declares a large size but sends only the start of its body', () => {
-    let declaredSize: number
-    let allocatedSizes: number[]
-    let error: unknown
-
-    beforeEach(async () => {
-      declaredSize = 64 * 1024 * 1024
-      const body = form.getBuffer()
-      const start = body.subarray(0, body.indexOf('file1') + 200)
-      allocatedSizes = []
-      const record = (size: number) => allocatedSizes.push(size)
-      const { alloc, allocUnsafe, allocUnsafeSlow } = Buffer
-      jest.spyOn(Buffer, 'alloc').mockImplementation((size, ...rest) => (record(size), alloc(size, ...rest)))
-      jest.spyOn(Buffer, 'allocUnsafe').mockImplementation((size) => (record(size), allocUnsafe(size)))
-      jest.spyOn(Buffer, 'allocUnsafeSlow').mockImplementation((size) => (record(size), allocUnsafeSlow(size)))
-      // Never ends: the client keeps the connection open after its first bytes.
-      const stalled = new Readable({ read() {} })
-      stalled.push(start)
-      wrapped = multipartParserWrapper(
-        handler as any,
-        { maxFileSize: declaredSize, maxFiles: 10, uploadTimeoutMs: 50 },
-        budget as unknown as IUploadBudget
-      )
-      error = await wrapped({
-        request: {
-          headers: { get: (name: string) => ({ ...form.getHeaders(), 'content-length': String(declaredSize) }[name]) },
-          body: Readable.toWeb(stalled)
-        }
-      } as any).catch((e) => e)
-    })
-
-    afterEach(() => {
-      jest.restoreAllMocks()
-    })
-
-    it('should only allocate memory for the bytes received before timing out', () => {
-      expect({ error, largestAllocation: Math.max(0, ...allocatedSizes) < 1024 * 1024 }).toEqual({
-        error: new RequestTimeoutError('The multipart upload timed out.'),
-        largestAllocation: true
-      })
+      }).toEqual({ reserved: [[declaredSize]], status: 200, released: 1, releasedAfterHandler: true })
     })
   })
 
@@ -145,6 +93,57 @@ describe('when parsing a multipart request under an upload budget', () => {
     })
   })
 
+  describe('and it carries several small files', () => {
+    beforeEach(async () => {
+      form = new FormData()
+      form.append('entityId', 'an-entity-id')
+      for (let i = 0; i < 3; i++) {
+        form.append(`file${i}`, Buffer.alloc(10, 1), { filename: `file${i}` })
+      }
+      await wrapped(
+        buildContext(form.getBuffer(), { ...form.getHeaders(), 'content-length': String(form.getBuffer().length) })
+      )
+    })
+
+    it('should reserve the spool file overhead of every file on top of the received bytes', () => {
+      expect(lease.resize.mock.calls[lease.resize.mock.calls.length - 1]).toEqual([
+        'an-entity-id'.length + 3 * 10 + 3 * SPOOL_FILE_OVERHEAD_BYTES
+      ])
+    })
+  })
+
+  describe('and the budget has no room for the overhead of its next file', () => {
+    let declaredSize: number
+    let error: unknown
+
+    beforeEach(async () => {
+      form = new FormData()
+      form.append('entityId', 'an-entity-id')
+      for (let i = 0; i < 3; i++) {
+        form.append(`file${i}`, Buffer.alloc(10, 1), { filename: `file${i}` })
+      }
+      declaredSize = form.getBuffer().length
+      lease.resize.mockImplementation((size: number) => size <= declaredSize + SPOOL_FILE_OVERHEAD_BYTES)
+      error = await wrapped(
+        buildContext(form.getBuffer(), { ...form.getHeaders(), 'content-length': String(declaredSize) })
+      ).catch((e) => e)
+    })
+
+    it('should reject with a ServiceUnavailableError before creating its temporary file and release the reservation', () => {
+      expect({
+        error,
+        filesCreated: createWriteStream.mock.calls.length,
+        handled: handler.mock.calls.length,
+        released: lease.release.mock.calls.length
+      }).toEqual({
+        error: new ServiceUnavailableError('Server is handling too many uploads, please retry shortly.'),
+        filesCreated: 1,
+        handled: 0,
+        released: 1
+      })
+    })
+  })
+
   describe('and the budget has no room for it', () => {
     let error: unknown
 
@@ -157,94 +156,27 @@ describe('when parsing a multipart request under an upload budget', () => {
 
     it('should reject with a ServiceUnavailableError without running the handler', () => {
       expect({ error, handled: handler.mock.calls.length }).toEqual({
-        error: new ServiceUnavailableError('Server is buffering too many uploads, please retry shortly.'),
+        error: new ServiceUnavailableError('Server is handling too many uploads, please retry shortly.'),
         handled: 0
       })
     })
   })
 
-  describe('and the request declares its content length', () => {
-    let files: Record<string, { value: Buffer }>
-
-    beforeEach(async () => {
-      handler.mockImplementationOnce(async (ctx: any) => {
-        files = ctx.formData.files
-        return { status: 200, body: {} }
-      })
-      await wrapped(
-        buildContext(form.getBuffer(), { ...form.getHeaders(), 'content-length': String(form.getBuffer().length) })
-      )
-    })
-
-    it('should hold the files, including their concatenated copies, within the declared reservation', () => {
-      expect({ resized: lease.resize.mock.calls, file: files.file1.value }).toEqual({
-        resized: [],
-        file: Buffer.alloc(100, 1)
-      })
-    })
-  })
-
-  describe('and the body is larger than its declared content length', () => {
+  describe('and the body outgrows its reservation beyond what the budget can fit', () => {
     let error: unknown
 
     beforeEach(async () => {
+      lease.resize.mockReturnValue(false)
       error = await wrapped(buildContext(form.getBuffer(), { ...form.getHeaders(), 'content-length': '10' })).catch(
         (e) => e
       )
     })
 
-    it('should reject with an InvalidRequestError, skip the handler and release the reservation', () => {
-      expect({ error, handled: handler.mock.calls.length, released: lease.release.mock.calls.length }).toEqual({
-        error: new InvalidRequestError('The request body is larger than its declared Content-Length.'),
-        handled: 0,
-        released: 1
-      })
-    })
-  })
-
-  describe('and a body without a declared size outgrows what the budget can fit', () => {
-    let error: unknown
-
-    beforeEach(async () => {
-      lease.resize.mockReturnValue(false)
-      error = await wrapped(buildContext(form.getBuffer(), form.getHeaders())).catch((e) => e)
-    })
-
     it('should reject with a ServiceUnavailableError, skip the handler and release the reservation', () => {
       expect({ error, handled: handler.mock.calls.length, released: lease.release.mock.calls.length }).toEqual({
-        error: new ServiceUnavailableError('Server is buffering too many uploads, please retry shortly.'),
+        error: new ServiceUnavailableError('Server is handling too many uploads, please retry shortly.'),
         handled: 0,
         released: 1
-      })
-    })
-  })
-
-  describe('and a file of a body without a declared size is concatenated within the budget', () => {
-    let bodyBytes: number
-
-    beforeEach(async () => {
-      bodyBytes = 'an-entity-id'.length + 100
-      await wrapped(buildContext(form.getBuffer(), form.getHeaders()))
-    })
-
-    it('should reserve the extra copy while concatenating and return it afterwards', () => {
-      expect(lease.resize.mock.calls.slice(-2)).toEqual([[bodyBytes + 100], [bodyBytes]])
-    })
-  })
-
-  describe('and the budget cannot fit the copy made while concatenating a file of a body without a declared size', () => {
-    let error: unknown
-
-    beforeEach(async () => {
-      const bodyBytes = 'an-entity-id'.length + 100
-      lease.resize.mockImplementation((bytes: number) => bytes <= bodyBytes)
-      error = await wrapped(buildContext(form.getBuffer(), form.getHeaders())).catch((e) => e)
-    })
-
-    it('should reject with a ServiceUnavailableError without running the handler', () => {
-      expect({ error, handled: handler.mock.calls.length }).toEqual({
-        error: new ServiceUnavailableError('Server is buffering too many uploads, please retry shortly.'),
-        handled: 0
       })
     })
   })
@@ -255,11 +187,12 @@ describe('when parsing a multipart request under an upload budget', () => {
 
     beforeEach(async () => {
       maxTotalSize = 50
-      lease.resize.mockImplementation((size: number) => size <= maxTotalSize)
+      // Full at the footprint of a maximum-size body in one file.
+      lease.resize.mockImplementation((size: number) => size <= maxTotalSize + SPOOL_FILE_OVERHEAD_BYTES)
       wrapped = multipartParserWrapper(
         handler as any,
         { maxFileSize: 1024, maxFiles: 10, maxTotalSize },
-        budget as unknown as IUploadBudget
+        { tmpFolder, uploadBudget: budget as unknown as IUploadBudget }
       )
       error = await wrapped(buildContext(form.getBuffer(), form.getHeaders())).catch((e) => e)
     })
@@ -307,29 +240,33 @@ describe('when parsing a multipart request under an upload budget', () => {
 })
 
 describe('when parsing multipart requests that together fill the upload budget', () => {
+  let tmpFolder: string
   let outcomes: Array<number | string>
 
   beforeEach(async () => {
+    tmpFolder = await mkdtemp(path.join(tmpdir(), 'multipart-'))
     const form = new FormData()
     form.append('entityId', 'an-entity-id')
     form.append('file1', Buffer.alloc(1000, 1), { filename: 'file1' })
     const body = form.getBuffer()
     const headers = { ...form.getHeaders(), 'content-length': String(body.length) }
     const values: Partial<Record<EnvironmentConfig, number>> = {
-      // Each request's peak is its body plus a copy of its largest file (bounded by the body).
-      [EnvironmentConfig.MAX_IN_FLIGHT_UPLOAD_BYTES]: 2 * (2 * body.length),
+      [EnvironmentConfig.MAX_IN_FLIGHT_UPLOAD_BYTES]: 2 * (body.length + SPOOL_FILE_OVERHEAD_BYTES),
       [EnvironmentConfig.MAX_CONCURRENT_UPLOADS]: 2,
       [EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE]: body.length,
-      [EnvironmentConfig.MAX_UPLOAD_FILE_SIZE]: 4096
+      [EnvironmentConfig.MAX_UPLOAD_FILE_COUNT]: 1
     }
-    const budget = createUploadBudget({
-      env: { getConfig: (key: EnvironmentConfig) => values[key] },
-      metrics: { observe: jest.fn(), increment: jest.fn() }
-    } as any)
+    const budget = createUploadBudget(
+      {
+        env: { getConfig: (key: EnvironmentConfig) => values[key] },
+        metrics: { observe: jest.fn(), increment: jest.fn() }
+      } as any,
+      'disk'
+    )
     const wrapped: Wrapped = multipartParserWrapper(
       jest.fn().mockResolvedValue({ status: 200, body: {} }) as any,
       { maxFileSize: 4096, maxFiles: 10, maxTotalSize: body.length },
-      budget
+      { tmpFolder, uploadBudget: budget }
     )
     const responses = await Promise.all([
       wrapped(buildContext(body, headers)).catch((e) => e),
@@ -338,7 +275,82 @@ describe('when parsing multipart requests that together fill the upload budget',
     outcomes = responses.map((response) => (response instanceof Error ? response.name : response.status))
   })
 
+  afterEach(async () => {
+    await rm(tmpFolder, { recursive: true, force: true })
+  })
+
   it('should complete every admitted request', () => {
     expect(outcomes).toEqual([200, 200])
+  })
+})
+
+describe('when parsing multipart requests whose files together exceed the upload budget', () => {
+  const FILE_COUNT = 4
+  let tmpFolder: string
+  let capacity: number
+  let outcomes: Array<number | string>
+  let filesCreated: number
+  let fullCapacityAdmitted: boolean
+
+  beforeEach(async () => {
+    tmpFolder = await mkdtemp(path.join(tmpdir(), 'multipart-'))
+    const form = new FormData()
+    form.append('entityId', 'an-entity-id')
+    for (let i = 0; i < FILE_COUNT; i++) {
+      form.append(`file${i}`, Buffer.alloc(0), { filename: `file${i}` })
+    }
+    const body = form.getBuffer()
+    const headers = { ...form.getHeaders(), 'content-length': String(body.length) }
+    // Room for one request's spool files and the other's declared bytes, but not for its files.
+    capacity = 'an-entity-id'.length + FILE_COUNT * SPOOL_FILE_OVERHEAD_BYTES + body.length
+    const values: Partial<Record<EnvironmentConfig, number>> = {
+      [EnvironmentConfig.MAX_IN_FLIGHT_UPLOAD_BYTES]: capacity,
+      [EnvironmentConfig.MAX_CONCURRENT_UPLOADS]: 2,
+      [EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE]: body.length,
+      [EnvironmentConfig.MAX_UPLOAD_FILE_COUNT]: FILE_COUNT
+    }
+    const budget = createUploadBudget(
+      {
+        env: { getConfig: (key: EnvironmentConfig) => values[key] },
+        metrics: { observe: jest.fn(), increment: jest.fn() }
+      } as any,
+      'disk'
+    )
+    filesCreated = 0
+    const wrapped: Wrapped = multipartParserWrapper(
+      jest.fn().mockResolvedValue({ status: 200, body: {} }) as any,
+      { maxFileSize: 4096, maxFiles: FILE_COUNT, maxTotalSize: body.length },
+      {
+        tmpFolder,
+        uploadBudget: budget,
+        createWriteStream: (filePath: string) => {
+          filesCreated++
+          return createFileWriteStream(filePath)
+        }
+      }
+    )
+    const responses = await Promise.all([
+      wrapped(buildContext(body, headers)).catch((e) => e),
+      wrapped(buildContext(body, headers)).catch((e) => e)
+    ])
+    outcomes = responses.map((response) => (response instanceof Error ? response.name : response.status)).sort()
+    try {
+      budget.acquire(capacity).release()
+      fullCapacityAdmitted = true
+    } catch {
+      fullCapacityAdmitted = false
+    }
+  })
+
+  afterEach(async () => {
+    await rm(tmpFolder, { recursive: true, force: true })
+  })
+
+  it('should complete one request and reject the other as retryable before creating its temporary files', () => {
+    expect({ outcomes, filesCreated }).toEqual({ outcomes: [200, 'ServiceUnavailableError'], filesCreated: FILE_COUNT })
+  })
+
+  it('should return every reservation to the budget once both settle', () => {
+    expect(fullCapacityAdmitted).toBe(true)
   })
 })
