@@ -20,7 +20,7 @@ import * as pointerBookkeeping from './pointer-bookkeeping'
 import { createDeployRateLimiter, IDeployRateLimiterComponent } from './rate-limiter'
 import * as serverValidator from './server-validator'
 import ms from 'ms'
-import { DeployEntityOptions, TestableDeploymentService } from './types'
+import { DeployEntityOptions, ReadDeployment, TestableDeploymentService } from './types'
 
 // Stable fragment of the error returned when a concurrent deploy already holds one of the pointers.
 // Exported so callers (e.g. the partial-deployment finalize retry) can detect this transient condition
@@ -383,7 +383,29 @@ export function createDeploymentService(
     return protocolResult
   }
 
+  async function readDeployment(files: DeploymentFiles, entityId: string): Promise<ReadDeployment | InvalidResult> {
+    const hashes: Map<string, Uint8Array> = await hashFiles(components.crypto, files, entityId)
+
+    const entityFile = hashes.get(entityId)
+    if (!entityFile) {
+      return InvalidResult({ errors: [`Failed to find the entity file.`] })
+    }
+
+    let entity: Entity
+    try {
+      entity = components.entities.parse(entityFile, entityId)
+      if (!entity) {
+        return InvalidResult({ errors: ['There was a problem parsing the entity, it was null'] })
+      }
+    } catch (error) {
+      logger.warn(`There was an error parsing the entity: ${error}`)
+      return InvalidResult({ errors: ['There was a problem parsing the entity'] })
+    }
+    return { files: hashes, entity }
+  }
+
   return {
+    readDeployment,
     setRateLimiter(rl: IDeployRateLimiterComponent) {
       rateLimiter = rl
     },
@@ -417,26 +439,11 @@ export function createDeploymentService(
         return deployedEntity.localTimestamp
       }
 
-      // Hash all files
-      const hashes: Map<string, Uint8Array> = await hashFiles(components.crypto, files, entityId)
-
-      // Find entity file
-      const entityFile = hashes.get(entityId)
-      if (!entityFile) {
-        return InvalidResult({ errors: [`Failed to find the entity file.`] })
+      const read = await readDeployment(files, entityId)
+      if (isInvalidDeployment(read)) {
+        return read
       }
-
-      // Parse entity file into an Entity
-      let entity: Entity
-      try {
-        entity = components.entities.parse(entityFile, entityId)
-        if (!entity) {
-          return InvalidResult({ errors: ['There was a problem parsing the entity, it was null'] })
-        }
-      } catch (error) {
-        logger.warn(`There was an error parsing the entity: ${error}`)
-        return InvalidResult({ errors: ['There was a problem parsing the entity'] })
-      }
+      const { files: hashes, entity } = read
 
       // Reject entities without pointers up front (before claiming any pointer locks)
       if (entity.pointers.length === 0)

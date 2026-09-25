@@ -1,5 +1,11 @@
-import { EntityType } from '@dcl/schemas'
-import { DeploymentContext, DeploymentFiles, DeploymentResult, LocalDeploymentAuditInfo } from '../../deployment-types'
+import { Entity, EntityType } from '@dcl/schemas'
+import {
+  DeploymentContext,
+  DeploymentFiles,
+  DeploymentResult,
+  InvalidResult,
+  LocalDeploymentAuditInfo
+} from '../../deployment-types'
 import { IDeployRateLimiterComponent } from './rate-limiter'
 
 export type DeployEntityOptions = {
@@ -10,6 +16,12 @@ export type DeployEntityOptions = {
   requestTtlAnchor?: number
 }
 
+/** A deployment's files keyed by content hash, and its parsed entity. */
+export type ReadDeployment = {
+  files: Map<string, Uint8Array>
+  entity: Entity
+}
+
 export interface IDeploymentService {
   deployEntity(
     files: DeploymentFiles,
@@ -18,6 +30,11 @@ export interface IDeploymentService {
     context: DeploymentContext,
     options?: DeployEntityOptions
   ): Promise<DeploymentResult>
+  /**
+   * Hashes a deployment's files and parses its entity file, as deployEntity does before validating it.
+   * The returned files can be passed to deployEntity without hashing them again.
+   */
+  readDeployment(files: DeploymentFiles, entityId: string): Promise<ReadDeployment | InvalidResult>
   /** The local timestamp of the entity's recorded deployment, or `undefined` if it was never deployed. */
   getDeployedEntityTimestamp(entityId: string): Promise<number | undefined>
   /** Whether a deployment of this entity type on these pointers is currently rate limited. */

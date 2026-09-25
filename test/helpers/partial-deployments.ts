@@ -33,8 +33,17 @@ export async function prepareSceneDeployment(
 }
 
 /** The same deployment signed by the same owner through an ephemeral key that has already expired. */
-export function withExpiredAuthChain(deployment: PreparedDeployment, identity: IdentityType): PreparedDeployment {
-  const authChain = Authenticator.createAuthChain(identity, createUnsafeIdentity(), -1, deployment.entityId)
+export function withExpiredAuthChain(
+  deployment: PreparedDeployment,
+  identity: IdentityType,
+  expiredMinutesAgo = 1
+): PreparedDeployment {
+  const authChain = Authenticator.createAuthChain(
+    identity,
+    createUnsafeIdentity(),
+    -expiredMinutesAgo,
+    deployment.entityId
+  )
   return { ...deployment, authChain }
 }
 

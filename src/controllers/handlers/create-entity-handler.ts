@@ -4,6 +4,7 @@ import { AuthChain, AuthLink, EthAddress } from '@dcl/crypto'
 import { DeploymentContext, isInvalidDeployment, isSuccessfulDeployment } from '../../deployment-types'
 import { EntityLockTimeoutError } from '../../adapters/content-locks'
 import { InvalidPartialDeploymentError } from '../../logic/partial-deployments'
+import { ReadDeployment } from '../../logic/deployment-service/types'
 import { FormHandlerContextWithPath } from '../../types'
 import { InvalidRequestError, ServiceUnavailableError } from '../errors'
 
@@ -14,11 +15,6 @@ type PostEntity202 = { missing: string[] }
 // crafted `authChain[<huge>][...]` field name can't drive a large iteration count on the public,
 // unauthenticated POST /entities endpoint (issue #1936).
 const MAX_AUTH_CHAIN_LENGTH = 10
-
-type ContentFile = {
-  path?: string
-  content: Buffer
-}
 
 type Response =
   | { status: 200; body: PostEntity200 }
@@ -77,8 +73,28 @@ export async function createEntity(
   }
 
   // Authenticate before taking any lock, so a request that can't be authenticated never holds a lock
-  // connection. Same check and message as the deployment validator's signature validation.
-  const signature = await crypto.validateSignature(entityId, authChain, Date.now())
+  // connection. Same check, expiry date (the entity's timestamp) and message as the deployment validator.
+  let regularDeployment: ReadDeployment | undefined
+  let signatureDate: number
+  if (isPartial) {
+    const entityFile = context.formData.files[entityId]?.value
+    const read = entityFile ? await deployer.readDeployment([entityFile], entityId) : undefined
+    // A batch without a readable entity file is a resume, whose storage read-back needs a chain valid now.
+    signatureDate = read && !isInvalidDeployment(read) ? read.entity.timestamp : Date.now()
+  } else {
+    const read = await deployer.readDeployment(
+      Object.values(context.formData.files).map((file) => file.value),
+      entityId
+    )
+    if (isInvalidDeployment(read)) {
+      metrics.increment('dcl_deployments_endpoint_counter', { kind: 'validation_error' })
+      logger.error(`POST /entities - Deployment failed (${read.errors.join(',')})`, { entityId, ethAddress, userAgent })
+      return { status: 400, body: { errors: read.errors } }
+    }
+    regularDeployment = read
+    signatureDate = read.entity.timestamp
+  }
+  const signature = await crypto.validateSignature(entityId, authChain, signatureDate)
   if (!signature.ok) {
     return { status: 400, body: { errors: [`The signature is invalid. ${signature.message}`] } }
   }
@@ -140,17 +156,12 @@ export async function createEntity(
       }
     }
 
-    const deployFiles: ContentFile[] = []
     try {
-      for (const filename of Object.keys(context.formData.files)) {
-        const file = context.formData.files[filename]
-        deployFiles.push({ path: filename, content: file.value })
-      }
-
       const auditInfo = { authChain, version: 'v3' }
 
+      // Already hashed while authenticating.
       const deploymentResult = await deployer.deployEntity(
-        deployFiles.map(({ content }) => content),
+        regularDeployment!.files,
         entityId,
         auditInfo,
         DeploymentContext.LOCAL
