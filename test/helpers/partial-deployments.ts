@@ -1,4 +1,5 @@
 import { Authenticator, IdentityType } from '@dcl/crypto'
+import { createUnsafeIdentity } from '@dcl/crypto/dist/crypto'
 import { EntityType } from '@dcl/schemas'
 import { buildEntity } from 'dcl-catalyst-client/dist/client/utils/DeploymentBuilder'
 import FormData = require('form-data')
@@ -29,6 +30,12 @@ export async function prepareSceneDeployment(
   const authChain = Authenticator.createSimpleAuthChain(prepared.entityId, identity.address, signature)
   const contentHashes = Array.from(prepared.files.keys()).filter((k) => k !== prepared.entityId)
   return { entityId: prepared.entityId, authChain, files: prepared.files, contentHashes }
+}
+
+/** The same deployment signed by the same owner through an ephemeral key that has already expired. */
+export function withExpiredAuthChain(deployment: PreparedDeployment, identity: IdentityType): PreparedDeployment {
+  const authChain = Authenticator.createAuthChain(identity, createUnsafeIdentity(), -1, deployment.entityId)
+  return { ...deployment, authChain }
 }
 
 export function buildPartialForm(deployment: PreparedDeployment, keysToInclude: string[], partial = true): FormData {

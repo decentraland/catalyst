@@ -30,10 +30,12 @@ function buildContext(partial: boolean, components: Record<string, unknown>): Co
 describe('when creating an entity under the content lock', () => {
   let withRead: jest.Mock
   let validateSignature: jest.Mock
+  let getDeployedEntityTimestamp: jest.Mock
 
   beforeEach(() => {
     withRead = jest.fn()
     validateSignature = jest.fn()
+    getDeployedEntityTimestamp = jest.fn().mockResolvedValue(undefined)
   })
 
   afterEach(() => {
@@ -45,7 +47,13 @@ describe('when creating an entity under the content lock', () => {
 
     beforeEach(async () => {
       validateSignature.mockResolvedValueOnce({ ok: false, message: 'bad signature' })
-      response = await createEntity(buildContext(true, { contentLocks: { withRead }, crypto: { validateSignature } }))
+      response = await createEntity(
+        buildContext(true, {
+          contentLocks: { withRead },
+          crypto: { validateSignature },
+          deployer: { getDeployedEntityTimestamp }
+        })
+      )
     })
 
     it('should reject it with a 400 without taking any content lock', () => {
@@ -61,7 +69,13 @@ describe('when creating an entity under the content lock', () => {
 
     beforeEach(async () => {
       validateSignature.mockResolvedValueOnce({ ok: false, message: 'bad signature' })
-      response = await createEntity(buildContext(false, { contentLocks: { withRead }, crypto: { validateSignature } }))
+      response = await createEntity(
+        buildContext(false, {
+          contentLocks: { withRead },
+          crypto: { validateSignature },
+          deployer: { getDeployedEntityTimestamp }
+        })
+      )
     })
 
     it('should reject it with a 400 without taking any content lock', () => {
@@ -72,6 +86,33 @@ describe('when creating an entity under the content lock', () => {
     })
   })
 
+  describe.each([
+    ['a regular deployment', false],
+    ['a partial batch', true]
+  ])('and %s replays an already deployed entity', (_, partial) => {
+    let response: Awaited<ReturnType<typeof createEntity>>
+
+    beforeEach(async () => {
+      getDeployedEntityTimestamp.mockResolvedValueOnce(1234)
+      validateSignature.mockResolvedValueOnce({ ok: false, message: 'Ephemeral key expired' })
+      response = await createEntity(
+        buildContext(partial, {
+          contentLocks: { withRead },
+          crypto: { validateSignature },
+          deployer: { getDeployedEntityTimestamp }
+        })
+      )
+    })
+
+    it('should answer 200 with the original creation timestamp without re-authenticating or taking any lock', () => {
+      expect({
+        response,
+        signatureChecks: validateSignature.mock.calls.length,
+        locks: withRead.mock.calls.length
+      }).toEqual({ response: { status: 200, body: { creationTimestamp: 1234 } }, signatureChecks: 0, locks: 0 })
+    })
+  })
+
   describe('and the entity stays locked by another request past the bounded wait', () => {
     let error: unknown
 
@@ -79,7 +120,11 @@ describe('when creating an entity under the content lock', () => {
       validateSignature.mockResolvedValueOnce({ ok: true })
       withRead.mockRejectedValueOnce(new EntityLockTimeoutError(ENTITY_ID))
       error = await createEntity(
-        buildContext(false, { contentLocks: { withRead }, crypto: { validateSignature } })
+        buildContext(false, {
+          contentLocks: { withRead },
+          crypto: { validateSignature },
+          deployer: { getDeployedEntityTimestamp }
+        })
       ).catch((e) => e)
     })
 
