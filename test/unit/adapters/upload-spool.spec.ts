@@ -1,12 +1,17 @@
 import { STOP_COMPONENT } from '@well-known-components/interfaces'
 import { ChildProcess, spawn } from 'child_process'
-import { access, mkdir, mkdtemp, readdir, rm, utimes } from 'fs/promises'
+import { access, lstat, mkdir, mkdtemp, readdir, rm, symlink, utimes, writeFile } from 'fs/promises'
 import { tmpdir } from 'os'
 import path from 'path'
 import { createUploadSpool, IUploadSpool, UploadSpoolFolderTooLongError } from '../../../src/adapters/upload-spool'
+import { SPOOL_MARKER } from '../../../src/adapters/upload-spool/component'
 import { Environment, EnvironmentBuilder, EnvironmentConfig } from '../../../src/Environment'
 
 const DAY_AGO = new Date(Date.now() - 24 * 60 * 60 * 1000)
+// Process folder names shaped like the generated ones.
+const CRASHED_OWNER = '00000000000000a1'
+const STARTING_WITHOUT_SOCKET = '00000000000000a2'
+const CRASHED_BEFORE_LISTENING = '00000000000000a3'
 
 function envWithSpoolFolder(root: string): Environment {
   const env = new Environment()
@@ -17,6 +22,7 @@ function envWithSpoolFolder(root: string): Environment {
 async function makeProcessFolder(root: string, name: string, folderTime?: Date): Promise<string> {
   const folder = path.join(root, name)
   await mkdir(path.join(folder, 'upload-1'), { recursive: true })
+  await writeFile(path.join(folder, SPOOL_MARKER), '')
   if (folderTime) {
     await utimes(folder, folderTime, folderTime)
   }
@@ -54,16 +60,18 @@ describe('when creating the upload spool', () => {
   let spool: IUploadSpool
   let remaining: string[]
   let ownSocket: boolean
+  let ownMarker: boolean
 
   beforeEach(async () => {
     root = await mkdtemp(path.join(tmpdir(), 'upload-spool-'))
-    const crashed = await makeProcessFolder(root, 'crashed-owner')
+    const crashed = await makeProcessFolder(root, CRASHED_OWNER)
     await kill(await listenAsOwnerOf(crashed))
-    await makeProcessFolder(root, 'starting-without-socket')
-    await makeProcessFolder(root, 'crashed-before-listening', DAY_AGO)
+    await makeProcessFolder(root, STARTING_WITHOUT_SOCKET)
+    await makeProcessFolder(root, CRASHED_BEFORE_LISTENING, DAY_AGO)
     spool = await createUploadSpool({ env: envWithSpoolFolder(root) })
     remaining = (await readdir(root)).sort()
     ownSocket = await exists(path.join(spool.folder, '.owner'))
+    ownMarker = await exists(path.join(spool.folder, SPOOL_MARKER))
   })
 
   afterEach(async () => {
@@ -71,10 +79,78 @@ describe('when creating the upload spool', () => {
     await rm(root, { recursive: true, force: true })
   })
 
-  it('should reclaim the folders of exited processes and listen on its own owner socket', () => {
-    expect({ remaining, ownSocket }).toEqual({
-      remaining: ['starting-without-socket', path.basename(spool.folder)].sort(),
-      ownSocket: true
+  it('should reclaim the folders of exited processes and mark and listen on its own folder', () => {
+    expect({ remaining, ownSocket, ownMarker }).toEqual({
+      remaining: [STARTING_WITHOUT_SOCKET, path.basename(spool.folder)].sort(),
+      ownSocket: true,
+      ownMarker: true
+    })
+  })
+})
+
+describe('when the spool root holds entries this component did not create', () => {
+  let root: string
+  let elsewhere: string
+  let spool: IUploadSpool
+  let unrelatedFileKept: boolean
+  let unmarkedFolderKept: boolean
+  let otherNamedFolderKept: boolean
+  let crashedOwnerFolderKept: boolean
+  let symlinkKept: boolean
+  let symlinkTargetKept: boolean
+
+  beforeEach(async () => {
+    root = await mkdtemp(path.join(tmpdir(), 'upload-spool-'))
+    elsewhere = await mkdtemp(path.join(tmpdir(), 'upload-spool-target-'))
+    await writeFile(path.join(root, 'unrelated.log'), 'data')
+    await utimes(path.join(root, 'unrelated.log'), DAY_AGO, DAY_AGO)
+    // Hex-named like a process folder and holding a dead socket, but without the marker.
+    const unmarked = path.join(root, '00000000000000d1')
+    await mkdir(path.join(unmarked, 'data'), { recursive: true })
+    await kill(await listenAsOwnerOf(unmarked))
+    await utimes(unmarked, DAY_AGO, DAY_AGO)
+    // Marked, with a dead socket, but not named like a generated process folder.
+    const otherNamed = await makeProcessFolder(root, 'backups', DAY_AGO)
+    await kill(await listenAsOwnerOf(otherNamed))
+    // A marked process folder reached through a symlink must not be followed.
+    const target = await makeProcessFolder(elsewhere, '00000000000000d2')
+    await kill(await listenAsOwnerOf(target))
+    await symlink(target, path.join(root, '00000000000000d2'))
+    const crashed = await makeProcessFolder(root, CRASHED_OWNER)
+    await kill(await listenAsOwnerOf(crashed))
+    spool = await createUploadSpool({ env: envWithSpoolFolder(root) })
+    unrelatedFileKept = await exists(path.join(root, 'unrelated.log'))
+    unmarkedFolderKept = await exists(path.join(unmarked, 'data'))
+    otherNamedFolderKept = await exists(path.join(otherNamed, 'upload-1'))
+    crashedOwnerFolderKept = await exists(crashed)
+    symlinkKept = await lstat(path.join(root, '00000000000000d2')).then(
+      () => true,
+      () => false
+    )
+    symlinkTargetKept = await exists(path.join(target, 'upload-1'))
+  })
+
+  afterEach(async () => {
+    await spool[STOP_COMPONENT]?.()
+    await rm(root, { recursive: true, force: true })
+    await rm(elsewhere, { recursive: true, force: true })
+  })
+
+  it('should leave every unrelated entry untouched and still reclaim the marked folder of an exited process', () => {
+    expect({
+      unrelatedFileKept,
+      unmarkedFolderKept,
+      otherNamedFolderKept,
+      symlinkKept,
+      symlinkTargetKept,
+      crashedOwnerFolderKept
+    }).toEqual({
+      unrelatedFileKept: true,
+      unmarkedFolderKept: true,
+      otherNamedFolderKept: true,
+      symlinkKept: true,
+      symlinkTargetKept: true,
+      crashedOwnerFolderKept: false
     })
   })
 })
@@ -87,7 +163,7 @@ describe('when a process of the same host is stalled while another process start
 
   beforeEach(async () => {
     root = await mkdtemp(path.join(tmpdir(), 'upload-spool-'))
-    const folder = await makeProcessFolder(root, 'stalled-owner')
+    const folder = await makeProcessFolder(root, '00000000000000b1')
     stalledOwner = await listenAsOwnerOf(folder)
     stalledOwner.kill('SIGSTOP')
     await utimes(folder, DAY_AGO, DAY_AGO)
@@ -116,7 +192,7 @@ describe('when another host owns a live spool in the shared content storage', ()
   beforeEach(async () => {
     storageRoot = await mkdtemp(path.join(tmpdir(), 's-'))
     // Seen from this host, a remote owner's socket has no listener, exactly like a crashed one.
-    remoteFolder = await makeProcessFolder(path.join(storageRoot, 'contents', '_uploads'), 'remote-owner')
+    remoteFolder = await makeProcessFolder(path.join(storageRoot, 'contents', '_uploads'), '00000000000000c1')
     await kill(await listenAsOwnerOf(remoteFolder))
     await utimes(remoteFolder, DAY_AGO, DAY_AGO)
     const env = await new EnvironmentBuilder().withConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, storageRoot).build()

@@ -56,6 +56,7 @@ export const DEFAULT_MAX_CONCURRENT_UPLOADS = 40
 // A body still arriving after this is aborted with 408, so slow senders can't hold upload slots.
 export const DEFAULT_MULTIPART_UPLOAD_TIMEOUT_MS = 5 * 60 * 1000
 // POST /entities bodies are spooled on node-local disk: spool ownership is only provable within one host.
+// Its contents are managed by the upload spool; only the marked process folders it creates are ever reclaimed.
 export const DEFAULT_UPLOAD_SPOOL_FOLDER = path.join(os.tmpdir(), 'catalyst-uploads')
 
 // Body cap for the JSON endpoints that buffer the whole request into memory before validating it
