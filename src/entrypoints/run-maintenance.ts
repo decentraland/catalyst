@@ -10,8 +10,10 @@ import { metricsDeclaration } from '../metrics'
 import { migrateContentFolderStructure } from '../migrations/ContentFolderMigrationManager'
 import { createMigrationExecutor } from '../migrations/migration-executor'
 import { createDatabaseComponent } from '../adapters/database'
+import { createContentLocks } from '../adapters/content-locks'
 import { createContentFilesRepository } from '../adapters/content-files-repository'
 import { createDeploymentsRepository } from '../adapters/deployments-repository'
+import { createPendingDeploymentsRepository } from '../adapters/pending-deployments-repository'
 import { createSnapshotsRepository } from '../adapters/snapshots-repository'
 import { createSystemProperties } from '../adapters/system-properties'
 import { ActiveEntities } from '../logic/active-entities'
@@ -41,6 +43,8 @@ void Lifecycle.run({
     const metrics = createTestMetricsComponent(metricsDeclaration)
     const env = await new EnvironmentBuilder().build()
     const database = await createDatabaseComponent({ logs, env, metrics })
+    // Shares the server's database lock, so this sweep excludes in-flight deployments.
+    const contentLocks = createContentLocks({ logs, env })
     const fs = createFsComponent()
     const contentStorageFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
     // This must run with a FolderBasedFileSystem implementation of IContentStorageComponent
@@ -48,6 +52,7 @@ void Lifecycle.run({
     const migrationManager = createMigrationExecutor({ logs, env })
     const contentFilesRepository = createContentFilesRepository()
     const deploymentsRepository = createDeploymentsRepository()
+    const pendingDeploymentsRepository = createPendingDeploymentsRepository()
     const snapshotsRepository = createSnapshotsRepository()
     const systemProperties = createSystemProperties({ database })
     // `deleteUnreferencedFiles` is the only GC method this entrypoint invokes; the
@@ -63,12 +68,15 @@ void Lifecycle.run({
         storage,
         contentFilesRepository,
         deploymentsRepository,
+        pendingDeploymentsRepository,
         snapshotsRepository,
         systemProperties,
-        activeEntities
+        activeEntities,
+        contentLocks
       },
       false,
-      0
+      0,
+      env.getConfig(EnvironmentConfig.PENDING_DEPLOYMENT_TTL)
     )
     env.logConfigValues(logs.getLogger('Environment'))
     return {
@@ -76,11 +84,13 @@ void Lifecycle.run({
       metrics,
       env,
       database,
+      contentLocks,
       migrationManager,
       fs,
       storage,
       contentFilesRepository,
       deploymentsRepository,
+      pendingDeploymentsRepository,
       snapshotsRepository,
       garbageCollectionManager
     }

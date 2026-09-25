@@ -2,26 +2,33 @@ import { PostEntity200, PostEntity400 } from '@dcl/catalyst-api-specs/lib/client
 import { Field } from '@well-known-components/multipart-wrapper'
 import { AuthChain, AuthLink, EthAddress } from '@dcl/crypto'
 import { DeploymentContext, isInvalidDeployment, isSuccessfulDeployment } from '../../deployment-types'
+import { EntityLockTimeoutError } from '../../adapters/content-locks'
+import { InvalidPartialDeploymentError } from '../../logic/partial-deployments'
+import { ReadDeployment } from '../../logic/deployment-service/types'
 import { FormHandlerContextWithPath } from '../../types'
-import { InvalidRequestError } from '../errors'
+import { InvalidRequestError, ServiceUnavailableError } from '../errors'
+
+/** Body of a 202 response to a partial deployment request: the content hashes not yet on the server. */
+type PostEntity202 = { missing: string[] }
 
 // A real auth chain has 2-3 links; cap generously. This bounds the index-parsing loop below so a
 // crafted `authChain[<huge>][...]` field name can't drive a large iteration count on the public,
 // unauthenticated POST /entities endpoint (issue #1936).
 const MAX_AUTH_CHAIN_LENGTH = 10
 
-type ContentFile = {
-  path?: string
-  content: Buffer
-}
-
-type Response = { status: 200; body: PostEntity200 } | { status: 400; body: PostEntity400 }
+type Response =
+  | { status: 200; body: PostEntity200 }
+  | { status: 202; body: PostEntity202 }
+  | { status: 400 | 429; body: PostEntity400; headers?: Record<string, string> }
 
 // Method: POST
 export async function createEntity(
-  context: FormHandlerContextWithPath<'logs' | 'fs' | 'metrics' | 'deployer', '/entities'>
+  context: FormHandlerContextWithPath<
+    'logs' | 'fs' | 'metrics' | 'deployer' | 'partialDeployments' | 'contentLocks' | 'crypto',
+    '/entities'
+  >
 ): Promise<Response> {
-  const { metrics, deployer, logs } = context.components
+  const { metrics, deployer, partialDeployments, logs, contentLocks, crypto } = context.components
 
   const logger = logs.getLogger('create-entity')
   // Guard the required field explicitly: without it a missing `entityId` throws a TypeError and the
@@ -50,55 +57,161 @@ export async function createEntity(
     throw new InvalidRequestError('Invalid auth chain')
   }
 
-  const deployFiles: ContentFile[] = []
-  try {
-    for (const filename of Object.keys(context.formData.files)) {
-      const file = context.formData.files[filename]
-      deployFiles.push({ path: filename, content: file.value })
+  const isPartial = context.formData.fields.partial?.value === 'true'
+
+  // Deployments are idempotent: a replay of a published entity gets its original timestamp without
+  // re-authentication (its chain may have expired since), as deployEntity has always answered.
+  const deployedTimestamp = await deployer.getDeployedEntityTimestamp(entityId)
+  if (deployedTimestamp !== undefined) {
+    if (isPartial) {
+      metrics.increment('dcl_partial_deployments_staging_total', { kind: 'finalized' })
+    } else {
+      metrics.increment('dcl_deployments_endpoint_counter', { kind: 'success' })
+    }
+    logger.info(`POST /entities - Entity already deployed`, { entityId, ethAddress, userAgent })
+    return { status: 200, body: { creationTimestamp: deployedTimestamp } }
+  }
+
+  // Authenticate before taking any lock, so a request that can't be authenticated never holds a lock
+  // connection. Same check, expiry date (the entity's timestamp) and message as the deployment validator.
+  let regularDeployment: ReadDeployment | undefined
+  let signatureDate: number
+  if (isPartial) {
+    const entityFile = context.formData.files[entityId]?.value
+    const read = entityFile ? await deployer.readDeployment([entityFile], entityId) : undefined
+    // A batch without a readable entity file is a resume, whose storage read-back needs a chain valid now.
+    signatureDate = read && !isInvalidDeployment(read) ? read.entity.timestamp : Date.now()
+  } else {
+    const read = await deployer.readDeployment(
+      Object.values(context.formData.files).map((file) => file.value),
+      entityId
+    )
+    if (isInvalidDeployment(read)) {
+      metrics.increment('dcl_deployments_endpoint_counter', { kind: 'validation_error' })
+      logger.error(`POST /entities - Deployment failed (${read.errors.join(',')})`, { entityId, ethAddress, userAgent })
+      return { status: 400, body: { errors: read.errors } }
+    }
+    regularDeployment = read
+    signatureDate = read.entity.timestamp
+  }
+  const signature = await crypto.validateSignature(entityId, authChain, signatureDate)
+  if (!signature.ok) {
+    return { status: 400, body: { errors: [`The signature is invalid. ${signature.message}`] } }
+  }
+
+  // Every deployment holds the shared content lock through publication, so garbage collection can't
+  // delete content it stores or reuses; batches of one entity are serialized.
+  return withContentLock(async (): Promise<Response> => {
+    // A `partial=true` field marks a staging request of a multi-request (partial) deployment: the
+    // content may be uploaded across several requests and the entity only becomes live once all of it is
+    // present. Requests without the flag behave exactly as before.
+    if (isPartial) {
+      // Preserve the field-name keys (content hashes): unlike the vanilla path, they are load-bearing.
+      const files = new Map<string, Uint8Array>()
+      for (const filename of Object.keys(context.formData.files)) {
+        files.set(filename, context.formData.files[filename].value)
+      }
+
+      try {
+        const result = await partialDeployments.stageDeployment({ entityId, authChain, files })
+        if (result.kind === 'deployed') {
+          metrics.increment('dcl_partial_deployments_staging_total', { kind: 'finalized' })
+          logger.info(`POST /entities - Partial deployment finalized`, { entityId, ethAddress, userAgent })
+          return { status: 200, body: { creationTimestamp: result.creationTimestamp } }
+        }
+        metrics.increment('dcl_partial_deployments_staging_total', { kind: 'accepted' })
+        logger.info(`POST /entities - Partial deployment staged`, {
+          entityId,
+          ethAddress,
+          userAgent,
+          missing: result.missing.length
+        })
+        return { status: 202, body: { missing: result.missing } }
+      } catch (error) {
+        if (error instanceof InvalidPartialDeploymentError) {
+          metrics.increment('dcl_partial_deployments_staging_total', { kind: 'validation_error' })
+          logger.error(`POST /entities - Partial deployment failed (${error.errors.join(',')})`, {
+            entityId,
+            ethAddress,
+            userAgent
+          })
+          // statusCode is 429 for transient conditions (rate limiting), 400 for validation errors. On a
+          // 429 with a known window, send Retry-After so the client waits it out instead of exhausting its
+          // resume budget inside the window.
+          const headers =
+            error.statusCode === 429 && error.retryAfterSeconds !== undefined
+              ? { 'Retry-After': String(error.retryAfterSeconds) }
+              : undefined
+          return { status: error.statusCode, body: { errors: error.errors }, headers }
+        }
+        metrics.increment('dcl_partial_deployments_staging_total', { kind: 'error' })
+        // Never log `authChain` or `signature`: they are cryptographic credentials.
+        logger.error(`POST /entities - Partial deployment internal server error '${error}'`, {
+          entityId,
+          ethAddress,
+          userAgent
+        })
+        logger.error(error)
+        throw error
+      }
     }
 
-    const auditInfo = { authChain, version: 'v3' }
+    try {
+      const auditInfo = { authChain, version: 'v3' }
 
-    const deploymentResult = await deployer.deployEntity(
-      deployFiles.map(({ content }) => content),
-      entityId,
-      auditInfo,
-      DeploymentContext.LOCAL
-    )
+      // Already hashed while authenticating.
+      const deploymentResult = await deployer.deployEntity(
+        regularDeployment!.files,
+        entityId,
+        auditInfo,
+        DeploymentContext.LOCAL
+      )
 
-    if (isSuccessfulDeployment(deploymentResult)) {
-      metrics.increment('dcl_deployments_endpoint_counter', { kind: 'success' })
-      logger.info(`POST /entities - Deployment successful`, { entityId, ethAddress, userAgent })
-      return {
-        status: 200,
-        body: { creationTimestamp: deploymentResult }
+      if (isSuccessfulDeployment(deploymentResult)) {
+        metrics.increment('dcl_deployments_endpoint_counter', { kind: 'success' })
+        logger.info(`POST /entities - Deployment successful`, { entityId, ethAddress, userAgent })
+        return {
+          status: 200,
+          body: { creationTimestamp: deploymentResult }
+        }
+      } else if (isInvalidDeployment(deploymentResult)) {
+        metrics.increment('dcl_deployments_endpoint_counter', { kind: 'validation_error' })
+        logger.error(`POST /entities - Deployment failed (${deploymentResult.errors.join(',')})`, {
+          entityId,
+          ethAddress,
+          userAgent
+        })
+        return {
+          status: 400,
+          body: { errors: deploymentResult.errors }
+        }
+      } else {
+        logger.error(`deploymentResult is invalid ${JSON.stringify(deploymentResult)}`)
+        throw new Error('deploymentResult is invalid')
       }
-    } else if (isInvalidDeployment(deploymentResult)) {
-      metrics.increment('dcl_deployments_endpoint_counter', { kind: 'validation_error' })
-      logger.error(`POST /entities - Deployment failed (${deploymentResult.errors.join(',')})`, {
+    } catch (error) {
+      metrics.increment('dcl_deployments_endpoint_counter', { kind: 'error' })
+      // Never log `authChain` or `signature`: they are cryptographic credentials and
+      // must not end up in logs/aggregation. `entityId` + `ethAddress` are enough to debug.
+      logger.error(`POST /entities - Internal server error '${error}'`, {
         entityId,
         ethAddress,
         userAgent
       })
-      return {
-        status: 400,
-        body: { errors: deploymentResult.errors }
-      }
-    } else {
-      logger.error(`deploymentResult is invalid ${JSON.stringify(deploymentResult)}`)
-      throw new Error('deploymentResult is invalid')
+      logger.error(error)
+      throw error
     }
-  } catch (error) {
-    metrics.increment('dcl_deployments_endpoint_counter', { kind: 'error' })
-    // Never log `authChain` or `signature`: they are cryptographic credentials and
-    // must not end up in logs/aggregation. `entityId` + `ethAddress` are enough to debug.
-    logger.error(`POST /entities - Internal server error '${error}'`, {
-      entityId,
-      ethAddress,
-      userAgent
-    })
-    logger.error(error)
-    throw error
+  }, entityId)
+
+  async function withContentLock(operation: () => Promise<Response>, lockedEntityId: string): Promise<Response> {
+    try {
+      return await contentLocks.withRead(operation, lockedEntityId)
+    } catch (error) {
+      if (error instanceof EntityLockTimeoutError) {
+        throw new ServiceUnavailableError(error.message)
+      }
+      throw error
+    }
   }
 }
 

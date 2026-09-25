@@ -4,7 +4,8 @@ import busboy from 'busboy'
 import { Readable } from 'stream'
 import { pipeline } from 'stream/promises'
 import { FormDataContext } from '../types'
-import { InvalidRequestError, PayloadTooLargeError } from './errors'
+import { IUploadBudget, peakUploadBytes, UploadBudgetExceededError, UploadBudgetLease } from '../adapters/upload-budget'
+import { InvalidRequestError, PayloadTooLargeError, RequestTimeoutError, ServiceUnavailableError } from './errors'
 
 /**
  * Limits applied to a multipart request before its contents are buffered into memory.
@@ -31,11 +32,14 @@ export type MultipartLimits = {
   maxFieldSize?: number
   /** Maximum cumulative size, in bytes, across every file and field in a single request. */
   maxTotalSize?: number
+  /** Maximum time, in milliseconds, to receive the whole body. */
+  uploadTimeoutMs?: number
 }
 
 export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T extends IHttpServerComponent.IResponse>(
   handler: (ctx: Ctx) => Promise<T>,
-  limits: MultipartLimits = {}
+  limits: MultipartLimits = {},
+  uploadBudget?: IUploadBudget
 ): (ctx: IHttpServerComponent.DefaultContext<U>) => Promise<T> {
   return async function (ctx: IHttpServerComponent.DefaultContext<U>): Promise<T> {
     const { maxTotalSize } = limits
@@ -43,14 +47,40 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
     // Reject an upload whose declared Content-Length already exceeds the total budget, before we read
     // (and buffer) any of the body. A request that lies about or omits Content-Length is still bounded
     // by the cumulative `totalBytes` guard below, which stops once the buffered bytes exceed the cap.
-    if (maxTotalSize !== undefined) {
-      const declaredSize = parseInt(ctx.request.headers.get('content-length') || '', 10)
-      if (!isNaN(declaredSize) && declaredSize > maxTotalSize) {
-        throw new PayloadTooLargeError(
-          `The request body is too large. The maximum allowed total upload size is ${maxTotalSize} bytes.`
-        )
-      }
+    const declaredSize = parseInt(ctx.request.headers.get('content-length') || '', 10)
+    if (maxTotalSize !== undefined && !isNaN(declaredSize) && declaredSize > maxTotalSize) {
+      throw new PayloadTooLargeError(
+        `The request body is too large. The maximum allowed total upload size is ${maxTotalSize} bytes.`
+      )
     }
+
+    // Reserve the declared body's peak before reading it, so a full budget sheds the upload unread.
+    const declaredBodyBytes = Number.isSafeInteger(declaredSize) && declaredSize > 0 ? declaredSize : 0
+    const initialReservation = declaredBodyBytes > 0 ? peakUploadBytes(declaredBodyBytes, limits.maxFileSize) : 0
+    let lease: UploadBudgetLease | undefined
+    try {
+      lease = uploadBudget?.acquire(initialReservation)
+    } catch (error) {
+      if (error instanceof UploadBudgetExceededError) {
+        throw new ServiceUnavailableError(error.message)
+      }
+      throw error
+    }
+    try {
+      return await parseAndHandle(ctx, lease, declaredBodyBytes, initialReservation)
+    } finally {
+      // Files stay buffered until the handler returns.
+      lease?.release()
+    }
+  }
+
+  async function parseAndHandle(
+    ctx: IHttpServerComponent.DefaultContext<U>,
+    lease: UploadBudgetLease | undefined,
+    declaredBodyBytes: number,
+    initialReservation: number
+  ): Promise<T> {
+    const { maxTotalSize } = limits
 
     let formDataParser: ReturnType<typeof busboy>
     try {
@@ -75,6 +105,16 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
     // `constructor` is stored as a plain key instead of mutating the object's prototype.
     const fields: Record<string, Field> = Object.create(null)
     const files: Record<string, File> = Object.create(null)
+    // Every form name may appear once: a repeated part would be buffered but only one copy kept.
+    const seenNames = new Set<string>()
+    const rejectIfDuplicate = (name: string): boolean => {
+      if (seenNames.has(name)) {
+        abort(new InvalidRequestError(`Duplicate form field '${name}'`))
+        return true
+      }
+      seenNames.add(name)
+      return false
+    }
 
     // Cumulative bytes seen across every file and field. The per-file/per-field caps don't bound the
     // sum (a request may carry many files/fields), and this wrapper buffers everything in memory, so
@@ -91,7 +131,9 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       aborted = true
       formDataParser.destroy(error)
     }
+    let reservedBytes = initialReservation
     const rejectIfOverTotal = (): boolean => {
+      // Over the limit is final (413), so check it before a full budget could answer a retryable 503.
       if (maxTotalSize !== undefined && totalBytes > maxTotalSize) {
         abort(
           new PayloadTooLargeError(
@@ -99,6 +141,22 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
           )
         )
         return true
+      }
+      if (declaredBodyBytes > 0) {
+        // The declared body's peak is already reserved, so it must not outgrow its declaration.
+        if (totalBytes > declaredBodyBytes) {
+          abort(new InvalidRequestError('The request body is larger than its declared Content-Length.'))
+          return true
+        }
+      } else if (totalBytes > reservedBytes) {
+        // A body without a declared size grows the reservation as it arrives.
+        if (lease) {
+          if (!lease.resize(totalBytes)) {
+            abort(new ServiceUnavailableError('Server is buffering too many uploads, please retry shortly.'))
+            return true
+          }
+          reservedBytes = totalBytes
+        }
       }
       return false
     }
@@ -131,6 +189,9 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
         )
         return
       }
+      if (rejectIfDuplicate(name)) {
+        return
+      }
       totalBytes += Buffer.byteLength(value)
       if (rejectIfOverTotal()) {
         return
@@ -139,6 +200,13 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
     })
 
     formDataParser.on('file', function (name, stream, info) {
+      // Checked on the part's headers, before any of its bytes are buffered.
+      if (aborted || rejectIfDuplicate(name)) {
+        // Destroying the parser errors the open part's stream too.
+        stream.on('error', () => undefined).resume()
+        return
+      }
+      // Chunks as received, so memory tracks the bytes that actually arrived rather than any declaration.
       const chunks: Buffer[] = []
       stream.on('data', function (data: Buffer) {
         if (aborted) {
@@ -163,7 +231,20 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
         abort(err)
       })
       stream.on('end', function () {
+        if (aborted) {
+          return
+        }
+        // Concatenating briefly holds a second copy of the file: a declared body reserved it up front,
+        // one without a declared size reserves it meanwhile.
+        const growingLease = declaredBodyBytes === 0 ? lease : undefined
+        const fileBytes = chunks.reduce((sum, chunk) => sum + chunk.length, 0)
+        if (growingLease && !growingLease.resize(reservedBytes + fileBytes)) {
+          abort(new ServiceUnavailableError('Server is buffering too many uploads, please retry shortly.'))
+          return
+        }
         files[name] = Object.assign(Object.assign({}, info), { fieldname: name, value: Buffer.concat(chunks) })
+        chunks.length = 0
+        growingLease?.resize(reservedBytes)
       })
     })
 
@@ -177,16 +258,27 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
     // (destroying the parser) the request body (a web stream) is cancelled and the upload is aborted,
     // and a client that disconnects mid-upload rejects here — instead of leaving the parser and an
     // unsettled promise dangling (a slow resource leak).
+    const timeout =
+      limits.uploadTimeoutMs === undefined
+        ? undefined
+        : setTimeout(() => abort(new RequestTimeoutError('The multipart upload timed out.')), limits.uploadTimeoutMs)
     try {
       await pipeline(source, formDataParser)
     } catch (error) {
-      // Our own size-limit rejections keep their 413 status. Any other failure means we couldn't
+      // Our own rejections keep their status (400, 413, 503, 408). Any other failure means we couldn't
       // parse the request body (a malformed, truncated, or empty multipart body, or a mid-upload
       // disconnect) — that's a client error (400), not an internal 500.
-      if (error instanceof PayloadTooLargeError) {
+      if (
+        error instanceof InvalidRequestError ||
+        error instanceof PayloadTooLargeError ||
+        error instanceof ServiceUnavailableError ||
+        error instanceof RequestTimeoutError
+      ) {
         throw error
       }
       throw new InvalidRequestError('Invalid multipart/form-data request')
+    } finally {
+      clearTimeout(timeout)
     }
 
     const newContext = Object.assign(Object.create(ctx), { formData: { fields, files } })

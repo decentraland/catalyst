@@ -1,13 +1,46 @@
-import { DeploymentContext, DeploymentFiles, DeploymentResult, LocalDeploymentAuditInfo } from '../../deployment-types'
+import { Entity, EntityType } from '@dcl/schemas'
+import {
+  DeploymentContext,
+  DeploymentFiles,
+  DeploymentResult,
+  InvalidResult,
+  LocalDeploymentAuditInfo
+} from '../../deployment-types'
 import { IDeployRateLimiterComponent } from './rate-limiter'
+
+export type DeployEntityOptions = {
+  /**
+   * When, in ms, the REQUEST_TTL_BACKWARDS freshness bound is measured from. Defaults to now; only a
+   * partial upload's finalization passes its admission time.
+   */
+  requestTtlAnchor?: number
+}
+
+/** A deployment's files keyed by content hash, and its parsed entity. */
+export type ReadDeployment = {
+  files: Map<string, Uint8Array>
+  entity: Entity
+}
 
 export interface IDeploymentService {
   deployEntity(
     files: DeploymentFiles,
     entityId: string,
     auditInfo: LocalDeploymentAuditInfo,
-    context: DeploymentContext
+    context: DeploymentContext,
+    options?: DeployEntityOptions
   ): Promise<DeploymentResult>
+  /**
+   * Hashes a deployment's files and parses its entity file, as deployEntity does before validating it.
+   * The returned files can be passed to deployEntity without hashing them again.
+   */
+  readDeployment(files: DeploymentFiles, entityId: string): Promise<ReadDeployment | InvalidResult>
+  /** The local timestamp of the entity's recorded deployment, or `undefined` if it was never deployed. */
+  getDeployedEntityTimestamp(entityId: string): Promise<number | undefined>
+  /** Whether a deployment of this entity type on these pointers is currently rate limited. */
+  isRateLimited(entityType: EntityType, pointers: string[]): boolean
+  /** The rate-limit window (seconds) for an entity type, used as a Retry-After hint on a 429. */
+  getRateLimitTtlSeconds(entityType: EntityType): number
 }
 
 /**

@@ -43,6 +43,15 @@ export const DEFAULT_MAX_UPLOAD_FIELD_SIZE = 100 * 1024 // 100 KB per field valu
 // disk (instead of buffering) would remove the memory exposure entirely and is the proper follow-up.
 export const DEFAULT_MAX_UPLOAD_TOTAL_SIZE = 2 * 1024 * 1024 * 1024 // 2 GiB total per request
 
+// Aggregate bound on POST /entities bodies buffered at once across all clients. It must fit one
+// maximum-size request's peak: MAX_UPLOAD_TOTAL_SIZE plus a copy of one file (up to
+// MAX_UPLOAD_FILE_SIZE). Partial batches are exempt from the per-IP daily quota below and are bounded
+// by this budget and their account's byte quotas instead.
+export const DEFAULT_MAX_IN_FLIGHT_UPLOAD_BYTES = 4 * 1024 * 1024 * 1024 // 4 GiB
+export const DEFAULT_MAX_CONCURRENT_UPLOADS = 40
+// A body still arriving after this is aborted with 408, so slow senders can't hold upload slots.
+export const DEFAULT_MULTIPART_UPLOAD_TIMEOUT_MS = 5 * 60 * 1000
+
 // Body cap for the JSON endpoints that buffer the whole request into memory before validating it
 // (POST /entities/active). The schema's `maxItems: 1000` can't help because JSON parsing happens
 // before validation, so without this an unauthenticated client can stream an arbitrarily large body
@@ -59,7 +68,9 @@ export const DEFAULT_POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS = 60
 
 // Daily quota for POST /entities. A second, independent rate-limit bucket that caps the total
 // number of deployments a single IP can make in a 24-hour rolling window. This catches attackers
-// who stay just below the per-minute burst limit but sustain high volume over hours.
+// who stay just below the per-minute burst limit but sustain high volume over hours. It counts regular
+// deployments; once an IP has spent it, its requests are rejected before their body is read unless
+// they declare a partial batch with `POST /entities?partial=true`.
 export const DEFAULT_POST_ENTITIES_DAILY_QUOTA_MAX = 300
 
 /**
@@ -296,6 +307,13 @@ export enum EnvironmentConfig {
   PG_POOL_SIZE,
   GARBAGE_COLLECTION,
   GARBAGE_COLLECTION_INTERVAL,
+  PENDING_DEPLOYMENT_TTL,
+  PENDING_DEPLOYMENTS_CLEANUP_INTERVAL,
+  MAX_PENDING_DEPLOYMENTS_PER_DEPLOYER,
+  MAX_PENDING_BYTES_PER_DEPLOYER,
+  MAX_PENDING_BYTES,
+  MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE,
+  CONTENT_LOCK_CONNECTIONS,
   BLOOM_FILTER_EXPECTED_ELEMENTS,
   SEQUENTIAL_TASK_CONCURRENCY,
   ENTITIES_CACHE_CONTROL_MAX_AGE,
@@ -322,6 +340,9 @@ export enum EnvironmentConfig {
   MAX_UPLOAD_FIELD_COUNT,
   MAX_UPLOAD_FIELD_SIZE,
   MAX_UPLOAD_TOTAL_SIZE,
+  MAX_IN_FLIGHT_UPLOAD_BYTES,
+  MAX_CONCURRENT_UPLOADS,
+  MULTIPART_UPLOAD_TIMEOUT_MS,
   MAX_ACTIVE_ENTITIES_BODY_SIZE,
 
   // Per-client rate limit on POST /entities. The header is deliberately not scoped to this endpoint:
@@ -545,7 +566,36 @@ export class EnvironmentBuilder {
       () => process.env.GARBAGE_COLLECTION === 'true'
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL, () =>
-      parseMsEnv('GARBAGE_COLLECTION_INTERVAL', ms('6h'))
+      // The sweep is incremental (overwrites since its watermark), so its cost tracks deploy volume.
+      parseMsEnv('GARBAGE_COLLECTION_INTERVAL', ms('1h'))
+    )
+    // How long a partial (multi-request) deployment may stay pending before it is reclaimed. Anchors
+    // both the deployment-TTL check for staged uploads and the expiry job that deletes stale rows.
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PENDING_DEPLOYMENT_TTL, () =>
+      parseMsEnv('PENDING_DEPLOYMENT_TTL', ms('24h'))
+    )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PENDING_DEPLOYMENTS_CLEANUP_INTERVAL, () =>
+      // Expired uploads stay charged against quotas until reclaimed, so reclaim them soon after expiry.
+      parseMsEnv('PENDING_DEPLOYMENTS_CLEANUP_INTERVAL', ms('10m'))
+    )
+    // Max pending (partial) uploads per deployer, including expired ones awaiting cleanup.
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_PENDING_DEPLOYMENTS_PER_DEPLOYER, () =>
+      parsePositiveIntEnv('MAX_PENDING_DEPLOYMENTS_PER_DEPLOYER', 10)
+    )
+    // Staged/reserved bytes per deployer and per server; expired uploads stay charged until cleanup.
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_PENDING_BYTES_PER_DEPLOYER, () =>
+      parsePositiveIntEnv('MAX_PENDING_BYTES_PER_DEPLOYER', 1024 ** 3)
+    )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_PENDING_BYTES, () =>
+      parsePositiveIntEnv('MAX_PENDING_BYTES', 50 * 1024 ** 3)
+    )
+    // Accepted partial batch bytes per deployer per fixed one-minute window, retries included.
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE, () =>
+      parsePositiveIntEnv('MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE', 512 * 1024 ** 2)
+    )
+    // Connections of the dedicated upload/GC advisory-lock pool, on top of PG_POOL_SIZE.
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CONTENT_LOCK_CONNECTIONS, () =>
+      parsePositiveIntEnv('CONTENT_LOCK_CONNECTIONS', 16)
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.BLOOM_FILTER_EXPECTED_ELEMENTS, () => {
       const parsed = parseInt(process.env.BLOOM_FILTER_EXPECTED_ELEMENTS ?? '', 10)
@@ -681,6 +731,18 @@ export class EnvironmentBuilder {
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE, () =>
       parseNonNegativeIntEnv('MAX_UPLOAD_TOTAL_SIZE', DEFAULT_MAX_UPLOAD_TOTAL_SIZE)
+    )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_IN_FLIGHT_UPLOAD_BYTES, () =>
+      parsePositiveIntEnv('MAX_IN_FLIGHT_UPLOAD_BYTES', DEFAULT_MAX_IN_FLIGHT_UPLOAD_BYTES)
+    )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_CONCURRENT_UPLOADS, () =>
+      parsePositiveIntEnv('MAX_CONCURRENT_UPLOADS', DEFAULT_MAX_CONCURRENT_UPLOADS)
+    )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MULTIPART_UPLOAD_TIMEOUT_MS, () =>
+      parsePositiveIntEnv('MULTIPART_UPLOAD_TIMEOUT_MS', DEFAULT_MULTIPART_UPLOAD_TIMEOUT_MS)
     )
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_ACTIVE_ENTITIES_BODY_SIZE, () =>

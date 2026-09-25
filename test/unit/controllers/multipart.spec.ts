@@ -308,27 +308,96 @@ describe('when parsing a multipart request with upload limits', () => {
     })
   })
 
-  describe('and two files share the same field name', () => {
-    let form: FormData
-    let wrapped: (ctx: IHttpServerComponent.DefaultContext<any>) => Promise<IHttpServerComponent.IResponse>
-    let capturedFiles: Record<string, { value: Buffer }> | undefined
+  describe('and the request declares its content length and carries several files', () => {
+    let files: Record<string, { value: Buffer }>
 
-    beforeEach(() => {
-      capturedFiles = undefined
-      handler.mockImplementation(async (ctx: any) => {
-        capturedFiles = ctx.formData.files
+    beforeEach(async () => {
+      const form = new FormData()
+      form.append('entityId', 'an-entity-id')
+      form.append('a', Buffer.alloc(3000, 1), { filename: 'a' })
+      form.append('empty', Buffer.alloc(0), { filename: 'empty' })
+      form.append('b', Buffer.from('second file'), { filename: 'b' })
+      handler.mockImplementationOnce(async (ctx: any) => {
+        files = ctx.formData.files
         return { status: 200, body: {} }
       })
-      form = new FormData()
-      form.append('dup', Buffer.from('first'), { filename: 'a.bin' })
-      form.append('dup', Buffer.from('second'), { filename: 'b.bin' })
-      wrapped = multipartParserWrapper(handler as any, { maxFileSize: 1024, maxFiles: 10 })
+      const wrapped = multipartParserWrapper(handler as any, { maxFileSize: 4096, maxFiles: 10 })
+      const headers: Record<string, string> = {
+        ...form.getHeaders(),
+        'content-length': String(form.getBuffer().length)
+      }
+      await wrapped({
+        request: {
+          headers: { get: (name: string) => headers[name.toLowerCase()] },
+          body: Readable.toWeb(Readable.from(form.getBuffer()))
+        }
+      } as any)
     })
 
-    it('should keep the last file uploaded under that name', async () => {
-      await wrapped(buildContext(form))
+    it('should hand the handler each file with its own bytes', () => {
+      expect({ a: files.a.value, empty: files.empty.value, b: files.b.value.toString() }).toEqual({
+        a: Buffer.alloc(3000, 1),
+        empty: Buffer.alloc(0),
+        b: 'second file'
+      })
+    })
+  })
 
-      expect(capturedFiles!['dup'].value.toString()).toBe('second')
+  describe('and two files share the same field name', () => {
+    let error: unknown
+
+    beforeEach(async () => {
+      const form = new FormData()
+      form.append('dup', Buffer.alloc(10, 1), { filename: 'dup' })
+      // Over maxTotalSize on its own, so buffering it would fail with a 413 instead.
+      form.append('dup', Buffer.alloc(2000, 2), { filename: 'dup' })
+      const wrapped = multipartParserWrapper(handler as any, { maxFileSize: 4096, maxFiles: 10, maxTotalSize: 1000 })
+      error = await wrapped(buildContext(form)).catch((e) => e)
+    })
+
+    it('should reject the repeated part before buffering it, without invoking the handler', () => {
+      expect({ error, handled: handler.mock.calls.length }).toEqual({
+        error: new InvalidRequestError("Duplicate form field 'dup'"),
+        handled: 0
+      })
+    })
+  })
+
+  describe('and two form fields share the same name', () => {
+    let error: unknown
+
+    beforeEach(async () => {
+      const form = new FormData()
+      form.append('partial', 'true')
+      form.append('partial', 'false')
+      const wrapped = multipartParserWrapper(handler as any, { maxFileSize: 1024, maxFiles: 10 })
+      error = await wrapped(buildContext(form)).catch((e) => e)
+    })
+
+    it('should reject with an InvalidRequestError without invoking the handler', () => {
+      expect({ error, handled: handler.mock.calls.length }).toEqual({
+        error: new InvalidRequestError("Duplicate form field 'partial'"),
+        handled: 0
+      })
+    })
+  })
+
+  describe('and a file reuses the name of a form field', () => {
+    let error: unknown
+
+    beforeEach(async () => {
+      const form = new FormData()
+      form.append('entityId', 'an-entity-id')
+      form.append('entityId', Buffer.alloc(10, 1), { filename: 'entityId' })
+      const wrapped = multipartParserWrapper(handler as any, { maxFileSize: 1024, maxFiles: 10 })
+      error = await wrapped(buildContext(form)).catch((e) => e)
+    })
+
+    it('should reject with an InvalidRequestError without invoking the handler', () => {
+      expect({ error, handled: handler.mock.calls.length }).toEqual({
+        error: new InvalidRequestError("Duplicate form field 'entityId'"),
+        handled: 0
+      })
     })
   })
 })

@@ -59,6 +59,11 @@ async function* streamContentHashesNotBeingUsedAnymore(
   lastGarbageCollectionTimestamp: number,
   options?: { batchSize?: number }
 ): AsyncIterable<string> {
+  // This only produces GC *candidates*; pending (partial) deployments are not excluded here. The
+  // per-batch findReferencedHashes re-check (which includes non-expired pending entity ids and content
+  // hashes) runs immediately before deletion and is authoritative, so over-producing candidates is
+  // safe. A correlated pending_deployments anti-join here would run per content_files row across the
+  // whole table for no protection the re-check doesn't already provide.
   const query = SQL`
     SELECT content_files.content_hash
     FROM content_files
@@ -89,10 +94,15 @@ async function* streamContentHashesNotBeingUsedAnymore(
  * The three checks matter because storage is one namespace shared by content files, entity JSONs and
  * snapshot files, and byte-identical files collide on hash.
  */
-async function findReferencedHashes(database: DatabaseClient, hashes: string[]): Promise<Set<string>> {
+async function findReferencedHashes(
+  database: DatabaseClient,
+  hashes: string[],
+  pendingDeploymentTtlMs: number
+): Promise<Set<string>> {
   if (hashes.length === 0) {
     return new Set()
   }
+  const pendingCutoff = Date.now() - pendingDeploymentTtlMs
   const query = SQL`
     SELECT cf.content_hash AS hash
       FROM content_files cf
@@ -102,6 +112,12 @@ async function findReferencedHashes(database: DatabaseClient, hashes: string[]):
     SELECT hash FROM snapshots WHERE hash = ANY(${hashes})
     UNION
     SELECT entity_id AS hash FROM deployments WHERE entity_id = ANY(${hashes})
+    UNION
+    SELECT entity_id AS hash FROM pending_deployments
+      WHERE created_at > to_timestamp(${pendingCutoff} / 1000.0) AND entity_id = ANY(${hashes})
+    UNION
+    SELECT unnest(content_hashes) AS hash FROM pending_deployments
+      WHERE created_at > to_timestamp(${pendingCutoff} / 1000.0) AND content_hashes && ${hashes}
   `
   const result = await database.queryWithValues<{ hash: string }>(query, 'gc_recheck_referenced_hashes')
   return new Set(result.rows.map((row) => row.hash))

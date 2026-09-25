@@ -1,8 +1,8 @@
-import { bufferToStream } from '@dcl/catalyst-storage'
 import { AuthChain, Authenticator } from '@dcl/crypto'
 import { Entity, EntityType, IPFSv2 } from '@dcl/schemas'
 import { isDeepStrictEqual } from 'util'
 import { EnvironmentConfig } from '../../Environment'
+import { storeStreamsInBatches } from '../store-content'
 import {
   AuditInfo,
   DeploymentContext,
@@ -20,12 +20,12 @@ import * as pointerBookkeeping from './pointer-bookkeeping'
 import { createDeployRateLimiter, IDeployRateLimiterComponent } from './rate-limiter'
 import * as serverValidator from './server-validator'
 import ms from 'ms'
-import { TestableDeploymentService } from './types'
+import { DeployEntityOptions, ReadDeployment, TestableDeploymentService } from './types'
 
-// Upper bound on concurrent content-file writes within a single deployment. Content files are
-// content-addressed and independent, so they can be written in parallel; the cap keeps a single
-// many-file entity from fanning out into an unbounded number of simultaneous storage writes.
-const CONTENT_STORE_CONCURRENCY = 10
+// Stable fragment of the error returned when a concurrent deploy already holds one of the pointers.
+// Exported so callers (e.g. the partial-deployment finalize retry) can detect this transient condition
+// without coupling to the full, human-readable message text.
+export const POINTERS_BEING_DEPLOYED_ERROR = 'currently being deployed'
 
 export function isIPFSHash(hash: string): boolean {
   return IPFSv2.validate(hash)
@@ -78,11 +78,27 @@ export function createDeploymentService(
     | 'denylist'
     | 'deploymentsRepository'
     | 'contentFilesRepository'
+    | 'pendingDeploymentsRepository'
     | 'entities'
   >
 ): TestableDeploymentService {
   const logger = components.logs.getLogger('deployer')
   const LEGACY_CONTENT_MIGRATION_TIMESTAMP: Date = new Date(1582167600000) // DCL Launch Day
+
+  // True when the entity is older, by wall clock, than the vanilla REQUEST_TTL_BACKWARDS bound — i.e.
+  // only a partial upload's admission-time anchor could have let it through the freshness check. The
+  // finalize current-access gate keys off this condition. (Comparison, not `<=`, so an unset TTL —
+  // `x > undefined` is false — behaves as before.)
+  function isOlderThanRequestTtlBackwards(entity: Entity): boolean {
+    const backwards = components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
+    return Date.now() - entity.timestamp > backwards
+  }
+
+  // The "request is not recent enough" check, measured from `anchor` (now, or a partial upload's admission).
+  function isRequestTtlBackwards(entity: Entity, anchor: number): boolean {
+    const backwards = components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
+    return anchor - entity.timestamp > backwards
+  }
 
   // In-process deploy rate limiter. Defaults to a real instance built from env config;
   // tests swap it via `setRateLimiter` (see TestableDeploymentService).
@@ -155,7 +171,8 @@ export function createDeploymentService(
     // Idempotency result from deployEntity's earlier getEntityById check, threaded in to avoid a second
     // identical query per deploy. It is `undefined` on the normal path (deployEntity returns early when
     // the entity already exists), and same-entity concurrent deploys are excluded by the pointer locks.
-    deployedEntity: { entityId: string; localTimestamp: number } | undefined
+    deployedEntity: { entityId: string; localTimestamp: number } | undefined,
+    requestTtlAnchor: number | undefined
   ): Promise<InvalidResult | { auditInfoComplete: AuditInfo; wasEntityDeployed: boolean }> {
     const isEntityAlreadyDeployed = !!deployedEntity
 
@@ -165,7 +182,8 @@ export function createDeploymentService(
       isEntityAlreadyDeployed,
       auditInfo,
       hashes,
-      isContentUnchanged
+      isContentUnchanged,
+      requestTtlAnchor
     )
 
     if (!validationResult.ok) {
@@ -239,6 +257,11 @@ export function createDeploymentService(
 
         // Set who overwrote who
         await components.deploymentsRepository.setEntitiesAsOverwritten(database, overwrote, deploymentId)
+
+        // If this entity had a pending (partial) deployment, it is now fully deployed — drop its
+        // staging row atomically with the deployment. Covers both auto-finalize of a partial upload
+        // and a vanilla deploy of a previously-staged entity. No-op (single PK delete) otherwise.
+        await components.pendingDeploymentsRepository.deleteByEntityId(database, entity.id)
       }, 'tx_deploy_entity')
 
       // Now that the transaction has committed, reflect the new active pointers in the in-memory cache.
@@ -280,16 +303,9 @@ export function createDeploymentService(
     // Check for if content is already stored
     const alreadyStoredHashes: Map<string, boolean> = await components.storage.existMultiple(Array.from(hashes.keys()))
 
-    // Store all the entity's not-already-stored content. The files are independent
-    // (content-addressed) and this runs before/outside the deployment transaction, so write
-    // them in bounded-parallel batches instead of one at a time to speed up multi-file deploys.
+    // Store all the entity's not-already-stored content, in bounded-parallel batches (see helper).
     const filesToStore = Array.from(hashes).filter(([fileHash]) => !alreadyStoredHashes.get(fileHash))
-    for (let i = 0; i < filesToStore.length; i += CONTENT_STORE_CONCURRENCY) {
-      const batch = filesToStore.slice(i, i + CONTENT_STORE_CONCURRENCY)
-      await Promise.all(
-        batch.map(([fileHash, content]) => components.storage.storeStream(fileHash, bufferToStream(content)))
-      )
-    }
+    await storeStreamsInBatches(components.storage, filesToStore)
   }
 
   async function validateDeployment(
@@ -298,7 +314,8 @@ export function createDeploymentService(
     isEntityDeployedAlready: boolean,
     auditInfo: LocalDeploymentAuditInfo,
     hashes: Map<string, Uint8Array>,
-    isContentUnchanged: boolean
+    isContentUnchanged: boolean,
+    requestTtlAnchor: number | undefined
   ): Promise<{ ok: boolean; errors?: string[] }> {
     // When deploying a new entity in some context which is not sync, we run some server side checks
     const serverValidationResult = await serverValidator.validateForServer(
@@ -315,8 +332,7 @@ export function createDeploymentService(
           (entity.type === EntityType.PROFILE &&
             isContentUnchanged &&
             rateLimiter.isUnchangedDeploymentRateLimited(entity.type, entity.pointers)),
-        isRequestTtlBackwards: (entity) =>
-          Date.now() - entity.timestamp > components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
+        isRequestTtlBackwards: (entity) => isRequestTtlBackwards(entity, requestTtlAnchor ?? Date.now())
       }
     )
 
@@ -328,23 +344,89 @@ export function createDeploymentService(
       }
     }
 
-    return await components.validator.validate({
+    const protocolResult = await components.validator.validate({
       // TODO: remove as any after fixing content validator
       entity: entity as any,
       auditInfo,
       files: hashes
     })
+    if (!protocolResult.ok) {
+      return protocolResult
+    }
+
+    // The protocol access validation above is historical: it proves ownership at entity.timestamp's
+    // block (required for sync/replay). Vanilla deploys bound that staleness to REQUEST_TTL_BACKWARDS
+    // (~minutes), but a scene completing a partial upload may be up to PENDING_DEPLOYMENT_TTL (~24h)
+    // old — long enough for the LAND to have been sold mid-upload. When the entity is older than the
+    // vanilla bound (i.e. only a partial upload's admission anchor let it through the TTL check above),
+    // require access against the CURRENT chain state too, so a seller can't finalize onto land they no
+    // longer own. Fresh deploys never reach this (the wall-clock condition fails), so the hot path is
+    // unaffected.
+    if (context === DeploymentContext.LOCAL && entity.type === EntityType.SCENE) {
+      if (isOlderThanRequestTtlBackwards(entity)) {
+        const currentAccessResult = await components.validator.validateCurrentAccess({
+          entity: entity as any,
+          auditInfo,
+          files: hashes
+        })
+        if (!currentAccessResult.ok) {
+          return {
+            ok: false,
+            errors: currentAccessResult.errors ?? [
+              'The deployer no longer has access to the entity pointers (access is required both when a partial upload starts and when it is finalized).'
+            ]
+          }
+        }
+      }
+    }
+
+    return protocolResult
+  }
+
+  async function readDeployment(files: DeploymentFiles, entityId: string): Promise<ReadDeployment | InvalidResult> {
+    const hashes: Map<string, Uint8Array> = await hashFiles(components.crypto, files, entityId)
+
+    const entityFile = hashes.get(entityId)
+    if (!entityFile) {
+      return InvalidResult({ errors: [`Failed to find the entity file.`] })
+    }
+
+    let entity: Entity
+    try {
+      entity = components.entities.parse(entityFile, entityId)
+      if (!entity) {
+        return InvalidResult({ errors: ['There was a problem parsing the entity, it was null'] })
+      }
+    } catch (error) {
+      logger.warn(`There was an error parsing the entity: ${error}`)
+      return InvalidResult({ errors: ['There was a problem parsing the entity'] })
+    }
+    return { files: hashes, entity }
   }
 
   return {
+    readDeployment,
     setRateLimiter(rl: IDeployRateLimiterComponent) {
       rateLimiter = rl
+    },
+    // Exposes the in-process rate-limiter to the partial-deployment staging path so a staging request
+    // is subject to the same limit as a full deploy, without duplicating limiter state.
+    isRateLimited(entityType: EntityType, pointers: string[]): boolean {
+      return rateLimiter.isRateLimited(entityType, pointers)
+    },
+    getRateLimitTtlSeconds(entityType: EntityType): number {
+      return rateLimiter.getRateLimitTtlSeconds(entityType)
+    },
+    async getDeployedEntityTimestamp(entityId: string): Promise<number | undefined> {
+      const deployedEntity = await components.deploymentsRepository.getEntityById(components.database, entityId)
+      return deployedEntity?.localTimestamp
     },
     async deployEntity(
       files: DeploymentFiles,
       entityId: string,
       auditInfo: LocalDeploymentAuditInfo,
-      context: DeploymentContext
+      context: DeploymentContext,
+      options: DeployEntityOptions = {}
     ): Promise<DeploymentResult> {
       const deployedEntity = await components.deploymentsRepository.getEntityById(components.database, entityId)
       // entity deployments are idempotent operations
@@ -357,26 +439,11 @@ export function createDeploymentService(
         return deployedEntity.localTimestamp
       }
 
-      // Hash all files
-      const hashes: Map<string, Uint8Array> = await hashFiles(components.crypto, files, entityId)
-
-      // Find entity file
-      const entityFile = hashes.get(entityId)
-      if (!entityFile) {
-        return InvalidResult({ errors: [`Failed to find the entity file.`] })
+      const read = await readDeployment(files, entityId)
+      if (isInvalidDeployment(read)) {
+        return read
       }
-
-      // Parse entity file into an Entity
-      let entity: Entity
-      try {
-        entity = components.entities.parse(entityFile, entityId)
-        if (!entity) {
-          return InvalidResult({ errors: ['There was a problem parsing the entity, it was null'] })
-        }
-      } catch (error) {
-        logger.warn(`There was an error parsing the entity: ${error}`)
-        return InvalidResult({ errors: ['There was a problem parsing the entity'] })
-      }
+      const { files: hashes, entity } = read
 
       // Reject entities without pointers up front (before claiming any pointer locks)
       if (entity.pointers.length === 0)
@@ -390,8 +457,9 @@ export function createDeploymentService(
       const overlappingPointers = tryAcquirePointerLocks(entity.type, entity.pointers)
       if (overlappingPointers.length > 0) {
         return InvalidResult({
+          kind: 'pointer-conflict',
           errors: [
-            `The following pointers are currently being deployed: '${overlappingPointers.join()}'. Please try again in a few seconds.`
+            `The following pointers are ${POINTERS_BEING_DEPLOYED_ERROR}: '${overlappingPointers.join()}'. Please try again in a few seconds.`
           ]
         })
       }
@@ -430,7 +498,8 @@ export function createDeploymentService(
           hashes,
           contextToDeploy,
           isContentUnchanged,
-          deployedEntity
+          deployedEntity,
+          options.requestTtlAnchor
         )
 
         if (!storeResult) {

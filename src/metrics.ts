@@ -76,6 +76,54 @@ export const metricsDeclaration = validateMetricsDeclaration({
     type: 'gauge',
     labelNames: ['entity_type']
   },
+  dcl_partial_deployments_staging_total: {
+    help: 'Partial (multi-request) deployment staging requests through HTTP',
+    type: 'counter',
+    // kind=(accepted|finalized|already_deployed|validation_error|error)
+    labelNames: ['kind']
+  },
+  dcl_pending_deployments_expired_total: {
+    help: 'Expired pending deployments reclaimed by the cleanup job',
+    type: 'counter',
+    labelNames: []
+  },
+  dcl_multipart_upload_reserved_bytes: {
+    help: 'POST /entities body bytes reserved in the in-flight upload budget',
+    type: 'gauge',
+    labelNames: []
+  },
+  dcl_multipart_upload_active: {
+    help: 'POST /entities bodies being buffered',
+    type: 'gauge',
+    labelNames: []
+  },
+  dcl_multipart_upload_rejections_total: {
+    help: 'POST /entities uploads shed because the in-flight upload budget was full',
+    type: 'counter',
+    // reason=(bytes|concurrency)
+    labelNames: ['reason']
+  },
+  dcl_partial_upload_metadata_checks_total: {
+    help: 'Content metadata checks performed by partial uploads',
+    type: 'counter',
+    labelNames: []
+  },
+  dcl_partial_upload_batches_total: {
+    help: 'Accepted partial upload batches',
+    type: 'counter',
+    // outcome=(incomplete|finalizing)
+    labelNames: ['outcome']
+  },
+  dcl_partial_upload_reserved_bytes: {
+    help: 'Staging bytes reserved, including expired uploads awaiting cleanup',
+    type: 'gauge',
+    labelNames: []
+  },
+  dcl_partial_upload_cleanup_backlog_bytes: {
+    help: 'Expired staging bytes awaiting successful cleanup',
+    type: 'gauge',
+    labelNames: []
+  },
   dcl_ignored_sync_deployments: {
     help: 'Entities ignored during the synchronization and bootstrapping',
     type: 'counter',

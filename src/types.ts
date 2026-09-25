@@ -14,6 +14,7 @@ import {
 // Source `IHttpServerComponent` from there so handler context types match what the server provides.
 import { IHttpServerComponent } from '@dcl/core-commons'
 import { IRateLimiterComponent } from '@dcl/rate-limiter-component'
+import { IDeploymentQuotaComponent } from './logic/deployment-quota'
 import { Field, File } from '@well-known-components/multipart-wrapper'
 import { HTTPProvider } from 'eth-connect'
 import qs from 'qs'
@@ -25,6 +26,9 @@ import { ActiveEntities } from './logic/active-entities'
 import { IContentFilesRepository } from './adapters/content-files-repository'
 import { Denylist } from './adapters/denylist'
 import { IDeploymentsRepository } from './adapters/deployments-repository'
+import { IPendingDeploymentsRepository } from './adapters/pending-deployments-repository'
+import { IUploadBudget } from './adapters/upload-budget'
+import { IContentLocks } from './adapters/content-locks'
 import { IPointersRepository } from './adapters/pointers-repository'
 import { ISnapshotsRepository } from './adapters/snapshots-repository'
 import { DeployedEntitiesBloomFilter } from './adapters/deployed-entities-bloom-filter'
@@ -37,6 +41,7 @@ import { IGarbageCollectionComponent } from './logic/garbage-collection'
 import { IContentClusterComponent } from './logic/peer-cluster'
 import { SnapshotStorage } from './adapters/snapshot-storage'
 import { IDeploymentsComponent } from './logic/deployments'
+import { IPartialDeployments } from './logic/partial-deployments'
 import { IQueryParams } from './logic/query-params'
 import { IEntities } from './logic/entities'
 import { ISnapshots } from './logic/snapshots'
@@ -87,10 +92,14 @@ export type AppComponents = {
   activeEntitiesRepository: IActiveEntitiesRepository
   contentFilesRepository: IContentFilesRepository
   deploymentsRepository: IDeploymentsRepository
+  pendingDeploymentsRepository: IPendingDeploymentsRepository
+  contentLocks: IContentLocks
   pointersRepository: IPointersRepository
   snapshotsRepository: ISnapshotsRepository
   config: IConfigComponent
   deployer: Deployer
+  partialDeployments: IPartialDeployments
+  pendingDeploymentsCleanupJob: IJobComponent
   staticConfigs: {
     contentStorageFolder: string
     tmpDownloadFolder: string
@@ -112,8 +121,10 @@ export type AppComponents = {
   garbageCollectionManager: IGarbageCollectionComponent
   systemProperties: SystemProperties
   server: IHttpServerComponent<GlobalContext>
-  /** Per-client request budget, currently mounted only on POST /entities. */
+  /** Per-client request budget for regular (non-partial) POST /entities deployments. */
   rateLimiter: IRateLimiterComponent<GlobalContext>
+  deploymentQuota: IDeploymentQuotaComponent
+  uploadBudget: IUploadBudget
   activeEntities: ActiveEntities
   sequentialExecutor: ISequentialTaskExecutorComponent
   denylist: Denylist
@@ -141,6 +152,8 @@ export type MaintenanceComponents = {
   migrationManager: MigrationExecutor
   contentFilesRepository: IContentFilesRepository
   deploymentsRepository: IDeploymentsRepository
+  pendingDeploymentsRepository: IPendingDeploymentsRepository
+  contentLocks: IContentLocks
   snapshotsRepository: ISnapshotsRepository
   garbageCollectionManager: IGarbageCollectionComponent
 }

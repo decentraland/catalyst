@@ -9,6 +9,8 @@ export type IDeployRateLimiterComponent = {
   isRateLimited(entityType: EntityType, pointers: string[]): boolean
   newUnchangedDeployment(entityType: EntityType, pointers: string[], localTimestamp: number): void
   isUnchangedDeploymentRateLimited(entityType: EntityType, pointers: string[]): boolean
+  /** The rate-limit window (seconds) for an entity type — the TTL after which a pointer clears. */
+  getRateLimitTtlSeconds(entityType: EntityType): number
 }
 
 export type DeploymentRateLimitConfig = {
@@ -108,6 +110,11 @@ export function createDeployRateLimiter(
         })
       }
       return limited
+    },
+
+    getRateLimitTtlSeconds(entityType: EntityType): number {
+      // stdTTL is the per-type window in seconds (see generateDeploymentCacheMap).
+      return getCacheFromEntityType(entityType).cache.options.stdTTL ?? 0
     }
   }
 }

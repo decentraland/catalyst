@@ -86,7 +86,13 @@ export type PartialDeploymentHistory<T extends DeploymentBase> = {
 
 export type LocalDeploymentAuditInfo = Pick<AuditInfo, 'authChain'>
 
-export type InvalidResult = { errors: string[] }
+export type InvalidResult = {
+  errors: string[]
+  // Distinguishes a transient, retryable pointer-lock conflict (another deploy is holding the pointers
+  // right now) from a terminal validation failure, so callers can branch on structure instead of
+  // string-matching the error message.
+  kind?: 'pointer-conflict'
+}
 export function InvalidResult(val: InvalidResult): InvalidResult {
   return val
 }
