@@ -5,6 +5,7 @@ import path from 'path'
 import { createEntity } from '../../../src/controllers/handlers/create-entity-handler'
 import { ServiceUnavailableError } from '../../../src/controllers/errors'
 import { UploadBudgetExceededError } from '../../../src/adapters/upload-budget'
+import { EntityLockTimeoutError } from '../../../src/adapters/content-locks'
 import { SpooledFile } from '../../../src/types'
 import { DeploymentFileSource } from '../../../src/logic/deployment-service/types'
 
@@ -122,7 +123,7 @@ describe('when creating an entity from spooled upload files', () => {
     })
   })
 
-  describe('and it is a regular deployment while the memory budget is full', () => {
+  describe('and it is a regular deployment while the memory budget has no room for its entity file', () => {
     let error: unknown
 
     beforeEach(async () => {
@@ -143,6 +144,58 @@ describe('when creating an entity from spooled upload files', () => {
         error: new ServiceUnavailableError('Server is handling too many uploads, please retry shortly.'),
         deployed: 0
       })
+    })
+  })
+
+  describe('and it is a regular deployment while the memory budget has no room for its files', () => {
+    let withRead: jest.Mock
+    let error: unknown
+
+    beforeEach(async () => {
+      withRead = jest.fn((operation: () => Promise<unknown>) => operation())
+      // The entity file's share fits; the share for every file doesn't.
+      deploymentMemoryBudget.acquire.mockReturnValueOnce(lease).mockImplementationOnce(() => {
+        throw new UploadBudgetExceededError('bytes')
+      })
+      error = await createEntity(
+        buildContext(files, false, {
+          deployer: { deployEntity, getDeployedEntityTimestamp, readDeployment },
+          deploymentMemoryBudget,
+          contentLocks: { withRead },
+          partialDeployments: {}
+        })
+      ).catch((e) => e)
+    })
+
+    it('should reject with a ServiceUnavailableError without taking the content lock', () => {
+      expect({ error, locks: withRead.mock.calls.length, deployed: deployEntity.mock.calls.length }).toEqual({
+        error: new ServiceUnavailableError('Server is handling too many uploads, please retry shortly.'),
+        locks: 0,
+        deployed: 0
+      })
+    })
+  })
+
+  describe('and it is a regular deployment whose content lock wait times out', () => {
+    let error: unknown
+
+    beforeEach(async () => {
+      error = await createEntity(
+        buildContext(files, false, {
+          deployer: { deployEntity, getDeployedEntityTimestamp, readDeployment },
+          deploymentMemoryBudget,
+          contentLocks: { withRead: jest.fn().mockRejectedValue(new EntityLockTimeoutError(ENTITY_ID)) },
+          partialDeployments: {}
+        })
+      ).catch((e) => e)
+    })
+
+    it('should reject with a ServiceUnavailableError and release every memory budget share', () => {
+      expect({
+        rejected: error instanceof ServiceUnavailableError,
+        reserved: deploymentMemoryBudget.acquire.mock.calls.length,
+        released: lease.release.mock.calls.length
+      }).toEqual({ rejected: true, reserved: 2, released: 2 })
     })
   })
 

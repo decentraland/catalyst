@@ -36,6 +36,7 @@ function buildContext(
     components: {
       logs: { getLogger: () => ({ info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() }) },
       metrics: { increment: jest.fn() },
+      deploymentMemoryBudget: { acquire: () => ({ resize: jest.fn(), release: jest.fn() }) },
       ...components
     }
   } as unknown as Context

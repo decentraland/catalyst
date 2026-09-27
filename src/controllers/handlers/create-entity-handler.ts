@@ -130,68 +130,78 @@ export async function createEntity(
 
   // Every deployment holds the shared content lock through publication, so garbage collection can't
   // delete content it stores or reuses; batches of one entity are serialized.
-  return withContentLock(async (): Promise<Response> => {
-    // A `partial=true` field marks a staging request of a multi-request (partial) deployment: the
-    // content may be uploaded across several requests and the entity only becomes live once all of it is
-    // present. Requests without the flag behave exactly as before.
-    if (isPartial) {
-      // Preserve the field-name keys (content hashes): unlike the vanilla path, they are load-bearing.
-      // The files stay on disk; staging streams them.
-      const files = new Map<string, StagedFile>()
-      for (const filename of Object.keys(context.formData.files)) {
-        files.set(filename, toStagedFile(context.formData.files[filename]))
-      }
+  if (!regularDeployment) {
+    return withContentLock(() => stagePartialBatch(authChain), entityId)
+  }
+  // Admitted before the lock, so a full memory budget sheds the deployment without a lock-pool connection.
+  // The share is held while waiting for the lock and released once the deployment settles.
+  const deployment = regularDeployment
+  const memoryLease = acquireMemory(uploaded.reduce((sum, file) => sum + file.size, 0))
+  try {
+    return await withContentLock(() => deployRegular(deployment, authChain), entityId)
+  } finally {
+    memoryLease.release()
+  }
 
-      try {
-        const result = await partialDeployments.stageDeployment({ entityId, authChain, files })
-        if (result.kind === 'deployed') {
-          metrics.increment('dcl_partial_deployments_staging_total', { kind: 'finalized' })
-          logger.info(`POST /entities - Partial deployment finalized`, { entityId, ethAddress, userAgent })
-          return { status: 200, body: { creationTimestamp: result.creationTimestamp } }
-        }
-        metrics.increment('dcl_partial_deployments_staging_total', { kind: 'accepted' })
-        logger.info(`POST /entities - Partial deployment staged`, {
-          entityId,
-          ethAddress,
-          userAgent,
-          missing: result.missing.length
-        })
-        return { status: 202, body: { missing: result.missing } }
-      } catch (error) {
-        if (error instanceof InvalidPartialDeploymentError) {
-          metrics.increment('dcl_partial_deployments_staging_total', { kind: 'validation_error' })
-          logger.error(`POST /entities - Partial deployment failed (${error.errors.join(',')})`, {
-            entityId,
-            ethAddress,
-            userAgent
-          })
-          // statusCode is 429 for transient conditions (rate limiting), 400 for validation errors. On a
-          // 429 with a known window, send Retry-After so the client waits it out instead of exhausting its
-          // resume budget inside the window.
-          const headers =
-            error.statusCode === 429 && error.retryAfterSeconds !== undefined
-              ? { 'Retry-After': String(error.retryAfterSeconds) }
-              : undefined
-          return { status: error.statusCode, body: { errors: error.errors }, headers }
-        }
-        metrics.increment('dcl_partial_deployments_staging_total', { kind: 'error' })
-        // Never log `authChain` or `signature`: they are cryptographic credentials.
-        logger.error(`POST /entities - Partial deployment internal server error '${error}'`, {
+  // A `partial=true` field marks a staging request of a multi-request (partial) deployment: the content
+  // may be uploaded across several requests and the entity only becomes live once all of it is present.
+  async function stagePartialBatch(authChain: AuthChain): Promise<Response> {
+    // Preserve the field-name keys (content hashes): unlike the vanilla path, they are load-bearing.
+    // The files stay on disk; staging streams them.
+    const files = new Map<string, StagedFile>()
+    for (const filename of Object.keys(context.formData.files)) {
+      files.set(filename, toStagedFile(context.formData.files[filename]))
+    }
+
+    try {
+      const result = await partialDeployments.stageDeployment({ entityId, authChain, files })
+      if (result.kind === 'deployed') {
+        metrics.increment('dcl_partial_deployments_staging_total', { kind: 'finalized' })
+        logger.info(`POST /entities - Partial deployment finalized`, { entityId, ethAddress, userAgent })
+        return { status: 200, body: { creationTimestamp: result.creationTimestamp } }
+      }
+      metrics.increment('dcl_partial_deployments_staging_total', { kind: 'accepted' })
+      logger.info(`POST /entities - Partial deployment staged`, {
+        entityId,
+        ethAddress,
+        userAgent,
+        missing: result.missing.length
+      })
+      return { status: 202, body: { missing: result.missing } }
+    } catch (error) {
+      if (error instanceof InvalidPartialDeploymentError) {
+        metrics.increment('dcl_partial_deployments_staging_total', { kind: 'validation_error' })
+        logger.error(`POST /entities - Partial deployment failed (${error.errors.join(',')})`, {
           entityId,
           ethAddress,
           userAgent
         })
-        logger.error(error)
-        throw error
+        // statusCode is 429 for transient conditions (rate limiting), 400 for validation errors. On a
+        // 429 with a known window, send Retry-After so the client waits it out instead of exhausting its
+        // resume budget inside the window.
+        const headers =
+          error.statusCode === 429 && error.retryAfterSeconds !== undefined
+            ? { 'Retry-After': String(error.retryAfterSeconds) }
+            : undefined
+        return { status: error.statusCode, body: { errors: error.errors }, headers }
       }
+      metrics.increment('dcl_partial_deployments_staging_total', { kind: 'error' })
+      // Never log `authChain` or `signature`: they are cryptographic credentials.
+      logger.error(`POST /entities - Partial deployment internal server error '${error}'`, {
+        entityId,
+        ethAddress,
+        userAgent
+      })
+      logger.error(error)
+      throw error
     }
+  }
 
-    // The regular deploy pipeline validates from memory, so reading the files in takes a memory budget
-    // share, released once the deployment settles.
-    const memoryLease = acquireMemory(uploaded.reduce((sum, file) => sum + file.size, 0))
+  // The regular deploy pipeline validates from memory, reading the files in under the memory share.
+  async function deployRegular(deployment: ReadDeployment, authChain: AuthChain): Promise<Response> {
     try {
       // Keyed by the hashes computed from disk while authenticating, so they aren't hashed again.
-      const { hashes } = regularDeployment!
+      const { hashes } = deployment
       const deployFiles = new Map<string, Uint8Array>()
       for (let i = 0; i < uploaded.length; i++) {
         deployFiles.set(hashes[i], await readFile(uploaded[i].path))
@@ -234,10 +244,8 @@ export async function createEntity(
       })
       logger.error(error)
       throw error
-    } finally {
-      memoryLease.release()
     }
-  }, entityId)
+  }
 
   function acquireMemory(bytes: number): UploadBudgetLease {
     try {
