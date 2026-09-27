@@ -12,7 +12,7 @@ import {
 } from '@well-known-components/interfaces'
 // `@dcl/http-server` v2 produces native-fetch request/response types, defined in `@dcl/core-commons`.
 // Source `IHttpServerComponent` from there so handler context types match what the server provides.
-import { IHttpServerComponent } from '@dcl/core-commons'
+import { ICacheStorageComponent, IHttpServerComponent } from '@dcl/core-commons'
 import { IRateLimiterComponent } from '@dcl/rate-limiter-component'
 import { IDeploymentQuotaComponent } from './logic/deployment-quota'
 import { Field, File } from '@well-known-components/multipart-wrapper'
@@ -124,6 +124,8 @@ export type AppComponents = {
   server: IHttpServerComponent<GlobalContext>
   /** Per-client request budget for regular (non-partial) POST /entities deployments. */
   rateLimiter: IRateLimiterComponent<GlobalContext>
+  /** The rate limiter's counter store; state that must agree with its counters lives here too. */
+  rateLimitStore: ICacheStorageComponent
   deploymentQuota: IDeploymentQuotaComponent
   uploadBudget: IUploadBudget
   sourceUploadLimits: ISourceUploadLimits

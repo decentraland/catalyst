@@ -529,11 +529,14 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   // 12. Rate limiting
   // ---------------------------------------------------------------------------
   // Its own cache instance: counter churn would evict whatever else shared the LRU. It has no
-  // lifecycle (no start/stop), so there is nothing to register for shutdown.
+  // lifecycle (no start/stop), so there is nothing to register for shutdown. Process-local, like the
+  // one content server per Catalyst node; a fleet sharing a limiter would swap in a shared store here,
+  // and the daily quota's exhausted-source markers follow it.
+  const rateLimitStore = createInMemoryCacheComponent({ max: RATE_LIMITER_CACHE_MAX_KEYS })
   const trustedClientIpHeader = env.getConfig<string | undefined>(EnvironmentConfig.TRUSTED_CLIENT_IP_HEADER)
   const rateLimiterLogger = logs.getLogger('rate-limiter')
   const rateLimiter = createRateLimiterComponent<GlobalContext>(
-    { cache: createInMemoryCacheComponent({ max: RATE_LIMITER_CACHE_MAX_KEYS }), logs, metrics },
+    { cache: rateLimitStore, logs, metrics },
     {
       // Process-level only. A budget set here would become the default for every mount and for
       // `consume()`, so the endpoint's own lives at its mount in `controllers/routes.ts`.
@@ -545,7 +548,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     }
   )
 
-  const deploymentQuota = createDeploymentQuota({ env, rateLimiter })
+  const deploymentQuota = createDeploymentQuota({ env, logs, rateLimiter, rateLimitStore })
 
   // Bounds POST /entities bodies buffered at once; partial batches count only against this.
   const uploadBudget = createUploadBudget({ env, metrics })
@@ -613,6 +616,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     migrationManager,
     pointersRepository,
     rateLimiter,
+    rateLimitStore,
     deploymentQuota,
     sequentialExecutor,
     server,
