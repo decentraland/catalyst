@@ -1,5 +1,6 @@
 import { Authenticator, IdentityType } from '@dcl/crypto'
 import FormData = require('form-data')
+import { request } from 'http'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { makeNoopValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import { createDefaultServer, resetServer } from '../simpleTestEnvironment'
@@ -26,6 +27,31 @@ async function pendingEntityIds(server: TestProgram): Promise<string[]> {
     'SELECT entity_id FROM pending_deployments'
   )
   return result.rows.map((r) => r.entity_id)
+}
+
+// Sends the body in two halves `pauseMs` apart, as a slow uploader would.
+function postSlowly(server: TestProgram, form: FormData, pauseMs: number): Promise<number> {
+  const body = form.getBuffer()
+  return new Promise((resolve, reject) => {
+    const req = request(
+      `${server.getUrl()}/entities`,
+      { method: 'POST', headers: { ...form.getHeaders(), 'content-length': String(body.length) } },
+      (res) => {
+        res.resume()
+        res.on('end', () => resolve(res.statusCode ?? 0))
+      }
+    )
+    req.on('error', reject)
+    req.write(body.subarray(0, body.length / 2))
+    setTimeout(() => req.end(body.subarray(body.length / 2)), pauseMs)
+  })
+}
+
+async function pendingCreatedAt(server: TestProgram, entityId: string): Promise<number | undefined> {
+  const result = await server.components.database.query<{ created_at: Date }>(
+    `SELECT created_at FROM pending_deployments WHERE entity_id = '${entityId}'`
+  )
+  return result.rows[0]?.created_at.getTime()
 }
 
 async function countDeployments(server: TestProgram, entityId: string): Promise<number> {
@@ -631,6 +657,151 @@ describe('Integration - Partial deployments', () => {
 
       it('should not deploy the older entity', async () => {
         expect(await countDeployments(server, older.entityId)).toBe(0)
+      })
+    })
+  })
+
+  describe('when the first batch of an upload takes a while to arrive', () => {
+    const PAUSE_MS = 1500
+    let sentAt: number
+    let status: number
+    let createdAt: number | undefined
+
+    beforeEach(async () => {
+      const deployment = await prepareSceneDeployment(
+        ['7,6'],
+        { 'a.txt': Buffer.from(`slow ${Date.now()}-${Math.random()}`) },
+        identity
+      )
+      sentAt = Date.now()
+      status = await postSlowly(server, buildPartialForm(deployment, [deployment.entityId]), PAUSE_MS)
+      createdAt = await pendingCreatedAt(server, deployment.entityId)
+    })
+
+    it('should start the upload lifetime when the request arrived, not when its body was received', () => {
+      expect({ status, startedBeforeBodyEnded: createdAt! - sentAt < PAUSE_MS }).toEqual({
+        status: 202,
+        startedBeforeBodyEnded: true
+      })
+    })
+  })
+
+  describe('when an upload expires while a batch is being processed', () => {
+    const PAST_EXPIRY_MS = 25 * 60 * 60 * 1000
+    let deployment: PreparedDeployment
+    let response: Response
+    let realNow: () => number
+
+    function expireFromNowOn(): void {
+      jest.spyOn(Date, 'now').mockImplementation(() => realNow() + PAST_EXPIRY_MS)
+    }
+
+    beforeEach(async () => {
+      realNow = Date.now.bind(Date)
+      deployment = await prepareSceneDeployment(
+        ['8,6'],
+        {
+          'a.txt': Buffer.from(`expiring a ${Date.now()}-${Math.random()}`),
+          'b.txt': Buffer.from(`expiring b ${Date.now()}-${Math.random()}`)
+        },
+        identity
+      )
+      await postForm(server, buildPartialForm(deployment, [deployment.entityId]))
+    })
+
+    describe('and it expires after the batch is admitted, before its files are stored', () => {
+      let stored: boolean
+
+      beforeEach(async () => {
+        const addIncomingBytes = server.components.pendingDeploymentsRepository.addIncomingBytes
+        jest
+          .spyOn(server.components.pendingDeploymentsRepository, 'addIncomingBytes')
+          .mockImplementationOnce(async (...args) => {
+            const bytes = await addIncomingBytes(...args)
+            expireFromNowOn()
+            return bytes
+          })
+        response = await postForm(server, buildPartialForm(deployment, [deployment.contentHashes[0]]))
+        stored = await server.components.storage.exist(deployment.contentHashes[0])
+      })
+
+      it('should reject the batch as expired without storing its files', async () => {
+        expect({ status: response.status, body: await response.json(), stored }).toEqual({
+          status: 400,
+          body: { errors: ['This upload expired. Create a new entity with a fresh timestamp.'] },
+          stored: false
+        })
+      })
+    })
+
+    describe('and it expires after the completing batch is stored, before it is published', () => {
+      beforeEach(async () => {
+        const getStoredFiles = server.components.pendingDeploymentsRepository.getStoredFiles
+        jest
+          .spyOn(server.components.pendingDeploymentsRepository, 'getStoredFiles')
+          .mockImplementationOnce(async (...args) => {
+            const files = await getStoredFiles(...args)
+            expireFromNowOn()
+            return files
+          })
+        response = await postForm(server, buildPartialForm(deployment, deployment.contentHashes))
+      })
+
+      it('should reject the batch as expired without publishing the entity', async () => {
+        expect({
+          status: response.status,
+          body: await response.json(),
+          deployed: await countDeployments(server, deployment.entityId)
+        }).toEqual({
+          status: 400,
+          body: { errors: ['This upload expired. Create a new entity with a fresh timestamp.'] },
+          deployed: 0
+        })
+      })
+    })
+
+    describe('and it expires while the completing batch is being validated for publication', () => {
+      beforeEach(async () => {
+        jest.spyOn(server.components.validator, 'validate').mockImplementationOnce(async () => {
+          expireFromNowOn()
+          return { ok: true }
+        })
+        response = await postForm(server, buildPartialForm(deployment, deployment.contentHashes))
+      })
+
+      it('should roll the publication back and reject the batch as expired', async () => {
+        expect({
+          status: response.status,
+          body: await response.json(),
+          deployed: await countDeployments(server, deployment.entityId)
+        }).toEqual({
+          status: 400,
+          body: {
+            errors: ['This upload expired before it could be published. Create a new entity with a fresh timestamp.']
+          },
+          deployed: 0
+        })
+      })
+    })
+
+    describe('and cleanup removes it while a batch is being validated', () => {
+      let pending: string[]
+
+      beforeEach(async () => {
+        jest.spyOn(server.components.validator, 'validateStagingScene').mockImplementationOnce(async () => {
+          await server.components.database.query('DELETE FROM pending_deployments')
+          return { ok: true }
+        })
+        response = await postForm(server, buildPartialForm(deployment, [deployment.contentHashes[0]]))
+        pending = await pendingEntityIds(server)
+      })
+
+      it('should reject the batch as expired instead of starting the upload again', async () => {
+        expect({ status: response.status, body: await response.json(), pending }).toEqual({
+          status: 400,
+          body: { errors: ['This upload expired. Create a new entity with a fresh timestamp.'] },
+          pending: []
+        })
       })
     })
   })

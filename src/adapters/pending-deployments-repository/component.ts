@@ -48,10 +48,10 @@ async function getByEntityId(database: DatabaseClient, entityId: string): Promis
 
 async function insert(database: DatabaseClient, row: InsertPendingDeployment): Promise<PendingDeploymentRow> {
   const result = await database.queryWithValues<PendingDeploymentDbRow>(
-    SQL`INSERT INTO pending_deployments (entity_id, entity_type, pointers, content_hashes, deployer_address)
+    SQL`INSERT INTO pending_deployments (entity_id, entity_type, pointers, content_hashes, deployer_address, created_at)
         VALUES (${row.entityId}, ${row.entityType}, ${row.pointers}, ${
       row.contentHashes
-    }, ${row.deployerAddress.toLowerCase()})
+    }, ${row.deployerAddress.toLowerCase()}, to_timestamp(${row.createdAt} / 1000.0))
         RETURNING `.append(ROW_COLUMNS),
     'pending_deployment_insert'
   )
@@ -230,9 +230,9 @@ async function* streamAllNonExpiredHashes(
   options?: { batchSize?: number }
 ): AsyncIterable<string> {
   const live = cutoff(ttlMs)
-  const query = SQL`SELECT entity_id AS hash FROM pending_deployments WHERE created_at > `
+  const query = SQL`SELECT entity_id AS hash FROM pending_deployments WHERE created_at >= `
     .append(live)
-    .append(SQL` UNION SELECT unnest(content_hashes) AS hash FROM pending_deployments WHERE created_at > `)
+    .append(SQL` UNION SELECT unnest(content_hashes) AS hash FROM pending_deployments WHERE created_at >= `)
     .append(live)
   for await (const row of database.streamQuery<{ hash: string }>(
     query,

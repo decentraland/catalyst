@@ -5,6 +5,7 @@ export {
   hashFiles,
   POINTERS_BEING_DEPLOYED_ERROR
 } from './component'
+export { DeploymentDeadlineExceededError } from './errors'
 export { DELTA_POINTER_RESULT, referenceEntityFromPointers } from './pointer-bookkeeping'
 export type { PointerDeltaMap } from './pointer-bookkeeping'
 export { createDeployRateLimiter } from './rate-limiter'

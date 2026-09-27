@@ -7,6 +7,7 @@ import { InvalidPartialDeploymentError } from '../../logic/partial-deployments'
 import { ReadDeployment } from '../../logic/deployment-service/types'
 import { FormHandlerContextWithPath } from '../../types'
 import { InvalidRequestError, ServiceUnavailableError } from '../errors'
+import { RequestArrivalContext } from '../request-arrival'
 
 /** Body of a 202 response to a partial deployment request: the content hashes not yet on the server. */
 type PostEntity202 = { missing: string[] }
@@ -26,7 +27,8 @@ export async function createEntity(
   context: FormHandlerContextWithPath<
     'logs' | 'fs' | 'metrics' | 'deployer' | 'partialDeployments' | 'contentLocks' | 'crypto',
     '/entities'
-  >
+  > &
+    RequestArrivalContext
 ): Promise<Response> {
   const { metrics, deployer, partialDeployments, logs, contentLocks, crypto } = context.components
 
@@ -113,7 +115,12 @@ export async function createEntity(
       }
 
       try {
-        const result = await partialDeployments.stageDeployment({ entityId, authChain, files })
+        const result = await partialDeployments.stageDeployment({
+          entityId,
+          authChain,
+          files,
+          requestedAt: context.requestArrivedAt
+        })
         if (result.kind === 'deployed') {
           metrics.increment('dcl_partial_deployments_staging_total', { kind: 'finalized' })
           logger.info(`POST /entities - Partial deployment finalized`, { entityId, ethAddress, userAgent })

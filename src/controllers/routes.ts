@@ -4,6 +4,7 @@ import { EnvironmentConfig } from '../Environment'
 import { multipartParserWrapper } from './multipart'
 import { createDeploymentQuotaAdmission, withDeploymentQuota } from './deployment-quota'
 import { createSourceUploadAdmission } from './source-upload-admission'
+import { stampRequestArrival, withRequestArrival } from './request-arrival'
 import { GlobalContext } from '../types'
 import { activeEntitiesBodySchema, getActiveEntitiesHandler } from './handlers/active-entities-handler'
 import { createEntity } from './handlers/create-entity-handler'
@@ -52,12 +53,13 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
     // counted or not, holds a share of its source's in-flight uploads until the request ends.
     router.post(
       '/entities',
+      stampRequestArrival(),
       burstLimit,
       preventExecutionIfBoostrapping({ syncOrchestrator: components.syncOrchestrator }),
       createDeploymentQuotaAdmission(components),
       createSourceUploadAdmission(components),
       multipartParserWrapper(
-        withDeploymentQuota(components, createEntity),
+        withDeploymentQuota(components, withRequestArrival(createEntity)),
         {
           maxFileSize: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FILE_SIZE),
           maxFiles: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FILE_COUNT),

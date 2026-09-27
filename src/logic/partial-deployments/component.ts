@@ -84,7 +84,18 @@ export function createPartialDeployments(
   const bytesPerMinute = BigInt(env.getConfig<number>(EnvironmentConfig.MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE))
 
   function isLive(row: PendingDeploymentRow): boolean {
-    return Date.now() - row.createdAt.getTime() <= pendingDeploymentTtlMs
+    return Date.now() <= row.createdAt.getTime() + pendingDeploymentTtlMs
+  }
+
+  const expired = () =>
+    new InvalidPartialDeploymentError(['This upload expired. Create a new entity with a fresh timestamp.'])
+
+  // Re-checked before every step that stores or publishes, since a batch admitted just before expiry
+  // could otherwise finish after it, once garbage collection no longer counts its content as pending.
+  function assertLiveUntil(expiresAt: number): void {
+    if (Date.now() > expiresAt) {
+      throw expired()
+    }
   }
 
   async function inventory(hashes: string[]) {
@@ -116,13 +127,16 @@ export function createPartialDeployments(
     contentHashes: string[],
     admittedAt: number
   ): Promise<StageDeploymentResult> {
+    const expiresAt = admittedAt + pendingDeploymentTtlMs
+    assertLiveUntil(expiresAt)
     const entityId = entity.id
     // The deploy pipeline re-reads content from storage, so only the entity file needs to be in the map.
     const finalizeFiles = new Map<string, Uint8Array>([[entityId, entityFile]])
     for (let attempt = 0; ; attempt++) {
       // Freshness is measured from the upload's admission, as when staging it.
       const result = await deployer.deployEntity(finalizeFiles, entityId, { authChain }, DeploymentContext.LOCAL, {
-        requestTtlAnchor: admittedAt
+        requestTtlAnchor: admittedAt,
+        mustCommitBy: expiresAt
       })
       if (!isInvalidDeployment(result)) {
         await deletePendingBestEffort(entityId)
@@ -185,18 +199,32 @@ export function createPartialDeployments(
     return streamToBufferCapped(await stored.asStream(), MAX_ENTITY_FILE_SIZE_BYTES)
   }
 
-  async function createUpload(entity: Entity, contentHashes: string[], deployerAddress: string): Promise<void> {
+  // Creates the upload unless it exists and returns when it was created. One seen earlier in this request
+  // must still exist: only cleanup of an expired upload removes it, and re-creating it would restart its
+  // lifetime.
+  async function createUpload(
+    entity: Entity,
+    contentHashes: string[],
+    deployerAddress: string,
+    seen: PendingDeploymentRow | undefined,
+    requestedAt: number
+  ): Promise<number> {
+    let createdAt = requestedAt
     await database.transaction(async (tx) => {
       await pendingDeploymentsRepository.acquireDeployerLock(tx, deployerAddress)
       const existing = await pendingDeploymentsRepository.getByEntityId(tx, entity.id)
+      if (seen && !existing) {
+        throw expired()
+      }
       if (existing) {
         if (!isLive(existing)) {
-          throw new InvalidPartialDeploymentError(['This upload expired. Create a new entity with a fresh timestamp.'])
+          throw expired()
         }
         // Reservations are charged to the upload's creator, so nobody else may add batches to it.
         if (existing.deployerAddress !== deployerAddress) {
           throw new InvalidPartialDeploymentError(['This upload was started by another account.'])
         }
+        createdAt = existing.createdAt.getTime()
         return
       }
       if ((await pendingDeploymentsRepository.countByDeployer(tx, deployerAddress)) >= maxPendingPerDeployer) {
@@ -209,9 +237,11 @@ export function createPartialDeployments(
         entityType: entity.type,
         pointers: entity.pointers,
         contentHashes,
-        deployerAddress
+        deployerAddress,
+        createdAt
       })
     }, 'tx_create_pending_deployment')
+    return createdAt
   }
 
   async function reserve(
@@ -252,7 +282,12 @@ export function createPartialDeployments(
     }, 'tx_reserve_pending_deployment')
   }
 
-  async function stageDeployment({ entityId, authChain, files }: StageDeploymentInput): Promise<StageDeploymentResult> {
+  async function stageDeployment({
+    entityId,
+    authChain,
+    files,
+    requestedAt
+  }: StageDeploymentInput): Promise<StageDeploymentResult> {
     // Completion replay: a deployed entity is never deployed again.
     const alreadyDeployed = await deploymentsRepository.getEntityById(database, entityId)
     if (alreadyDeployed) {
@@ -309,7 +344,7 @@ export function createPartialDeployments(
     const deployerAddress = Authenticator.ownerAddress(authChain).toLowerCase()
     const pending = await pendingDeploymentsRepository.getByEntityId(database, entityId)
     if (pending && !isLive(pending)) {
-      throw new InvalidPartialDeploymentError(['This upload expired. Create a new entity with a fresh timestamp.'])
+      throw expired()
     }
 
     // Resume batches by the upload's creator skip the slow access check: creating the upload passed
@@ -336,8 +371,8 @@ export function createPartialDeployments(
         deployer.getRateLimitTtlSeconds(entity.type)
       )
     }
-    // Freshness is measured once, at admission.
-    const ttlAnchor = pending ? pending.createdAt.getTime() : Date.now()
+    // Freshness and the upload's lifetime are measured from its first request's arrival.
+    const ttlAnchor = pending ? pending.createdAt.getTime() : requestedAt
     if (ttlAnchor - entity.timestamp > requestTtlBackwards) {
       throw new InvalidPartialDeploymentError([
         `The request is not recent enough, please submit it again with a new timestamp (entityId=${entity.id}).`
@@ -382,7 +417,7 @@ export function createPartialDeployments(
       throw new InvalidPartialDeploymentError(['Deployment failed: The deployment is too big.'])
     }
 
-    await createUpload(entity, contentHashes, deployerAddress)
+    const createdAt = await createUpload(entity, contentHashes, deployerAddress, pending, requestedAt)
     try {
       await reserve(entityId, Array.from(receipts.values()), maxSceneBytes, incomingBytes)
     } catch (error) {
@@ -391,6 +426,7 @@ export function createPartialDeployments(
       throw error
     }
 
+    assertLiveUntil(createdAt + pendingDeploymentTtlMs)
     await storeStreamsInBatches(storage, Array.from(uploadedFiles))
     await database.transaction(async (tx) => {
       await pendingDeploymentsRepository.markStored(tx, entityId, Array.from(uploadedFiles.keys()))
@@ -412,7 +448,7 @@ export function createPartialDeployments(
       return { kind: 'incomplete', missing: nowMissing }
     }
 
-    return await finalize(entity, entityFile, authChain, contentHashes, ttlAnchor)
+    return await finalize(entity, entityFile, authChain, contentHashes, createdAt)
   }
 
   async function cleanupExpired(): Promise<number> {

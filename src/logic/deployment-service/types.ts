@@ -14,6 +14,8 @@ export type DeployEntityOptions = {
    * partial upload's finalization passes its admission time.
    */
   requestTtlAnchor?: number
+  /** Epoch ms after which the deployment must not commit: a partial upload's expiry. */
+  mustCommitBy?: number
 }
 
 /** A deployment's files keyed by content hash, and its parsed entity. */

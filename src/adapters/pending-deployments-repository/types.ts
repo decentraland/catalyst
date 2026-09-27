@@ -20,6 +20,8 @@ export interface InsertPendingDeployment {
   pointers: string[]
   contentHashes: string[]
   deployerAddress: string
+  /** When the upload's first request arrived (epoch ms); its fixed lifetime starts here. */
+  createdAt: number
 }
 
 /** A byte reservation for one staged file; `stored` marks completed writes and verified reused content. */
@@ -41,7 +43,7 @@ export interface ReservationTotals {
 export interface IPendingDeploymentsRepository {
   /** Returns the upload for an entity id, live or expired, or undefined if none exists. */
   getByEntityId(db: DatabaseClient, entityId: string): Promise<PendingDeploymentRow | undefined>
-  /** Creates an upload. `created_at` is fixed from here on: nothing extends an upload's lifetime. */
+  /** Creates an upload at `createdAt`, which is fixed from here on: nothing extends an upload's lifetime. */
   insert(db: DatabaseClient, row: InsertPendingDeployment): Promise<PendingDeploymentRow>
   /** Counts every upload of a deployer, including expired ones awaiting cleanup. */
   countByDeployer(db: DatabaseClient, deployerAddress: string): Promise<number>

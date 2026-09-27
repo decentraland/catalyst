@@ -5,6 +5,8 @@ export type StageDeploymentInput = {
   authChain: AuthChain
   /** Uploaded files keyed by their multipart field name (the content hash, or the entity id). */
   files: Map<string, Uint8Array>
+  /** When the request arrived (epoch ms), before its body was read. A new upload's lifetime starts here. */
+  requestedAt: number
 }
 
 export type StageDeploymentResult =
