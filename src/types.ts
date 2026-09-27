@@ -12,7 +12,7 @@ import {
 } from '@well-known-components/interfaces'
 // `@dcl/http-server` v2 produces native-fetch request/response types, defined in `@dcl/core-commons`.
 // Source `IHttpServerComponent` from there so handler context types match what the server provides.
-import { IHttpServerComponent } from '@dcl/core-commons'
+import { ICacheStorageComponent, IHttpServerComponent } from '@dcl/core-commons'
 import { IRateLimiterComponent } from '@dcl/rate-limiter-component'
 import { IDeploymentQuotaComponent } from './logic/deployment-quota'
 import { Field } from '@well-known-components/multipart-wrapper'
@@ -30,6 +30,7 @@ import { IDeploymentsRepository } from './adapters/deployments-repository'
 import { IPendingDeploymentsRepository } from './adapters/pending-deployments-repository'
 import { IUploadBudget } from './adapters/upload-budget'
 import { IUploadSpool } from './adapters/upload-spool'
+import { ISourceUploadLimits } from './adapters/source-upload-limits'
 import { IContentLocks } from './adapters/content-locks'
 import { IPointersRepository } from './adapters/pointers-repository'
 import { ISnapshotsRepository } from './adapters/snapshots-repository'
@@ -135,6 +136,8 @@ export type AppComponents = {
   server: IHttpServerComponent<GlobalContext>
   /** Per-client request budget for regular (non-partial) POST /entities deployments. */
   rateLimiter: IRateLimiterComponent<GlobalContext>
+  /** The rate limiter's counter store; state that must agree with its counters lives here too. */
+  rateLimitStore: ICacheStorageComponent
   deploymentQuota: IDeploymentQuotaComponent
   /** Bounds POST /entities bodies spooled to temporary files. */
   uploadBudget: IUploadBudget
@@ -142,6 +145,8 @@ export type AppComponents = {
   deploymentMemoryBudget: IUploadBudget
   /** This process's node-local folder for POST /entities spools. */
   uploadSpool: IUploadSpool
+  /** Bounds each client source's POST /entities bodies in flight. */
+  sourceUploadLimits: ISourceUploadLimits
   activeEntities: ActiveEntities
   sequentialExecutor: ISequentialTaskExecutorComponent
   denylist: Denylist

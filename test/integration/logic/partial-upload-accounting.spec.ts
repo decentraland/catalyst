@@ -229,7 +229,8 @@ describe('Integration - Partial upload accounting', () => {
           entityType: EntityType.SCENE,
           pointers: ['4,4'],
           contentHashes: sharing.contentHashes,
-          deployerAddress: identity.address.toLowerCase()
+          deployerAddress: identity.address.toLowerCase(),
+          createdAt: Date.now()
         })
         await server.components.partialDeployments.cleanupExpired()
       })

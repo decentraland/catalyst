@@ -199,6 +199,32 @@ describe('when parsing a multipart request with upload limits', () => {
     })
   })
 
+  describe('and the payload is exactly the total allowed', () => {
+    let response: unknown
+
+    beforeEach(async () => {
+      const form = new FormData()
+      form.append('entityId', 'x'.repeat(40))
+      form.append('file', Buffer.alloc(60, 1), { filename: 'file' })
+      const body = form.getBuffer()
+      const headers = { ...form.getHeaders(), 'content-length': String(body.length) }
+      response = await multipartParserWrapper(
+        handler as any,
+        { maxFileSize: 4096, maxFiles: 1, maxFields: 1, maxTotalSize: 100 },
+        { tmpFolder }
+      )({
+        request: {
+          headers: { get: (name: string) => (headers as Record<string, string>)[name.toLowerCase()] },
+          body: Readable.toWeb(Readable.from(body))
+        }
+      } as any)
+    })
+
+    it('should accept it although its Content-Length, framing included, is larger', () => {
+      expect(response).toEqual({ status: 200, body: {} })
+    })
+  })
+
   describe('and a body without a declared size carries more bytes than its payload and framing allow', () => {
     let error: unknown
 

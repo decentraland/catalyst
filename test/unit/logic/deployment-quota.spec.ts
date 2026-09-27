@@ -1,3 +1,5 @@
+import { ICacheStorageComponent } from '@dcl/core-commons'
+import { createInMemoryCacheComponent } from '@dcl/memory-cache-component'
 import { RateLimitKeySource, RateLimitResult } from '@dcl/rate-limiter-component'
 import { EnvironmentConfig } from '../../../src/Environment'
 import {
@@ -22,20 +24,28 @@ const COUNTED: RateLimitResult = {
   bucket: '/entities daily-quota'
 }
 
+function buildQuota(consume: jest.Mock, rateLimitStore: ICacheStorageComponent): IDeploymentQuotaComponent {
+  return createDeploymentQuota({
+    env: {
+      getConfig: (key: EnvironmentConfig) => (key === EnvironmentConfig.POST_ENTITIES_DAILY_QUOTA_MAX ? 2 : undefined)
+    },
+    logs: { getLogger: () => ({ warn: jest.fn() }) },
+    rateLimiter: { consume },
+    rateLimitStore
+  } as any)
+}
+
 describe('when using the daily deployment quota', () => {
   let consume: jest.Mock
+  let rateLimitStore: ICacheStorageComponent
   let quota: IDeploymentQuotaComponent
   let admission: unknown
 
   beforeEach(() => {
     jest.spyOn(Date, 'now').mockReturnValue(NOW)
     consume = jest.fn()
-    quota = createDeploymentQuota({
-      env: {
-        getConfig: (key: EnvironmentConfig) => (key === EnvironmentConfig.POST_ENTITIES_DAILY_QUOTA_MAX ? 2 : undefined)
-      },
-      rateLimiter: { consume }
-    } as any)
+    rateLimitStore = createInMemoryCacheComponent({ max: 100 })
+    quota = buildQuota(consume, rateLimitStore)
   })
 
   afterEach(() => {
@@ -69,6 +79,45 @@ describe('when using the daily deployment quota', () => {
         admission: new DeploymentQuotaExceededError(3600),
         counted: 1
       })
+    })
+  })
+
+  describe('and another instance sharing the counter store spent the source allowance', () => {
+    beforeEach(async () => {
+      consume.mockResolvedValueOnce({ ...COUNTED, remaining: 0 })
+      await buildQuota(consume, rateLimitStore).consume('203.0.113.1')
+      admission = await quota.assertAvailable('203.0.113.1').catch((e) => e)
+    })
+
+    it('should turn the source away here too', () => {
+      expect(admission).toEqual(new DeploymentQuotaExceededError(3600))
+    })
+  })
+
+  describe('and the store cannot record that the source is spent', () => {
+    let error: unknown
+
+    beforeEach(async () => {
+      jest.spyOn(rateLimitStore, 'set').mockRejectedValueOnce(new Error('store down'))
+      consume.mockResolvedValueOnce({ ...COUNTED, remaining: 0 })
+      error = await quota.consume('203.0.113.1').catch((e) => e)
+    })
+
+    it('should still count the deployment as allowed', () => {
+      expect(error).toBeUndefined()
+    })
+  })
+
+  describe('and the store cannot be read before the body', () => {
+    beforeEach(async () => {
+      consume.mockResolvedValueOnce({ ...COUNTED, remaining: 0 })
+      await quota.consume('203.0.113.1')
+      jest.spyOn(rateLimitStore, 'get').mockRejectedValueOnce(new Error('store down'))
+      admission = await quota.assertAvailable('203.0.113.1').catch((e) => e)
+    })
+
+    it('should admit the source and leave the decision to the count after the body, as the limiter fails open', () => {
+      expect(admission).toBeUndefined()
     })
   })
 

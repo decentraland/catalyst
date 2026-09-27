@@ -1,7 +1,7 @@
 /**
  * Daily budget of regular (non-partial) deployments per client source. Counting goes through the rate
- * limiter; the component also remembers which sources have spent their budget, so a request can be
- * turned away before its body is read without being counted.
+ * limiter; which sources have spent their budget is kept in the limiter's store, so a request can be
+ * turned away before its body is read, without being counted, by any instance sharing the counters.
  */
 export interface IDeploymentQuotaComponent {
   /**

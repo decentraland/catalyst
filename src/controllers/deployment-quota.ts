@@ -1,9 +1,8 @@
 import { IHttpServerComponent } from '@dcl/core-commons'
 import { Middleware } from '@dcl/http-server/dist/middleware'
-import { canonicalizeIpAddress, clientIpFromForwardedHeader } from '@dcl/rate-limiter-component'
-import { EnvironmentConfig } from '../Environment'
 import { DeploymentQuotaExceededError } from '../logic/deployment-quota'
 import { AppComponents, FormDataContext } from '../types'
+import { createClientSourceResolver } from './client-source'
 import { InvalidRequestError } from './errors'
 
 type QuotaComponents = Pick<AppComponents, 'deploymentQuota' | 'env'>
@@ -21,15 +20,6 @@ function quotaExceededResponse(error: DeploymentQuotaExceededError): IHttpServer
   }
 }
 
-// Same client identity the rate limiter derives: the trusted forwarding header, else the socket address.
-function clientSource(components: QuotaComponents): (context: IHttpServerComponent.DefaultContext<object>) => string {
-  const trustedHeader = components.env.getConfig<string | undefined>(EnvironmentConfig.TRUSTED_CLIENT_IP_HEADER)
-  return (context) =>
-    (trustedHeader && clientIpFromForwardedHeader(context.request.headers.get(trustedHeader), 1)) ||
-    canonicalizeIpAddress(context.remoteAddress) ||
-    ''
-}
-
 /**
  * Turns away, before the body is read, a request from a source whose daily deployment quota is spent,
  * unless it declares itself a partial batch with `?partial=true`. Nothing is counted here.
@@ -38,7 +28,7 @@ export function createDeploymentQuotaAdmission(
   components: QuotaComponents
 ): Middleware<IHttpServerComponent.DefaultContext<object>> {
   const { deploymentQuota } = components
-  const sourceOf = clientSource(components)
+  const sourceOf = createClientSourceResolver(components)
   return async (context, next) => {
     if (!isDeclaredPartial(context)) {
       try {
@@ -63,7 +53,7 @@ export function withDeploymentQuota<Ctx extends FormDataContext<object>>(
   handler: (context: Ctx) => Promise<IHttpServerComponent.IResponse>
 ): (context: Ctx) => Promise<IHttpServerComponent.IResponse> {
   const { deploymentQuota } = components
-  const sourceOf = clientSource(components)
+  const sourceOf = createClientSourceResolver(components)
   return async (context) => {
     const isPartial = context.formData.fields.partial?.value === 'true'
     if (!isPartial) {

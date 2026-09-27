@@ -114,10 +114,10 @@ async function findReferencedHashes(
     SELECT entity_id AS hash FROM deployments WHERE entity_id = ANY(${hashes})
     UNION
     SELECT entity_id AS hash FROM pending_deployments
-      WHERE created_at > to_timestamp(${pendingCutoff} / 1000.0) AND entity_id = ANY(${hashes})
+      WHERE created_at >= to_timestamp(${pendingCutoff} / 1000.0) AND entity_id = ANY(${hashes})
     UNION
     SELECT unnest(content_hashes) AS hash FROM pending_deployments
-      WHERE created_at > to_timestamp(${pendingCutoff} / 1000.0) AND content_hashes && ${hashes}
+      WHERE created_at >= to_timestamp(${pendingCutoff} / 1000.0) AND content_hashes && ${hashes}
   `
   const result = await database.queryWithValues<{ hash: string }>(query, 'gc_recheck_referenced_hashes')
   return new Set(result.rows.map((row) => row.hash))

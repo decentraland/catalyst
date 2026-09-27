@@ -23,6 +23,7 @@ import * as pointerBookkeeping from './pointer-bookkeeping'
 import { createDeployRateLimiter, IDeployRateLimiterComponent } from './rate-limiter'
 import * as serverValidator from './server-validator'
 import ms from 'ms'
+import { DeploymentDeadlineExceededError } from './errors'
 import { DeployEntityOptions, DeploymentFileSource, ReadDeployment, TestableDeploymentService } from './types'
 
 // Stable fragment of the error returned when a concurrent deploy already holds one of the pointers.
@@ -175,7 +176,7 @@ export function createDeploymentService(
     // identical query per deploy. It is `undefined` on the normal path (deployEntity returns early when
     // the entity already exists), and same-entity concurrent deploys are excluded by the pointer locks.
     deployedEntity: { entityId: string; localTimestamp: number } | undefined,
-    requestTtlAnchor: number | undefined
+    options: DeployEntityOptions
   ): Promise<InvalidResult | { auditInfoComplete: AuditInfo; wasEntityDeployed: boolean }> {
     const isEntityAlreadyDeployed = !!deployedEntity
 
@@ -186,7 +187,7 @@ export function createDeploymentService(
       auditInfo,
       hashes,
       isContentUnchanged,
-      requestTtlAnchor
+      options.requestTtlAnchor
     )
 
     if (!validationResult.ok) {
@@ -265,6 +266,11 @@ export function createDeploymentService(
         // staging row atomically with the deployment. Covers both auto-finalize of a partial upload
         // and a vanilla deploy of a previously-staged entity. No-op (single PK delete) otherwise.
         await components.pendingDeploymentsRepository.deleteByEntityId(database, entity.id)
+
+        // Last, so validation time can't carry the commit past the deadline; throwing rolls it back.
+        if (options.mustCommitBy !== undefined && Date.now() > options.mustCommitBy) {
+          throw new DeploymentDeadlineExceededError()
+        }
       }, 'tx_deploy_entity')
 
       // Now that the transaction has committed, reflect the new active pointers in the in-memory cache.
@@ -513,7 +519,7 @@ export function createDeploymentService(
           contextToDeploy,
           isContentUnchanged,
           deployedEntity,
-          options.requestTtlAnchor
+          options
         )
 
         if (!storeResult) {
@@ -578,6 +584,9 @@ export function createDeploymentService(
         // TODO: review this
         return storeResult.auditInfoComplete.localTimestamp || Date.now()
       } catch (error) {
+        if (error instanceof DeploymentDeadlineExceededError) {
+          return InvalidResult({ errors: [error.message] })
+        }
         logger.error(`There was an error deploying the entity: ${error}`, { entityId })
         return InvalidResult({
           errors: [`There was an error deploying the entity`]

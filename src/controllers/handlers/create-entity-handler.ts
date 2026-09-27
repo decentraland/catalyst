@@ -10,6 +10,7 @@ import { InvalidPartialDeploymentError, MAX_ENTITY_FILE_SIZE_BYTES, StagedFile }
 import { DeploymentFileSource, ReadDeployment } from '../../logic/deployment-service/types'
 import { FormHandlerContextWithPath, SpooledFile } from '../../types'
 import { InvalidRequestError, ServiceUnavailableError } from '../errors'
+import { RequestArrivalContext } from '../request-arrival'
 
 /** Body of a 202 response to a partial deployment request: the content hashes not yet on the server. */
 type PostEntity202 = { missing: string[] }
@@ -36,7 +37,8 @@ export async function createEntity(
     | 'deploymentMemoryBudget'
     | 'crypto',
     '/entities'
-  >
+  > &
+    RequestArrivalContext
 ): Promise<Response> {
   const { metrics, deployer, partialDeployments, logs, contentLocks, deploymentMemoryBudget, crypto } =
     context.components
@@ -110,13 +112,13 @@ export async function createEntity(
     return { status: 400, body: { errors: [`The signature is invalid. ${signature.message}`] } }
   }
 
-  // Every deployment holds the shared content lock through publication, so garbage collection can't
-  // delete content it stores or reuses; batches of one entity are serialized.
+  // Staging takes the content lock itself, only for storage and publication.
   if (!regularDeployment) {
-    return withContentLock(() => stagePartialBatch(authChain), entityId)
+    return stagePartialBatch(authChain)
   }
-  // Admitted before the lock, so a full memory budget sheds the deployment without a lock-pool connection.
-  // The share is held while waiting for the lock and released once the deployment settles.
+  // Every deployment holds the shared content lock through publication, so garbage collection can't
+  // delete content it stores or reuses. The memory share is taken before it, so a full budget sheds the
+  // deployment without a lock-pool connection, and is held until the deployment settles.
   const deployment = regularDeployment
   const memoryLease = acquireMemory(uploaded.reduce((sum, file) => sum + file.size, 0))
   try {
@@ -136,7 +138,12 @@ export async function createEntity(
     }
 
     try {
-      const result = await partialDeployments.stageDeployment({ entityId, authChain, files })
+      const result = await partialDeployments.stageDeployment({
+        entityId,
+        authChain,
+        files,
+        requestedAt: context.requestArrivedAt
+      })
       if (result.kind === 'deployed') {
         metrics.increment('dcl_partial_deployments_staging_total', { kind: 'finalized' })
         logger.info(`POST /entities - Partial deployment finalized`, { entityId, ethAddress, userAgent })
@@ -166,6 +173,9 @@ export async function createEntity(
             ? { 'Retry-After': String(error.retryAfterSeconds) }
             : undefined
         return { status: error.statusCode, body: { errors: error.errors }, headers }
+      }
+      if (error instanceof EntityLockTimeoutError) {
+        throw new ServiceUnavailableError(error.message)
       }
       metrics.increment('dcl_partial_deployments_staging_total', { kind: 'error' })
       // Never log `authChain` or `signature`: they are cryptographic credentials.

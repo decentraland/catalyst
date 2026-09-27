@@ -47,13 +47,18 @@ export const DEFAULT_MAX_UPLOAD_TOTAL_SIZE = 2 * 1024 * 1024 * 1024 // 2 GiB tot
 
 // Aggregate bound on POST /entities bodies spooled to temporary files at once across all clients, each
 // file charged 16 KiB on top of its bytes so it also bounds inodes. It must fit one maximum-size request
-// (MAX_UPLOAD_TOTAL_SIZE plus the charge for MAX_UPLOAD_FILE_COUNT files). Partial batches are exempt from the per-IP daily quota
-// below and are bounded by this budget and their account's byte quotas instead.
+// (MAX_UPLOAD_TOTAL_SIZE plus the charge for MAX_UPLOAD_FILE_COUNT files). Partial batches are exempt from
+// the per-IP daily quota below and are bounded by this budget, its per-source share and their account's
+// byte quotas instead.
 export const DEFAULT_MAX_IN_FLIGHT_UPLOAD_BYTES = 4 * 1024 * 1024 * 1024 // 4 GiB
 // Aggregate bound on regular deployment files read into memory at once. Partial batches stream their
 // content from disk; only the entity file read to authenticate them counts against it. It must fit one MAX_UPLOAD_TOTAL_SIZE request.
 export const DEFAULT_MAX_IN_MEMORY_DEPLOYMENT_BYTES = DEFAULT_MAX_UPLOAD_TOTAL_SIZE
 export const DEFAULT_MAX_CONCURRENT_UPLOADS = 40
+// One client source's share of the budget above, applied before the body is read: a body that never
+// completes is never authenticated or counted, so per-source concurrency is what bounds slow senders.
+// The per-source byte share (MAX_IN_FLIGHT_UPLOAD_BYTES_PER_SOURCE) defaults to MAX_UPLOAD_TOTAL_SIZE.
+export const DEFAULT_MAX_CONCURRENT_UPLOADS_PER_SOURCE = 4
 // A body still arriving after this is aborted with 408, so slow senders can't hold upload slots.
 export const DEFAULT_MULTIPART_UPLOAD_TIMEOUT_MS = 5 * 60 * 1000
 // POST /entities bodies are spooled on node-local disk: spool ownership is only provable within one host.
@@ -351,6 +356,8 @@ export enum EnvironmentConfig {
   MAX_IN_FLIGHT_UPLOAD_BYTES,
   MAX_IN_MEMORY_DEPLOYMENT_BYTES,
   MAX_CONCURRENT_UPLOADS,
+  MAX_CONCURRENT_UPLOADS_PER_SOURCE,
+  MAX_IN_FLIGHT_UPLOAD_BYTES_PER_SOURCE,
   MULTIPART_UPLOAD_TIMEOUT_MS,
   UPLOAD_SPOOL_FOLDER,
   MAX_ACTIVE_ENTITIES_BODY_SIZE,
@@ -753,6 +760,14 @@ export class EnvironmentBuilder {
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_CONCURRENT_UPLOADS, () =>
       parsePositiveIntEnv('MAX_CONCURRENT_UPLOADS', DEFAULT_MAX_CONCURRENT_UPLOADS)
+    )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_CONCURRENT_UPLOADS_PER_SOURCE, () =>
+      parsePositiveIntEnv('MAX_CONCURRENT_UPLOADS_PER_SOURCE', DEFAULT_MAX_CONCURRENT_UPLOADS_PER_SOURCE)
+    )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_IN_FLIGHT_UPLOAD_BYTES_PER_SOURCE, () =>
+      parseOptionalNonNegativeIntEnv('MAX_IN_FLIGHT_UPLOAD_BYTES_PER_SOURCE')
     )
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MULTIPART_UPLOAD_TIMEOUT_MS, () =>

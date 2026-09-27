@@ -80,6 +80,26 @@ describe('when parsing a multipart request under an upload budget', () => {
     })
   })
 
+  describe('and its declared size, framing included, is larger than the total allowed', () => {
+    let maxTotalSize: number
+
+    beforeEach(async () => {
+      maxTotalSize = form.getBuffer().length - 10
+      wrapped = multipartParserWrapper(
+        handler as any,
+        { maxFileSize: 1024, maxFiles: 10, maxFields: 10, maxTotalSize },
+        { tmpFolder, uploadBudget: budget as unknown as IUploadBudget }
+      )
+      await wrapped(
+        buildContext(form.getBuffer(), { ...form.getHeaders(), 'content-length': String(form.getBuffer().length) })
+      )
+    })
+
+    it('should reserve only a payload at the total allowed, since framing is never spooled', () => {
+      expect(budget.acquire.mock.calls).toEqual([[maxTotalSize]])
+    })
+  })
+
   describe('and its declared size exceeds what it spools', () => {
     let spooledBytes: number
 
