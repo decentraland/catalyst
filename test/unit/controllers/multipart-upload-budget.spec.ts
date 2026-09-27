@@ -80,6 +80,26 @@ describe('when parsing a multipart request under an upload budget', () => {
     })
   })
 
+  describe('and its declared size exceeds what it spools', () => {
+    let spooledBytes: number
+
+    beforeEach(async () => {
+      form = new FormData()
+      form.append('entityId', 'an-entity-id')
+      spooledBytes = 'an-entity-id'.length
+      await wrapped(
+        buildContext(form.getBuffer(), { ...form.getHeaders(), 'content-length': String(form.getBuffer().length) })
+      )
+    })
+
+    it('should shrink the reservation to the spooled footprint before running the handler', () => {
+      expect({
+        resized: lease.resize.mock.calls,
+        beforeHandler: lease.resize.mock.invocationCallOrder[0] < handler.mock.invocationCallOrder[0]
+      }).toEqual({ resized: [[spooledBytes]], beforeHandler: true })
+    })
+  })
+
   describe('and the request declares no content length', () => {
     beforeEach(async () => {
       await wrapped(buildContext(form.getBuffer(), form.getHeaders()))
@@ -281,6 +301,57 @@ describe('when parsing multipart requests that together fill the upload budget',
 
   it('should complete every admitted request', () => {
     expect(outcomes).toEqual([200, 200])
+  })
+})
+
+describe('when parsing a maximum-size payload under a disk budget of exactly the documented minimum', () => {
+  const FIELD_COUNT = 300
+  let tmpFolder: string
+  let declaredOverCapacity: boolean
+  let outcome: number | string
+
+  beforeEach(async () => {
+    tmpFolder = await mkdtemp(path.join(tmpdir(), 'multipart-'))
+    // Many small fields carry more framing than the one file's spool overhead leaves room for.
+    const form = new FormData()
+    for (let i = 0; i < FIELD_COUNT; i++) {
+      form.append(`field${i}`, 'x')
+    }
+    form.append('file1', Buffer.alloc(100, 1), { filename: 'file1' })
+    const body = form.getBuffer()
+    const payload = FIELD_COUNT + 100
+    const capacity = payload + SPOOL_FILE_OVERHEAD_BYTES
+    declaredOverCapacity = body.length > capacity
+    const values: Partial<Record<EnvironmentConfig, number>> = {
+      [EnvironmentConfig.MAX_IN_FLIGHT_UPLOAD_BYTES]: capacity,
+      [EnvironmentConfig.MAX_CONCURRENT_UPLOADS]: 1,
+      [EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE]: payload,
+      [EnvironmentConfig.MAX_UPLOAD_FILE_COUNT]: 1
+    }
+    const budget = createUploadBudget(
+      {
+        env: { getConfig: (key: EnvironmentConfig) => values[key] },
+        metrics: { observe: jest.fn(), increment: jest.fn() }
+      } as any,
+      'disk'
+    )
+    const wrapped: Wrapped = multipartParserWrapper(
+      jest.fn().mockResolvedValue({ status: 200, body: {} }) as any,
+      { maxFileSize: 4096, maxFiles: 1, maxFields: FIELD_COUNT, maxTotalSize: payload },
+      { tmpFolder, uploadBudget: budget }
+    )
+    const response = await wrapped(
+      buildContext(body, { ...form.getHeaders(), 'content-length': String(body.length) })
+    ).catch((e) => e)
+    outcome = response instanceof Error ? response.name : response.status
+  })
+
+  afterEach(async () => {
+    await rm(tmpFolder, { recursive: true, force: true })
+  })
+
+  it('should accept it although its declared size, framing included, exceeds the budget', () => {
+    expect({ declaredOverCapacity, outcome }).toEqual({ declaredOverCapacity: true, outcome: 200 })
   })
 })
 

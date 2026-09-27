@@ -4,7 +4,7 @@ import { tmpdir } from 'os'
 import path from 'path'
 import { Readable } from 'stream'
 import { IHttpServerComponent } from '@dcl/core-commons'
-import { multipartParserWrapper } from '../../../src/controllers/multipart'
+import { maxMultipartBodySize, multipartParserWrapper } from '../../../src/controllers/multipart'
 import { InvalidRequestError, PayloadTooLargeError } from '../../../src/controllers/errors'
 
 function buildContext(form: FormData): IHttpServerComponent.DefaultContext<any> {
@@ -170,19 +170,16 @@ describe('when parsing a multipart request with upload limits', () => {
     })
   })
 
-  describe('and the declared Content-Length already exceeds the total allowed', () => {
+  describe('and the declared Content-Length exceeds the total allowed plus the framing of every part', () => {
     let wrapped: (ctx: IHttpServerComponent.DefaultContext<any>) => Promise<IHttpServerComponent.IResponse>
     let context: IHttpServerComponent.DefaultContext<any>
 
     beforeEach(() => {
       const form = new FormData()
       form.append('entityId', 'an-entity-id')
-      const headers = { ...form.getHeaders(), 'content-length': '5000' }
-      wrapped = multipartParserWrapper(
-        handler as any,
-        { maxFileSize: 4096, maxFiles: 10, maxTotalSize: 1500 },
-        { tmpFolder }
-      )
+      const limits = { maxFileSize: 4096, maxFiles: 10, maxFields: 10, maxTotalSize: 1500 }
+      const headers = { ...form.getHeaders(), 'content-length': String(maxMultipartBodySize(limits)! + 1) }
+      wrapped = multipartParserWrapper(handler as any, limits, { tmpFolder })
       context = {
         request: {
           headers: { get: (name: string) => (headers as Record<string, string>)[name.toLowerCase()] },
@@ -199,6 +196,32 @@ describe('when parsing a multipart request with upload limits', () => {
       await expect(wrapped(context)).rejects.toThrow()
 
       expect(handler).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('and a body without a declared size carries more bytes than its payload and framing allow', () => {
+    let error: unknown
+
+    beforeEach(async () => {
+      const form = new FormData()
+      form.append('entityId', 'an-entity-id')
+      const limits = { maxFileSize: 4096, maxFiles: 1, maxFields: 1, maxTotalSize: 100 }
+      // busboy skips a preamble without reporting it.
+      const preamble = Buffer.alloc(maxMultipartBodySize(limits)!, 'x')
+      const headers = form.getHeaders()
+      error = await multipartParserWrapper(handler as any, limits, { tmpFolder })({
+        request: {
+          headers: { get: (name: string) => (headers as Record<string, string>)[name.toLowerCase()] },
+          body: Readable.toWeb(Readable.from(Buffer.concat([preamble, Buffer.from('\r\n'), form.getBuffer()])))
+        }
+      } as any).catch((e) => e)
+    })
+
+    it('should reject it with a PayloadTooLargeError without invoking the handler', () => {
+      expect({ rejected: error instanceof PayloadTooLargeError, handled: handler.mock.calls.length }).toEqual({
+        rejected: true,
+        handled: 0
+      })
     })
   })
 

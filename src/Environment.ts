@@ -41,7 +41,8 @@ export const DEFAULT_MAX_UPLOAD_FIELD_SIZE = 100 * 1024 // 100 KB per field valu
 // is huge, so without a total cap one request could try to spool hundreds of GB. The validator's size
 // check is *per pointer*, so a legitimate multi-parcel scene can be several GB; this default is
 // deliberately generous (and `MAX_UPLOAD_TOTAL_SIZE`-tunable) to bound the pathological case without
-// rejecting large estate deployments.
+// rejecting large estate deployments. It counts file and field bytes; the body may exceed it by the
+// multipart framing of its parts, which is bounded per part and never spooled.
 export const DEFAULT_MAX_UPLOAD_TOTAL_SIZE = 2 * 1024 * 1024 * 1024 // 2 GiB total per request
 
 // Aggregate bound on POST /entities bodies spooled to temporary files at once across all clients, each
