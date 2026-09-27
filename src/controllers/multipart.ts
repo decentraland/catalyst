@@ -42,6 +42,10 @@ export type MultipartLimits = {
   maxTotalSize?: number
   /** Maximum time, in milliseconds, to receive the whole body. */
   uploadTimeoutMs?: number
+  /** Least body bytes per second, measured over `receiveRateWindowMs`, before the upload is aborted. */
+  minReceiveRateBytesPerSecond?: number
+  /** Sliding window the receive rate is measured over, in milliseconds; the first window is a grace period. */
+  receiveRateWindowMs?: number
 }
 
 export type MultipartOptions = {
@@ -66,6 +70,9 @@ export function maxMultipartBodySize(limits: MultipartLimits): number | undefine
   // One more part's worth covers the closing boundary and any preamble or epilogue.
   return maxTotalSize + (maxFiles + maxFields + 1) * MULTIPART_PART_FRAMING_BYTES
 }
+
+// Samples of the received bytes per receive-rate window, so the window slides in quarter steps.
+const RECEIVE_RATE_SAMPLES_PER_WINDOW = 4
 
 // Temporary files a request writes at once: busboy moves to the next part while earlier files are
 // still flushing, so without a cap one request could hold a descriptor per part.
@@ -107,6 +114,34 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       // The temporary files are removed by the time this runs.
       lease?.release()
     }
+  }
+
+  // Aborts a body that arrives slower than the minimum rate, so a stalled sender can't hold its upload
+  // slot and disk reservation until the upload timeout.
+  function startReceiveRateCheck(
+    receivedBytes: () => number,
+    abort: (error: Error) => void
+  ): NodeJS.Timeout | undefined {
+    const { minReceiveRateBytesPerSecond: minRate, receiveRateWindowMs: windowMs } = limits
+    if (!minRate || !windowMs) {
+      return undefined
+    }
+    const minWindowBytes = (minRate * windowMs) / 1000
+    const samples = [0]
+    return setInterval(() => {
+      samples.push(receivedBytes())
+      if (samples.length <= RECEIVE_RATE_SAMPLES_PER_WINDOW) {
+        return
+      }
+      if (samples[samples.length - 1] - samples[0] < minWindowBytes) {
+        abort(
+          new RequestTimeoutError(
+            `The multipart upload is too slow: under ${minRate} bytes per second over ${windowMs} ms.`
+          )
+        )
+      }
+      samples.shift()
+    }, windowMs / RECEIVE_RATE_SAMPLES_PER_WINDOW)
   }
 
   function bodyTooLarge(): PayloadTooLargeError {
@@ -352,6 +387,7 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
         limits.uploadTimeoutMs === undefined
           ? undefined
           : setTimeout(() => abort(new RequestTimeoutError('The multipart upload timed out.')), limits.uploadTimeoutMs)
+      const rateCheck = startReceiveRateCheck(() => bodyBytes, abort)
       try {
         await pipeline(source, countBody, formDataParser)
         // busboy finishes before the last temporary files are flushed.
@@ -375,6 +411,7 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
         throw new InvalidRequestError('Invalid multipart/form-data request')
       } finally {
         clearTimeout(timeout)
+        clearInterval(rateCheck)
       }
       if (writeError) {
         throw writeError

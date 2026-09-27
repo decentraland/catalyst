@@ -66,7 +66,11 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
           maxFields: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FIELD_COUNT),
           maxFieldSize: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FIELD_SIZE),
           maxTotalSize: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE),
-          uploadTimeoutMs: env.getConfig<number>(EnvironmentConfig.MULTIPART_UPLOAD_TIMEOUT_MS)
+          uploadTimeoutMs: env.getConfig<number>(EnvironmentConfig.MULTIPART_UPLOAD_TIMEOUT_MS),
+          minReceiveRateBytesPerSecond: env.getConfig<number>(
+            EnvironmentConfig.MIN_UPLOAD_RECEIVE_RATE_BYTES_PER_SECOND
+          ),
+          receiveRateWindowMs: env.getConfig<number>(EnvironmentConfig.UPLOAD_RECEIVE_RATE_WINDOW_MS)
         },
         { tmpFolder: components.staticConfigs.uploadTmpFolder, uploadBudget: components.uploadBudget }
       )
