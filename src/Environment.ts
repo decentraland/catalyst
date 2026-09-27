@@ -50,8 +50,8 @@ export const DEFAULT_MAX_UPLOAD_TOTAL_SIZE = 2 * 1024 * 1024 * 1024 // 2 GiB tot
 // (MAX_UPLOAD_TOTAL_SIZE plus the charge for MAX_UPLOAD_FILE_COUNT files). Partial batches are exempt from the per-IP daily quota
 // below and are bounded by this budget and their account's byte quotas instead.
 export const DEFAULT_MAX_IN_FLIGHT_UPLOAD_BYTES = 4 * 1024 * 1024 * 1024 // 4 GiB
-// Aggregate bound on regular deployment files read into memory at once. Partial batches stream from
-// disk and never count against it. It must fit one MAX_UPLOAD_TOTAL_SIZE request.
+// Aggregate bound on regular deployment files read into memory at once. Partial batches stream their
+// content from disk; only the entity file read to authenticate them counts against it. It must fit one MAX_UPLOAD_TOTAL_SIZE request.
 export const DEFAULT_MAX_IN_MEMORY_DEPLOYMENT_BYTES = DEFAULT_MAX_UPLOAD_TOTAL_SIZE
 export const DEFAULT_MAX_CONCURRENT_UPLOADS = 40
 // A body still arriving after this is aborted with 408, so slow senders can't hold upload slots.

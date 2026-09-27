@@ -1,7 +1,7 @@
 import { PostEntity200, PostEntity400 } from '@dcl/catalyst-api-specs/lib/client'
 import { Field } from '@well-known-components/multipart-wrapper'
 import { AuthChain, AuthLink, EthAddress } from '@dcl/crypto'
-import { DeploymentContext, isInvalidDeployment, isSuccessfulDeployment } from '../../deployment-types'
+import { DeploymentContext, InvalidResult, isInvalidDeployment, isSuccessfulDeployment } from '../../deployment-types'
 import { createReadStream } from 'fs'
 import { readFile } from 'fs/promises'
 import { EntityLockTimeoutError } from '../../adapters/content-locks'
@@ -92,29 +92,11 @@ export async function createEntity(
     // Only an entity file within staging's size cap is read, as staging itself does.
     const entityFile = context.formData.files[entityId]
     const read =
-      entityFile && entityFile.size <= MAX_ENTITY_FILE_SIZE_BYTES
-        ? await deployer.readDeployment([toStagedFile(entityFile)], entityId)
-        : undefined
+      entityFile && entityFile.size <= MAX_ENTITY_FILE_SIZE_BYTES ? await readDeployment([entityFile]) : undefined
     // A batch without a readable entity file is a resume, whose storage read-back needs a chain valid now.
     signatureDate = read && !isInvalidDeployment(read) ? read.entity.timestamp : Date.now()
   } else {
-    // Files are hashed from disk; reading the entity file in takes a memory budget share meanwhile.
-    const entityReadLeases: UploadBudgetLease[] = []
-    const sources = uploaded.map(
-      (file): DeploymentFileSource => ({
-        openStream: () => createReadStream(file.path),
-        read: () => {
-          entityReadLeases.push(acquireMemory(file.size))
-          return readFile(file.path)
-        }
-      })
-    )
-    let read: Awaited<ReturnType<typeof deployer.readDeployment>>
-    try {
-      read = await deployer.readDeployment(sources, entityId)
-    } finally {
-      entityReadLeases.forEach((lease) => lease.release())
-    }
+    const read = await readDeployment(uploaded)
     if (isInvalidDeployment(read)) {
       metrics.increment('dcl_deployments_endpoint_counter', { kind: 'validation_error' })
       logger.error(`POST /entities - Deployment failed (${read.errors.join(',')})`, { entityId, ethAddress, userAgent })
@@ -244,6 +226,25 @@ export async function createEntity(
       })
       logger.error(error)
       throw error
+    }
+  }
+
+  // Files are hashed from disk; reading the entity file in takes a memory budget share meanwhile.
+  async function readDeployment(files: SpooledFile[]): Promise<ReadDeployment | InvalidResult> {
+    const entityReadLeases: UploadBudgetLease[] = []
+    const sources = files.map(
+      (file): DeploymentFileSource => ({
+        openStream: () => createReadStream(file.path),
+        read: () => {
+          entityReadLeases.push(acquireMemory(file.size))
+          return readFile(file.path)
+        }
+      })
+    )
+    try {
+      return await deployer.readDeployment(sources, entityId)
+    } finally {
+      entityReadLeases.forEach((lease) => lease.release())
     }
   }
 

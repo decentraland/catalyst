@@ -220,19 +220,45 @@ describe('when creating an entity from spooled upload files', () => {
       status = response.status
     })
 
-    it('should read only its entity file to authenticate and stage the files from disk without taking a memory budget share', () => {
+    it('should read only its entity file to authenticate, under a released memory budget share, and stage the files from disk', () => {
       expect({
         status,
         streamedContents,
         stagedContent,
         stagedSize,
-        reserved: deploymentMemoryBudget.acquire.mock.calls.length
+        reserved: deploymentMemoryBudget.acquire.mock.calls,
+        released: lease.release.mock.calls.length
       }).toEqual({
         status: 202,
         streamedContents: ['{"entity":true}'],
         stagedContent: 'scene content',
         stagedSize: 'scene content'.length,
-        reserved: 0
+        reserved: [[files[0].size]],
+        released: 1
+      })
+    })
+  })
+
+  describe('and it is a partial batch while the memory budget has no room for its entity file', () => {
+    let error: unknown
+
+    beforeEach(async () => {
+      deploymentMemoryBudget.acquire.mockImplementationOnce(() => {
+        throw new UploadBudgetExceededError('bytes')
+      })
+      error = await createEntity(
+        buildContext(files, true, {
+          deployer: { deployEntity, getDeployedEntityTimestamp, readDeployment },
+          deploymentMemoryBudget,
+          partialDeployments: { stageDeployment }
+        })
+      ).catch((e) => e)
+    })
+
+    it('should reject with a ServiceUnavailableError without staging it', () => {
+      expect({ error, staged: stageDeployment.mock.calls.length }).toEqual({
+        error: new ServiceUnavailableError('Server is handling too many uploads, please retry shortly.'),
+        staged: 0
       })
     })
   })

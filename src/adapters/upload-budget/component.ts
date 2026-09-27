@@ -15,7 +15,7 @@ export const SPOOL_FILE_OVERHEAD_BYTES = 16 * 1024
 /**
  * Creates a byte and concurrency budget shared by every POST /entities request of this process: `disk`
  * bounds bodies spooled to temporary files, each file charged SPOOL_FILE_OVERHEAD_BYTES on top of its
- * size, and `memory` bounds regular deployments read into memory.
+ * size, and `memory` bounds regular deployments and entity files read into memory.
  * @param components Environment and metrics.
  * @param kind Which resource the budget bounds.
  * @returns The upload budget.
