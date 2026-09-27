@@ -28,6 +28,8 @@ type PreparedBatch = {
 // pointer lock retries and hits deployEntity's idempotency fast path.
 const FINALIZE_POINTER_CONFLICT_RETRIES = 3
 const FINALIZE_POINTER_CONFLICT_DELAY_MS = 300
+// The conflicting deployment is in flight, so it clears within seconds.
+const POINTER_CONFLICT_RETRY_AFTER_SECONDS = 5
 
 // Caps the manifest on both paths: a resume reads it back from storage outside the multipart budget.
 const MAX_ENTITY_FILE_SIZE_BYTES = 10 * 1024 * 1024 // 10 MB
@@ -181,7 +183,10 @@ export function createPartialDeployments(
       if (deployer.isRateLimited(entity.type, entity.pointers)) {
         throw new InvalidPartialDeploymentError(result.errors, 429, deployer.getRateLimitTtlSeconds(entity.type))
       }
-      throw new InvalidPartialDeploymentError(result.errors, isPointerConflict ? 429 : 400)
+      if (isPointerConflict) {
+        throw new InvalidPartialDeploymentError(result.errors, 429, POINTER_CONFLICT_RETRY_AFTER_SECONDS)
+      }
+      throw new InvalidPartialDeploymentError(result.errors)
     }
   }
 

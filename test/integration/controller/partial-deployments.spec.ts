@@ -641,6 +641,32 @@ describe('Integration - Partial deployments', () => {
     })
   })
 
+  describe('when the completing batch keeps finding its pointers being deployed', () => {
+    let response: Response
+
+    beforeEach(async () => {
+      const deployment = await prepareSceneDeployment(
+        ['9,10'],
+        { 'a.txt': Buffer.from(`conflicting ${Date.now()}-${Math.random()}`) },
+        identity
+      )
+      jest
+        .spyOn(server.components.deployer, 'deployEntity')
+        .mockResolvedValue({ kind: 'pointer-conflict', errors: ['The pointers are being deployed.'] })
+      response = await postForm(
+        server,
+        buildPartialForm(deployment, [deployment.entityId, ...deployment.contentHashes])
+      )
+    })
+
+    it('should answer a 429 telling the client when to retry', () => {
+      expect({ status: response.status, retryAfter: response.headers.get('retry-after') }).toEqual({
+        status: 429,
+        retryAfter: '5'
+      })
+    })
+  })
+
   describe('when two partial uploads target the same pointers', () => {
     let older: PreparedDeployment
     let newer: PreparedDeployment
