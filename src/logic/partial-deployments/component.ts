@@ -10,6 +10,20 @@ import { storeStreamsInBatches } from '../store-content'
 import { InvalidPartialDeploymentError } from './errors'
 import { IPartialDeployments, StageDeploymentInput, StageDeploymentResult } from './types'
 
+// A batch whose request-only checks passed, ready to be stored under the content lock.
+type PreparedBatch = {
+  entity: Entity
+  entityFile: Uint8Array
+  authChain: StageDeploymentInput['authChain']
+  uploadedFiles: Map<string, Uint8Array>
+  deployerAddress: string
+  contentHashes: string[]
+  maxSceneBytes: bigint
+  /** The upload as it was when the batch was prepared, if it existed. */
+  seen: PendingDeploymentRow | undefined
+  requestedAt: number
+}
+
 // Bounded retry for two requests completing the same upload at once: the loser of the in-memory
 // pointer lock retries and hits deployEntity's idempotency fast path.
 const FINALIZE_POINTER_CONFLICT_RETRIES = 3
@@ -36,8 +50,8 @@ async function streamToBufferCapped(stream: AsyncIterable<Buffer>, maxBytes: num
 }
 
 /**
- * Stages authenticated, entity-keyed partial upload batches. The HTTP handler holds the shared content
- * lock and the per-entity lock through this operation, including publication. Overlapping uploads
+ * Stages authenticated, entity-keyed partial upload batches. Each batch is hashed and validated without
+ * locks, then stored and possibly published under the shared content lock and the per-entity lock. Overlapping uploads
  * coexist within byte and count quotas; publication order is enforced by the deploy pipeline.
  * @param components Validation, persistence, storage and telemetry dependencies.
  * @returns Partial deployment orchestration and expired-upload cleanup.
@@ -282,12 +296,22 @@ export function createPartialDeployments(
     }, 'tx_reserve_pending_deployment')
   }
 
-  async function stageDeployment({
+  async function stageDeployment(input: StageDeploymentInput): Promise<StageDeploymentResult> {
+    const prepared = await prepareBatch(input)
+    if ('kind' in prepared) {
+      return prepared
+    }
+    // Hashing and validation above hold no lock connection; storage and publication below do.
+    return contentLocks.withRead(() => commitBatch(prepared), input.entityId)
+  }
+
+  // Everything that depends only on the request and slow-changing state, run outside the content lock.
+  async function prepareBatch({
     entityId,
     authChain,
     files,
     requestedAt
-  }: StageDeploymentInput): Promise<StageDeploymentResult> {
+  }: StageDeploymentInput): Promise<PreparedBatch | StageDeploymentResult> {
     // Completion replay: a deployed entity is never deployed again.
     const alreadyDeployed = await deploymentsRepository.getEntityById(database, entityId)
     if (alreadyDeployed) {
@@ -387,6 +411,41 @@ export function createPartialDeployments(
     const contentHashes = Array.from(new Set((entity.content ?? []).map((c) => c.hash)))
     const maxSceneBytes =
       BigInt(validator.getMaxSizeInBytesPerPointer(EntityType.SCENE)) * BigInt(entity.pointers.length)
+    return {
+      entity,
+      entityFile,
+      authChain,
+      uploadedFiles,
+      deployerAddress,
+      contentHashes,
+      maxSceneBytes,
+      seen: pending,
+      requestedAt
+    }
+  }
+
+  // Runs under the shared content lock and the entity's lock, so batches of one upload are serialized.
+  async function commitBatch({
+    entity,
+    entityFile,
+    authChain,
+    uploadedFiles,
+    deployerAddress,
+    contentHashes,
+    maxSceneBytes,
+    seen,
+    requestedAt
+  }: PreparedBatch): Promise<StageDeploymentResult> {
+    const entityId = entity.id
+    // Another batch may have published the entity since this one was prepared.
+    const alreadyDeployed = await deploymentsRepository.getEntityById(database, entityId)
+    if (alreadyDeployed) {
+      return { kind: 'deployed', creationTimestamp: alreadyDeployed.localTimestamp }
+    }
+    const pending = await pendingDeploymentsRepository.getByEntityId(database, entityId)
+    if (seen && !pending) {
+      throw expired()
+    }
 
     // One inventory of already-stored content per upload; later batches rely on receipts.
     const receipts = new Map<string, FileReceipt>()
@@ -417,7 +476,7 @@ export function createPartialDeployments(
       throw new InvalidPartialDeploymentError(['Deployment failed: The deployment is too big.'])
     }
 
-    const createdAt = await createUpload(entity, contentHashes, deployerAddress, pending, requestedAt)
+    const createdAt = await createUpload(entity, contentHashes, deployerAddress, seen ?? pending, requestedAt)
     try {
       await reserve(entityId, Array.from(receipts.values()), maxSceneBytes, incomingBytes)
     } catch (error) {

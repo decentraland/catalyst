@@ -101,68 +101,71 @@ export async function createEntity(
     return { status: 400, body: { errors: [`The signature is invalid. ${signature.message}`] } }
   }
 
-  // Every deployment holds the shared content lock through publication, so garbage collection can't
-  // delete content it stores or reuses; batches of one entity are serialized.
-  return withContentLock(async (): Promise<Response> => {
-    // A `partial=true` field marks a staging request of a multi-request (partial) deployment: the
-    // content may be uploaded across several requests and the entity only becomes live once all of it is
-    // present. Requests without the flag behave exactly as before.
-    if (isPartial) {
-      // Preserve the field-name keys (content hashes): unlike the vanilla path, they are load-bearing.
-      const files = new Map<string, Uint8Array>()
-      for (const filename of Object.keys(context.formData.files)) {
-        files.set(filename, context.formData.files[filename].value)
-      }
+  // A `partial=true` field marks a staging request of a multi-request (partial) deployment: the content
+  // may be uploaded across several requests and the entity only becomes live once all of it is present.
+  // Staging takes the content lock itself, only for storage and publication.
+  if (isPartial) {
+    // Preserve the field-name keys (content hashes): unlike the vanilla path, they are load-bearing.
+    const files = new Map<string, Uint8Array>()
+    for (const filename of Object.keys(context.formData.files)) {
+      files.set(filename, context.formData.files[filename].value)
+    }
 
-      try {
-        const result = await partialDeployments.stageDeployment({
-          entityId,
-          authChain,
-          files,
-          requestedAt: context.requestArrivedAt
-        })
-        if (result.kind === 'deployed') {
-          metrics.increment('dcl_partial_deployments_staging_total', { kind: 'finalized' })
-          logger.info(`POST /entities - Partial deployment finalized`, { entityId, ethAddress, userAgent })
-          return { status: 200, body: { creationTimestamp: result.creationTimestamp } }
-        }
-        metrics.increment('dcl_partial_deployments_staging_total', { kind: 'accepted' })
-        logger.info(`POST /entities - Partial deployment staged`, {
-          entityId,
-          ethAddress,
-          userAgent,
-          missing: result.missing.length
-        })
-        return { status: 202, body: { missing: result.missing } }
-      } catch (error) {
-        if (error instanceof InvalidPartialDeploymentError) {
-          metrics.increment('dcl_partial_deployments_staging_total', { kind: 'validation_error' })
-          logger.error(`POST /entities - Partial deployment failed (${error.errors.join(',')})`, {
-            entityId,
-            ethAddress,
-            userAgent
-          })
-          // statusCode is 429 for transient conditions (rate limiting), 400 for validation errors. On a
-          // 429 with a known window, send Retry-After so the client waits it out instead of exhausting its
-          // resume budget inside the window.
-          const headers =
-            error.statusCode === 429 && error.retryAfterSeconds !== undefined
-              ? { 'Retry-After': String(error.retryAfterSeconds) }
-              : undefined
-          return { status: error.statusCode, body: { errors: error.errors }, headers }
-        }
-        metrics.increment('dcl_partial_deployments_staging_total', { kind: 'error' })
-        // Never log `authChain` or `signature`: they are cryptographic credentials.
-        logger.error(`POST /entities - Partial deployment internal server error '${error}'`, {
+    try {
+      const result = await partialDeployments.stageDeployment({
+        entityId,
+        authChain,
+        files,
+        requestedAt: context.requestArrivedAt
+      })
+      if (result.kind === 'deployed') {
+        metrics.increment('dcl_partial_deployments_staging_total', { kind: 'finalized' })
+        logger.info(`POST /entities - Partial deployment finalized`, { entityId, ethAddress, userAgent })
+        return { status: 200, body: { creationTimestamp: result.creationTimestamp } }
+      }
+      metrics.increment('dcl_partial_deployments_staging_total', { kind: 'accepted' })
+      logger.info(`POST /entities - Partial deployment staged`, {
+        entityId,
+        ethAddress,
+        userAgent,
+        missing: result.missing.length
+      })
+      return { status: 202, body: { missing: result.missing } }
+    } catch (error) {
+      if (error instanceof InvalidPartialDeploymentError) {
+        metrics.increment('dcl_partial_deployments_staging_total', { kind: 'validation_error' })
+        logger.error(`POST /entities - Partial deployment failed (${error.errors.join(',')})`, {
           entityId,
           ethAddress,
           userAgent
         })
-        logger.error(error)
-        throw error
+        // statusCode is 429 for transient conditions (rate limiting), 400 for validation errors. On a
+        // 429 with a known window, send Retry-After so the client waits it out instead of exhausting its
+        // resume budget inside the window.
+        const headers =
+          error.statusCode === 429 && error.retryAfterSeconds !== undefined
+            ? { 'Retry-After': String(error.retryAfterSeconds) }
+            : undefined
+        return { status: error.statusCode, body: { errors: error.errors }, headers }
       }
+      if (error instanceof EntityLockTimeoutError) {
+        throw new ServiceUnavailableError(error.message)
+      }
+      metrics.increment('dcl_partial_deployments_staging_total', { kind: 'error' })
+      // Never log `authChain` or `signature`: they are cryptographic credentials.
+      logger.error(`POST /entities - Partial deployment internal server error '${error}'`, {
+        entityId,
+        ethAddress,
+        userAgent
+      })
+      logger.error(error)
+      throw error
     }
+  }
 
+  // Every deployment holds the shared content lock through publication, so garbage collection can't
+  // delete content it stores or reuses.
+  return withContentLock(async (): Promise<Response> => {
     try {
       const auditInfo = { authChain, version: 'v3' }
 

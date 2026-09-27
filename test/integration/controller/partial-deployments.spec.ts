@@ -246,8 +246,10 @@ describe('Integration - Partial deployments', () => {
 
   describe('when an uploaded file does not match its declared hash key', () => {
     let response: Response
+    let withRead: jest.SpyInstance
 
     beforeEach(async () => {
+      withRead = jest.spyOn(server.components.contentLocks, 'withRead')
       const deployment = await prepareSceneDeployment(['5,5'], { 'a.txt': Buffer.from('mismatch content') }, identity)
       const form = new FormData()
       form.append('entityId', deployment.entityId)
@@ -264,8 +266,34 @@ describe('Integration - Partial deployments', () => {
       response = await postForm(server, form)
     })
 
-    it('should return 400', () => {
-      expect(response.status).toBe(400)
+    it('should reject it with a 400 without taking the content lock', () => {
+      expect({ status: response.status, locks: withRead.mock.calls.length }).toEqual({ status: 400, locks: 0 })
+    })
+  })
+
+  describe('when a batch fails its staging validation', () => {
+    let response: Response
+    let withRead: jest.SpyInstance
+
+    beforeEach(async () => {
+      const deployment = await prepareSceneDeployment(
+        ['5,6'],
+        { 'a.txt': Buffer.from(`invalid ${Date.now()}-${Math.random()}`) },
+        identity
+      )
+      jest
+        .spyOn(server.components.validator, 'validateStagingScene')
+        .mockResolvedValueOnce({ ok: false, errors: ['no access'] })
+      withRead = jest.spyOn(server.components.contentLocks, 'withRead')
+      response = await postForm(server, buildPartialForm(deployment, [deployment.entityId]))
+    })
+
+    it('should reject it with its errors without taking the content lock', async () => {
+      expect({ status: response.status, body: await response.json(), locks: withRead.mock.calls.length }).toEqual({
+        status: 400,
+        body: { errors: ['no access'] },
+        locks: 0
+      })
     })
   })
 

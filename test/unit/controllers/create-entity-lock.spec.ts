@@ -42,9 +42,11 @@ describe('when creating an entity under the content lock', () => {
   let getDeployedEntityTimestamp: jest.Mock
   let readDeployment: jest.Mock
   let deployer: Record<string, jest.Mock>
+  let stageDeployment: jest.Mock
 
   beforeEach(() => {
     withRead = jest.fn()
+    stageDeployment = jest.fn()
     validateSignature = jest.fn()
     getDeployedEntityTimestamp = jest.fn().mockResolvedValue(undefined)
     readDeployment = jest.fn().mockResolvedValue({ files: new Map(), entity: { timestamp: ENTITY_TIMESTAMP } })
@@ -108,23 +110,40 @@ describe('when creating an entity under the content lock', () => {
     beforeEach(async () => {
       validateSignature.mockResolvedValueOnce({ ok: true })
       withRead.mockResolvedValueOnce({ status: 200, body: { creationTimestamp: NOW } })
-      await createEntity(buildContext(partial, { contentLocks: { withRead }, crypto: { validateSignature }, deployer }))
+      stageDeployment.mockResolvedValueOnce({ kind: 'deployed', creationTimestamp: NOW })
+      await createEntity(
+        buildContext(partial, {
+          contentLocks: { withRead },
+          crypto: { validateSignature },
+          deployer,
+          partialDeployments: { stageDeployment }
+        })
+      )
     })
 
-    it('should check the chain at the entity timestamp, as the deployment validation does, before taking the lock', () => {
+    it('should check the chain at the entity timestamp, as the deployment validation does, before deploying it', () => {
       expect({
         checkedAt: validateSignature.mock.calls.map(([, , date]) => date),
-        locks: withRead.mock.calls.length
-      }).toEqual({ checkedAt: [ENTITY_TIMESTAMP], locks: 1 })
+        deployments: withRead.mock.calls.length + stageDeployment.mock.calls.length
+      }).toEqual({ checkedAt: [ENTITY_TIMESTAMP], deployments: 1 })
     })
   })
 
   describe('and a partial batch resumes an upload without its entity file', () => {
     beforeEach(async () => {
       validateSignature.mockResolvedValueOnce({ ok: true })
-      withRead.mockResolvedValueOnce({ status: 202, body: { missing: [] } })
+      stageDeployment.mockResolvedValueOnce({ kind: 'incomplete', missing: [] })
       await createEntity(
-        buildContext(true, { contentLocks: { withRead }, crypto: { validateSignature }, deployer }, {})
+        buildContext(
+          true,
+          {
+            contentLocks: { withRead },
+            crypto: { validateSignature },
+            deployer,
+            partialDeployments: { stageDeployment }
+          },
+          {}
+        )
       )
     })
 
@@ -183,6 +202,49 @@ describe('when creating an entity under the content lock', () => {
         signatureChecks: validateSignature.mock.calls.length,
         locks: withRead.mock.calls.length
       }).toEqual({ response: { status: 200, body: { creationTimestamp: 1234 } }, signatureChecks: 0, locks: 0 })
+    })
+  })
+
+  describe('and a partial batch is staged', () => {
+    beforeEach(async () => {
+      validateSignature.mockResolvedValueOnce({ ok: true })
+      stageDeployment.mockResolvedValueOnce({ kind: 'incomplete', missing: [] })
+      await createEntity(
+        buildContext(true, {
+          contentLocks: { withRead },
+          crypto: { validateSignature },
+          deployer,
+          partialDeployments: { stageDeployment }
+        })
+      )
+    })
+
+    it('should leave the content lock to staging, which takes it only to store and publish', () => {
+      expect({ locks: withRead.mock.calls.length, staged: stageDeployment.mock.calls.length }).toEqual({
+        locks: 0,
+        staged: 1
+      })
+    })
+  })
+
+  describe('and a partial batch finds its entity locked past the bounded wait', () => {
+    let error: unknown
+
+    beforeEach(async () => {
+      validateSignature.mockResolvedValueOnce({ ok: true })
+      stageDeployment.mockRejectedValueOnce(new EntityLockTimeoutError(ENTITY_ID))
+      error = await createEntity(
+        buildContext(true, {
+          contentLocks: { withRead },
+          crypto: { validateSignature },
+          deployer,
+          partialDeployments: { stageDeployment }
+        })
+      ).catch((e) => e)
+    })
+
+    it('should answer with a retryable ServiceUnavailableError', () => {
+      expect(error).toEqual(new ServiceUnavailableError(new EntityLockTimeoutError(ENTITY_ID).message))
     })
   })
 
