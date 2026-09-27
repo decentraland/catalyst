@@ -71,6 +71,26 @@ describe('when parsing a multipart request under an upload budget', () => {
     })
   })
 
+  describe('and its declared size, framing included, is larger than the total allowed', () => {
+    let maxTotalSize: number
+
+    beforeEach(async () => {
+      maxTotalSize = form.getBuffer().length - 10
+      wrapped = multipartParserWrapper(
+        handler as any,
+        { maxFileSize: 1024, maxFiles: 10, maxFields: 10, maxTotalSize },
+        budget as unknown as IUploadBudget
+      )
+      await wrapped(
+        buildContext(form.getBuffer(), { ...form.getHeaders(), 'content-length': String(form.getBuffer().length) })
+      )
+    })
+
+    it('should reserve only the peak of a payload at the total allowed, since framing is never buffered', () => {
+      expect(budget.acquire.mock.calls).toEqual([[2 * maxTotalSize]])
+    })
+  })
+
   describe('and its declared size is larger than the maximum file size', () => {
     let declaredSize: number
 

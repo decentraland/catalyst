@@ -41,6 +41,8 @@ export const DEFAULT_MAX_UPLOAD_FIELD_SIZE = 100 * 1024 // 100 KB per field valu
 // scene can be several GB; this default is deliberately generous (and `MAX_UPLOAD_TOTAL_SIZE`-tunable)
 // to bound the pathological case without rejecting large estate deployments. Streaming uploads to
 // disk (instead of buffering) would remove the memory exposure entirely and is the proper follow-up.
+// It counts file and field bytes; the body may exceed it by the multipart framing of its parts, which
+// is bounded per part and never buffered.
 export const DEFAULT_MAX_UPLOAD_TOTAL_SIZE = 2 * 1024 * 1024 * 1024 // 2 GiB total per request
 
 // Aggregate bound on POST /entities bodies buffered at once across all clients. It must fit one
