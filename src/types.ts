@@ -28,6 +28,7 @@ import { Denylist } from './adapters/denylist'
 import { IDeploymentsRepository } from './adapters/deployments-repository'
 import { IPendingDeploymentsRepository } from './adapters/pending-deployments-repository'
 import { IUploadBudget } from './adapters/upload-budget'
+import { ISourceUploadLimits } from './adapters/source-upload-limits'
 import { IContentLocks } from './adapters/content-locks'
 import { IPointersRepository } from './adapters/pointers-repository'
 import { ISnapshotsRepository } from './adapters/snapshots-repository'
@@ -125,6 +126,7 @@ export type AppComponents = {
   rateLimiter: IRateLimiterComponent<GlobalContext>
   deploymentQuota: IDeploymentQuotaComponent
   uploadBudget: IUploadBudget
+  sourceUploadLimits: ISourceUploadLimits
   activeEntities: ActiveEntities
   sequentialExecutor: ISequentialTaskExecutorComponent
   denylist: Denylist

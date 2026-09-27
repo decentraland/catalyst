@@ -98,9 +98,9 @@ export const metricsDeclaration = validateMetricsDeclaration({
     labelNames: []
   },
   dcl_multipart_upload_rejections_total: {
-    help: 'POST /entities uploads shed because the in-flight upload budget was full',
+    help: 'POST /entities uploads shed because the in-flight upload budget, or its source share, was full',
     type: 'counter',
-    // reason=(bytes|concurrency)
+    // reason=(bytes|concurrency|source_bytes|source_concurrency)
     labelNames: ['reason']
   },
   dcl_partial_upload_metadata_checks_total: {

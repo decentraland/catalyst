@@ -1,4 +1,5 @@
 import FormData from 'form-data'
+import { ClientRequest, request } from 'http'
 import { IdentityType } from '@dcl/crypto'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { makeNoopValidator } from '../../helpers/logic/server-validator/NoOpValidator'
@@ -10,6 +11,7 @@ import { buildPartialForm, PreparedDeployment, prepareSceneDeployment } from '..
 const BURST_LIMIT = 3
 const DAILY_QUOTA = 2
 const CLIENT_IP_HEADER = 'x-test-client-ip'
+const UPLOADS_PER_SOURCE = 2
 
 function uniqueContents(count: number): Record<string, Buffer> {
   // Storage is content-addressed and survives resetServer, so each run needs unique bytes.
@@ -43,6 +45,24 @@ describe('Integration - POST /entities request limits', () => {
     return statuses
   }
 
+  // Sends the headers and half of the body, then stalls, holding the upload in flight.
+  function startStalledUpload(clientIp: string, form: FormData, query: string): ClientRequest {
+    const body = form.getBuffer()
+    const stalled = request(`${server.getUrl()}/entities${query}`, {
+      method: 'POST',
+      headers: { ...form.getHeaders(), 'content-length': String(body.length), [CLIENT_IP_HEADER]: clientIp }
+    })
+    stalled.on('error', () => undefined)
+    stalled.write(body.subarray(0, body.length / 2))
+    return stalled
+  }
+
+  async function waitForCalls(spy: jest.SpyInstance, calls: number): Promise<void> {
+    while (spy.mock.calls.length < calls) {
+      await new Promise((resolve) => setTimeout(resolve, 10))
+    }
+  }
+
   function partialBatches(deployment: PreparedDeployment): string[][] {
     const [firstHash, ...otherHashes] = deployment.contentHashes
     return [[deployment.entityId, firstHash], ...otherHashes.map((hash) => [hash])]
@@ -52,7 +72,8 @@ describe('Integration - POST /entities request limits', () => {
     server = await createDefaultServer({
       [EnvironmentConfig.POST_ENTITIES_RATE_LIMIT_MAX]: BURST_LIMIT,
       [EnvironmentConfig.POST_ENTITIES_DAILY_QUOTA_MAX]: DAILY_QUOTA,
-      [EnvironmentConfig.TRUSTED_CLIENT_IP_HEADER]: CLIENT_IP_HEADER
+      [EnvironmentConfig.TRUSTED_CLIENT_IP_HEADER]: CLIENT_IP_HEADER,
+      [EnvironmentConfig.MAX_CONCURRENT_UPLOADS_PER_SOURCE]: UPLOADS_PER_SOURCE
     })
   })
 
@@ -172,6 +193,43 @@ describe('Integration - POST /entities request limits', () => {
           status: 429,
           bodiesRead: 0
         })
+      })
+    })
+  })
+
+  describe('when a source already has its share of uploads in flight', () => {
+    let stalled: ClientRequest[]
+    let acquire: jest.SpyInstance
+    let response: { status: number; retryAfter: string | null; body: unknown }
+
+    beforeEach(async () => {
+      const deployment = await prepareSceneDeployment(['80,80'], uniqueContents(1), identity)
+      const form = buildPartialForm(deployment, [deployment.entityId, ...deployment.contentHashes])
+      acquire = jest.spyOn(server.components.uploadBudget, 'acquire')
+      stalled = Array.from({ length: UPLOADS_PER_SOURCE }, () =>
+        startStalledUpload('203.0.113.8', form, '?partial=true')
+      )
+      await waitForCalls(acquire, UPLOADS_PER_SOURCE)
+      const answer = await fetch(`${server.getUrl()}/entities?partial=true`, {
+        method: 'POST',
+        body: form.getBuffer(),
+        headers: { ...form.getHeaders(), [CLIENT_IP_HEADER]: '203.0.113.8' }
+      })
+      response = { status: answer.status, retryAfter: answer.headers.get('retry-after'), body: await answer.json() }
+    })
+
+    afterEach(() => {
+      stalled.forEach((upload) => upload.destroy())
+    })
+
+    it('should answer another partial batch from it with a 429 before reading its body', () => {
+      expect({ response, bodiesRead: acquire.mock.calls.length }).toEqual({
+        response: {
+          status: 429,
+          retryAfter: '5',
+          body: { error: 'Too many uploads in progress from this client, please retry shortly.' }
+        },
+        bodiesRead: UPLOADS_PER_SOURCE
       })
     })
   })

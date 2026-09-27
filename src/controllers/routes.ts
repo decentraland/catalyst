@@ -3,6 +3,7 @@ import { createSchemaValidatorComponent } from '@dcl/schema-validator-component'
 import { EnvironmentConfig } from '../Environment'
 import { multipartParserWrapper } from './multipart'
 import { createDeploymentQuotaAdmission, withDeploymentQuota } from './deployment-quota'
+import { createSourceUploadAdmission } from './source-upload-admission'
 import { GlobalContext } from '../types'
 import { activeEntitiesBodySchema, getActiveEntitiesHandler } from './handlers/active-entities-handler'
 import { createEntity } from './handlers/create-entity-handler'
@@ -47,12 +48,14 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
     })
     // The daily quota counts regular deployments after parsing; a source that has spent it is turned
     // away before its body is read unless the request declares itself partial with `?partial=true`.
-    // Partial uploads are many batches, bounded by their account's byte quotas instead.
+    // Partial uploads are many batches, bounded by their account's byte quotas instead. Every body,
+    // counted or not, holds a share of its source's in-flight uploads until the request ends.
     router.post(
       '/entities',
       burstLimit,
       preventExecutionIfBoostrapping({ syncOrchestrator: components.syncOrchestrator }),
       createDeploymentQuotaAdmission(components),
+      createSourceUploadAdmission(components),
       multipartParserWrapper(
         withDeploymentQuota(components, createEntity),
         {
