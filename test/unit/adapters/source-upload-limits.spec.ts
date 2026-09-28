@@ -6,17 +6,26 @@ import {
   SourceUploadLimitExceededError
 } from '../../../src/adapters/source-upload-limits'
 
-type LimitsConfig = { maxUploads: number; maxBytes?: number; maxRequestBytes: number }
+type LimitsConfig = {
+  maxUploads: number
+  maxBytes?: number
+  maxRequestBytes: number
+  trustedClientIpHeader?: string
+}
 
-function buildComponents({ maxUploads, maxBytes, maxRequestBytes }: LimitsConfig) {
-  const values: Partial<Record<EnvironmentConfig, number | undefined>> = {
+function buildComponents({ maxUploads, maxBytes, maxRequestBytes, trustedClientIpHeader = 'x-real-ip' }: LimitsConfig) {
+  const values: Partial<Record<EnvironmentConfig, number | string | undefined>> = {
     [EnvironmentConfig.MAX_CONCURRENT_UPLOADS_PER_SOURCE]: maxUploads,
     [EnvironmentConfig.MAX_IN_FLIGHT_UPLOAD_BYTES_PER_SOURCE]: maxBytes,
-    [EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE]: maxRequestBytes
+    [EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE]: maxRequestBytes,
+    [EnvironmentConfig.TRUSTED_CLIENT_IP_HEADER]: trustedClientIpHeader || undefined
   }
+  const warn = jest.fn()
   return {
     env: { getConfig: jest.fn((key: EnvironmentConfig) => values[key]) },
-    metrics: { increment: jest.fn() }
+    logs: { getLogger: jest.fn(() => ({ warn })) },
+    metrics: { increment: jest.fn() },
+    warn
   } as any
 }
 
@@ -61,6 +70,26 @@ describe('when creating the per-source upload limits', () => {
     it('should give each source one maximum-size upload worth of bytes', () => {
       expect(error).toEqual(new SourceUploadLimitExceededError('source_bytes'))
     })
+  })
+})
+
+describe('when admitting uploads without a trusted client IP header', () => {
+  let components: ReturnType<typeof buildComponents>
+  let error: unknown
+
+  beforeEach(() => {
+    components = buildComponents({ maxUploads: 1, maxBytes: 100, maxRequestBytes: 100, trustedClientIpHeader: '' })
+    const limits = createSourceUploadLimits(components)
+    limits.acquire('10.0.0.2', 100)
+    error = captureError(() => limits.acquire('10.0.0.2', 100))
+  })
+
+  it('should not limit the socket address every proxied client shares', () => {
+    expect(error).toBeUndefined()
+  })
+
+  it('should warn once at startup that per-source limits are off', () => {
+    expect(components.warn).toHaveBeenCalledTimes(1)
   })
 })
 

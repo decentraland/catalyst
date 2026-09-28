@@ -171,7 +171,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   // 4. Database + per-domain repositories
   // ---------------------------------------------------------------------------
   const database = await createDatabaseComponent({ logs, env, metrics })
-  const contentLocks = createContentLocks({ logs, env })
+  const contentLocks = createContentLocks({ logs, env, metrics })
 
   const activeEntitiesRepository = createActiveEntitiesRepository()
   const contentFilesRepository = createContentFilesRepository()
@@ -561,7 +561,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   // Bound POST /entities bodies spooled to disk.
   const uploadBudget = createUploadBudget({ env, metrics }, 'disk')
   // One client source's share of the uploads in flight, taken before the body is read.
-  const sourceUploadLimits = createSourceUploadLimits({ env, metrics })
+  const sourceUploadLimits = createSourceUploadLimits({ env, logs, metrics })
 
   // Warn at startup rather than per request: any client can send a forwarding header, so its
   // presence proves nothing and would let an outsider raise this.

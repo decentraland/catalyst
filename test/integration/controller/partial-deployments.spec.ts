@@ -54,6 +54,14 @@ async function pendingCreatedAt(server: TestProgram, entityId: string): Promise<
   return result.rows[0]?.created_at.getTime()
 }
 
+async function isRecordedAsStored(server: TestProgram, entityId: string, hash: string): Promise<boolean> {
+  const stored = await server.components.pendingDeploymentsRepository.getStoredFiles(
+    server.components.database,
+    entityId
+  )
+  return stored.has(hash)
+}
+
 async function countDeployments(server: TestProgram, entityId: string): Promise<number> {
   const result = await server.components.deploymentsRepository.getEntityById(server.components.database, entityId)
   return result ? 1 : 0
@@ -783,6 +791,94 @@ describe('Integration - Partial deployments', () => {
         expect({ status: response.status, body: await response.json(), stored }).toEqual({
           status: 400,
           body: { errors: ['This upload expired. Create a new entity with a fresh timestamp.'] },
+          stored: false
+        })
+      })
+    })
+
+    describe('and it expires while its files are being stored', () => {
+      let stored: boolean
+
+      beforeEach(async () => {
+        const storeStream = server.components.storage.storeStream
+        jest.spyOn(server.components.storage, 'storeStream').mockImplementationOnce(async (...args) => {
+          await storeStream(...args)
+          expireFromNowOn()
+        })
+        response = await postForm(server, buildPartialForm(deployment, [deployment.contentHashes[0]]))
+        stored = await isRecordedAsStored(server, deployment.entityId, deployment.contentHashes[0])
+      })
+
+      it('should reject the batch as expired without recording the late write as progress', async () => {
+        expect({ status: response.status, body: await response.json(), stored }).toEqual({
+          status: 400,
+          body: { errors: ['This upload expired. Create a new entity with a fresh timestamp.'] },
+          stored: false
+        })
+      })
+    })
+
+    describe('and it expires once an incomplete batch has been recorded', () => {
+      beforeEach(async () => {
+        const getStoredFiles = server.components.pendingDeploymentsRepository.getStoredFiles
+        jest
+          .spyOn(server.components.pendingDeploymentsRepository, 'getStoredFiles')
+          .mockImplementationOnce(async (...args) => {
+            const files = await getStoredFiles(...args)
+            expireFromNowOn()
+            return files
+          })
+        response = await postForm(server, buildPartialForm(deployment, [deployment.contentHashes[0]]))
+      })
+
+      it('should reject the batch as expired instead of asking for the rest of the upload', async () => {
+        expect({ status: response.status, body: await response.json() }).toEqual({
+          status: 400,
+          body: { errors: ['This upload expired. Create a new entity with a fresh timestamp.'] }
+        })
+      })
+    })
+
+    describe('and its lifetime ends while a write is still in flight', () => {
+      const REMAINING_LIFETIME_MS = 1500
+      const STALLED_WRITE_MS = 5000
+      let writeAborted: boolean
+      let stored: boolean
+
+      beforeEach(async () => {
+        const ttlMs = server.components.env.getConfig<number>(EnvironmentConfig.PENDING_DEPLOYMENT_TTL)
+        await server.components.database.query(
+          `UPDATE pending_deployments SET created_at = to_timestamp(${
+            realNow() - ttlMs + REMAINING_LIFETIME_MS
+          } / 1000.0) WHERE entity_id = '${deployment.entityId}'`
+        )
+        writeAborted = false
+        const storeStream = server.components.storage.storeStream
+        // Stalls like a slow backend write, honoring the abort as the real backends do.
+        jest.spyOn(server.components.storage, 'storeStream').mockImplementationOnce(async (id, content, signal) => {
+          await new Promise<void>((resolve) => {
+            const stall = setTimeout(resolve, STALLED_WRITE_MS)
+            signal?.addEventListener('abort', () => {
+              clearTimeout(stall)
+              resolve()
+            })
+          })
+          if (signal?.aborted) {
+            writeAborted = true
+            content.destroy()
+            throw signal.reason
+          }
+          await storeStream(id, content, signal)
+        })
+        response = await postForm(server, buildPartialForm(deployment, [deployment.contentHashes[0]]))
+        stored = await isRecordedAsStored(server, deployment.entityId, deployment.contentHashes[0])
+      })
+
+      it('should abort the write at the deadline and reject the batch as expired', async () => {
+        expect({ status: response.status, body: await response.json(), writeAborted, stored }).toEqual({
+          status: 400,
+          body: { errors: ['This upload expired. Create a new entity with a fresh timestamp.'] },
+          writeAborted: true,
           stored: false
         })
       })

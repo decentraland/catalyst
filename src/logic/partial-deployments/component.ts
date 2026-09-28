@@ -2,6 +2,7 @@ import { Authenticator } from '@dcl/crypto'
 import { Entity, EntityType, IPFSv2 } from '@dcl/schemas'
 import { hashV1 } from '@dcl/hashing'
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
+import { EntityLockTimeoutError } from '../../adapters/content-locks'
 import { FileReceipt, PendingDeploymentRow } from '../../adapters/pending-deployments-repository'
 import { UploadBudgetExceededError, UploadBudgetLease } from '../../adapters/upload-budget'
 import { EnvironmentConfig } from '../../Environment'
@@ -127,6 +128,30 @@ export function createPartialDeployments(
     }
   }
 
+  // Stores a batch, aborting the writes still running when the upload expires.
+  async function storeUntil(files: Map<string, StagedFile>, expiresAt: number): Promise<void> {
+    assertLiveUntil(expiresAt)
+    const signal = AbortSignal.timeout(Math.max(expiresAt - Date.now(), 0))
+    try {
+      await storeStreamsInBatches(
+        storage,
+        Array.from(files, ([hash, file]) => [hash, () => file.openStream()]),
+        signal
+      )
+    } catch (error) {
+      if (signal.aborted) {
+        throw expired()
+      }
+      throw error
+    }
+  }
+
+  // A resumable answer tells the client to keep uploading, so it is only given while the upload is live.
+  function incompleteUntil(missing: string[], expiresAt: number): StageDeploymentResult {
+    assertLiveUntil(expiresAt)
+    return { kind: 'incomplete', missing }
+  }
+
   async function inventory(hashes: string[]) {
     metrics.increment('dcl_partial_upload_metadata_checks_total', {}, hashes.length)
     return storage.fileInfoMultiple(hashes)
@@ -189,7 +214,7 @@ export function createPartialDeployments(
       const missingNow = contentHashes.filter((hash) => !present.get(hash))
       if (missingNow.length > 0) {
         await markMissing(entityId, missingNow)
-        return { kind: 'incomplete', missing: missingNow }
+        return incompleteUntil(missingNow, expiresAt)
       }
 
       // Catalyst-only transient conditions keep their retryable 429.
@@ -525,21 +550,21 @@ export function createPartialDeployments(
       throw error
     }
 
-    assertLiveUntil(createdAt + pendingDeploymentTtlMs)
-    await storeStreamsInBatches(
-      storage,
-      Array.from(uploadedFiles, ([hash, file]) => [hash, () => file.openStream()])
-    )
+    const expiresAt = createdAt + pendingDeploymentTtlMs
+    await storeUntil(uploadedFiles, expiresAt)
+    // A write that outlived the upload is left unrecorded; cleanup reclaims it with the upload's receipts.
     await database.transaction(async (tx) => {
+      if (!(await pendingDeploymentsRepository.markInitializedIfLive(tx, entityId, pendingDeploymentTtlMs))) {
+        throw expired()
+      }
       await pendingDeploymentsRepository.markStored(tx, entityId, Array.from(uploadedFiles.keys()))
-      await pendingDeploymentsRepository.markInitialized(tx, entityId)
     }, 'tx_record_pending_deployment_progress')
 
     const progress = await pendingDeploymentsRepository.getStoredFiles(database, entityId)
     const missing = contentHashes.filter((hash) => !progress.has(hash))
     metrics.increment('dcl_partial_upload_batches_total', { outcome: missing.length ? 'incomplete' : 'finalizing' })
     if (missing.length > 0) {
-      return { kind: 'incomplete', missing }
+      return incompleteUntil(missing, expiresAt)
     }
 
     // One full verification at completion; the shared content lock keeps GC out until publication.
@@ -547,7 +572,7 @@ export function createPartialDeployments(
     const nowMissing = contentHashes.filter((hash) => presentInfos.get(hash) === undefined)
     if (nowMissing.length > 0) {
       await markMissing(entityId, nowMissing)
-      return { kind: 'incomplete', missing: nowMissing }
+      return incompleteUntil(nowMissing, expiresAt)
     }
 
     return await finalize(entity, entityFile, authChain, contentHashes, createdAt)
@@ -560,21 +585,33 @@ export function createPartialDeployments(
       EXPIRED_UPLOADS_PER_CLEANUP
     )
     let removed = 0
-    for (const entityId of expired) {
-      // Accounting is released only after every physical delete batch succeeds.
-      const keys = await pendingDeploymentsRepository.getStagedKeys(database, entityId)
-      for (let offset = 0; offset < keys.length; offset += CLEANUP_DELETE_BATCH_SIZE) {
-        const batch = keys.slice(offset, offset + CLEANUP_DELETE_BATCH_SIZE)
-        await contentLocks.withWrite(async () => {
-          const referenced = await contentFilesRepository.findReferencedHashes(database, batch, pendingDeploymentTtlMs)
-          const orphaned = batch.filter((hash) => !referenced.has(hash))
-          if (orphaned.length > 0) {
-            await storage.delete(orphaned)
-          }
-        })
+    try {
+      for (const entityId of expired) {
+        // Accounting is released only after every physical delete batch succeeds.
+        const keys = await pendingDeploymentsRepository.getStagedKeys(database, entityId)
+        for (let offset = 0; offset < keys.length; offset += CLEANUP_DELETE_BATCH_SIZE) {
+          const batch = keys.slice(offset, offset + CLEANUP_DELETE_BATCH_SIZE)
+          await contentLocks.withWrite(async () => {
+            const referenced = await contentFilesRepository.findReferencedHashes(
+              database,
+              batch,
+              pendingDeploymentTtlMs
+            )
+            const orphaned = batch.filter((hash) => !referenced.has(hash))
+            if (orphaned.length > 0) {
+              await storage.delete(orphaned)
+            }
+          })
+        }
+        await pendingDeploymentsRepository.deleteExpiredByEntityId(database, entityId, pendingDeploymentTtlMs)
+        removed++
       }
-      await pendingDeploymentsRepository.deleteExpiredByEntityId(database, entityId, pendingDeploymentTtlMs)
-      removed++
+    } catch (error) {
+      // Busy with deployments: the rest stays charged and is retried on the next run.
+      if (!(error instanceof EntityLockTimeoutError)) {
+        throw error
+      }
+      logger.warn(`Expired-upload cleanup deferred after ${removed} upload(s): deployments kept the content lock busy`)
     }
     await pendingDeploymentsRepository.deleteElapsedRateWindows(database)
     const reserved = await pendingDeploymentsRepository.getReservedBytes(database, pendingDeploymentTtlMs)

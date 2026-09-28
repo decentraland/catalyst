@@ -44,7 +44,7 @@ void Lifecycle.run({
     const env = await new EnvironmentBuilder().build()
     const database = await createDatabaseComponent({ logs, env, metrics })
     // Shares the server's database lock, so this sweep excludes in-flight deployments.
-    const contentLocks = createContentLocks({ logs, env })
+    const contentLocks = createContentLocks({ logs, env, metrics })
     const fs = createFsComponent()
     const contentStorageFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
     // This must run with a FolderBasedFileSystem implementation of IContentStorageComponent

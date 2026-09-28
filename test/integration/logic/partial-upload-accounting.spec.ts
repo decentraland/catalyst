@@ -1,6 +1,7 @@
 import { STOP_COMPONENT } from '@well-known-components/interfaces'
 import { IdentityType } from '@dcl/crypto'
 import { EntityType } from '@dcl/schemas'
+import { EntityLockTimeoutError } from '../../../src/adapters/content-locks'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { makeNoopValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import {
@@ -210,6 +211,32 @@ describe('Integration - Partial upload accounting', () => {
 
       it('should fail the cleanup and keep the expired bytes charged', () => {
         expect({ cleanupError, status: response.status }).toEqual({ cleanupError: 'storage unavailable', status: 400 })
+      })
+    })
+
+    describe('and deployments keep the content lock busy during cleanup', () => {
+      let cleanupError: unknown
+      let removed: number | undefined
+      let stored: boolean
+      let pending: string[]
+
+      beforeEach(async () => {
+        jest.spyOn(server.components.contentLocks, 'withWrite').mockRejectedValueOnce(new EntityLockTimeoutError())
+        ;[removed, cleanupError] = await server.components.partialDeployments.cleanupExpired().then(
+          (count) => [count, undefined],
+          (error) => [undefined, error]
+        )
+        stored = await server.components.storage.exist(largeHash(expired))
+        pending = await pendingEntityIds(server)
+      })
+
+      it('should defer the upload to the next run and keep it charged', () => {
+        expect({ cleanupError, removed, stored, pending }).toEqual({
+          cleanupError: undefined,
+          removed: 0,
+          stored: true,
+          pending: [expired.entityId]
+        })
       })
     })
 

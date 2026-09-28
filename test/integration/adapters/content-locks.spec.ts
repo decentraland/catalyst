@@ -25,7 +25,7 @@ describe('Integration - content locks', () => {
     beforeEach(async () => {
       // Two connections: one held by the busy entity, one that must stay free while others wait on it.
       const env = new Environment(server.components.env).setConfig(EnvironmentConfig.CONTENT_LOCK_CONNECTIONS, 2)
-      locks = createContentLocks({ env, logs: server.components.logs })
+      locks = createContentLocks({ env, logs: server.components.logs, metrics: server.components.metrics })
       let releaseHolder!: () => void
       const held = new Promise<void>((resolve) => (releaseHolder = resolve))
       holder = locks.withRead(async () => {
@@ -64,7 +64,7 @@ describe('Integration - content locks', () => {
 
     beforeEach(async () => {
       const env = new Environment(server.components.env).setConfig(EnvironmentConfig.CONTENT_LOCK_CONNECTIONS, 2)
-      locks = createContentLocks({ env, logs: server.components.logs })
+      locks = createContentLocks({ env, logs: server.components.logs, metrics: server.components.metrics })
       let releaseGc!: () => void
       const held = new Promise<void>((resolve) => (releaseGc = resolve))
       gc = locks.withWrite(async () => {
@@ -103,7 +103,7 @@ describe('Integration - content locks', () => {
 
     beforeEach(async () => {
       const env = new Environment(server.components.env).setConfig(EnvironmentConfig.CONTENT_LOCK_CONNECTIONS, 3)
-      locks = createContentLocks({ env, logs: server.components.logs })
+      locks = createContentLocks({ env, logs: server.components.logs, metrics: server.components.metrics })
       let releaseDeployment!: () => void
       const held = new Promise<void>((resolve) => (releaseDeployment = resolve))
       deployment = locks.withRead(async () => {
@@ -125,9 +125,9 @@ describe('Integration - content locks', () => {
       await locks[STOP_COMPONENT]?.()
     })
 
-    it('should let only one writer wait on a connection and run all of them once the deployment ends', async () => {
+    it('should keep every writer out of the PostgreSQL lock queue and run all of them once the deployment ends', async () => {
       expect({ lockWaiters, writers: await writers }).toEqual({
-        lockWaiters: 1,
+        lockWaiters: 0,
         writers: ['writer 1', 'writer 2', 'writer 3']
       })
     })
@@ -141,7 +141,10 @@ describe('Integration - content locks', () => {
 
     beforeEach(async () => {
       const env = new Environment(server.components.env).setConfig(EnvironmentConfig.CONTENT_LOCK_CONNECTIONS, 3)
-      locks = createContentLocks({ env, logs: server.components.logs }, { maxWaitMs: 1_000, writerLockTimeoutMs: 200 })
+      locks = createContentLocks(
+        { env, logs: server.components.logs, metrics: server.components.metrics },
+        { maxWaitMs: 1_000 }
+      )
       let releaseDeployment!: () => void
       const held = new Promise<void>((resolve) => (releaseDeployment = resolve))
       deployment = locks.withRead(async () => {
@@ -170,6 +173,44 @@ describe('Integration - content locks', () => {
     })
   })
 
+  describe('when a deployment arrives while a writer is retrying behind another deployment', () => {
+    let locks: IContentLocks
+    let firstDeployment: Promise<string>
+    let writer: Promise<string>
+    let secondDeployment: string
+
+    beforeEach(async () => {
+      const env = new Environment(server.components.env).setConfig(EnvironmentConfig.CONTENT_LOCK_CONNECTIONS, 3)
+      locks = createContentLocks({ env, logs: server.components.logs, metrics: server.components.metrics })
+      let releaseFirst!: () => void
+      const held = new Promise<void>((resolve) => (releaseFirst = resolve))
+      firstDeployment = locks.withRead(async () => {
+        await held
+        return 'first deployment'
+      })
+      await new Promise((resolve) => setTimeout(resolve, 100))
+      writer = locks.withWrite(async () => 'writer')
+      await new Promise((resolve) => setTimeout(resolve, 300))
+      secondDeployment = await Promise.race([
+        locks.withRead(async () => 'second deployment'),
+        new Promise<string>((resolve) => setTimeout(() => resolve('blocked'), 3000))
+      ])
+      releaseFirst()
+    })
+
+    afterEach(async () => {
+      await Promise.allSettled([firstDeployment, writer])
+      await locks[STOP_COMPONENT]?.()
+    })
+
+    it('should run the deployment without waiting for the writer, and the writer once the gate is free', async () => {
+      expect({ secondDeployment, writer: await writer }).toEqual({
+        secondDeployment: 'second deployment',
+        writer: 'writer'
+      })
+    })
+  })
+
   describe('when the lock pool stays saturated past the bounded wait', () => {
     let locks: IContentLocks
     let holder: Promise<string>
@@ -177,7 +218,10 @@ describe('Integration - content locks', () => {
 
     beforeEach(async () => {
       const env = new Environment(server.components.env).setConfig(EnvironmentConfig.CONTENT_LOCK_CONNECTIONS, 1)
-      locks = createContentLocks({ env, logs: server.components.logs }, { maxWaitMs: 300, connectionTimeoutMs: 100 })
+      locks = createContentLocks(
+        { env, logs: server.components.logs, metrics: server.components.metrics },
+        { maxWaitMs: 300, connectionTimeoutMs: 100 }
+      )
       let releaseHolder!: () => void
       const held = new Promise<void>((resolve) => (releaseHolder = resolve))
       holder = locks.withRead(async () => {

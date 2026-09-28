@@ -9,7 +9,8 @@ export interface IContentLocks extends IBaseComponent {
    */
   withRead<T>(operation: () => Promise<T>, entityId?: string): Promise<T>
   /**
-   * Runs a reference check plus physical delete excluding every in-flight storage mutation.
+   * Runs a reference check plus physical delete excluding every in-flight storage mutation. Acquired only
+   * in a moment with no deployment in flight, so sustained deployments can defer it.
    * @throws EntityLockTimeoutError when in-flight deployments keep the gate past the bounded wait.
    */
   withWrite<T>(operation: () => Promise<T>): Promise<T>
@@ -18,8 +19,6 @@ export interface IContentLocks extends IBaseComponent {
 export type ContentLocksOptions = {
   /** Longest a request retries a busy lock or a saturated pool before failing, in milliseconds. */
   maxWaitMs?: number
-  /** How long one writer attempt queues for the exclusive lock, in milliseconds. */
-  writerLockTimeoutMs?: number
   /** How long one attempt waits for a pool connection, in milliseconds. */
   connectionTimeoutMs?: number
 }
