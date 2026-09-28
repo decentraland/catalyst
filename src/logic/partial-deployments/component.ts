@@ -3,6 +3,7 @@ import { Entity, EntityType, IPFSv2 } from '@dcl/schemas'
 import { hashV1 } from '@dcl/hashing'
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { FileReceipt, PendingDeploymentRow } from '../../adapters/pending-deployments-repository'
+import { UploadBudgetExceededError, UploadBudgetLease } from '../../adapters/upload-budget'
 import { EnvironmentConfig } from '../../Environment'
 import { DeploymentContext, isInvalidDeployment } from '../../deployment-types'
 import { AppComponents } from '../../types'
@@ -40,13 +41,21 @@ const EMPTY_FILE = new Uint8Array(0)
 const EXPIRED_UPLOADS_PER_CLEANUP = 100
 const CLEANUP_DELETE_BATCH_SIZE = 1000
 
-async function streamToBufferCapped(stream: AsyncIterable<Buffer>, maxBytes: number): Promise<Uint8Array> {
+// Grows the memory share with the bytes read, so stored sizes (attacker-influenced when compressed) aren't trusted.
+async function streamToBufferCapped(
+  stream: AsyncIterable<Buffer>,
+  maxBytes: number,
+  lease: UploadBudgetLease
+): Promise<Uint8Array> {
   const chunks: Buffer[] = []
   let total = 0
   for await (const chunk of stream) {
     total += chunk.byteLength
     if (total > maxBytes) {
       throw new InvalidPartialDeploymentError([`The stored entity file is too large (over ${maxBytes} bytes).`])
+    }
+    if (!lease.resize(total)) {
+      throw new UploadBudgetExceededError('bytes')
     }
     chunks.push(chunk)
   }
@@ -76,6 +85,7 @@ export function createPartialDeployments(
     | 'pendingDeploymentsRepository'
     | 'contentFilesRepository'
     | 'contentLocks'
+    | 'deploymentMemoryBudget'
   >
 ): IPartialDeployments {
   const {
@@ -91,7 +101,8 @@ export function createPartialDeployments(
     deploymentsRepository,
     pendingDeploymentsRepository,
     contentFilesRepository,
-    contentLocks
+    contentLocks,
+    deploymentMemoryBudget
   } = components
   const logger = logs.getLogger('partial-deployments')
   const pendingDeploymentTtlMs = env.getConfig<number>(EnvironmentConfig.PENDING_DEPLOYMENT_TTL)
@@ -192,9 +203,11 @@ export function createPartialDeployments(
     }
   }
 
+  // Reads the entity file back under a memory budget share handed to `hold`, which the caller releases.
   async function readBackEntityFile(
     entityId: string,
-    authChain: StageDeploymentInput['authChain']
+    authChain: StageDeploymentInput['authChain'],
+    hold: (lease: UploadBudgetLease) => void
   ): Promise<Uint8Array> {
     const mustInclude = new InvalidPartialDeploymentError([
       `The first partial request for an entity, and any request by another signer, must include the entity file '${entityId}'.`
@@ -213,11 +226,15 @@ export function createPartialDeployments(
     ) {
       throw mustInclude
     }
+    const lease = deploymentMemoryBudget.acquire(0)
+    hold(lease)
     const stored = await storage.retrieve(entityId)
     if (!stored) {
       throw mustInclude
     }
-    return streamToBufferCapped(await stored.asStream(), MAX_ENTITY_FILE_SIZE_BYTES)
+    // A file the budget can never hold is rejected outright rather than with a 503 it can't outwait.
+    const maxBytes = Math.min(MAX_ENTITY_FILE_SIZE_BYTES, deploymentMemoryBudget.capacityBytes)
+    return streamToBufferCapped(await stored.asStream(), maxBytes, lease)
   }
 
   // Creates the upload unless it exists and returns when it was created. One seen earlier in this request
@@ -304,21 +321,25 @@ export function createPartialDeployments(
   }
 
   async function stageDeployment(input: StageDeploymentInput): Promise<StageDeploymentResult> {
-    const prepared = await prepareBatch(input)
-    if ('kind' in prepared) {
-      return prepared
+    // A read-back entity file stays in memory, under its budget share, until the batch settles.
+    const leases: UploadBudgetLease[] = []
+    try {
+      const prepared = await prepareBatch(input, (lease) => leases.push(lease))
+      if ('kind' in prepared) {
+        return prepared
+      }
+      // Hashing and validation above hold no lock connection; storage and publication below do.
+      return await contentLocks.withRead(() => commitBatch(prepared), input.entityId)
+    } finally {
+      leases.forEach((lease) => lease.release())
     }
-    // Hashing and validation above hold no lock connection; storage and publication below do.
-    return contentLocks.withRead(() => commitBatch(prepared), input.entityId)
   }
 
   // Everything that depends only on the request and slow-changing state, run outside the content lock.
-  async function prepareBatch({
-    entityId,
-    authChain,
-    files,
-    requestedAt
-  }: StageDeploymentInput): Promise<PreparedBatch | StageDeploymentResult> {
+  async function prepareBatch(
+    { entityId, authChain, files, entityFile: uploadedEntityBytes, requestedAt }: StageDeploymentInput,
+    hold: (lease: UploadBudgetLease) => void
+  ): Promise<PreparedBatch | StageDeploymentResult> {
     // Completion replay: a deployed entity is never deployed again.
     const alreadyDeployed = await deploymentsRepository.getEntityById(database, entityId)
     if (alreadyDeployed) {
@@ -356,9 +377,12 @@ export function createPartialDeployments(
           `The entity file '${entityId}' is too large (${uploadedEntityFile.size} bytes, max ${MAX_ENTITY_FILE_SIZE_BYTES}).`
         ])
       }
-      entityFile = await uploadedEntityFile.read()
+      if (!uploadedEntityBytes) {
+        throw new Error(`The entity file '${entityId}' was uploaded but not passed in memory.`)
+      }
+      entityFile = uploadedEntityBytes
     } else {
-      entityFile = await readBackEntityFile(entityId, authChain)
+      entityFile = await readBackEntityFile(entityId, authChain, hold)
     }
 
     let entity: Entity

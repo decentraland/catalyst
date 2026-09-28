@@ -14,6 +14,8 @@ export type UploadBudgetKind = 'disk' | 'memory'
  * than by request count. POST /entities receives each body before any authentication.
  */
 export interface IUploadBudget {
+  /** Most bytes the budget can ever hold at once. */
+  readonly capacityBytes: number
   /**
    * Admits an upload with an initial byte reservation.
    * @throws UploadBudgetExceededError when the concurrency or byte budget is exhausted.

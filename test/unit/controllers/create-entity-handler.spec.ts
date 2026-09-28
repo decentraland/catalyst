@@ -4,7 +4,8 @@ import { tmpdir } from 'os'
 import path from 'path'
 import { createEntity } from '../../../src/controllers/handlers/create-entity-handler'
 import { ServiceUnavailableError } from '../../../src/controllers/errors'
-import { UploadBudgetExceededError } from '../../../src/adapters/upload-budget'
+import { createUploadBudget, UploadBudgetExceededError } from '../../../src/adapters/upload-budget'
+import { EnvironmentConfig } from '../../../src/Environment'
 import { EntityLockTimeoutError } from '../../../src/adapters/content-locks'
 import { SpooledFile } from '../../../src/types'
 import { DeploymentFileSource } from '../../../src/logic/deployment-service/types'
@@ -202,12 +203,18 @@ describe('when creating an entity from spooled upload files', () => {
   describe('and it is a partial batch', () => {
     let stagedContent: string
     let stagedSize: number
+    let stagedEntityFile: string
+    let releasedWhileStaging: number
     let status: number
 
     beforeEach(async () => {
-      stageDeployment.mockImplementationOnce(async ({ files: staged }) => {
-        stagedContent = Buffer.from(await staged.get('content-hash').read()).toString()
+      stageDeployment.mockImplementationOnce(async ({ files: staged, entityFile }) => {
+        const chunks: Buffer[] = []
+        for await (const chunk of staged.get('content-hash').openStream()) chunks.push(chunk)
+        stagedContent = Buffer.concat(chunks).toString()
         stagedSize = staged.get('content-hash').size
+        stagedEntityFile = Buffer.from(entityFile).toString()
+        releasedWhileStaging = lease.release.mock.calls.length
         return { kind: 'incomplete', missing: ['other-hash'] }
       })
       const response = await createEntity(
@@ -220,21 +227,127 @@ describe('when creating an entity from spooled upload files', () => {
       status = response.status
     })
 
-    it('should read only its entity file to authenticate, under a released memory budget share, and stage the files from disk', () => {
+    it('should read its entity file once, under a memory budget share held until staging settles, and stream the rest from disk', () => {
       expect({
         status,
         streamedContents,
         stagedContent,
         stagedSize,
+        stagedEntityFile,
         reserved: deploymentMemoryBudget.acquire.mock.calls,
+        releasedWhileStaging,
         released: lease.release.mock.calls.length
       }).toEqual({
         status: 202,
         streamedContents: ['{"entity":true}'],
         stagedContent: 'scene content',
         stagedSize: 'scene content'.length,
+        stagedEntityFile: '{"entity":true}',
         reserved: [[files[0].size]],
+        releasedWhileStaging: 0,
         released: 1
+      })
+    })
+  })
+
+  describe('and it is a partial batch without its entity file', () => {
+    let stagedEntityFile: Uint8Array | undefined
+    let status: number
+
+    beforeEach(async () => {
+      stageDeployment.mockImplementationOnce(async ({ entityFile }) => {
+        stagedEntityFile = entityFile
+        return { kind: 'incomplete', missing: ['other-hash'] }
+      })
+      const response = await createEntity(
+        buildContext([files[1]], true, {
+          deployer: { deployEntity, getDeployedEntityTimestamp, readDeployment },
+          deploymentMemoryBudget,
+          partialDeployments: { stageDeployment }
+        })
+      )
+      status = response.status
+    })
+
+    it('should leave reading the entity file back to staging, without a memory budget share of its own', () => {
+      expect({ status, stagedEntityFile, reserved: deploymentMemoryBudget.acquire.mock.calls.length }).toEqual({
+        status: 202,
+        stagedEntityFile: undefined,
+        reserved: 0
+      })
+    })
+  })
+
+  describe('and a partial batch arrives while another one is still staging and the memory budget fits only one entity file', () => {
+    let finishFirst: () => void
+    let firstStatus: number
+    let secondError: unknown
+    let secondUnavailable: boolean
+
+    beforeEach(async () => {
+      const limits: Record<string, number> = {
+        [EnvironmentConfig.MAX_IN_MEMORY_DEPLOYMENT_BYTES]: files[0].size + 1,
+        [EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE]: files[0].size + 1,
+        [EnvironmentConfig.MAX_CONCURRENT_UPLOADS]: 10
+      }
+      const budget = createUploadBudget(
+        {
+          env: { getConfig: (key: number) => limits[key] } as any,
+          metrics: { observe: jest.fn(), increment: jest.fn() } as any
+        },
+        'memory'
+      )
+      stageDeployment.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finishFirst = () => resolve({ kind: 'incomplete', missing: ['other-hash'] })
+          })
+      )
+      const components = {
+        deployer: { deployEntity, getDeployedEntityTimestamp, readDeployment },
+        deploymentMemoryBudget: budget,
+        partialDeployments: { stageDeployment }
+      }
+      const first = createEntity(buildContext(files, true, components))
+      while (stageDeployment.mock.calls.length === 0) {
+        await new Promise((resolve) => setImmediate(resolve))
+      }
+      secondError = await createEntity(buildContext(files, true, components)).catch((e) => e)
+      secondUnavailable = secondError instanceof ServiceUnavailableError
+      finishFirst()
+      firstStatus = (await first).status
+    })
+
+    it('should reject the second with a ServiceUnavailableError without staging it and stage the first', () => {
+      expect({ secondError, secondUnavailable, firstStatus, staged: stageDeployment.mock.calls.length }).toEqual({
+        secondError: new ServiceUnavailableError('Server is handling too many uploads, please retry shortly.'),
+        secondUnavailable: true,
+        firstStatus: 202,
+        staged: 1
+      })
+    })
+  })
+
+  describe('and staging a partial batch finds no room in the memory budget', () => {
+    let error: unknown
+    let unavailable: boolean
+
+    beforeEach(async () => {
+      stageDeployment.mockRejectedValueOnce(new UploadBudgetExceededError('bytes'))
+      error = await createEntity(
+        buildContext([files[1]], true, {
+          deployer: { deployEntity, getDeployedEntityTimestamp, readDeployment },
+          deploymentMemoryBudget,
+          partialDeployments: { stageDeployment }
+        })
+      ).catch((e) => e)
+      unavailable = error instanceof ServiceUnavailableError
+    })
+
+    it('should reject with a ServiceUnavailableError', () => {
+      expect({ error, unavailable }).toEqual({
+        error: new ServiceUnavailableError('Server is handling too many uploads, please retry shortly.'),
+        unavailable: true
       })
     })
   })

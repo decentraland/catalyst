@@ -87,39 +87,27 @@ export async function createEntity(
 
   // Authenticate before taking any lock, so a request that can't be authenticated never holds a lock
   // connection. Same check, expiry date (the entity's timestamp) and message as the deployment validator.
-  const uploaded = Object.values(context.formData.files)
-  let regularDeployment: ReadDeployment | undefined
-  let signatureDate: number
   if (isPartial) {
-    // Only an entity file within staging's size cap is read, as staging itself does.
-    const entityFile = context.formData.files[entityId]
-    const read =
-      entityFile && entityFile.size <= MAX_ENTITY_FILE_SIZE_BYTES ? await readDeployment([entityFile]) : undefined
-    // A batch without a readable entity file is a resume, whose storage read-back needs a chain valid now.
-    signatureDate = read && !isInvalidDeployment(read) ? read.entity.timestamp : Date.now()
-  } else {
-    const read = await readDeployment(uploaded)
-    if (isInvalidDeployment(read)) {
-      metrics.increment('dcl_deployments_endpoint_counter', { kind: 'validation_error' })
-      logger.error(`POST /entities - Deployment failed (${read.errors.join(',')})`, { entityId, ethAddress, userAgent })
-      return { status: 400, body: { errors: read.errors } }
-    }
-    regularDeployment = read
-    signatureDate = read.entity.timestamp
+    return handlePartialBatch(authChain)
   }
-  const signature = await crypto.validateSignature(entityId, authChain, signatureDate)
-  if (!signature.ok) {
-    return { status: 400, body: { errors: [`The signature is invalid. ${signature.message}`] } }
+  const uploaded = Object.values(context.formData.files)
+  const deployment = await readDeployment(uploaded)
+  if (isInvalidDeployment(deployment)) {
+    metrics.increment('dcl_deployments_endpoint_counter', { kind: 'validation_error' })
+    logger.error(`POST /entities - Deployment failed (${deployment.errors.join(',')})`, {
+      entityId,
+      ethAddress,
+      userAgent
+    })
+    return { status: 400, body: { errors: deployment.errors } }
   }
-
-  // Staging takes the content lock itself, only for storage and publication.
-  if (!regularDeployment) {
-    return stagePartialBatch(authChain)
+  const signatureError = await checkSignature(authChain, deployment.entity.timestamp)
+  if (signatureError) {
+    return signatureError
   }
   // Every deployment holds the shared content lock through publication, so garbage collection can't
   // delete content it stores or reuses. The memory share is taken before it, so a full budget sheds the
   // deployment without a lock-pool connection, and is held until the deployment settles.
-  const deployment = regularDeployment
   const memoryLease = acquireMemory(uploaded.reduce((sum, file) => sum + file.size, 0))
   try {
     return await withContentLock(() => deployRegular(deployment, authChain), entityId)
@@ -127,9 +115,40 @@ export async function createEntity(
     memoryLease.release()
   }
 
+  async function checkSignature(authChain: AuthChain, signatureDate: number): Promise<Response | undefined> {
+    const signature = await crypto.validateSignature(entityId, authChain, signatureDate)
+    return signature.ok
+      ? undefined
+      : { status: 400, body: { errors: [`The signature is invalid. ${signature.message}`] } }
+  }
+
+  // The entity file is read once, under a memory share held until staging settles, and handed to staging.
+  async function handlePartialBatch(authChain: AuthChain): Promise<Response> {
+    // Only an entity file within staging's size cap is read, as staging itself requires.
+    const uploadedEntity = context.formData.files[entityId]
+    const readsEntity = !!uploadedEntity && uploadedEntity.size <= MAX_ENTITY_FILE_SIZE_BYTES
+    const memoryLease = readsEntity ? acquireMemory(uploadedEntity.size) : undefined
+    try {
+      // Read only once the file hashes to the entity id; a batch whose file doesn't fails staging's hash check.
+      let entityFile: Uint8Array | undefined
+      const source: DeploymentFileSource = {
+        openStream: () => createReadStream(uploadedEntity.path),
+        read: async () => (entityFile = await readFile(uploadedEntity.path))
+      }
+      const read = readsEntity ? await deployer.readDeployment([source], entityId) : undefined
+      // A batch without a readable entity file is a resume, whose storage read-back needs a chain valid now.
+      const signatureDate = read && !isInvalidDeployment(read) ? read.entity.timestamp : Date.now()
+      const signatureError = await checkSignature(authChain, signatureDate)
+      // Staging takes the content lock itself, only for storage and publication.
+      return signatureError ?? (await stagePartialBatch(authChain, entityFile))
+    } finally {
+      memoryLease?.release()
+    }
+  }
+
   // A `partial=true` field marks a staging request of a multi-request (partial) deployment: the content
   // may be uploaded across several requests and the entity only becomes live once all of it is present.
-  async function stagePartialBatch(authChain: AuthChain): Promise<Response> {
+  async function stagePartialBatch(authChain: AuthChain, entityFile: Uint8Array | undefined): Promise<Response> {
     // Preserve the field-name keys (content hashes): unlike the vanilla path, they are load-bearing.
     // The files stay on disk; staging streams them.
     const files = new Map<string, StagedFile>()
@@ -142,6 +161,7 @@ export async function createEntity(
         entityId,
         authChain,
         files,
+        entityFile,
         requestedAt: context.requestArrivedAt
       })
       if (result.kind === 'deployed') {
@@ -174,7 +194,7 @@ export async function createEntity(
             : undefined
         return { status: error.statusCode, body: { errors: error.errors }, headers }
       }
-      if (error instanceof EntityLockTimeoutError) {
+      if (error instanceof EntityLockTimeoutError || error instanceof UploadBudgetExceededError) {
         throw new ServiceUnavailableError(error.message)
       }
       metrics.increment('dcl_partial_deployments_staging_total', { kind: 'error' })
@@ -282,11 +302,7 @@ export async function createEntity(
 }
 
 function toStagedFile(file: SpooledFile): StagedFile {
-  return {
-    size: file.size,
-    openStream: () => createReadStream(file.path),
-    read: () => readFile(file.path)
-  }
+  return { size: file.size, openStream: () => createReadStream(file.path) }
 }
 
 function requireString(val: string): string {

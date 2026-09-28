@@ -276,6 +276,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     entities
   })
 
+  // Bounds regular deployments' files and partial batches' entity files read into memory.
+  const deploymentMemoryBudget = createUploadBudget({ env, metrics }, 'memory')
   const partialDeployments = createPartialDeployments({
     logs,
     metrics,
@@ -289,7 +291,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     deploymentsRepository,
     pendingDeploymentsRepository,
     contentFilesRepository,
-    contentLocks
+    contentLocks,
+    deploymentMemoryBudget
   })
 
   // ---------------------------------------------------------------------------
@@ -555,9 +558,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const deploymentQuota = createDeploymentQuota({ env, logs, rateLimiter, rateLimitStore })
 
-  // Bound POST /entities bodies on disk and regular deployments in memory; partial batches only use disk.
+  // Bound POST /entities bodies spooled to disk.
   const uploadBudget = createUploadBudget({ env, metrics }, 'disk')
-  const deploymentMemoryBudget = createUploadBudget({ env, metrics }, 'memory')
   // One client source's share of the uploads in flight, taken before the body is read.
   const sourceUploadLimits = createSourceUploadLimits({ env, metrics })
 

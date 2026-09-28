@@ -95,5 +95,5 @@ export function createUploadBudget(
     }
   }
 
-  return { acquire }
+  return { capacityBytes, acquire }
 }

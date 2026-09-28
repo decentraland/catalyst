@@ -52,7 +52,7 @@ export const DEFAULT_MAX_UPLOAD_TOTAL_SIZE = 2 * 1024 * 1024 * 1024 // 2 GiB tot
 // byte quotas instead.
 export const DEFAULT_MAX_IN_FLIGHT_UPLOAD_BYTES = 4 * 1024 * 1024 * 1024 // 4 GiB
 // Aggregate bound on regular deployment files read into memory at once. Partial batches stream their
-// content from disk; only the entity file read to authenticate them counts against it. It must fit one MAX_UPLOAD_TOTAL_SIZE request.
+// content from disk; only their entity file counts, held until the batch is staged. It must fit one MAX_UPLOAD_TOTAL_SIZE request.
 export const DEFAULT_MAX_IN_MEMORY_DEPLOYMENT_BYTES = DEFAULT_MAX_UPLOAD_TOTAL_SIZE
 export const DEFAULT_MAX_CONCURRENT_UPLOADS = 40
 // One client source's share of the budget above, applied before the body is read: a body that never
