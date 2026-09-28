@@ -553,7 +553,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   // Bounds POST /entities bodies buffered at once; partial batches count only against this.
   const uploadBudget = createUploadBudget({ env, metrics })
   // One client source's share of it, taken before the body is read.
-  const sourceUploadLimits = createSourceUploadLimits({ env, metrics })
+  const sourceUploadLimits = createSourceUploadLimits({ env, logs, metrics })
 
   // Warn at startup rather than per request: any client can send a forwarding header, so its
   // presence proves nothing and would let an outsider raise this.
