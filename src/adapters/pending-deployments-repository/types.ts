@@ -59,7 +59,8 @@ export interface IPendingDeploymentsRepository {
   /** Adds bytes to the deployer's fixed one-minute window and returns the window total. */
   addIncomingBytes(db: DatabaseClient, deployerAddress: string, bytes: number): Promise<bigint>
   markStored(db: DatabaseClient, entityId: string, hashes: string[]): Promise<void>
-  markInitialized(db: DatabaseClient, entityId: string): Promise<void>
+  /** Marks the upload initialized while it is live; false once it has expired or been removed. */
+  markInitializedIfLive(db: DatabaseClient, entityId: string, ttlMs: number): Promise<boolean>
   /** Forgets completed writes that a final verification found missing. Reservations stay charged. */
   markMissing(db: DatabaseClient, entityId: string, hashes: string[]): Promise<void>
   /** Returns the sizes of successfully stored files, never counting reservations as writes. */

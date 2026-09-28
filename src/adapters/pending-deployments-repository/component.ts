@@ -144,11 +144,14 @@ async function markStored(database: DatabaseClient, entityId: string, hashes: st
   )
 }
 
-async function markInitialized(database: DatabaseClient, entityId: string): Promise<void> {
-  await database.queryWithValues(
-    SQL`UPDATE pending_deployments SET initialized = true WHERE entity_id = ${entityId}`,
+async function markInitializedIfLive(database: DatabaseClient, entityId: string, ttlMs: number): Promise<boolean> {
+  const result = await database.queryWithValues(
+    SQL`UPDATE pending_deployments SET initialized = true WHERE entity_id = ${entityId} AND created_at >= `.append(
+      cutoff(ttlMs)
+    ),
     'pending_deployment_mark_initialized'
   )
+  return result.rowCount > 0
 }
 
 async function markMissing(database: DatabaseClient, entityId: string, hashes: string[]): Promise<void> {
@@ -255,7 +258,7 @@ export function createPendingDeploymentsRepository(): IPendingDeploymentsReposit
     getReservationTotals,
     addIncomingBytes,
     markStored,
-    markInitialized,
+    markInitializedIfLive,
     markMissing,
     getStoredFiles,
     getStagedKeys,

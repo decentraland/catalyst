@@ -114,6 +114,26 @@ export function createPartialDeployments(
     }
   }
 
+  // Stores a batch, aborting the writes still running when the upload expires.
+  async function storeUntil(files: Map<string, Uint8Array>, expiresAt: number): Promise<void> {
+    assertLiveUntil(expiresAt)
+    const signal = AbortSignal.timeout(Math.max(expiresAt - Date.now(), 0))
+    try {
+      await storeStreamsInBatches(storage, Array.from(files), signal)
+    } catch (error) {
+      if (signal.aborted) {
+        throw expired()
+      }
+      throw error
+    }
+  }
+
+  // A resumable answer tells the client to keep uploading, so it is only given while the upload is live.
+  function incompleteUntil(missing: string[], expiresAt: number): StageDeploymentResult {
+    assertLiveUntil(expiresAt)
+    return { kind: 'incomplete', missing }
+  }
+
   async function inventory(hashes: string[]) {
     metrics.increment('dcl_partial_upload_metadata_checks_total', {}, hashes.length)
     return storage.fileInfoMultiple(hashes)
@@ -176,7 +196,7 @@ export function createPartialDeployments(
       const missingNow = contentHashes.filter((hash) => !present.get(hash))
       if (missingNow.length > 0) {
         await markMissing(entityId, missingNow)
-        return { kind: 'incomplete', missing: missingNow }
+        return incompleteUntil(missingNow, expiresAt)
       }
 
       // Catalyst-only transient conditions keep their retryable 429.
@@ -490,18 +510,21 @@ export function createPartialDeployments(
       throw error
     }
 
-    assertLiveUntil(createdAt + pendingDeploymentTtlMs)
-    await storeStreamsInBatches(storage, Array.from(uploadedFiles))
+    const expiresAt = createdAt + pendingDeploymentTtlMs
+    await storeUntil(uploadedFiles, expiresAt)
+    // A write that outlived the upload is left unrecorded; cleanup reclaims it with the upload's receipts.
     await database.transaction(async (tx) => {
+      if (!(await pendingDeploymentsRepository.markInitializedIfLive(tx, entityId, pendingDeploymentTtlMs))) {
+        throw expired()
+      }
       await pendingDeploymentsRepository.markStored(tx, entityId, Array.from(uploadedFiles.keys()))
-      await pendingDeploymentsRepository.markInitialized(tx, entityId)
     }, 'tx_record_pending_deployment_progress')
 
     const progress = await pendingDeploymentsRepository.getStoredFiles(database, entityId)
     const missing = contentHashes.filter((hash) => !progress.has(hash))
     metrics.increment('dcl_partial_upload_batches_total', { outcome: missing.length ? 'incomplete' : 'finalizing' })
     if (missing.length > 0) {
-      return { kind: 'incomplete', missing }
+      return incompleteUntil(missing, expiresAt)
     }
 
     // One full verification at completion; the shared content lock keeps GC out until publication.
@@ -509,7 +532,7 @@ export function createPartialDeployments(
     const nowMissing = contentHashes.filter((hash) => presentInfos.get(hash) === undefined)
     if (nowMissing.length > 0) {
       await markMissing(entityId, nowMissing)
-      return { kind: 'incomplete', missing: nowMissing }
+      return incompleteUntil(nowMissing, expiresAt)
     }
 
     return await finalize(entity, entityFile, authChain, contentHashes, createdAt)
