@@ -1,5 +1,6 @@
 import * as bf from 'bloom-filters'
 import SQL from 'sql-template-strings'
+import { EntityLockTimeoutError } from '../../adapters/content-locks'
 import { SYSTEM_PROPERTIES } from '../../adapters/system-properties'
 import { runLoggingPerformance } from '../../instrument'
 import { AppComponents } from '../../types'
@@ -52,18 +53,21 @@ export function createGarbageCollectionComponent(
    * @returns The deleted hashes.
    */
   async function deleteUnreferenced(candidates: string[]): Promise<string[]> {
-    return components.contentLocks.withWrite(async () => {
-      const stillReferenced = await components.contentFilesRepository.findReferencedHashes(
-        components.database,
-        candidates,
-        pendingDeploymentTtlMs
-      )
-      const toDelete = candidates.filter((hash) => !stillReferenced.has(hash))
-      if (toDelete.length > 0) {
-        await components.storage.delete(toDelete)
-      }
-      return toDelete
-    })
+    return components.contentLocks.withWrite(() => deleteUnreferencedLocked(candidates))
+  }
+
+  // Must run under the exclusive content lock.
+  async function deleteUnreferencedLocked(candidates: string[]): Promise<string[]> {
+    const stillReferenced = await components.contentFilesRepository.findReferencedHashes(
+      components.database,
+      candidates,
+      pendingDeploymentTtlMs
+    )
+    const toDelete = candidates.filter((hash) => !stillReferenced.has(hash))
+    if (toDelete.length > 0) {
+      await components.storage.delete(toDelete)
+    }
+    return toDelete
   }
 
   /**
@@ -192,24 +196,27 @@ export function createGarbageCollectionComponent(
     const hashes = Array.from(hashesSet)
 
     logger.info(`Profile cleanup will remove ${deployments.length} deployments and ${hashes.length} from content_files`)
-    await components.database.transaction(async (database) => {
-      await database.queryWithValues(
-        SQL`DELETE FROM content_files WHERE deployment = ANY(${deployments})`,
-        'gc_old_profiles_delete_content_files'
-      )
+    // Rows and files go under one exclusive lock: once the rows are gone nothing references the files, so a
+    // lock timeout between the two would leak them past every later sweep.
+    const hashesToDelete = await components.contentLocks.withWrite(async () => {
+      await components.database.transaction(async (database) => {
+        await database.queryWithValues(
+          SQL`DELETE FROM content_files WHERE deployment = ANY(${deployments})`,
+          'gc_old_profiles_delete_content_files'
+        )
 
-      logger.info(`Profile cleanup will remove ${deployments.length} deployments`)
-      await database.queryWithValues(
-        SQL`DELETE FROM deployments WHERE id = ANY(${deployments})`,
-        'gc_old_profiles_delete_deployments'
-      )
-    }, 'gc_old_profiles')
+        logger.info(`Profile cleanup will remove ${deployments.length} deployments`)
+        await database.queryWithValues(
+          SQL`DELETE FROM deployments WHERE id = ANY(${deployments})`,
+          'gc_old_profiles_delete_deployments'
+        )
+      }, 'gc_old_profiles')
 
-    // Delete the files from storage only after the DB transaction commits: doing it first would leave
-    // live content_files rows referencing already-deleted files if the transaction failed. A leftover
-    // file after a successful commit is reclaimed by the next unused-hashes sweep.
-    // Re-verify under the exclusive content lock: the in-use check above ran before the transaction.
-    const hashesToDelete = hashes.length > 0 ? await deleteUnreferenced(hashes) : []
+      // Delete the files from storage only after the DB transaction commits: doing it first would leave
+      // live content_files rows referencing already-deleted files if the transaction failed.
+      // Re-verify here: the in-use check above ran before the transaction.
+      return hashes.length > 0 ? deleteUnreferencedLocked(hashes) : []
+    })
     logger.info(`Profile cleanup removed ${hashesToDelete.length} files from storage`)
 
     return {
@@ -270,6 +277,13 @@ export function createGarbageCollectionComponent(
       await components.systemProperties.set(SYSTEM_PROPERTIES.lastGarbageCollectionTime, newTimeOfCollection)
 
       lastTimeOfCollection = newTimeOfCollection
+    } catch (error) {
+      // The watermark stays put, so the next sweep re-examines everything this one skipped.
+      if (error instanceof EntityLockTimeoutError) {
+        logger.warn('Garbage collection deferred to the next sweep: deployments kept the content lock busy')
+        return
+      }
+      throw error
     } finally {
       endTimer()
     }
@@ -344,7 +358,10 @@ export function createGarbageCollectionComponent(
       try {
         numberOfDeletedFiles += (await deleteUnreferenced(candidates)).length
       } catch (error) {
-        unreferencedLogger.error(error as Error, { batchSize: String(candidates.length) })
+        // The content lock already warned about a busy gate; the batch is retried on the next run.
+        if (!(error instanceof EntityLockTimeoutError)) {
+          unreferencedLogger.error(error as Error, { batchSize: String(candidates.length) })
+        }
       }
     }
 

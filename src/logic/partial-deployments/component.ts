@@ -1,6 +1,7 @@
 import { Authenticator } from '@dcl/crypto'
 import { Entity, EntityType, IPFSv2 } from '@dcl/schemas'
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
+import { EntityLockTimeoutError } from '../../adapters/content-locks'
 import { FileReceipt, PendingDeploymentRow } from '../../adapters/pending-deployments-repository'
 import { EnvironmentConfig } from '../../Environment'
 import { DeploymentContext, isInvalidDeployment } from '../../deployment-types'
@@ -545,21 +546,33 @@ export function createPartialDeployments(
       EXPIRED_UPLOADS_PER_CLEANUP
     )
     let removed = 0
-    for (const entityId of expired) {
-      // Accounting is released only after every physical delete batch succeeds.
-      const keys = await pendingDeploymentsRepository.getStagedKeys(database, entityId)
-      for (let offset = 0; offset < keys.length; offset += CLEANUP_DELETE_BATCH_SIZE) {
-        const batch = keys.slice(offset, offset + CLEANUP_DELETE_BATCH_SIZE)
-        await contentLocks.withWrite(async () => {
-          const referenced = await contentFilesRepository.findReferencedHashes(database, batch, pendingDeploymentTtlMs)
-          const orphaned = batch.filter((hash) => !referenced.has(hash))
-          if (orphaned.length > 0) {
-            await storage.delete(orphaned)
-          }
-        })
+    try {
+      for (const entityId of expired) {
+        // Accounting is released only after every physical delete batch succeeds.
+        const keys = await pendingDeploymentsRepository.getStagedKeys(database, entityId)
+        for (let offset = 0; offset < keys.length; offset += CLEANUP_DELETE_BATCH_SIZE) {
+          const batch = keys.slice(offset, offset + CLEANUP_DELETE_BATCH_SIZE)
+          await contentLocks.withWrite(async () => {
+            const referenced = await contentFilesRepository.findReferencedHashes(
+              database,
+              batch,
+              pendingDeploymentTtlMs
+            )
+            const orphaned = batch.filter((hash) => !referenced.has(hash))
+            if (orphaned.length > 0) {
+              await storage.delete(orphaned)
+            }
+          })
+        }
+        await pendingDeploymentsRepository.deleteExpiredByEntityId(database, entityId, pendingDeploymentTtlMs)
+        removed++
       }
-      await pendingDeploymentsRepository.deleteExpiredByEntityId(database, entityId, pendingDeploymentTtlMs)
-      removed++
+    } catch (error) {
+      // Busy with deployments: the rest stays charged and is retried on the next run.
+      if (!(error instanceof EntityLockTimeoutError)) {
+        throw error
+      }
+      logger.warn(`Expired-upload cleanup deferred after ${removed} upload(s): deployments kept the content lock busy`)
     }
     await pendingDeploymentsRepository.deleteElapsedRateWindows(database)
     const reserved = await pendingDeploymentsRepository.getReservedBytes(database, pendingDeploymentTtlMs)

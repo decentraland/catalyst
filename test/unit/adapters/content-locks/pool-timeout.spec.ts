@@ -1,7 +1,9 @@
+import { createTestMetricsComponent } from '@dcl/metrics'
 import { createLogComponent } from '@well-known-components/logger'
 import { Pool } from 'pg'
 import { createContentLocks, EntityLockTimeoutError } from '../../../../src/adapters/content-locks'
 import { Environment, EnvironmentConfig } from '../../../../src/Environment'
+import { metricsDeclaration } from '../../../../src/metrics'
 
 describe('when the lock pool times out while opening a new connection', () => {
   let connect: jest.SpyInstance
@@ -14,7 +16,10 @@ describe('when the lock pool times out while opening a new connection', () => {
       .mockRejectedValue(new Error('Connection terminated due to connection timeout') as never)
     operation = jest.fn()
     const env = new Environment().setConfig(EnvironmentConfig.CONTENT_LOCK_CONNECTIONS, 1)
-    const locks = createContentLocks({ env, logs: await createLogComponent({}) }, { maxWaitMs: 100 })
+    const locks = createContentLocks(
+      { env, logs: await createLogComponent({}), metrics: createTestMetricsComponent(metricsDeclaration) },
+      { maxWaitMs: 100 }
+    )
     error = await locks.withRead(operation, 'an-entity').catch((e) => e)
   })
 

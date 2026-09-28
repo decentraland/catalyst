@@ -12,9 +12,6 @@ const CONTENT_LOCK_KEY = 'catalyst-content-gc'
 const ENTITY_LOCK_RETRY_MIN_MS = 25
 const ENTITY_LOCK_RETRY_MAX_MS = 500
 const ENTITY_LOCK_MAX_WAIT_MS = 60_000
-// How long one writer attempt queues for the gate, and pauses after failing, so deployments get turns.
-const WRITER_LOCK_TIMEOUT_MS = 10_000
-const LOCK_NOT_AVAILABLE = '55P03'
 
 // node-postgres reports a pool-connect timeout with one of two messages, depending on whether it was
 // waiting for a free connection or still opening a new one.
@@ -30,18 +27,18 @@ function isPoolTimeout(error: unknown): boolean {
 /**
  * Creates the storage/GC gate on a dedicated connection pool, shared by every process using this
  * database. Deployments share it; garbage collection takes it exclusively, one writer per process at a
- * time so waiting writers hold at most one connection.
- * @param components Environment and logging.
+ * time. Nobody queues inside PostgreSQL: every attempt is a try-lock, retried with backoff, so a writer
+ * that has not acquired the gate never blocks deployments.
+ * @param components Environment, logging and metrics.
  * @param options Bounded wait and pool connection timeout.
  * @returns Lifecycle-managed content locks.
  */
 export function createContentLocks(
-  components: Pick<AppComponents, 'env' | 'logs'>,
+  components: Pick<AppComponents, 'env' | 'logs' | 'metrics'>,
   options: ContentLocksOptions = {}
 ): IContentLocks {
-  const { env, logs } = components
+  const { env, logs, metrics } = components
   const maxWaitMs = options.maxWaitMs ?? ENTITY_LOCK_MAX_WAIT_MS
-  const writerLockTimeoutMs = options.writerLockTimeoutMs ?? WRITER_LOCK_TIMEOUT_MS
   const logger = logs.getLogger('content-locks')
   const pool = new Pool({
     port: env.getConfig<number>(EnvironmentConfig.PSQL_PORT),
@@ -55,8 +52,8 @@ export function createContentLocks(
   })
   pool.on('error', (error) => logger.error(error))
 
-  // One attempt. Only GC queues on the exclusive gate, bounded by lock_timeout; deployments report a GC
-  // batch or a busy entity back instead of waiting, so they never hold a pool connection while waiting.
+  // One attempt. A held gate or busy entity is reported back instead of waited on, so no attempt holds a
+  // pool connection while waiting, and a writer never queues ahead of deployments in PostgreSQL.
   async function attempt<T>(
     exclusive: boolean,
     operation: () => Promise<T>,
@@ -74,23 +71,13 @@ export function createContentLocks(
     }
     let failed = false
     try {
-      if (exclusive) {
-        await client.query(`SET lock_timeout = ${Math.ceil(writerLockTimeoutMs)}`)
-        try {
-          await client.query(SQL`SELECT pg_advisory_lock(hashtextextended(${CONTENT_LOCK_KEY}, 0))`)
-        } catch (error) {
-          if ((error as { code?: string }).code === LOCK_NOT_AVAILABLE) {
-            return { acquired: false }
-          }
-          throw error
-        }
-      } else {
-        const gate = await client.query<{ acquired: boolean }>(
-          SQL`SELECT pg_try_advisory_lock_shared(hashtextextended(${CONTENT_LOCK_KEY}, 0)) AS acquired`
-        )
-        if (!gate.rows[0]?.acquired) {
-          return { acquired: false }
-        }
+      const gate = await client.query<{ acquired: boolean }>(
+        exclusive
+          ? SQL`SELECT pg_try_advisory_lock(hashtextextended(${CONTENT_LOCK_KEY}, 0)) AS acquired`
+          : SQL`SELECT pg_try_advisory_lock_shared(hashtextextended(${CONTENT_LOCK_KEY}, 0)) AS acquired`
+      )
+      if (!gate.rows[0]?.acquired) {
+        return { acquired: false }
       }
       if (entityId) {
         const entityLock = await client.query<{ acquired: boolean }>(
@@ -106,9 +93,6 @@ export function createContentLocks(
       // releases its session locks.
       try {
         await client.query('SELECT pg_advisory_unlock_all()')
-        if (exclusive) {
-          await client.query('RESET lock_timeout')
-        }
       } catch {
         failed = true
       }
@@ -123,16 +107,20 @@ export function createContentLocks(
       if (result.acquired) {
         return result.value
       }
-      const pauseMs = exclusive ? writerLockTimeoutMs : delayMs
-      if (Date.now() + pauseMs > deadline) {
+      if (Date.now() + delayMs > deadline) {
+        if (exclusive) {
+          // Expected under sustained deployments; the periodic caller retries on its next run.
+          metrics.increment('dcl_content_lock_writer_timeouts_total')
+          logger.warn(`Gave up on the exclusive content lock after ${maxWaitMs}ms of in-flight deployments`)
+        }
         throw new EntityLockTimeoutError(entityId)
       }
-      await sleep(pauseMs)
+      await sleep(delayMs)
     }
   }
 
-  // Writers are rare (GC and expired-upload cleanup). Queuing them in-process keeps a waiting writer from
-  // holding more than one connection while it waits behind in-flight deployments.
+  // Writers are rare (GC and expired-upload cleanup). Queuing them in-process keeps one process's writers
+  // from polling the gate at once.
   let writers: Promise<unknown> = Promise.resolve()
   function withWrite<T>(operation: () => Promise<T>): Promise<T> {
     const turn = writers.then(() => run(true, operation))

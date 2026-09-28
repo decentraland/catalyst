@@ -166,7 +166,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   // 4. Database + per-domain repositories
   // ---------------------------------------------------------------------------
   const database = await createDatabaseComponent({ logs, env, metrics })
-  const contentLocks = createContentLocks({ logs, env })
+  const contentLocks = createContentLocks({ logs, env, metrics })
 
   const activeEntitiesRepository = createActiveEntitiesRepository()
   const contentFilesRepository = createContentFilesRepository()

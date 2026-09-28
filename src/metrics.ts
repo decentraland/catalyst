@@ -35,6 +35,12 @@ export const metricsDeclaration = validateMetricsDeclaration({
     labelNames: []
   },
 
+  dcl_content_lock_writer_timeouts_total: {
+    help: 'Garbage collection or cleanup runs deferred because deployments kept the content lock busy',
+    type: 'counter',
+    labelNames: []
+  },
+
   dcl_content_garbage_collection_time: {
     help: 'Histogram of time spent in garbage collection',
     type: 'histogram',
