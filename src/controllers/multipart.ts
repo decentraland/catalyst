@@ -42,7 +42,10 @@ export type MultipartLimits = {
   maxTotalSize?: number
   /** Maximum time, in milliseconds, to receive the whole body. */
   uploadTimeoutMs?: number
-  /** Least body bytes per second, measured over `receiveRateWindowMs`, before the upload is aborted. */
+  /**
+   * Least body bytes per second, measured over `receiveRateWindowMs`, before the upload is aborted. Only
+   * time spent waiting on the client counts, not time the body is held back while the spool catches up.
+   */
   minReceiveRateBytesPerSecond?: number
   /** Sliding window the receive rate is measured over, in milliseconds; the first window is a grace period. */
   receiveRateWindowMs?: number
@@ -55,6 +58,8 @@ export type MultipartOptions = {
   uploadBudget?: IUploadBudget
   /** Opens a temporary file for writing. */
   createWriteStream?: (filePath: string) => Writable
+  /** Most time, in milliseconds, to flush the temporary files once the body is received. */
+  spoolFlushTimeoutMs?: number
 }
 
 // Most framing busboy accepts per part: its 16 KiB header block plus an RFC 2046 boundary line (at most
@@ -77,6 +82,10 @@ const RECEIVE_RATE_SAMPLES_PER_WINDOW = 4
 // Temporary files a request writes at once: busboy moves to the next part while earlier files are
 // still flushing, so without a cap one request could hold a descriptor per part.
 export const MAX_OPEN_SPOOL_FILES = 8
+
+// Once the body is parsed only the last buffered chunks of the open files remain to flush, so this is
+// only reached by a stuck disk; the upload then fails with 503 rather than holding its budget share.
+export const DEFAULT_SPOOL_FLUSH_TIMEOUT_MS = 60_000
 
 export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T extends IHttpServerComponent.IResponse>(
   handler: (ctx: Ctx) => Promise<T>,
@@ -117,9 +126,11 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
   }
 
   // Aborts a body that arrives slower than the minimum rate, so a stalled sender can't hold its upload
-  // slot and disk reservation until the upload timeout.
+  // slot and disk reservation until the upload timeout. The window slides over `waitedMs`, the time spent
+  // waiting on the client, so a spool that backpressures the body never counts against its sender.
   function startReceiveRateCheck(
     receivedBytes: () => number,
+    waitedMs: () => number,
     abort: (error: Error) => void
   ): NodeJS.Timeout | undefined {
     const { minReceiveRateBytesPerSecond: minRate, receiveRateWindowMs: windowMs } = limits
@@ -127,20 +138,24 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       return undefined
     }
     const minWindowBytes = (minRate * windowMs) / 1000
-    const samples = [0]
+    const samples = [{ at: 0, bytes: 0 }]
     return setInterval(() => {
-      samples.push(receivedBytes())
-      if (samples.length <= RECEIVE_RATE_SAMPLES_PER_WINDOW) {
+      const latest = { at: waitedMs(), bytes: receivedBytes() }
+      if (latest.at === samples[samples.length - 1].at) {
         return
       }
-      if (samples[samples.length - 1] - samples[0] < minWindowBytes) {
+      // The window starts at the newest sample at least a window old.
+      while (samples.length > 1 && latest.at - samples[1].at >= windowMs) {
+        samples.shift()
+      }
+      if (latest.at - samples[0].at >= windowMs && latest.bytes - samples[0].bytes < minWindowBytes) {
         abort(
           new RequestTimeoutError(
             `The multipart upload is too slow: under ${minRate} bytes per second over ${windowMs} ms.`
           )
         )
       }
-      samples.shift()
+      samples.push(latest)
     }, windowMs / RECEIVE_RATE_SAMPLES_PER_WINDOW)
   }
 
@@ -367,8 +382,15 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       const source = requestBody ? Readable.fromWeb(requestBody) : Readable.from([])
       // busboy skips preambles, epilogues and unnamed parts without reporting their bytes.
       let bodyBytes = 0
+      // Time spent waiting for the next chunk; time suspended at `yield` is the parser backpressuring.
+      let waitedMs = 0
+      let waitingSince: number | undefined
+      const waited = (): number => waitedMs + (waitingSince === undefined ? 0 : Date.now() - waitingSince)
       const countBody = async function* (chunks: AsyncIterable<Uint8Array>): AsyncGenerator<Uint8Array> {
+        waitingSince = Date.now()
         for await (const chunk of chunks) {
+          waitedMs = waited()
+          waitingSince = undefined
           bodyBytes += chunk.byteLength
           if (maxBodySize !== undefined && bodyBytes > maxBodySize) {
             const error = bodyTooLarge()
@@ -376,22 +398,24 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
             throw error
           }
           yield chunk
+          waitingSince = Date.now()
         }
+        waitedMs = waited()
+        waitingSince = undefined
       }
 
       // `pipeline` tears down *both* streams if either errors: when a limit handler calls `abort()`
       // (destroying the parser) the request body (a web stream) is cancelled and the upload is aborted,
       // and a client that disconnects mid-upload rejects here — instead of leaving the parser and an
       // unsettled promise dangling (a slow resource leak).
+      // The timeout is wall-clock, so it bounds how long a body holds its share whatever slows it.
       const timeout =
         limits.uploadTimeoutMs === undefined
           ? undefined
           : setTimeout(() => abort(new RequestTimeoutError('The multipart upload timed out.')), limits.uploadTimeoutMs)
-      const rateCheck = startReceiveRateCheck(() => bodyBytes, abort)
+      const rateCheck = startReceiveRateCheck(() => bodyBytes, waited, abort)
       try {
         await pipeline(source, countBody, formDataParser)
-        // busboy finishes before the last temporary files are flushed.
-        await Promise.all(writes)
       } catch (error) {
         if (writeError) {
           throw writeError
@@ -413,8 +437,22 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
         clearTimeout(timeout)
         clearInterval(rateCheck)
       }
+      // The body is received: a slow flush is the server's, so it gets its own bound and a retryable 503.
+      const flushTimeout = setTimeout(
+        () => abort(new ServiceUnavailableError('The upload could not be stored in time, please retry shortly.')),
+        options.spoolFlushTimeoutMs ?? DEFAULT_SPOOL_FLUSH_TIMEOUT_MS
+      )
+      try {
+        // busboy finishes before the last temporary files are flushed.
+        await Promise.all(writes)
+      } finally {
+        clearTimeout(flushTimeout)
+      }
       if (writeError) {
         throw writeError
+      }
+      if (abortReason) {
+        throw abortReason
       }
       // The handler runs holding only what the spool uses, not the declared framing.
       const footprint = totalBytes + spooledFiles * SPOOL_FILE_OVERHEAD_BYTES

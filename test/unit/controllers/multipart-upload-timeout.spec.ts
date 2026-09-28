@@ -1,11 +1,11 @@
 import FormData from 'form-data'
-import { mkdtemp, rm } from 'fs/promises'
+import { mkdtemp, readdir, rm } from 'fs/promises'
 import { tmpdir } from 'os'
 import path from 'path'
-import { Readable } from 'stream'
+import { Readable, Writable } from 'stream'
 import { IHttpServerComponent } from '@dcl/core-commons'
-import { multipartParserWrapper } from '../../../src/controllers/multipart'
-import { RequestTimeoutError } from '../../../src/controllers/errors'
+import { MAX_OPEN_SPOOL_FILES, multipartParserWrapper } from '../../../src/controllers/multipart'
+import { RequestTimeoutError, ServiceUnavailableError } from '../../../src/controllers/errors'
 import { IUploadBudget } from '../../../src/adapters/upload-budget'
 
 type Wrapped = (ctx: IHttpServerComponent.DefaultContext<any>) => Promise<IHttpServerComponent.IResponse>
@@ -168,6 +168,123 @@ describe('when parsing a multipart request with a minimum receive rate', () => {
           ({ value }) => !clearIntervalSpy.mock.calls.some(([handle]) => handle === value)
         ).length
       }).toEqual({ status: 200, handled: 1, uncleared: 0 })
+    })
+  })
+})
+
+describe('when parsing a multipart request whose temporary files are slow to write', () => {
+  const WINDOW_MS = 100
+  // 1000 bytes per window.
+  const MIN_RATE = 10_000
+  let handler: jest.Mock
+  let lease: { resize: jest.Mock; release: jest.Mock }
+  let budget: IUploadBudget
+  let form: FormData
+  let tmpFolder: string
+  let finalDelayMs: number | undefined
+
+  beforeEach(async () => {
+    tmpFolder = await mkdtemp(path.join(tmpdir(), 'multipart-'))
+    handler = jest.fn(async (ctx: any) => ({ status: 200, body: Object.keys(ctx.formData.files).length }))
+    lease = { resize: jest.fn().mockReturnValue(true), release: jest.fn() }
+    budget = { acquire: jest.fn().mockReturnValue(lease) } as unknown as IUploadBudget
+    form = new FormData()
+    form.append('entityId', 'an-entity-id')
+  })
+
+  afterEach(async () => {
+    jest.resetAllMocks()
+    await rm(tmpFolder, { recursive: true, force: true })
+  })
+
+  // A slow disk: every temporary file takes `finalDelayMs` to flush and close, or never does when unset.
+  function slowWriteStream(): Writable {
+    return new Writable({
+      write: (_chunk, _encoding, callback) => callback(),
+      final: (callback) => {
+        if (finalDelayMs !== undefined) {
+          setTimeout(callback, finalDelayMs)
+        }
+      }
+    })
+  }
+
+  describe('and the last files are still flushing after the whole body arrived', () => {
+    let response: IHttpServerComponent.IResponse
+
+    beforeEach(async () => {
+      finalDelayMs = 300
+      form.append('file1', Buffer.alloc(6000, 1), { filename: 'file1' })
+      response = await multipartParserWrapper(
+        handler as any,
+        {
+          maxFileSize: 10_000,
+          uploadTimeoutMs: 50,
+          minReceiveRateBytesPerSecond: MIN_RATE,
+          receiveRateWindowMs: WINDOW_MS
+        },
+        { tmpFolder, uploadBudget: budget, createWriteStream: slowWriteStream }
+      )(buildContext(Readable.from(form.getBuffer()), form.getHeaders()))
+    })
+
+    it('should wait for the flush past the upload timeout and the receive-rate window and run the handler', () => {
+      expect({ status: response.status, files: response.body }).toEqual({ status: 200, files: 1 })
+    })
+  })
+
+  describe('and waiting for temporary file slots holds the body back for longer than a receive-rate window', () => {
+    const FILE_COUNT = MAX_OPEN_SPOOL_FILES * 3
+    let response: IHttpServerComponent.IResponse
+
+    beforeEach(async () => {
+      finalDelayMs = 100
+      for (let i = 0; i < FILE_COUNT; i++) {
+        form.append(`file${i}`, Buffer.from(`content ${i}`), { filename: `file${i}` })
+      }
+      response = await multipartParserWrapper(
+        handler as any,
+        {
+          maxFiles: FILE_COUNT,
+          uploadTimeoutMs: 5_000,
+          minReceiveRateBytesPerSecond: MIN_RATE,
+          receiveRateWindowMs: WINDOW_MS
+        },
+        { tmpFolder, uploadBudget: budget, createWriteStream: slowWriteStream }
+      )(buildContext(Readable.from(form.getBuffer()), form.getHeaders()))
+    })
+
+    it('should not count the held-back time against the client and receive every file', () => {
+      expect({ status: response.status, files: response.body }).toEqual({ status: 200, files: FILE_COUNT })
+    })
+  })
+
+  describe('and a temporary file never finishes flushing', () => {
+    let error: unknown
+    let leftovers: string[]
+
+    beforeEach(async () => {
+      finalDelayMs = undefined
+      form.append('file1', Buffer.alloc(100, 1), { filename: 'file1' })
+      error = await multipartParserWrapper(
+        handler as any,
+        { maxFileSize: 1024 },
+        { tmpFolder, uploadBudget: budget, createWriteStream: slowWriteStream, spoolFlushTimeoutMs: 50 }
+      )(buildContext(Readable.from(form.getBuffer()), form.getHeaders())).catch((e) => e)
+      leftovers = await readdir(tmpFolder)
+    })
+
+    it('should fail with a retryable ServiceUnavailableError, skip the handler, release the upload slot and remove the spool', () => {
+      expect({
+        error,
+        handled: handler.mock.calls.length,
+        released: lease.release.mock.calls.length,
+        leftovers
+      }).toEqual({
+        error: new ServiceUnavailableError('The upload could not be stored in time, please retry shortly.'),
+        handled: 0,
+        released: 1,
+        leftovers: []
+      })
     })
   })
 })
