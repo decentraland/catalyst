@@ -107,7 +107,7 @@ export const metricsDeclaration = validateMetricsDeclaration({
   dcl_multipart_upload_rejections_total: {
     help: 'POST /entities uploads shed because an upload budget, or its source share, was full',
     type: 'counter',
-    // budget=(disk|memory|source) reason=(bytes|concurrency|source_bytes|source_concurrency)
+    // budget=(disk|memory|source) reason=(bytes|source_bytes|source_concurrency)
     labelNames: ['budget', 'reason']
   },
   dcl_partial_upload_metadata_checks_total: {

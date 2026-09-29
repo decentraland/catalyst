@@ -7,13 +7,13 @@ import {
   UploadBudgetLease
 } from '../../../src/adapters/upload-budget'
 
-type BudgetConfig = { capacityBytes: number; maxUploads: number; maxRequestBytes: number; maxFiles?: number }
+type BudgetConfig = { capacityBytes: number; minReservationBytes: number; maxRequestBytes: number; maxFiles?: number }
 
-function buildComponents({ capacityBytes, maxUploads, maxRequestBytes, maxFiles = 0 }: BudgetConfig) {
+function buildComponents({ capacityBytes, minReservationBytes, maxRequestBytes, maxFiles = 0 }: BudgetConfig) {
   const values: Partial<Record<EnvironmentConfig, number>> = {
     [EnvironmentConfig.MAX_IN_FLIGHT_UPLOAD_BYTES]: capacityBytes,
     [EnvironmentConfig.MAX_IN_MEMORY_DEPLOYMENT_BYTES]: capacityBytes,
-    [EnvironmentConfig.MAX_CONCURRENT_UPLOADS]: maxUploads,
+    [EnvironmentConfig.MIN_UPLOAD_RESERVATION_BYTES]: minReservationBytes,
     [EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE]: maxRequestBytes,
     [EnvironmentConfig.MAX_UPLOAD_FILE_COUNT]: maxFiles
   }
@@ -38,7 +38,10 @@ describe('when creating the upload budget', () => {
 
     beforeEach(() => {
       creation = () =>
-        createUploadBudget(buildComponents({ capacityBytes: 100, maxUploads: 2, maxRequestBytes: 101 }), 'disk')
+        createUploadBudget(
+          buildComponents({ capacityBytes: 100, minReservationBytes: 30, maxRequestBytes: 101 }),
+          'disk'
+        )
     })
 
     it('should fail at startup naming the settings', () => {
@@ -56,7 +59,7 @@ describe('when creating the upload budget', () => {
         createUploadBudget(
           buildComponents({
             capacityBytes: 100 + 2 * SPOOL_FILE_OVERHEAD_BYTES,
-            maxUploads: 2,
+            minReservationBytes: 30,
             maxRequestBytes: 100,
             maxFiles: 3
           }),
@@ -69,13 +72,29 @@ describe('when creating the upload budget', () => {
     })
   })
 
+  describe('and the disk budget cannot fit a single minimum reservation', () => {
+    let creation: () => IUploadBudget
+
+    beforeEach(() => {
+      creation = () =>
+        createUploadBudget(
+          buildComponents({ capacityBytes: 100, minReservationBytes: 101, maxRequestBytes: 60 }),
+          'disk'
+        )
+    })
+
+    it('should fail at startup naming both settings', () => {
+      expect(creation).toThrow('MAX_IN_FLIGHT_UPLOAD_BYTES (100) must be at least MIN_UPLOAD_RESERVATION_BYTES (101).')
+    })
+  })
+
   describe('and the memory budget fits a maximum-size request with its maximum file count', () => {
     let creation: () => IUploadBudget
 
     beforeEach(() => {
       creation = () =>
         createUploadBudget(
-          buildComponents({ capacityBytes: 100, maxUploads: 2, maxRequestBytes: 100, maxFiles: 3 }),
+          buildComponents({ capacityBytes: 100, minReservationBytes: 30, maxRequestBytes: 100, maxFiles: 3 }),
           'memory'
         )
     })
@@ -90,7 +109,10 @@ describe('when creating the upload budget', () => {
 
     beforeEach(() => {
       creation = () =>
-        createUploadBudget(buildComponents({ capacityBytes: 100, maxUploads: 2, maxRequestBytes: 101 }), 'memory')
+        createUploadBudget(
+          buildComponents({ capacityBytes: 100, minReservationBytes: 30, maxRequestBytes: 101 }),
+          'memory'
+        )
     })
 
     it('should fail at startup naming both settings', () => {
@@ -103,10 +125,13 @@ describe('when acquiring from the upload budget', () => {
   let budget: IUploadBudget
 
   beforeEach(() => {
-    budget = createUploadBudget(buildComponents({ capacityBytes: 100, maxUploads: 2, maxRequestBytes: 100 }), 'disk')
+    budget = createUploadBudget(
+      buildComponents({ capacityBytes: 100, minReservationBytes: 30, maxRequestBytes: 100 }),
+      'disk'
+    )
   })
 
-  describe('and the upload fits the byte and concurrency budgets', () => {
+  describe('and the upload fits the byte budget', () => {
     let lease: UploadBudgetLease
 
     beforeEach(() => {
@@ -118,17 +143,45 @@ describe('when acquiring from the upload budget', () => {
     })
   })
 
-  describe('and every concurrent upload slot is taken', () => {
+  describe('and fewer small uploads are in flight than the budget fits at the minimum reservation', () => {
     let error: unknown
 
     beforeEach(() => {
       budget.acquire(0)
+      budget.acquire(1)
+      error = captureError(() => budget.acquire(0))
+    })
+
+    it('should admit it', () => {
+      expect(error).toBeUndefined()
+    })
+  })
+
+  describe('and as many small uploads are in flight as the budget fits at the minimum reservation', () => {
+    let error: unknown
+
+    beforeEach(() => {
+      budget.acquire(0)
+      budget.acquire(1)
       budget.acquire(0)
       error = captureError(() => budget.acquire(0))
     })
 
-    it('should reject it for concurrency', () => {
-      expect(error).toEqual(new UploadBudgetExceededError('concurrency'))
+    it('should reject it', () => {
+      expect(error).toEqual(new UploadBudgetExceededError())
+    })
+  })
+
+  describe('and an upload larger than the minimum reservation is in flight', () => {
+    let errors: unknown[]
+
+    beforeEach(() => {
+      budget.acquire(70)
+      errors = [captureError(() => budget.acquire(0)), captureError(() => budget.acquire(0))]
+    })
+
+    it('should count its declared size against the budget', () => {
+      expect(errors).toEqual([undefined, new UploadBudgetExceededError()])
     })
   })
 
@@ -140,8 +193,8 @@ describe('when acquiring from the upload budget', () => {
       error = captureError(() => budget.acquire(41))
     })
 
-    it('should reject it for bytes', () => {
-      expect(error).toEqual(new UploadBudgetExceededError('bytes'))
+    it('should reject it', () => {
+      expect(error).toEqual(new UploadBudgetExceededError())
     })
   })
 
@@ -153,7 +206,7 @@ describe('when acquiring from the upload budget', () => {
       error = captureError(() => budget.acquire(100))
     })
 
-    it('should return its bytes and slot to the budget', () => {
+    it('should return its bytes to the budget', () => {
       expect(error).toBeUndefined()
     })
   })
@@ -167,11 +220,12 @@ describe('when acquiring from the upload budget', () => {
       lease.release()
       budget.acquire(0)
       budget.acquire(0)
+      budget.acquire(0)
       error = captureError(() => budget.acquire(0))
     })
 
-    it('should free its slot only once', () => {
-      expect(error).toEqual(new UploadBudgetExceededError('concurrency'))
+    it('should return its bytes only once', () => {
+      expect(error).toEqual(new UploadBudgetExceededError())
     })
   })
 })
@@ -181,7 +235,10 @@ describe('when resizing an upload budget lease', () => {
   let lease: UploadBudgetLease
 
   beforeEach(() => {
-    budget = createUploadBudget(buildComponents({ capacityBytes: 100, maxUploads: 3, maxRequestBytes: 100 }), 'disk')
+    budget = createUploadBudget(
+      buildComponents({ capacityBytes: 100, minReservationBytes: 30, maxRequestBytes: 100 }),
+      'disk'
+    )
     lease = budget.acquire(10)
   })
 
@@ -195,7 +252,7 @@ describe('when resizing an upload budget lease', () => {
     })
 
     it('should grow the reservation', () => {
-      expect({ resized, error }).toEqual({ resized: true, error: new UploadBudgetExceededError('bytes') })
+      expect({ resized, error }).toEqual({ resized: true, error: new UploadBudgetExceededError() })
     })
   })
 
@@ -204,13 +261,29 @@ describe('when resizing an upload budget lease', () => {
     let error: unknown
 
     beforeEach(() => {
-      budget.acquire(50)
-      resized = lease.resize(51)
-      error = captureError(() => budget.acquire(40))
+      budget.acquire(40)
+      resized = lease.resize(61)
+      error = captureError(() => budget.acquire(30))
     })
 
     it('should refuse and keep the previous reservation', () => {
       expect({ resized, error }).toEqual({ resized: false, error: undefined })
+    })
+  })
+
+  describe('and the new size is below the minimum reservation', () => {
+    let resized: boolean
+    let error: unknown
+
+    beforeEach(() => {
+      lease.resize(70)
+      resized = lease.resize(5)
+      budget.acquire(45)
+      error = captureError(() => budget.acquire(0))
+    })
+
+    it('should shrink the reservation only down to the minimum', () => {
+      expect({ resized, error }).toEqual({ resized: true, error: new UploadBudgetExceededError() })
     })
   })
 

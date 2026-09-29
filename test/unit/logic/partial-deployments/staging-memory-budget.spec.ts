@@ -159,7 +159,7 @@ describe('when staging a partial batch', () => {
 
     it('should reject with an UploadBudgetExceededError before parsing it and release the memory share', () => {
       expect({ error, parsed: parse.mock.calls.length, released: lease.release.mock.calls.length }).toEqual({
-        error: new UploadBudgetExceededError('bytes'),
+        error: new UploadBudgetExceededError(),
         parsed: 0,
         released: 1
       })

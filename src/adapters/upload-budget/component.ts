@@ -13,13 +13,14 @@ const CAPACITY_SETTING: Record<UploadBudgetKind, keyof typeof EnvironmentConfig>
 export const SPOOL_FILE_OVERHEAD_BYTES = 16 * 1024
 
 /**
- * Creates a byte and concurrency budget shared by every POST /entities request of this process: `disk`
- * bounds bodies spooled to temporary files, each file charged SPOOL_FILE_OVERHEAD_BYTES on top of its
- * size, and `memory` bounds regular deployments and entity files read into memory.
+ * Creates a byte budget shared by every POST /entities request of this process: `disk` bounds bodies
+ * spooled to temporary files, each file charged SPOOL_FILE_OVERHEAD_BYTES on top of its size and every
+ * lease holding at least MIN_UPLOAD_RESERVATION_BYTES, so it also bounds how many uploads run at once;
+ * `memory` bounds regular deployments and entity files read into memory.
  * @param components Environment and metrics.
  * @param kind Which resource the budget bounds.
  * @returns The upload budget.
- * @throws Error when the byte budget cannot fit a single maximum-size request.
+ * @throws Error when the byte budget cannot fit a single maximum-size request, or one minimum reservation.
  */
 export function createUploadBudget(
   components: Pick<AppComponents, 'env' | 'metrics'>,
@@ -28,7 +29,9 @@ export function createUploadBudget(
   const { env, metrics } = components
   const setting = CAPACITY_SETTING[kind]
   const capacityBytes = env.getConfig<number>(EnvironmentConfig[setting])
-  const maxUploads = env.getConfig<number>(EnvironmentConfig.MAX_CONCURRENT_UPLOADS)
+  // Only request (disk) leases carry per-request overhead; memory leases hold exactly what they read.
+  const minReservationBytes =
+    kind === 'disk' ? env.getConfig<number>(EnvironmentConfig.MIN_UPLOAD_RESERVATION_BYTES) : 0
   const maxTotalSize = env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE)
   if (kind === 'disk') {
     const maxFiles = env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FILE_COUNT)
@@ -42,6 +45,11 @@ export function createUploadBudget(
   } else if (capacityBytes < maxTotalSize) {
     throw new Error(`${setting} (${capacityBytes}) must be at least MAX_UPLOAD_TOTAL_SIZE (${maxTotalSize}).`)
   }
+  if (capacityBytes < minReservationBytes) {
+    throw new Error(
+      `${setting} (${capacityBytes}) must be at least MIN_UPLOAD_RESERVATION_BYTES (${minReservationBytes}).`
+    )
+  }
 
   let reservedBytes = 0
   let activeUploads = 0
@@ -51,17 +59,11 @@ export function createUploadBudget(
     metrics.observe('dcl_multipart_upload_active', { budget: kind }, activeUploads)
   }
 
-  function reject(reason: 'bytes' | 'concurrency'): never {
-    metrics.increment('dcl_multipart_upload_rejections_total', { budget: kind, reason })
-    throw new UploadBudgetExceededError(reason)
-  }
-
-  function acquire(bytes: number): UploadBudgetLease {
-    if (activeUploads >= maxUploads) {
-      reject('concurrency')
-    }
+  function acquire(requestedBytes: number): UploadBudgetLease {
+    const bytes = Math.max(requestedBytes, minReservationBytes)
     if (reservedBytes + bytes > capacityBytes) {
-      reject('bytes')
+      metrics.increment('dcl_multipart_upload_rejections_total', { budget: kind, reason: 'bytes' })
+      throw new UploadBudgetExceededError()
     }
     activeUploads++
     reservedBytes += bytes
@@ -70,10 +72,11 @@ export function createUploadBudget(
     let current = bytes
     let released = false
     return {
-      resize(next: number): boolean {
+      resize(requestedNext: number): boolean {
         if (released) {
           return false
         }
+        const next = Math.max(requestedNext, minReservationBytes)
         if (next > current && reservedBytes + next - current > capacityBytes) {
           metrics.increment('dcl_multipart_upload_rejections_total', { budget: kind, reason: 'bytes' })
           return false

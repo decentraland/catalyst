@@ -81,7 +81,7 @@ async function streamToBufferCapped(
       throw new InvalidPartialDeploymentError([`The stored entity file is too large (over ${maxBytes} bytes).`])
     }
     if (!lease.resize(total)) {
-      throw new UploadBudgetExceededError('bytes')
+      throw new UploadBudgetExceededError()
     }
     chunks.push(chunk)
   }

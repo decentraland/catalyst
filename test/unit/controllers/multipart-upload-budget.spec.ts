@@ -189,7 +189,7 @@ describe('when parsing a multipart request under an upload budget', () => {
 
     beforeEach(async () => {
       budget.acquire.mockImplementationOnce(() => {
-        throw new UploadBudgetExceededError('concurrency')
+        throw new UploadBudgetExceededError()
       })
       error = await wrapped(buildContext(form.getBuffer(), form.getHeaders())).catch((e) => e)
     })
@@ -292,7 +292,7 @@ describe('when parsing multipart requests that together fill the upload budget',
     const headers = { ...form.getHeaders(), 'content-length': String(body.length) }
     const values: Partial<Record<EnvironmentConfig, number>> = {
       [EnvironmentConfig.MAX_IN_FLIGHT_UPLOAD_BYTES]: 2 * (body.length + SPOOL_FILE_OVERHEAD_BYTES),
-      [EnvironmentConfig.MAX_CONCURRENT_UPLOADS]: 2,
+      [EnvironmentConfig.MIN_UPLOAD_RESERVATION_BYTES]: 1,
       [EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE]: body.length,
       [EnvironmentConfig.MAX_UPLOAD_FILE_COUNT]: 1
     }
@@ -344,7 +344,7 @@ describe('when parsing a maximum-size payload under a disk budget of exactly the
     declaredOverCapacity = body.length > capacity
     const values: Partial<Record<EnvironmentConfig, number>> = {
       [EnvironmentConfig.MAX_IN_FLIGHT_UPLOAD_BYTES]: capacity,
-      [EnvironmentConfig.MAX_CONCURRENT_UPLOADS]: 1,
+      [EnvironmentConfig.MIN_UPLOAD_RESERVATION_BYTES]: 1,
       [EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE]: payload,
       [EnvironmentConfig.MAX_UPLOAD_FILE_COUNT]: 1
     }
@@ -396,7 +396,7 @@ describe('when parsing multipart requests whose files together exceed the upload
     capacity = 'an-entity-id'.length + FILE_COUNT * SPOOL_FILE_OVERHEAD_BYTES + body.length
     const values: Partial<Record<EnvironmentConfig, number>> = {
       [EnvironmentConfig.MAX_IN_FLIGHT_UPLOAD_BYTES]: capacity,
-      [EnvironmentConfig.MAX_CONCURRENT_UPLOADS]: 2,
+      [EnvironmentConfig.MIN_UPLOAD_RESERVATION_BYTES]: 1,
       [EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE]: body.length,
       [EnvironmentConfig.MAX_UPLOAD_FILE_COUNT]: FILE_COUNT
     }
@@ -443,5 +443,50 @@ describe('when parsing multipart requests whose files together exceed the upload
 
   it('should return every reservation to the budget once both settle', () => {
     expect(fullCapacityAdmitted).toBe(true)
+  })
+})
+
+describe('when parsing more small multipart requests at once than the upload budget fits at the minimum reservation', () => {
+  let tmpFolder: string
+  let outcomes: Array<number | string>
+
+  beforeEach(async () => {
+    tmpFolder = await mkdtemp(path.join(tmpdir(), 'multipart-'))
+    const form = new FormData()
+    form.append('entityId', 'an-entity-id')
+    form.append('file1', Buffer.alloc(100, 1), { filename: 'file1' })
+    const body = form.getBuffer()
+    const headers = { ...form.getHeaders(), 'content-length': String(body.length) }
+    const minReservationBytes = 64 * 1024
+    const values: Partial<Record<EnvironmentConfig, number>> = {
+      [EnvironmentConfig.MAX_IN_FLIGHT_UPLOAD_BYTES]: 3 * minReservationBytes,
+      [EnvironmentConfig.MIN_UPLOAD_RESERVATION_BYTES]: minReservationBytes,
+      [EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE]: body.length,
+      [EnvironmentConfig.MAX_UPLOAD_FILE_COUNT]: 1
+    }
+    const budget = createUploadBudget(
+      {
+        env: { getConfig: (key: EnvironmentConfig) => values[key] },
+        metrics: { observe: jest.fn(), increment: jest.fn() }
+      } as any,
+      'disk'
+    )
+    const wrapped: Wrapped = multipartParserWrapper(
+      jest.fn().mockResolvedValue({ status: 200, body: {} }) as any,
+      { maxFileSize: 4096, maxFiles: 10, maxTotalSize: body.length },
+      { tmpFolder, uploadBudget: budget }
+    )
+    const responses = await Promise.all(
+      Array.from({ length: 4 }, () => wrapped(buildContext(body, headers)).catch((e) => e))
+    )
+    outcomes = responses.map((response) => (response instanceof Error ? response.name : response.status))
+  })
+
+  afterEach(async () => {
+    await rm(tmpFolder, { recursive: true, force: true })
+  })
+
+  it('should admit as many as the budget fits at the minimum reservation and shed the rest as unavailable', () => {
+    expect(outcomes).toEqual([200, 200, 200, 'ServiceUnavailableError'])
   })
 })

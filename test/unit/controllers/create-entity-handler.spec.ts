@@ -129,7 +129,7 @@ describe('when creating an entity from spooled upload files', () => {
 
     beforeEach(async () => {
       deploymentMemoryBudget.acquire.mockImplementationOnce(() => {
-        throw new UploadBudgetExceededError('bytes')
+        throw new UploadBudgetExceededError()
       })
       error = await createEntity(
         buildContext(files, false, {
@@ -156,7 +156,7 @@ describe('when creating an entity from spooled upload files', () => {
       withRead = jest.fn((operation: () => Promise<unknown>) => operation())
       // The entity file's share fits; the share for every file doesn't.
       deploymentMemoryBudget.acquire.mockReturnValueOnce(lease).mockImplementationOnce(() => {
-        throw new UploadBudgetExceededError('bytes')
+        throw new UploadBudgetExceededError()
       })
       error = await createEntity(
         buildContext(files, false, {
@@ -287,8 +287,7 @@ describe('when creating an entity from spooled upload files', () => {
     beforeEach(async () => {
       const limits: Record<string, number> = {
         [EnvironmentConfig.MAX_IN_MEMORY_DEPLOYMENT_BYTES]: files[0].size + 1,
-        [EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE]: files[0].size + 1,
-        [EnvironmentConfig.MAX_CONCURRENT_UPLOADS]: 10
+        [EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE]: files[0].size + 1
       }
       const budget = createUploadBudget(
         {
@@ -333,7 +332,7 @@ describe('when creating an entity from spooled upload files', () => {
     let unavailable: boolean
 
     beforeEach(async () => {
-      stageDeployment.mockRejectedValueOnce(new UploadBudgetExceededError('bytes'))
+      stageDeployment.mockRejectedValueOnce(new UploadBudgetExceededError())
       error = await createEntity(
         buildContext([files[1]], true, {
           deployer: { deployEntity, getDeployedEntityTimestamp, readDeployment },
@@ -357,7 +356,7 @@ describe('when creating an entity from spooled upload files', () => {
 
     beforeEach(async () => {
       deploymentMemoryBudget.acquire.mockImplementationOnce(() => {
-        throw new UploadBudgetExceededError('bytes')
+        throw new UploadBudgetExceededError()
       })
       error = await createEntity(
         buildContext(files, true, {
