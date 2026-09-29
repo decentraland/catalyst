@@ -101,6 +101,18 @@ export function uploadTimedOutMessage(timeoutMs: number, receivedBytes: number, 
   )
 }
 
+const formatKiBPerSecond = (bytesPerSecond: number): string => String(Number((bytesPerSecond / 1024).toFixed(1)))
+
+/** The 408 message for a body arriving under the minimum rate, with the measured and required rates. */
+export function uploadTooSlowMessage(receivedBytes: number, elapsedMs: number, minBytesPerSecond: number): string {
+  const rate = (receivedBytes * 1000) / elapsedMs
+  return (
+    `The upload was too slow: received ${receivedBytes} bytes in the last ${formatSeconds(elapsedMs)} s ` +
+    `(${formatKiBPerSecond(rate)} KiB/s), below the minimum of ${formatKiBPerSecond(minBytesPerSecond)} KiB/s. ` +
+    'Retry on a faster connection or send smaller batches.'
+  )
+}
+
 export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T extends IHttpServerComponent.IResponse>(
   handler: (ctx: Ctx) => Promise<T>,
   limits: MultipartLimits,
@@ -162,12 +174,10 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       while (samples.length > 1 && latest.at - samples[1].at >= windowMs) {
         samples.shift()
       }
-      if (latest.at - samples[0].at >= windowMs && latest.bytes - samples[0].bytes < minWindowBytes) {
-        abort(
-          new RequestTimeoutError(
-            `The multipart upload is too slow: under ${minRate} bytes per second over ${windowMs} ms.`
-          )
-        )
+      const received = latest.bytes - samples[0].bytes
+      const elapsedMs = latest.at - samples[0].at
+      if (elapsedMs >= windowMs && received < minWindowBytes) {
+        abort(new RequestTimeoutError(uploadTooSlowMessage(received, elapsedMs, minRate)))
       }
       samples.push(latest)
     }, windowMs / RECEIVE_RATE_SAMPLES_PER_WINDOW)

@@ -4,7 +4,7 @@ import { tmpdir } from 'os'
 import path from 'path'
 import { Readable, Writable } from 'stream'
 import { IHttpServerComponent } from '@dcl/core-commons'
-import { MAX_OPEN_SPOOL_FILES, multipartParserWrapper } from '../../../src/controllers/multipart'
+import { MAX_OPEN_SPOOL_FILES, multipartParserWrapper, uploadTooSlowMessage } from '../../../src/controllers/multipart'
 import { RequestTimeoutError, ServiceUnavailableError } from '../../../src/controllers/errors'
 import { IUploadBudget } from '../../../src/adapters/upload-budget'
 
@@ -146,9 +146,12 @@ describe('when parsing a multipart request with a minimum receive rate', () => {
 
     it('should abort with a RequestTimeoutError long before the upload timeout, skip the handler and release the upload slot', () => {
       expect({ error, handled: handler.mock.calls.length, released: lease.release.mock.calls.length }).toEqual({
-        error: new RequestTimeoutError(
-          `The multipart upload is too slow: under ${MIN_RATE} bytes per second over ${WINDOW_MS} ms.`
-        ),
+        error: expect.objectContaining({
+          name: 'RequestTimeoutError',
+          message: expect.stringMatching(
+            /^The upload was too slow: received \d+ bytes in the last [\d.]+ s \([\d.]+ KiB\/s\), below the minimum of 9\.8 KiB\/s\. Retry on a faster connection or send smaller batches\.$/
+          )
+        }),
         handled: 0,
         released: 1
       })
@@ -308,5 +311,20 @@ describe('when parsing a multipart request whose temporary files are slow to wri
         leftovers: []
       })
     })
+  })
+})
+
+describe('when describing an upload that arrived under the minimum receive rate', () => {
+  let message: string
+
+  beforeEach(() => {
+    message = uploadTooSlowMessage(307_200, 10_000, 65_536)
+  })
+
+  it('should give the measured bytes, window and rate against the required rate', () => {
+    expect(message).toBe(
+      'The upload was too slow: received 307200 bytes in the last 10 s (30 KiB/s), below the minimum of 64 KiB/s. ' +
+        'Retry on a faster connection or send smaller batches.'
+    )
   })
 })
