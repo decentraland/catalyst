@@ -79,6 +79,11 @@ export const DEFAULT_POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS = 60
 // they declare a partial batch with `POST /entities?partial=true`.
 export const DEFAULT_POST_ENTITIES_DAILY_QUOTA_MAX = 300
 
+// Catalyst runs behind catalyst-owner's nginx, which forwards the connecting address in `X-Real-IP`
+// (`proxy_set_header X-Real-IP $remote_addr` in local/nginx/include/content_proxy.conf); keyed on the
+// socket address instead, every client would share nginx's address and so one budget.
+export const DEFAULT_TRUSTED_CLIENT_IP_HEADER = 'x-real-ip'
+
 /**
  * Parse a non-negative integer env var, falling back to `defaultValue` when it is unset/empty.
  * Throws on an invalid value (including partial parses like "256MB") rather than letting `parseInt`
@@ -119,17 +124,21 @@ function parsePositiveIntEnv(name: string, defaultValue: number): number {
 }
 
 /**
- * Reads an optional HTTP header name, returning `undefined` when unset/empty so the consumer keeps
- * its own default. Trimmed because a padded header name is not merely unmatched — `Headers.get`
- * rejects it outright.
+ * Reads an HTTP header name, falling back to `defaultValue` when unset and returning `undefined` when
+ * set empty, which opts out. Trimmed because a padded header name is not merely unmatched —
+ * `Headers.get` rejects it outright.
  */
-function parseOptionalHeaderNameEnv(name: string): string | undefined {
-  const trimmed = process.env[name]?.trim()
-  if (trimmed === undefined || trimmed === '') {
+function parseHeaderNameEnv(name: string, defaultValue: string): string | undefined {
+  const raw = process.env[name]
+  if (raw === undefined) {
+    return defaultValue
+  }
+  const trimmed = raw.trim()
+  if (trimmed === '') {
     return undefined
   }
   if (!/^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/.test(trimmed)) {
-    throw new Error(`Invalid ${name}: expected an HTTP header name but got "${process.env[name]}"`)
+    throw new Error(`Invalid ${name}: expected an HTTP header name but got "${raw}"`)
   }
   return trimmed
 }
@@ -779,10 +788,10 @@ export class EnvironmentBuilder {
       parsePositiveIntEnv('POST_ENTITIES_DAILY_QUOTA_MAX', DEFAULT_POST_ENTITIES_DAILY_QUOTA_MAX)
     )
 
-    // Unset is correct for a directly exposed server. Behind a proxy it must name the header that
-    // proxy writes, or every client shares one bucket — see the startup warning in `components.ts`.
+    // Defaults to the `X-Real-IP` catalyst-owner's nginx writes (see DEFAULT_TRUSTED_CLIENT_IP_HEADER).
+    // Set empty only for a directly exposed server, which then keys on the socket address.
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.TRUSTED_CLIENT_IP_HEADER, () =>
-      parseOptionalHeaderNameEnv('TRUSTED_CLIENT_IP_HEADER')
+      parseHeaderNameEnv('TRUSTED_CLIENT_IP_HEADER', DEFAULT_TRUSTED_CLIENT_IP_HEADER)
     )
 
     this.registerConfigIfNotAlreadySet(
