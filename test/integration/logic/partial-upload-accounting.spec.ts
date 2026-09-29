@@ -15,8 +15,8 @@ import { createDefaultServer, resetServer } from '../simpleTestEnvironment'
 import { TestProgram } from '../TestProgram'
 
 const CONTENT_SIZE = 2500
-const TTL_SECONDS = 24 * 60 * 60
-const CLEANUP_INTERVAL_SECONDS = 10 * 60
+const TTL_SECONDS = 60 * 60
+const CLEANUP_INTERVAL_SECONDS = 5 * 60
 
 // Two content files keep an upload incomplete while only the large one is staged.
 async function prepareUpload(identity: IdentityType, label: string): Promise<PreparedDeployment> {
@@ -262,7 +262,7 @@ describe('Integration - Partial upload accounting', () => {
       next = await prepareUpload(identity, 'next')
     })
 
-    describe('and a new upload is staged four minutes after a cleanup run that missed it', () => {
+    describe('and a new upload is staged three minutes after a cleanup run that missed it', () => {
       let response: Response
       let retryAfter: number
 
@@ -270,7 +270,7 @@ describe('Integration - Partial upload accounting', () => {
         jest.spyOn(server.components.pendingDeploymentsRepository, 'listExpired').mockResolvedValueOnce([])
         await server.components.partialDeployments.cleanupExpired()
         const realNow = Date.now.bind(Date)
-        jest.spyOn(Date, 'now').mockImplementation(() => realNow() + 4 * 60 * 1000)
+        jest.spyOn(Date, 'now').mockImplementation(() => realNow() + 3 * 60 * 1000)
         response = await stageLarge(server, next)
         retryAfter = Number(response.headers.get('Retry-After'))
       })
@@ -279,9 +279,9 @@ describe('Integration - Partial upload accounting', () => {
         expect(response.status).toBe(429)
       })
 
-      it('should ask the client to retry at the next cleanup run, about six minutes on', () => {
-        expect(retryAfter).toBeGreaterThan(CLEANUP_INTERVAL_SECONDS - 5 * 60)
-        expect(retryAfter).toBeLessThanOrEqual(CLEANUP_INTERVAL_SECONDS - 4 * 60)
+      it('should ask the client to retry at the next cleanup run, about two minutes on', () => {
+        expect(retryAfter).toBeGreaterThan(CLEANUP_INTERVAL_SECONDS - 4 * 60)
+        expect(retryAfter).toBeLessThanOrEqual(CLEANUP_INTERVAL_SECONDS - 3 * 60)
       })
     })
 

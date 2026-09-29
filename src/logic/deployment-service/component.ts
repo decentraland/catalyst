@@ -362,7 +362,7 @@ export function createDeploymentService(
 
     // The protocol access validation above is historical: it proves ownership at entity.timestamp's
     // block (required for sync/replay). Vanilla deploys bound that staleness to REQUEST_TTL_BACKWARDS
-    // (~minutes), but a scene completing a partial upload may be up to PENDING_DEPLOYMENT_TTL (~24h)
+    // (~minutes), but a scene completing a partial upload may be up to PENDING_DEPLOYMENT_TTL (~1h)
     // old — long enough for the LAND to have been sold mid-upload. When the entity is older than the
     // vanilla bound (i.e. only a partial upload's admission anchor let it through the TTL check above),
     // require access against the CURRENT chain state too, so a seller can't finalize onto land they no

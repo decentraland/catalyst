@@ -591,11 +591,11 @@ export class EnvironmentBuilder {
     // How long a partial (multi-request) deployment may stay pending before it is reclaimed. Anchors
     // both the deployment-TTL check for staged uploads and the expiry job that deletes stale rows.
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PENDING_DEPLOYMENT_TTL, () =>
-      parseMsEnv('PENDING_DEPLOYMENT_TTL', ms('24h'))
+      parseMsEnv('PENDING_DEPLOYMENT_TTL', ms('1h'))
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PENDING_DEPLOYMENTS_CLEANUP_INTERVAL, () =>
       // Expired uploads stay charged against quotas until reclaimed, so reclaim them soon after expiry.
-      parseMsEnv('PENDING_DEPLOYMENTS_CLEANUP_INTERVAL', ms('10m'))
+      parseMsEnv('PENDING_DEPLOYMENTS_CLEANUP_INTERVAL', ms('5m'))
     )
     // Max pending (partial) uploads per deployer, including expired ones awaiting cleanup.
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_PENDING_DEPLOYMENTS_PER_DEPLOYER, () =>
