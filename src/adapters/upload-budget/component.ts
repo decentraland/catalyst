@@ -15,21 +15,27 @@ export function peakUploadBytes(bodyBytes: number, maxFileBytes?: number): numbe
 }
 
 /**
- * Creates the in-flight upload budget shared by every POST /entities request of this process.
+ * Creates the in-flight upload budget shared by every POST /entities request of this process. Every lease
+ * holds at least MIN_UPLOAD_RESERVATION_BYTES, so the byte budget also bounds how many uploads run at once.
  * @param components Environment and metrics.
  * @returns The upload budget.
- * @throws Error when the byte budget cannot fit the peak of a single maximum-size request.
+ * @throws Error when the byte budget cannot fit the peak of a single maximum-size request, or one minimum reservation.
  */
 export function createUploadBudget(components: Pick<AppComponents, 'env' | 'metrics'>): IUploadBudget {
   const { env, metrics } = components
   const capacityBytes = env.getConfig<number>(EnvironmentConfig.MAX_IN_FLIGHT_UPLOAD_BYTES)
-  const maxUploads = env.getConfig<number>(EnvironmentConfig.MAX_CONCURRENT_UPLOADS)
+  const minReservationBytes = env.getConfig<number>(EnvironmentConfig.MIN_UPLOAD_RESERVATION_BYTES)
   const maxRequestBytes = env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE)
   const maxFileBytes = env.getConfig<number | undefined>(EnvironmentConfig.MAX_UPLOAD_FILE_SIZE)
   const maxRequestPeakBytes = peakUploadBytes(maxRequestBytes, maxFileBytes)
   if (capacityBytes < maxRequestPeakBytes) {
     throw new Error(
       `MAX_IN_FLIGHT_UPLOAD_BYTES (${capacityBytes}) must fit one maximum-size upload: MAX_UPLOAD_TOTAL_SIZE plus up to MAX_UPLOAD_FILE_SIZE (${maxRequestPeakBytes}).`
+    )
+  }
+  if (capacityBytes < minReservationBytes) {
+    throw new Error(
+      `MAX_IN_FLIGHT_UPLOAD_BYTES (${capacityBytes}) must be at least MIN_UPLOAD_RESERVATION_BYTES (${minReservationBytes}).`
     )
   }
 
@@ -41,17 +47,11 @@ export function createUploadBudget(components: Pick<AppComponents, 'env' | 'metr
     metrics.observe('dcl_multipart_upload_active', {}, activeUploads)
   }
 
-  function reject(reason: 'bytes' | 'concurrency'): never {
-    metrics.increment('dcl_multipart_upload_rejections_total', { reason })
-    throw new UploadBudgetExceededError(reason)
-  }
-
-  function acquire(bytes: number): UploadBudgetLease {
-    if (activeUploads >= maxUploads) {
-      reject('concurrency')
-    }
+  function acquire(requestedBytes: number): UploadBudgetLease {
+    const bytes = Math.max(requestedBytes, minReservationBytes)
     if (reservedBytes + bytes > capacityBytes) {
-      reject('bytes')
+      metrics.increment('dcl_multipart_upload_rejections_total', { reason: 'bytes' })
+      throw new UploadBudgetExceededError()
     }
     activeUploads++
     reservedBytes += bytes
@@ -60,10 +60,11 @@ export function createUploadBudget(components: Pick<AppComponents, 'env' | 'metr
     let current = bytes
     let released = false
     return {
-      resize(next: number): boolean {
+      resize(requestedNext: number): boolean {
         if (released) {
           return false
         }
+        const next = Math.max(requestedNext, minReservationBytes)
         if (next > current && reservedBytes + next - current > capacityBytes) {
           metrics.increment('dcl_multipart_upload_rejections_total', { reason: 'bytes' })
           return false

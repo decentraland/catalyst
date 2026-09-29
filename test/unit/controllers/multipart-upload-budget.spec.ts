@@ -170,7 +170,7 @@ describe('when parsing a multipart request under an upload budget', () => {
 
     beforeEach(async () => {
       budget.acquire.mockImplementationOnce(() => {
-        throw new UploadBudgetExceededError('concurrency')
+        throw new UploadBudgetExceededError()
       })
       error = await wrapped(buildContext(form.getBuffer(), form.getHeaders())).catch((e) => e)
     })
@@ -338,7 +338,7 @@ describe('when parsing multipart requests that together fill the upload budget',
     const values: Partial<Record<EnvironmentConfig, number>> = {
       // Each request's peak is its body plus a copy of its largest file (bounded by the body).
       [EnvironmentConfig.MAX_IN_FLIGHT_UPLOAD_BYTES]: 2 * (2 * body.length),
-      [EnvironmentConfig.MAX_CONCURRENT_UPLOADS]: 2,
+      [EnvironmentConfig.MIN_UPLOAD_RESERVATION_BYTES]: 2 * body.length,
       [EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE]: body.length,
       [EnvironmentConfig.MAX_UPLOAD_FILE_SIZE]: 4096
     }
@@ -360,5 +360,41 @@ describe('when parsing multipart requests that together fill the upload budget',
 
   it('should complete every admitted request', () => {
     expect(outcomes).toEqual([200, 200])
+  })
+})
+
+describe('when parsing more small multipart requests at once than the upload budget fits at the minimum reservation', () => {
+  let outcomes: Array<number | string>
+
+  beforeEach(async () => {
+    const form = new FormData()
+    form.append('entityId', 'an-entity-id')
+    form.append('file1', Buffer.alloc(100, 1), { filename: 'file1' })
+    const body = form.getBuffer()
+    const headers = { ...form.getHeaders(), 'content-length': String(body.length) }
+    const minReservationBytes = 64 * 1024
+    const values: Partial<Record<EnvironmentConfig, number>> = {
+      [EnvironmentConfig.MAX_IN_FLIGHT_UPLOAD_BYTES]: 3 * minReservationBytes,
+      [EnvironmentConfig.MIN_UPLOAD_RESERVATION_BYTES]: minReservationBytes,
+      [EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE]: body.length,
+      [EnvironmentConfig.MAX_UPLOAD_FILE_SIZE]: 4096
+    }
+    const budget = createUploadBudget({
+      env: { getConfig: (key: EnvironmentConfig) => values[key] },
+      metrics: { observe: jest.fn(), increment: jest.fn() }
+    } as any)
+    const wrapped: Wrapped = multipartParserWrapper(
+      jest.fn().mockResolvedValue({ status: 200, body: {} }) as any,
+      { maxFileSize: 4096, maxFiles: 10, maxTotalSize: body.length },
+      budget
+    )
+    const responses = await Promise.all(
+      Array.from({ length: 4 }, () => wrapped(buildContext(body, headers)).catch((e) => e))
+    )
+    outcomes = responses.map((response) => (response instanceof Error ? response.name : response.status))
+  })
+
+  it('should admit as many as the budget fits at the minimum reservation and shed the rest as unavailable', () => {
+    expect(outcomes).toEqual([200, 200, 200, 'ServiceUnavailableError'])
   })
 })

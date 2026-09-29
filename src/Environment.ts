@@ -50,7 +50,9 @@ export const DEFAULT_MAX_UPLOAD_TOTAL_SIZE = 2 * 1024 * 1024 * 1024 // 2 GiB tot
 // MAX_UPLOAD_FILE_SIZE). Partial batches are exempt from the per-IP daily quota below and are bounded
 // by this budget, its per-source share and their account's byte quotas instead.
 export const DEFAULT_MAX_IN_FLIGHT_UPLOAD_BYTES = 4 * 1024 * 1024 * 1024 // 4 GiB
-export const DEFAULT_MAX_CONCURRENT_UPLOADS = 40
+// Least any POST /entities request reserves from the budget above, covering its per-request overhead
+// (form fields, parser buffers, the socket), so the budget also bounds concurrency: 256 small uploads by default.
+export const DEFAULT_MIN_UPLOAD_RESERVATION_BYTES = 16 * 1024 * 1024 // 16 MiB
 // One client source's share of the budget above, applied before the body is read: a body that never
 // completes is never authenticated or counted, so per-source concurrency is what bounds slow senders.
 // The per-source byte share (MAX_IN_FLIGHT_UPLOAD_BYTES_PER_SOURCE) defaults to MAX_UPLOAD_TOTAL_SIZE.
@@ -356,7 +358,7 @@ export enum EnvironmentConfig {
   MAX_UPLOAD_FIELD_SIZE,
   MAX_UPLOAD_TOTAL_SIZE,
   MAX_IN_FLIGHT_UPLOAD_BYTES,
-  MAX_CONCURRENT_UPLOADS,
+  MIN_UPLOAD_RESERVATION_BYTES,
   MAX_CONCURRENT_UPLOADS_PER_SOURCE,
   MAX_IN_FLIGHT_UPLOAD_BYTES_PER_SOURCE,
   MULTIPART_UPLOAD_TIMEOUT_MS,
@@ -754,8 +756,8 @@ export class EnvironmentBuilder {
       parsePositiveIntEnv('MAX_IN_FLIGHT_UPLOAD_BYTES', DEFAULT_MAX_IN_FLIGHT_UPLOAD_BYTES)
     )
 
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_CONCURRENT_UPLOADS, () =>
-      parsePositiveIntEnv('MAX_CONCURRENT_UPLOADS', DEFAULT_MAX_CONCURRENT_UPLOADS)
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MIN_UPLOAD_RESERVATION_BYTES, () =>
+      parsePositiveIntEnv('MIN_UPLOAD_RESERVATION_BYTES', DEFAULT_MIN_UPLOAD_RESERVATION_BYTES)
     )
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_CONCURRENT_UPLOADS_PER_SOURCE, () =>
