@@ -146,7 +146,7 @@ describe('when parsing a multipart request under an upload budget', () => {
 
     it('should only allocate memory for the bytes received before timing out', () => {
       expect({ error, largestAllocation: Math.max(0, ...allocatedSizes) < 1024 * 1024 }).toEqual({
-        error: new RequestTimeoutError('The multipart upload timed out.'),
+        error: expect.any(RequestTimeoutError),
         largestAllocation: true
       })
     })

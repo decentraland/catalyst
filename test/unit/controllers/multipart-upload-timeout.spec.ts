@@ -45,12 +45,34 @@ describe('when parsing a multipart request with an upload timeout', () => {
       error = await wrapped(buildContext(stalled, form.getHeaders())).catch((e) => e)
     })
 
-    it('should abort with a RequestTimeoutError, skip the handler and release the upload slot', () => {
+    it('should abort with a RequestTimeoutError saying what arrived, skip the handler and release the upload slot', () => {
       expect({ error, handled: handler.mock.calls.length, released: lease.release.mock.calls.length }).toEqual({
-        error: new RequestTimeoutError('The multipart upload timed out.'),
+        error: new RequestTimeoutError(
+          'The upload did not finish within 0.05 s: received 60 bytes. Retry on a faster connection or send smaller batches.'
+        ),
         handled: 0,
         released: 1
       })
+    })
+  })
+
+  describe('and a body declaring its length stops arriving before it is complete', () => {
+    let error: unknown
+
+    beforeEach(async () => {
+      const stalled = new Readable({ read() {} })
+      stalled.push(form.getBuffer().subarray(0, 60))
+      const headers = { ...form.getHeaders(), 'content-length': String(form.getBuffer().length) }
+      error = await wrapped(buildContext(stalled, headers)).catch((e) => e)
+    })
+
+    it('should say how much of the declared body arrived', () => {
+      expect(error).toEqual(
+        new RequestTimeoutError(
+          `The upload did not finish within 0.05 s: received 60 of ${form.getBuffer().length} bytes. ` +
+            'Retry on a faster connection or send smaller batches.'
+        )
+      )
     })
   })
 

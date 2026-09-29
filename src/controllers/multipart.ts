@@ -51,6 +51,20 @@ export function maxMultipartBodySize(limits: MultipartLimits): number | undefine
   return maxTotalSize + (maxFiles + maxFields + 1) * MULTIPART_PART_FRAMING_BYTES
 }
 
+/** Formats milliseconds as seconds for a client-facing message, e.g. 300000 → "300", 50 → "0.05". */
+export function formatSeconds(ms: number): string {
+  return String(Number((ms / 1000).toFixed(3)))
+}
+
+/** The 408 message for a body that did not arrive within `timeoutMs`, with what did arrive. */
+export function uploadTimedOutMessage(timeoutMs: number, receivedBytes: number, declaredBytes?: number): string {
+  const received = declaredBytes === undefined ? `${receivedBytes}` : `${receivedBytes} of ${declaredBytes}`
+  return (
+    `The upload did not finish within ${formatSeconds(timeoutMs)} s: received ${received} bytes. ` +
+    'Retry on a faster connection or send smaller batches.'
+  )
+}
+
 export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T extends IHttpServerComponent.IResponse>(
   handler: (ctx: Ctx) => Promise<T>,
   limits: MultipartLimits = {},
@@ -297,10 +311,24 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
     // (destroying the parser) the request body (a web stream) is cancelled and the upload is aborted,
     // and a client that disconnects mid-upload rejects here — instead of leaving the parser and an
     // unsettled promise dangling (a slow resource leak).
+    const { uploadTimeoutMs } = limits
+    const declaredSize = parseInt(ctx.request.headers.get('content-length') || '', 10)
     const timeout =
-      limits.uploadTimeoutMs === undefined
+      uploadTimeoutMs === undefined
         ? undefined
-        : setTimeout(() => abort(new RequestTimeoutError('The multipart upload timed out.')), limits.uploadTimeoutMs)
+        : setTimeout(
+            () =>
+              abort(
+                new RequestTimeoutError(
+                  uploadTimedOutMessage(
+                    uploadTimeoutMs,
+                    bodyBytes,
+                    Number.isSafeInteger(declaredSize) ? declaredSize : undefined
+                  )
+                )
+              ),
+            uploadTimeoutMs
+          )
     try {
       await pipeline(source, countBody, formDataParser)
     } catch (error) {
