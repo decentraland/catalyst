@@ -2,8 +2,10 @@ import SQL from 'sql-template-strings'
 import { DatabaseClient } from '../../adapters/database'
 import {
   FileReceipt,
+  IncomingBytesWindow,
   InsertPendingDeployment,
   IPendingDeploymentsRepository,
+  OldestUploadScope,
   PendingDeploymentRow,
   ReservationTotals
 } from './types'
@@ -122,8 +124,12 @@ async function getReservationTotals(
   return { account: BigInt(row.account), total: BigInt(row.total), scene: BigInt(row.scene) }
 }
 
-async function addIncomingBytes(database: DatabaseClient, deployerAddress: string, bytes: number): Promise<bigint> {
-  const result = await database.queryWithValues<{ bytes: string }>(
+async function addIncomingBytes(
+  database: DatabaseClient,
+  deployerAddress: string,
+  bytes: number
+): Promise<IncomingBytesWindow> {
+  const result = await database.queryWithValues<{ bytes: string; ends_in_ms: number }>(
     SQL`INSERT INTO partial_upload_rates (deployer_address, window_started, bytes)
         VALUES (${deployerAddress.toLowerCase()}, now(), ${bytes})
         ON CONFLICT (deployer_address) DO UPDATE SET
@@ -131,10 +137,23 @@ async function addIncomingBytes(database: DatabaseClient, deployerAddress: strin
             THEN EXCLUDED.bytes ELSE partial_upload_rates.bytes + EXCLUDED.bytes END,
           window_started = CASE WHEN partial_upload_rates.window_started < now() - interval '1 minute'
             THEN now() ELSE partial_upload_rates.window_started END
-        RETURNING bytes::text AS bytes`,
+        RETURNING bytes::text AS bytes,
+          (EXTRACT(EPOCH FROM window_started + interval '1 minute' - now()) * 1000)::float8 AS ends_in_ms`,
     'pending_deployment_add_incoming_bytes'
   )
-  return BigInt(result.rows[0].bytes)
+  return { bytes: BigInt(result.rows[0].bytes), endsInMs: result.rows[0].ends_in_ms }
+}
+
+async function getOldestCreatedAt(database: DatabaseClient, scope: OldestUploadScope): Promise<number | undefined> {
+  const query = SQL`SELECT (EXTRACT(EPOCH FROM MIN(created_at)) * 1000)::float8 AS oldest FROM pending_deployments WHERE true`
+  if (scope.deployerAddress !== undefined) {
+    query.append(SQL` AND deployer_address = ${scope.deployerAddress.toLowerCase()}`)
+  }
+  const result = await database.queryWithValues<{ oldest: number | null }>(
+    query,
+    'pending_deployment_oldest_created_at'
+  )
+  return result.rows[0].oldest ?? undefined
 }
 
 async function markStored(database: DatabaseClient, entityId: string, hashes: string[]): Promise<void> {
@@ -257,6 +276,7 @@ export function createPendingDeploymentsRepository(): IPendingDeploymentsReposit
     refreshReservedBytes,
     getReservationTotals,
     addIncomingBytes,
+    getOldestCreatedAt,
     markStored,
     markInitializedIfLive,
     markMissing,

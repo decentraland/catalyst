@@ -1,8 +1,8 @@
 /**
  * Thrown by the partial-deployments component when a staging request is rejected. The controller maps
- * it to a response carrying `errors` with `statusCode`: 400 for validation, expiry and quota failures;
- * 429 (with `retryAfterSeconds`) only for the per-pointer deploy rate limiter and in-process pointer
- * conflicts.
+ * it to a response carrying `errors` with `statusCode`: 400 for validation, expiry and permission
+ * failures; 429 (with `retryAfterSeconds`) for the partial-upload quotas, the per-pointer deploy rate
+ * limiter and in-process pointer conflicts.
  */
 export class InvalidPartialDeploymentError extends Error {
   constructor(

@@ -2,7 +2,8 @@ import { Authenticator } from '@dcl/crypto'
 import { Entity, EntityType, IPFSv2 } from '@dcl/schemas'
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { EntityLockTimeoutError } from '../../adapters/content-locks'
-import { FileReceipt, PendingDeploymentRow } from '../../adapters/pending-deployments-repository'
+import { FileReceipt, OldestUploadScope, PendingDeploymentRow } from '../../adapters/pending-deployments-repository'
+import { DatabaseClient } from '../../adapters/database'
 import { EnvironmentConfig } from '../../Environment'
 import { DeploymentContext, isInvalidDeployment } from '../../deployment-types'
 import { AppComponents } from '../../types'
@@ -38,6 +39,30 @@ const MAX_ENTITY_FILE_SIZE_BYTES = 10 * 1024 * 1024 // 10 MB
 // Expired uploads reclaimed per cleanup run, and storage keys per exclusive delete batch.
 const EXPIRED_UPLOADS_PER_CLEANUP = 100
 const CLEANUP_DELETE_BATCH_SIZE = 1000
+
+/**
+ * Seconds a client should wait before retrying a partial-upload quota rejection that only expired-upload
+ * cleanup can resolve (upload count, account or server staged bytes). Expired uploads stay charged until
+ * a cleanup run reclaims them, so this is the next run once the oldest charged upload has expired: the
+ * next run if it already has, else the first run after it expires. Runs are `cleanupIntervalMs` apart,
+ * counted from the last one; before any run, from now. At least 1 s.
+ * @param params Current time, the oldest charged upload's creation (undefined if none), the upload
+ * lifetime, and the cleanup schedule (all epoch ms / ms).
+ * @returns The Retry-After seconds.
+ */
+export function secondsUntilCleanupFreesQuota(params: {
+  now: number
+  oldestCreatedAt: number | undefined
+  ttlMs: number
+  lastCleanupAt: number | undefined
+  cleanupIntervalMs: number
+}): number {
+  const { now, oldestCreatedAt, ttlMs, lastCleanupAt, cleanupIntervalMs } = params
+  const reclaimableAt = oldestCreatedAt === undefined ? now : Math.max(now, oldestCreatedAt + ttlMs)
+  const base = lastCleanupAt ?? now
+  const runs = Math.max(1, Math.ceil((reclaimableAt - base) / cleanupIntervalMs))
+  return Math.max(1, Math.ceil((base + runs * cleanupIntervalMs - now) / 1000))
+}
 
 async function streamToBufferCapped(stream: AsyncIterable<Buffer>, maxBytes: number): Promise<Uint8Array> {
   const chunks: Buffer[] = []
@@ -99,6 +124,9 @@ export function createPartialDeployments(
   const accountBytes = BigInt(env.getConfig<number>(EnvironmentConfig.MAX_PENDING_BYTES_PER_DEPLOYER))
   const globalBytes = BigInt(env.getConfig<number>(EnvironmentConfig.MAX_PENDING_BYTES))
   const bytesPerMinute = BigInt(env.getConfig<number>(EnvironmentConfig.MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE))
+  const cleanupIntervalMs = env.getConfig<number>(EnvironmentConfig.PENDING_DEPLOYMENTS_CLEANUP_INTERVAL)
+  // When the last cleanup run ended, to estimate the next one for Retry-After.
+  let lastCleanupAt: number | undefined
 
   function isLive(row: PendingDeploymentRow): boolean {
     return Date.now() <= row.createdAt.getTime() + pendingDeploymentTtlMs
@@ -127,6 +155,18 @@ export function createPartialDeployments(
       }
       throw error
     }
+  }
+
+  // A 429 for a quota that frees when cleanup reclaims the oldest upload in scope.
+  async function quotaExceeded(db: DatabaseClient, message: string, scope: OldestUploadScope) {
+    const retryAfterSeconds = secondsUntilCleanupFreesQuota({
+      now: Date.now(),
+      oldestCreatedAt: await pendingDeploymentsRepository.getOldestCreatedAt(db, scope),
+      ttlMs: pendingDeploymentTtlMs,
+      lastCleanupAt,
+      cleanupIntervalMs
+    })
+    return new InvalidPartialDeploymentError([message], 429, retryAfterSeconds)
   }
 
   // A resumable answer tells the client to keep uploading, so it is only given while the upload is live.
@@ -268,9 +308,11 @@ export function createPartialDeployments(
         return
       }
       if ((await pendingDeploymentsRepository.countByDeployer(tx, deployerAddress)) >= maxPendingPerDeployer) {
-        throw new InvalidPartialDeploymentError([
-          `Too many partial uploads in progress for this account (max ${maxPendingPerDeployer}). Complete an upload or wait for expired uploads to be cleaned up.`
-        ])
+        throw await quotaExceeded(
+          tx,
+          `Too many partial uploads in progress for this account (max ${maxPendingPerDeployer}). Complete an upload or wait for expired uploads to be cleaned up.`,
+          { deployerAddress }
+        )
       }
       await pendingDeploymentsRepository.insert(tx, {
         entityId: entity.id,
@@ -296,13 +338,20 @@ export function createPartialDeployments(
     }
     // Committed on its own, before admission: the batch was received and processed even if it is then
     // rejected, so repeating rejected batches can't escape the rate limit.
-    const windowBytes = await pendingDeploymentsRepository.addIncomingBytes(
+    const rateWindow = await pendingDeploymentsRepository.addIncomingBytes(
       database,
       upload.deployerAddress,
       incomingBytes
     )
-    if (windowBytes > bytesPerMinute) {
-      throw new InvalidPartialDeploymentError(['Partial upload byte rate exceeded. Retry after one minute.'])
+    if (rateWindow.bytes > bytesPerMinute) {
+      const retryAfterSeconds = Math.max(1, Math.ceil(rateWindow.endsInMs / 1000))
+      throw new InvalidPartialDeploymentError(
+        [
+          `Partial upload byte rate exceeded for this account: ${rateWindow.bytes} bytes in the current one-minute window, max ${bytesPerMinute}. Retry in ${retryAfterSeconds} s.`
+        ],
+        429,
+        retryAfterSeconds
+      )
     }
     await database.transaction(async (tx) => {
       // One short global critical section makes both aggregate budgets atomic; no storage I/O under it.
@@ -313,10 +362,15 @@ export function createPartialDeployments(
       if (totals.scene > maxSceneBytes) {
         throw new InvalidPartialDeploymentError(['Deployment failed: The deployment is too big.'])
       }
-      if (totals.account > accountBytes || totals.total > globalBytes) {
-        throw new InvalidPartialDeploymentError([
-          'Partial upload storage budget exceeded. Complete uploads or wait for cleanup.'
-        ])
+      if (totals.account > accountBytes) {
+        throw await quotaExceeded(
+          tx,
+          `Partial upload storage budget exceeded for this account: ${totals.account} bytes staged with this batch, max ${accountBytes}. Complete uploads or wait for cleanup.`,
+          { deployerAddress: upload.deployerAddress }
+        )
+      }
+      if (totals.total > globalBytes) {
+        throw await quotaExceeded(tx, 'Partial upload storage on this server is full. Retry later.', {})
       }
       metrics.observe('dcl_partial_upload_reserved_bytes', {}, Number(totals.total))
     }, 'tx_reserve_pending_deployment')
@@ -540,6 +594,14 @@ export function createPartialDeployments(
   }
 
   async function cleanupExpired(): Promise<number> {
+    try {
+      return await reclaimExpired()
+    } finally {
+      lastCleanupAt = Date.now()
+    }
+  }
+
+  async function reclaimExpired(): Promise<number> {
     const expired = await pendingDeploymentsRepository.listExpired(
       database,
       pendingDeploymentTtlMs,

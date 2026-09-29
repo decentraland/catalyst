@@ -15,6 +15,8 @@ import { createDefaultServer, resetServer } from '../simpleTestEnvironment'
 import { TestProgram } from '../TestProgram'
 
 const CONTENT_SIZE = 2500
+const TTL_SECONDS = 24 * 60 * 60
+const CLEANUP_INTERVAL_SECONDS = 10 * 60
 
 // Two content files keep an upload incomplete while only the large one is staged.
 async function prepareUpload(identity: IdentityType, label: string): Promise<PreparedDeployment> {
@@ -71,18 +73,29 @@ describe('Integration - Partial upload accounting', () => {
   describe('when one account stages overlapping uploads beyond its byte budget', () => {
     let first: PreparedDeployment
     let second: Response
+    let body: { errors: string[] }
+    let retryAfter: number
 
     beforeEach(async () => {
       first = await prepareUpload(identity, 'first')
       await stageLarge(server, first)
       second = await stageLarge(server, await prepareUpload(identity, 'second'))
+      body = (await second.json()) as { errors: string[] }
+      retryAfter = Number(second.headers.get('Retry-After'))
     })
 
-    it('should reject the upload that exceeds the budget with 400', async () => {
-      expect({ status: second.status, body: await second.json() }).toEqual({
-        status: 400,
-        body: { errors: ['Partial upload storage budget exceeded. Complete uploads or wait for cleanup.'] }
+    it('should reject the upload that exceeds the budget with a 429 naming the staged and allowed bytes', () => {
+      expect({ status: second.status, error: body.errors[0] }).toEqual({
+        status: 429,
+        error: expect.stringMatching(
+          /^Partial upload storage budget exceeded for this account: \d+ bytes staged with this batch, max 4000\. Complete uploads or wait for cleanup\.$/
+        )
       })
+    })
+
+    it('should ask the client to retry once the admitted upload expires and cleanup reclaims it', () => {
+      expect(retryAfter).toBeGreaterThan(TTL_SECONDS - 60)
+      expect(retryAfter).toBeLessThanOrEqual(TTL_SECONDS + CLEANUP_INTERVAL_SECONDS)
     })
 
     it('should keep the admitted upload and discard the rejected one so it holds no upload slot', async () => {
@@ -92,6 +105,48 @@ describe('Integration - Partial upload accounting', () => {
     it('should still charge the rejected batch against the byte rate', async () => {
       const result = await server.components.database.query<{ bytes: string }>('SELECT bytes FROM partial_upload_rates')
       expect(Number(result.rows[0].bytes)).toBeGreaterThanOrEqual(2 * CONTENT_SIZE)
+    })
+  })
+
+  describe('when an account exceeds its byte budget while another account holds an older expired upload', () => {
+    let retryAfter: number
+
+    beforeEach(async () => {
+      const other = await prepareUpload(createIdentity(), 'other')
+      await postForm(server, buildPartialForm(other, [other.entityId]))
+      await expireUploads(server)
+      await stageLarge(server, await prepareUpload(identity, 'first'))
+      const response = await stageLarge(server, await prepareUpload(identity, 'second'))
+      retryAfter = Number(response.headers.get('Retry-After'))
+    })
+
+    it('should time the retry by the oldest upload of the account, not of the other account', () => {
+      expect(retryAfter).toBeGreaterThan(TTL_SECONDS - 60)
+    })
+  })
+
+  describe('when another account stages an upload past the server-wide byte budget', () => {
+    let response: Response
+    let body: unknown
+    let retryAfter: number
+
+    beforeEach(async () => {
+      await stageLarge(server, await prepareUpload(identity, 'first'))
+      response = await stageLarge(server, await prepareUpload(createIdentity(), 'second'))
+      body = await response.json()
+      retryAfter = Number(response.headers.get('Retry-After'))
+    })
+
+    it('should reject it with a 429 saying the server is full', () => {
+      expect({ status: response.status, body }).toEqual({
+        status: 429,
+        body: { errors: ['Partial upload storage on this server is full. Retry later.'] }
+      })
+    })
+
+    it('should ask the client to retry once the first upload expires and cleanup reclaims it', () => {
+      expect(retryAfter).toBeGreaterThan(TTL_SECONDS - 60)
+      expect(retryAfter).toBeLessThanOrEqual(TTL_SECONDS + CLEANUP_INTERVAL_SECONDS)
     })
   })
 
@@ -107,8 +162,39 @@ describe('Integration - Partial upload accounting', () => {
       statuses = responses.map((response) => response.status).sort()
     })
 
-    it('should admit exactly one of them', () => {
-      expect(statuses).toEqual([202, 400])
+    it('should admit exactly one of them and ask the other to retry later', () => {
+      expect(statuses).toEqual([202, 429])
+    })
+  })
+
+  describe('when the account has used up its one-minute byte rate', () => {
+    let response: Response
+    let body: { errors: string[] }
+    let retryAfter: number
+
+    beforeEach(async () => {
+      await stageLarge(server, await prepareUpload(identity, 'first'))
+      await server.components.database.query(
+        `UPDATE partial_upload_rates SET bytes = 100000, window_started = now() - interval '45 seconds'`
+      )
+      response = await stageLarge(server, await prepareUpload(identity, 'second'))
+      body = (await response.json()) as { errors: string[] }
+      retryAfter = Number(response.headers.get('Retry-After'))
+    })
+
+    it('should reject the batch with a 429 naming the window total and the limit', () => {
+      expect({ status: response.status, error: body.errors[0] }).toEqual({
+        status: 429,
+        error: expect.stringMatching(
+          /^Partial upload byte rate exceeded for this account: \d+ bytes in the current one-minute window, max 100000\. Retry in \d+ s\.$/
+        )
+      })
+    })
+
+    it('should ask the client, in the header and the message, to retry when the window ends', () => {
+      expect(retryAfter).toBeGreaterThanOrEqual(10)
+      expect(retryAfter).toBeLessThanOrEqual(15)
+      expect(body.errors[0]).toContain(`Retry in ${retryAfter} s.`)
     })
   })
 
@@ -133,6 +219,8 @@ describe('Integration - Partial upload accounting', () => {
 
   describe('when the account holds its maximum number of uploads and they have expired', () => {
     let response: Response
+    let body: unknown
+    let retryAfter: number
 
     beforeEach(async () => {
       for (const label of ['one', 'two', 'three']) {
@@ -142,10 +230,24 @@ describe('Integration - Partial upload accounting', () => {
       await expireUploads(server)
       const extra = await prepareUpload(identity, 'extra')
       response = await postForm(server, buildPartialForm(extra, [extra.entityId]))
+      body = await response.json()
+      retryAfter = Number(response.headers.get('Retry-After'))
     })
 
-    it('should keep counting the expired uploads until cleanup', () => {
-      expect(response.status).toBe(400)
+    it('should keep counting the expired uploads until cleanup, rejecting with a 429', () => {
+      expect({ status: response.status, body }).toEqual({
+        status: 429,
+        body: {
+          errors: [
+            'Too many partial uploads in progress for this account (max 3). Complete an upload or wait for expired uploads to be cleaned up.'
+          ]
+        }
+      })
+    })
+
+    it('should ask the client to retry after the next cleanup run', () => {
+      expect(retryAfter).toBeGreaterThanOrEqual(1)
+      expect(retryAfter).toBeLessThanOrEqual(CLEANUP_INTERVAL_SECONDS)
     })
   })
 
@@ -160,15 +262,26 @@ describe('Integration - Partial upload accounting', () => {
       next = await prepareUpload(identity, 'next')
     })
 
-    describe('and a new upload is staged before cleanup', () => {
+    describe('and a new upload is staged four minutes after a cleanup run that missed it', () => {
       let response: Response
+      let retryAfter: number
 
       beforeEach(async () => {
+        jest.spyOn(server.components.pendingDeploymentsRepository, 'listExpired').mockResolvedValueOnce([])
+        await server.components.partialDeployments.cleanupExpired()
+        const realNow = Date.now.bind(Date)
+        jest.spyOn(Date, 'now').mockImplementation(() => realNow() + 4 * 60 * 1000)
         response = await stageLarge(server, next)
+        retryAfter = Number(response.headers.get('Retry-After'))
       })
 
-      it('should reject it because the expired bytes stay charged', () => {
-        expect(response.status).toBe(400)
+      it('should reject it with a 429 because the expired bytes stay charged', () => {
+        expect(response.status).toBe(429)
+      })
+
+      it('should ask the client to retry at the next cleanup run, about six minutes on', () => {
+        expect(retryAfter).toBeGreaterThan(CLEANUP_INTERVAL_SECONDS - 5 * 60)
+        expect(retryAfter).toBeLessThanOrEqual(CLEANUP_INTERVAL_SECONDS - 4 * 60)
       })
     })
 
@@ -210,7 +323,7 @@ describe('Integration - Partial upload accounting', () => {
       })
 
       it('should fail the cleanup and keep the expired bytes charged', () => {
-        expect({ cleanupError, status: response.status }).toEqual({ cleanupError: 'storage unavailable', status: 400 })
+        expect({ cleanupError, status: response.status }).toEqual({ cleanupError: 'storage unavailable', status: 429 })
       })
     })
 

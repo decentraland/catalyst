@@ -40,6 +40,19 @@ export interface ReservationTotals {
   scene: bigint
 }
 
+/** The deployer's fixed one-minute byte window after adding a batch to it. */
+export interface IncomingBytesWindow {
+  bytes: bigint
+  /** Milliseconds until the window elapses and the next batch starts a new one, by the database clock. */
+  endsInMs: number
+}
+
+/** Which uploads `getOldestCreatedAt` considers. */
+export interface OldestUploadScope {
+  /** Only this deployer's uploads; every upload on the server otherwise. */
+  deployerAddress?: string
+}
+
 export interface IPendingDeploymentsRepository {
   /** Returns the upload for an entity id, live or expired, or undefined if none exists. */
   getByEntityId(db: DatabaseClient, entityId: string): Promise<PendingDeploymentRow | undefined>
@@ -56,8 +69,10 @@ export interface IPendingDeploymentsRepository {
   /** Refreshes the cached `reserved_bytes` of an upload from its receipts. */
   refreshReservedBytes(db: DatabaseClient, entityId: string): Promise<void>
   getReservationTotals(db: DatabaseClient, entityId: string, deployerAddress: string): Promise<ReservationTotals>
-  /** Adds bytes to the deployer's fixed one-minute window and returns the window total. */
-  addIncomingBytes(db: DatabaseClient, deployerAddress: string, bytes: number): Promise<bigint>
+  /** Adds bytes to the deployer's fixed one-minute window and returns the window total and when it ends. */
+  addIncomingBytes(db: DatabaseClient, deployerAddress: string, bytes: number): Promise<IncomingBytesWindow>
+  /** Creation time (epoch ms) of the oldest upload in scope, expired ones included, or undefined if none. */
+  getOldestCreatedAt(db: DatabaseClient, scope: OldestUploadScope): Promise<number | undefined>
   markStored(db: DatabaseClient, entityId: string, hashes: string[]): Promise<void>
   /** Marks the upload initialized while it is live; false once it has expired or been removed. */
   markInitializedIfLive(db: DatabaseClient, entityId: string, ttlMs: number): Promise<boolean>
