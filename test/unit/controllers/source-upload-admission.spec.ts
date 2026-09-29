@@ -2,18 +2,21 @@
  * @jest-environment ./test/fetch-environment.js
  */
 import { IHttpServerComponent } from '@dcl/core-commons'
-import { SourceUploadLimitExceededError } from '../../../src/adapters/source-upload-limits'
+import { createSourceUploadLimits, SourceUploadLimitExceededError } from '../../../src/adapters/source-upload-limits'
 import { createSourceUploadAdmission } from '../../../src/controllers/source-upload-admission'
-import { EnvironmentConfig } from '../../../src/Environment'
+import { EnvironmentBuilder, EnvironmentConfig } from '../../../src/Environment'
 
 const MAX_REQUEST_BYTES = 1000
 const CLIENT_IP_HEADER = 'x-test-client-ip'
 
-function buildContext(headers: Record<string, string>): IHttpServerComponent.DefaultContext<object> {
+function buildContext(
+  headers: Record<string, string>,
+  remoteAddress = '198.51.100.9'
+): IHttpServerComponent.DefaultContext<object> {
   return {
     request: new Request('http://localhost/entities', { method: 'POST', headers }),
     url: new URL('http://localhost/entities'),
-    remoteAddress: '198.51.100.9'
+    remoteAddress
   } as unknown as IHttpServerComponent.DefaultContext<object>
 }
 
@@ -116,6 +119,62 @@ describe('when admitting a POST /entities body by its source', () => {
         },
         forwarded: 0
       })
+    })
+  })
+})
+
+describe('when admitting POST /entities bodies behind nginx with the default trusted client IP header', () => {
+  const NGINX_ADDRESS = '172.18.0.2'
+  let savedHeader: string | undefined
+  let admission: ReturnType<typeof createSourceUploadAdmission>
+  let holdUpload: () => void
+  let heldUpload: Promise<unknown>
+  let response: IHttpServerComponent.IResponse | unknown
+
+  beforeEach(async () => {
+    savedHeader = process.env.TRUSTED_CLIENT_IP_HEADER
+    delete process.env.TRUSTED_CLIENT_IP_HEADER
+    const env = await new EnvironmentBuilder()
+      .withConfig(EnvironmentConfig.MAX_CONCURRENT_UPLOADS_PER_SOURCE, 1)
+      .withConfig(EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE, MAX_REQUEST_BYTES)
+      .build()
+    const sourceUploadLimits = createSourceUploadLimits({ env, metrics: { increment: jest.fn() } as any })
+    admission = createSourceUploadAdmission({ env, sourceUploadLimits })
+    const held = new Promise((resolve) => (holdUpload = () => resolve({ status: 200 })))
+    heldUpload = admission(buildContext({ 'x-real-ip': '203.0.113.1' }, NGINX_ADDRESS), () => held as any)
+  })
+
+  afterEach(async () => {
+    holdUpload()
+    await heldUpload
+    if (savedHeader === undefined) {
+      delete process.env.TRUSTED_CLIENT_IP_HEADER
+    } else {
+      process.env.TRUSTED_CLIENT_IP_HEADER = savedHeader
+    }
+  })
+
+  describe('and the same client sends another upload', () => {
+    beforeEach(async () => {
+      response = await admission(buildContext({ 'x-real-ip': '203.0.113.1' }, NGINX_ADDRESS), async () => ({
+        status: 200
+      }))
+    })
+
+    it('should limit it by the X-Real-IP address', () => {
+      expect(response).toEqual(expect.objectContaining({ status: 429 }))
+    })
+  })
+
+  describe('and another client sends an upload through the same nginx', () => {
+    beforeEach(async () => {
+      response = await admission(buildContext({ 'x-real-ip': '203.0.113.2' }, NGINX_ADDRESS), async () => ({
+        status: 200
+      }))
+    })
+
+    it('should admit it rather than share the nginx address with the first client', () => {
+      expect(response).toEqual({ status: 200 })
     })
   })
 })

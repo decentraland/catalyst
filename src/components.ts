@@ -561,15 +561,16 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   // Bound POST /entities bodies spooled to disk.
   const uploadBudget = createUploadBudget({ env, metrics }, 'disk')
   // One client source's share of the uploads in flight, taken before the body is read.
-  const sourceUploadLimits = createSourceUploadLimits({ env, logs, metrics })
+  const sourceUploadLimits = createSourceUploadLimits({ env, metrics })
 
   // Warn at startup rather than per request: any client can send a forwarding header, so its
   // presence proves nothing and would let an outsider raise this.
   if (!trustedClientIpHeader) {
     rateLimiterLogger.warn(
-      'TRUSTED_CLIENT_IP_HEADER is unset, so POST /entities is rate limited by socket address. That is ' +
-        'correct only if this process is reached directly; behind a proxy every client shares one budget. ' +
-        'Watch the key_source label on rate_limiter_requests_total to tell which is happening.'
+      'TRUSTED_CLIENT_IP_HEADER is set empty, so POST /entities rate limits and per-source upload limits key ' +
+        'on the socket address. That is correct only if this process is reached directly; behind a proxy ' +
+        'every client shares one budget. Watch the key_source label on rate_limiter_requests_total to tell ' +
+        'which is happening.'
     )
   }
 

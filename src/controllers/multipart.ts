@@ -87,6 +87,20 @@ export const MAX_OPEN_SPOOL_FILES = 8
 // only reached by a stuck disk; the upload then fails with 503 rather than holding its budget share.
 export const DEFAULT_SPOOL_FLUSH_TIMEOUT_MS = 60_000
 
+/** Formats milliseconds as seconds for a client-facing message, e.g. 300000 → "300", 50 → "0.05". */
+export function formatSeconds(ms: number): string {
+  return String(Number((ms / 1000).toFixed(3)))
+}
+
+/** The 408 message for a body that did not arrive within `timeoutMs`, with what did arrive. */
+export function uploadTimedOutMessage(timeoutMs: number, receivedBytes: number, declaredBytes?: number): string {
+  const received = declaredBytes === undefined ? `${receivedBytes}` : `${receivedBytes} of ${declaredBytes}`
+  return (
+    `The upload did not finish within ${formatSeconds(timeoutMs)} s: received ${received} bytes. ` +
+    'Retry on a faster connection or send smaller batches.'
+  )
+}
+
 export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T extends IHttpServerComponent.IResponse>(
   handler: (ctx: Ctx) => Promise<T>,
   limits: MultipartLimits,
@@ -409,10 +423,24 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       // and a client that disconnects mid-upload rejects here — instead of leaving the parser and an
       // unsettled promise dangling (a slow resource leak).
       // The timeout is wall-clock, so it bounds how long a body holds its share whatever slows it.
+      const { uploadTimeoutMs } = limits
+      const declaredSize = parseInt(ctx.request.headers.get('content-length') || '', 10)
       const timeout =
-        limits.uploadTimeoutMs === undefined
+        uploadTimeoutMs === undefined
           ? undefined
-          : setTimeout(() => abort(new RequestTimeoutError('The multipart upload timed out.')), limits.uploadTimeoutMs)
+          : setTimeout(
+              () =>
+                abort(
+                  new RequestTimeoutError(
+                    uploadTimedOutMessage(
+                      uploadTimeoutMs,
+                      bodyBytes,
+                      Number.isSafeInteger(declaredSize) ? declaredSize : undefined
+                    )
+                  )
+                ),
+              uploadTimeoutMs
+            )
       const rateCheck = startReceiveRateCheck(() => bodyBytes, waited, abort)
       try {
         await pipeline(source, countBody, formDataParser)
