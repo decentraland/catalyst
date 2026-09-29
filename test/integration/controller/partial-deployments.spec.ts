@@ -1219,7 +1219,16 @@ describe('Integration - Partial deployments', () => {
     partialDeploymentContract(() => ({
       entityId: deployment.entityId,
       contentHashes: deployment.contentHashes,
-      send: (keys) => postForm(server, buildPartialForm(deployment, keys))
+      send: (keys) => postForm(server, buildPartialForm(deployment, keys)),
+      sendAsAnotherSigner: (keys) => {
+        const other = createIdentity()
+        const authChain = Authenticator.createSimpleAuthChain(
+          deployment.entityId,
+          other.address,
+          Authenticator.createSignature(other, deployment.entityId)
+        )
+        return postForm(server, buildPartialForm({ ...deployment, authChain }, keys))
+      }
     }))
   })
 })

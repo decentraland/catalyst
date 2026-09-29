@@ -6,6 +6,8 @@ export type PartialUploadFixture = {
   entityId: string
   contentHashes: string[]
   send(keys: string[]): Promise<{ status: number; json(): Promise<unknown> }>
+  /** Sends a batch signed by a different valid key, which need not be authorized to deploy the scene. */
+  sendAsAnotherSigner(keys: string[]): Promise<{ status: number; json(): Promise<unknown> }>
 }
 
 /** Registers the common wire contract without depending on Worlds storage or scene lookup APIs. */
@@ -44,6 +46,31 @@ export function partialDeploymentContract(fixture: () => PartialUploadFixture): 
 
       it('should return the same completion body and timestamp', () => {
         expect({ statuses, retryCompletion }).toEqual({ statuses: [200, 200], retryCompletion: firstCompletion })
+      })
+    })
+
+    describe('and the entity is already published', () => {
+      let publication: { creationTimestamp: number }
+      let laterBatches: { status: number; body: unknown }[]
+
+      beforeEach(async () => {
+        publication = (await (await upload.send([upload.entityId, ...upload.contentHashes])).json()) as {
+          creationTimestamp: number
+        }
+        // Any signer's batch, with or without the manifest, gets the live publication.
+        laterBatches = []
+        for (const keys of [[upload.entityId, upload.contentHashes[0]], [upload.contentHashes[0]]]) {
+          const response = await upload.sendAsAnotherSigner(keys)
+          laterBatches.push({ status: response.status, body: await response.json() })
+        }
+      })
+
+      it("should answer every later batch with 200 and the publication's creation timestamp", () => {
+        const expected = {
+          status: 200,
+          body: expect.objectContaining({ creationTimestamp: publication.creationTimestamp })
+        }
+        expect(laterBatches).toEqual([expected, expected])
       })
     })
 
