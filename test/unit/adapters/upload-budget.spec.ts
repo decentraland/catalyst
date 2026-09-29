@@ -230,6 +230,22 @@ describe('when acquiring from the upload budget', () => {
   })
 })
 
+describe('when acquiring from the memory budget', () => {
+  let errors: unknown[]
+
+  beforeEach(() => {
+    const budget = createUploadBudget(
+      buildComponents({ capacityBytes: 100, minReservationBytes: 30, maxRequestBytes: 100 }),
+      'memory'
+    )
+    errors = [0, 0, 0, 0, 100].map((bytes) => captureError(() => budget.acquire(bytes)))
+  })
+
+  it('should reserve exactly the requested bytes, without the minimum reservation', () => {
+    expect(errors).toEqual([undefined, undefined, undefined, undefined, undefined])
+  })
+})
+
 describe('when resizing an upload budget lease', () => {
   let budget: IUploadBudget
   let lease: UploadBudgetLease
