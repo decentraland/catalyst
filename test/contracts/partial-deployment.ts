@@ -74,6 +74,26 @@ export function partialDeploymentContract(fixture: () => PartialUploadFixture): 
       })
     })
 
+    describe('and a batch repeats a content file under the same hash', () => {
+      let rejectedStatus: number
+      let followUp: { status: number; body: unknown }
+
+      beforeEach(async () => {
+        await upload.send([upload.entityId])
+        const [repeated] = upload.contentHashes
+        rejectedStatus = (await upload.send([repeated, repeated, repeated])).status
+        const next = await upload.send([upload.entityId])
+        followUp = { status: next.status, body: await next.json() }
+      })
+
+      it('should reject it with 400 without staging the repeated file', () => {
+        expect({ rejectedStatus, followUp }).toEqual({
+          rejectedStatus: 400,
+          followUp: { status: 202, body: { missing: expect.arrayContaining(upload.contentHashes) } }
+        })
+      })
+    })
+
     describe('and the first request includes all content', () => {
       it('should publish immediately with a creation timestamp', async () => {
         const response = await upload.send([upload.entityId, ...upload.contentHashes])

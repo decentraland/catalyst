@@ -324,7 +324,7 @@ export function createPartialDeployments(
 
   // Creates the upload unless it exists and returns when it was created. One seen earlier in this request
   // must still exist: only cleanup of an expired upload removes it, and re-creating it would restart its
-  // lifetime.
+  // lifetime. A new upload is only inserted while its lifetime, anchored at `requestedAt`, is still running.
   async function createUpload(
     entity: Entity,
     contentHashes: string[],
@@ -358,6 +358,8 @@ export function createPartialDeployments(
           'uploads_per_account'
         )
       }
+      // A delayed first batch (slow parsing, validation or lock waits) may arrive already past its deadline.
+      assertLiveUntil(createdAt + pendingDeploymentTtlMs)
       await pendingDeploymentsRepository.insert(tx, {
         entityId: entity.id,
         entityType: entity.type,
@@ -374,12 +376,15 @@ export function createPartialDeployments(
     entityId: string,
     receipts: FileReceipt[],
     maxSceneBytes: bigint,
-    incomingBytes: number
+    incomingBytes: number,
+    expiresAt: number
   ): Promise<void> {
     const upload = await pendingDeploymentsRepository.getByEntityId(database, entityId)
     if (!upload) {
       throw new InvalidPartialDeploymentError(['Upload no longer exists; resend its manifest.'])
     }
+    // Nothing is charged to an upload past its deadline.
+    assertLiveUntil(expiresAt)
     // Committed on its own, before admission: the batch was received and processed even if it is then
     // rejected, so repeating rejected batches can't escape the rate limit.
     const rateWindow = await pendingDeploymentsRepository.addIncomingBytes(
@@ -401,6 +406,7 @@ export function createPartialDeployments(
     await database.transaction(async (tx) => {
       // One short global critical section makes both aggregate budgets atomic; no storage I/O under it.
       await pendingDeploymentsRepository.acquireBudgetLock(tx)
+      assertLiveUntil(expiresAt)
       await pendingDeploymentsRepository.upsertFileReceipts(tx, entityId, receipts)
       await pendingDeploymentsRepository.refreshReservedBytes(tx, entityId)
       const totals = await pendingDeploymentsRepository.getReservationTotals(tx, entityId, upload.deployerAddress)
@@ -625,8 +631,9 @@ export function createPartialDeployments(
     }
 
     const createdAt = await createUpload(entity, contentHashes, deployerAddress, seen ?? pending, requestedAt)
+    const expiresAt = createdAt + pendingDeploymentTtlMs
     try {
-      await reserve(entityId, Array.from(receipts.values()), maxSceneBytes, incomingBytes)
+      await reserve(entityId, Array.from(receipts.values()), maxSceneBytes, incomingBytes, expiresAt)
     } catch (error) {
       // A first batch that isn't admitted must not keep its new upload holding a slot of the cap.
       if (!pending) await pendingDeploymentsRepository.deleteUnadmitted(database, entityId).catch(() => undefined)
@@ -636,7 +643,6 @@ export function createPartialDeployments(
       metrics.increment('dcl_partial_uploads_started_total')
     }
 
-    const expiresAt = createdAt + pendingDeploymentTtlMs
     await storeUntil(uploadedFiles, expiresAt)
     // A write that outlived the upload is left unrecorded; cleanup reclaims it with the upload's receipts.
     let batches = 0
