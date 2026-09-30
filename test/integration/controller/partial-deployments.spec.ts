@@ -830,6 +830,39 @@ describe('Integration - Partial deployments', () => {
       })
     })
 
+    describe('and it expires while its batch waits for the byte budget', () => {
+      let reservedBefore: string
+      let reservedAfter: string
+
+      async function reservedBytes(): Promise<string> {
+        const result = await server.components.database.query<{ reserved_bytes: string }>(
+          `SELECT reserved_bytes FROM pending_deployments WHERE entity_id = '${deployment.entityId}'`
+        )
+        return result.rows[0].reserved_bytes
+      }
+
+      beforeEach(async () => {
+        reservedBefore = await reservedBytes()
+        const acquireBudgetLock = server.components.pendingDeploymentsRepository.acquireBudgetLock
+        jest
+          .spyOn(server.components.pendingDeploymentsRepository, 'acquireBudgetLock')
+          .mockImplementationOnce(async (...args) => {
+            await acquireBudgetLock(...args)
+            expireFromNowOn()
+          })
+        response = await postForm(server, buildPartialForm(deployment, [deployment.contentHashes[0]]))
+        reservedAfter = await reservedBytes()
+      })
+
+      it('should reject the batch as expired without reserving its bytes', async () => {
+        expect({ status: response.status, body: await response.json(), reservedAfter }).toEqual({
+          status: 400,
+          body: { errors: ['This upload expired. Create a new entity with a fresh timestamp.'] },
+          reservedAfter: reservedBefore
+        })
+      })
+    })
+
     describe('and it expires while its files are being stored', () => {
       let stored: boolean
 
@@ -985,6 +1018,93 @@ describe('Integration - Partial deployments', () => {
           status: 400,
           body: { errors: ['This upload expired. Create a new entity with a fresh timestamp.'] },
           pending: []
+        })
+      })
+    })
+  })
+
+  describe('when the first batch of a new upload reaches its deadline before it is admitted', () => {
+    const PAST_EXPIRY_MS = 25 * 60 * 60 * 1000
+    let deployment: PreparedDeployment
+    let response: Response
+    let body: unknown
+    let pending: string[]
+    let rateWindows: number
+    let realNow: () => number
+
+    function expireFromNowOn(): void {
+      jest.spyOn(Date, 'now').mockImplementation(() => realNow() + PAST_EXPIRY_MS)
+    }
+
+    async function send(): Promise<void> {
+      response = await postForm(
+        server,
+        buildPartialForm(deployment, [deployment.entityId, deployment.contentHashes[0]])
+      )
+      body = await response.json()
+      pending = await pendingEntityIds(server)
+      const rates = await server.components.database.query<{ count: string }>(
+        'SELECT COUNT(*) AS count FROM partial_upload_rates'
+      )
+      rateWindows = parseInt(rates.rows[0].count)
+    }
+
+    beforeEach(async () => {
+      realNow = Date.now.bind(Date)
+      deployment = await prepareSceneDeployment(
+        ['9,6'],
+        {
+          'a.txt': Buffer.from(`late first a ${Date.now()}-${Math.random()}`),
+          'b.txt': Buffer.from(`late first b ${Date.now()}-${Math.random()}`)
+        },
+        identity
+      )
+    })
+
+    describe('and the deadline passes before the upload is created', () => {
+      let insert: jest.SpyInstance
+
+      beforeEach(async () => {
+        insert = jest.spyOn(server.components.pendingDeploymentsRepository, 'insert')
+        const countByDeployer = server.components.pendingDeploymentsRepository.countByDeployer
+        jest
+          .spyOn(server.components.pendingDeploymentsRepository, 'countByDeployer')
+          .mockImplementationOnce(async (...args) => {
+            const count = await countByDeployer(...args)
+            expireFromNowOn()
+            return count
+          })
+        await send()
+      })
+
+      it('should reject it as expired without creating or charging the upload', () => {
+        expect({ status: response.status, body, inserts: insert.mock.calls.length, pending, rateWindows }).toEqual({
+          status: 400,
+          body: { errors: ['This upload expired. Create a new entity with a fresh timestamp.'] },
+          inserts: 0,
+          pending: [],
+          rateWindows: 0
+        })
+      })
+    })
+
+    describe('and the deadline passes right after the upload is created', () => {
+      beforeEach(async () => {
+        const insert = server.components.pendingDeploymentsRepository.insert
+        jest.spyOn(server.components.pendingDeploymentsRepository, 'insert').mockImplementationOnce(async (...args) => {
+          const row = await insert(...args)
+          expireFromNowOn()
+          return row
+        })
+        await send()
+      })
+
+      it('should reject it as expired, dropping the upload without charging its byte rate', () => {
+        expect({ status: response.status, body, pending, rateWindows }).toEqual({
+          status: 400,
+          body: { errors: ['This upload expired. Create a new entity with a fresh timestamp.'] },
+          pending: [],
+          rateWindows: 0
         })
       })
     })
