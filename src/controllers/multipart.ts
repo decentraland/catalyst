@@ -6,7 +6,7 @@ import { mkdir, mkdtemp, rm } from 'fs/promises'
 import path from 'path'
 import { Readable, Writable } from 'stream'
 import { pipeline } from 'stream/promises'
-import { FormDataContext, SpooledFile } from '../types'
+import { AppComponents, FormDataContext, SpooledFile } from '../types'
 import {
   IUploadBudget,
   SPOOL_FILE_OVERHEAD_BYTES,
@@ -53,6 +53,8 @@ export type MultipartOptions = {
   createWriteStream?: (filePath: string) => Writable
   /** Most time, in milliseconds, to flush the temporary files once the body is received. */
   spoolFlushTimeoutMs?: number
+  /** Counts upload timeouts and spool failures. */
+  metrics?: Pick<AppComponents['metrics'], 'increment'>
 }
 
 // Most framing busboy accepts per part: its 16 KiB header block plus an RFC 2046 boundary line (at most
@@ -374,19 +376,20 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       const timeout =
         uploadTimeoutMs === undefined
           ? undefined
-          : setTimeout(
-              () =>
-                abort(
-                  new RequestTimeoutError(
-                    uploadTimedOutMessage(
-                      uploadTimeoutMs,
-                      bodyBytes,
-                      Number.isSafeInteger(declaredSize) ? declaredSize : undefined
-                    )
+          : setTimeout(() => {
+              if (!aborted) {
+                options.metrics?.increment('dcl_multipart_upload_timeouts_total')
+              }
+              abort(
+                new RequestTimeoutError(
+                  uploadTimedOutMessage(
+                    uploadTimeoutMs,
+                    bodyBytes,
+                    Number.isSafeInteger(declaredSize) ? declaredSize : undefined
                   )
-                ),
-              uploadTimeoutMs
-            )
+                )
+              )
+            }, uploadTimeoutMs)
       try {
         await pipeline(source, countBody, formDataParser)
       } catch (error) {

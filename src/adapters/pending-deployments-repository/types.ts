@@ -40,6 +40,16 @@ export interface ReservationTotals {
   scene: bigint
 }
 
+/** Server-wide staging state, expired uploads awaiting cleanup included. */
+export interface StagingTotals {
+  /** Reserved bytes of every upload. */
+  total: number
+  /** Reserved bytes of expired uploads. */
+  expired: number
+  liveUploads: number
+  expiredUploads: number
+}
+
 /** The deployer's fixed one-minute byte window after adding a batch to it. */
 export interface IncomingBytesWindow {
   bytes: bigint
@@ -74,6 +84,8 @@ export interface IPendingDeploymentsRepository {
   /** Creation time (epoch ms) of the oldest upload in scope, expired ones included, or undefined if none. */
   getOldestCreatedAt(db: DatabaseClient, scope: OldestUploadScope): Promise<number | undefined>
   markStored(db: DatabaseClient, entityId: string, hashes: string[]): Promise<void>
+  /** Counts one more stored batch for the upload and returns its total. */
+  countBatch(db: DatabaseClient, entityId: string): Promise<number>
   /** Marks the upload initialized while it is live; false once it has expired or been removed. */
   markInitializedIfLive(db: DatabaseClient, entityId: string, ttlMs: number): Promise<boolean>
   /** Forgets completed writes that a final verification found missing. Reservations stay charged. */
@@ -91,8 +103,8 @@ export interface IPendingDeploymentsRepository {
   deleteExpiredByEntityId(db: DatabaseClient, entityId: string, ttlMs: number): Promise<void>
   /** Drops rate windows that have already elapsed. */
   deleteElapsedRateWindows(db: DatabaseClient): Promise<void>
-  /** Reserved bytes on the server, and the part held by expired uploads awaiting cleanup. */
-  getReservedBytes(db: DatabaseClient, ttlMs: number): Promise<{ total: number; expired: number }>
+  /** Reserved bytes and upload counts on the server, split by expiry. */
+  getStagingTotals(db: DatabaseClient, ttlMs: number): Promise<StagingTotals>
   /**
    * Streams the entity ids and content hashes of every live upload. Used by the garbage-collection
    * bloom sweep so staged content is never reclaimed while its upload is in flight.

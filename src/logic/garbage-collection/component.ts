@@ -259,6 +259,9 @@ export function createGarbageCollectionComponent(
     } catch (error) {
       logger.error(`Failed to perform old profiles cleanup`)
       logger.error(error as Error)
+      if (performGarbageCollection) {
+        components.metrics.increment('dcl_content_garbage_collection_runs_total', { outcome: 'error' })
+      }
       return
     }
 
@@ -277,12 +280,16 @@ export function createGarbageCollectionComponent(
       await components.systemProperties.set(SYSTEM_PROPERTIES.lastGarbageCollectionTime, newTimeOfCollection)
 
       lastTimeOfCollection = newTimeOfCollection
+      components.metrics.increment('dcl_content_garbage_collection_runs_total', { outcome: 'success' })
+      components.metrics.observe('dcl_content_garbage_collection_last_success_timestamp_seconds', {}, Date.now() / 1000)
     } catch (error) {
       // The watermark stays put, so the next sweep re-examines everything this one skipped.
       if (error instanceof EntityLockTimeoutError) {
+        components.metrics.increment('dcl_content_garbage_collection_runs_total', { outcome: 'deferred' })
         logger.warn('Garbage collection deferred to the next sweep: deployments kept the content lock busy')
         return
       }
+      components.metrics.increment('dcl_content_garbage_collection_runs_total', { outcome: 'error' })
       throw error
     } finally {
       endTimer()

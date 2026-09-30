@@ -53,6 +53,7 @@ export function createUploadBudget(
 
   let reservedBytes = 0
   let activeUploads = 0
+  metrics.observe('dcl_multipart_upload_capacity_bytes', { budget: kind }, capacityBytes)
 
   function report(): void {
     metrics.observe('dcl_multipart_upload_reserved_bytes', { budget: kind }, reservedBytes)

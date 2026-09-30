@@ -88,6 +88,23 @@ describe('when creating the upload budget', () => {
     })
   })
 
+  describe.each(['disk', 'memory'] as const)('and the %s budget fits a maximum-size request', (kind) => {
+    let components: ReturnType<typeof buildComponents>
+
+    beforeEach(() => {
+      components = buildComponents({ capacityBytes: 100, minReservationBytes: 30, maxRequestBytes: 60 })
+      createUploadBudget(components, kind)
+    })
+
+    it('should report its capacity labeled with the budget', () => {
+      expect(components.metrics.observe).toHaveBeenCalledWith(
+        'dcl_multipart_upload_capacity_bytes',
+        { budget: kind },
+        100
+      )
+    })
+  })
+
   describe('and the memory budget fits a maximum-size request with its maximum file count', () => {
     let creation: () => IUploadBudget
 

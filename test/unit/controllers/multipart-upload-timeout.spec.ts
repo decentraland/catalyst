@@ -25,9 +25,11 @@ describe('when parsing a multipart request with an upload timeout', () => {
   let form: FormData
   let wrapped: Wrapped
   let tmpFolder: string
+  let increment: jest.Mock
 
   beforeEach(async () => {
     tmpFolder = await mkdtemp(path.join(tmpdir(), 'multipart-'))
+    increment = jest.fn()
     handler = jest.fn().mockResolvedValue({ status: 200, body: {} })
     lease = { resize: jest.fn().mockReturnValue(true), release: jest.fn() }
     const budget = { acquire: jest.fn().mockReturnValue(lease) } as unknown as IUploadBudget
@@ -37,7 +39,7 @@ describe('when parsing a multipart request with an upload timeout', () => {
     wrapped = multipartParserWrapper(
       handler as any,
       { maxFileSize: 1024, uploadTimeoutMs: 50 },
-      { tmpFolder, uploadBudget: budget }
+      { tmpFolder, uploadBudget: budget, metrics: { increment } }
     )
   })
 
@@ -63,6 +65,18 @@ describe('when parsing a multipart request with an upload timeout', () => {
         handled: 0,
         released: 1
       })
+    })
+  })
+
+  describe('and a stalled body times out', () => {
+    beforeEach(async () => {
+      const stalled = new Readable({ read() {} })
+      stalled.push(form.getBuffer().subarray(0, 60))
+      await wrapped(buildContext(stalled, form.getHeaders())).catch(() => undefined)
+    })
+
+    it('should count one upload timeout', () => {
+      expect(increment.mock.calls).toEqual([['dcl_multipart_upload_timeouts_total']])
     })
   })
 
@@ -93,8 +107,12 @@ describe('when parsing a multipart request with an upload timeout', () => {
       response = await wrapped(buildContext(Readable.from(form.getBuffer()), form.getHeaders()))
     })
 
-    it('should run the handler', () => {
-      expect({ status: response.status, handled: handler.mock.calls.length }).toEqual({ status: 200, handled: 1 })
+    it('should run the handler without counting a timeout', () => {
+      expect({ status: response.status, handled: handler.mock.calls.length, timeouts: increment.mock.calls }).toEqual({
+        status: 200,
+        handled: 1,
+        timeouts: []
+      })
     })
   })
 })

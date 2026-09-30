@@ -7,7 +7,8 @@ import {
   IPendingDeploymentsRepository,
   OldestUploadScope,
   PendingDeploymentRow,
-  ReservationTotals
+  ReservationTotals,
+  StagingTotals
 } from './types'
 
 interface PendingDeploymentDbRow {
@@ -163,6 +164,14 @@ async function markStored(database: DatabaseClient, entityId: string, hashes: st
   )
 }
 
+async function countBatch(database: DatabaseClient, entityId: string): Promise<number> {
+  const result = await database.queryWithValues<{ batches: number }>(
+    SQL`UPDATE pending_deployments SET batches = batches + 1 WHERE entity_id = ${entityId} RETURNING batches`,
+    'pending_deployment_count_batch'
+  )
+  return result.rows[0]?.batches ?? 0
+}
+
 async function markInitializedIfLive(database: DatabaseClient, entityId: string, ttlMs: number): Promise<boolean> {
   const result = await database.queryWithValues(
     SQL`UPDATE pending_deployments SET initialized = true WHERE entity_id = ${entityId} AND created_at >= `.append(
@@ -235,15 +244,37 @@ async function deleteElapsedRateWindows(database: DatabaseClient): Promise<void>
   )
 }
 
-async function getReservedBytes(database: DatabaseClient, ttlMs: number): Promise<{ total: number; expired: number }> {
-  const result = await database.queryWithValues<{ total: string; expired: string }>(
+async function getStagingTotals(database: DatabaseClient, ttlMs: number): Promise<StagingTotals> {
+  const expired = cutoff(ttlMs)
+  const result = await database.queryWithValues<{
+    total: string
+    expired: string
+    live_uploads: string
+    expired_uploads: string
+  }>(
     SQL`SELECT COALESCE(SUM(reserved_bytes), 0)::text AS total,
           COALESCE(SUM(reserved_bytes) FILTER (WHERE created_at < `
-      .append(cutoff(ttlMs))
-      .append(SQL`), 0)::text AS expired FROM pending_deployments`),
-    'pending_deployment_reserved_bytes'
+      .append(expired)
+      .append(
+        SQL`), 0)::text AS expired,
+          COUNT(*) FILTER (WHERE created_at >= `
+      )
+      .append(expired)
+      .append(
+        SQL`)::text AS live_uploads,
+          COUNT(*) FILTER (WHERE created_at < `
+      )
+      .append(expired)
+      .append(SQL`)::text AS expired_uploads FROM pending_deployments`),
+    'pending_deployment_staging_totals'
   )
-  return { total: Number(result.rows[0].total), expired: Number(result.rows[0].expired) }
+  const row = result.rows[0]
+  return {
+    total: Number(row.total),
+    expired: Number(row.expired),
+    liveUploads: Number(row.live_uploads),
+    expiredUploads: Number(row.expired_uploads)
+  }
 }
 
 async function* streamAllNonExpiredHashes(
@@ -278,6 +309,7 @@ export function createPendingDeploymentsRepository(): IPendingDeploymentsReposit
     addIncomingBytes,
     getOldestCreatedAt,
     markStored,
+    countBatch,
     markInitializedIfLive,
     markMissing,
     getStoredFiles,
@@ -287,7 +319,7 @@ export function createPendingDeploymentsRepository(): IPendingDeploymentsReposit
     listExpired,
     deleteExpiredByEntityId,
     deleteElapsedRateWindows,
-    getReservedBytes,
+    getStagingTotals,
     streamAllNonExpiredHashes
   }
 }
