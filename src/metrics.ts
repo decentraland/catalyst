@@ -168,6 +168,17 @@ export const metricsDeclaration = validateMetricsDeclaration({
     // budget=(disk|memory)
     labelNames: ['budget']
   },
+  dcl_upload_spool_failures_total: {
+    help: 'POST /entities disk spool failures',
+    type: 'counter',
+    // reason=(write_error|flush_timeout|cleanup)
+    labelNames: ['reason']
+  },
+  dcl_upload_spool_reclaimed_folders_total: {
+    help: 'Spool folders of exited processes reclaimed at startup',
+    type: 'counter',
+    labelNames: []
+  },
   dcl_multipart_upload_timeouts_total: {
     help: 'POST /entities bodies that did not arrive within MULTIPART_UPLOAD_TIMEOUT_MS (408)',
     type: 'counter',

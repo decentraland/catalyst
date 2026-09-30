@@ -1,8 +1,8 @@
 import FormData from 'form-data'
-import { access, mkdtemp, readdir, readFile, rm } from 'fs/promises'
+import { access, chmod, mkdtemp, readdir, readFile, rm } from 'fs/promises'
 import { tmpdir } from 'os'
 import path from 'path'
-import { Readable } from 'stream'
+import { Readable, Writable } from 'stream'
 import { IHttpServerComponent } from '@dcl/core-commons'
 import { multipartParserWrapper } from '../../../src/controllers/multipart'
 
@@ -83,6 +83,74 @@ describe('when a multipart request spools its files to disk', () => {
 
     it('should still remove the temporary files', () => {
       expect({ error, leftovers }).toEqual({ error: new Error('handler failed'), leftovers: [] })
+    })
+  })
+})
+
+describe('when spooling a multipart request fails', () => {
+  let tmpFolder: string
+  let form: FormData
+  let handler: jest.Mock
+  let increment: jest.Mock
+
+  beforeEach(async () => {
+    tmpFolder = await mkdtemp(path.join(tmpdir(), 'multipart-'))
+    form = new FormData()
+    form.append('entityId', 'an-entity-id')
+    form.append('file1', Buffer.from('spooled content'), { filename: 'file1' })
+    handler = jest.fn().mockResolvedValue({ status: 200, body: {} })
+    increment = jest.fn()
+  })
+
+  afterEach(async () => {
+    jest.resetAllMocks()
+    await chmod(tmpFolder, 0o755)
+    await rm(tmpFolder, { recursive: true, force: true })
+  })
+
+  describe('and writing a temporary file fails', () => {
+    let error: unknown
+
+    beforeEach(async () => {
+      const failingWriteStream = (): Writable =>
+        new Writable({ write: (_chunk, _encoding, callback) => callback(new Error('ENOSPC: no space left')) })
+      error = await multipartParserWrapper(
+        handler as any,
+        { maxFileSize: 1024 },
+        { tmpFolder, createWriteStream: failingWriteStream, metrics: { increment } }
+      )(buildContext(form)).catch((e) => e)
+    })
+
+    it('should fail with the write error without running the handler and count one spool write error', () => {
+      expect({ error, handled: handler.mock.calls.length, metrics: increment.mock.calls }).toEqual({
+        error: new Error('ENOSPC: no space left'),
+        handled: 0,
+        metrics: [['dcl_upload_spool_failures_total', { reason: 'write_error' }]]
+      })
+    })
+  })
+
+  describe('and removing its spool folder fails', () => {
+    let response: IHttpServerComponent.IResponse
+
+    beforeEach(async () => {
+      // A read-only parent keeps the request's spool folder from being removed.
+      handler.mockImplementationOnce(async () => {
+        await chmod(tmpFolder, 0o555)
+        return { status: 200, body: {} }
+      })
+      response = await multipartParserWrapper(
+        handler as any,
+        { maxFileSize: 1024 },
+        { tmpFolder, metrics: { increment } }
+      )(buildContext(form))
+    })
+
+    it('should still answer the handler response and count one spool cleanup failure', () => {
+      expect({ status: response.status, metrics: increment.mock.calls }).toEqual({
+        status: 200,
+        metrics: [['dcl_upload_spool_failures_total', { reason: 'cleanup' }]]
+      })
     })
   })
 })

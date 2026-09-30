@@ -304,6 +304,9 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
                 }
               })
               writer.on('error', function (error: Error) {
+                if (!writeError) {
+                  options.metrics?.increment('dcl_upload_spool_failures_total', { reason: 'write_error' })
+                }
                 writeError = writeError ?? error
                 abort(error)
               })
@@ -413,10 +416,12 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
         clearTimeout(timeout)
       }
       // The body is received: a slow flush is the server's, so it gets its own bound and a retryable 503.
-      const flushTimeout = setTimeout(
-        () => abort(new ServiceUnavailableError('The upload could not be stored in time, please retry shortly.')),
-        options.spoolFlushTimeoutMs ?? DEFAULT_SPOOL_FLUSH_TIMEOUT_MS
-      )
+      const flushTimeout = setTimeout(() => {
+        if (!aborted) {
+          options.metrics?.increment('dcl_upload_spool_failures_total', { reason: 'flush_timeout' })
+        }
+        abort(new ServiceUnavailableError('The upload could not be stored in time, please retry shortly.'))
+      }, options.spoolFlushTimeoutMs ?? DEFAULT_SPOOL_FLUSH_TIMEOUT_MS)
       try {
         // busboy finishes before the last temporary files are flushed.
         await Promise.all(writes)
@@ -442,7 +447,10 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
         writer.destroy()
       }
       await Promise.allSettled(writes)
-      await rm(directory, { recursive: true, force: true }).catch(() => undefined)
+      // A folder left behind is not charged to the disk budget until its process restarts.
+      await rm(directory, { recursive: true, force: true }).catch(() =>
+        options.metrics?.increment('dcl_upload_spool_failures_total', { reason: 'cleanup' })
+      )
     }
   }
 }

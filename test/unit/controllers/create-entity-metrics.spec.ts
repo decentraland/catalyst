@@ -2,6 +2,7 @@ import { Authenticator } from '@dcl/crypto'
 import { createEntity } from '../../../src/controllers/handlers/create-entity-handler'
 import { EntityLockTimeoutError } from '../../../src/adapters/content-locks'
 import { InvalidPartialDeploymentError } from '../../../src/logic/partial-deployments'
+import { UploadBudgetExceededError } from '../../../src/adapters/upload-budget'
 
 type Context = Parameters<typeof createEntity>[0]
 
@@ -94,6 +95,22 @@ describe('when a partial batch is rejected', () => {
 
     beforeEach(async () => {
       stageDeployment.mockRejectedValueOnce(new EntityLockTimeoutError(ENTITY_ID))
+      error = await createEntity(buildContext(stageDeployment, increment)).catch((e) => e)
+    })
+
+    it('should fail with a 503 error and count the batch as busy', () => {
+      expect({ error: (error as Error).name, metrics: increment.mock.calls }).toEqual({
+        error: 'ServiceUnavailableError',
+        metrics: [['dcl_partial_deployments_staging_total', { kind: 'busy' }]]
+      })
+    })
+  })
+
+  describe('and the memory budget cannot fit its entity file', () => {
+    let error: unknown
+
+    beforeEach(async () => {
+      stageDeployment.mockRejectedValueOnce(new UploadBudgetExceededError())
       error = await createEntity(buildContext(stageDeployment, increment)).catch((e) => e)
     })
 

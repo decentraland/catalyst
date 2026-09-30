@@ -30,12 +30,12 @@ type OwnerState = 'alive' | 'dead' | 'missing'
  * must be node-local: never a folder shared with other hosts, such as the content storage.
  * Only root entries positively identified as process folders (real directory, generated name, marker file)
  * are ever reclaimed, so anything else in the root is left untouched.
- * @param components Reads UPLOAD_SPOOL_FOLDER from `env`.
+ * @param components Reads UPLOAD_SPOOL_FOLDER from `env`; counts reclaimed folders in `metrics`.
  * @returns The lifecycle-managed spool; its folder stays owned until stop, or exit if spools remain.
  * @throws UploadSpoolFolderTooLongError when the folder path can't hold the owner socket.
  */
-export async function createUploadSpool(components: Pick<AppComponents, 'env'>): Promise<IUploadSpool> {
-  const { env } = components
+export async function createUploadSpool(components: Pick<AppComponents, 'env' | 'metrics'>): Promise<IUploadSpool> {
+  const { env, metrics } = components
   const root = path.resolve(env.getConfig<string>(EnvironmentConfig.UPLOAD_SPOOL_FOLDER))
   const folder = path.join(root, randomBytes(8).toString('hex'))
   const socketPath = path.join(folder, OWNER_SOCKET)
@@ -46,7 +46,9 @@ export async function createUploadSpool(components: Pick<AppComponents, 'env'>):
   await mkdir(root, { recursive: true })
   for (const entry of await readdir(root)) {
     if (PROCESS_FOLDER_NAME.test(entry) && (await isProcessFolder(path.join(root, entry)))) {
-      await reclaimIfAbandoned(path.join(root, entry))
+      if (await reclaimIfAbandoned(path.join(root, entry))) {
+        metrics.increment('dcl_upload_spool_reclaimed_folders_total')
+      }
     }
   }
   await mkdir(folder)
@@ -85,18 +87,19 @@ async function isProcessFolder(entryPath: string): Promise<boolean> {
 }
 
 // Reclaims a folder whose owner socket refuses connections, or that got no socket within the startup grace.
-async function reclaimIfAbandoned(entryPath: string): Promise<void> {
+async function reclaimIfAbandoned(entryPath: string): Promise<boolean> {
   const state = await probeOwner(path.join(entryPath, OWNER_SOCKET))
   if (state === 'alive') {
-    return
+    return false
   }
   if (state === 'missing') {
     const entry = await lstat(entryPath).catch(() => undefined)
     if (!entry || entry.mtimeMs >= Date.now() - SPOOL_STARTUP_GRACE_MS) {
-      return
+      return false
     }
   }
   await rm(entryPath, { recursive: true, force: true })
+  return true
 }
 
 // Anything but a refused or missing socket counts as alive, so an unexpected error never deletes.

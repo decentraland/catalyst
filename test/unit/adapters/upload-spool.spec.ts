@@ -19,6 +19,10 @@ function envWithSpoolFolder(root: string): Environment {
   return env
 }
 
+function spoolComponents(env: Environment, increment: jest.Mock = jest.fn()) {
+  return { env, metrics: { increment } } as unknown as Parameters<typeof createUploadSpool>[0]
+}
+
 async function makeProcessFolder(root: string, name: string, folderTime?: Date): Promise<string> {
   const folder = path.join(root, name)
   await mkdir(path.join(folder, 'upload-1'), { recursive: true })
@@ -61,6 +65,7 @@ describe('when creating the upload spool', () => {
   let remaining: string[]
   let ownSocket: boolean
   let ownMarker: boolean
+  let increment: jest.Mock
 
   beforeEach(async () => {
     root = await mkdtemp(path.join(tmpdir(), 'upload-spool-'))
@@ -68,7 +73,8 @@ describe('when creating the upload spool', () => {
     await kill(await listenAsOwnerOf(crashed))
     await makeProcessFolder(root, STARTING_WITHOUT_SOCKET)
     await makeProcessFolder(root, CRASHED_BEFORE_LISTENING, DAY_AGO)
-    spool = await createUploadSpool({ env: envWithSpoolFolder(root) })
+    increment = jest.fn()
+    spool = await createUploadSpool(spoolComponents(envWithSpoolFolder(root), increment))
     remaining = (await readdir(root)).sort()
     ownSocket = await exists(path.join(spool.folder, '.owner'))
     ownMarker = await exists(path.join(spool.folder, SPOOL_MARKER))
@@ -85,6 +91,12 @@ describe('when creating the upload spool', () => {
       ownSocket: true,
       ownMarker: true
     })
+  })
+  it('should count each reclaimed folder', () => {
+    expect(increment.mock.calls).toEqual([
+      ['dcl_upload_spool_reclaimed_folders_total'],
+      ['dcl_upload_spool_reclaimed_folders_total']
+    ])
   })
 })
 
@@ -118,7 +130,7 @@ describe('when the spool root holds entries this component did not create', () =
     await symlink(target, path.join(root, '00000000000000d2'))
     const crashed = await makeProcessFolder(root, CRASHED_OWNER)
     await kill(await listenAsOwnerOf(crashed))
-    spool = await createUploadSpool({ env: envWithSpoolFolder(root) })
+    spool = await createUploadSpool(spoolComponents(envWithSpoolFolder(root)))
     unrelatedFileKept = await exists(path.join(root, 'unrelated.log'))
     unmarkedFolderKept = await exists(path.join(unmarked, 'data'))
     otherNamedFolderKept = await exists(path.join(otherNamed, 'upload-1'))
@@ -167,7 +179,7 @@ describe('when a process of the same host is stalled while another process start
     stalledOwner = await listenAsOwnerOf(folder)
     stalledOwner.kill('SIGSTOP')
     await utimes(folder, DAY_AGO, DAY_AGO)
-    other = await createUploadSpool({ env: envWithSpoolFolder(root) })
+    other = await createUploadSpool(spoolComponents(envWithSpoolFolder(root)))
     spoolFileKept = await exists(path.join(folder, 'upload-1'))
   })
 
@@ -196,7 +208,7 @@ describe('when another host owns a live spool in the shared content storage', ()
     await kill(await listenAsOwnerOf(remoteFolder))
     await utimes(remoteFolder, DAY_AGO, DAY_AGO)
     const env = await new EnvironmentBuilder().withConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, storageRoot).build()
-    spool = await createUploadSpool({ env })
+    spool = await createUploadSpool(spoolComponents(env))
     remoteSpoolKept = await exists(path.join(remoteFolder, 'upload-1'))
     spoolInStorage = !path.relative(storageRoot, spool.folder).startsWith('..')
   })
@@ -217,7 +229,7 @@ describe('when the upload spool stops', () => {
 
   beforeEach(async () => {
     root = await mkdtemp(path.join(tmpdir(), 'upload-spool-'))
-    spool = await createUploadSpool({ env: envWithSpoolFolder(root) })
+    spool = await createUploadSpool(spoolComponents(envWithSpoolFolder(root)))
   })
 
   afterEach(async () => {
@@ -245,7 +257,7 @@ describe('when the upload spool stops', () => {
       await mkdir(path.join(spool.folder, 'upload-in-flight'))
       await spool[STOP_COMPONENT]?.()
       await utimes(spool.folder, DAY_AGO, DAY_AGO)
-      other = await createUploadSpool({ env: envWithSpoolFolder(root) })
+      other = await createUploadSpool(spoolComponents(envWithSpoolFolder(root)))
       folderKept = await exists(path.join(spool.folder, 'upload-in-flight'))
     })
 
@@ -265,7 +277,7 @@ describe('when the spool folder is too long to hold the owner socket', () => {
 
   beforeEach(async () => {
     root = await mkdtemp(path.join(tmpdir(), 'upload-spool-'))
-    creation = createUploadSpool({ env: envWithSpoolFolder(path.join(root, 'a'.repeat(100))) })
+    creation = createUploadSpool(spoolComponents(envWithSpoolFolder(path.join(root, 'a'.repeat(100)))))
     await creation.catch(() => undefined)
   })
 

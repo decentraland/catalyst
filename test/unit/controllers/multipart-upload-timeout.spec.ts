@@ -124,9 +124,11 @@ describe('when parsing a multipart request whose temporary files are slow to wri
   let form: FormData
   let tmpFolder: string
   let finalDelayMs: number | undefined
+  let increment: jest.Mock
 
   beforeEach(async () => {
     tmpFolder = await mkdtemp(path.join(tmpdir(), 'multipart-'))
+    increment = jest.fn()
     handler = jest.fn(async (ctx: any) => ({ status: 200, body: Object.keys(ctx.formData.files).length }))
     lease = { resize: jest.fn().mockReturnValue(true), release: jest.fn() }
     budget = { acquire: jest.fn().mockReturnValue(lease) } as unknown as IUploadBudget
@@ -160,12 +162,16 @@ describe('when parsing a multipart request whose temporary files are slow to wri
       response = await multipartParserWrapper(
         handler as any,
         { maxFileSize: 10_000, uploadTimeoutMs: 50 },
-        { tmpFolder, uploadBudget: budget, createWriteStream: slowWriteStream }
+        { tmpFolder, uploadBudget: budget, createWriteStream: slowWriteStream, metrics: { increment } }
       )(buildContext(Readable.from(form.getBuffer()), form.getHeaders()))
     })
 
-    it('should wait for the flush past the upload timeout and run the handler', () => {
-      expect({ status: response.status, files: response.body }).toEqual({ status: 200, files: 1 })
+    it('should wait for the flush past the upload timeout and run the handler without counting a failure', () => {
+      expect({ status: response.status, files: response.body, metrics: increment.mock.calls }).toEqual({
+        status: 200,
+        files: 1,
+        metrics: []
+      })
     })
   })
 
@@ -179,7 +185,13 @@ describe('when parsing a multipart request whose temporary files are slow to wri
       error = await multipartParserWrapper(
         handler as any,
         { maxFileSize: 1024 },
-        { tmpFolder, uploadBudget: budget, createWriteStream: slowWriteStream, spoolFlushTimeoutMs: 50 }
+        {
+          tmpFolder,
+          uploadBudget: budget,
+          createWriteStream: slowWriteStream,
+          spoolFlushTimeoutMs: 50,
+          metrics: { increment }
+        }
       )(buildContext(Readable.from(form.getBuffer()), form.getHeaders())).catch((e) => e)
       leftovers = await readdir(tmpFolder)
     })
@@ -196,6 +208,10 @@ describe('when parsing a multipart request whose temporary files are slow to wri
         released: 1,
         leftovers: []
       })
+    })
+
+    it('should count one spool flush timeout', () => {
+      expect(increment.mock.calls).toEqual([['dcl_upload_spool_failures_total', { reason: 'flush_timeout' }]])
     })
   })
 })
