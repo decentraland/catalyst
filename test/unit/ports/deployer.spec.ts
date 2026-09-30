@@ -23,6 +23,7 @@ import { createPointersRepository } from '../../../src/adapters/pointers-reposit
 import { createActiveEntitiesRepository } from '../../../src/adapters/active-entities-repository'
 import { createContentFilesRepository } from '../../../src/adapters/content-files-repository'
 import { createDeploymentsRepository } from '../../../src/adapters/deployments-repository'
+import { createPendingDeploymentsRepository } from '../../../src/adapters/pending-deployments-repository'
 import * as deploymentLogic from '../../../src/logic/deployments'
 import * as deployments from '../../../src/logic/deployments'
 import { metricsDeclaration } from '../../../src/metrics'
@@ -108,8 +109,8 @@ describe('Deployer', function () {
       const deltaMilliseconds = Date.now() - deploymentResult
       expect(deltaMilliseconds).toBeGreaterThanOrEqual(0)
       expect(deltaMilliseconds).toBeLessThanOrEqual(1000)
-      expect(storageSpy).toHaveBeenCalledWith(entity.id, expect.anything())
-      expect(storageSpy).toHaveBeenCalledWith(randomFileHash, expect.anything())
+      expect(storageSpy).toHaveBeenCalledWith(entity.id, expect.anything(), undefined)
+      expect(storageSpy).toHaveBeenCalledWith(randomFileHash, expect.anything(), undefined)
     }
   })
 
@@ -130,8 +131,8 @@ describe('Deployer', function () {
 
     await service.deployEntity([entityFile, randomFile], entity.id, auditInfo, DeploymentContext.LOCAL)
 
-    expect(storeSpy).toHaveBeenCalledWith(entity.id, expect.anything())
-    expect(storeSpy).not.toHaveBeenCalledWith(randomFileHash, expect.anything())
+    expect(storeSpy).toHaveBeenCalledWith(entity.id, expect.anything(), undefined)
+    expect(storeSpy).not.toHaveBeenCalledWith(randomFileHash, expect.anything(), undefined)
   })
 
   it(`When an entity has more content files than the storage concurrency limit, then all of them are stored`, async () => {
@@ -264,6 +265,7 @@ describe('Deployer', function () {
       denylist,
       contentFilesRepository,
       deploymentsRepository,
+      pendingDeploymentsRepository: createPendingDeploymentsRepository(),
       entities: createEntities({ env })
     }
     const deployer = createDeploymentService(deployerComponents)

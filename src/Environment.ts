@@ -41,7 +41,24 @@ export const DEFAULT_MAX_UPLOAD_FIELD_SIZE = 100 * 1024 // 100 KB per field valu
 // scene can be several GB; this default is deliberately generous (and `MAX_UPLOAD_TOTAL_SIZE`-tunable)
 // to bound the pathological case without rejecting large estate deployments. Streaming uploads to
 // disk (instead of buffering) would remove the memory exposure entirely and is the proper follow-up.
+// It counts file and field bytes; the body may exceed it by the multipart framing of its parts, which
+// is bounded per part and never buffered.
 export const DEFAULT_MAX_UPLOAD_TOTAL_SIZE = 2 * 1024 * 1024 * 1024 // 2 GiB total per request
+
+// Aggregate bound on POST /entities bodies buffered at once across all clients. It must fit one
+// maximum-size request's peak: MAX_UPLOAD_TOTAL_SIZE plus a copy of one file (up to
+// MAX_UPLOAD_FILE_SIZE). Partial batches are exempt from the per-IP daily quota below and are bounded
+// by this budget, its per-source share and their account's byte quotas instead.
+export const DEFAULT_MAX_IN_FLIGHT_UPLOAD_BYTES = 4 * 1024 * 1024 * 1024 // 4 GiB
+// Least any POST /entities request reserves from the budget above, covering its per-request overhead
+// (form fields, parser buffers, the socket), so the budget also bounds concurrency: 256 small uploads by default.
+export const DEFAULT_MIN_UPLOAD_RESERVATION_BYTES = 16 * 1024 * 1024 // 16 MiB
+// One client source's share of the budget above, applied before the body is read: a body that never
+// completes is never authenticated or counted, so per-source concurrency is what bounds slow senders.
+// The per-source byte share (MAX_IN_FLIGHT_UPLOAD_BYTES_PER_SOURCE) defaults to MAX_UPLOAD_TOTAL_SIZE.
+export const DEFAULT_MAX_CONCURRENT_UPLOADS_PER_SOURCE = 4
+// A body still arriving after this is aborted with 408, so slow senders can't hold upload slots.
+export const DEFAULT_MULTIPART_UPLOAD_TIMEOUT_MS = 5 * 60 * 1000
 
 // Body cap for the JSON endpoints that buffer the whole request into memory before validating it
 // (POST /entities/active). The schema's `maxItems: 1000` can't help because JSON parsing happens
@@ -59,8 +76,15 @@ export const DEFAULT_POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS = 60
 
 // Daily quota for POST /entities. A second, independent rate-limit bucket that caps the total
 // number of deployments a single IP can make in a 24-hour rolling window. This catches attackers
-// who stay just below the per-minute burst limit but sustain high volume over hours.
+// who stay just below the per-minute burst limit but sustain high volume over hours. It counts regular
+// deployments; once an IP has spent it, its requests are rejected before their body is read unless
+// they declare a partial batch with `POST /entities?partial=true`.
 export const DEFAULT_POST_ENTITIES_DAILY_QUOTA_MAX = 300
+
+// Catalyst runs behind catalyst-owner's nginx, which forwards the connecting address in `X-Real-IP`
+// (`proxy_set_header X-Real-IP $remote_addr` in local/nginx/include/content_proxy.conf); keyed on the
+// socket address instead, every client would share nginx's address and so one budget.
+export const DEFAULT_TRUSTED_CLIENT_IP_HEADER = 'x-real-ip'
 
 /**
  * Parse a non-negative integer env var, falling back to `defaultValue` when it is unset/empty.
@@ -102,17 +126,21 @@ function parsePositiveIntEnv(name: string, defaultValue: number): number {
 }
 
 /**
- * Reads an optional HTTP header name, returning `undefined` when unset/empty so the consumer keeps
- * its own default. Trimmed because a padded header name is not merely unmatched — `Headers.get`
- * rejects it outright.
+ * Reads an HTTP header name, falling back to `defaultValue` when unset and returning `undefined` when
+ * set empty, which opts out. Trimmed because a padded header name is not merely unmatched —
+ * `Headers.get` rejects it outright.
  */
-function parseOptionalHeaderNameEnv(name: string): string | undefined {
-  const trimmed = process.env[name]?.trim()
-  if (trimmed === undefined || trimmed === '') {
+function parseHeaderNameEnv(name: string, defaultValue: string): string | undefined {
+  const raw = process.env[name]
+  if (raw === undefined) {
+    return defaultValue
+  }
+  const trimmed = raw.trim()
+  if (trimmed === '') {
     return undefined
   }
   if (!/^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/.test(trimmed)) {
-    throw new Error(`Invalid ${name}: expected an HTTP header name but got "${process.env[name]}"`)
+    throw new Error(`Invalid ${name}: expected an HTTP header name but got "${raw}"`)
   }
   return trimmed
 }
@@ -296,6 +324,13 @@ export enum EnvironmentConfig {
   PG_POOL_SIZE,
   GARBAGE_COLLECTION,
   GARBAGE_COLLECTION_INTERVAL,
+  PENDING_DEPLOYMENT_TTL,
+  PENDING_DEPLOYMENTS_CLEANUP_INTERVAL,
+  MAX_PENDING_DEPLOYMENTS_PER_DEPLOYER,
+  MAX_PENDING_BYTES_PER_DEPLOYER,
+  MAX_PENDING_BYTES,
+  MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE,
+  CONTENT_LOCK_CONNECTIONS,
   BLOOM_FILTER_EXPECTED_ELEMENTS,
   SEQUENTIAL_TASK_CONCURRENCY,
   ENTITIES_CACHE_CONTROL_MAX_AGE,
@@ -322,6 +357,11 @@ export enum EnvironmentConfig {
   MAX_UPLOAD_FIELD_COUNT,
   MAX_UPLOAD_FIELD_SIZE,
   MAX_UPLOAD_TOTAL_SIZE,
+  MAX_IN_FLIGHT_UPLOAD_BYTES,
+  MIN_UPLOAD_RESERVATION_BYTES,
+  MAX_CONCURRENT_UPLOADS_PER_SOURCE,
+  MAX_IN_FLIGHT_UPLOAD_BYTES_PER_SOURCE,
+  MULTIPART_UPLOAD_TIMEOUT_MS,
   MAX_ACTIVE_ENTITIES_BODY_SIZE,
 
   // Per-client rate limit on POST /entities. The header is deliberately not scoped to this endpoint:
@@ -545,7 +585,36 @@ export class EnvironmentBuilder {
       () => process.env.GARBAGE_COLLECTION === 'true'
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL, () =>
-      parseMsEnv('GARBAGE_COLLECTION_INTERVAL', ms('6h'))
+      // The sweep is incremental (overwrites since its watermark), so its cost tracks deploy volume.
+      parseMsEnv('GARBAGE_COLLECTION_INTERVAL', ms('1h'))
+    )
+    // How long a partial (multi-request) deployment may stay pending before it is reclaimed. Anchors
+    // both the deployment-TTL check for staged uploads and the expiry job that deletes stale rows.
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PENDING_DEPLOYMENT_TTL, () =>
+      parseMsEnv('PENDING_DEPLOYMENT_TTL', ms('1h'))
+    )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PENDING_DEPLOYMENTS_CLEANUP_INTERVAL, () =>
+      // Expired uploads stay charged against quotas until reclaimed, so reclaim them soon after expiry.
+      parseMsEnv('PENDING_DEPLOYMENTS_CLEANUP_INTERVAL', ms('5m'))
+    )
+    // Max pending (partial) uploads per deployer, including expired ones awaiting cleanup.
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_PENDING_DEPLOYMENTS_PER_DEPLOYER, () =>
+      parsePositiveIntEnv('MAX_PENDING_DEPLOYMENTS_PER_DEPLOYER', 10)
+    )
+    // Staged/reserved bytes per deployer and per server; expired uploads stay charged until cleanup.
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_PENDING_BYTES_PER_DEPLOYER, () =>
+      parsePositiveIntEnv('MAX_PENDING_BYTES_PER_DEPLOYER', 1024 ** 3)
+    )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_PENDING_BYTES, () =>
+      parsePositiveIntEnv('MAX_PENDING_BYTES', 50 * 1024 ** 3)
+    )
+    // Accepted partial batch bytes per deployer per fixed one-minute window, retries included.
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE, () =>
+      parsePositiveIntEnv('MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE', 512 * 1024 ** 2)
+    )
+    // Connections of the dedicated upload/GC advisory-lock pool, on top of PG_POOL_SIZE.
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CONTENT_LOCK_CONNECTIONS, () =>
+      parsePositiveIntEnv('CONTENT_LOCK_CONNECTIONS', 16)
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.BLOOM_FILTER_EXPECTED_ELEMENTS, () => {
       const parsed = parseInt(process.env.BLOOM_FILTER_EXPECTED_ELEMENTS ?? '', 10)
@@ -683,6 +752,26 @@ export class EnvironmentBuilder {
       parseNonNegativeIntEnv('MAX_UPLOAD_TOTAL_SIZE', DEFAULT_MAX_UPLOAD_TOTAL_SIZE)
     )
 
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_IN_FLIGHT_UPLOAD_BYTES, () =>
+      parsePositiveIntEnv('MAX_IN_FLIGHT_UPLOAD_BYTES', DEFAULT_MAX_IN_FLIGHT_UPLOAD_BYTES)
+    )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MIN_UPLOAD_RESERVATION_BYTES, () =>
+      parsePositiveIntEnv('MIN_UPLOAD_RESERVATION_BYTES', DEFAULT_MIN_UPLOAD_RESERVATION_BYTES)
+    )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_CONCURRENT_UPLOADS_PER_SOURCE, () =>
+      parsePositiveIntEnv('MAX_CONCURRENT_UPLOADS_PER_SOURCE', DEFAULT_MAX_CONCURRENT_UPLOADS_PER_SOURCE)
+    )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_IN_FLIGHT_UPLOAD_BYTES_PER_SOURCE, () =>
+      parseOptionalNonNegativeIntEnv('MAX_IN_FLIGHT_UPLOAD_BYTES_PER_SOURCE')
+    )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MULTIPART_UPLOAD_TIMEOUT_MS, () =>
+      parsePositiveIntEnv('MULTIPART_UPLOAD_TIMEOUT_MS', DEFAULT_MULTIPART_UPLOAD_TIMEOUT_MS)
+    )
+
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_ACTIVE_ENTITIES_BODY_SIZE, () =>
       // No flooring: createBodySizeLimitMiddleware rejects a value < 1 loudly at startup. Flooring a
       // mistaken 0 up to 1 would instead install a silent 1-byte cap that rejects every request.
@@ -701,10 +790,10 @@ export class EnvironmentBuilder {
       parsePositiveIntEnv('POST_ENTITIES_DAILY_QUOTA_MAX', DEFAULT_POST_ENTITIES_DAILY_QUOTA_MAX)
     )
 
-    // Unset is correct for a directly exposed server. Behind a proxy it must name the header that
-    // proxy writes, or every client shares one bucket — see the startup warning in `components.ts`.
+    // Defaults to the `X-Real-IP` catalyst-owner's nginx writes (see DEFAULT_TRUSTED_CLIENT_IP_HEADER).
+    // Set empty only for a directly exposed server, which then keys on the socket address.
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.TRUSTED_CLIENT_IP_HEADER, () =>
-      parseOptionalHeaderNameEnv('TRUSTED_CLIENT_IP_HEADER')
+      parseHeaderNameEnv('TRUSTED_CLIENT_IP_HEADER', DEFAULT_TRUSTED_CLIENT_IP_HEADER)
     )
 
     this.registerConfigIfNotAlreadySet(

@@ -1,6 +1,6 @@
 import * as bf from 'bloom-filters'
-import PQueue from 'p-queue'
 import SQL from 'sql-template-strings'
+import { EntityLockTimeoutError } from '../../adapters/content-locks'
 import { SYSTEM_PROPERTIES } from '../../adapters/system-properties'
 import { runLoggingPerformance } from '../../instrument'
 import { AppComponents } from '../../types'
@@ -11,6 +11,9 @@ const PROFILE_CLEANUP_LIMIT = 10000
 // How many unused content hashes to delete from storage per batch. Bounds both the in-memory list
 // and the size of each storage.delete operation during a sweep.
 const GC_DELETE_BATCH_SIZE = 1000
+
+// Delete batches deleteUnreferencedFiles keeps queued at once. Each holds a content-lock connection.
+const GC_DELETE_CONCURRENCY = 4
 
 // Safety margin subtracted from the stored garbage-collection watermark. The next sweep only
 // reconsiders hashes whose overwrite committed after the watermark; a deploy that assigned an older
@@ -30,14 +33,42 @@ export function createGarbageCollectionComponent(
     | 'activeEntities'
     | 'contentFilesRepository'
     | 'deploymentsRepository'
+    | 'pendingDeploymentsRepository'
     | 'snapshotsRepository'
+    | 'contentLocks'
   >,
   performGarbageCollection: boolean,
-  profileDuration: number
+  profileDuration: number,
+  // How long a partial (pending) deployment survives. Its entity id + content hashes are treated as
+  // referenced until it expires, so in-flight staged uploads are never reclaimed.
+  pendingDeploymentTtlMs: number
 ): IGarbageCollectionComponent {
   const logger = components.logs.getLogger('GarbageCollectionManager')
   let lastSweepResult: SweepResult | undefined = undefined
   let lastTimeOfCollection = 0
+
+  /**
+   * Re-checks candidates against the database and deletes the unreferenced ones, both under the
+   * exclusive content lock so no deployment can store or reuse them in between.
+   * @returns The deleted hashes.
+   */
+  async function deleteUnreferenced(candidates: string[]): Promise<string[]> {
+    return components.contentLocks.withWrite(() => deleteUnreferencedLocked(candidates))
+  }
+
+  // Must run under the exclusive content lock.
+  async function deleteUnreferencedLocked(candidates: string[]): Promise<string[]> {
+    const stillReferenced = await components.contentFilesRepository.findReferencedHashes(
+      components.database,
+      candidates,
+      pendingDeploymentTtlMs
+    )
+    const toDelete = candidates.filter((hash) => !stillReferenced.has(hash))
+    if (toDelete.length > 0) {
+      await components.storage.delete(toDelete)
+    }
+    return toDelete
+  }
 
   /**
    * When it is time, we will calculate the hashes of all the overwritten deployments, and check if they are not being used by another deployment.
@@ -55,13 +86,12 @@ export function createGarbageCollectionComponent(
       // a concurrent deploy may have re-referenced a hash since; and because storage is a single
       // content-addressed namespace, a candidate hash may also be a snapshot file or an entity JSON
       // (byte-identical files collide on hash). Never delete anything that is still referenced.
-      const stillReferenced = await components.contentFilesRepository.findReferencedHashes(components.database, batch)
-      const toDelete = batch.filter((hash) => !stillReferenced.has(hash))
+      const candidates = batch
       batch = []
+      const toDelete = await deleteUnreferenced(candidates)
       if (toDelete.length === 0) {
         return
       }
-      await components.storage.delete(toDelete)
       // Emit the metric per batch (after the delete) so progress is observable during a long sweep
       // and a crash mid-sweep still records what was already deleted.
       components.metrics.increment('dcl_content_garbage_collection_items_total', {}, toDelete.length)
@@ -166,37 +196,28 @@ export function createGarbageCollectionComponent(
     const hashes = Array.from(hashesSet)
 
     logger.info(`Profile cleanup will remove ${deployments.length} deployments and ${hashes.length} from content_files`)
-    await components.database.transaction(async (database) => {
-      await database.queryWithValues(
-        SQL`DELETE FROM content_files WHERE deployment = ANY(${deployments})`,
-        'gc_old_profiles_delete_content_files'
-      )
+    // Rows and files go under one exclusive lock: once the rows are gone nothing references the files, so a
+    // lock timeout between the two would leak them past every later sweep.
+    const hashesToDelete = await components.contentLocks.withWrite(async () => {
+      await components.database.transaction(async (database) => {
+        await database.queryWithValues(
+          SQL`DELETE FROM content_files WHERE deployment = ANY(${deployments})`,
+          'gc_old_profiles_delete_content_files'
+        )
 
-      logger.info(`Profile cleanup will remove ${deployments.length} deployments`)
-      await database.queryWithValues(
-        SQL`DELETE FROM deployments WHERE id = ANY(${deployments})`,
-        'gc_old_profiles_delete_deployments'
-      )
-    }, 'gc_old_profiles')
+        logger.info(`Profile cleanup will remove ${deployments.length} deployments`)
+        await database.queryWithValues(
+          SQL`DELETE FROM deployments WHERE id = ANY(${deployments})`,
+          'gc_old_profiles_delete_deployments'
+        )
+      }, 'gc_old_profiles')
 
-    // Delete the files from storage only after the DB transaction commits: doing it first would leave
-    // live content_files rows referencing already-deleted files if the transaction failed. A leftover
-    // file after a successful commit is reclaimed by the next unused-hashes sweep.
-    // Re-verify right before deleting (same guard as gcUnusedHashes): the in-use check above ran before
-    // the transaction, so a concurrent deploy may have re-referenced one of these hashes since. This
-    // narrows — but does not fully close — the window; a truly atomic guard would need locking.
-    let hashesToDelete = hashes
-    if (hashesToDelete.length > 0) {
-      const stillReferenced = await components.contentFilesRepository.findReferencedHashes(
-        components.database,
-        hashesToDelete
-      )
-      hashesToDelete = hashesToDelete.filter((hash) => !stillReferenced.has(hash))
-    }
-    logger.info(`Profile cleanup will remove ${hashesToDelete.length} files from storage`)
-    if (hashesToDelete.length > 0) {
-      await components.storage.delete(hashesToDelete)
-    }
+      // Delete the files from storage only after the DB transaction commits: doing it first would leave
+      // live content_files rows referencing already-deleted files if the transaction failed.
+      // Re-verify here: the in-use check above ran before the transaction.
+      return hashes.length > 0 ? deleteUnreferencedLocked(hashes) : []
+    })
+    logger.info(`Profile cleanup removed ${hashesToDelete.length} files from storage`)
 
     return {
       deletedHashes: new Set(hashesToDelete),
@@ -238,6 +259,9 @@ export function createGarbageCollectionComponent(
     } catch (error) {
       logger.error(`Failed to perform old profiles cleanup`)
       logger.error(error as Error)
+      if (performGarbageCollection) {
+        components.metrics.increment('dcl_content_garbage_collection_runs_total', { outcome: 'error' })
+      }
       return
     }
 
@@ -256,6 +280,17 @@ export function createGarbageCollectionComponent(
       await components.systemProperties.set(SYSTEM_PROPERTIES.lastGarbageCollectionTime, newTimeOfCollection)
 
       lastTimeOfCollection = newTimeOfCollection
+      components.metrics.increment('dcl_content_garbage_collection_runs_total', { outcome: 'success' })
+      components.metrics.observe('dcl_content_garbage_collection_last_success_timestamp_seconds', {}, Date.now() / 1000)
+    } catch (error) {
+      // The watermark stays put, so the next sweep re-examines everything this one skipped.
+      if (error instanceof EntityLockTimeoutError) {
+        components.metrics.increment('dcl_content_garbage_collection_runs_total', { outcome: 'deferred' })
+        logger.warn('Garbage collection deferred to the next sweep: deployments kept the content lock busy')
+        return
+      }
+      components.metrics.increment('dcl_content_garbage_collection_runs_total', { outcome: 'error' })
+      throw error
     } finally {
       endTimer()
     }
@@ -296,35 +331,73 @@ export function createGarbageCollectionComponent(
         'add of stream snapshot hashes to bloom filter',
         async () => await addAllToBloomFilter(components.snapshotsRepository.getAllSnapshotHashes(components.database))
       )
+
+      // Entity ids and content hashes of non-expired pending (partial) deployments are still referenced:
+      // their content is staged but not yet attached to any deployment, so it would otherwise look
+      // unreferenced and be swept. Expired pending rows are intentionally excluded so their staged
+      // content becomes reclaimable.
+      const totalPendingHashes = await runLoggingPerformance(
+        unreferencedLogger,
+        'add of stream pending deployment hashes to bloom filter',
+        async () =>
+          await addAllToBloomFilter(
+            components.pendingDeploymentsRepository.streamAllNonExpiredHashes(
+              components.database,
+              pendingDeploymentTtlMs
+            )
+          )
+      )
       unreferencedLogger.info(
-        `Created bloom filter with ${totalEntityIds} entity ids, ${totalContentFileHashes} content hashes and ${totalSnapshotHashes} snapshot hashes.`
+        `Created bloom filter with ${totalEntityIds} entity ids, ${totalContentFileHashes} content hashes, ${totalSnapshotHashes} snapshot hashes and ${totalPendingHashes} pending deployment hashes.`
       )
     })
 
-    const queue = new PQueue({ concurrency: 1000 })
     let numberOfDeletedFiles = 0
-    unreferencedLogger.info(`Deleting files...`)
-    for await (const storageFileId of components.storage.allFileIds()) {
-      if (!referencedHashesBloom.has(storageFileId)) {
-        // Enqueue without awaiting each task so up to `concurrency` deletes run in parallel; awaiting
-        // `queue.add` here would serialize them and make the concurrency setting meaningless.
-        // Backpressure keeps the queue from growing unbounded ahead of the workers.
-        void queue.add(async () => {
-          try {
-            await components.storage.delete([storageFileId])
-            numberOfDeletedFiles++
-          } catch (error) {
-            unreferencedLogger.error(error as Error, { storageFileId })
-          }
-        })
-        // Backpressure: if the queued (not-yet-started) work grows too large, wait for it to drain
-        // before enqueuing more, so a multi-million-file sweep can't buffer every task in memory.
-        if (queue.size >= GC_DELETE_BATCH_SIZE * 2) {
-          await queue.onEmpty()
+    let batch: string[] = []
+    const inFlight = new Set<Promise<void>>()
+
+    // Delete in batches, re-verifying each batch against the database right before deletion. The bloom
+    // filter was built once at the start of a potentially hours-long sweep, so anything referenced
+    // AFTER that — most notably a partial (pending) upload that starts mid-sweep and stages files for
+    // hours — is invisible to it. findReferencedHashes covers active deployments, snapshots, entity ids
+    // and non-expired pending deployments at delete time.
+    const deleteBatch = async (candidates: string[]): Promise<void> => {
+      try {
+        numberOfDeletedFiles += (await deleteUnreferenced(candidates)).length
+      } catch (error) {
+        // The content lock already warned about a busy gate; the batch is retried on the next run.
+        if (!(error instanceof EntityLockTimeoutError)) {
+          unreferencedLogger.error(error as Error, { batchSize: String(candidates.length) })
         }
       }
     }
-    await queue.onIdle()
+
+    // Batches serialize on the exclusive content lock; the small window only keeps the storage listing
+    // advancing while a batch deletes.
+    const flushBatch = async (): Promise<void> => {
+      if (batch.length === 0) {
+        return
+      }
+      const candidates = batch
+      batch = []
+      const task: Promise<void> = deleteBatch(candidates).finally(() => inFlight.delete(task))
+      inFlight.add(task)
+      if (inFlight.size >= GC_DELETE_CONCURRENCY) {
+        await Promise.race(inFlight)
+      }
+    }
+
+    unreferencedLogger.info(`Deleting files...`)
+    for await (const storageFileId of components.storage.allFileIds()) {
+      if (!referencedHashesBloom.has(storageFileId)) {
+        batch.push(storageFileId)
+        if (batch.length >= GC_DELETE_BATCH_SIZE) {
+          await flushBatch()
+        }
+      }
+    }
+    await flushBatch()
+    await Promise.all(inFlight)
     unreferencedLogger.info(`Deleted ${numberOfDeletedFiles} files`)
   }
 

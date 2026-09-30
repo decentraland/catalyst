@@ -35,9 +35,28 @@ export const metricsDeclaration = validateMetricsDeclaration({
     labelNames: []
   },
 
+  dcl_content_lock_writer_timeouts_total: {
+    help: 'Garbage collection or cleanup runs deferred because deployments kept the content lock busy',
+    type: 'counter',
+    labelNames: []
+  },
+
   dcl_content_garbage_collection_time: {
     help: 'Histogram of time spent in garbage collection',
     type: 'histogram',
+    labelNames: []
+  },
+
+  dcl_content_garbage_collection_runs_total: {
+    help: 'Garbage collection sweeps',
+    type: 'counter',
+    // outcome=(success|deferred|error); deferred means the content lock stayed busy
+    labelNames: ['outcome']
+  },
+
+  dcl_content_garbage_collection_last_success_timestamp_seconds: {
+    help: 'Unix time of the last garbage collection sweep that completed',
+    type: 'gauge',
     labelNames: []
   },
 
@@ -75,6 +94,120 @@ export const metricsDeclaration = validateMetricsDeclaration({
     help: 'Pending deployments',
     type: 'gauge',
     labelNames: ['entity_type']
+  },
+  dcl_partial_deployments_staging_total: {
+    help: 'Partial (multi-request) deployment staging requests through HTTP',
+    type: 'counter',
+    // kind=(accepted|finalized|validation_error|throttled|busy|error)
+    labelNames: ['kind']
+  },
+  dcl_partial_upload_throttled_total: {
+    help: 'Partial upload batches answered 429, by the quota or limit that rejected them',
+    type: 'counter',
+    // reason=(uploads_per_account|bytes_per_account|bytes_per_server|bytes_per_minute|entity_rate_limit|pointer_conflict)
+    labelNames: ['reason']
+  },
+  dcl_partial_uploads_started_total: {
+    help: 'Partial uploads whose first batch was admitted',
+    type: 'counter',
+    labelNames: []
+  },
+  dcl_partial_uploads_completed_total: {
+    help: 'Partial uploads published by their final batch',
+    type: 'counter',
+    labelNames: []
+  },
+  dcl_partial_uploads_pending: {
+    help: 'Partial uploads in the database at the last cleanup run (server-wide)',
+    type: 'gauge',
+    // state=(live|expired)
+    labelNames: ['state']
+  },
+  dcl_partial_upload_duration_seconds: {
+    help: 'Time from a partial upload first batch arrival to its publication',
+    type: 'histogram',
+    labelNames: [],
+    buckets: [5, 15, 30, 60, 120, 300, 600, 900, 1800, 2700, 3600]
+  },
+  dcl_partial_upload_batches_per_upload: {
+    help: 'Stored batches a partial upload took until publication',
+    type: 'histogram',
+    labelNames: [],
+    buckets: [1, 2, 3, 5, 10, 20, 50, 100, 250]
+  },
+  dcl_partial_upload_capacity_bytes: {
+    help: 'Server-wide staging byte cap for partial uploads (MAX_PENDING_BYTES)',
+    type: 'gauge',
+    labelNames: []
+  },
+  dcl_pending_deployments_expired_total: {
+    help: 'Expired pending deployments reclaimed by the cleanup job',
+    type: 'counter',
+    labelNames: []
+  },
+  dcl_partial_upload_cleanup_runs_total: {
+    help: 'Expired partial upload cleanup runs',
+    type: 'counter',
+    // outcome=(success|deferred|error); deferred means the content lock stayed busy
+    labelNames: ['outcome']
+  },
+  dcl_partial_upload_cleanup_duration_seconds: {
+    help: 'Duration of expired partial upload cleanup runs',
+    type: 'histogram',
+    labelNames: [],
+    buckets: [0.1, 0.5, 1, 5, 15, 30, 60, 120, 300]
+  },
+  dcl_partial_upload_cleanup_last_success_timestamp_seconds: {
+    help: 'Unix time of the last cleanup run that reclaimed every expired upload it listed',
+    type: 'gauge',
+    labelNames: []
+  },
+  dcl_multipart_upload_capacity_bytes: {
+    help: 'Capacity of the POST /entities in-flight upload budget',
+    type: 'gauge',
+    labelNames: []
+  },
+  dcl_multipart_upload_timeouts_total: {
+    help: 'POST /entities bodies that did not arrive within MULTIPART_UPLOAD_TIMEOUT_MS (408)',
+    type: 'counter',
+    labelNames: []
+  },
+  dcl_multipart_upload_reserved_bytes: {
+    help: 'POST /entities body bytes reserved in the in-flight upload budget',
+    type: 'gauge',
+    labelNames: []
+  },
+  dcl_multipart_upload_active: {
+    help: 'POST /entities bodies being buffered',
+    type: 'gauge',
+    labelNames: []
+  },
+  dcl_multipart_upload_rejections_total: {
+    help: 'POST /entities uploads shed because the in-flight upload budget, or its source share, was full',
+    type: 'counter',
+    // reason=(bytes|source_bytes|source_concurrency)
+    labelNames: ['reason']
+  },
+  dcl_partial_upload_metadata_checks_total: {
+    help: 'Content metadata checks performed by partial uploads',
+    type: 'counter',
+    labelNames: []
+  },
+  dcl_partial_upload_batches_total: {
+    help: 'Accepted partial upload batches',
+    type: 'counter',
+    // outcome=(incomplete|finalizing)
+    labelNames: ['outcome']
+  },
+  dcl_partial_upload_reserved_bytes: {
+    help: 'Staging bytes reserved, including expired uploads awaiting cleanup',
+    type: 'gauge',
+    labelNames: []
+  },
+  dcl_partial_upload_cleanup_backlog_bytes: {
+    help: 'Expired staging bytes awaiting successful cleanup',
+    type: 'gauge',
+    labelNames: []
   },
   dcl_ignored_sync_deployments: {
     help: 'Entities ignored during the synchronization and bootstrapping',
