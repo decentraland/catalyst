@@ -9,7 +9,7 @@ import { DeploymentContext, isInvalidDeployment } from '../../deployment-types'
 import { AppComponents } from '../../types'
 import { REQUEST_TTL_FORWARDS } from '../deployment-service/server-validator'
 import { storeStreamsInBatches } from '../store-content'
-import { InvalidPartialDeploymentError } from './errors'
+import { InvalidPartialDeploymentError, PartialUploadThrottleReason } from './errors'
 import { IPartialDeployments, StageDeploymentInput, StageDeploymentResult } from './types'
 
 // A batch whose request-only checks passed, ready to be stored under the content lock.
@@ -127,6 +127,7 @@ export function createPartialDeployments(
   const cleanupIntervalMs = env.getConfig<number>(EnvironmentConfig.PENDING_DEPLOYMENTS_CLEANUP_INTERVAL)
   // When the last cleanup run ended, to estimate the next one for Retry-After.
   let lastCleanupAt: number | undefined
+  metrics.observe('dcl_partial_upload_capacity_bytes', {}, Number(globalBytes))
 
   function isLive(row: PendingDeploymentRow): boolean {
     return Date.now() <= row.createdAt.getTime() + pendingDeploymentTtlMs
@@ -158,7 +159,12 @@ export function createPartialDeployments(
   }
 
   // A 429 for a quota that frees when cleanup reclaims the oldest upload in scope.
-  async function quotaExceeded(db: DatabaseClient, message: string, scope: OldestUploadScope) {
+  async function quotaExceeded(
+    db: DatabaseClient,
+    message: string,
+    scope: OldestUploadScope,
+    reason: PartialUploadThrottleReason
+  ) {
     const retryAfterSeconds = secondsUntilCleanupFreesQuota({
       now: Date.now(),
       oldestCreatedAt: await pendingDeploymentsRepository.getOldestCreatedAt(db, scope),
@@ -166,7 +172,7 @@ export function createPartialDeployments(
       lastCleanupAt,
       cleanupIntervalMs
     })
-    return new InvalidPartialDeploymentError([message], 429, retryAfterSeconds)
+    return new InvalidPartialDeploymentError([message], 429, retryAfterSeconds, reason)
   }
 
   // A resumable answer tells the client to keep uploading, so it is only given while the upload is live.
@@ -202,7 +208,8 @@ export function createPartialDeployments(
     entityFile: Uint8Array,
     authChain: StageDeploymentInput['authChain'],
     contentHashes: string[],
-    admittedAt: number
+    admittedAt: number,
+    batches: number
   ): Promise<StageDeploymentResult> {
     const expiresAt = admittedAt + pendingDeploymentTtlMs
     assertLiveUntil(expiresAt)
@@ -216,6 +223,9 @@ export function createPartialDeployments(
         mustCommitBy: expiresAt
       })
       if (!isInvalidDeployment(result)) {
+        metrics.increment('dcl_partial_uploads_completed_total')
+        metrics.observe('dcl_partial_upload_duration_seconds', {}, (Date.now() - admittedAt) / 1000)
+        metrics.observe('dcl_partial_upload_batches_per_upload', {}, batches)
         await deletePendingBestEffort(entityId)
         return { kind: 'deployed', creationTimestamp: result }
       }
@@ -242,10 +252,20 @@ export function createPartialDeployments(
 
       // Catalyst-only transient conditions keep their retryable 429.
       if (deployer.isRateLimited(entity.type, entity.pointers)) {
-        throw new InvalidPartialDeploymentError(result.errors, 429, deployer.getRateLimitTtlSeconds(entity.type))
+        throw new InvalidPartialDeploymentError(
+          result.errors,
+          429,
+          deployer.getRateLimitTtlSeconds(entity.type),
+          'entity_rate_limit'
+        )
       }
       if (isPointerConflict) {
-        throw new InvalidPartialDeploymentError(result.errors, 429, POINTER_CONFLICT_RETRY_AFTER_SECONDS)
+        throw new InvalidPartialDeploymentError(
+          result.errors,
+          429,
+          POINTER_CONFLICT_RETRY_AFTER_SECONDS,
+          'pointer_conflict'
+        )
       }
       throw new InvalidPartialDeploymentError(result.errors)
     }
@@ -311,7 +331,8 @@ export function createPartialDeployments(
         throw await quotaExceeded(
           tx,
           `Too many partial uploads in progress for this account (max ${maxPendingPerDeployer}). Complete an upload or wait for expired uploads to be cleaned up.`,
-          { deployerAddress }
+          { deployerAddress },
+          'uploads_per_account'
         )
       }
       await pendingDeploymentsRepository.insert(tx, {
@@ -350,7 +371,8 @@ export function createPartialDeployments(
           `Partial upload byte rate exceeded for this account: ${rateWindow.bytes} bytes in the current one-minute window, max ${bytesPerMinute}. Retry in ${retryAfterSeconds} s.`
         ],
         429,
-        retryAfterSeconds
+        retryAfterSeconds,
+        'bytes_per_minute'
       )
     }
     await database.transaction(async (tx) => {
@@ -366,11 +388,17 @@ export function createPartialDeployments(
         throw await quotaExceeded(
           tx,
           `Partial upload storage budget exceeded for this account: ${totals.account} bytes staged with this batch, max ${accountBytes}. Complete uploads or wait for cleanup.`,
-          { deployerAddress: upload.deployerAddress }
+          { deployerAddress: upload.deployerAddress },
+          'bytes_per_account'
         )
       }
       if (totals.total > globalBytes) {
-        throw await quotaExceeded(tx, 'Partial upload storage on this server is full. Retry later.', {})
+        throw await quotaExceeded(
+          tx,
+          'Partial upload storage on this server is full. Retry later.',
+          {},
+          'bytes_per_server'
+        )
       }
       metrics.observe('dcl_partial_upload_reserved_bytes', {}, Number(totals.total))
     }, 'tx_reserve_pending_deployment')
@@ -472,7 +500,8 @@ export function createPartialDeployments(
       throw new InvalidPartialDeploymentError(
         [`Entity rate limited (entityId=${entity.id} pointers=${entity.pointers.join(',')}).`],
         429,
-        deployer.getRateLimitTtlSeconds(entity.type)
+        deployer.getRateLimitTtlSeconds(entity.type),
+        'entity_rate_limit'
       )
     }
     // Freshness and the upload's lifetime are measured from its first request's arrival.
@@ -564,15 +593,20 @@ export function createPartialDeployments(
       if (!pending) await pendingDeploymentsRepository.deleteUnadmitted(database, entityId).catch(() => undefined)
       throw error
     }
+    if (!pending) {
+      metrics.increment('dcl_partial_uploads_started_total')
+    }
 
     const expiresAt = createdAt + pendingDeploymentTtlMs
     await storeUntil(uploadedFiles, expiresAt)
     // A write that outlived the upload is left unrecorded; cleanup reclaims it with the upload's receipts.
+    let batches = 0
     await database.transaction(async (tx) => {
       if (!(await pendingDeploymentsRepository.markInitializedIfLive(tx, entityId, pendingDeploymentTtlMs))) {
         throw expired()
       }
       await pendingDeploymentsRepository.markStored(tx, entityId, Array.from(uploadedFiles.keys()))
+      batches = await pendingDeploymentsRepository.countBatch(tx, entityId)
     }, 'tx_record_pending_deployment_progress')
 
     const progress = await pendingDeploymentsRepository.getStoredFiles(database, entityId)
@@ -590,24 +624,34 @@ export function createPartialDeployments(
       return incompleteUntil(nowMissing, expiresAt)
     }
 
-    return await finalize(entity, entityFile, authChain, contentHashes, createdAt)
+    return await finalize(entity, entityFile, authChain, contentHashes, createdAt, batches)
   }
 
   async function cleanupExpired(): Promise<number> {
+    const { end } = metrics.startTimer('dcl_partial_upload_cleanup_duration_seconds')
+    let outcome: 'success' | 'deferred' | 'error' = 'error'
     try {
-      return await reclaimExpired()
+      const { removed, deferred } = await reclaimExpired()
+      outcome = deferred ? 'deferred' : 'success'
+      if (!deferred) {
+        metrics.observe('dcl_partial_upload_cleanup_last_success_timestamp_seconds', {}, Date.now() / 1000)
+      }
+      return removed
     } finally {
+      end()
+      metrics.increment('dcl_partial_upload_cleanup_runs_total', { outcome })
       lastCleanupAt = Date.now()
     }
   }
 
-  async function reclaimExpired(): Promise<number> {
+  async function reclaimExpired(): Promise<{ removed: number; deferred: boolean }> {
     const expired = await pendingDeploymentsRepository.listExpired(
       database,
       pendingDeploymentTtlMs,
       EXPIRED_UPLOADS_PER_CLEANUP
     )
     let removed = 0
+    let deferred = false
     try {
       for (const entityId of expired) {
         // Accounting is released only after every physical delete batch succeeds.
@@ -634,17 +678,20 @@ export function createPartialDeployments(
       if (!(error instanceof EntityLockTimeoutError)) {
         throw error
       }
+      deferred = true
       logger.warn(`Expired-upload cleanup deferred after ${removed} upload(s): deployments kept the content lock busy`)
     }
     await pendingDeploymentsRepository.deleteElapsedRateWindows(database)
-    const reserved = await pendingDeploymentsRepository.getReservedBytes(database, pendingDeploymentTtlMs)
-    metrics.observe('dcl_partial_upload_reserved_bytes', {}, reserved.total)
-    metrics.observe('dcl_partial_upload_cleanup_backlog_bytes', {}, reserved.expired)
+    const totals = await pendingDeploymentsRepository.getStagingTotals(database, pendingDeploymentTtlMs)
+    metrics.observe('dcl_partial_upload_reserved_bytes', {}, totals.total)
+    metrics.observe('dcl_partial_upload_cleanup_backlog_bytes', {}, totals.expired)
+    metrics.observe('dcl_partial_uploads_pending', { state: 'live' }, totals.liveUploads)
+    metrics.observe('dcl_partial_uploads_pending', { state: 'expired' }, totals.expiredUploads)
     if (removed > 0) {
       metrics.increment('dcl_pending_deployments_expired_total', {}, removed)
       logger.info(`Reclaimed ${removed} expired pending deployment(s)`)
     }
-    return removed
+    return { removed, deferred }
   }
 
   return { stageDeployment, cleanupExpired }

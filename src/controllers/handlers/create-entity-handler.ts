@@ -133,7 +133,13 @@ export async function createEntity(
       return { status: 202, body: { missing: result.missing } }
     } catch (error) {
       if (error instanceof InvalidPartialDeploymentError) {
-        metrics.increment('dcl_partial_deployments_staging_total', { kind: 'validation_error' })
+        const throttled = error.statusCode === 429
+        metrics.increment('dcl_partial_deployments_staging_total', {
+          kind: throttled ? 'throttled' : 'validation_error'
+        })
+        if (throttled) {
+          metrics.increment('dcl_partial_upload_throttled_total', { reason: error.throttleReason ?? 'unknown' })
+        }
         logger.error(`POST /entities - Partial deployment failed (${error.errors.join(',')})`, {
           entityId,
           ethAddress,
@@ -149,6 +155,7 @@ export async function createEntity(
         return { status: error.statusCode, body: { errors: error.errors }, headers }
       }
       if (error instanceof EntityLockTimeoutError) {
+        metrics.increment('dcl_partial_deployments_staging_total', { kind: 'busy' })
         throw new ServiceUnavailableError(error.message)
       }
       metrics.increment('dcl_partial_deployments_staging_total', { kind: 'error' })

@@ -135,10 +135,28 @@ describe('Integration - Partial deployments', () => {
 
         describe('and the last batch uploads the remaining content file', () => {
           let thirdResponse: Response
+          let observe: jest.SpyInstance
+          let increment: jest.SpyInstance
 
           beforeEach(async () => {
+            observe = jest.spyOn(server.components.metrics, 'observe')
+            increment = jest.spyOn(server.components.metrics, 'increment')
             // Last content file → auto-finalize.
             thirdResponse = await postForm(server, buildPartialForm(deployment, [hashB]))
+          })
+
+          it('should report the completed upload with its three batches and its duration', () => {
+            expect({
+              completed: increment.mock.calls.filter(([name]) => name === 'dcl_partial_uploads_completed_total'),
+              batches: observe.mock.calls.filter(([name]) => name === 'dcl_partial_upload_batches_per_upload'),
+              durations: observe.mock.calls
+                .filter(([name]) => name === 'dcl_partial_upload_duration_seconds')
+                .map(([, , seconds]) => seconds >= 0)
+            }).toEqual({
+              completed: [['dcl_partial_uploads_completed_total']],
+              batches: [['dcl_partial_upload_batches_per_upload', {}, 3]],
+              durations: [true]
+            })
           })
 
           it('should finalize with 200 and a creation timestamp', async () => {
@@ -197,8 +215,12 @@ describe('Integration - Partial deployments', () => {
 
   describe('when a single partial request already contains all the content', () => {
     let response: Response
+    let increment: jest.SpyInstance
+    let observe: jest.SpyInstance
 
     beforeEach(async () => {
+      increment = jest.spyOn(server.components.metrics, 'increment')
+      observe = jest.spyOn(server.components.metrics, 'observe')
       const deployment = await prepareSceneDeployment(['2,2'], { 'a.txt': Buffer.from('single batch file') }, identity)
       response = await postForm(
         server,
@@ -209,6 +231,18 @@ describe('Integration - Partial deployments', () => {
     it('should finalize immediately with 200 and no pending row', async () => {
       expect(response.status).toBe(200)
       expect(await countPendingDeployments(server)).toBe(0)
+    })
+
+    it('should report one started and completed upload that took a single batch', () => {
+      expect({
+        lifecycle: increment.mock.calls.filter(([name]) =>
+          /^dcl_partial_uploads_(started|completed)_total$/.test(name)
+        ),
+        batches: observe.mock.calls.filter(([name]) => name === 'dcl_partial_upload_batches_per_upload')
+      }).toEqual({
+        lifecycle: [['dcl_partial_uploads_started_total'], ['dcl_partial_uploads_completed_total']],
+        batches: [['dcl_partial_upload_batches_per_upload', {}, 1]]
+      })
     })
   })
 

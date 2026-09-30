@@ -68,6 +68,24 @@ describe('when creating the upload budget', () => {
     })
   })
 
+  describe('and the byte budget fits a maximum-size request', () => {
+    let components: ReturnType<typeof buildComponents>
+
+    beforeEach(() => {
+      components = buildComponents({
+        capacityBytes: 100,
+        minReservationBytes: 30,
+        maxRequestBytes: 60,
+        maxFileBytes: 40
+      })
+      createUploadBudget(components)
+    })
+
+    it('should report its capacity', () => {
+      expect(components.metrics.observe).toHaveBeenCalledWith('dcl_multipart_upload_capacity_bytes', {}, 100)
+    })
+  })
+
   describe('and the byte budget fits the peak of a maximum-size request whose files are smaller than it', () => {
     let creation: () => IUploadBudget
 

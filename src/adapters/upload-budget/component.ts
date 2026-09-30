@@ -41,6 +41,7 @@ export function createUploadBudget(components: Pick<AppComponents, 'env' | 'metr
 
   let reservedBytes = 0
   let activeUploads = 0
+  metrics.observe('dcl_multipart_upload_capacity_bytes', {}, capacityBytes)
 
   function report(): void {
     metrics.observe('dcl_multipart_upload_reserved_bytes', {}, reservedBytes)

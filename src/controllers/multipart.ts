@@ -3,7 +3,7 @@ import { Field, File } from '@well-known-components/multipart-wrapper'
 import busboy from 'busboy'
 import { Readable } from 'stream'
 import { pipeline } from 'stream/promises'
-import { FormDataContext } from '../types'
+import { AppComponents, FormDataContext } from '../types'
 import { IUploadBudget, peakUploadBytes, UploadBudgetExceededError, UploadBudgetLease } from '../adapters/upload-budget'
 import { InvalidRequestError, PayloadTooLargeError, RequestTimeoutError, ServiceUnavailableError } from './errors'
 
@@ -68,7 +68,8 @@ export function uploadTimedOutMessage(timeoutMs: number, receivedBytes: number, 
 export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T extends IHttpServerComponent.IResponse>(
   handler: (ctx: Ctx) => Promise<T>,
   limits: MultipartLimits = {},
-  uploadBudget?: IUploadBudget
+  uploadBudget?: IUploadBudget,
+  metrics?: Pick<AppComponents['metrics'], 'increment'>
 ): (ctx: IHttpServerComponent.DefaultContext<U>) => Promise<T> {
   const maxBodySize = maxMultipartBodySize(limits)
 
@@ -316,19 +317,20 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
     const timeout =
       uploadTimeoutMs === undefined
         ? undefined
-        : setTimeout(
-            () =>
-              abort(
-                new RequestTimeoutError(
-                  uploadTimedOutMessage(
-                    uploadTimeoutMs,
-                    bodyBytes,
-                    Number.isSafeInteger(declaredSize) ? declaredSize : undefined
-                  )
+        : setTimeout(() => {
+            if (!aborted) {
+              metrics?.increment('dcl_multipart_upload_timeouts_total')
+            }
+            abort(
+              new RequestTimeoutError(
+                uploadTimedOutMessage(
+                  uploadTimeoutMs,
+                  bodyBytes,
+                  Number.isSafeInteger(declaredSize) ? declaredSize : undefined
                 )
-              ),
-            uploadTimeoutMs
-          )
+              )
+            )
+          }, uploadTimeoutMs)
     try {
       await pipeline(source, countBody, formDataParser)
     } catch (error) {
