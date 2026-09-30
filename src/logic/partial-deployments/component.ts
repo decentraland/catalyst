@@ -1,23 +1,25 @@
 import { Authenticator } from '@dcl/crypto'
 import { Entity, EntityType, IPFSv2 } from '@dcl/schemas'
+import { hashV1 } from '@dcl/hashing'
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { EntityLockTimeoutError } from '../../adapters/content-locks'
 import { FileReceipt, OldestUploadScope, PendingDeploymentRow } from '../../adapters/pending-deployments-repository'
 import { DatabaseClient } from '../../adapters/database'
+import { UploadBudgetExceededError, UploadBudgetLease } from '../../adapters/upload-budget'
 import { EnvironmentConfig } from '../../Environment'
 import { DeploymentContext, isInvalidDeployment } from '../../deployment-types'
 import { AppComponents } from '../../types'
 import { REQUEST_TTL_FORWARDS } from '../deployment-service/server-validator'
-import { storeStreamsInBatches } from '../store-content'
+import { CONTENT_STORE_CONCURRENCY, storeStreamsInBatches } from '../store-content'
 import { InvalidPartialDeploymentError, PartialUploadThrottleReason } from './errors'
-import { IPartialDeployments, StageDeploymentInput, StageDeploymentResult } from './types'
+import { IPartialDeployments, StagedFile, StageDeploymentInput, StageDeploymentResult } from './types'
 
 // A batch whose request-only checks passed, ready to be stored under the content lock.
 type PreparedBatch = {
   entity: Entity
   entityFile: Uint8Array
   authChain: StageDeploymentInput['authChain']
-  uploadedFiles: Map<string, Uint8Array>
+  uploadedFiles: Map<string, StagedFile>
   deployerAddress: string
   contentHashes: string[]
   maxSceneBytes: bigint
@@ -34,7 +36,8 @@ const FINALIZE_POINTER_CONFLICT_DELAY_MS = 300
 const POINTER_CONFLICT_RETRY_AFTER_SECONDS = 5
 
 // Caps the manifest on both paths: a resume reads it back from storage outside the multipart budget.
-const MAX_ENTITY_FILE_SIZE_BYTES = 10 * 1024 * 1024 // 10 MB
+export const MAX_ENTITY_FILE_SIZE_BYTES = 10 * 1024 * 1024 // 10 MB
+const EMPTY_FILE = new Uint8Array(0)
 
 // Expired uploads reclaimed per cleanup run, and storage keys per exclusive delete batch.
 const EXPIRED_UPLOADS_PER_CLEANUP = 100
@@ -64,13 +67,21 @@ export function secondsUntilCleanupFreesQuota(params: {
   return Math.max(1, Math.ceil((base + runs * cleanupIntervalMs - now) / 1000))
 }
 
-async function streamToBufferCapped(stream: AsyncIterable<Buffer>, maxBytes: number): Promise<Uint8Array> {
+// Grows the memory share with the bytes read, so stored sizes (attacker-influenced when compressed) aren't trusted.
+async function streamToBufferCapped(
+  stream: AsyncIterable<Buffer>,
+  maxBytes: number,
+  lease: UploadBudgetLease
+): Promise<Uint8Array> {
   const chunks: Buffer[] = []
   let total = 0
   for await (const chunk of stream) {
     total += chunk.byteLength
     if (total > maxBytes) {
       throw new InvalidPartialDeploymentError([`The stored entity file is too large (over ${maxBytes} bytes).`])
+    }
+    if (!lease.resize(total)) {
+      throw new UploadBudgetExceededError()
     }
     chunks.push(chunk)
   }
@@ -90,9 +101,9 @@ export function createPartialDeployments(
     | 'logs'
     | 'metrics'
     | 'env'
+    | 'crypto'
     | 'storage'
     | 'database'
-    | 'crypto'
     | 'validator'
     | 'deployer'
     | 'entities'
@@ -100,22 +111,24 @@ export function createPartialDeployments(
     | 'pendingDeploymentsRepository'
     | 'contentFilesRepository'
     | 'contentLocks'
+    | 'deploymentMemoryBudget'
   >
 ): IPartialDeployments {
   const {
     logs,
     metrics,
     env,
+    crypto,
     storage,
     database,
-    crypto,
     validator,
     deployer,
     entities,
     deploymentsRepository,
     pendingDeploymentsRepository,
     contentFilesRepository,
-    contentLocks
+    contentLocks,
+    deploymentMemoryBudget
   } = components
   const logger = logs.getLogger('partial-deployments')
   const pendingDeploymentTtlMs = env.getConfig<number>(EnvironmentConfig.PENDING_DEPLOYMENT_TTL)
@@ -145,11 +158,15 @@ export function createPartialDeployments(
   }
 
   // Stores a batch, aborting the writes still running when the upload expires.
-  async function storeUntil(files: Map<string, Uint8Array>, expiresAt: number): Promise<void> {
+  async function storeUntil(files: Map<string, StagedFile>, expiresAt: number): Promise<void> {
     assertLiveUntil(expiresAt)
     const signal = AbortSignal.timeout(Math.max(expiresAt - Date.now(), 0))
     try {
-      await storeStreamsInBatches(storage, Array.from(files), signal)
+      await storeStreamsInBatches(
+        storage,
+        Array.from(files, ([hash, file]) => [hash, () => file.openStream()]),
+        signal
+      )
     } catch (error) {
       if (signal.aborted) {
         throw expired()
@@ -271,9 +288,11 @@ export function createPartialDeployments(
     }
   }
 
+  // Reads the entity file back under a memory budget share handed to `hold`, which the caller releases.
   async function readBackEntityFile(
     entityId: string,
-    authChain: StageDeploymentInput['authChain']
+    authChain: StageDeploymentInput['authChain'],
+    hold: (lease: UploadBudgetLease) => void
   ): Promise<Uint8Array> {
     const mustInclude = new InvalidPartialDeploymentError([
       `The first partial request for an entity, and any request by another signer, must include the entity file '${entityId}'.`
@@ -292,11 +311,15 @@ export function createPartialDeployments(
     ) {
       throw mustInclude
     }
+    const lease = deploymentMemoryBudget.acquire(0)
+    hold(lease)
     const stored = await storage.retrieve(entityId)
     if (!stored) {
       throw mustInclude
     }
-    return streamToBufferCapped(await stored.asStream(), MAX_ENTITY_FILE_SIZE_BYTES)
+    // A file the budget can never hold is rejected outright rather than with a 503 it can't outwait.
+    const maxBytes = Math.min(MAX_ENTITY_FILE_SIZE_BYTES, deploymentMemoryBudget.capacityBytes)
+    return streamToBufferCapped(await stored.asStream(), maxBytes, lease)
   }
 
   // Creates the upload unless it exists and returns when it was created. One seen earlier in this request
@@ -411,21 +434,25 @@ export function createPartialDeployments(
   }
 
   async function stageDeployment(input: StageDeploymentInput): Promise<StageDeploymentResult> {
-    const prepared = await prepareBatch(input)
-    if ('kind' in prepared) {
-      return prepared
+    // A read-back entity file stays in memory, under its budget share, until the batch settles.
+    const leases: UploadBudgetLease[] = []
+    try {
+      const prepared = await prepareBatch(input, (lease) => leases.push(lease))
+      if ('kind' in prepared) {
+        return prepared
+      }
+      // Hashing and validation above hold no lock connection; storage and publication below do.
+      return await contentLocks.withRead(() => commitBatch(prepared), input.entityId)
+    } finally {
+      leases.forEach((lease) => lease.release())
     }
-    // Hashing and validation above hold no lock connection; storage and publication below do.
-    return contentLocks.withRead(() => commitBatch(prepared), input.entityId)
   }
 
   // Everything that depends only on the request and slow-changing state, run outside the content lock.
-  async function prepareBatch({
-    entityId,
-    authChain,
-    files,
-    requestedAt
-  }: StageDeploymentInput): Promise<PreparedBatch | StageDeploymentResult> {
+  async function prepareBatch(
+    { entityId, authChain, files, entityFile: uploadedEntityBytes, requestedAt }: StageDeploymentInput,
+    hold: (lease: UploadBudgetLease) => void
+  ): Promise<PreparedBatch | StageDeploymentResult> {
     // Completion replay: a deployed entity is never deployed again.
     const alreadyDeployed = await deploymentsRepository.getEntityById(database, entityId)
     if (alreadyDeployed) {
@@ -438,30 +465,37 @@ export function createPartialDeployments(
       ])
     }
 
-    // In partial mode the field-name keys are load-bearing, so every file must hash to its key.
+    // In partial mode the field-name keys are load-bearing, so every file must hash to its key. Files are
+    // hashed from their streams so a batch is never held in memory.
     const entries = Array.from(files.entries())
-    const hashed = await crypto.calculateIPFSHashes(entries.map(([, buf]) => buf))
-    const uploadedFiles = new Map<string, Uint8Array>()
-    for (let i = 0; i < entries.length; i++) {
-      const declaredKey = entries[i][0]
-      const computedHash = hashed[i].hash
-      if (declaredKey !== computedHash) {
-        throw new InvalidPartialDeploymentError([
-          `The uploaded file '${declaredKey}' does not match its content hash (computed ${computedHash}).`
-        ])
-      }
-      uploadedFiles.set(computedHash, hashed[i].file)
+    for (let i = 0; i < entries.length; i += CONTENT_STORE_CONCURRENCY) {
+      await Promise.all(
+        entries.slice(i, i + CONTENT_STORE_CONCURRENCY).map(async ([declaredKey, file]) => {
+          const computedHash = await hashV1(file.openStream())
+          if (declaredKey !== computedHash) {
+            throw new InvalidPartialDeploymentError([
+              `The uploaded file '${declaredKey}' does not match its content hash (computed ${computedHash}).`
+            ])
+          }
+        })
+      )
     }
+    const uploadedFiles: Map<string, StagedFile> = files
 
-    let entityFile = uploadedFiles.get(entityId)
-    if (entityFile) {
-      if (entityFile.byteLength > MAX_ENTITY_FILE_SIZE_BYTES) {
+    let entityFile: Uint8Array
+    const uploadedEntityFile = uploadedFiles.get(entityId)
+    if (uploadedEntityFile) {
+      if (uploadedEntityFile.size > MAX_ENTITY_FILE_SIZE_BYTES) {
         throw new InvalidPartialDeploymentError([
-          `The entity file '${entityId}' is too large (${entityFile.byteLength} bytes, max ${MAX_ENTITY_FILE_SIZE_BYTES}).`
+          `The entity file '${entityId}' is too large (${uploadedEntityFile.size} bytes, max ${MAX_ENTITY_FILE_SIZE_BYTES}).`
         ])
       }
+      if (!uploadedEntityBytes) {
+        throw new Error(`The entity file '${entityId}' was uploaded but not passed in memory.`)
+      }
+      entityFile = uploadedEntityBytes
     } else {
-      entityFile = await readBackEntityFile(entityId, authChain)
+      entityFile = await readBackEntityFile(entityId, authChain, hold)
     }
 
     let entity: Entity
@@ -488,8 +522,13 @@ export function createPartialDeployments(
     // Resume batches by the upload's creator skip the slow access check: creating the upload passed
     // it, bytes are hash-verified against the manifest, and finalize re-runs the full validation.
     const isResumeBySameDeployer = !!pending && pending.deployerAddress === deployerAddress
+    // The staging validations only read which files were uploaded, not their bytes (size and content
+    // checks run at finalize against storage), so content files are passed as empty placeholders.
+    const stagingFiles = new Map<string, Uint8Array>(
+      Array.from(uploadedFiles.keys(), (key) => [key, key === entityId ? entityFile : EMPTY_FILE])
+    )
     const validationResult = await validator.validateStagingScene(
-      { entity, files: uploadedFiles, auditInfo: { authChain } },
+      { entity, files: stagingFiles, auditInfo: { authChain } },
       { skipAccessCheck: isResumeBySameDeployer }
     )
     if (!validationResult.ok) {
@@ -581,8 +620,8 @@ export function createPartialDeployments(
     }
     let incomingBytes = 0
     for (const [hash, file] of uploadedFiles) {
-      incomingBytes += file.byteLength
-      receipts.set(hash, { hash, size: file.byteLength, stored: receipts.get(hash)?.stored ?? false })
+      incomingBytes += file.size
+      receipts.set(hash, { hash, size: file.size, stored: receipts.get(hash)?.stored ?? false })
     }
     const knownSceneBytes = Array.from(receipts.values())
       .filter((receipt) => receipt.hash !== entityId)

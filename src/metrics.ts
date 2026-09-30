@@ -163,8 +163,20 @@ export const metricsDeclaration = validateMetricsDeclaration({
     labelNames: []
   },
   dcl_multipart_upload_capacity_bytes: {
-    help: 'Capacity of the POST /entities in-flight upload budget',
+    help: 'Capacity of a POST /entities upload budget',
     type: 'gauge',
+    // budget=(disk|memory)
+    labelNames: ['budget']
+  },
+  dcl_upload_spool_failures_total: {
+    help: 'POST /entities disk spool failures',
+    type: 'counter',
+    // reason=(write_error|flush_timeout|cleanup)
+    labelNames: ['reason']
+  },
+  dcl_upload_spool_reclaimed_folders_total: {
+    help: 'Spool folders of exited processes reclaimed at startup',
+    type: 'counter',
     labelNames: []
   },
   dcl_multipart_upload_timeouts_total: {
@@ -173,20 +185,21 @@ export const metricsDeclaration = validateMetricsDeclaration({
     labelNames: []
   },
   dcl_multipart_upload_reserved_bytes: {
-    help: 'POST /entities body bytes reserved in the in-flight upload budget',
+    help: 'POST /entities bytes reserved in an upload budget',
     type: 'gauge',
-    labelNames: []
+    // budget=(disk|memory)
+    labelNames: ['budget']
   },
   dcl_multipart_upload_active: {
-    help: 'POST /entities bodies being buffered',
+    help: 'POST /entities uploads holding an upload budget',
     type: 'gauge',
-    labelNames: []
+    labelNames: ['budget']
   },
   dcl_multipart_upload_rejections_total: {
-    help: 'POST /entities uploads shed because the in-flight upload budget, or its source share, was full',
+    help: 'POST /entities uploads shed because an upload budget, or its source share, was full',
     type: 'counter',
-    // reason=(bytes|source_bytes|source_concurrency)
-    labelNames: ['reason']
+    // budget=(disk|memory|source) reason=(bytes|source_bytes|source_concurrency)
+    labelNames: ['budget', 'reason']
   },
   dcl_partial_upload_metadata_checks_total: {
     help: 'Content metadata checks performed by partial uploads',

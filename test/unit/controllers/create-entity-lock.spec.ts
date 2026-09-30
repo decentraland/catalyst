@@ -26,11 +26,17 @@ function buildContext(
     request: { headers: { get: () => null } },
     formData: {
       fields,
-      files: Object.fromEntries(Object.entries(files).map(([name, value]) => [name, { fieldname: name, value }]))
+      files: Object.fromEntries(
+        Object.entries(files).map(([name, value]) => [
+          name,
+          { fieldname: name, path: `/spool/${name}`, size: value.length }
+        ])
+      )
     },
     components: {
       logs: { getLogger: () => ({ info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() }) },
       metrics: { increment: jest.fn() },
+      deploymentMemoryBudget: { acquire: () => ({ resize: jest.fn(), release: jest.fn() }) },
       ...components
     }
   } as unknown as Context
@@ -49,7 +55,7 @@ describe('when creating an entity under the content lock', () => {
     stageDeployment = jest.fn()
     validateSignature = jest.fn()
     getDeployedEntityTimestamp = jest.fn().mockResolvedValue(undefined)
-    readDeployment = jest.fn().mockResolvedValue({ files: new Map(), entity: { timestamp: ENTITY_TIMESTAMP } })
+    readDeployment = jest.fn().mockResolvedValue({ hashes: [], entity: { timestamp: ENTITY_TIMESTAMP } })
     deployer = { getDeployedEntityTimestamp, readDeployment }
     jest.spyOn(Date, 'now').mockReturnValue(NOW)
   })
