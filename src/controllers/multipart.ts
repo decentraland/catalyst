@@ -126,7 +126,7 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
     try {
       return await parseAndHandle(ctx, lease, initialReservation)
     } finally {
-      // The temporary files are removed by the time this runs.
+      // Runs once removing the temporary files has finished or failed.
       lease?.release()
     }
   }
@@ -447,7 +447,8 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
         writer.destroy()
       }
       await Promise.allSettled(writes)
-      // A folder left behind is not charged to the disk budget until its process restarts.
+      // The lease is released even if removal fails; a leftover folder is no longer counted and is only
+      // reclaimed after this process exits, by the next startup on this host.
       await rm(directory, { recursive: true, force: true }).catch(() =>
         options.metrics?.increment('dcl_upload_spool_failures_total', { reason: 'cleanup' })
       )
