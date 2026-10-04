@@ -7,7 +7,10 @@ import {
   UploadBudgetLease
 } from '../../../src/adapters/upload-budget'
 
-type BudgetConfig = { capacityBytes: number; minReservationBytes: number; maxRequestBytes: number; maxFiles?: number }
+const GiB = 1024 ** 3
+const MiB = 1024 ** 2
+
+type BudgetConfig = { capacityBytes?: number; minReservationBytes: number; maxRequestBytes: number; maxFiles?: number }
 
 function buildComponents({ capacityBytes, minReservationBytes, maxRequestBytes, maxFiles = 0 }: BudgetConfig) {
   const values: Partial<Record<EnvironmentConfig, number>> = {
@@ -85,6 +88,62 @@ describe('when creating the upload budget', () => {
 
     it('should fail at startup naming both settings', () => {
       expect(creation).toThrow('MAX_IN_FLIGHT_UPLOAD_BYTES (100) must be at least MIN_UPLOAD_RESERVATION_BYTES (101).')
+    })
+  })
+
+  describe.each([
+    ['disk', 4 * GiB],
+    ['memory', 3 * GiB]
+  ] as const)('and MAX_UPLOAD_TOTAL_SIZE is 3 GiB and the %s budget is unset', (kind, capacityBytes) => {
+    let components: ReturnType<typeof buildComponents>
+
+    beforeEach(() => {
+      components = buildComponents({ minReservationBytes: 16 * MiB, maxRequestBytes: 3 * GiB, maxFiles: 3000 })
+      createUploadBudget(components, kind)
+    })
+
+    it(`should start with the larger of its default and one maximum-size request: ${capacityBytes} bytes`, () => {
+      expect(components.metrics.observe).toHaveBeenCalledWith(
+        'dcl_upload_budget_capacity_bytes',
+        { budget: kind },
+        capacityBytes
+      )
+    })
+  })
+
+  describe('and MAX_UPLOAD_TOTAL_SIZE is 4 GiB and the disk budget is unset', () => {
+    let components: ReturnType<typeof buildComponents>
+
+    beforeEach(() => {
+      components = buildComponents({ minReservationBytes: 16 * MiB, maxRequestBytes: 4 * GiB, maxFiles: 3000 })
+      createUploadBudget(components, 'disk')
+    })
+
+    it('should grow past its 4 GiB default to fit the request and the overhead of its maximum file count', () => {
+      expect(components.metrics.observe).toHaveBeenCalledWith(
+        'dcl_upload_budget_capacity_bytes',
+        { budget: 'disk' },
+        4 * GiB + 3000 * SPOOL_FILE_OVERHEAD_BYTES
+      )
+    })
+  })
+
+  describe.each([
+    ['disk', 'MAX_IN_FLIGHT_UPLOAD_BYTES'],
+    ['memory', 'MAX_IN_MEMORY_DEPLOYMENT_BYTES']
+  ] as const)('and MAX_UPLOAD_TOTAL_SIZE is 3 GiB and the %s budget is explicitly set to 2 GiB', (kind, setting) => {
+    let creation: () => IUploadBudget
+
+    beforeEach(() => {
+      creation = () =>
+        createUploadBudget(
+          buildComponents({ capacityBytes: 2 * GiB, minReservationBytes: 16 * MiB, maxRequestBytes: 3 * GiB }),
+          kind
+        )
+    })
+
+    it('should still fail at startup rather than derive a larger capacity', () => {
+      expect(creation).toThrow(`${setting} (${2 * GiB}) must be at least MAX_UPLOAD_TOTAL_SIZE`)
     })
   })
 

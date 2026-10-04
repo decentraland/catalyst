@@ -52,8 +52,9 @@ export const DEFAULT_MAX_UPLOAD_TOTAL_SIZE = 2 * 1024 * 1024 * 1024 // 2 GiB tot
 // byte quotas instead.
 export const DEFAULT_MAX_IN_FLIGHT_UPLOAD_BYTES = 4 * 1024 * 1024 * 1024 // 4 GiB
 // Aggregate bound on regular deployment files read into memory at once. Partial batches stream their
-// content from disk; only their entity file counts, held until the batch is staged. It must fit one MAX_UPLOAD_TOTAL_SIZE request.
-export const DEFAULT_MAX_IN_MEMORY_DEPLOYMENT_BYTES = DEFAULT_MAX_UPLOAD_TOTAL_SIZE
+// content from disk; only their entity file counts, held until the batch is staged. It must fit one MAX_UPLOAD_TOTAL_SIZE
+// request; unset, it is this default or MAX_UPLOAD_TOTAL_SIZE, whichever is larger.
+export const DEFAULT_MAX_IN_MEMORY_DEPLOYMENT_BYTES = 2 * 1024 * 1024 * 1024 // 2 GiB
 // Least any POST /entities request reserves from MAX_IN_FLIGHT_UPLOAD_BYTES, covering its per-request overhead
 // (form fields, parser buffers, open spool files, the socket), so that budget also bounds concurrency: 256 small uploads by default.
 export const DEFAULT_MIN_UPLOAD_RESERVATION_BYTES = 16 * 1024 * 1024 // 16 MiB
@@ -777,7 +778,7 @@ export class EnvironmentBuilder {
     )
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_IN_MEMORY_DEPLOYMENT_BYTES, () =>
-      parsePositiveIntEnv('MAX_IN_MEMORY_DEPLOYMENT_BYTES', DEFAULT_MAX_IN_MEMORY_DEPLOYMENT_BYTES)
+      parseOptionalPositiveIntEnv('MAX_IN_MEMORY_DEPLOYMENT_BYTES')
     )
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MIN_UPLOAD_RESERVATION_BYTES, () =>

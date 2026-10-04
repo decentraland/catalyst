@@ -1,4 +1,8 @@
-import { DEFAULT_MAX_IN_FLIGHT_UPLOAD_BYTES, EnvironmentConfig } from '../../Environment'
+import {
+  DEFAULT_MAX_IN_FLIGHT_UPLOAD_BYTES,
+  DEFAULT_MAX_IN_MEMORY_DEPLOYMENT_BYTES,
+  EnvironmentConfig
+} from '../../Environment'
 import { AppComponents } from '../../types'
 import { UploadBudgetExceededError } from './errors'
 import { IUploadBudget, UploadBudgetKind, UploadBudgetLease } from './types'
@@ -16,8 +20,8 @@ export const SPOOL_FILE_OVERHEAD_BYTES = 16 * 1024
  * Creates a byte budget shared by every POST /entities request of this process: `disk` bounds bodies
  * spooled to temporary files, each file charged SPOOL_FILE_OVERHEAD_BYTES on top of its size and every
  * lease holding at least MIN_UPLOAD_RESERVATION_BYTES, so it also bounds how many uploads run at once;
- * `memory` bounds regular deployments and entity files read into memory. Unset, the disk budget defaults
- * to DEFAULT_MAX_IN_FLIGHT_UPLOAD_BYTES or one maximum-size request, whichever is larger.
+ * `memory` bounds regular deployments and entity files read into memory. Unset, a budget defaults to its
+ * DEFAULT_MAX_* setting or one maximum-size request, whichever is larger.
  * @param components Environment and metrics.
  * @param kind Which resource the budget bounds.
  * @returns The upload budget.
@@ -33,24 +37,22 @@ export function createUploadBudget(
   const minReservationBytes =
     kind === 'disk' ? env.getConfig<number>(EnvironmentConfig.MIN_UPLOAD_RESERVATION_BYTES) : 0
   const maxTotalSize = env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE)
-  let capacityBytes: number
-  if (kind === 'disk') {
-    const maxFiles = env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FILE_COUNT)
-    const maxRequestBytes = maxTotalSize + maxFiles * SPOOL_FILE_OVERHEAD_BYTES
-    capacityBytes =
-      env.getConfig<number | undefined>(EnvironmentConfig[setting]) ??
-      Math.max(DEFAULT_MAX_IN_FLIGHT_UPLOAD_BYTES, maxRequestBytes)
-    if (capacityBytes < maxRequestBytes) {
-      throw new Error(
-        `${setting} (${capacityBytes}) must be at least MAX_UPLOAD_TOTAL_SIZE plus ${SPOOL_FILE_OVERHEAD_BYTES} ` +
-          `bytes per MAX_UPLOAD_FILE_COUNT file (${maxRequestBytes}).`
-      )
-    }
-  } else {
-    capacityBytes = env.getConfig<number>(EnvironmentConfig[setting])
-    if (capacityBytes < maxTotalSize) {
-      throw new Error(`${setting} (${capacityBytes}) must be at least MAX_UPLOAD_TOTAL_SIZE (${maxTotalSize}).`)
-    }
+  // Least capacity that fits one maximum-size request.
+  const requiredBytes =
+    kind === 'disk'
+      ? maxTotalSize + env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FILE_COUNT) * SPOOL_FILE_OVERHEAD_BYTES
+      : maxTotalSize
+  // Read here, not at module load: Environment imports this module back through components.
+  const defaultBytes = kind === 'disk' ? DEFAULT_MAX_IN_FLIGHT_UPLOAD_BYTES : DEFAULT_MAX_IN_MEMORY_DEPLOYMENT_BYTES
+  const capacityBytes =
+    env.getConfig<number | undefined>(EnvironmentConfig[setting]) ?? Math.max(defaultBytes, requiredBytes)
+  if (capacityBytes < requiredBytes) {
+    throw new Error(
+      kind === 'disk'
+        ? `${setting} (${capacityBytes}) must be at least MAX_UPLOAD_TOTAL_SIZE plus ${SPOOL_FILE_OVERHEAD_BYTES} ` +
+          `bytes per MAX_UPLOAD_FILE_COUNT file (${requiredBytes}).`
+        : `${setting} (${capacityBytes}) must be at least MAX_UPLOAD_TOTAL_SIZE (${maxTotalSize}).`
+    )
   }
   if (capacityBytes < minReservationBytes) {
     throw new Error(
