@@ -52,7 +52,8 @@ describe('when staging a partial batch', () => {
       [EnvironmentConfig.MAX_PENDING_DEPLOYMENTS_PER_DEPLOYER]: 10,
       [EnvironmentConfig.MAX_PENDING_BYTES_PER_DEPLOYER]: 1e9,
       [EnvironmentConfig.MAX_PENDING_BYTES]: 1e9,
-      [EnvironmentConfig.MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE]: 1e9
+      [EnvironmentConfig.MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE]: 1e9,
+      [EnvironmentConfig.MAX_UPLOAD_FILE_SIZE]: 1e6
     }
     partialDeployments = createPartialDeployments({
       logs: { getLogger: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }) },

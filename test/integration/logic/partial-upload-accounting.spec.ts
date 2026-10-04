@@ -15,6 +15,10 @@ import { createDefaultServer, resetServer } from '../simpleTestEnvironment'
 import { TestProgram } from '../TestProgram'
 
 const CONTENT_SIZE = 2500
+const MAX_FILE_SIZE = 1024 * 1024
+// The least rate startup accepts: the 10 MiB entity file cap plus one maximum-size file.
+const BYTES_PER_MINUTE = MAX_FILE_SIZE + 10 * 1024 * 1024
+const OVERSIZED_PART_SIZE = MAX_FILE_SIZE / 2
 const TTL_SECONDS = 60 * 60
 const CLEANUP_INTERVAL_SECONDS = 5 * 60
 
@@ -55,7 +59,8 @@ describe('Integration - Partial upload accounting', () => {
     server = await createDefaultServer({
       [EnvironmentConfig.MAX_PENDING_BYTES_PER_DEPLOYER]: 4000,
       [EnvironmentConfig.MAX_PENDING_BYTES]: 5000,
-      [EnvironmentConfig.MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE]: 100_000,
+      [EnvironmentConfig.MAX_UPLOAD_FILE_SIZE]: MAX_FILE_SIZE,
+      [EnvironmentConfig.MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE]: BYTES_PER_MINUTE,
       [EnvironmentConfig.MAX_PENDING_DEPLOYMENTS_PER_DEPLOYER]: 3
     })
     // The scheduled cleanup runs once at startup and could reclaim an upload a test just expired.
@@ -175,7 +180,7 @@ describe('Integration - Partial upload accounting', () => {
     beforeEach(async () => {
       await stageLarge(server, await prepareUpload(identity, 'first'))
       await server.components.database.query(
-        `UPDATE partial_upload_rates SET bytes = 100000, window_started = now() - interval '45 seconds'`
+        `UPDATE partial_upload_rates SET bytes = ${BYTES_PER_MINUTE}, window_started = now() - interval '45 seconds'`
       )
       response = await stageLarge(server, await prepareUpload(identity, 'second'))
       body = (await response.json()) as { errors: string[] }
@@ -186,7 +191,9 @@ describe('Integration - Partial upload accounting', () => {
       expect({ status: response.status, error: body.errors[0] }).toEqual({
         status: 429,
         error: expect.stringMatching(
-          /^Partial upload byte rate exceeded for this account: \d+ bytes in the current one-minute window, max 100000\. Retry in \d+ s\.$/
+          new RegExp(
+            `^Partial upload byte rate exceeded for this account: \\d+ bytes in the current one-minute window, max ${BYTES_PER_MINUTE}\\. Retry in \\d+ s\\.$`
+          )
         )
       })
     })
@@ -195,6 +202,83 @@ describe('Integration - Partial upload accounting', () => {
       expect(retryAfter).toBeGreaterThanOrEqual(10)
       expect(retryAfter).toBeLessThanOrEqual(15)
       expect(body.errors[0]).toContain(`Retry in ${retryAfter} s.`)
+    })
+  })
+
+  describe('when a single batch is larger than the one-minute byte rate', () => {
+    let deployment: PreparedDeployment
+    let batchBytes: number
+    let response: Response
+    let body: { errors: string[] }
+
+    beforeEach(async () => {
+      const nonce = `oversized-${Date.now()}-${Math.random()}`
+      const files: Record<string, Buffer> = {}
+      for (let i = 0; i * OVERSIZED_PART_SIZE <= BYTES_PER_MINUTE; i++) {
+        files[`part-${i}.bin`] = Buffer.alloc(OVERSIZED_PART_SIZE, `${nonce}-${i}`)
+      }
+      deployment = await prepareSceneDeployment(['3,3'], files, identity)
+      batchBytes = Array.from(deployment.files.values()).reduce((sum, file) => sum + file.byteLength, 0)
+      response = await postForm(
+        server,
+        buildPartialForm(deployment, [deployment.entityId, ...deployment.contentHashes])
+      )
+      body = (await response.json()) as { errors: string[] }
+    })
+
+    it('should reject it with a 400 naming its size and the limit, since no window can admit it', () => {
+      expect({ status: response.status, retryAfter: response.headers.get('Retry-After'), errors: body.errors }).toEqual(
+        {
+          status: 400,
+          retryAfter: null,
+          errors: [
+            `This batch is ${batchBytes} bytes, over the partial upload byte rate limit of ${BYTES_PER_MINUTE} bytes per minute. Send it in smaller batches.`
+          ]
+        }
+      )
+    })
+
+    it('should still charge the rejected batch against the byte rate', async () => {
+      const result = await server.components.database.query<{ bytes: string }>('SELECT bytes FROM partial_upload_rates')
+      expect(result.rows).toEqual([{ bytes: String(batchBytes) }])
+    })
+  })
+
+  describe('when a single upload needs more storage than the account budget on its own', () => {
+    let deployment: PreparedDeployment
+    let response: Response
+    let body: { errors: string[] }
+
+    beforeEach(async () => {
+      const nonce = `too-big-${Date.now()}-${Math.random()}`
+      deployment = await prepareSceneDeployment(
+        ['3,3'],
+        {
+          'first.bin': Buffer.alloc(CONTENT_SIZE, `${nonce}-first`),
+          'second.bin': Buffer.alloc(CONTENT_SIZE, `${nonce}-second`),
+          'small.txt': Buffer.from(`small ${nonce}`)
+        },
+        identity
+      )
+      const largeHashes = deployment.contentHashes.filter(
+        (hash) => deployment.files.get(hash)!.byteLength === CONTENT_SIZE
+      )
+      response = await postForm(server, buildPartialForm(deployment, [deployment.entityId, ...largeHashes]))
+      body = (await response.json()) as { errors: string[] }
+    })
+
+    it('should reject it with a 400 naming the budget and the bytes it needs, since cleanup can never make room', () => {
+      expect({ status: response.status, retryAfter: response.headers.get('Retry-After'), errors: body.errors }).toEqual(
+        {
+          status: 400,
+          retryAfter: null,
+          errors: [
+            `This upload needs ${
+              deployment.files.get(deployment.entityId)!.byteLength + 2 * CONTENT_SIZE
+            } bytes of partial upload storage, over the per-account budget of 4000 bytes.`
+          ]
+        }
+      )
     })
   })
 

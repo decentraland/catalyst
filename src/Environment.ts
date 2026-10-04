@@ -47,8 +47,8 @@ export const DEFAULT_MAX_UPLOAD_TOTAL_SIZE = 2 * 1024 * 1024 * 1024 // 2 GiB tot
 
 // Aggregate bound on POST /entities bodies spooled to temporary files at once across all clients, each
 // file charged 16 KiB on top of its bytes so it also bounds inodes. It must fit one maximum-size request
-// (MAX_UPLOAD_TOTAL_SIZE plus the charge for MAX_UPLOAD_FILE_COUNT files). Partial batches are exempt from
-// the per-IP daily quota below and are bounded by this budget, its per-source share and their account's
+// (MAX_UPLOAD_TOTAL_SIZE plus the charge for MAX_UPLOAD_FILE_COUNT files); unset, it is this default or that
+// size, whichever is larger. Partial batches are exempt from the per-IP daily quota below and are bounded by this budget, its per-source share and their account's
 // byte quotas instead.
 export const DEFAULT_MAX_IN_FLIGHT_UPLOAD_BYTES = 4 * 1024 * 1024 * 1024 // 4 GiB
 // Aggregate bound on regular deployment files read into memory at once. Partial batches stream their
@@ -162,6 +162,17 @@ function parseOptionalNonNegativeIntEnv(name: string): number | undefined {
     return undefined
   }
   return parseNonNegativeIntEnv(name, 0)
+}
+
+/**
+ * Like `parseOptionalNonNegativeIntEnv` but rejects `0`, for a bound whose default the consumer derives.
+ */
+function parseOptionalPositiveIntEnv(name: string): number | undefined {
+  const raw = process.env[name]
+  if (raw === undefined || raw === '') {
+    return undefined
+  }
+  return parsePositiveIntEnv(name, 0)
 }
 
 /**
@@ -762,7 +773,7 @@ export class EnvironmentBuilder {
     )
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_IN_FLIGHT_UPLOAD_BYTES, () =>
-      parsePositiveIntEnv('MAX_IN_FLIGHT_UPLOAD_BYTES', DEFAULT_MAX_IN_FLIGHT_UPLOAD_BYTES)
+      parseOptionalPositiveIntEnv('MAX_IN_FLIGHT_UPLOAD_BYTES')
     )
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_IN_MEMORY_DEPLOYMENT_BYTES, () =>

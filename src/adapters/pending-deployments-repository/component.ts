@@ -112,8 +112,9 @@ async function getReservationTotals(
   entityId: string,
   deployerAddress: string
 ): Promise<ReservationTotals> {
-  const result = await database.queryWithValues<{ account: string; total: string; scene: string }>(
+  const result = await database.queryWithValues<{ upload: string; account: string; total: string; scene: string }>(
     SQL`SELECT
+          COALESCE(SUM(reserved_bytes) FILTER (WHERE entity_id = ${entityId}), 0)::text AS upload,
           COALESCE(SUM(reserved_bytes) FILTER (WHERE deployer_address = ${deployerAddress.toLowerCase()}), 0)::text AS account,
           COALESCE(SUM(reserved_bytes), 0)::text AS total,
           (SELECT COALESCE(SUM(size), 0)::text FROM pending_deployment_files
@@ -122,7 +123,12 @@ async function getReservationTotals(
     'pending_deployment_reservation_totals'
   )
   const row = result.rows[0]
-  return { account: BigInt(row.account), total: BigInt(row.total), scene: BigInt(row.scene) }
+  return {
+    upload: BigInt(row.upload),
+    account: BigInt(row.account),
+    total: BigInt(row.total),
+    scene: BigInt(row.scene)
+  }
 }
 
 async function addIncomingBytes(

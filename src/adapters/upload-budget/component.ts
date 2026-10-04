@@ -1,4 +1,4 @@
-import { EnvironmentConfig } from '../../Environment'
+import { DEFAULT_MAX_IN_FLIGHT_UPLOAD_BYTES, EnvironmentConfig } from '../../Environment'
 import { AppComponents } from '../../types'
 import { UploadBudgetExceededError } from './errors'
 import { IUploadBudget, UploadBudgetKind, UploadBudgetLease } from './types'
@@ -16,7 +16,8 @@ export const SPOOL_FILE_OVERHEAD_BYTES = 16 * 1024
  * Creates a byte budget shared by every POST /entities request of this process: `disk` bounds bodies
  * spooled to temporary files, each file charged SPOOL_FILE_OVERHEAD_BYTES on top of its size and every
  * lease holding at least MIN_UPLOAD_RESERVATION_BYTES, so it also bounds how many uploads run at once;
- * `memory` bounds regular deployments and entity files read into memory.
+ * `memory` bounds regular deployments and entity files read into memory. Unset, the disk budget defaults
+ * to DEFAULT_MAX_IN_FLIGHT_UPLOAD_BYTES or one maximum-size request, whichever is larger.
  * @param components Environment and metrics.
  * @param kind Which resource the budget bounds.
  * @returns The upload budget.
@@ -28,22 +29,28 @@ export function createUploadBudget(
 ): IUploadBudget {
   const { env, metrics } = components
   const setting = CAPACITY_SETTING[kind]
-  const capacityBytes = env.getConfig<number>(EnvironmentConfig[setting])
   // Only request (disk) leases carry per-request overhead; memory leases hold exactly what they read.
   const minReservationBytes =
     kind === 'disk' ? env.getConfig<number>(EnvironmentConfig.MIN_UPLOAD_RESERVATION_BYTES) : 0
   const maxTotalSize = env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE)
+  let capacityBytes: number
   if (kind === 'disk') {
     const maxFiles = env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FILE_COUNT)
     const maxRequestBytes = maxTotalSize + maxFiles * SPOOL_FILE_OVERHEAD_BYTES
+    capacityBytes =
+      env.getConfig<number | undefined>(EnvironmentConfig[setting]) ??
+      Math.max(DEFAULT_MAX_IN_FLIGHT_UPLOAD_BYTES, maxRequestBytes)
     if (capacityBytes < maxRequestBytes) {
       throw new Error(
         `${setting} (${capacityBytes}) must be at least MAX_UPLOAD_TOTAL_SIZE plus ${SPOOL_FILE_OVERHEAD_BYTES} ` +
           `bytes per MAX_UPLOAD_FILE_COUNT file (${maxRequestBytes}).`
       )
     }
-  } else if (capacityBytes < maxTotalSize) {
-    throw new Error(`${setting} (${capacityBytes}) must be at least MAX_UPLOAD_TOTAL_SIZE (${maxTotalSize}).`)
+  } else {
+    capacityBytes = env.getConfig<number>(EnvironmentConfig[setting])
+    if (capacityBytes < maxTotalSize) {
+      throw new Error(`${setting} (${capacityBytes}) must be at least MAX_UPLOAD_TOTAL_SIZE (${maxTotalSize}).`)
+    }
   }
   if (capacityBytes < minReservationBytes) {
     throw new Error(
@@ -53,17 +60,17 @@ export function createUploadBudget(
 
   let reservedBytes = 0
   let activeUploads = 0
-  metrics.observe('dcl_multipart_upload_capacity_bytes', { budget: kind }, capacityBytes)
+  metrics.observe('dcl_upload_budget_capacity_bytes', { budget: kind }, capacityBytes)
 
   function report(): void {
-    metrics.observe('dcl_multipart_upload_reserved_bytes', { budget: kind }, reservedBytes)
-    metrics.observe('dcl_multipart_upload_active', { budget: kind }, activeUploads)
+    metrics.observe('dcl_upload_budget_reserved_bytes', { budget: kind }, reservedBytes)
+    metrics.observe('dcl_upload_budget_active', { budget: kind }, activeUploads)
   }
 
   function acquire(requestedBytes: number): UploadBudgetLease {
     const bytes = Math.max(requestedBytes, minReservationBytes)
     if (reservedBytes + bytes > capacityBytes) {
-      metrics.increment('dcl_multipart_upload_rejections_total', { budget: kind, reason: 'bytes' })
+      metrics.increment('dcl_upload_budget_rejections_total', { budget: kind, reason: 'bytes' })
       throw new UploadBudgetExceededError()
     }
     activeUploads++
@@ -79,7 +86,7 @@ export function createUploadBudget(
         }
         const next = Math.max(requestedNext, minReservationBytes)
         if (next > current && reservedBytes + next - current > capacityBytes) {
-          metrics.increment('dcl_multipart_upload_rejections_total', { budget: kind, reason: 'bytes' })
+          metrics.increment('dcl_upload_budget_rejections_total', { budget: kind, reason: 'bytes' })
           return false
         }
         reservedBytes += next - current

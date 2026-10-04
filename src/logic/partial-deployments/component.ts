@@ -94,6 +94,7 @@ async function streamToBufferCapped(
  * coexist within byte and count quotas; publication order is enforced by the deploy pipeline.
  * @param components Validation, persistence, storage and telemetry dependencies.
  * @returns Partial deployment orchestration and expired-upload cleanup.
+ * @throws Error when MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE can't fit a batch of the entity file and one maximum-size file.
  */
 export function createPartialDeployments(
   components: Pick<
@@ -137,6 +138,14 @@ export function createPartialDeployments(
   const accountBytes = BigInt(env.getConfig<number>(EnvironmentConfig.MAX_PENDING_BYTES_PER_DEPLOYER))
   const globalBytes = BigInt(env.getConfig<number>(EnvironmentConfig.MAX_PENDING_BYTES))
   const bytesPerMinute = BigInt(env.getConfig<number>(EnvironmentConfig.MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE))
+  // A file can't be split across batches, so a smaller rate would make some valid scenes impossible to upload.
+  const minBytesPerMinute =
+    BigInt(env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FILE_SIZE)) + BigInt(MAX_ENTITY_FILE_SIZE_BYTES)
+  if (bytesPerMinute < minBytesPerMinute) {
+    throw new Error(
+      `MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE (${bytesPerMinute}) must fit a batch of the entity file (up to ${MAX_ENTITY_FILE_SIZE_BYTES} bytes) and one MAX_UPLOAD_FILE_SIZE file: at least ${minBytesPerMinute}.`
+    )
+  }
   const cleanupIntervalMs = env.getConfig<number>(EnvironmentConfig.PENDING_DEPLOYMENTS_CLEANUP_INTERVAL)
   // When the last cleanup run ended, to estimate the next one for Retry-After.
   let lastCleanupAt: number | undefined
@@ -392,6 +401,12 @@ export function createPartialDeployments(
       upload.deployerAddress,
       incomingBytes
     )
+    // No window can ever admit this batch, so retrying it can't help.
+    if (BigInt(incomingBytes) > bytesPerMinute) {
+      throw new InvalidPartialDeploymentError([
+        `This batch is ${incomingBytes} bytes, over the partial upload byte rate limit of ${bytesPerMinute} bytes per minute. Send it in smaller batches.`
+      ])
+    }
     if (rateWindow.bytes > bytesPerMinute) {
       const retryAfterSeconds = Math.max(1, Math.ceil(rateWindow.endsInMs / 1000))
       throw new InvalidPartialDeploymentError(
@@ -412,6 +427,14 @@ export function createPartialDeployments(
       const totals = await pendingDeploymentsRepository.getReservationTotals(tx, entityId, upload.deployerAddress)
       if (totals.scene > maxSceneBytes) {
         throw new InvalidPartialDeploymentError(['Deployment failed: The deployment is too big.'])
+      }
+      // An upload larger than a budget on its own never fits, however much the others free.
+      const uploadBudget = accountBytes < globalBytes ? accountBytes : globalBytes
+      if (totals.upload > uploadBudget) {
+        const limit = accountBytes < globalBytes ? 'per-account' : 'server'
+        throw new InvalidPartialDeploymentError([
+          `This upload needs ${totals.upload} bytes of partial upload storage, over the ${limit} budget of ${uploadBudget} bytes.`
+        ])
       }
       if (totals.account > accountBytes) {
         throw await quotaExceeded(

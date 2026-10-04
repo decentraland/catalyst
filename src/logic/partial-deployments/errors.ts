@@ -10,7 +10,7 @@ export type PartialUploadThrottleReason =
 /**
  * Thrown by the partial-deployments component when a staging request is rejected. The controller maps
  * it to a response carrying `errors` with `statusCode`: 400 for validation, expiry and permission
- * failures; 429 (with `retryAfterSeconds` and `throttleReason`) for the partial-upload quotas, the
+ * failures and for batches or uploads larger than a quota on their own; 429 (with `retryAfterSeconds` and `throttleReason`) for the partial-upload quotas, the
  * per-pointer deploy rate limiter and in-process pointer conflicts.
  */
 export class InvalidPartialDeploymentError extends Error {

@@ -97,11 +97,7 @@ describe('when creating the upload budget', () => {
     })
 
     it('should report its capacity labeled with the budget', () => {
-      expect(components.metrics.observe).toHaveBeenCalledWith(
-        'dcl_multipart_upload_capacity_bytes',
-        { budget: kind },
-        100
-      )
+      expect(components.metrics.observe).toHaveBeenCalledWith('dcl_upload_budget_capacity_bytes', { budget: kind }, 100)
     })
   })
 
