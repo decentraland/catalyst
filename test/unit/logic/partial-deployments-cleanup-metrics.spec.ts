@@ -5,6 +5,9 @@ import { IPartialDeployments } from '../../../src/logic/partial-deployments/type
 
 const NOW = 1_800_000_000_000
 const MAX_PENDING_BYTES = 5000
+const MAX_UPLOAD_FILE_SIZE = 1000
+// Fits the entity file (up to 10 MiB) plus one maximum-size file.
+const MIN_BYTES_PER_MINUTE = MAX_UPLOAD_FILE_SIZE + 10 * 1024 * 1024
 
 type Mocks = {
   metrics: { increment: jest.Mock; observe: jest.Mock; startTimer: jest.Mock }
@@ -25,15 +28,17 @@ function buildMocks(): Mocks {
   }
 }
 
-function build(mocks: Mocks): IPartialDeployments {
+function build(mocks: Mocks, overrides: Partial<Record<EnvironmentConfig, number>> = {}): IPartialDeployments {
   const config: Partial<Record<EnvironmentConfig, number>> = {
     [EnvironmentConfig.PENDING_DEPLOYMENT_TTL]: 60 * 60 * 1000,
     [EnvironmentConfig.REQUEST_TTL_BACKWARDS]: 20 * 60 * 1000,
     [EnvironmentConfig.MAX_PENDING_DEPLOYMENTS_PER_DEPLOYER]: 10,
     [EnvironmentConfig.MAX_PENDING_BYTES_PER_DEPLOYER]: 1000,
     [EnvironmentConfig.MAX_PENDING_BYTES]: MAX_PENDING_BYTES,
-    [EnvironmentConfig.MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE]: 1000,
-    [EnvironmentConfig.PENDING_DEPLOYMENTS_CLEANUP_INTERVAL]: 5 * 60 * 1000
+    [EnvironmentConfig.MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE]: MIN_BYTES_PER_MINUTE,
+    [EnvironmentConfig.MAX_UPLOAD_FILE_SIZE]: MAX_UPLOAD_FILE_SIZE,
+    [EnvironmentConfig.PENDING_DEPLOYMENTS_CLEANUP_INTERVAL]: 5 * 60 * 1000,
+    ...overrides
   }
   return createPartialDeployments({
     logs: { getLogger: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }) },
@@ -76,6 +81,27 @@ describe('when creating the partial deployments component', () => {
 
   it('should report the server-wide staging cap', () => {
     expect(mocks.metrics.observe).toHaveBeenCalledWith('dcl_partial_upload_capacity_bytes', {}, MAX_PENDING_BYTES)
+  })
+})
+
+describe('when creating the partial deployments component with a byte rate below one entity file plus one maximum-size file', () => {
+  let creating: () => IPartialDeployments
+
+  beforeEach(() => {
+    const mocks = buildMocks()
+    creating = () => build(mocks, { [EnvironmentConfig.MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE]: MIN_BYTES_PER_MINUTE - 1 })
+  })
+
+  afterEach(() => {
+    jest.resetAllMocks()
+  })
+
+  it('should fail startup naming the least byte rate that fits such a batch', () => {
+    expect(creating).toThrow(
+      `MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE (${
+        MIN_BYTES_PER_MINUTE - 1
+      }) must fit a batch of the entity file (up to 10485760 bytes) and one MAX_UPLOAD_FILE_SIZE file: at least ${MIN_BYTES_PER_MINUTE}.`
+    )
   })
 })
 

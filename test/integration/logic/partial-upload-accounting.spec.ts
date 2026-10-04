@@ -15,8 +15,10 @@ import { createDefaultServer, resetServer } from '../simpleTestEnvironment'
 import { TestProgram } from '../TestProgram'
 
 const CONTENT_SIZE = 2500
-const BYTES_PER_MINUTE = 100_000
-const OVERSIZED_FILE_SIZE = 50_000
+const MAX_FILE_SIZE = 1024 * 1024
+// The least rate startup accepts: the 10 MiB entity file cap plus one maximum-size file.
+const BYTES_PER_MINUTE = MAX_FILE_SIZE + 10 * 1024 * 1024
+const OVERSIZED_PART_SIZE = MAX_FILE_SIZE / 2
 const TTL_SECONDS = 60 * 60
 const CLEANUP_INTERVAL_SECONDS = 5 * 60
 
@@ -57,6 +59,7 @@ describe('Integration - Partial upload accounting', () => {
     server = await createDefaultServer({
       [EnvironmentConfig.MAX_PENDING_BYTES_PER_DEPLOYER]: 4000,
       [EnvironmentConfig.MAX_PENDING_BYTES]: 5000,
+      [EnvironmentConfig.MAX_UPLOAD_FILE_SIZE]: MAX_FILE_SIZE,
       [EnvironmentConfig.MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE]: BYTES_PER_MINUTE,
       [EnvironmentConfig.MAX_PENDING_DEPLOYMENTS_PER_DEPLOYER]: 3
     })
@@ -211,8 +214,8 @@ describe('Integration - Partial upload accounting', () => {
     beforeEach(async () => {
       const nonce = `oversized-${Date.now()}-${Math.random()}`
       const files: Record<string, Buffer> = {}
-      for (let i = 0; i * OVERSIZED_FILE_SIZE <= BYTES_PER_MINUTE; i++) {
-        files[`part-${i}.bin`] = Buffer.alloc(OVERSIZED_FILE_SIZE, `${nonce}-${i}`)
+      for (let i = 0; i * OVERSIZED_PART_SIZE <= BYTES_PER_MINUTE; i++) {
+        files[`part-${i}.bin`] = Buffer.alloc(OVERSIZED_PART_SIZE, `${nonce}-${i}`)
       }
       deployment = await prepareSceneDeployment(['3,3'], files, identity)
       batchBytes = Array.from(deployment.files.values()).reduce((sum, file) => sum + file.byteLength, 0)

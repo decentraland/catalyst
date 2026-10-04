@@ -83,6 +83,7 @@ async function streamToBufferCapped(stream: AsyncIterable<Buffer>, maxBytes: num
  * coexist within byte and count quotas; publication order is enforced by the deploy pipeline.
  * @param components Validation, persistence, storage and telemetry dependencies.
  * @returns Partial deployment orchestration and expired-upload cleanup.
+ * @throws Error when MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE can't fit a batch of the entity file and one maximum-size file.
  */
 export function createPartialDeployments(
   components: Pick<
@@ -124,6 +125,14 @@ export function createPartialDeployments(
   const accountBytes = BigInt(env.getConfig<number>(EnvironmentConfig.MAX_PENDING_BYTES_PER_DEPLOYER))
   const globalBytes = BigInt(env.getConfig<number>(EnvironmentConfig.MAX_PENDING_BYTES))
   const bytesPerMinute = BigInt(env.getConfig<number>(EnvironmentConfig.MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE))
+  // A file can't be split across batches, so a smaller rate would make some valid scenes impossible to upload.
+  const minBytesPerMinute =
+    BigInt(env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FILE_SIZE)) + BigInt(MAX_ENTITY_FILE_SIZE_BYTES)
+  if (bytesPerMinute < minBytesPerMinute) {
+    throw new Error(
+      `MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE (${bytesPerMinute}) must fit a batch of the entity file (up to ${MAX_ENTITY_FILE_SIZE_BYTES} bytes) and one MAX_UPLOAD_FILE_SIZE file: at least ${minBytesPerMinute}.`
+    )
+  }
   const cleanupIntervalMs = env.getConfig<number>(EnvironmentConfig.PENDING_DEPLOYMENTS_CLEANUP_INTERVAL)
   // When the last cleanup run ended, to estimate the next one for Retry-After.
   let lastCleanupAt: number | undefined
