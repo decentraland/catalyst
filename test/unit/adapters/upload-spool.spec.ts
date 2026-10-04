@@ -289,3 +289,50 @@ describe('when the spool folder is too long to hold the owner socket', () => {
     await expect(creation).rejects.toBeInstanceOf(UploadSpoolFolderTooLongError)
   })
 })
+
+// A spool root path of exactly `length` bytes under `base`.
+function rootOfLength(base: string, length: number): string {
+  return path.join(base, 'a'.repeat(length - Buffer.byteLength(base) - 1))
+}
+
+describe('when the spool folder is exactly 76 bytes long', () => {
+  let base: string
+  let root: string
+  let spool: IUploadSpool
+  let ownSocket: boolean
+
+  beforeEach(async () => {
+    base = await mkdtemp(path.join(tmpdir(), 's-'))
+    root = rootOfLength(base, 76)
+    spool = await createUploadSpool(spoolComponents(envWithSpoolFolder(root)))
+    ownSocket = (await lstat(path.join(spool.folder, '.owner'))).isSocket()
+  })
+
+  afterEach(async () => {
+    await spool[STOP_COMPONENT]?.()
+    await rm(base, { recursive: true, force: true })
+  })
+
+  it('should create its folder under it and listen on the owner socket', () => {
+    expect({ parent: path.dirname(spool.folder), ownSocket }).toEqual({ parent: root, ownSocket: true })
+  })
+})
+
+describe('when the spool folder is 77 bytes long', () => {
+  let base: string
+  let creation: Promise<IUploadSpool>
+
+  beforeEach(async () => {
+    base = await mkdtemp(path.join(tmpdir(), 's-'))
+    creation = createUploadSpool(spoolComponents(envWithSpoolFolder(rootOfLength(base, 77))))
+    await creation.catch(() => undefined)
+  })
+
+  afterEach(async () => {
+    await rm(base, { recursive: true, force: true })
+  })
+
+  it('should fail with an UploadSpoolFolderTooLongError', async () => {
+    await expect(creation).rejects.toBeInstanceOf(UploadSpoolFolderTooLongError)
+  })
+})
