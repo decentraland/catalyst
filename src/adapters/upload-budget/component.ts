@@ -1,4 +1,4 @@
-import { EnvironmentConfig } from '../../Environment'
+import { DEFAULT_MAX_IN_FLIGHT_UPLOAD_BYTES, EnvironmentConfig } from '../../Environment'
 import { AppComponents } from '../../types'
 import { UploadBudgetExceededError } from './errors'
 import { IUploadBudget, UploadBudgetLease } from './types'
@@ -17,17 +17,21 @@ export function peakUploadBytes(bodyBytes: number, maxFileBytes?: number): numbe
 /**
  * Creates the in-flight upload budget shared by every POST /entities request of this process. Every lease
  * holds at least MIN_UPLOAD_RESERVATION_BYTES, so the byte budget also bounds how many uploads run at once.
+ * Unset, MAX_IN_FLIGHT_UPLOAD_BYTES defaults to DEFAULT_MAX_IN_FLIGHT_UPLOAD_BYTES or the peak of one
+ * maximum-size request, whichever is larger.
  * @param components Environment and metrics.
  * @returns The upload budget.
  * @throws Error when the byte budget cannot fit the peak of a single maximum-size request, or one minimum reservation.
  */
 export function createUploadBudget(components: Pick<AppComponents, 'env' | 'metrics'>): IUploadBudget {
   const { env, metrics } = components
-  const capacityBytes = env.getConfig<number>(EnvironmentConfig.MAX_IN_FLIGHT_UPLOAD_BYTES)
   const minReservationBytes = env.getConfig<number>(EnvironmentConfig.MIN_UPLOAD_RESERVATION_BYTES)
   const maxRequestBytes = env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE)
   const maxFileBytes = env.getConfig<number | undefined>(EnvironmentConfig.MAX_UPLOAD_FILE_SIZE)
   const maxRequestPeakBytes = peakUploadBytes(maxRequestBytes, maxFileBytes)
+  const capacityBytes =
+    env.getConfig<number | undefined>(EnvironmentConfig.MAX_IN_FLIGHT_UPLOAD_BYTES) ??
+    Math.max(DEFAULT_MAX_IN_FLIGHT_UPLOAD_BYTES, maxRequestPeakBytes)
   if (capacityBytes < maxRequestPeakBytes) {
     throw new Error(
       `MAX_IN_FLIGHT_UPLOAD_BYTES (${capacityBytes}) must fit one maximum-size upload: MAX_UPLOAD_TOTAL_SIZE plus up to MAX_UPLOAD_FILE_SIZE (${maxRequestPeakBytes}).`

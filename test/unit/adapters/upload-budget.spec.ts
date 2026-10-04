@@ -6,8 +6,11 @@ import {
   UploadBudgetLease
 } from '../../../src/adapters/upload-budget'
 
+const GiB = 1024 ** 3
+const MiB = 1024 ** 2
+
 type BudgetConfig = {
-  capacityBytes: number
+  capacityBytes?: number
   minReservationBytes: number
   maxRequestBytes: number
   maxFileBytes: number
@@ -83,6 +86,36 @@ describe('when creating the upload budget', () => {
 
     it('should report its capacity', () => {
       expect(components.metrics.observe).toHaveBeenCalledWith('dcl_multipart_upload_capacity_bytes', {}, 100)
+    })
+  })
+
+  describe('and the byte budget is unset and a maximum-size request peaks above 4 GiB', () => {
+    let components: ReturnType<typeof buildComponents>
+
+    beforeEach(() => {
+      components = buildComponents({ minReservationBytes: 16 * MiB, maxRequestBytes: 4 * GiB, maxFileBytes: 100 * MiB })
+      createUploadBudget(components)
+    })
+
+    it('should start with the peak of that request as its capacity', () => {
+      expect(components.metrics.observe).toHaveBeenCalledWith(
+        'dcl_multipart_upload_capacity_bytes',
+        {},
+        4 * GiB + 100 * MiB
+      )
+    })
+  })
+
+  describe('and the byte budget is unset and a maximum-size request peaks below 4 GiB', () => {
+    let components: ReturnType<typeof buildComponents>
+
+    beforeEach(() => {
+      components = buildComponents({ minReservationBytes: 16 * MiB, maxRequestBytes: 2 * GiB, maxFileBytes: 100 * MiB })
+      createUploadBudget(components)
+    })
+
+    it('should start with 4 GiB as its capacity', () => {
+      expect(components.metrics.observe).toHaveBeenCalledWith('dcl_multipart_upload_capacity_bytes', {}, 4 * GiB)
     })
   })
 
