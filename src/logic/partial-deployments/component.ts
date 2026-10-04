@@ -369,6 +369,12 @@ export function createPartialDeployments(
       upload.deployerAddress,
       incomingBytes
     )
+    // No window can ever admit this batch, so retrying it can't help.
+    if (BigInt(incomingBytes) > bytesPerMinute) {
+      throw new InvalidPartialDeploymentError([
+        `This batch is ${incomingBytes} bytes, over the partial upload byte rate limit of ${bytesPerMinute} bytes per minute. Send it in smaller batches.`
+      ])
+    }
     if (rateWindow.bytes > bytesPerMinute) {
       const retryAfterSeconds = Math.max(1, Math.ceil(rateWindow.endsInMs / 1000))
       throw new InvalidPartialDeploymentError(
@@ -389,6 +395,14 @@ export function createPartialDeployments(
       const totals = await pendingDeploymentsRepository.getReservationTotals(tx, entityId, upload.deployerAddress)
       if (totals.scene > maxSceneBytes) {
         throw new InvalidPartialDeploymentError(['Deployment failed: The deployment is too big.'])
+      }
+      // An upload larger than a budget on its own never fits, however much the others free.
+      const uploadBudget = accountBytes < globalBytes ? accountBytes : globalBytes
+      if (totals.upload > uploadBudget) {
+        const limit = accountBytes < globalBytes ? 'per-account' : 'server'
+        throw new InvalidPartialDeploymentError([
+          `This upload needs ${totals.upload} bytes of partial upload storage, over the ${limit} budget of ${uploadBudget} bytes.`
+        ])
       }
       if (totals.account > accountBytes) {
         throw await quotaExceeded(

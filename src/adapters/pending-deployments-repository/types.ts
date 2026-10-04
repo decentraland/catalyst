@@ -32,6 +32,8 @@ export interface FileReceipt {
 }
 
 export interface ReservationTotals {
+  /** Reserved bytes of this upload. */
+  upload: bigint
   /** Reserved bytes of every upload of the deployer, expired ones included. */
   account: bigint
   /** Reserved bytes of every upload on the server, expired ones included. */
