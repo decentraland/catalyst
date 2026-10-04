@@ -628,6 +628,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     rateLimitStore,
     deploymentQuota,
     sequentialExecutor,
+    // Stopped after the server: stop runs in reverse key order.
+    uploadSpool,
     server,
     snapshotGenerationJob,
     snapshotsRepository,
@@ -640,7 +642,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     tracer,
     uploadBudget,
     deploymentMemoryBudget,
-    uploadSpool,
     sourceUploadLimits,
     validator,
     queryParams,
