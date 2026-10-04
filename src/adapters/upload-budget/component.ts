@@ -45,17 +45,17 @@ export function createUploadBudget(components: Pick<AppComponents, 'env' | 'metr
 
   let reservedBytes = 0
   let activeUploads = 0
-  metrics.observe('dcl_multipart_upload_capacity_bytes', {}, capacityBytes)
+  metrics.observe('dcl_upload_budget_capacity_bytes', {}, capacityBytes)
 
   function report(): void {
-    metrics.observe('dcl_multipart_upload_reserved_bytes', {}, reservedBytes)
-    metrics.observe('dcl_multipart_upload_active', {}, activeUploads)
+    metrics.observe('dcl_upload_budget_reserved_bytes', {}, reservedBytes)
+    metrics.observe('dcl_upload_budget_active', {}, activeUploads)
   }
 
   function acquire(requestedBytes: number): UploadBudgetLease {
     const bytes = Math.max(requestedBytes, minReservationBytes)
     if (reservedBytes + bytes > capacityBytes) {
-      metrics.increment('dcl_multipart_upload_rejections_total', { reason: 'bytes' })
+      metrics.increment('dcl_upload_budget_rejections_total', { reason: 'bytes' })
       throw new UploadBudgetExceededError()
     }
     activeUploads++
@@ -71,7 +71,7 @@ export function createUploadBudget(components: Pick<AppComponents, 'env' | 'metr
         }
         const next = Math.max(requestedNext, minReservationBytes)
         if (next > current && reservedBytes + next - current > capacityBytes) {
-          metrics.increment('dcl_multipart_upload_rejections_total', { reason: 'bytes' })
+          metrics.increment('dcl_upload_budget_rejections_total', { reason: 'bytes' })
           return false
         }
         reservedBytes += next - current

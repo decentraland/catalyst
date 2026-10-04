@@ -162,7 +162,7 @@ export const metricsDeclaration = validateMetricsDeclaration({
     type: 'gauge',
     labelNames: []
   },
-  dcl_multipart_upload_capacity_bytes: {
+  dcl_upload_budget_capacity_bytes: {
     help: 'Capacity of the POST /entities in-flight upload budget',
     type: 'gauge',
     labelNames: []
@@ -172,17 +172,17 @@ export const metricsDeclaration = validateMetricsDeclaration({
     type: 'counter',
     labelNames: []
   },
-  dcl_multipart_upload_reserved_bytes: {
+  dcl_upload_budget_reserved_bytes: {
     help: 'POST /entities body bytes reserved in the in-flight upload budget',
     type: 'gauge',
     labelNames: []
   },
-  dcl_multipart_upload_active: {
+  dcl_upload_budget_active: {
     help: 'POST /entities bodies being buffered',
     type: 'gauge',
     labelNames: []
   },
-  dcl_multipart_upload_rejections_total: {
+  dcl_upload_budget_rejections_total: {
     help: 'POST /entities uploads shed because the in-flight upload budget, or its source share, was full',
     type: 'counter',
     // reason=(bytes|source_bytes|source_concurrency)

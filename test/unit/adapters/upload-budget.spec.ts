@@ -85,7 +85,7 @@ describe('when creating the upload budget', () => {
     })
 
     it('should report its capacity', () => {
-      expect(components.metrics.observe).toHaveBeenCalledWith('dcl_multipart_upload_capacity_bytes', {}, 100)
+      expect(components.metrics.observe).toHaveBeenCalledWith('dcl_upload_budget_capacity_bytes', {}, 100)
     })
   })
 
@@ -99,7 +99,7 @@ describe('when creating the upload budget', () => {
 
     it('should start with the peak of that request as its capacity', () => {
       expect(components.metrics.observe).toHaveBeenCalledWith(
-        'dcl_multipart_upload_capacity_bytes',
+        'dcl_upload_budget_capacity_bytes',
         {},
         4 * GiB + 100 * MiB
       )
@@ -115,7 +115,7 @@ describe('when creating the upload budget', () => {
     })
 
     it('should start with 4 GiB as its capacity', () => {
-      expect(components.metrics.observe).toHaveBeenCalledWith('dcl_multipart_upload_capacity_bytes', {}, 4 * GiB)
+      expect(components.metrics.observe).toHaveBeenCalledWith('dcl_upload_budget_capacity_bytes', {}, 4 * GiB)
     })
   })
 
