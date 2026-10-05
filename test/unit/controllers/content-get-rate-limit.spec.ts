@@ -6,15 +6,11 @@
  * the environment the integration project already uses to copy them in.
  *
  * Mirrors test/unit/controllers/post-entities-rate-limit.spec.ts: same middleware, same mounting
- * pattern, with two additions specific to GET /contents — the `skip` exemption for DAO sync peers,
+ * pattern, with two additions specific to GET /contents — the sync-peer exemption wrapper for DAO peers,
  * and the config that builds the exemption set (TRUSTED_SYNC_PEER_IPS).
  */
 import { createInMemoryCacheComponent } from '@dcl/memory-cache-component'
-import {
-  clientIpFromForwardedHeader,
-  createRateLimiterComponent,
-  IRateLimiterComponent
-} from '@dcl/rate-limiter-component'
+import { createRateLimiterComponent, IRateLimiterComponent } from '@dcl/rate-limiter-component'
 import { createTestMetricsComponent } from '@dcl/metrics'
 import { IHttpServerComponent } from '@dcl/core-commons'
 import {
@@ -26,6 +22,7 @@ import {
 } from '../../../src/Environment'
 import { metricsDeclaration } from '../../../src/metrics'
 import { GlobalContext } from '../../../src/types'
+import { withSyncPeerExemption } from '../../../src/controllers/sync-peer-exemption'
 
 type RateLimitedRequestContext = IHttpServerComponent.DefaultContext<GlobalContext> & {
   routerPath: string
@@ -176,17 +173,16 @@ describe('when a client downloads content through the rate limit middleware', ()
         buildLimitExceededResponse: () => ({ status: 429, body: { error: 'Too many requests' } })
       }
     )
-    middleware = rateLimiter.withRateLimitMiddleware({
-      name: 'GET /contents',
-      max,
-      windowSeconds: 60,
-      skip: (request) => {
-        if (trustedSyncPeerIps.size === 0) return false
-        const ip = clientIpFromForwardedHeader(request.headers.get('cf-connecting-ip'), 1)
-        return ip !== null && trustedSyncPeerIps.has(ip)
-      }
-    })
+    middleware = buildMiddleware('cf-connecting-ip')
   })
+
+  /** Built the way routes.ts builds it: the limiter wrapped by the sync-peer exemption. */
+  const buildMiddleware = (trustedClientIpHeader: string | undefined) =>
+    withSyncPeerExemption<GlobalContext>(
+      rateLimiter.withRateLimitMiddleware({ name: 'GET /contents', max, windowSeconds: 60 }),
+      trustedSyncPeerIps,
+      trustedClientIpHeader
+    ) as unknown as IHttpServerComponent.IRequestHandler<RateLimitedRequestContext>
 
   afterEach(() => {
     jest.clearAllMocks()
@@ -231,6 +227,7 @@ describe('when a client downloads content through the rate limit middleware', ()
 
     beforeEach(async () => {
       trustedSyncPeerIps = new Set(['203.0.113.50'])
+      middleware = buildMiddleware('cf-connecting-ip')
       statuses = []
       // One more request than the budget allows: every one of them must still pass, because this
       // identity is exempted rather than merely given a larger budget.
@@ -254,6 +251,7 @@ describe('when a client downloads content through the rate limit middleware', ()
 
     beforeEach(async () => {
       trustedSyncPeerIps = new Set(['203.0.113.50'])
+      middleware = buildMiddleware('cf-connecting-ip')
       exemptStatuses = []
       for (let i = 0; i < max + 1; i++) {
         exemptStatuses.push((await get(undefined, { 'cf-connecting-ip': '203.0.113.50' })).status)
@@ -263,6 +261,85 @@ describe('when a client downloads content through the rate limit middleware', ()
 
     it('should exempt the peer while still bounding everyone else', () => {
       expect([exemptStatuses, otherStatus]).toEqual([[200, 200, 200, 200], 200])
+    })
+  })
+})
+
+describe('when the catalyst is exposed directly, with no trusted client IP header', () => {
+  let middleware: IHttpServerComponent.IRequestHandler<RateLimitedRequestContext>
+  let next: jest.Mock
+  const max = 2
+
+  // No header configured: the limiter keys on the socket address, so the exemption must too.
+  const getDirect = async (remoteAddress: string): Promise<RateLimitedResponse> =>
+    (await middleware(buildContext('/contents/:hashId', remoteAddress), next)) as RateLimitedResponse
+
+  beforeEach(() => {
+    next = jest.fn().mockResolvedValue({ status: 200 })
+    const rateLimiter = createRateLimiterComponent<GlobalContext>(
+      {
+        cache: createInMemoryCacheComponent({ max: 100 }),
+        logs: createSilentLogs(),
+        metrics: createTestMetricsComponent(metricsDeclaration)
+      },
+      {
+        keyPrefix: 'catalyst-content:rl',
+        buildLimitExceededResponse: () => ({ status: 429, body: { error: 'Too many requests' } })
+      }
+    )
+    middleware = withSyncPeerExemption<GlobalContext>(
+      rateLimiter.withRateLimitMiddleware({ name: 'GET /contents', max, windowSeconds: 60 }),
+      new Set(['203.0.113.50']),
+      undefined
+    ) as unknown as IHttpServerComponent.IRequestHandler<RateLimitedRequestContext>
+  })
+
+  afterEach(() => {
+    jest.clearAllMocks()
+  })
+
+  describe('and the caller is a listed DAO sync peer connecting from its socket address', () => {
+    let statuses: number[]
+
+    beforeEach(async () => {
+      statuses = []
+      for (let i = 0; i < max + 2; i++) {
+        statuses.push((await getDirect('203.0.113.50')).status)
+      }
+    })
+
+    it('should never be throttled', () => {
+      expect(statuses).toEqual([200, 200, 200, 200])
+    })
+  })
+
+  describe('and the caller is listed only in IPv4-mapped IPv6 form on the socket', () => {
+    let statuses: number[]
+
+    beforeEach(async () => {
+      statuses = []
+      for (let i = 0; i < max + 1; i++) {
+        statuses.push((await getDirect('::ffff:203.0.113.50')).status)
+      }
+    })
+
+    it('should canonicalize the socket address before matching the allowlist', () => {
+      expect(statuses).toEqual([200, 200, 200])
+    })
+  })
+
+  describe('and the caller is not listed', () => {
+    let statuses: number[]
+
+    beforeEach(async () => {
+      statuses = []
+      for (let i = 0; i < max + 1; i++) {
+        statuses.push((await getDirect('198.51.100.9')).status)
+      }
+    })
+
+    it('should still be bounded by the per-client budget', () => {
+      expect(statuses).toEqual([200, 200, 429])
     })
   })
 })

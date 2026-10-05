@@ -1,8 +1,8 @@
 import { Router, createBodySizeLimitMiddleware } from '@dcl/http-server'
-import { clientIpFromForwardedHeader } from '@dcl/rate-limiter-component'
 import { createSchemaValidatorComponent } from '@dcl/schema-validator-component'
 import { EnvironmentConfig } from '../Environment'
 import { multipartParserWrapper } from './multipart'
+import { withSyncPeerExemption } from './sync-peer-exemption'
 import { GlobalContext } from '../types'
 import { activeEntitiesBodySchema, getActiveEntitiesHandler } from './handlers/active-entities-handler'
 import { createEntity } from './handlers/create-entity-handler'
@@ -79,22 +79,18 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
   // different hash every time). Reads the same TRUSTED_CLIENT_IP_HEADER as the POST /entities limiter
   // above, so both agree on which client a request came from.
   const trustedClientIpHeader = env.getConfig<string | undefined>(EnvironmentConfig.TRUSTED_CLIENT_IP_HEADER)
-  const contentGetRateLimitMiddleware = components.rateLimiter.withRateLimitMiddleware({
-    name: 'GET /contents',
-    max: env.getConfig<number>(EnvironmentConfig.CONTENT_GET_RATE_LIMIT_MAX),
-    windowSeconds: env.getConfig<number>(EnvironmentConfig.CONTENT_GET_RATE_LIMIT_WINDOW_SECONDS),
-    // Exempts known DAO sync peers (by real egress IP — see TRUSTED_SYNC_PEER_IPS) so a full
-    // resync/bootstrap is never throttled. Mirrors exactly how the limiter itself would resolve the
-    // caller's address, so a peer is exempted under the same identity it would otherwise be counted
-    // under, never a different one.
-    skip: (request) => {
-      if (components.trustedSyncPeerIps.size === 0 || !trustedClientIpHeader) {
-        return false
-      }
-      const ip = clientIpFromForwardedHeader(request.headers.get(trustedClientIpHeader), 1)
-      return ip !== null && components.trustedSyncPeerIps.has(ip)
-    }
-  })
+  // Known DAO sync peers (TRUSTED_SYNC_PEER_IPS, by real egress IP) bypass this budget so a full
+  // resync/bootstrap is never throttled — see `withSyncPeerExemption` for why this wraps the limiter
+  // instead of using its `skip` option.
+  const contentGetRateLimitMiddleware = withSyncPeerExemption(
+    components.rateLimiter.withRateLimitMiddleware({
+      name: 'GET /contents',
+      max: env.getConfig<number>(EnvironmentConfig.CONTENT_GET_RATE_LIMIT_MAX),
+      windowSeconds: env.getConfig<number>(EnvironmentConfig.CONTENT_GET_RATE_LIMIT_WINDOW_SECONDS)
+    }),
+    components.trustedSyncPeerIps,
+    trustedClientIpHeader
+  )
   router.head('/contents/:hashId', contentGetRateLimitMiddleware, getContentHandler)
   router.get('/contents/:hashId', contentGetRateLimitMiddleware, getContentHandler)
   router.get('/available-content', getAvailableContentHandler)
