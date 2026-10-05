@@ -1,4 +1,5 @@
 import { Router, createBodySizeLimitMiddleware } from '@dcl/http-server'
+import { clientIpFromForwardedHeader } from '@dcl/rate-limiter-component'
 import { createSchemaValidatorComponent } from '@dcl/schema-validator-component'
 import { EnvironmentConfig } from '../Environment'
 import { multipartParserWrapper } from './multipart'
@@ -73,8 +74,29 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
     schemaValidator.withSchemaValidatorMiddleware(activeEntitiesBodySchema),
     getActiveEntitiesHandler
   )
-  router.head('/contents/:hashId', getContentHandler)
-  router.get('/contents/:hashId', getContentHandler)
+  // Per-client budget on individual content-file downloads — see DEFAULT_CONTENT_GET_RATE_LIMIT_MAX
+  // for why this exists (nginx's `$uri`-keyed `limit_req` can't bound a bootstrap client requesting a
+  // different hash every time). Reads the same TRUSTED_CLIENT_IP_HEADER as the POST /entities limiter
+  // above, so both agree on which client a request came from.
+  const trustedClientIpHeader = env.getConfig<string | undefined>(EnvironmentConfig.TRUSTED_CLIENT_IP_HEADER)
+  const contentGetRateLimitMiddleware = components.rateLimiter.withRateLimitMiddleware({
+    name: 'GET /contents',
+    max: env.getConfig<number>(EnvironmentConfig.CONTENT_GET_RATE_LIMIT_MAX),
+    windowSeconds: env.getConfig<number>(EnvironmentConfig.CONTENT_GET_RATE_LIMIT_WINDOW_SECONDS),
+    // Exempts known DAO sync peers (by real egress IP — see TRUSTED_SYNC_PEER_IPS) so a full
+    // resync/bootstrap is never throttled. Mirrors exactly how the limiter itself would resolve the
+    // caller's address, so a peer is exempted under the same identity it would otherwise be counted
+    // under, never a different one.
+    skip: (request) => {
+      if (components.trustedSyncPeerIps.size === 0 || !trustedClientIpHeader) {
+        return false
+      }
+      const ip = clientIpFromForwardedHeader(request.headers.get(trustedClientIpHeader), 1)
+      return ip !== null && components.trustedSyncPeerIps.has(ip)
+    }
+  })
+  router.head('/contents/:hashId', contentGetRateLimitMiddleware, getContentHandler)
+  router.get('/contents/:hashId', contentGetRateLimitMiddleware, getContentHandler)
   router.get('/available-content', getAvailableContentHandler)
   router.get('/audit/:type/:entityId', getEntityAuditInformationHandler)
   router.get('/deployments', getDeploymentsHandler)

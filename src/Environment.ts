@@ -62,6 +62,17 @@ export const DEFAULT_POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS = 60
 // who stay just below the per-minute burst limit but sustain high volume over hours.
 export const DEFAULT_POST_ENTITIES_DAILY_QUOTA_MAX = 300
 
+// Per-client request budget for GET/HEAD /contents/:hashId. Added after the 2026-10-04 incident
+// where a single unaffiliated IP bulk-downloaded a node's entire content store (~490k requests,
+// ~38 GB) over several hours: nginx's `limit_req` zones on `/content/*` are keyed on `$uri`, so a
+// bootstrap-style client requesting a different hash every time never repeats a key and never
+// trips them — see the note on `DEFAULT_POST_ENTITIES_RATE_LIMIT_MAX` above, which is the same
+// gap for POST. 300 req/min is well above any single legitimate client's steady fetch rate
+// (comparable to `POST_ENTITIES_RATE_LIMIT_MAX`'s headroom) and far below the ~1,000-2,700 req/min
+// sustained by that incident's traffic. Tune per node if it hosts an unusually large catch-up load.
+export const DEFAULT_CONTENT_GET_RATE_LIMIT_MAX = 300
+export const DEFAULT_CONTENT_GET_RATE_LIMIT_WINDOW_SECONDS = 60
+
 /**
  * Parse a non-negative integer env var, falling back to `defaultValue` when it is unset/empty.
  * Throws on an invalid value (including partial parses like "256MB") rather than letting `parseInt`
@@ -330,6 +341,11 @@ export enum EnvironmentConfig {
   POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS,
   POST_ENTITIES_DAILY_QUOTA_MAX,
   TRUSTED_CLIENT_IP_HEADER,
+
+  // Per-client rate limit on GET/HEAD /contents/:hashId, and the sync-peer exemption for it.
+  CONTENT_GET_RATE_LIMIT_MAX,
+  CONTENT_GET_RATE_LIMIT_WINDOW_SECONDS,
+  TRUSTED_SYNC_PEER_IPS,
 
   SUBGRAPH_COMPONENT_RETRIES,
   SUBGRAPH_COMPONENT_QUERY_TIMEOUT,
@@ -705,6 +721,28 @@ export class EnvironmentBuilder {
     // proxy writes, or every client shares one bucket — see the startup warning in `components.ts`.
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.TRUSTED_CLIENT_IP_HEADER, () =>
       parseOptionalHeaderNameEnv('TRUSTED_CLIENT_IP_HEADER')
+    )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CONTENT_GET_RATE_LIMIT_MAX, () =>
+      parsePositiveIntEnv('CONTENT_GET_RATE_LIMIT_MAX', DEFAULT_CONTENT_GET_RATE_LIMIT_MAX)
+    )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CONTENT_GET_RATE_LIMIT_WINDOW_SECONDS, () =>
+      parsePositiveIntEnv('CONTENT_GET_RATE_LIMIT_WINDOW_SECONDS', DEFAULT_CONTENT_GET_RATE_LIMIT_WINDOW_SECONDS)
+    )
+
+    // Comma-separated IPs exempt from the GET/HEAD /contents rate limit above: the real egress
+    // addresses of known DAO Catalyst sync peers, so a full resync/bootstrap is never throttled.
+    // Deliberately IPs, not the DAO peers' hostnames: most are Cloudflare-proxied, so resolving
+    // their hostname would yield a shared Cloudflare edge address rather than that peer's own
+    // address, and allowlisting a Cloudflare edge range would exempt nearly anyone behind
+    // Cloudflare — the same hole this limit exists to close. Populate from the peer's real egress
+    // IP (visible in access logs once it syncs) rather than DNS. Empty by default: no exemptions
+    // until an operator opts a peer in.
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.TRUSTED_SYNC_PEER_IPS,
+      () => process.env.TRUSTED_SYNC_PEER_IPS ?? ''
     )
 
     this.registerConfigIfNotAlreadySet(
