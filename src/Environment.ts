@@ -73,6 +73,24 @@ export const DEFAULT_POST_ENTITIES_DAILY_QUOTA_MAX = 300
 export const DEFAULT_CONTENT_GET_RATE_LIMIT_MAX = 300
 export const DEFAULT_CONTENT_GET_RATE_LIMIT_WINDOW_SECONDS = 60
 
+// Hourly and daily quotas for GET/HEAD /contents/:hashId, independent buckets layered on top of the
+// per-minute limit above (the same burst + quota pairing POST /entities uses). The per-minute limit
+// alone still lets a client that paces itself pull ~430k files a day — close to the whole 2026-10-04
+// incident in one day — and crawlers seen after it stayed well under any per-minute limit while
+// running around the clock. Only requests that reach the content server count (cached responses are
+// served by the CDN), and the busiest non-peer client observed on peer-eu1 sent ~2k such requests in
+// a whole day, so these leave ~10x headroom while turning a full-store bootstrap from hours into weeks.
+export const DEFAULT_CONTENT_GET_HOURLY_QUOTA_MAX = 3000
+export const DEFAULT_CONTENT_GET_DAILY_QUOTA_MAX = 20000
+
+// IPv6 clients are counted per network of this prefix length rather than per address: a single host
+// is usually routed a whole /64, so keying on the full address lets it rotate addresses and get a
+// fresh budget each time (the 2026-10-04 crawler's user agent was later seen arriving over IPv6).
+// 128 restores per-address counting. Some hosting providers (e.g. DigitalOcean) carve one /64 into
+// small per-server slices, so unrelated servers there can share a budget; narrow this (e.g. 124) on a
+// node where that becomes a problem. Listed sync peers are exempted before any counting happens.
+export const DEFAULT_CONTENT_GET_RATE_LIMIT_IPV6_PREFIX_LENGTH = 64
+
 /**
  * Parse a non-negative integer env var, falling back to `defaultValue` when it is unset/empty.
  * Throws on an invalid value (including partial parses like "256MB") rather than letting `parseInt`
@@ -345,6 +363,9 @@ export enum EnvironmentConfig {
   // Per-client rate limit on GET/HEAD /contents/:hashId, and the sync-peer exemption for it.
   CONTENT_GET_RATE_LIMIT_MAX,
   CONTENT_GET_RATE_LIMIT_WINDOW_SECONDS,
+  CONTENT_GET_HOURLY_QUOTA_MAX,
+  CONTENT_GET_DAILY_QUOTA_MAX,
+  CONTENT_GET_RATE_LIMIT_IPV6_PREFIX_LENGTH,
   TRUSTED_SYNC_PEER_IPS,
 
   SUBGRAPH_COMPONENT_RETRIES,
@@ -730,6 +751,27 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CONTENT_GET_RATE_LIMIT_WINDOW_SECONDS, () =>
       parsePositiveIntEnv('CONTENT_GET_RATE_LIMIT_WINDOW_SECONDS', DEFAULT_CONTENT_GET_RATE_LIMIT_WINDOW_SECONDS)
     )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CONTENT_GET_HOURLY_QUOTA_MAX, () =>
+      parsePositiveIntEnv('CONTENT_GET_HOURLY_QUOTA_MAX', DEFAULT_CONTENT_GET_HOURLY_QUOTA_MAX)
+    )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CONTENT_GET_DAILY_QUOTA_MAX, () =>
+      parsePositiveIntEnv('CONTENT_GET_DAILY_QUOTA_MAX', DEFAULT_CONTENT_GET_DAILY_QUOTA_MAX)
+    )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CONTENT_GET_RATE_LIMIT_IPV6_PREFIX_LENGTH, () => {
+      const prefixLength = parsePositiveIntEnv(
+        'CONTENT_GET_RATE_LIMIT_IPV6_PREFIX_LENGTH',
+        DEFAULT_CONTENT_GET_RATE_LIMIT_IPV6_PREFIX_LENGTH
+      )
+      if (prefixLength > 128) {
+        throw new Error(
+          `Invalid CONTENT_GET_RATE_LIMIT_IPV6_PREFIX_LENGTH: expected 1-128 but got "${process.env.CONTENT_GET_RATE_LIMIT_IPV6_PREFIX_LENGTH}"`
+        )
+      }
+      return prefixLength
+    })
 
     // Comma-separated IPs exempt from the GET/HEAD /contents rate limit above: the real egress
     // addresses of known DAO Catalyst sync peers, so a full resync/bootstrap is never throttled.

@@ -14,6 +14,9 @@ import { createRateLimiterComponent, IRateLimiterComponent } from '@dcl/rate-lim
 import { createTestMetricsComponent } from '@dcl/metrics'
 import { IHttpServerComponent } from '@dcl/core-commons'
 import {
+  DEFAULT_CONTENT_GET_DAILY_QUOTA_MAX,
+  DEFAULT_CONTENT_GET_HOURLY_QUOTA_MAX,
+  DEFAULT_CONTENT_GET_RATE_LIMIT_IPV6_PREFIX_LENGTH,
   DEFAULT_CONTENT_GET_RATE_LIMIT_MAX,
   DEFAULT_CONTENT_GET_RATE_LIMIT_WINDOW_SECONDS,
   Environment,
@@ -23,6 +26,11 @@ import {
 import { metricsDeclaration } from '../../../src/metrics'
 import { GlobalContext } from '../../../src/types'
 import { withSyncPeerExemption } from '../../../src/controllers/sync-peer-exemption'
+import {
+  ContentGetRateLimitConfig,
+  createContentGetRateLimitMiddleware,
+  ipv6NetworkKey
+} from '../../../src/controllers/content-get-rate-limit'
 
 type RateLimitedRequestContext = IHttpServerComponent.DefaultContext<GlobalContext> & {
   routerPath: string
@@ -123,8 +131,80 @@ describe('when reading the GET /contents rate limit configuration', () => {
     })
 
     it('should fail at startup rather than install a zero-length window', async () => {
+      await expect(new EnvironmentBuilder().build()).rejects.toThrow('Invalid CONTENT_GET_RATE_LIMIT_WINDOW_SECONDS')
+    })
+  })
+
+  describe('and none of the quota or IPv6 prefix settings is set', () => {
+    let env: Environment
+
+    beforeEach(async () => {
+      delete process.env.CONTENT_GET_HOURLY_QUOTA_MAX
+      delete process.env.CONTENT_GET_DAILY_QUOTA_MAX
+      delete process.env.CONTENT_GET_RATE_LIMIT_IPV6_PREFIX_LENGTH
+      env = await new EnvironmentBuilder().build()
+    })
+
+    it('should default to 3,000 per hour, 20,000 per day and IPv6 networks of /64', () => {
+      expect([
+        env.getConfig(EnvironmentConfig.CONTENT_GET_HOURLY_QUOTA_MAX),
+        env.getConfig(EnvironmentConfig.CONTENT_GET_DAILY_QUOTA_MAX),
+        env.getConfig(EnvironmentConfig.CONTENT_GET_RATE_LIMIT_IPV6_PREFIX_LENGTH)
+      ]).toEqual([
+        DEFAULT_CONTENT_GET_HOURLY_QUOTA_MAX,
+        DEFAULT_CONTENT_GET_DAILY_QUOTA_MAX,
+        DEFAULT_CONTENT_GET_RATE_LIMIT_IPV6_PREFIX_LENGTH
+      ])
+    })
+  })
+
+  describe('and the quotas and IPv6 prefix are set', () => {
+    let env: Environment
+
+    beforeEach(async () => {
+      process.env.CONTENT_GET_HOURLY_QUOTA_MAX = '100'
+      process.env.CONTENT_GET_DAILY_QUOTA_MAX = '1000'
+      process.env.CONTENT_GET_RATE_LIMIT_IPV6_PREFIX_LENGTH = '124'
+      env = await new EnvironmentBuilder().build()
+    })
+
+    it('should read all three values from the environment', () => {
+      expect([
+        env.getConfig(EnvironmentConfig.CONTENT_GET_HOURLY_QUOTA_MAX),
+        env.getConfig(EnvironmentConfig.CONTENT_GET_DAILY_QUOTA_MAX),
+        env.getConfig(EnvironmentConfig.CONTENT_GET_RATE_LIMIT_IPV6_PREFIX_LENGTH)
+      ]).toEqual([100, 1000, 124])
+    })
+  })
+
+  describe('and the hourly quota is set to zero', () => {
+    beforeEach(() => {
+      process.env.CONTENT_GET_HOURLY_QUOTA_MAX = '0'
+    })
+
+    it('should fail at startup rather than reject every download', async () => {
+      await expect(new EnvironmentBuilder().build()).rejects.toThrow('Invalid CONTENT_GET_HOURLY_QUOTA_MAX')
+    })
+  })
+
+  describe('and the daily quota is set to zero', () => {
+    beforeEach(() => {
+      process.env.CONTENT_GET_DAILY_QUOTA_MAX = '0'
+    })
+
+    it('should fail at startup rather than reject every download', async () => {
+      await expect(new EnvironmentBuilder().build()).rejects.toThrow('Invalid CONTENT_GET_DAILY_QUOTA_MAX')
+    })
+  })
+
+  describe('and the IPv6 prefix length is outside 1-128', () => {
+    beforeEach(() => {
+      process.env.CONTENT_GET_RATE_LIMIT_IPV6_PREFIX_LENGTH = '129'
+    })
+
+    it('should fail at startup', async () => {
       await expect(new EnvironmentBuilder().build()).rejects.toThrow(
-        'Invalid CONTENT_GET_RATE_LIMIT_WINDOW_SECONDS'
+        'Invalid CONTENT_GET_RATE_LIMIT_IPV6_PREFIX_LENGTH'
       )
     })
   })
@@ -340,6 +420,189 @@ describe('when the catalyst is exposed directly, with no trusted client IP heade
 
     it('should still be bounded by the per-client budget', () => {
       expect(statuses).toEqual([200, 200, 429])
+    })
+  })
+})
+
+describe('when deriving the rate-limit identity of a client address', () => {
+  describe('and the address is IPv6', () => {
+    it('should key it by its /64 network', () => {
+      expect([
+        ipv6NetworkKey('2a03:b0c0:3:f0:0:3:410:3000', 64),
+        ipv6NetworkKey('2a03:b0c0:3:f0:0:2:6d50:c000', 64)
+      ]).toEqual(['2a03:b0c0:3:f0:0:0:0:0/64', '2a03:b0c0:3:f0:0:0:0:0/64'])
+    })
+
+    it('should mask a prefix length that is not a multiple of 16', () => {
+      expect(ipv6NetworkKey('2001:db8::1:0:0:1f', 124)).toBe('2001:db8:0:0:1:0:0:10/124')
+    })
+
+    it('should expand zero-compression and ignore a zone id', () => {
+      expect([ipv6NetworkKey('::1', 64), ipv6NetworkKey('fe80::1%eth0', 64)]).toEqual([
+        '0:0:0:0:0:0:0:0/64',
+        'fe80:0:0:0:0:0:0:0/64'
+      ])
+    })
+
+    it('should handle an embedded dotted IPv4 tail', () => {
+      expect(ipv6NetworkKey('64:ff9b::1.2.3.4', 128)).toBe('64:ff9b:0:0:0:0:102:304/128')
+    })
+  })
+
+  describe('and the address is IPv4 or malformed', () => {
+    it('should return null so the limiter keys on the address itself', () => {
+      expect([ipv6NetworkKey('203.0.113.7', 64), ipv6NetworkKey('1::2::3', 64), ipv6NetworkKey('zz::1', 64)]).toEqual([
+        null,
+        null,
+        null
+      ])
+    })
+  })
+})
+
+describe('when a client downloads content through the full GET /contents limit (burst + hourly + daily)', () => {
+  let next: jest.Mock
+  let middleware: IHttpServerComponent.IRequestHandler<RateLimitedRequestContext>
+  let config: ContentGetRateLimitConfig
+
+  const get = async (ip: string): Promise<RateLimitedResponse> =>
+    (await middleware(
+      buildContext('/contents/:hashId', undefined, { 'cf-connecting-ip': ip }),
+      next
+    )) as RateLimitedResponse
+
+  const statusesFor = async (ips: string[]) => {
+    const statuses: number[] = []
+    for (const ip of ips) statuses.push((await get(ip)).status)
+    return statuses
+  }
+
+  const build = (trustedSyncPeerIps: ReadonlySet<string> = new Set()) => {
+    const rateLimiter = createRateLimiterComponent<GlobalContext>(
+      {
+        cache: createInMemoryCacheComponent({ max: 100 }),
+        logs: createSilentLogs(),
+        metrics: createTestMetricsComponent(metricsDeclaration)
+      },
+      {
+        keyPrefix: 'catalyst-content:rl',
+        trustedClientIpHeader: 'cf-connecting-ip',
+        buildLimitExceededResponse: () => ({ status: 429, body: { error: 'Too many requests' } })
+      }
+    )
+    middleware = createContentGetRateLimitMiddleware<GlobalContext>(
+      rateLimiter,
+      trustedSyncPeerIps,
+      'cf-connecting-ip',
+      config
+    ) as unknown as IHttpServerComponent.IRequestHandler<RateLimitedRequestContext>
+  }
+
+  beforeEach(() => {
+    next = jest.fn().mockResolvedValue({ status: 200 })
+    config = { burstMax: 100, burstWindowSeconds: 60, hourlyMax: 3, dailyMax: 100, ipv6PrefixLength: 64 }
+  })
+
+  afterEach(() => {
+    jest.clearAllMocks()
+  })
+
+  describe('and the client stays under the burst limit but exceeds the hourly quota', () => {
+    let statuses: number[]
+
+    beforeEach(async () => {
+      build()
+      statuses = await statusesFor(['198.51.100.9', '198.51.100.9', '198.51.100.9', '198.51.100.9'])
+    })
+
+    it('should reject once the hourly quota is spent', () => {
+      expect([statuses, next.mock.calls.length]).toEqual([[200, 200, 200, 429], 3])
+    })
+  })
+
+  describe('and the client stays under the burst and hourly limits but exceeds the daily quota', () => {
+    let statuses: number[]
+
+    beforeEach(async () => {
+      config = { ...config, hourlyMax: 100, dailyMax: 2 }
+      build()
+      statuses = await statusesFor(['198.51.100.9', '198.51.100.9', '198.51.100.9'])
+    })
+
+    it('should reject once the daily quota is spent', () => {
+      expect(statuses).toEqual([200, 200, 429])
+    })
+  })
+
+  describe('and an IPv6 client rotates addresses within one /64', () => {
+    let statuses: number[]
+
+    beforeEach(async () => {
+      build()
+      statuses = await statusesFor([
+        '2a03:b0c0:3:f0::1',
+        '2a03:b0c0:3:f0::2',
+        '2a03:b0c0:3:f0:0:3:410:3000',
+        '2a03:b0c0:3:f0:ffff::9'
+      ])
+    })
+
+    it('should count every address against the same budget', () => {
+      expect(statuses).toEqual([200, 200, 200, 429])
+    })
+  })
+
+  describe('and two IPv6 clients are in different /64 networks', () => {
+    let statuses: number[]
+
+    beforeEach(async () => {
+      build()
+      statuses = await statusesFor(['2a03:b0c0:3:f0::1', '2a03:b0c0:3:f0::1', '2a03:b0c0:3:f0::1', '2a03:b0c0:3:f1::1'])
+    })
+
+    it('should give each network its own budget', () => {
+      expect(statuses).toEqual([200, 200, 200, 200])
+    })
+  })
+
+  describe('and the IPv6 prefix length is 128', () => {
+    let statuses: number[]
+
+    beforeEach(async () => {
+      config = { ...config, ipv6PrefixLength: 128 }
+      build()
+      statuses = await statusesFor(['2a03:b0c0:3:f0::1', '2a03:b0c0:3:f0::1', '2a03:b0c0:3:f0::1', '2a03:b0c0:3:f0::2'])
+    })
+
+    it('should count each address separately', () => {
+      expect(statuses).toEqual([200, 200, 200, 200])
+    })
+  })
+
+  describe('and different IPv4 clients share no budget', () => {
+    let statuses: number[]
+
+    beforeEach(async () => {
+      build()
+      statuses = await statusesFor(['198.51.100.9', '198.51.100.9', '198.51.100.9', '198.51.100.10'])
+    })
+
+    it('should keep counting IPv4 clients per address', () => {
+      expect(statuses).toEqual([200, 200, 200, 200])
+    })
+  })
+
+  describe('and the caller is a listed DAO sync peer', () => {
+    let statuses: number[]
+
+    beforeEach(async () => {
+      config = { ...config, burstMax: 1, hourlyMax: 1, dailyMax: 1 }
+      build(new Set(['203.0.113.50']))
+      statuses = await statusesFor(['203.0.113.50', '203.0.113.50', '203.0.113.50'])
+    })
+
+    it('should bypass the burst limit and both quotas', () => {
+      expect(statuses).toEqual([200, 200, 200])
     })
   })
 })

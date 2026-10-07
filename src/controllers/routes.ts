@@ -2,7 +2,7 @@ import { Router, createBodySizeLimitMiddleware } from '@dcl/http-server'
 import { createSchemaValidatorComponent } from '@dcl/schema-validator-component'
 import { EnvironmentConfig } from '../Environment'
 import { multipartParserWrapper } from './multipart'
-import { withSyncPeerExemption } from './sync-peer-exemption'
+import { createContentGetRateLimitMiddleware } from './content-get-rate-limit'
 import { GlobalContext } from '../types'
 import { activeEntitiesBodySchema, getActiveEntitiesHandler } from './handlers/active-entities-handler'
 import { createEntity } from './handlers/create-entity-handler'
@@ -74,22 +74,22 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
     schemaValidator.withSchemaValidatorMiddleware(activeEntitiesBodySchema),
     getActiveEntitiesHandler
   )
-  // Per-client budget on individual content-file downloads — see DEFAULT_CONTENT_GET_RATE_LIMIT_MAX
-  // for why this exists (nginx's `$uri`-keyed `limit_req` can't bound a bootstrap client requesting a
-  // different hash every time). Reads the same TRUSTED_CLIENT_IP_HEADER as the POST /entities limiter
-  // above, so both agree on which client a request came from.
-  const trustedClientIpHeader = env.getConfig<string | undefined>(EnvironmentConfig.TRUSTED_CLIENT_IP_HEADER)
-  // Known DAO sync peers (TRUSTED_SYNC_PEER_IPS, by real egress IP) bypass this budget so a full
-  // resync/bootstrap is never throttled — see `withSyncPeerExemption` for why this wraps the limiter
-  // instead of using its `skip` option.
-  const contentGetRateLimitMiddleware = withSyncPeerExemption(
-    components.rateLimiter.withRateLimitMiddleware({
-      name: 'GET /contents',
-      max: env.getConfig<number>(EnvironmentConfig.CONTENT_GET_RATE_LIMIT_MAX),
-      windowSeconds: env.getConfig<number>(EnvironmentConfig.CONTENT_GET_RATE_LIMIT_WINDOW_SECONDS)
-    }),
+  // Per-client budget on individual content-file downloads: a per-minute burst limit plus hourly and
+  // daily quotas — see DEFAULT_CONTENT_GET_RATE_LIMIT_MAX and DEFAULT_CONTENT_GET_HOURLY_QUOTA_MAX for
+  // why each exists. Reads the same TRUSTED_CLIENT_IP_HEADER as the POST /entities limiter above, so
+  // both agree on which client a request came from. Known DAO sync peers (TRUSTED_SYNC_PEER_IPS, by
+  // real egress IP) bypass all three so a full resync/bootstrap is never throttled.
+  const contentGetRateLimitMiddleware = createContentGetRateLimitMiddleware(
+    components.rateLimiter,
     components.trustedSyncPeerIps,
-    trustedClientIpHeader
+    env.getConfig<string | undefined>(EnvironmentConfig.TRUSTED_CLIENT_IP_HEADER),
+    {
+      burstMax: env.getConfig<number>(EnvironmentConfig.CONTENT_GET_RATE_LIMIT_MAX),
+      burstWindowSeconds: env.getConfig<number>(EnvironmentConfig.CONTENT_GET_RATE_LIMIT_WINDOW_SECONDS),
+      hourlyMax: env.getConfig<number>(EnvironmentConfig.CONTENT_GET_HOURLY_QUOTA_MAX),
+      dailyMax: env.getConfig<number>(EnvironmentConfig.CONTENT_GET_DAILY_QUOTA_MAX),
+      ipv6PrefixLength: env.getConfig<number>(EnvironmentConfig.CONTENT_GET_RATE_LIMIT_IPV6_PREFIX_LENGTH)
+    }
   )
   router.head('/contents/:hashId', contentGetRateLimitMiddleware, getContentHandler)
   router.get('/contents/:hashId', contentGetRateLimitMiddleware, getContentHandler)
