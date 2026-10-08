@@ -73,6 +73,57 @@ describe('when parsing a multipart request with upload limits', () => {
     })
   })
 
+  describe('and a file is exactly the maximum allowed file size', () => {
+    let error: unknown
+
+    beforeEach(async () => {
+      const form = new FormData()
+      form.append('file1', Buffer.alloc(1024, 1), { filename: 'file1' })
+      error = await multipartParserWrapper(handler as any, { maxFileSize: 1024, maxFiles: 10 })(
+        buildContext(form)
+      ).then(
+        () => undefined,
+        (e) => e
+      )
+    })
+
+    it('should not reject', () => {
+      expect(error).toBeUndefined()
+    })
+
+    it('should invoke the handler with the whole file', () => {
+      expect(handler).toHaveBeenCalledWith(
+        expect.objectContaining({
+          formData: expect.objectContaining({
+            files: { file1: expect.objectContaining({ value: Buffer.alloc(1024, 1) }) }
+          })
+        })
+      )
+    })
+  })
+
+  describe('and a file is one byte over the maximum allowed file size', () => {
+    let error: unknown
+
+    beforeEach(async () => {
+      const form = new FormData()
+      form.append('file1', Buffer.alloc(1025, 1), { filename: 'file1.bin' })
+      error = await multipartParserWrapper(handler as any, { maxFileSize: 1024, maxFiles: 10 })(
+        buildContext(form)
+      ).catch((e) => e)
+    })
+
+    it('should reject with a PayloadTooLargeError naming the file and its size limit', () => {
+      expect(error).toEqual(
+        new PayloadTooLargeError("File 'file1.bin' is too large. The maximum allowed size per file is 1024 bytes.")
+      )
+    })
+
+    it('should not invoke the handler', () => {
+      expect(handler).not.toHaveBeenCalled()
+    })
+  })
+
   describe('and the request contains more files than the maximum allowed', () => {
     let form: FormData
     let wrapped: (ctx: IHttpServerComponent.DefaultContext<any>) => Promise<IHttpServerComponent.IResponse>
