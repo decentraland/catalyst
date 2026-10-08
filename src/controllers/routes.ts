@@ -3,6 +3,9 @@ import { createSchemaValidatorComponent } from '@dcl/schema-validator-component'
 import { EnvironmentConfig } from '../Environment'
 import { multipartParserWrapper } from './multipart'
 import { createContentGetRateLimitMiddleware } from './content-get-rate-limit'
+import { createDeploymentQuotaAdmission, withDeploymentQuota } from './deployment-quota'
+import { createSourceUploadAdmission } from './source-upload-admission'
+import { stampRequestArrival, withRequestArrival } from './request-arrival'
 import { GlobalContext } from '../types'
 import { activeEntitiesBodySchema, getActiveEntitiesHandler } from './handlers/active-entities-handler'
 import { createEntity } from './handlers/create-entity-handler'
@@ -39,28 +42,36 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
   if (env.getConfig(EnvironmentConfig.READ_ONLY)) {
     logger.info(`Content Server running on read-only mode. POST /entities endpoint will not be exposed`)
   } else {
+    // Separate `name`s so they count in independent buckets.
+    const burstLimit = components.rateLimiter.withRateLimitMiddleware({
+      name: '/entities burst',
+      max: env.getConfig<number>(EnvironmentConfig.POST_ENTITIES_RATE_LIMIT_MAX),
+      windowSeconds: env.getConfig<number>(EnvironmentConfig.POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS)
+    })
+    // The daily quota counts regular deployments after parsing; a source that has spent it is turned
+    // away before its body is read unless the request declares itself partial with `?partial=true`.
+    // Partial uploads are many batches, bounded by their account's byte quotas instead. Every body,
+    // counted or not, holds a share of its source's in-flight uploads until the request ends.
     router.post(
       '/entities',
-      // Both limiters must stay ahead of the multipart parser, which buffers the whole upload
-      // into memory. They use separate `name`s so they count in independent buckets.
-      components.rateLimiter.withRateLimitMiddleware({
-        name: '/entities burst',
-        max: env.getConfig<number>(EnvironmentConfig.POST_ENTITIES_RATE_LIMIT_MAX),
-        windowSeconds: env.getConfig<number>(EnvironmentConfig.POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS)
-      }),
-      components.rateLimiter.withRateLimitMiddleware({
-        name: '/entities daily-quota',
-        max: env.getConfig<number>(EnvironmentConfig.POST_ENTITIES_DAILY_QUOTA_MAX),
-        windowSeconds: 86400
-      }),
+      stampRequestArrival(),
+      burstLimit,
       preventExecutionIfBoostrapping({ syncOrchestrator: components.syncOrchestrator }),
-      multipartParserWrapper(createEntity, {
-        maxFileSize: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FILE_SIZE),
-        maxFiles: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FILE_COUNT),
-        maxFields: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FIELD_COUNT),
-        maxFieldSize: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FIELD_SIZE),
-        maxTotalSize: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE)
-      })
+      createDeploymentQuotaAdmission(components),
+      createSourceUploadAdmission(components),
+      multipartParserWrapper(
+        withDeploymentQuota(components, withRequestArrival(createEntity)),
+        {
+          maxFileSize: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FILE_SIZE),
+          maxFiles: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FILE_COUNT),
+          maxFields: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FIELD_COUNT),
+          maxFieldSize: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FIELD_SIZE),
+          maxTotalSize: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE),
+          uploadTimeoutMs: env.getConfig<number>(EnvironmentConfig.MULTIPART_UPLOAD_TIMEOUT_MS)
+        },
+        components.uploadBudget,
+        components.metrics
+      )
     )
   }
 

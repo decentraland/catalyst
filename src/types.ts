@@ -12,8 +12,9 @@ import {
 } from '@well-known-components/interfaces'
 // `@dcl/http-server` v2 produces native-fetch request/response types, defined in `@dcl/core-commons`.
 // Source `IHttpServerComponent` from there so handler context types match what the server provides.
-import { IHttpServerComponent } from '@dcl/core-commons'
+import { ICacheStorageComponent, IHttpServerComponent } from '@dcl/core-commons'
 import { IRateLimiterComponent } from '@dcl/rate-limiter-component'
+import { IDeploymentQuotaComponent } from './logic/deployment-quota'
 import { Field, File } from '@well-known-components/multipart-wrapper'
 import { HTTPProvider } from 'eth-connect'
 import qs from 'qs'
@@ -25,6 +26,10 @@ import { ActiveEntities } from './logic/active-entities'
 import { IContentFilesRepository } from './adapters/content-files-repository'
 import { Denylist } from './adapters/denylist'
 import { IDeploymentsRepository } from './adapters/deployments-repository'
+import { IPendingDeploymentsRepository } from './adapters/pending-deployments-repository'
+import { IUploadBudget } from './adapters/upload-budget'
+import { ISourceUploadLimits } from './adapters/source-upload-limits'
+import { IContentLocks } from './adapters/content-locks'
 import { IPointersRepository } from './adapters/pointers-repository'
 import { ISnapshotsRepository } from './adapters/snapshots-repository'
 import { DeployedEntitiesBloomFilter } from './adapters/deployed-entities-bloom-filter'
@@ -37,6 +42,7 @@ import { IGarbageCollectionComponent } from './logic/garbage-collection'
 import { IContentClusterComponent } from './logic/peer-cluster'
 import { SnapshotStorage } from './adapters/snapshot-storage'
 import { IDeploymentsComponent } from './logic/deployments'
+import { IPartialDeployments } from './logic/partial-deployments'
 import { IQueryParams } from './logic/query-params'
 import { IEntities } from './logic/entities'
 import { ISnapshots } from './logic/snapshots'
@@ -87,10 +93,14 @@ export type AppComponents = {
   activeEntitiesRepository: IActiveEntitiesRepository
   contentFilesRepository: IContentFilesRepository
   deploymentsRepository: IDeploymentsRepository
+  pendingDeploymentsRepository: IPendingDeploymentsRepository
+  contentLocks: IContentLocks
   pointersRepository: IPointersRepository
   snapshotsRepository: ISnapshotsRepository
   config: IConfigComponent
   deployer: Deployer
+  partialDeployments: IPartialDeployments
+  pendingDeploymentsCleanupJob: IJobComponent
   staticConfigs: {
     contentStorageFolder: string
     tmpDownloadFolder: string
@@ -112,8 +122,16 @@ export type AppComponents = {
   garbageCollectionManager: IGarbageCollectionComponent
   systemProperties: SystemProperties
   server: IHttpServerComponent<GlobalContext>
-  /** Per-client request budget, mounted on POST /entities and on GET/HEAD /contents/:hashId. */
+  /**
+   * Per-client request budget: regular (non-partial) POST /entities deployments and GET/HEAD
+   * /contents/:hashId.
+   */
   rateLimiter: IRateLimiterComponent<GlobalContext>
+  /** The rate limiter's counter store; state that must agree with its counters lives here too. */
+  rateLimitStore: ICacheStorageComponent
+  deploymentQuota: IDeploymentQuotaComponent
+  uploadBudget: IUploadBudget
+  sourceUploadLimits: ISourceUploadLimits
   /**
    * Canonicalized real egress IPs of DAO Catalyst peers exempt from the GET/HEAD /contents rate
    * limit (from `TRUSTED_SYNC_PEER_IPS`). Empty by default — see the config's doc comment in
@@ -147,6 +165,8 @@ export type MaintenanceComponents = {
   migrationManager: MigrationExecutor
   contentFilesRepository: IContentFilesRepository
   deploymentsRepository: IDeploymentsRepository
+  pendingDeploymentsRepository: IPendingDeploymentsRepository
+  contentLocks: IContentLocks
   snapshotsRepository: ISnapshotsRepository
   garbageCollectionManager: IGarbageCollectionComponent
 }

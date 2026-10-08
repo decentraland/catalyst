@@ -42,6 +42,10 @@ import { createSnapshotsRepository } from './adapters/snapshots-repository'
 // =============================================================================
 import { createContentValidator } from './adapters/content-validator'
 import { createDatabaseComponent } from './adapters/database'
+import { createContentLocks } from './adapters/content-locks'
+import { createUploadBudget } from './adapters/upload-budget'
+import { createSourceUploadLimits } from './adapters/source-upload-limits'
+import { createDeploymentQuota } from './logic/deployment-quota'
 import { createDenylist } from './adapters/denylist'
 import { createDeployedEntitiesBloomFilter } from './adapters/deployed-entities-bloom-filter'
 import { createFailedDeployments } from './adapters/failed-deployments'
@@ -58,6 +62,8 @@ import { createCrypto } from './logic/crypto'
 import { createContentCluster, createCustomDAOSource, createDAOSource } from './logic/peer-cluster'
 import { createDeploymentsComponent, retryFailedDeploymentExecution } from './logic/deployments'
 import { createDeploymentService } from './logic/deployment-service'
+import { createPartialDeployments } from './logic/partial-deployments'
+import { createPendingDeploymentsRepository } from './adapters/pending-deployments-repository'
 import { createEntities } from './logic/entities'
 import { createGarbageCollectionComponent } from './logic/garbage-collection'
 import { createQueryParams } from './logic/query-params'
@@ -160,10 +166,12 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   // 4. Database + per-domain repositories
   // ---------------------------------------------------------------------------
   const database = await createDatabaseComponent({ logs, env, metrics })
+  const contentLocks = createContentLocks({ logs, env, metrics })
 
   const activeEntitiesRepository = createActiveEntitiesRepository()
   const contentFilesRepository = createContentFilesRepository()
   const deploymentsRepository = createDeploymentsRepository()
+  const pendingDeploymentsRepository = createPendingDeploymentsRepository()
   const pointersRepository = createPointersRepository()
   const snapshotsRepository = createSnapshotsRepository()
 
@@ -259,7 +267,24 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     denylist,
     deploymentsRepository,
     contentFilesRepository,
+    pendingDeploymentsRepository,
     entities
+  })
+
+  const partialDeployments = createPartialDeployments({
+    logs,
+    metrics,
+    env,
+    storage,
+    database,
+    crypto,
+    validator,
+    deployer,
+    entities,
+    deploymentsRepository,
+    pendingDeploymentsRepository,
+    contentFilesRepository,
+    contentLocks
   })
 
   // ---------------------------------------------------------------------------
@@ -275,10 +300,13 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       activeEntities,
       contentFilesRepository,
       deploymentsRepository,
-      snapshotsRepository
+      pendingDeploymentsRepository,
+      snapshotsRepository,
+      contentLocks
     },
     env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION),
-    env.getConfig(EnvironmentConfig.PROFILE_DURATION)
+    env.getConfig(EnvironmentConfig.PROFILE_DURATION),
+    env.getConfig(EnvironmentConfig.PENDING_DEPLOYMENT_TTL)
   )
 
   const garbageCollectionJob = createJobComponent(
@@ -287,6 +315,17 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL),
     {
       onError: (err) => logs.getLogger('GarbageCollectionJob').error(err as Error)
+    }
+  )
+
+  // Expiry of stale partial (pending) deployments. Kept separate from the GC sweep, which short-circuits
+  // when GARBAGE_COLLECTION is disabled — expiry must run on every node so staged uploads can't linger.
+  const pendingDeploymentsCleanupJob = createJobComponent(
+    { logs },
+    partialDeployments.cleanupExpired,
+    env.getConfig(EnvironmentConfig.PENDING_DEPLOYMENTS_CLEANUP_INTERVAL),
+    {
+      onError: (err) => logs.getLogger('PendingDeploymentsCleanupJob').error(err as Error)
     }
   )
 
@@ -312,7 +351,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       deployedEntitiesBloomFilter,
       storage,
       failedDeployments,
-      deploymentsRepository
+      deploymentsRepository,
+      contentLocks
     },
     {
       ignoredTypes: new Set(ignoredTypes),
@@ -489,11 +529,14 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   // 12. Rate limiting
   // ---------------------------------------------------------------------------
   // Its own cache instance: counter churn would evict whatever else shared the LRU. It has no
-  // lifecycle (no start/stop), so there is nothing to register for shutdown.
+  // lifecycle (no start/stop), so there is nothing to register for shutdown. Process-local, like the
+  // one content server per Catalyst node; a fleet sharing a limiter would swap in a shared store here,
+  // and the daily quota's exhausted-source markers follow it.
+  const rateLimitStore = createInMemoryCacheComponent({ max: RATE_LIMITER_CACHE_MAX_KEYS })
   const trustedClientIpHeader = env.getConfig<string | undefined>(EnvironmentConfig.TRUSTED_CLIENT_IP_HEADER)
   const rateLimiterLogger = logs.getLogger('rate-limiter')
   const rateLimiter = createRateLimiterComponent<GlobalContext>(
-    { cache: createInMemoryCacheComponent({ max: RATE_LIMITER_CACHE_MAX_KEYS }), logs, metrics },
+    { cache: rateLimitStore, logs, metrics },
     {
       // Process-level only. A budget set here would become the default for every mount and for
       // `consume()`, so the endpoint's own lives at its mount in `controllers/routes.ts`.
@@ -505,13 +548,21 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     }
   )
 
+  const deploymentQuota = createDeploymentQuota({ env, logs, rateLimiter, rateLimitStore })
+
+  // Bounds POST /entities bodies buffered at once; partial batches count only against this.
+  const uploadBudget = createUploadBudget({ env, metrics })
+  // One client source's share of it, taken before the body is read.
+  const sourceUploadLimits = createSourceUploadLimits({ env, metrics })
+
   // Warn at startup rather than per request: any client can send a forwarding header, so its
   // presence proves nothing and would let an outsider raise this.
   if (!trustedClientIpHeader) {
     rateLimiterLogger.warn(
-      'TRUSTED_CLIENT_IP_HEADER is unset, so POST /entities is rate limited by socket address. That is ' +
-        'correct only if this process is reached directly; behind a proxy every client shares one budget. ' +
-        'Watch the key_source label on rate_limiter_requests_total to tell which is happening.'
+      'TRUSTED_CLIENT_IP_HEADER is set empty, so POST /entities and GET/HEAD /contents rate limits and per-source upload limits key ' +
+        'on the socket address. That is correct only if this process is reached directly; behind a proxy ' +
+        'every client shares one budget. Watch the key_source label on rate_limiter_requests_total to tell ' +
+        'which is happening.'
     )
   }
 
@@ -553,6 +604,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   // Return
   // ---------------------------------------------------------------------------
   return {
+    contentLocks,
     activeEntities,
     activeEntitiesRepository,
     batchDeployer,
@@ -565,8 +617,11 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     denylistReloadJob,
     deployedEntitiesBloomFilter,
     deployer,
+    partialDeployments,
     deployments,
     deploymentsRepository,
+    pendingDeploymentsRepository,
+    pendingDeploymentsCleanupJob,
     downloadQueue,
     env,
     failedDeployments,
@@ -581,6 +636,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     migrationManager,
     pointersRepository,
     rateLimiter,
+    rateLimitStore,
+    deploymentQuota,
     trustedSyncPeerIps,
     sequentialExecutor,
     server,
@@ -593,6 +650,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     syncOrchestrator,
     systemProperties,
     tracer,
+    uploadBudget,
+    sourceUploadLimits,
     validator,
     queryParams,
     entities,

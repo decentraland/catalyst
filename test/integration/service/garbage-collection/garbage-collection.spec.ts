@@ -2,6 +2,8 @@ import { EntityType } from '@dcl/schemas'
 import assert from 'assert'
 import ms from 'ms'
 import SQL from 'sql-template-strings'
+import { EntityLockTimeoutError } from '../../../../src/adapters/content-locks'
+import { SYSTEM_PROPERTIES } from '../../../../src/adapters/system-properties'
 import { EnvironmentBuilder, EnvironmentConfig } from '../../../../src/Environment'
 import { stopAllComponents } from '../../../../src/logic/components-lifecycle'
 import { AppComponents } from '../../../../src/types'
@@ -175,6 +177,50 @@ describe('Integration - Garbage Collection', () => {
       )
       return result.rows[0].id
     }
+
+    describe('when deployments keep the content lock busy while a stale profile is collected', () => {
+      let staleProfile: EntityCombo
+      let sweepError: unknown
+      let deploymentKept: boolean
+      let filesKept: boolean
+      let watermark: number | undefined
+
+      beforeEach(async () => {
+        staleProfile = await buildDeployData(['0x000000000'], {
+          type: EntityType.PROFILE,
+          contentPaths: ['test/integration/resources/some-binary-file.png'],
+          timestamp: Date.now() - ms('2 years'),
+          metadata: {}
+        })
+        await deployEntitiesCombo(components.deployer, staleProfile)
+        jest.spyOn(components.contentLocks, 'withWrite').mockRejectedValue(new EntityLockTimeoutError())
+        sweepError = await components.garbageCollectionManager.performSweep().then(
+          () => undefined,
+          (error) => error
+        )
+        const deployment = await components.deploymentsRepository.getEntityById(
+          components.database,
+          staleProfile.entity.id
+        )
+        deploymentKept = !!deployment
+        const stored = await components.storage.existMultiple(staleProfile.entity.content!.map(({ hash }) => hash))
+        filesKept = Array.from(stored.values()).every(Boolean)
+        watermark = await components.systemProperties.get(SYSTEM_PROPERTIES.lastGarbageCollectionTime)
+      })
+
+      afterEach(() => {
+        jest.restoreAllMocks()
+      })
+
+      it('should defer the collection to the next sweep without deleting the profile or its files', () => {
+        expect({ sweepError, deploymentKept, filesKept, watermark }).toEqual({
+          sweepError: undefined,
+          deploymentKept: true,
+          filesKept: true,
+          watermark: undefined
+        })
+      })
+    })
 
     it('removing stale profile should remove deployment and files', async () => {
       const timestamp = Date.now() - ms('2 years')
