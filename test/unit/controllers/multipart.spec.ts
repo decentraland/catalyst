@@ -1,5 +1,5 @@
 import FormData from 'form-data'
-import { mkdtemp, rm } from 'fs/promises'
+import { mkdtemp, readFile, rm } from 'fs/promises'
 import { tmpdir } from 'os'
 import path from 'path'
 import { Readable } from 'stream'
@@ -84,6 +84,65 @@ describe('when parsing a multipart request with upload limits', () => {
     it('should not invoke the handler', async () => {
       await expect(wrapped(buildContext(form))).rejects.toThrow()
 
+      expect(handler).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('and a file is exactly the maximum allowed file size', () => {
+    let error: unknown
+    let spooledContent: Buffer | undefined
+
+    beforeEach(async () => {
+      const form = new FormData()
+      form.append('file1', Buffer.alloc(1024, 1), { filename: 'file1' })
+      handler.mockImplementationOnce(async (ctx) => {
+        spooledContent = await readFile(ctx.formData.files.file1.path)
+        return { status: 200, body: {} }
+      })
+      error = await multipartParserWrapper(
+        handler as any,
+        { maxFileSize: 1024, maxFiles: 10 },
+        { spool: spoolIn(tmpFolder) }
+      )(buildContext(form)).then(
+        () => undefined,
+        (e) => e
+      )
+    })
+
+    it('should not reject', () => {
+      expect(error).toBeUndefined()
+    })
+
+    it('should invoke the handler with the whole file spooled', () => {
+      expect(handler).toHaveBeenCalledWith(
+        expect.objectContaining({
+          formData: expect.objectContaining({ files: { file1: expect.objectContaining({ size: 1024 }) } })
+        })
+      )
+      expect(spooledContent).toEqual(Buffer.alloc(1024, 1))
+    })
+  })
+
+  describe('and a file is one byte over the maximum allowed file size', () => {
+    let error: unknown
+
+    beforeEach(async () => {
+      const form = new FormData()
+      form.append('file1', Buffer.alloc(1025, 1), { filename: 'file1.bin' })
+      error = await multipartParserWrapper(
+        handler as any,
+        { maxFileSize: 1024, maxFiles: 10 },
+        { spool: spoolIn(tmpFolder) }
+      )(buildContext(form)).catch((e) => e)
+    })
+
+    it('should reject with a PayloadTooLargeError naming the file and its size limit', () => {
+      expect(error).toEqual(
+        new PayloadTooLargeError("File 'file1.bin' is too large. The maximum allowed size per file is 1024 bytes.")
+      )
+    })
+
+    it('should not invoke the handler', () => {
       expect(handler).not.toHaveBeenCalled()
     })
   })
