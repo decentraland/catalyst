@@ -112,8 +112,14 @@ export type AppComponents = {
   garbageCollectionManager: IGarbageCollectionComponent
   systemProperties: SystemProperties
   server: IHttpServerComponent<GlobalContext>
-  /** Per-client request budget, currently mounted only on POST /entities. */
+  /** Per-client request budget, mounted on POST /entities and on GET/HEAD /contents/:hashId. */
   rateLimiter: IRateLimiterComponent<GlobalContext>
+  /**
+   * Canonicalized real egress IPs of DAO Catalyst peers exempt from the GET/HEAD /contents rate
+   * limit (from `TRUSTED_SYNC_PEER_IPS`). Empty by default — see the config's doc comment in
+   * `Environment.ts` for why these are IPs rather than the peers' (Cloudflare-proxied) hostnames.
+   */
+  trustedSyncPeerIps: ReadonlySet<string>
   activeEntities: ActiveEntities
   sequentialExecutor: ISequentialTaskExecutorComponent
   denylist: Denylist
