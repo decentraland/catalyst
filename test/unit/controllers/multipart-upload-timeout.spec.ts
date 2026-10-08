@@ -1,8 +1,12 @@
 import FormData from 'form-data'
-import { Readable } from 'stream'
+import { mkdtemp, readdir, rm } from 'fs/promises'
+import { tmpdir } from 'os'
+import path from 'path'
+import { Readable, Writable } from 'stream'
 import { IHttpServerComponent } from '@dcl/core-commons'
 import { multipartParserWrapper } from '../../../src/controllers/multipart'
-import { RequestTimeoutError } from '../../../src/controllers/errors'
+import { spoolIn } from '../../helpers/upload-spool'
+import { RequestTimeoutError, ServiceUnavailableError } from '../../../src/controllers/errors'
 import { IUploadBudget } from '../../../src/adapters/upload-budget'
 
 type Wrapped = (ctx: IHttpServerComponent.DefaultContext<any>) => Promise<IHttpServerComponent.IResponse>
@@ -21,9 +25,11 @@ describe('when parsing a multipart request with an upload timeout', () => {
   let lease: { resize: jest.Mock; release: jest.Mock }
   let form: FormData
   let wrapped: Wrapped
+  let tmpFolder: string
   let increment: jest.Mock
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    tmpFolder = await mkdtemp(path.join(tmpdir(), 'multipart-'))
     increment = jest.fn()
     handler = jest.fn().mockResolvedValue({ status: 200, body: {} })
     lease = { resize: jest.fn().mockReturnValue(true), release: jest.fn() }
@@ -31,11 +37,16 @@ describe('when parsing a multipart request with an upload timeout', () => {
     form = new FormData()
     form.append('entityId', 'an-entity-id')
     form.append('file1', Buffer.alloc(100, 1), { filename: 'file1' })
-    wrapped = multipartParserWrapper(handler as any, { maxFileSize: 1024, uploadTimeoutMs: 50 }, budget, { increment })
+    wrapped = multipartParserWrapper(
+      handler as any,
+      { maxFileSize: 1024, uploadTimeoutMs: 50 },
+      { spool: spoolIn(tmpFolder), uploadBudget: budget, metrics: { increment } }
+    )
   })
 
-  afterEach(() => {
+  afterEach(async () => {
     jest.resetAllMocks()
+    await rm(tmpFolder, { recursive: true, force: true })
   })
 
   describe('and the body stops arriving before it is complete', () => {
@@ -103,6 +114,105 @@ describe('when parsing a multipart request with an upload timeout', () => {
         handled: 1,
         timeouts: []
       })
+    })
+  })
+})
+
+describe('when parsing a multipart request whose temporary files are slow to write', () => {
+  let handler: jest.Mock
+  let lease: { resize: jest.Mock; release: jest.Mock }
+  let budget: IUploadBudget
+  let form: FormData
+  let tmpFolder: string
+  let finalDelayMs: number | undefined
+  let increment: jest.Mock
+
+  beforeEach(async () => {
+    tmpFolder = await mkdtemp(path.join(tmpdir(), 'multipart-'))
+    increment = jest.fn()
+    handler = jest.fn(async (ctx: any) => ({ status: 200, body: Object.keys(ctx.formData.files).length }))
+    lease = { resize: jest.fn().mockReturnValue(true), release: jest.fn() }
+    budget = { acquire: jest.fn().mockReturnValue(lease) } as unknown as IUploadBudget
+    form = new FormData()
+    form.append('entityId', 'an-entity-id')
+  })
+
+  afterEach(async () => {
+    jest.resetAllMocks()
+    await rm(tmpFolder, { recursive: true, force: true })
+  })
+
+  // A slow disk: every temporary file takes `finalDelayMs` to flush and close, or never does when unset.
+  function slowWriteStream(): Writable {
+    return new Writable({
+      write: (_chunk, _encoding, callback) => callback(),
+      final: (callback) => {
+        if (finalDelayMs !== undefined) {
+          setTimeout(callback, finalDelayMs)
+        }
+      }
+    })
+  }
+
+  describe('and the last files are still flushing after the whole body arrived', () => {
+    let response: IHttpServerComponent.IResponse
+
+    beforeEach(async () => {
+      finalDelayMs = 300
+      form.append('file1', Buffer.alloc(6000, 1), { filename: 'file1' })
+      response = await multipartParserWrapper(
+        handler as any,
+        { maxFileSize: 10_000, uploadTimeoutMs: 50 },
+        { spool: spoolIn(tmpFolder), uploadBudget: budget, createWriteStream: slowWriteStream, metrics: { increment } }
+      )(buildContext(Readable.from(form.getBuffer()), form.getHeaders()))
+    })
+
+    it('should wait for the flush past the upload timeout and run the handler without counting a failure', () => {
+      expect({ status: response.status, files: response.body, metrics: increment.mock.calls }).toEqual({
+        status: 200,
+        files: 1,
+        metrics: []
+      })
+    })
+  })
+
+  describe('and a temporary file never finishes flushing', () => {
+    let error: unknown
+    let leftovers: string[]
+
+    beforeEach(async () => {
+      finalDelayMs = undefined
+      form.append('file1', Buffer.alloc(100, 1), { filename: 'file1' })
+      error = await multipartParserWrapper(
+        handler as any,
+        { maxFileSize: 1024 },
+        {
+          spool: spoolIn(tmpFolder),
+          uploadBudget: budget,
+          createWriteStream: slowWriteStream,
+          spoolFlushTimeoutMs: 50,
+          metrics: { increment }
+        }
+      )(buildContext(Readable.from(form.getBuffer()), form.getHeaders())).catch((e) => e)
+      leftovers = await readdir(tmpFolder)
+    })
+
+    it('should fail with a retryable ServiceUnavailableError, skip the handler, release the upload slot and remove the spool', () => {
+      expect({
+        error,
+        handled: handler.mock.calls.length,
+        released: lease.release.mock.calls.length,
+        leftovers
+      }).toEqual({
+        error: new ServiceUnavailableError('The upload could not be stored in time, please retry shortly.'),
+        handled: 0,
+        released: 1,
+        leftovers: []
+      })
+    })
+
+    it('should count one spool flush timeout', () => {
+      expect(increment.mock.calls).toEqual([['dcl_upload_spool_failures_total', { reason: 'flush_timeout' }]])
     })
   })
 })

@@ -44,6 +44,7 @@ import { createContentValidator } from './adapters/content-validator'
 import { createDatabaseComponent } from './adapters/database'
 import { createContentLocks } from './adapters/content-locks'
 import { createUploadBudget } from './adapters/upload-budget'
+import { createUploadSpool } from './adapters/upload-spool'
 import { createSourceUploadLimits } from './adapters/source-upload-limits'
 import { createDeploymentQuota } from './logic/deployment-quota'
 import { createDenylist } from './adapters/denylist'
@@ -140,6 +141,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const contentStorageFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
   const tmpDownloadFolder = path.join(contentStorageFolder, '_tmp')
   await fs.mkdir(tmpDownloadFolder, { recursive: true })
+  // Per-request spools of POST /entities bodies, in a node-local folder this process owns.
+  const uploadSpool = await createUploadSpool({ env, metrics })
   const staticConfigs = {
     contentStorageFolder,
     tmpDownloadFolder
@@ -271,20 +274,23 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     entities
   })
 
+  // Bounds regular deployments' files and partial batches' entity files read into memory.
+  const deploymentMemoryBudget = createUploadBudget({ env, metrics }, 'memory')
   const partialDeployments = createPartialDeployments({
     logs,
     metrics,
     env,
+    crypto,
     storage,
     database,
-    crypto,
     validator,
     deployer,
     entities,
     deploymentsRepository,
     pendingDeploymentsRepository,
     contentFilesRepository,
-    contentLocks
+    contentLocks,
+    deploymentMemoryBudget
   })
 
   // ---------------------------------------------------------------------------
@@ -550,9 +556,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const deploymentQuota = createDeploymentQuota({ env, logs, rateLimiter, rateLimitStore })
 
-  // Bounds POST /entities bodies buffered at once; partial batches count only against this.
-  const uploadBudget = createUploadBudget({ env, metrics })
-  // One client source's share of it, taken before the body is read.
+  // Bound POST /entities bodies spooled to disk.
+  const uploadBudget = createUploadBudget({ env, metrics }, 'disk')
+  // One client source's share of the uploads in flight, taken before the body is read.
   const sourceUploadLimits = createSourceUploadLimits({ env, metrics })
 
   // Warn at startup rather than per request: any client can send a forwarding header, so its
@@ -640,6 +646,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     deploymentQuota,
     trustedSyncPeerIps,
     sequentialExecutor,
+    // Stopped after the server: stop runs in reverse key order.
+    uploadSpool,
     server,
     snapshotGenerationJob,
     snapshotsRepository,
@@ -651,6 +659,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     systemProperties,
     tracer,
     uploadBudget,
+    deploymentMemoryBudget,
     sourceUploadLimits,
     validator,
     queryParams,

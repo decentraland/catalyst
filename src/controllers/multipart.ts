@@ -1,26 +1,34 @@
 import { IHttpServerComponent } from '@dcl/core-commons'
-import { Field, File } from '@well-known-components/multipart-wrapper'
+import { Field } from '@well-known-components/multipart-wrapper'
 import busboy from 'busboy'
-import { Readable } from 'stream'
+import { createWriteStream } from 'fs'
+import { rm } from 'fs/promises'
+import path from 'path'
+import { Readable, Writable } from 'stream'
 import { pipeline } from 'stream/promises'
-import { AppComponents, FormDataContext } from '../types'
-import { IUploadBudget, peakUploadBytes, UploadBudgetExceededError, UploadBudgetLease } from '../adapters/upload-budget'
+import { AppComponents, FormDataContext, SpooledFile } from '../types'
+import {
+  IUploadBudget,
+  SPOOL_FILE_OVERHEAD_BYTES,
+  UploadBudgetExceededError,
+  UploadBudgetLease
+} from '../adapters/upload-budget'
+import { IUploadSpool, UploadSpoolStoppedError } from '../adapters/upload-spool'
 import { InvalidRequestError, PayloadTooLargeError, RequestTimeoutError, ServiceUnavailableError } from './errors'
 
 /**
- * Limits applied to a multipart request before its contents are buffered into memory.
+ * Limits applied to a multipart request while it is received.
  *
  * The upstream `@well-known-components/multipart-wrapper` buffers every uploaded file
  * fully in memory (`Buffer.concat`) with no bound, and this happens *before* any
  * authentication/validation runs — so an unauthenticated client can exhaust memory by
- * streaming a large body. This wrapper is a drop-in replacement that wires `busboy`'s
- * native limits and rejects (HTTP 413) as soon as a limit is exceeded, instead of
- * silently buffering or truncating.
+ * streaming a large body. This wrapper is a drop-in replacement that spools files to
+ * temporary files, wires `busboy`'s native limits and rejects (HTTP 413) as soon as a
+ * limit is exceeded, instead of silently truncating.
  *
  * `maxTotalSize` additionally bounds the cumulative size of every file and field value; with the file
  * and field counts it also bounds the whole body, multipart framing included (pre-checked against the
- * declared Content-Length). The wrapper still buffers files in memory, so a
- * reverse-proxy / load-balancer body cap remains a sensible extra layer for very large uploads.
+ * declared Content-Length).
  */
 export type MultipartLimits = {
   /** Maximum size, in bytes, accepted for any single uploaded file. */
@@ -37,8 +45,21 @@ export type MultipartLimits = {
   uploadTimeoutMs?: number
 }
 
+export type MultipartOptions = {
+  /** Creates the folder that holds a request's temporary files; they are removed once the handler returns. */
+  spool: Pick<IUploadSpool, 'createRequestFolder'>
+  /** Bounds the bytes spooled across concurrent requests, each file charged SPOOL_FILE_OVERHEAD_BYTES. */
+  uploadBudget?: IUploadBudget
+  /** Opens a temporary file for writing. */
+  createWriteStream?: (filePath: string) => Writable
+  /** Most time, in milliseconds, to flush the temporary files once the body is received. */
+  spoolFlushTimeoutMs?: number
+  /** Counts upload timeouts and spool failures. */
+  metrics?: Pick<AppComponents['metrics'], 'increment'>
+}
+
 // Most framing busboy accepts per part: its 16 KiB header block plus an RFC 2046 boundary line (at most
-// 70 bytes) and CRLFs. It is never buffered.
+// 70 bytes) and CRLFs. It never reaches disk.
 export const MULTIPART_PART_FRAMING_BYTES = 16 * 1024 + 128
 
 /** Largest body a request within `limits` can have: its payload plus the framing of every part. */
@@ -50,6 +71,14 @@ export function maxMultipartBodySize(limits: MultipartLimits): number | undefine
   // One more part's worth covers the closing boundary and any preamble or epilogue.
   return maxTotalSize + (maxFiles + maxFields + 1) * MULTIPART_PART_FRAMING_BYTES
 }
+
+// Temporary files a request writes at once: busboy moves to the next part while earlier files are
+// still flushing, so without a cap one request could hold a descriptor per part.
+export const MAX_OPEN_SPOOL_FILES = 8
+
+// Once the body is parsed only the last buffered chunks of the open files remain to flush, so this is
+// only reached by a stuck disk; the upload then fails with 503 rather than holding its budget share.
+export const DEFAULT_SPOOL_FLUSH_TIMEOUT_MS = 60_000
 
 /** Formats milliseconds as seconds for a client-facing message, e.g. 300000 → "300", 50 → "0.05". */
 export function formatSeconds(ms: number): string {
@@ -67,30 +96,28 @@ export function uploadTimedOutMessage(timeoutMs: number, receivedBytes: number, 
 
 export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T extends IHttpServerComponent.IResponse>(
   handler: (ctx: Ctx) => Promise<T>,
-  limits: MultipartLimits = {},
-  uploadBudget?: IUploadBudget,
-  metrics?: Pick<AppComponents['metrics'], 'increment'>
+  limits: MultipartLimits,
+  options: MultipartOptions
 ): (ctx: IHttpServerComponent.DefaultContext<U>) => Promise<T> {
   const maxBodySize = maxMultipartBodySize(limits)
 
   return async function (ctx: IHttpServerComponent.DefaultContext<U>): Promise<T> {
     const { maxTotalSize } = limits
 
-    // Reject an upload whose declared Content-Length can't fit a valid body, before we read (and buffer)
-    // any of it. A body without Content-Length is bounded as it arrives, by both its payload and its size.
+    // Reject an upload whose declared Content-Length can't fit a valid body, before we read any of it.
+    // A body without Content-Length is bounded as it arrives, by both its payload and its whole size.
     const declaredSize = parseInt(ctx.request.headers.get('content-length') || '', 10)
     if (maxBodySize !== undefined && !isNaN(declaredSize) && declaredSize > maxBodySize) {
       throw bodyTooLarge()
     }
 
-    // Reserve the declared body's peak before reading it, so a full budget sheds the upload unread.
-    // Framing is never buffered, so the payload a declaration can carry is capped at the payload limit.
-    const declaredBodyBytes =
+    // Reserve the declared size before reading the body, so a full budget sheds the upload unread. Framing
+    // never reaches disk, so it is capped at the payload limit; file overheads are charged per part.
+    const initialReservation =
       Number.isSafeInteger(declaredSize) && declaredSize > 0 ? Math.min(declaredSize, maxTotalSize ?? Infinity) : 0
-    const initialReservation = declaredBodyBytes > 0 ? peakUploadBytes(declaredBodyBytes, limits.maxFileSize) : 0
     let lease: UploadBudgetLease | undefined
     try {
-      lease = uploadBudget?.acquire(initialReservation)
+      lease = options.uploadBudget?.acquire(initialReservation)
     } catch (error) {
       if (error instanceof UploadBudgetExceededError) {
         throw new ServiceUnavailableError(error.message)
@@ -98,9 +125,9 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       throw error
     }
     try {
-      return await parseAndHandle(ctx, lease, declaredBodyBytes, initialReservation)
+      return await parseAndHandle(ctx, lease, initialReservation)
     } finally {
-      // Files stay buffered until the handler returns.
+      // Runs once removing the temporary files has finished or failed.
       lease?.release()
     }
   }
@@ -115,7 +142,6 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
   async function parseAndHandle(
     ctx: IHttpServerComponent.DefaultContext<U>,
     lease: UploadBudgetLease | undefined,
-    declaredBodyBytes: number,
     initialReservation: number
   ): Promise<T> {
     const { maxTotalSize } = limits
@@ -140,219 +166,300 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       throw new InvalidRequestError('Invalid request: expected a multipart/form-data body')
     }
 
-    // Null-prototype maps so that an attacker-controlled field/file name such as `__proto__` or
-    // `constructor` is stored as a plain key instead of mutating the object's prototype.
-    const fields: Record<string, Field> = Object.create(null)
-    const files: Record<string, File> = Object.create(null)
-    // Every form name may appear once: a repeated part would be buffered but only one copy kept.
-    const seenNames = new Set<string>()
-    const rejectIfDuplicate = (name: string): boolean => {
-      if (seenNames.has(name)) {
-        abort(new InvalidRequestError(`Duplicate form field '${name}'`))
-        return true
+    let directory: string
+    try {
+      directory = await options.spool.createRequestFolder()
+    } catch (error) {
+      if (error instanceof UploadSpoolStoppedError) {
+        throw new ServiceUnavailableError(error.message)
       }
-      seenNames.add(name)
-      return false
+      throw error
     }
-
-    // Cumulative bytes seen across every file and field. The per-file/per-field caps don't bound the
-    // sum (a request may carry many files/fields), and this wrapper buffers everything in memory, so
-    // track the total and reject once it crosses `maxTotalSize`.
-    let totalBytes = 0
-    // Set once any limit is hit. `abort` destroys the parser exactly once, and the field/file
-    // handlers short-circuit on `aborted` — so in-flight chunks aren't buffered after a rejection
-    // (bounding the overshoot past a limit) and destroy() is never called more than once.
-    let aborted = false
-    // The first rejection wins over whatever the torn-down pipeline reports.
-    let abortReason: Error | undefined
-    const abort = (error: Error): void => {
-      if (aborted) {
-        return
-      }
-      aborted = true
-      abortReason = error
-      formDataParser.destroy(error)
-    }
-    let reservedBytes = initialReservation
-    const rejectIfOverTotal = (): boolean => {
-      // Over the limit is final (413), so check it before a full budget could answer a retryable 503.
-      if (maxTotalSize !== undefined && totalBytes > maxTotalSize) {
-        abort(
-          new PayloadTooLargeError(
-            `The request body is too large. The maximum allowed total upload size is ${maxTotalSize} bytes.`
-          )
-        )
-        return true
-      }
-      if (declaredBodyBytes > 0) {
-        // The declared body's peak is already reserved, so it must not outgrow its declaration.
-        if (totalBytes > declaredBodyBytes) {
-          abort(new InvalidRequestError('The request body is larger than its declared Content-Length.'))
+    const openWriter = options.createWriteStream ?? createWriteStream
+    const writers = new Set<Writable>()
+    // Parts paused until a temporary file slot frees up.
+    const waitingParts: Array<() => void> = []
+    const writes: Promise<void>[] = []
+    try {
+      // Null-prototype maps so that an attacker-controlled field/file name such as `__proto__` or
+      // `constructor` is stored as a plain key instead of mutating the object's prototype.
+      const fields: Record<string, Field> = Object.create(null)
+      const files: Record<string, SpooledFile> = Object.create(null)
+      // Every form name may appear once: a repeated part would be received but only one copy kept.
+      const seenNames = new Set<string>()
+      const rejectIfDuplicate = (name: string): boolean => {
+        if (seenNames.has(name)) {
+          abort(new InvalidRequestError(`Duplicate form field '${name}'`))
           return true
         }
-      } else if (totalBytes > reservedBytes) {
-        // A body without a declared size grows the reservation as it arrives.
-        if (lease) {
-          if (!lease.resize(totalBytes)) {
-            abort(new ServiceUnavailableError('Server is buffering too many uploads, please retry shortly.'))
-            return true
-          }
-          reservedBytes = totalBytes
-        }
+        seenNames.add(name)
+        return false
       }
-      return false
-    }
 
-    // Emitted once more files than `maxFiles` are seen. Reject instead of dropping them silently.
-    formDataParser.on('filesLimit', function () {
-      abort(new PayloadTooLargeError(`Too many files in the request. The maximum allowed is ${limits.maxFiles}.`))
-    })
-
-    // Emitted once more than `maxFields` non-file fields are seen. Bounds the in-memory `fields`
-    // object and any downstream per-field work (e.g. the auth-chain index scan) so a request with a
-    // huge number of fields can't exhaust memory/CPU.
-    formDataParser.on('fieldsLimit', function () {
-      abort(
-        new PayloadTooLargeError(`Too many form fields in the request. The maximum allowed is ${limits.maxFields}.`)
-      )
-    })
-
-    formDataParser.on('field', function (name, value, info) {
-      if (aborted) {
-        return
-      }
-      // busboy truncates a field value larger than `maxFieldSize` (setting valueTruncated); reject
-      // rather than store a partial value.
-      if (info.valueTruncated) {
-        abort(
-          new PayloadTooLargeError(
-            `Field '${name}' is too large. The maximum allowed size per field is ${limits.maxFieldSize} bytes.`
-          )
-        )
-        return
-      }
-      if (rejectIfDuplicate(name)) {
-        return
-      }
-      totalBytes += Buffer.byteLength(value)
-      if (rejectIfOverTotal()) {
-        return
-      }
-      fields[name] = Object.assign({ fieldname: name, value }, info)
-    })
-
-    formDataParser.on('file', function (name, stream, info) {
-      // Checked on the part's headers, before any of its bytes are buffered.
-      if (aborted || rejectIfDuplicate(name)) {
-        // Destroying the parser errors the open part's stream too.
-        stream.on('error', () => undefined).resume()
-        return
-      }
-      // Chunks as received, so memory tracks the bytes that actually arrived rather than any declaration.
-      const chunks: Buffer[] = []
-      stream.on('data', function (data: Buffer) {
+      // Cumulative bytes seen across every file and field. The per-file/per-field caps don't bound the
+      // sum (a request may carry many files/fields), so track the total and reject once it crosses
+      // `maxTotalSize`.
+      let totalBytes = 0
+      let spooledFiles = 0
+      let reservedBytes = initialReservation
+      // Set once any limit is hit. `abort` destroys the parser exactly once, and the field/file
+      // handlers short-circuit on `aborted` — so in-flight chunks aren't counted after a rejection
+      // and destroy() is never called more than once.
+      let aborted = false
+      // The first rejection wins over whatever the torn-down pipeline reports.
+      let abortReason: Error | undefined
+      // A temporary file that can't be written is a server failure, not a malformed request.
+      let writeError: Error | undefined
+      const abort = (error: Error): void => {
         if (aborted) {
           return
         }
-        totalBytes += data.length
+        aborted = true
+        abortReason = error
+        waitingParts.length = 0
+        formDataParser.destroy(error)
+        for (const writer of writers) {
+          writer.destroy()
+        }
+      }
+      const rejectIfOverTotal = (): boolean => {
+        // Checked before growing the reservation: an oversize body gets a final 413, never a retryable 503.
+        if (maxTotalSize !== undefined && totalBytes > maxTotalSize) {
+          abort(
+            new PayloadTooLargeError(
+              `The request body is too large. The maximum allowed total upload size is ${maxTotalSize} bytes.`
+            )
+          )
+          return true
+        }
+        return rejectIfOverBudget()
+      }
+      // Grows the reservation to the spool's disk footprint when it outgrows the declared size (or lack of one).
+      const rejectIfOverBudget = (): boolean => {
+        const footprint = totalBytes + spooledFiles * SPOOL_FILE_OVERHEAD_BYTES
+        if (lease && footprint > reservedBytes) {
+          if (!lease.resize(footprint)) {
+            abort(new ServiceUnavailableError('Server is handling too many uploads, please retry shortly.'))
+            return true
+          }
+          reservedBytes = footprint
+        }
+        return false
+      }
+      // Charged on the part's headers, before its temporary file exists.
+      const rejectIfNoRoomForFile = (): boolean => {
+        spooledFiles++
+        return rejectIfOverBudget()
+      }
+
+      // Emitted once more files than `maxFiles` are seen. Reject instead of dropping them silently.
+      formDataParser.on('filesLimit', function () {
+        abort(new PayloadTooLargeError(`Too many files in the request. The maximum allowed is ${limits.maxFiles}.`))
+      })
+
+      // Emitted once more than `maxFields` non-file fields are seen. Bounds the in-memory `fields`
+      // object and any downstream per-field work (e.g. the auth-chain index scan) so a request with a
+      // huge number of fields can't exhaust memory/CPU.
+      formDataParser.on('fieldsLimit', function () {
+        abort(
+          new PayloadTooLargeError(`Too many form fields in the request. The maximum allowed is ${limits.maxFields}.`)
+        )
+      })
+
+      formDataParser.on('field', function (name, value, info) {
+        if (aborted) {
+          return
+        }
+        // busboy truncates a field value larger than `maxFieldSize` (setting valueTruncated); reject
+        // rather than store a partial value.
+        if (info.valueTruncated) {
+          abort(
+            new PayloadTooLargeError(
+              `Field '${name}' is too large. The maximum allowed size per field is ${limits.maxFieldSize} bytes.`
+            )
+          )
+          return
+        }
+        if (rejectIfDuplicate(name)) {
+          return
+        }
+        totalBytes += Buffer.byteLength(value)
         if (rejectIfOverTotal()) {
           return
         }
-        chunks.push(data)
+        fields[name] = Object.assign({ fieldname: name, value }, info)
       })
-      // Emitted when the file exceeds `maxFileSize`. busboy truncates the stream, so we
-      // must reject rather than store partial (and therefore wrong-hash) content.
-      stream.on('limit', function () {
-        abort(
-          new PayloadTooLargeError(
-            `File '${info.filename}' is too large. The maximum allowed size per file is ${limits.maxFileSize} bytes.`
+
+      formDataParser.on('file', function (name, stream, info) {
+        // Checked on the part's headers, before a temporary file is opened for it.
+        if (aborted || rejectIfDuplicate(name) || rejectIfNoRoomForFile()) {
+          // Destroying the parser errors the open part's stream too.
+          stream.on('error', () => undefined).resume()
+          return
+        }
+        const part = spooledFiles - 1
+        const spool = (): void => {
+          // Temporary names are sequence numbers: field names are client-controlled.
+          const filePath = path.join(directory, String(part))
+          const writer = openWriter(filePath)
+          writers.add(writer)
+          let size = 0
+          writes.push(
+            new Promise<void>((resolve) => {
+              writer.on('finish', function () {
+                if (!aborted) {
+                  files[name] = Object.assign({}, info, { fieldname: name, path: filePath, size })
+                }
+              })
+              writer.on('error', function (error: Error) {
+                if (!writeError) {
+                  options.metrics?.increment('dcl_upload_spool_failures_total', { reason: 'write_error' })
+                }
+                writeError = writeError ?? error
+                abort(error)
+              })
+              writer.on('close', function () {
+                writers.delete(writer)
+                resolve()
+                if (!aborted) {
+                  waitingParts.shift()?.()
+                }
+              })
+            })
           )
-        )
-      })
-      stream.on('error', function (err: Error) {
-        abort(err)
-      })
-      stream.on('end', function () {
-        if (aborted) {
-          return
-        }
-        // Concatenating briefly holds a second copy of the file: a declared body reserved it up front,
-        // one without a declared size reserves it meanwhile.
-        const growingLease = declaredBodyBytes === 0 ? lease : undefined
-        const fileBytes = chunks.reduce((sum, chunk) => sum + chunk.length, 0)
-        if (growingLease && !growingLease.resize(reservedBytes + fileBytes)) {
-          abort(new ServiceUnavailableError('Server is buffering too many uploads, please retry shortly.'))
-          return
-        }
-        files[name] = Object.assign(Object.assign({}, info), { fieldname: name, value: Buffer.concat(chunks) })
-        chunks.length = 0
-        growingLease?.resize(reservedBytes)
-      })
-    })
-
-    // @dcl/http-server v2 hands handlers a native `Request`, whose `body` is a web `ReadableStream`
-    // rather than a Node stream. Adapt it so it can be piped into busboy. The cast bridges the
-    // lib.dom `ReadableStream` type to the `node:stream/web` one that `Readable.fromWeb` expects.
-    const requestBody = ctx.request.body as unknown as Parameters<typeof Readable.fromWeb>[0] | null
-    const source = requestBody ? Readable.fromWeb(requestBody) : Readable.from([])
-    // busboy skips preambles, epilogues and unnamed parts without reporting their bytes.
-    let bodyBytes = 0
-    const countBody = async function* (chunks: AsyncIterable<Uint8Array>): AsyncGenerator<Uint8Array> {
-      for await (const chunk of chunks) {
-        bodyBytes += chunk.byteLength
-        if (maxBodySize !== undefined && bodyBytes > maxBodySize) {
-          const error = bodyTooLarge()
-          abort(error)
-          throw error
-        }
-        yield chunk
-      }
-    }
-
-    // `pipeline` tears down *both* streams if either errors: when a limit handler calls `abort()`
-    // (destroying the parser) the request body (a web stream) is cancelled and the upload is aborted,
-    // and a client that disconnects mid-upload rejects here — instead of leaving the parser and an
-    // unsettled promise dangling (a slow resource leak).
-    const { uploadTimeoutMs } = limits
-    const declaredSize = parseInt(ctx.request.headers.get('content-length') || '', 10)
-    const timeout =
-      uploadTimeoutMs === undefined
-        ? undefined
-        : setTimeout(() => {
-            if (!aborted) {
-              metrics?.increment('dcl_multipart_upload_timeouts_total')
+          stream.on('data', function (data: Buffer) {
+            if (aborted) {
+              return
             }
-            abort(
-              new RequestTimeoutError(
-                uploadTimedOutMessage(
-                  uploadTimeoutMs,
-                  bodyBytes,
-                  Number.isSafeInteger(declaredSize) ? declaredSize : undefined
+            size += data.length
+            totalBytes += data.length
+            rejectIfOverTotal()
+          })
+          stream.pipe(writer)
+        }
+        // Emitted when the file exceeds `maxFileSize`. busboy truncates the stream, so we
+        // must reject rather than store partial (and therefore wrong-hash) content.
+        stream.on('limit', function () {
+          abort(
+            new PayloadTooLargeError(
+              `File '${info.filename}' is too large. The maximum allowed size per file is ${limits.maxFileSize} bytes.`
+            )
+          )
+        })
+        stream.on('error', function (err: Error) {
+          abort(err)
+        })
+        if (writers.size >= MAX_OPEN_SPOOL_FILES) {
+          // Pausing the part backpressures busboy and the request body until a file closes.
+          stream.pause()
+          waitingParts.push(spool)
+        } else {
+          spool()
+        }
+      })
+
+      // @dcl/http-server v2 hands handlers a native `Request`, whose `body` is a web `ReadableStream`
+      // rather than a Node stream. Adapt it so it can be piped into busboy. The cast bridges the
+      // lib.dom `ReadableStream` type to the `node:stream/web` one that `Readable.fromWeb` expects.
+      const requestBody = ctx.request.body as unknown as Parameters<typeof Readable.fromWeb>[0] | null
+      const source = requestBody ? Readable.fromWeb(requestBody) : Readable.from([])
+      // busboy skips preambles, epilogues and unnamed parts without reporting their bytes.
+      let bodyBytes = 0
+      const countBody = async function* (chunks: AsyncIterable<Uint8Array>): AsyncGenerator<Uint8Array> {
+        for await (const chunk of chunks) {
+          bodyBytes += chunk.byteLength
+          if (maxBodySize !== undefined && bodyBytes > maxBodySize) {
+            const error = bodyTooLarge()
+            abort(error)
+            throw error
+          }
+          yield chunk
+        }
+      }
+
+      // `pipeline` tears down *both* streams if either errors: when a limit handler calls `abort()`
+      // (destroying the parser) the request body (a web stream) is cancelled and the upload is aborted,
+      // and a client that disconnects mid-upload rejects here — instead of leaving the parser and an
+      // unsettled promise dangling (a slow resource leak).
+      // The timeout is wall-clock, so it bounds how long a body holds its share whatever slows it.
+      const { uploadTimeoutMs } = limits
+      const declaredSize = parseInt(ctx.request.headers.get('content-length') || '', 10)
+      const timeout =
+        uploadTimeoutMs === undefined
+          ? undefined
+          : setTimeout(() => {
+              if (!aborted) {
+                options.metrics?.increment('dcl_multipart_upload_timeouts_total')
+              }
+              abort(
+                new RequestTimeoutError(
+                  uploadTimedOutMessage(
+                    uploadTimeoutMs,
+                    bodyBytes,
+                    Number.isSafeInteger(declaredSize) ? declaredSize : undefined
+                  )
                 )
               )
-            )
-          }, uploadTimeoutMs)
-    try {
-      await pipeline(source, countBody, formDataParser)
-    } catch (error) {
-      const failure = abortReason ?? error
-      // Our own rejections keep their status (400, 413, 503, 408). Any other failure means we couldn't
-      // parse the request body (a malformed, truncated, or empty multipart body, or a mid-upload
-      // disconnect) — that's a client error (400), not an internal 500.
-      if (
-        failure instanceof InvalidRequestError ||
-        failure instanceof PayloadTooLargeError ||
-        failure instanceof ServiceUnavailableError ||
-        failure instanceof RequestTimeoutError
-      ) {
-        throw failure
+            }, uploadTimeoutMs)
+      try {
+        await pipeline(source, countBody, formDataParser)
+      } catch (error) {
+        if (writeError) {
+          throw writeError
+        }
+        const failure = abortReason ?? error
+        // Our own rejections keep their status. Any other failure means we couldn't parse the
+        // request body (a malformed, truncated, or empty multipart body, or a mid-upload disconnect) —
+        // that's a client error (400), not an internal 500.
+        if (
+          failure instanceof InvalidRequestError ||
+          failure instanceof PayloadTooLargeError ||
+          failure instanceof ServiceUnavailableError ||
+          failure instanceof RequestTimeoutError
+        ) {
+          throw failure
+        }
+        throw new InvalidRequestError('Invalid multipart/form-data request')
+      } finally {
+        clearTimeout(timeout)
       }
-      throw new InvalidRequestError('Invalid multipart/form-data request')
-    } finally {
-      clearTimeout(timeout)
-    }
+      // The body is received: a slow flush is the server's, so it gets its own bound and a retryable 503.
+      const flushTimeout = setTimeout(() => {
+        if (!aborted) {
+          options.metrics?.increment('dcl_upload_spool_failures_total', { reason: 'flush_timeout' })
+        }
+        abort(new ServiceUnavailableError('The upload could not be stored in time, please retry shortly.'))
+      }, options.spoolFlushTimeoutMs ?? DEFAULT_SPOOL_FLUSH_TIMEOUT_MS)
+      try {
+        // busboy finishes before the last temporary files are flushed.
+        await Promise.all(writes)
+      } finally {
+        clearTimeout(flushTimeout)
+      }
+      if (writeError) {
+        throw writeError
+      }
+      if (abortReason) {
+        throw abortReason
+      }
+      // The handler runs holding only what the spool uses, not the declared framing.
+      const footprint = totalBytes + spooledFiles * SPOOL_FILE_OVERHEAD_BYTES
+      if (lease && footprint < reservedBytes && lease.resize(footprint)) {
+        reservedBytes = footprint
+      }
 
-    const newContext = Object.assign(Object.create(ctx), { formData: { fields, files } })
-    return handler(newContext as Ctx)
+      const newContext = Object.assign(Object.create(ctx), { formData: { fields, files } })
+      return await handler(newContext as Ctx)
+    } finally {
+      for (const writer of writers) {
+        writer.destroy()
+      }
+      await Promise.allSettled(writes)
+      // The lease is released even if removal fails; a leftover folder is no longer counted and is only
+      // reclaimed after this process exits, by the next startup on this host.
+      await rm(directory, { recursive: true, force: true }).catch(() =>
+        options.metrics?.increment('dcl_upload_spool_failures_total', { reason: 'cleanup' })
+      )
+    }
   }
 }

@@ -1,10 +1,23 @@
 import { AuthChain } from '@dcl/crypto'
+import { Readable } from 'stream'
+
+/** One uploaded file of a staging batch, streamed from wherever the request put it. */
+export type StagedFile = {
+  size: number
+  /** Opens a new stream over the file's bytes. */
+  openStream(): Readable
+}
 
 export type StageDeploymentInput = {
   entityId: string
   authChain: AuthChain
   /** Uploaded files keyed by their multipart field name (the content hash, or the entity id). */
-  files: Map<string, Uint8Array>
+  files: Map<string, StagedFile>
+  /**
+   * The bytes of the batch's entity file, read in under the caller's memory budget share, which it holds
+   * until staging settles. Required when `files` carries an entity file within MAX_ENTITY_FILE_SIZE_BYTES.
+   */
+  entityFile?: Uint8Array
   /** When the request arrived (epoch ms), before its body was read. A new upload's lifetime starts here. */
   requestedAt: number
 }
@@ -23,8 +36,8 @@ export interface IPartialDeployments {
    * lock; storage and publication take the shared content lock and the entity's lock, so batches of one
    * upload are serialized there.
    *
-   * Throws {@link InvalidPartialDeploymentError} for client errors, and EntityLockTimeoutError when the
-   * locks stay busy.
+   * Throws {@link InvalidPartialDeploymentError} for client errors, EntityLockTimeoutError when the
+   * locks stay busy, and UploadBudgetExceededError when the memory budget can't hold a resume's entity file.
    */
   stageDeployment(input: StageDeploymentInput): Promise<StageDeploymentResult>
   /** Deletes expired uploads' unreferenced staged content, then releases their accounting. */

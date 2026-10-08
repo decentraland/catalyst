@@ -6,12 +6,17 @@ export interface UploadBudgetLease {
   release(): void
 }
 
+/** The resource a budget bounds: temporary upload files on disk, or deployment files read into memory. */
+export type UploadBudgetKind = 'disk' | 'memory'
+
 /**
- * Aggregate bound on uploads buffered in memory at once, across all clients. POST /entities buffers
- * each request body before any authentication, so this bounds memory by bytes rather than by request
- * count; each upload reserves at least a minimum, which also bounds how many run at once.
+ * Aggregate bound on uploads held at once across all clients, by bytes rather than by request count.
+ * POST /entities receives each body before any authentication; each of its uploads reserves at least a
+ * minimum from the disk budget, which also bounds how many run at once.
  */
 export interface IUploadBudget {
+  /** Most bytes the budget can ever hold at once. */
+  readonly capacityBytes: number
   /**
    * Admits an upload with an initial byte reservation, raised to the minimum reservation.
    * @throws UploadBudgetExceededError when the byte budget is exhausted.
