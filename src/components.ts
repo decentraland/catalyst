@@ -7,7 +7,7 @@ import { createServerComponent, instrumentHttpServerWithPromClientRegistry } fro
 import { createJobComponent } from '@dcl/job-component'
 import { createInMemoryCacheComponent } from '@dcl/memory-cache-component'
 import { createMetricsComponent } from '@dcl/metrics'
-import { createRateLimiterComponent } from '@dcl/rate-limiter-component'
+import { canonicalizeIpAddress, createRateLimiterComponent } from '@dcl/rate-limiter-component'
 import { EthAddress } from '@dcl/schemas'
 import { createJobQueue, createSynchronizer } from '@dcl/snapshots-fetcher'
 import { createTracedFetcherComponent } from '@dcl/traced-fetch-component'
@@ -559,12 +559,31 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   // presence proves nothing and would let an outsider raise this.
   if (!trustedClientIpHeader) {
     rateLimiterLogger.warn(
-      'TRUSTED_CLIENT_IP_HEADER is set empty, so POST /entities rate limits and per-source upload limits key ' +
+      'TRUSTED_CLIENT_IP_HEADER is set empty, so POST /entities and GET/HEAD /contents rate limits and per-source upload limits key ' +
         'on the socket address. That is correct only if this process is reached directly; behind a proxy ' +
         'every client shares one budget. Watch the key_source label on rate_limiter_requests_total to tell ' +
         'which is happening.'
     )
   }
+
+  // DAO sync-peer exemption for the GET/HEAD /contents rate limit (mounted in controllers/routes.ts).
+  // Parsed and validated once at startup rather than per request. Invalid entries are dropped with a
+  // loud warning rather than failing boot: a typo'd exemption should not take the whole node down,
+  // but it must not fail silently either, since a dropped entry means that peer's next sync gets
+  // throttled instead of exempted.
+  const trustedSyncPeerIps: ReadonlySet<string> = (() => {
+    const raw = splitByCommaTrimAndRemoveEmptyElements(env.getConfig<string>(EnvironmentConfig.TRUSTED_SYNC_PEER_IPS))
+    const canonical = new Set<string>()
+    for (const entry of raw) {
+      const ip = canonicalizeIpAddress(entry)
+      if (ip === null) {
+        rateLimiterLogger.warn(`Ignoring invalid entry in TRUSTED_SYNC_PEER_IPS: "${entry}" is not an IP address`)
+        continue
+      }
+      canonical.add(ip)
+    }
+    return canonical
+  })()
 
   const buildInfo = {
     version: CURRENT_VERSION,
@@ -619,6 +638,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     rateLimiter,
     rateLimitStore,
     deploymentQuota,
+    trustedSyncPeerIps,
     sequentialExecutor,
     server,
     snapshotGenerationJob,
