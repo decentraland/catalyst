@@ -2,7 +2,7 @@ import { IHttpServerComponent } from '@dcl/core-commons'
 import { Field } from '@well-known-components/multipart-wrapper'
 import busboy from 'busboy'
 import { createWriteStream } from 'fs'
-import { mkdir, mkdtemp, rm } from 'fs/promises'
+import { rm } from 'fs/promises'
 import path from 'path'
 import { Readable, Writable } from 'stream'
 import { pipeline } from 'stream/promises'
@@ -13,6 +13,7 @@ import {
   UploadBudgetExceededError,
   UploadBudgetLease
 } from '../adapters/upload-budget'
+import { IUploadSpool, UploadSpoolStoppedError } from '../adapters/upload-spool'
 import { InvalidRequestError, PayloadTooLargeError, RequestTimeoutError, ServiceUnavailableError } from './errors'
 
 /**
@@ -45,8 +46,8 @@ export type MultipartLimits = {
 }
 
 export type MultipartOptions = {
-  /** Folder that holds each request's temporary files; they are removed once the handler returns. */
-  tmpFolder: string
+  /** Creates the folder that holds a request's temporary files; they are removed once the handler returns. */
+  spool: Pick<IUploadSpool, 'createRequestFolder'>
   /** Bounds the bytes spooled across concurrent requests, each file charged SPOOL_FILE_OVERHEAD_BYTES. */
   uploadBudget?: IUploadBudget
   /** Opens a temporary file for writing. */
@@ -165,9 +166,15 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       throw new InvalidRequestError('Invalid request: expected a multipart/form-data body')
     }
 
-    // Recreated if a temp-folder cleaner removed it while this process was idle.
-    await mkdir(options.tmpFolder, { recursive: true })
-    const directory = await mkdtemp(path.join(options.tmpFolder, 'upload-'))
+    let directory: string
+    try {
+      directory = await options.spool.createRequestFolder()
+    } catch (error) {
+      if (error instanceof UploadSpoolStoppedError) {
+        throw new ServiceUnavailableError(error.message)
+      }
+      throw error
+    }
     const openWriter = options.createWriteStream ?? createWriteStream
     const writers = new Set<Writable>()
     // Parts paused until a temporary file slot frees up.

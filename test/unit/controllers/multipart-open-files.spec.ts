@@ -5,6 +5,7 @@ import path from 'path'
 import { Readable, Writable } from 'stream'
 import { IHttpServerComponent } from '@dcl/core-commons'
 import { MAX_OPEN_SPOOL_FILES, multipartParserWrapper } from '../../../src/controllers/multipart'
+import { spoolIn } from '../../helpers/upload-spool'
 
 function buildContext(form: FormData): IHttpServerComponent.DefaultContext<any> {
   const headers = form.getHeaders()
@@ -48,7 +49,7 @@ describe('when a request carries more files than can be spooled at once', () => 
     await multipartParserWrapper(
       handler as any,
       { maxFiles: FILE_COUNT },
-      { tmpFolder, createWriteStream }
+      { spool: spoolIn(tmpFolder), createWriteStream }
     )(buildContext(form))
   })
 

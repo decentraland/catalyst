@@ -6,6 +6,7 @@ import path from 'path'
 import { Readable } from 'stream'
 import { IHttpServerComponent } from '@dcl/core-commons'
 import { multipartParserWrapper } from '../../../src/controllers/multipart'
+import { spoolIn } from '../../helpers/upload-spool'
 import { PayloadTooLargeError, ServiceUnavailableError } from '../../../src/controllers/errors'
 import {
   createUploadBudget,
@@ -50,7 +51,7 @@ describe('when parsing a multipart request under an upload budget', () => {
     wrapped = multipartParserWrapper(
       handler as any,
       { maxFileSize: 1024, maxFiles: 10 },
-      { tmpFolder, uploadBudget: budget as unknown as IUploadBudget, createWriteStream }
+      { spool: spoolIn(tmpFolder), uploadBudget: budget as unknown as IUploadBudget, createWriteStream }
     )
   })
 
@@ -88,7 +89,7 @@ describe('when parsing a multipart request under an upload budget', () => {
       wrapped = multipartParserWrapper(
         handler as any,
         { maxFileSize: 1024, maxFiles: 10, maxFields: 10, maxTotalSize },
-        { tmpFolder, uploadBudget: budget as unknown as IUploadBudget }
+        { spool: spoolIn(tmpFolder), uploadBudget: budget as unknown as IUploadBudget }
       )
       await wrapped(
         buildContext(form.getBuffer(), { ...form.getHeaders(), 'content-length': String(form.getBuffer().length) })
@@ -232,7 +233,7 @@ describe('when parsing a multipart request under an upload budget', () => {
       wrapped = multipartParserWrapper(
         handler as any,
         { maxFileSize: 1024, maxFiles: 10, maxTotalSize },
-        { tmpFolder, uploadBudget: budget as unknown as IUploadBudget }
+        { spool: spoolIn(tmpFolder), uploadBudget: budget as unknown as IUploadBudget }
       )
       error = await wrapped(buildContext(form.getBuffer(), form.getHeaders())).catch((e) => e)
     })
@@ -306,7 +307,7 @@ describe('when parsing multipart requests that together fill the upload budget',
     const wrapped: Wrapped = multipartParserWrapper(
       jest.fn().mockResolvedValue({ status: 200, body: {} }) as any,
       { maxFileSize: 4096, maxFiles: 10, maxTotalSize: body.length },
-      { tmpFolder, uploadBudget: budget }
+      { spool: spoolIn(tmpFolder), uploadBudget: budget }
     )
     const responses = await Promise.all([
       wrapped(buildContext(body, headers)).catch((e) => e),
@@ -358,7 +359,7 @@ describe('when parsing a maximum-size payload under a disk budget of exactly the
     const wrapped: Wrapped = multipartParserWrapper(
       jest.fn().mockResolvedValue({ status: 200, body: {} }) as any,
       { maxFileSize: 4096, maxFiles: 1, maxFields: FIELD_COUNT, maxTotalSize: payload },
-      { tmpFolder, uploadBudget: budget }
+      { spool: spoolIn(tmpFolder), uploadBudget: budget }
     )
     const response = await wrapped(
       buildContext(body, { ...form.getHeaders(), 'content-length': String(body.length) })
@@ -412,7 +413,7 @@ describe('when parsing multipart requests whose files together exceed the upload
       jest.fn().mockResolvedValue({ status: 200, body: {} }) as any,
       { maxFileSize: 4096, maxFiles: FILE_COUNT, maxTotalSize: body.length },
       {
-        tmpFolder,
+        spool: spoolIn(tmpFolder),
         uploadBudget: budget,
         createWriteStream: (filePath: string) => {
           filesCreated++
@@ -474,7 +475,7 @@ describe('when parsing more small multipart requests at once than the upload bud
     const wrapped: Wrapped = multipartParserWrapper(
       jest.fn().mockResolvedValue({ status: 200, body: {} }) as any,
       { maxFileSize: 4096, maxFiles: 10, maxTotalSize: body.length },
-      { tmpFolder, uploadBudget: budget }
+      { spool: spoolIn(tmpFolder), uploadBudget: budget }
     )
     const responses = await Promise.all(
       Array.from({ length: 4 }, () => wrapped(buildContext(body, headers)).catch((e) => e))

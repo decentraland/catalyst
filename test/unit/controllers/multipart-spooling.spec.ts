@@ -4,7 +4,12 @@ import { tmpdir } from 'os'
 import path from 'path'
 import { Readable, Writable } from 'stream'
 import { IHttpServerComponent } from '@dcl/core-commons'
+import { STOP_COMPONENT } from '@well-known-components/interfaces'
+import { createUploadSpool } from '../../../src/adapters/upload-spool'
+import { ServiceUnavailableError } from '../../../src/controllers/errors'
 import { multipartParserWrapper } from '../../../src/controllers/multipart'
+import { Environment, EnvironmentConfig } from '../../../src/Environment'
+import { spoolIn } from '../../helpers/upload-spool'
 
 type Wrapped = (ctx: IHttpServerComponent.DefaultContext<any>) => Promise<IHttpServerComponent.IResponse>
 
@@ -38,7 +43,7 @@ describe('when a multipart request spools its files to disk', () => {
     form.append('entityId', 'an-entity-id')
     form.append('file1', Buffer.from('spooled content'), { filename: 'file1' })
     handler = jest.fn()
-    wrapped = multipartParserWrapper(handler as any, { maxFileSize: 1024 }, { tmpFolder })
+    wrapped = multipartParserWrapper(handler as any, { maxFileSize: 1024 }, { spool: spoolIn(tmpFolder) })
   })
 
   afterEach(async () => {
@@ -117,7 +122,7 @@ describe('when spooling a multipart request fails', () => {
       error = await multipartParserWrapper(
         handler as any,
         { maxFileSize: 1024 },
-        { tmpFolder, createWriteStream: failingWriteStream, metrics: { increment } }
+        { spool: spoolIn(tmpFolder), createWriteStream: failingWriteStream, metrics: { increment } }
       )(buildContext(form)).catch((e) => e)
     })
 
@@ -142,7 +147,7 @@ describe('when spooling a multipart request fails', () => {
       response = await multipartParserWrapper(
         handler as any,
         { maxFileSize: 1024 },
-        { tmpFolder, metrics: { increment } }
+        { spool: spoolIn(tmpFolder), metrics: { increment } }
       )(buildContext(form))
     })
 
@@ -151,6 +156,46 @@ describe('when spooling a multipart request fails', () => {
         status: 200,
         metrics: [['dcl_upload_spool_failures_total', { reason: 'cleanup' }]]
       })
+    })
+  })
+})
+
+describe('when a multipart request arrives after the upload spool stopped', () => {
+  let root: string
+  let handler: jest.Mock
+  let error: unknown
+
+  beforeEach(async () => {
+    root = await mkdtemp(path.join(tmpdir(), 'multipart-'))
+    const env = new Environment()
+    env.setConfig(EnvironmentConfig.UPLOAD_SPOOL_FOLDER, root)
+    const spool = await createUploadSpool({ env, metrics: { increment: jest.fn() } } as unknown as Parameters<
+      typeof createUploadSpool
+    >[0])
+    await spool[STOP_COMPONENT]?.()
+    const form = new FormData()
+    form.append('file1', Buffer.from('spooled content'), { filename: 'file1' })
+    handler = jest.fn().mockResolvedValue({ status: 200, body: {} })
+    error = await multipartParserWrapper(
+      handler as any,
+      { maxFileSize: 1024 },
+      { spool }
+    )(buildContext(form)).catch((e) => e)
+  })
+
+  afterEach(async () => {
+    await rm(root, { recursive: true, force: true })
+  })
+
+  it('should answer a retryable 503 without running the handler', () => {
+    expect({
+      unavailable: error instanceof ServiceUnavailableError,
+      message: (error as Error).message,
+      handled: handler.mock.calls.length
+    }).toEqual({
+      unavailable: true,
+      message: 'This server is shutting down and no longer accepts uploads, please retry shortly.',
+      handled: 0
     })
   })
 })

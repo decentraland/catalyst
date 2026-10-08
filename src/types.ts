@@ -115,7 +115,6 @@ export type AppComponents = {
   staticConfigs: {
     contentStorageFolder: string
     tmpDownloadFolder: string
-    uploadTmpFolder: string
   }
   batchDeployer: IBatchDeployer
   synchronizer: SynchronizerComponent

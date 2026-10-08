@@ -143,11 +143,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   await fs.mkdir(tmpDownloadFolder, { recursive: true })
   // Per-request spools of POST /entities bodies, in a node-local folder this process owns.
   const uploadSpool = await createUploadSpool({ env, metrics })
-  const uploadTmpFolder = uploadSpool.folder
   const staticConfigs = {
     contentStorageFolder,
-    tmpDownloadFolder,
-    uploadTmpFolder
+    tmpDownloadFolder
   }
 
   // ---------------------------------------------------------------------------

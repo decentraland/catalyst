@@ -4,3 +4,11 @@ export class UploadSpoolFolderTooLongError extends Error {
     this.name = 'UploadSpoolFolderTooLongError'
   }
 }
+
+/** Thrown for a request folder asked for once the spool has begun stopping. */
+export class UploadSpoolStoppedError extends Error {
+  constructor() {
+    super('This server is shutting down and no longer accepts uploads, please retry shortly.')
+    this.name = 'UploadSpoolStoppedError'
+  }
+}

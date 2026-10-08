@@ -1,11 +1,11 @@
 import { STOP_COMPONENT } from '@well-known-components/interfaces'
 import { randomBytes } from 'crypto'
-import { lstat, mkdir, readdir, rm, writeFile } from 'fs/promises'
+import { lstat, mkdir, mkdtemp, readdir, rm, writeFile } from 'fs/promises'
 import net from 'net'
 import path from 'path'
 import { EnvironmentConfig } from '../../Environment'
 import { AppComponents } from '../../types'
-import { UploadSpoolFolderTooLongError } from './errors'
+import { UploadSpoolFolderTooLongError, UploadSpoolStoppedError } from './errors'
 import { IUploadSpool } from './types'
 
 const OWNER_SOCKET = '.owner'
@@ -53,6 +53,61 @@ export async function createUploadSpool(components: Pick<AppComponents, 'env' | 
   }
   await mkdir(folder)
   await writeFile(path.join(folder, SPOOL_MARKER), '', { flag: 'wx', mode: 0o600 })
+  let owner = await listenOwner(socketPath)
+  let stopping = false
+  let restoring: Promise<void> | undefined
+  const creating = new Set<Promise<string>>()
+
+  // Restores what a temp-folder cleaner removed, so startup reclaim still sees this folder as live.
+  async function restoreFolder(): Promise<void> {
+    await mkdir(root, { recursive: true })
+    await mkdir(folder).catch(ignoreCode('EEXIST'))
+    await writeFile(path.join(folder, SPOOL_MARKER), '', { flag: 'wx', mode: 0o600 }).catch(ignoreCode('EEXIST'))
+    if (!(await lstat(socketPath).catch(() => undefined))) {
+      // Closing a unix socket server unlinks its path, so the old one closes before the new one listens.
+      await new Promise<void>((resolve) => owner.close(() => resolve()))
+      owner = await listenOwner(socketPath)
+    }
+  }
+
+  async function createRequestFolder(): Promise<string> {
+    if (stopping) {
+      throw new UploadSpoolStoppedError()
+    }
+    const creation = (async () => {
+      restoring ??= restoreFolder().finally(() => {
+        restoring = undefined
+      })
+      await restoring
+      return mkdtemp(path.join(folder, 'upload-'))
+    })()
+    creating.add(creation)
+    try {
+      return await creation
+    } finally {
+      creating.delete(creation)
+    }
+  }
+
+  return {
+    folder,
+    createRequestFolder,
+    async [STOP_COMPONENT]() {
+      stopping = true
+      // A request folder still being created keeps the folder owned, as one already in use does.
+      await Promise.allSettled(creating)
+      // A folder still holding spools stays owned until this process exits.
+      const entries = await readdir(folder).catch(() => [])
+      if (entries.every((entry) => entry === OWNER_SOCKET || entry === SPOOL_MARKER)) {
+        await new Promise<void>((resolve) => owner.close(() => resolve()))
+        await rm(folder, { recursive: true, force: true }).catch(() => undefined)
+      }
+    }
+  }
+}
+
+// Listens on a folder's owner socket; unref'd so it never keeps the process alive.
+async function listenOwner(socketPath: string): Promise<net.Server> {
   const owner = net.createServer((connection) => connection.destroy())
   await new Promise<void>((resolve, reject) => {
     owner.once('error', reject)
@@ -62,16 +117,13 @@ export async function createUploadSpool(components: Pick<AppComponents, 'env' | 
     })
   })
   owner.unref()
+  return owner
+}
 
-  return {
-    folder,
-    async [STOP_COMPONENT]() {
-      // A folder still holding spools stays owned until this process exits.
-      const entries = await readdir(folder).catch(() => [])
-      if (entries.every((entry) => entry === OWNER_SOCKET || entry === SPOOL_MARKER)) {
-        await new Promise<void>((resolve) => owner.close(() => resolve()))
-        await rm(folder, { recursive: true, force: true }).catch(() => undefined)
-      }
+function ignoreCode(code: string): (error: NodeJS.ErrnoException) => void {
+  return (error) => {
+    if (error.code !== code) {
+      throw error
     }
   }
 }

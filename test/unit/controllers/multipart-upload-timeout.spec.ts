@@ -5,6 +5,7 @@ import path from 'path'
 import { Readable, Writable } from 'stream'
 import { IHttpServerComponent } from '@dcl/core-commons'
 import { multipartParserWrapper } from '../../../src/controllers/multipart'
+import { spoolIn } from '../../helpers/upload-spool'
 import { RequestTimeoutError, ServiceUnavailableError } from '../../../src/controllers/errors'
 import { IUploadBudget } from '../../../src/adapters/upload-budget'
 
@@ -39,7 +40,7 @@ describe('when parsing a multipart request with an upload timeout', () => {
     wrapped = multipartParserWrapper(
       handler as any,
       { maxFileSize: 1024, uploadTimeoutMs: 50 },
-      { tmpFolder, uploadBudget: budget, metrics: { increment } }
+      { spool: spoolIn(tmpFolder), uploadBudget: budget, metrics: { increment } }
     )
   })
 
@@ -162,7 +163,7 @@ describe('when parsing a multipart request whose temporary files are slow to wri
       response = await multipartParserWrapper(
         handler as any,
         { maxFileSize: 10_000, uploadTimeoutMs: 50 },
-        { tmpFolder, uploadBudget: budget, createWriteStream: slowWriteStream, metrics: { increment } }
+        { spool: spoolIn(tmpFolder), uploadBudget: budget, createWriteStream: slowWriteStream, metrics: { increment } }
       )(buildContext(Readable.from(form.getBuffer()), form.getHeaders()))
     })
 
@@ -186,7 +187,7 @@ describe('when parsing a multipart request whose temporary files are slow to wri
         handler as any,
         { maxFileSize: 1024 },
         {
-          tmpFolder,
+          spool: spoolIn(tmpFolder),
           uploadBudget: budget,
           createWriteStream: slowWriteStream,
           spoolFlushTimeoutMs: 50,

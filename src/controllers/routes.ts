@@ -69,7 +69,7 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
           uploadTimeoutMs: env.getConfig<number>(EnvironmentConfig.MULTIPART_UPLOAD_TIMEOUT_MS)
         },
         {
-          tmpFolder: components.staticConfigs.uploadTmpFolder,
+          spool: components.uploadSpool,
           uploadBudget: components.uploadBudget,
           metrics: components.metrics
         }

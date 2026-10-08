@@ -3,7 +3,12 @@ import { ChildProcess, spawn } from 'child_process'
 import { access, lstat, mkdir, mkdtemp, readdir, rm, symlink, utimes, writeFile } from 'fs/promises'
 import { tmpdir } from 'os'
 import path from 'path'
-import { createUploadSpool, IUploadSpool, UploadSpoolFolderTooLongError } from '../../../src/adapters/upload-spool'
+import {
+  createUploadSpool,
+  IUploadSpool,
+  UploadSpoolFolderTooLongError,
+  UploadSpoolStoppedError
+} from '../../../src/adapters/upload-spool'
 import { SPOOL_MARKER } from '../../../src/adapters/upload-spool/component'
 import { Environment, EnvironmentBuilder, EnvironmentConfig } from '../../../src/Environment'
 
@@ -249,6 +254,40 @@ describe('when the upload spool stops', () => {
     })
   })
 
+  describe('and a request folder is asked for afterwards', () => {
+    let creation: Promise<string>
+    let folderRecreated: boolean
+
+    beforeEach(async () => {
+      await spool[STOP_COMPONENT]?.()
+      creation = spool.createRequestFolder()
+      await creation.catch(() => undefined)
+      folderRecreated = await exists(spool.folder)
+    })
+
+    it('should reject it with an UploadSpoolStoppedError', async () => {
+      await expect(creation).rejects.toBeInstanceOf(UploadSpoolStoppedError)
+    })
+
+    it('should not recreate its folder', () => {
+      expect(folderRecreated).toBe(false)
+    })
+  })
+
+  describe('and a request folder is being created at the same time', () => {
+    let requestFolder: string
+    let requestFolderKept: boolean
+
+    beforeEach(async () => {
+      ;[requestFolder] = await Promise.all([spool.createRequestFolder(), spool[STOP_COMPONENT]?.()])
+      requestFolderKept = await exists(requestFolder)
+    })
+
+    it('should keep the folder owned for the new request', () => {
+      expect(requestFolderKept).toBe(true)
+    })
+  })
+
   describe('and a request still holds spooled files', () => {
     let other: IUploadSpool
     let folderKept: boolean
@@ -334,5 +373,46 @@ describe('when the spool folder is 77 bytes long', () => {
 
   it('should fail with an UploadSpoolFolderTooLongError', async () => {
     await expect(creation).rejects.toBeInstanceOf(UploadSpoolFolderTooLongError)
+  })
+})
+
+describe('when a temp-folder cleaner removes the spool folder while the process runs', () => {
+  let root: string
+  let spool: IUploadSpool
+  let other: IUploadSpool
+  let requestFolder: string
+  let ownMarker: boolean
+  let ownSocket: boolean
+  let keptFromOtherStartup: boolean
+
+  beforeEach(async () => {
+    root = await mkdtemp(path.join(tmpdir(), 'upload-spool-'))
+    spool = await createUploadSpool(spoolComponents(envWithSpoolFolder(root)))
+    await rm(spool.folder, { recursive: true, force: true })
+    requestFolder = await spool.createRequestFolder()
+    ownMarker = await exists(path.join(spool.folder, SPOOL_MARKER))
+    ownSocket = (await lstat(path.join(spool.folder, '.owner'))).isSocket()
+    // Past the startup grace, only a listening owner socket keeps it from being reclaimed.
+    await utimes(spool.folder, DAY_AGO, DAY_AGO)
+    other = await createUploadSpool(spoolComponents(envWithSpoolFolder(root)))
+    keptFromOtherStartup = await exists(requestFolder)
+  })
+
+  afterEach(async () => {
+    await other[STOP_COMPONENT]?.()
+    await spool[STOP_COMPONENT]?.()
+    await rm(root, { recursive: true, force: true })
+  })
+
+  it('should recreate its folder, marked and listened on, for the request', () => {
+    expect({ parent: path.dirname(requestFolder), ownMarker, ownSocket }).toEqual({
+      parent: spool.folder,
+      ownMarker: true,
+      ownSocket: true
+    })
+  })
+
+  it('should keep it from being reclaimed by another process starting on the host', () => {
+    expect(keptFromOtherStartup).toBe(true)
   })
 })
