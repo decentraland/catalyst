@@ -17,7 +17,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     updated_at: { type: 'timestamptz', notNull: true, default: pgm.func('now()') },
     // True once the initial inventory of already-stored content has been recorded.
     initialized: { type: 'boolean', notNull: true, default: false },
-    // Cached sum of pending_deployment_files.size, so admission scans uploads instead of receipts.
+    // Cached sum of the charged pending_deployment_files.size, so admission scans uploads instead of receipts.
     reserved_bytes: { type: 'bigint', notNull: true, default: 0 }
   })
   // Backs the GC referenced-hash check (`content_hashes && $1`).
@@ -27,8 +27,9 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
   // Backs the per-deployer upload count cap.
   pgm.createIndex('pending_deployments', 'deployer_address', { name: 'pending_deployments_deployer_idx' })
 
-  // Byte reservations per staged file. `stored` separates completed writes and verified reused content
-  // from reservations; failed writes stay charged.
+  // Known files per upload. `stored` separates completed writes and verified reused content from
+  // reservations; `charged` marks the files this upload writes, the only ones counted against the
+  // staging budgets. Failed writes stay charged.
   pgm.createTable('pending_deployment_files', {
     entity_id: {
       type: 'text',
@@ -38,7 +39,8 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     },
     hash: { type: 'text', notNull: true },
     size: { type: 'bigint', notNull: true, check: 'size >= 0' },
-    stored: { type: 'boolean', notNull: true, default: false }
+    stored: { type: 'boolean', notNull: true, default: false },
+    charged: { type: 'boolean', notNull: true, default: false }
   })
   pgm.addConstraint('pending_deployment_files', 'pending_deployment_files_pkey', {
     primaryKey: ['entity_id', 'hash']

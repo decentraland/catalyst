@@ -1,5 +1,6 @@
 import { STOP_COMPONENT } from '@well-known-components/interfaces'
 import { IdentityType } from '@dcl/crypto'
+import { bufferToStream } from '@dcl/catalyst-storage'
 import { EntityType } from '@dcl/schemas'
 import { EntityLockTimeoutError } from '../../../src/adapters/content-locks'
 import { EnvironmentConfig } from '../../../src/Environment'
@@ -42,6 +43,47 @@ function stageLarge(server: TestProgram, deployment: PreparedDeployment): Promis
 
 async function expireUploads(server: TestProgram): Promise<void> {
   await server.components.database.query(`UPDATE pending_deployments SET created_at = now() - interval '2 days'`)
+}
+
+async function reservedBytes(server: TestProgram, entityId: string): Promise<number> {
+  const result = await server.components.database.query<{ reserved_bytes: string }>(
+    `SELECT reserved_bytes FROM pending_deployments WHERE entity_id = '${entityId}'`
+  )
+  return Number(result.rows[0].reserved_bytes)
+}
+
+async function storeContent(server: TestProgram, deployment: PreparedDeployment, hashes: string[]): Promise<void> {
+  for (const hash of hashes) {
+    await server.components.storage.storeStream(hash, bufferToStream(deployment.files.get(hash)!))
+  }
+}
+
+function sizeOf(deployment: PreparedDeployment, hashes: string[]): number {
+  return hashes.reduce((sum, hash) => sum + deployment.files.get(hash)!.byteLength, 0)
+}
+
+// Two large files over the account budget together, plus two small ones to send in separate batches.
+async function prepareMostlyStoredUpload(
+  server: TestProgram,
+  identity: IdentityType
+): Promise<{ deployment: PreparedDeployment; storedHashes: string[]; newHash: string; lastHash: string }> {
+  const nonce = `mostly-stored-${Date.now()}-${Math.random()}`
+  const deployment = await prepareSceneDeployment(
+    ['3,3'],
+    {
+      'stored-1.bin': Buffer.alloc(CONTENT_SIZE, `${nonce}-1`),
+      'stored-2.bin': Buffer.alloc(CONTENT_SIZE, `${nonce}-2`),
+      'new.txt': Buffer.from(`new ${nonce}`),
+      'last.txt': Buffer.from(`last ${nonce}`)
+    },
+    identity
+  )
+  const storedHashes = deployment.contentHashes.filter(
+    (hash) => deployment.files.get(hash)!.byteLength === CONTENT_SIZE
+  )
+  const [newHash, lastHash] = deployment.contentHashes.filter((hash) => !storedHashes.includes(hash))
+  await storeContent(server, deployment, storedHashes)
+  return { deployment, storedHashes, newHash, lastHash }
 }
 
 async function pendingEntityIds(server: TestProgram): Promise<string[]> {
@@ -285,12 +327,15 @@ describe('Integration - Partial upload accounting', () => {
   describe('when a batch is retried', () => {
     let deployment: PreparedDeployment
     let batchBytes: number
+    let rewritten: string[]
 
     beforeEach(async () => {
       deployment = await prepareUpload(identity, 'retry')
       batchBytes = deployment.files.get(deployment.entityId)!.byteLength + CONTENT_SIZE
       await stageLarge(server, deployment)
+      const storeStream = jest.spyOn(server.components.storage, 'storeStream')
       await stageLarge(server, deployment)
+      rewritten = storeStream.mock.calls.map(([id]) => id).filter((id) => deployment.files.has(id))
     })
 
     it('should reserve storage once while charging both requests against the byte rate', async () => {
@@ -298,6 +343,91 @@ describe('Integration - Partial upload accounting', () => {
         'SELECT p.reserved_bytes, r.bytes FROM pending_deployments p JOIN partial_upload_rates r USING (deployer_address)'
       )
       expect(result.rows).toEqual([{ reserved_bytes: String(batchBytes), bytes: String(2 * batchBytes) }])
+    })
+
+    it('should not write the files the first request already stored again', () => {
+      expect(rewritten).toEqual([])
+    })
+  })
+
+  describe('when most of an upload is already in storage', () => {
+    let deployment: PreparedDeployment
+    let newHash: string
+    let lastHash: string
+    let response: Response
+    let reserved: number
+
+    beforeEach(async () => {
+      ;({ deployment, newHash, lastHash } = await prepareMostlyStoredUpload(server, identity))
+      response = await postForm(server, buildPartialForm(deployment, [deployment.entityId, newHash]))
+      reserved = await reservedBytes(server, deployment.entityId)
+    })
+
+    it('should admit it although the whole scene is over the account budget, charging only the bytes it stores', async () => {
+      expect({ status: response.status, body: await response.json(), reserved }).toEqual({
+        status: 202,
+        body: { missing: [lastHash] },
+        reserved: sizeOf(deployment, [deployment.entityId, newHash])
+      })
+    })
+
+    describe('and its last file is uploaded', () => {
+      let lastResponse: Response
+
+      beforeEach(async () => {
+        lastResponse = await postForm(server, buildPartialForm(deployment, [lastHash]))
+      })
+
+      it('should publish it', () => {
+        expect(lastResponse.status).toBe(200)
+      })
+    })
+  })
+
+  describe('when a batch re-sends files that are already in storage', () => {
+    let deployment: PreparedDeployment
+    let storedHashes: string[]
+    let newHash: string
+    let batch: string[]
+    let response: Response
+    let rewritten: string[]
+
+    beforeEach(async () => {
+      ;({ deployment, storedHashes, newHash } = await prepareMostlyStoredUpload(server, identity))
+      batch = [deployment.entityId, newHash, ...storedHashes]
+      const storeStream = jest.spyOn(server.components.storage, 'storeStream')
+      response = await postForm(server, buildPartialForm(deployment, batch))
+      rewritten = storeStream.mock.calls.map(([id]) => id).filter((id) => storedHashes.includes(id))
+    })
+
+    it('should admit the batch without writing those files again', () => {
+      expect({ status: response.status, rewritten }).toEqual({ status: 202, rewritten: [] })
+    })
+
+    it('should charge only the files it stores against the staging budgets', async () => {
+      expect(await reservedBytes(server, deployment.entityId)).toBe(sizeOf(deployment, [deployment.entityId, newHash]))
+    })
+
+    it('should still charge every received byte against the byte rate', async () => {
+      const result = await server.components.database.query<{ bytes: string }>('SELECT bytes FROM partial_upload_rates')
+      expect(result.rows).toEqual([{ bytes: String(sizeOf(deployment, batch)) }])
+    })
+  })
+
+  describe('when the files already in storage push a scene over its size limit', () => {
+    let response: Response
+
+    beforeEach(async () => {
+      jest.spyOn(server.components.validator, 'getMaxSizeInBytesPerPointer').mockReturnValue(CONTENT_SIZE * 2)
+      const { deployment, newHash } = await prepareMostlyStoredUpload(server, identity)
+      response = await postForm(server, buildPartialForm(deployment, [deployment.entityId, newHash]))
+    })
+
+    it('should reject it as too big, counting every file of the scene', async () => {
+      expect({ status: response.status, body: await response.json() }).toEqual({
+        status: 400,
+        body: { errors: ['Deployment failed: The deployment is too big.'] }
+      })
     })
   })
 

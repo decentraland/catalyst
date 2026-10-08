@@ -626,6 +626,9 @@ export function createPartialDeployments(
 
     // One inventory of already-stored content per upload; later batches rely on receipts.
     const receipts = new Map<string, FileReceipt>()
+    const alreadyStored = new Set(
+      pending ? (await pendingDeploymentsRepository.getStoredFiles(database, entityId)).keys() : []
+    )
     if (!pending?.initialized) {
       const infos = await inventory(contentHashes)
       for (const [hash, info] of infos) {
@@ -638,13 +641,21 @@ export function createPartialDeployments(
             `Couldn't determine the size of the already-stored content file: ${hash}`
           ])
         }
-        receipts.set(hash, { hash, size: info.contentSize, stored: true })
+        // Counts toward the scene size only: this upload doesn't stage it, and its manifest keeps it from GC.
+        receipts.set(hash, { hash, size: info.contentSize, stored: true, charged: false })
+        alreadyStored.add(hash)
       }
     }
+    // Every received byte counts toward the rate, but files already stored are neither rewritten nor charged.
     let incomingBytes = 0
+    const filesToStore = new Map<string, StagedFile>()
     for (const [hash, file] of uploadedFiles) {
       incomingBytes += file.size
-      receipts.set(hash, { hash, size: file.size, stored: receipts.get(hash)?.stored ?? false })
+      if (alreadyStored.has(hash)) {
+        continue
+      }
+      receipts.set(hash, { hash, size: file.size, stored: false, charged: true })
+      filesToStore.set(hash, file)
     }
     const knownSceneBytes = Array.from(receipts.values())
       .filter((receipt) => receipt.hash !== entityId)
@@ -666,14 +677,14 @@ export function createPartialDeployments(
       metrics.increment('dcl_partial_uploads_started_total')
     }
 
-    await storeUntil(uploadedFiles, expiresAt)
+    await storeUntil(filesToStore, expiresAt)
     // A write that outlived the upload is left unrecorded; cleanup reclaims it with the upload's receipts.
     let batches = 0
     await database.transaction(async (tx) => {
       if (!(await pendingDeploymentsRepository.markInitializedIfLive(tx, entityId, pendingDeploymentTtlMs))) {
         throw expired()
       }
-      await pendingDeploymentsRepository.markStored(tx, entityId, Array.from(uploadedFiles.keys()))
+      await pendingDeploymentsRepository.markStored(tx, entityId, Array.from(filesToStore.keys()))
       batches = await pendingDeploymentsRepository.countBatch(tx, entityId)
     }, 'tx_record_pending_deployment_progress')
 
