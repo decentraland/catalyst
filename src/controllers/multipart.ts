@@ -130,7 +130,8 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
           fileSize: limits.maxFileSize,
           files: limits.maxFiles,
           fields: limits.maxFields,
-          fieldSize: limits.maxFieldSize
+          // busboy marks a value that reaches `fieldSize` as truncated, so allow one more byte.
+          fieldSize: limits.maxFieldSize === undefined ? undefined : limits.maxFieldSize + 1
         }
       })
     } catch {
