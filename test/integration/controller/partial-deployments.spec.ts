@@ -1,18 +1,23 @@
 import { Authenticator, IdentityType } from '@dcl/crypto'
 import FormData = require('form-data')
 import { request } from 'http'
-import { EnvironmentConfig } from '../../../src/Environment'
+import { DEFAULT_MAX_UPLOAD_FIELD_SIZE, EnvironmentConfig } from '../../../src/Environment'
 import { makeNoopValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import { createDefaultServer, resetServer } from '../simpleTestEnvironment'
 import { TestProgram } from '../TestProgram'
 import { createIdentity } from '../E2ETestUtils'
 import {
+  buildIndexedPartialForm,
   buildPartialForm,
   postForm,
   PreparedDeployment,
   prepareSceneDeployment,
+  withAuthChainOf,
   withExpiredAuthChain
 } from '../../helpers/partial-deployments'
+
+// create-entity-handler's MAX_AUTH_CHAIN_LENGTH
+const MAX_AUTH_CHAIN_LINKS = 10
 import { partialDeploymentContract } from '../../contracts/partial-deployment'
 
 async function countPendingDeployments(server: TestProgram): Promise<number> {
@@ -243,6 +248,69 @@ describe('Integration - Partial deployments', () => {
         lifecycle: [['dcl_partial_uploads_started_total'], ['dcl_partial_uploads_completed_total']],
         batches: [['dcl_partial_upload_batches_per_upload', {}, 1]]
       })
+    })
+  })
+
+  describe('when the auth chain has one link more than the field cap allows', () => {
+    let response: Response
+    let body: unknown
+
+    beforeEach(async () => {
+      const deployment = withAuthChainOf(
+        await prepareSceneDeployment(['3,3'], { 'a.txt': Buffer.from('too many fields') }, identity),
+        identity,
+        MAX_AUTH_CHAIN_LINKS + 1
+      )
+      response = await postForm(
+        server,
+        buildIndexedPartialForm(deployment, [deployment.entityId, ...deployment.contentHashes])
+      )
+      body = await response.json()
+    })
+
+    it('should reject it with a 413 naming the field limit', () => {
+      expect({ status: response.status, body }).toEqual({
+        status: 413,
+        body: {
+          error: 'Too many form fields in the request. The maximum allowed is 32.'
+        }
+      })
+    })
+
+    it('should not stage the upload', async () => {
+      expect(await countPendingDeployments(server)).toBe(0)
+    })
+  })
+
+  describe('when a form field is one byte over the per-field size cap', () => {
+    let response: Response
+    let body: unknown
+
+    beforeEach(async () => {
+      const deployment = withAuthChainOf(
+        await prepareSceneDeployment(['3,3'], { 'a.txt': Buffer.from('oversized field') }, identity),
+        identity,
+        3,
+        32 * 1024 + 1
+      )
+      response = await postForm(
+        server,
+        buildIndexedPartialForm(deployment, [deployment.entityId, ...deployment.contentHashes])
+      )
+      body = await response.json()
+    })
+
+    it('should reject it with a 413 naming the field and its size limit', () => {
+      expect({ status: response.status, body }).toEqual({
+        status: 413,
+        body: {
+          error: "Field 'authChain[1][payload]' is too large. The maximum allowed size per field is 32768 bytes."
+        }
+      })
+    })
+
+    it('should not stage the upload', async () => {
+      expect(await countPendingDeployments(server)).toBe(0)
     })
   })
 
@@ -1207,6 +1275,34 @@ describe('Integration - Partial deployments', () => {
       })
 
       it('should accept it, as the chain was valid at the entity timestamp', () => {
+        expect({ status: response.status, deployed }).toEqual({ status: 200, deployed: 1 })
+      })
+    })
+
+    describe('and a request carries the most form fields a deployment may send', () => {
+      let response: Response
+      let deployed: number
+
+      beforeEach(async () => {
+        // entityId, partial and a 10-link chain fill the field cap; one payload fills the size cap.
+        const deployment = withAuthChainOf(
+          await prepareSceneDeployment(
+            ['18,18'],
+            { 'a.txt': Buffer.from(`longest chain ${Date.now()}-${Math.random()}`) },
+            identity
+          ),
+          identity,
+          MAX_AUTH_CHAIN_LINKS,
+          DEFAULT_MAX_UPLOAD_FIELD_SIZE
+        )
+        response = await postForm(
+          server,
+          buildIndexedPartialForm(deployment, [deployment.entityId, ...deployment.contentHashes])
+        )
+        deployed = await countDeployments(server, deployment.entityId)
+      })
+
+      it('should deploy the entity', () => {
         expect({ status: response.status, deployed }).toEqual({ status: 200, deployed: 1 })
       })
     })

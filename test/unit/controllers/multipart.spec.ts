@@ -143,6 +143,72 @@ describe('when parsing a multipart request with upload limits', () => {
     })
   })
 
+  describe('and the request carries the maximum number of fields, each of the maximum size', () => {
+    beforeEach(async () => {
+      const form = new FormData()
+      form.append('a', 'x'.repeat(1024))
+      form.append('b', 'x'.repeat(1024))
+      await multipartParserWrapper(
+        handler as any,
+        { maxFields: 2, maxFieldSize: 1024 },
+        { tmpFolder }
+      )(buildContext(form))
+    })
+
+    it('should invoke the handler with every field whole', () => {
+      expect(handler).toHaveBeenCalledWith(
+        expect.objectContaining({
+          formData: expect.objectContaining({
+            fields: {
+              a: expect.objectContaining({ value: 'x'.repeat(1024) }),
+              b: expect.objectContaining({ value: 'x'.repeat(1024) })
+            }
+          })
+        })
+      )
+    })
+  })
+
+  describe('and the request carries one field more than allowed', () => {
+    let error: unknown
+
+    beforeEach(async () => {
+      const form = new FormData()
+      form.append('a', 'x')
+      form.append('b', 'x')
+      form.append('c', 'x')
+      error = await multipartParserWrapper(
+        handler as any,
+        { maxFields: 2, maxFieldSize: 1024 },
+        { tmpFolder }
+      )(buildContext(form)).catch((e) => e)
+    })
+
+    it('should reject with a PayloadTooLargeError naming the field limit', () => {
+      expect(error).toEqual(new PayloadTooLargeError('Too many form fields in the request. The maximum allowed is 2.'))
+    })
+  })
+
+  describe('and a form field value is one byte over the maximum allowed size', () => {
+    let error: unknown
+
+    beforeEach(async () => {
+      const form = new FormData()
+      form.append('entityId', 'x'.repeat(1025))
+      error = await multipartParserWrapper(
+        handler as any,
+        { maxFields: 2, maxFieldSize: 1024 },
+        { tmpFolder }
+      )(buildContext(form)).catch((e) => e)
+    })
+
+    it('should reject with a PayloadTooLargeError naming the field and its size limit', () => {
+      expect(error).toEqual(
+        new PayloadTooLargeError("Field 'entityId' is too large. The maximum allowed size per field is 1024 bytes.")
+      )
+    })
+  })
+
   describe('and the cumulative size of the files exceeds the total allowed', () => {
     let form: FormData
     let wrapped: (ctx: IHttpServerComponent.DefaultContext<any>) => Promise<IHttpServerComponent.IResponse>

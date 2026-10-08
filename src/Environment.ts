@@ -34,8 +34,11 @@ export function parsePgPoolSize(raw: string | undefined): number {
 // Generous on purpose; tune via env on catalysts that accept very large multi-parcel scenes.
 export const DEFAULT_MAX_UPLOAD_FILE_SIZE = 100 * 1024 * 1024 // 100 MB per file
 export const DEFAULT_MAX_UPLOAD_FILE_COUNT = 3000
-export const DEFAULT_MAX_UPLOAD_FIELD_COUNT = 100 // non-file form fields (e.g. entityId + auth-chain links)
-export const DEFAULT_MAX_UPLOAD_FIELD_SIZE = 100 * 1024 // 100 KB per field value
+// Non-file form fields: entityId, partial and type/payload/signature for each of the 10 auth-chain links
+// the deploy handler accepts. Values are at most a few KiB (an EIP-1654 signature), so a request holds
+// at most 32 x 32 KiB = 1 MiB of fields in memory.
+export const DEFAULT_MAX_UPLOAD_FIELD_COUNT = 2 + 3 * 10
+export const DEFAULT_MAX_UPLOAD_FIELD_SIZE = 32 * 1024 // bytes per field value
 // Cumulative cap across every file + field in a single upload. `MAX_UPLOAD_FILE_SIZE` bounds one
 // file and `MAX_UPLOAD_FILE_COUNT` bounds the count, but their product (the only implicit ceiling)
 // is huge, so without a total cap one request could try to spool hundreds of GB. The validator's size
