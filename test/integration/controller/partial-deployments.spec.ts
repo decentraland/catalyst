@@ -955,13 +955,13 @@ describe('Integration - Partial deployments', () => {
 
     describe('and it expires once an incomplete batch has been recorded', () => {
       beforeEach(async () => {
-        const getStoredFiles = server.components.pendingDeploymentsRepository.getStoredFiles
+        const countBatch = server.components.pendingDeploymentsRepository.countBatch
         jest
-          .spyOn(server.components.pendingDeploymentsRepository, 'getStoredFiles')
+          .spyOn(server.components.pendingDeploymentsRepository, 'countBatch')
           .mockImplementationOnce(async (...args) => {
-            const files = await getStoredFiles(...args)
+            const batches = await countBatch(...args)
             expireFromNowOn()
-            return files
+            return batches
           })
         response = await postForm(server, buildPartialForm(deployment, [deployment.contentHashes[0]]))
       })
@@ -1021,13 +1021,13 @@ describe('Integration - Partial deployments', () => {
 
     describe('and it expires after the completing batch is stored, before it is published', () => {
       beforeEach(async () => {
-        const getStoredFiles = server.components.pendingDeploymentsRepository.getStoredFiles
+        const countBatch = server.components.pendingDeploymentsRepository.countBatch
         jest
-          .spyOn(server.components.pendingDeploymentsRepository, 'getStoredFiles')
+          .spyOn(server.components.pendingDeploymentsRepository, 'countBatch')
           .mockImplementationOnce(async (...args) => {
-            const files = await getStoredFiles(...args)
+            const batches = await countBatch(...args)
             expireFromNowOn()
-            return files
+            return batches
           })
         response = await postForm(server, buildPartialForm(deployment, deployment.contentHashes))
       })

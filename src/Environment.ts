@@ -615,7 +615,7 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_PENDING_DEPLOYMENTS_PER_DEPLOYER, () =>
       parsePositiveIntEnv('MAX_PENDING_DEPLOYMENTS_PER_DEPLOYER', 10)
     )
-    // Staged/reserved bytes per deployer and per server; expired uploads stay charged until cleanup.
+    // Bytes uploads write (not reused content) per deployer and per server; expired uploads stay charged until cleanup.
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_PENDING_BYTES_PER_DEPLOYER, () =>
       parsePositiveIntEnv('MAX_PENDING_BYTES_PER_DEPLOYER', 1024 ** 3)
     )

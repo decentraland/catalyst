@@ -24,21 +24,23 @@ export interface InsertPendingDeployment {
   createdAt: number
 }
 
-/** A byte reservation for one staged file; `stored` marks completed writes and verified reused content. */
+/** One known file of an upload; `stored` marks completed writes and verified reused content. */
 export interface FileReceipt {
   hash: string
   size: number
   stored: boolean
+  /** True when this upload writes the file, so its size counts against the staging budgets. */
+  charged: boolean
 }
 
 export interface ReservationTotals {
-  /** Reserved bytes of this upload. */
+  /** Charged bytes of this upload. */
   upload: bigint
-  /** Reserved bytes of every upload of the deployer, expired ones included. */
+  /** Charged bytes of every upload of the deployer, expired ones included. */
   account: bigint
-  /** Reserved bytes of every upload on the server, expired ones included. */
+  /** Charged bytes of every upload on the server, expired ones included. */
   total: bigint
-  /** Reserved bytes of this upload's content files, excluding its entity file. */
+  /** Bytes of this upload's known content files, charged or already stored, excluding its entity file. */
   scene: bigint
 }
 
@@ -76,9 +78,9 @@ export interface IPendingDeploymentsRepository {
   acquireDeployerLock(db: DatabaseClient, deployerAddress: string): Promise<void>
   /** Transaction-scoped lock making the account and server-wide byte budgets atomic. */
   acquireBudgetLock(db: DatabaseClient): Promise<void>
-  /** Adds receipts without double-charging a hash already reserved for the upload. */
+  /** Adds receipts without double-charging a hash already reserved for the upload; a hash stays charged once charged. */
   upsertFileReceipts(db: DatabaseClient, entityId: string, receipts: FileReceipt[]): Promise<void>
-  /** Refreshes the cached `reserved_bytes` of an upload from its receipts. */
+  /** Refreshes the cached `reserved_bytes` of an upload from its charged receipts. */
   refreshReservedBytes(db: DatabaseClient, entityId: string): Promise<void>
   getReservationTotals(db: DatabaseClient, entityId: string, deployerAddress: string): Promise<ReservationTotals>
   /** Adds bytes to the deployer's fixed one-minute window and returns the window total and when it ends. */

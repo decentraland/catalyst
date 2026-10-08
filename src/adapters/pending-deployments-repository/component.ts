@@ -87,13 +87,15 @@ async function upsertFileReceipts(database: DatabaseClient, entityId: string, re
   if (receipts.length === 0) {
     return
   }
+  const rows = JSON.stringify(receipts)
   await database.queryWithValues(
-    SQL`INSERT INTO pending_deployment_files (entity_id, hash, size, stored)
-        SELECT ${entityId}, r.hash, r.size, r.stored
-        FROM jsonb_to_recordset(${JSON.stringify(receipts)}::jsonb) AS r(hash text, size bigint, stored boolean)
+    SQL`INSERT INTO pending_deployment_files (entity_id, hash, size, stored, charged)
+        SELECT ${entityId}, r.hash, r.size, r.stored, r.charged
+        FROM jsonb_to_recordset(${rows}::jsonb) AS r(hash text, size bigint, stored boolean, charged boolean)
         ON CONFLICT (entity_id, hash) DO UPDATE SET
           size = GREATEST(pending_deployment_files.size, EXCLUDED.size),
-          stored = pending_deployment_files.stored OR EXCLUDED.stored`,
+          stored = pending_deployment_files.stored OR EXCLUDED.stored,
+          charged = pending_deployment_files.charged OR EXCLUDED.charged`,
     'pending_deployment_upsert_receipts'
   )
 }
@@ -101,7 +103,7 @@ async function upsertFileReceipts(database: DatabaseClient, entityId: string, re
 async function refreshReservedBytes(database: DatabaseClient, entityId: string): Promise<void> {
   await database.queryWithValues(
     SQL`UPDATE pending_deployments SET updated_at = now(), reserved_bytes = (
-          SELECT COALESCE(SUM(size), 0) FROM pending_deployment_files WHERE entity_id = ${entityId}
+          SELECT COALESCE(SUM(size), 0) FROM pending_deployment_files WHERE entity_id = ${entityId} AND charged
         ) WHERE entity_id = ${entityId}`,
     'pending_deployment_refresh_reserved'
   )
