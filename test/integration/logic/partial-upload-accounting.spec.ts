@@ -1,6 +1,5 @@
 import { STOP_COMPONENT } from '@well-known-components/interfaces'
 import { IdentityType } from '@dcl/crypto'
-import { bufferToStream } from '@dcl/catalyst-storage'
 import { EntityType } from '@dcl/schemas'
 import { EntityLockTimeoutError } from '../../../src/adapters/content-locks'
 import { EnvironmentConfig } from '../../../src/Environment'
@@ -17,6 +16,7 @@ import { createDefaultServer, resetServer } from '../simpleTestEnvironment'
 import { TestProgram } from '../TestProgram'
 
 const CONTENT_SIZE = 2500
+const SHARED_SIZE = 1000
 const MAX_FILE_SIZE = 1024 * 1024
 // The least rate startup accepts: the 10 MiB entity file cap plus one maximum-size file.
 const BYTES_PER_MINUTE = MAX_FILE_SIZE + 10 * 1024 * 1024
@@ -53,10 +53,39 @@ async function reservedBytes(server: TestProgram, entityId: string): Promise<num
   return Number(result.rows[0].reserved_bytes)
 }
 
-async function storeContent(server: TestProgram, deployment: PreparedDeployment, hashes: string[]): Promise<void> {
-  for (const hash of hashes) {
-    await server.components.storage.storeStream(hash, bufferToStream(deployment.files.get(hash)!))
+// Publishes the files through a regular deployment of another scene, so an active deployment references them.
+async function publishContent(server: TestProgram, deployment: PreparedDeployment, hashes: string[]): Promise<void> {
+  const contents = Object.fromEntries(hashes.map((hash) => [`${hash}.bin`, Buffer.from(deployment.files.get(hash)!)]))
+  const published = await prepareSceneDeployment(['8,8'], contents, createIdentity())
+  const response = await postForm(
+    server,
+    buildPartialForm(published, [published.entityId, ...published.contentHashes], false)
+  )
+  if (response.status !== 200) {
+    throw new Error(`Test setup error: publishing content failed with ${response.status}: ${await response.text()}`)
   }
+}
+
+// Two uploads by different accounts listing one shared file, plus a file of their own each.
+async function prepareSharingUploads(): Promise<{
+  first: PreparedDeployment
+  second: PreparedDeployment
+  sharedHash: string
+}> {
+  const nonce = `sharing-${Date.now()}-${Math.random()}`
+  const shared = Buffer.alloc(SHARED_SIZE, nonce)
+  const first = await prepareSceneDeployment(
+    ['3,3'],
+    { 'shared.bin': shared, 'own.txt': Buffer.from(`first ${nonce}`) },
+    createIdentity()
+  )
+  const second = await prepareSceneDeployment(
+    ['4,4'],
+    { 'shared.bin': shared, 'own.txt': Buffer.from(`second ${nonce}`) },
+    createIdentity()
+  )
+  const sharedHash = first.contentHashes.find((hash) => first.files.get(hash)!.byteLength === SHARED_SIZE)!
+  return { first, second, sharedHash }
 }
 
 function sizeOf(deployment: PreparedDeployment, hashes: string[]): number {
@@ -83,7 +112,7 @@ async function prepareMostlyStoredUpload(
     (hash) => deployment.files.get(hash)!.byteLength === CONTENT_SIZE
   )
   const [newHash, lastHash] = deployment.contentHashes.filter((hash) => !storedHashes.includes(hash))
-  await storeContent(server, deployment, storedHashes)
+  await publishContent(server, deployment, storedHashes)
   return { deployment, storedHashes, newHash, lastHash }
 }
 
@@ -351,7 +380,7 @@ describe('Integration - Partial upload accounting', () => {
     })
   })
 
-  describe('when most of an upload is already in storage', () => {
+  describe('when most of an upload is already published', () => {
     let deployment: PreparedDeployment
     let newHash: string
     let lastHash: string
@@ -385,7 +414,7 @@ describe('Integration - Partial upload accounting', () => {
     })
   })
 
-  describe('when a batch re-sends files that are already in storage', () => {
+  describe('when a batch re-sends files that are already published', () => {
     let deployment: PreparedDeployment
     let storedHashes: string[]
     let newHash: string
@@ -415,7 +444,51 @@ describe('Integration - Partial upload accounting', () => {
     })
   })
 
-  describe('when the files already in storage push a scene over its size limit', () => {
+  describe('when an upload lists content that only another pending upload staged', () => {
+    let second: PreparedDeployment
+    let sharedHash: string
+    let response: Response
+
+    beforeEach(async () => {
+      let first: PreparedDeployment
+      ;({ first, second, sharedHash } = await prepareSharingUploads())
+      await postForm(server, buildPartialForm(first, [first.entityId, sharedHash]))
+      response = await postForm(server, buildPartialForm(second, [second.entityId]))
+    })
+
+    it('should charge the content to the new upload as well', async () => {
+      expect({ status: response.status, reserved: await reservedBytes(server, second.entityId) }).toEqual({
+        status: 202,
+        reserved: sizeOf(second, [second.entityId, sharedHash])
+      })
+    })
+  })
+
+  describe('when a batch re-sends a file that only another pending upload staged', () => {
+    let second: PreparedDeployment
+    let sharedHash: string
+    let response: Response
+    let rewritten: string[]
+
+    beforeEach(async () => {
+      let first: PreparedDeployment
+      ;({ first, second, sharedHash } = await prepareSharingUploads())
+      await postForm(server, buildPartialForm(first, [first.entityId, sharedHash]))
+      const storeStream = jest.spyOn(server.components.storage, 'storeStream')
+      response = await postForm(server, buildPartialForm(second, [second.entityId, sharedHash]))
+      rewritten = storeStream.mock.calls.map(([id]) => id).filter((id) => id === sharedHash)
+    })
+
+    it('should admit the batch without writing the file again', () => {
+      expect({ status: response.status, rewritten }).toEqual({ status: 202, rewritten: [] })
+    })
+
+    it('should charge the file to the batch upload', async () => {
+      expect(await reservedBytes(server, second.entityId)).toBe(sizeOf(second, [second.entityId, sharedHash]))
+    })
+  })
+
+  describe('when the files already published push a scene over its size limit', () => {
     let response: Response
 
     beforeEach(async () => {

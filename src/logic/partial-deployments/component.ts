@@ -598,6 +598,7 @@ export function createPartialDeployments(
     )
     if (!pending?.initialized) {
       const infos = await inventory(contentHashes)
+      const sizes = new Map<string, number>()
       for (const [hash, info] of infos) {
         if (info === undefined) {
           continue
@@ -608,12 +609,16 @@ export function createPartialDeployments(
             `Couldn't determine the size of the already-stored content file: ${hash}`
           ])
         }
-        // Counts toward the scene size only: this upload doesn't stage it, and its manifest keeps it from GC.
-        receipts.set(hash, { hash, size: info.contentSize, stored: true, charged: false })
+        sizes.set(hash, info.contentSize)
+      }
+      // Only published content is free; content held just by pending uploads is charged as if received.
+      const published = await contentFilesRepository.findPublishedHashes(database, Array.from(sizes.keys()))
+      for (const [hash, size] of sizes) {
+        receipts.set(hash, { hash, size, stored: true, charged: !published.has(hash) })
         alreadyStored.add(hash)
       }
     }
-    // Every received byte counts toward the rate, but files already stored are neither rewritten nor charged.
+    // Every received byte counts toward the rate; already-stored files aren't rewritten, their receipts set the charge.
     let incomingBytes = 0
     const filesToStore = new Map<string, Uint8Array>()
     for (const [hash, file] of uploadedFiles) {

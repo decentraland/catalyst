@@ -23,5 +23,11 @@ export interface IContentFilesRepository {
    * delete from storage.
    */
   findReferencedHashes(db: DatabaseClient, hashes: string[], pendingDeploymentTtlMs: number): Promise<Set<string>>
+  /**
+   * From a set of hashes, return those kept by published content (an active deployment's content
+   * files, a deployment's entity file, or a snapshot). References held only by pending partial
+   * deployments don't count.
+   */
+  findPublishedHashes(db: DatabaseClient, hashes: string[]): Promise<Set<string>>
   streamAllDistinctContentFileHashes(db: DatabaseClient): AsyncIterable<string>
 }

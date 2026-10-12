@@ -28,8 +28,8 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
   pgm.createIndex('pending_deployments', 'deployer_address', { name: 'pending_deployments_deployer_idx' })
 
   // Known files per upload. `stored` separates completed writes and verified reused content from
-  // reservations; `charged` marks the files this upload writes, the only ones counted against the
-  // staging budgets. Failed writes stay charged.
+  // reservations; `charged` marks the files counted against the staging budgets: all but those published
+  // content already keeps. Failed writes stay charged.
   pgm.createTable('pending_deployment_files', {
     entity_id: {
       type: 'text',

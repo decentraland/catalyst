@@ -27,7 +27,8 @@ export interface IPartialDeployments {
   /**
    * Stages one batch of a partial (multi-request) scene deployment, keyed by entity id. Validates what
    * doesn't need the full content set, reserves bytes, stores the batch and records progress. Files
-   * already in storage are neither stored again nor charged against the staging budgets. The batch
+   * already in storage are not stored again, and are charged against the staging budgets unless
+   * published content (an active deployment or a snapshot) references them. The batch
    * that completes the content set is verified, deployed and returns `{ kind: 'deployed' }`; otherwise
    * `{ kind: 'incomplete' }` lists the hashes still missing. Hashing and validation run without any
    * lock; storage and publication take the shared content lock and the entity's lock, so batches of one
