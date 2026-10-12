@@ -41,9 +41,8 @@ const POINTER_CONFLICT_RETRY_AFTER_SECONDS = 5
 // Caps the manifest on both paths: a resume reads it back from storage outside the multipart budget.
 const MAX_ENTITY_FILE_SIZE_BYTES = 10 * 1024 * 1024 // 10 MB
 
-// Expired uploads listed per page, pages per cleanup run, and storage keys per exclusive delete batch.
+// Expired uploads listed per page, and storage keys per exclusive delete batch.
 const EXPIRED_UPLOADS_PER_PAGE = 100
-const EXPIRED_UPLOAD_PAGES_PER_CLEANUP = 5
 const CLEANUP_DELETE_BATCH_SIZE = 1000
 
 /**
@@ -88,6 +87,7 @@ async function streamToBufferCapped(stream: AsyncIterable<Buffer>, maxBytes: num
  * locks, then stored and possibly published under the shared content lock and the per-entity lock. Overlapping uploads
  * coexist within byte and count quotas; publication order is enforced by the deploy pipeline.
  * @param components Validation, persistence, storage and telemetry dependencies.
+ * @param options Tuning overrides; `expiredUploadsPerPage` is the cleanup listing page size (default 100).
  * @returns Partial deployment orchestration and expired-upload cleanup.
  * @throws Error when MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE can't fit a batch of the entity file and one maximum-size file.
  */
@@ -107,7 +107,8 @@ export function createPartialDeployments(
     | 'pendingDeploymentsRepository'
     | 'contentFilesRepository'
     | 'contentLocks'
-  >
+  >,
+  options: { expiredUploadsPerPage?: number } = {}
 ): IPartialDeployments {
   const {
     logs,
@@ -140,6 +141,7 @@ export function createPartialDeployments(
     )
   }
   const cleanupIntervalMs = env.getConfig<number>(EnvironmentConfig.PENDING_DEPLOYMENTS_CLEANUP_INTERVAL)
+  const expiredUploadsPerPage = options.expiredUploadsPerPage ?? EXPIRED_UPLOADS_PER_PAGE
   // When the last cleanup run ended, to estimate the next one for Retry-After.
   let lastCleanupAt: number | undefined
   metrics.observe('dcl_partial_upload_capacity_bytes', {}, Number(globalBytes))
@@ -722,12 +724,12 @@ export function createPartialDeployments(
     let deferred = false
     try {
       let after: ExpiredUpload | undefined
-      // Keyset paging moves past uploads that keep failing, so they can't starve the ones after them.
-      for (let page = 0; page < EXPIRED_UPLOAD_PAGES_PER_CLEANUP && !deferred; page++) {
+      // Keyset paging visits every expired upload once per run, moving past the ones that fail.
+      while (!deferred) {
         const expired = await pendingDeploymentsRepository.listExpired(
           database,
           pendingDeploymentTtlMs,
-          EXPIRED_UPLOADS_PER_PAGE,
+          expiredUploadsPerPage,
           after
         )
         for (const upload of expired) {
@@ -750,7 +752,7 @@ export function createPartialDeployments(
             })
           }
         }
-        if (expired.length < EXPIRED_UPLOADS_PER_PAGE) {
+        if (expired.length < expiredUploadsPerPage) {
           break
         }
         after = expired[expired.length - 1]

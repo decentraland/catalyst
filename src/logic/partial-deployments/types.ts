@@ -41,6 +41,7 @@ export interface IPartialDeployments {
   /**
    * Deletes expired uploads' unreferenced staged content, then releases their accounting. A failing upload
    * is logged, counted and skipped, so it never blocks the rest; only listing or housekeeping failures throw.
+   * A run visits every upload expired when it lists it, unless a busy content lock defers the rest.
    */
   cleanupExpired(): Promise<ExpiredCleanupSummary>
 }
