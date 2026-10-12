@@ -1,5 +1,6 @@
 export { createPendingDeploymentsRepository } from './component'
 export type {
+  ExpiredUpload,
   FileReceipt,
   IncomingBytesWindow,
   InsertPendingDeployment,

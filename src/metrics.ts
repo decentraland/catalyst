@@ -151,6 +151,12 @@ export const metricsDeclaration = validateMetricsDeclaration({
     // outcome=(success|deferred|error); deferred means the content lock stayed busy
     labelNames: ['outcome']
   },
+  dcl_partial_upload_cleanup_failures_total: {
+    help: 'Expired partial uploads a cleanup run failed to reclaim, skipped until the next run',
+    type: 'counter',
+    // reason=(storage|database)
+    labelNames: ['reason']
+  },
   dcl_partial_upload_cleanup_duration_seconds: {
     help: 'Duration of expired partial upload cleanup runs',
     type: 'histogram',

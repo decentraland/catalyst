@@ -2,15 +2,20 @@ import { Authenticator } from '@dcl/crypto'
 import { Entity, EntityType, IPFSv2 } from '@dcl/schemas'
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { EntityLockTimeoutError } from '../../adapters/content-locks'
-import { FileReceipt, OldestUploadScope, PendingDeploymentRow } from '../../adapters/pending-deployments-repository'
+import {
+  ExpiredUpload,
+  FileReceipt,
+  OldestUploadScope,
+  PendingDeploymentRow
+} from '../../adapters/pending-deployments-repository'
 import { DatabaseClient } from '../../adapters/database'
 import { EnvironmentConfig } from '../../Environment'
 import { DeploymentContext, isInvalidDeployment } from '../../deployment-types'
 import { AppComponents } from '../../types'
 import { REQUEST_TTL_FORWARDS } from '../deployment-service/server-validator'
 import { storeStreamsInBatches } from '../store-content'
-import { InvalidPartialDeploymentError, PartialUploadThrottleReason } from './errors'
-import { IPartialDeployments, StageDeploymentInput, StageDeploymentResult } from './types'
+import { InvalidPartialDeploymentError, PartialUploadThrottleReason, StagedContentDeleteError } from './errors'
+import { ExpiredCleanupSummary, IPartialDeployments, StageDeploymentInput, StageDeploymentResult } from './types'
 
 // A batch whose request-only checks passed, ready to be stored under the content lock.
 type PreparedBatch = {
@@ -36,8 +41,9 @@ const POINTER_CONFLICT_RETRY_AFTER_SECONDS = 5
 // Caps the manifest on both paths: a resume reads it back from storage outside the multipart budget.
 const MAX_ENTITY_FILE_SIZE_BYTES = 10 * 1024 * 1024 // 10 MB
 
-// Expired uploads reclaimed per cleanup run, and storage keys per exclusive delete batch.
-const EXPIRED_UPLOADS_PER_CLEANUP = 100
+// Expired uploads listed per page, pages per cleanup run, and storage keys per exclusive delete batch.
+const EXPIRED_UPLOADS_PER_PAGE = 100
+const EXPIRED_UPLOAD_PAGES_PER_CLEANUP = 5
 const CLEANUP_DELETE_BATCH_SIZE = 1000
 
 /**
@@ -667,16 +673,16 @@ export function createPartialDeployments(
     return await finalize(entity, entityFile, authChain, contentHashes, createdAt, batches)
   }
 
-  async function cleanupExpired(): Promise<number> {
+  async function cleanupExpired(): Promise<ExpiredCleanupSummary> {
     const { end } = metrics.startTimer('dcl_partial_upload_cleanup_duration_seconds')
-    let outcome: 'success' | 'deferred' | 'error' = 'error'
+    let outcome: ExpiredCleanupSummary['outcome'] = 'error'
     try {
-      const { removed, deferred } = await reclaimExpired()
-      outcome = deferred ? 'deferred' : 'success'
-      if (!deferred) {
+      const summary = await reclaimExpired()
+      outcome = summary.outcome
+      if (outcome === 'success') {
         metrics.observe('dcl_partial_upload_cleanup_last_success_timestamp_seconds', {}, Date.now() / 1000)
       }
-      return removed
+      return summary
     } finally {
       end()
       metrics.increment('dcl_partial_upload_cleanup_runs_total', { outcome })
@@ -684,54 +690,86 @@ export function createPartialDeployments(
     }
   }
 
-  async function reclaimExpired(): Promise<{ removed: number; deferred: boolean }> {
-    const expired = await pendingDeploymentsRepository.listExpired(
-      database,
-      pendingDeploymentTtlMs,
-      EXPIRED_UPLOADS_PER_CLEANUP
-    )
+  // Deletes an expired upload's unreferenced staged content, then releases its accounting.
+  async function reclaimUpload(entityId: string): Promise<void> {
+    // Accounting is released only after every physical delete batch succeeds.
+    const keys = await pendingDeploymentsRepository.getStagedKeys(database, entityId)
+    for (let offset = 0; offset < keys.length; offset += CLEANUP_DELETE_BATCH_SIZE) {
+      const batch = keys.slice(offset, offset + CLEANUP_DELETE_BATCH_SIZE)
+      await contentLocks.withWrite(async () => {
+        const referenced = await contentFilesRepository.findReferencedHashes(database, batch, pendingDeploymentTtlMs)
+        const orphaned = batch.filter((hash) => !referenced.has(hash))
+        if (orphaned.length > 0) {
+          try {
+            await storage.delete(orphaned)
+          } catch (error) {
+            throw new StagedContentDeleteError(entityId, error)
+          }
+        }
+      })
+    }
+    await pendingDeploymentsRepository.deleteExpiredByEntityId(database, entityId, pendingDeploymentTtlMs)
+  }
+
+  async function reclaimExpired(): Promise<ExpiredCleanupSummary> {
     let removed = 0
+    let failed = 0
     let deferred = false
     try {
-      for (const entityId of expired) {
-        // Accounting is released only after every physical delete batch succeeds.
-        const keys = await pendingDeploymentsRepository.getStagedKeys(database, entityId)
-        for (let offset = 0; offset < keys.length; offset += CLEANUP_DELETE_BATCH_SIZE) {
-          const batch = keys.slice(offset, offset + CLEANUP_DELETE_BATCH_SIZE)
-          await contentLocks.withWrite(async () => {
-            const referenced = await contentFilesRepository.findReferencedHashes(
-              database,
-              batch,
-              pendingDeploymentTtlMs
-            )
-            const orphaned = batch.filter((hash) => !referenced.has(hash))
-            if (orphaned.length > 0) {
-              await storage.delete(orphaned)
+      let after: ExpiredUpload | undefined
+      // Keyset paging moves past uploads that keep failing, so they can't starve the ones after them.
+      for (let page = 0; page < EXPIRED_UPLOAD_PAGES_PER_CLEANUP && !deferred; page++) {
+        const expired = await pendingDeploymentsRepository.listExpired(
+          database,
+          pendingDeploymentTtlMs,
+          EXPIRED_UPLOADS_PER_PAGE,
+          after
+        )
+        for (const upload of expired) {
+          try {
+            await reclaimUpload(upload.entityId)
+            removed++
+          } catch (error) {
+            // Busy with deployments: the rest stays charged and is retried on the next run.
+            if (error instanceof EntityLockTimeoutError) {
+              deferred = true
+              break
             }
-          })
+            failed++
+            const reason = error instanceof StagedContentDeleteError ? 'storage' : 'database'
+            metrics.increment('dcl_partial_upload_cleanup_failures_total', { reason })
+            logger.error('Failed to reclaim an expired partial upload; retrying it next run', {
+              entityId: upload.entityId,
+              reason,
+              error: error instanceof Error ? error.message : String(error)
+            })
+          }
         }
-        await pendingDeploymentsRepository.deleteExpiredByEntityId(database, entityId, pendingDeploymentTtlMs)
-        removed++
+        if (expired.length < EXPIRED_UPLOADS_PER_PAGE) {
+          break
+        }
+        after = expired[expired.length - 1]
       }
-    } catch (error) {
-      // Busy with deployments: the rest stays charged and is retried on the next run.
-      if (!(error instanceof EntityLockTimeoutError)) {
-        throw error
+      if (deferred) {
+        logger.warn(
+          `Expired-upload cleanup deferred after ${removed} upload(s): deployments kept the content lock busy`
+        )
       }
-      deferred = true
-      logger.warn(`Expired-upload cleanup deferred after ${removed} upload(s): deployments kept the content lock busy`)
+    } finally {
+      await pendingDeploymentsRepository.deleteElapsedRateWindows(database)
+      const totals = await pendingDeploymentsRepository.getStagingTotals(database, pendingDeploymentTtlMs)
+      metrics.observe('dcl_partial_upload_reserved_bytes', {}, totals.total)
+      metrics.observe('dcl_partial_upload_cleanup_backlog_bytes', {}, totals.expired)
+      metrics.observe('dcl_partial_uploads_pending', { state: 'live' }, totals.liveUploads)
+      metrics.observe('dcl_partial_uploads_pending', { state: 'expired' }, totals.expiredUploads)
+      if (removed > 0) {
+        metrics.increment('dcl_pending_deployments_expired_total', {}, removed)
+        logger.info(`Reclaimed ${removed} expired pending deployment(s)`)
+      }
     }
-    await pendingDeploymentsRepository.deleteElapsedRateWindows(database)
-    const totals = await pendingDeploymentsRepository.getStagingTotals(database, pendingDeploymentTtlMs)
-    metrics.observe('dcl_partial_upload_reserved_bytes', {}, totals.total)
-    metrics.observe('dcl_partial_upload_cleanup_backlog_bytes', {}, totals.expired)
-    metrics.observe('dcl_partial_uploads_pending', { state: 'live' }, totals.liveUploads)
-    metrics.observe('dcl_partial_uploads_pending', { state: 'expired' }, totals.expiredUploads)
-    if (removed > 0) {
-      metrics.increment('dcl_pending_deployments_expired_total', {}, removed)
-      logger.info(`Reclaimed ${removed} expired pending deployment(s)`)
-    }
-    return { removed, deferred }
+    // A failed upload outranks a deferral: it won't clear by waiting for the lock.
+    const outcome = failed > 0 ? 'error' : deferred ? 'deferred' : 'success'
+    return { removed, failed, outcome }
   }
 
   return { stageDeployment, cleanupExpired }

@@ -1,6 +1,7 @@
 import SQL from 'sql-template-strings'
 import { DatabaseClient } from '../../adapters/database'
 import {
+  ExpiredUpload,
   FileReceipt,
   IncomingBytesWindow,
   InsertPendingDeployment,
@@ -228,14 +229,25 @@ async function deleteUnadmitted(database: DatabaseClient, entityId: string): Pro
   )
 }
 
-async function listExpired(database: DatabaseClient, ttlMs: number, limit: number): Promise<string[]> {
-  const result = await database.queryWithValues<{ entity_id: string }>(
-    SQL`SELECT entity_id FROM pending_deployments WHERE created_at < `
-      .append(cutoff(ttlMs))
-      .append(SQL` ORDER BY created_at LIMIT ${limit}`),
+async function listExpired(
+  database: DatabaseClient,
+  ttlMs: number,
+  limit: number,
+  after?: ExpiredUpload
+): Promise<ExpiredUpload[]> {
+  const query =
+    SQL`SELECT entity_id, created_at::text AS created_at FROM pending_deployments WHERE created_at < `.append(
+      cutoff(ttlMs)
+    )
+  if (after) {
+    query.append(SQL` AND (created_at, entity_id) > (${after.createdAt}::timestamptz, ${after.entityId})`)
+  }
+  query.append(SQL` ORDER BY created_at, entity_id LIMIT ${limit}`)
+  const result = await database.queryWithValues<{ entity_id: string; created_at: string }>(
+    query,
     'pending_deployment_list_expired'
   )
-  return result.rows.map((row) => row.entity_id)
+  return result.rows.map((row) => ({ entityId: row.entity_id, createdAt: row.created_at }))
 }
 
 async function deleteExpiredByEntityId(database: DatabaseClient, entityId: string, ttlMs: number): Promise<void> {
