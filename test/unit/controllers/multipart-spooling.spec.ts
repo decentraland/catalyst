@@ -135,6 +135,49 @@ describe('when spooling a multipart request fails', () => {
     })
   })
 
+  describe('and creating its spool folder fails with ENOSPC', () => {
+    let error: unknown
+    let logError: jest.Mock
+
+    beforeEach(async () => {
+      logError = jest.fn()
+      const noSpace = Object.assign(new Error('ENOSPC: no space left on device, mkdir'), { code: 'ENOSPC' })
+      error = await multipartParserWrapper(
+        handler as any,
+        { maxFileSize: 1024 },
+        {
+          spool: { createRequestFolder: jest.fn().mockRejectedValue(noSpace) },
+          metrics: { increment },
+          logs: { getLogger: () => ({ error: logError } as any) }
+        }
+      )(buildContext(form)).catch((e) => e)
+    })
+
+    it('should answer a retryable 503 without running the handler', () => {
+      expect({
+        unavailable: error instanceof ServiceUnavailableError,
+        message: (error as Error).message,
+        handled: handler.mock.calls.length
+      }).toEqual({
+        unavailable: true,
+        message: 'The server cannot store uploads right now, please retry shortly.',
+        handled: 0
+      })
+    })
+
+    it('should count one spool folder failure and log it with its code', () => {
+      expect({ metrics: increment.mock.calls, logged: logError.mock.calls }).toEqual({
+        metrics: [['dcl_upload_spool_failures_total', { reason: 'folder' }]],
+        logged: [
+          [
+            'Failed to create an upload spool folder',
+            { code: 'ENOSPC', error: 'ENOSPC: no space left on device, mkdir' }
+          ]
+        ]
+      })
+    })
+  })
+
   describe('and removing its spool folder fails', () => {
     let response: IHttpServerComponent.IResponse
 

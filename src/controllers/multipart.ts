@@ -56,6 +56,8 @@ export type MultipartOptions = {
   spoolFlushTimeoutMs?: number
   /** Counts upload timeouts and spool failures. */
   metrics?: Pick<AppComponents['metrics'], 'increment'>
+  /** Logs spool failures the client only sees as a retryable 503. */
+  logs?: Pick<AppComponents['logs'], 'getLogger'>
 }
 
 // Most framing busboy accepts per part: its 16 KiB header block plus an RFC 2046 boundary line (at most
@@ -100,6 +102,7 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
   options: MultipartOptions
 ): (ctx: IHttpServerComponent.DefaultContext<U>) => Promise<T> {
   const maxBodySize = maxMultipartBodySize(limits)
+  const logger = options.logs?.getLogger('multipart')
 
   return async function (ctx: IHttpServerComponent.DefaultContext<U>): Promise<T> {
     const { maxTotalSize } = limits
@@ -173,7 +176,13 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       if (error instanceof UploadSpoolStoppedError) {
         throw new ServiceUnavailableError(error.message)
       }
-      throw error
+      // A full, read-only or unwritable spool disk is the server's and may clear, so the client retries.
+      options.metrics?.increment('dcl_upload_spool_failures_total', { reason: 'folder' })
+      logger?.error('Failed to create an upload spool folder', {
+        code: (error as NodeJS.ErrnoException)?.code ?? 'unknown',
+        error: error instanceof Error ? error.message : String(error)
+      })
+      throw new ServiceUnavailableError('The server cannot store uploads right now, please retry shortly.')
     }
     const openWriter = options.createWriteStream ?? createWriteStream
     const writers = new Set<Writable>()

@@ -177,7 +177,7 @@ export const metricsDeclaration = validateMetricsDeclaration({
   dcl_upload_spool_failures_total: {
     help: 'POST /entities disk spool failures',
     type: 'counter',
-    // reason=(write_error|flush_timeout|cleanup)
+    // reason=(write_error|flush_timeout|cleanup|folder)
     labelNames: ['reason']
   },
   dcl_upload_spool_reclaimed_folders_total: {

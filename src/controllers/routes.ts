@@ -72,7 +72,8 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
         {
           spool: components.uploadSpool,
           uploadBudget: components.uploadBudget,
-          metrics: components.metrics
+          metrics: components.metrics,
+          logs: components.logs
         }
       )
     )

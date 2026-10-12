@@ -9,6 +9,7 @@ export interface IUploadSpool extends IBaseComponent {
    * and its owner socket if a temp-folder cleaner removed them.
    * @returns The new request folder's path.
    * @throws UploadSpoolStoppedError once the spool has begun stopping.
+   * @throws The filesystem or socket error when the folders, marker or owner socket can't be created.
    */
   createRequestFolder(): Promise<string>
 }
