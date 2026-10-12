@@ -9,9 +9,10 @@ const MAX_UPLOAD_FILE_SIZE = 1000
 // Fits the entity file (up to 10 MiB) plus one maximum-size file.
 const MIN_BYTES_PER_MINUTE = MAX_UPLOAD_FILE_SIZE + 10 * 1024 * 1024
 
-// listExpired's page size and pages per cleanup run.
+// listExpired's default page size, a small one injected to keep paging tests fast, and the former per-run page cap.
 const PAGE_SIZE = 100
-const PAGES_PER_RUN = 5
+const SMALL_PAGE_SIZE = 2
+const FORMER_PAGES_PER_RUN = 5
 
 type Mocks = {
   metrics: { increment: jest.Mock; observe: jest.Mock; startTimer: jest.Mock }
@@ -49,7 +50,19 @@ function expiredUploads(prefix: string, count: number): { entityId: string; crea
   }))
 }
 
-function build(mocks: Mocks, overrides: Partial<Record<EnvironmentConfig, number>> = {}): IPartialDeployments {
+// Serves `uploads` (sorted as listExpired orders them) in keyset pages, as the repository does.
+function pagedListing(uploads: { entityId: string; createdAt: string }[]) {
+  return async (_db: unknown, _ttl: number, limit: number, after?: { entityId: string }) => {
+    const start = after ? uploads.findIndex((upload) => upload.entityId === after.entityId) + 1 : 0
+    return uploads.slice(start, start + limit)
+  }
+}
+
+function build(
+  mocks: Mocks,
+  overrides: Partial<Record<EnvironmentConfig, number>> = {},
+  options: { expiredUploadsPerPage?: number } = {}
+): IPartialDeployments {
   const config: Partial<Record<EnvironmentConfig, number>> = {
     [EnvironmentConfig.PENDING_DEPLOYMENT_TTL]: 60 * 60 * 1000,
     [EnvironmentConfig.REQUEST_TTL_BACKWARDS]: 20 * 60 * 1000,
@@ -61,21 +74,24 @@ function build(mocks: Mocks, overrides: Partial<Record<EnvironmentConfig, number
     [EnvironmentConfig.PENDING_DEPLOYMENTS_CLEANUP_INTERVAL]: 5 * 60 * 1000,
     ...overrides
   }
-  return createPartialDeployments({
-    logs: { getLogger: () => ({ info: jest.fn(), warn: jest.fn(), error: mocks.logError, debug: jest.fn() }) },
-    metrics: mocks.metrics,
-    env: { getConfig: (key: EnvironmentConfig) => config[key] },
-    storage: { delete: mocks.storageDelete },
-    contentFilesRepository: { findReferencedHashes: jest.fn().mockResolvedValue(new Set()) },
-    contentLocks: { withWrite: mocks.withWrite },
-    pendingDeploymentsRepository: {
-      listExpired: mocks.listExpired,
-      getStagedKeys: mocks.getStagedKeys,
-      deleteExpiredByEntityId: mocks.deleteExpiredByEntityId,
-      deleteElapsedRateWindows: mocks.deleteElapsedRateWindows,
-      getStagingTotals: mocks.getStagingTotals
-    }
-  } as any)
+  return createPartialDeployments(
+    {
+      logs: { getLogger: () => ({ info: jest.fn(), warn: jest.fn(), error: mocks.logError, debug: jest.fn() }) },
+      metrics: mocks.metrics,
+      env: { getConfig: (key: EnvironmentConfig) => config[key] },
+      storage: { delete: mocks.storageDelete },
+      contentFilesRepository: { findReferencedHashes: jest.fn().mockResolvedValue(new Set()) },
+      contentLocks: { withWrite: mocks.withWrite },
+      pendingDeploymentsRepository: {
+        listExpired: mocks.listExpired,
+        getStagedKeys: mocks.getStagedKeys,
+        deleteExpiredByEntityId: mocks.deleteExpiredByEntityId,
+        deleteElapsedRateWindows: mocks.deleteElapsedRateWindows,
+        getStagingTotals: mocks.getStagingTotals
+      }
+    } as any,
+    options
+  )
 }
 
 function runsOf(mocks: Mocks): unknown[] {
@@ -323,17 +339,55 @@ describe('when cleaning up expired partial uploads', () => {
     })
   })
 
-  describe('and every listed page is full of failing uploads', () => {
+  describe('and more failing uploads than the former per-run page cap held sit ahead of a reclaimable one', () => {
+    let uploads: { entityId: string; createdAt: string }[]
+
     beforeEach(async () => {
-      mocks.listExpired.mockImplementation(async () => expiredUploads('bafkreifailing', PAGE_SIZE))
-      mocks.getStagedKeys.mockRejectedValue(new Error('database is down'))
+      partialDeployments = build(mocks, {}, { expiredUploadsPerPage: SMALL_PAGE_SIZE })
+      uploads = [
+        ...expiredUploads('bafkreifailing', SMALL_PAGE_SIZE * FORMER_PAGES_PER_RUN + 1),
+        ...expiredUploads('bafkreilater', 1)
+      ]
+      mocks.listExpired.mockImplementation(pagedListing(uploads))
+      mocks.getStagedKeys.mockImplementation(async (_db: unknown, entityId: string) => {
+        if (entityId.startsWith('bafkreifailing')) {
+          throw new Error('database is down')
+        }
+        return ['bafkreia']
+      })
       summary = await partialDeployments.cleanupExpired()
     })
 
-    it('should stop after the per-run page cap', () => {
+    it('should page until a short page, visiting every upload once and reclaiming the later one', () => {
+      expect({
+        summary,
+        reclaimed: reclaimedOf(mocks),
+        visited: mocks.getStagedKeys.mock.calls.map(([, entityId]) => entityId),
+        listed: mocks.listExpired.mock.calls.length
+      }).toEqual({
+        summary: { removed: 1, failed: SMALL_PAGE_SIZE * FORMER_PAGES_PER_RUN + 1, outcome: 'error' },
+        reclaimed: ['bafkreilater000'],
+        visited: uploads.map((upload) => upload.entityId),
+        listed: Math.floor(uploads.length / SMALL_PAGE_SIZE) + 1
+      })
+    })
+  })
+
+  describe('and deployments keep the content lock busy on a later page', () => {
+    beforeEach(async () => {
+      partialDeployments = build(mocks, {}, { expiredUploadsPerPage: SMALL_PAGE_SIZE })
+      mocks.listExpired.mockImplementation(pagedListing(expiredUploads('bafkreientity', SMALL_PAGE_SIZE * 3)))
+      mocks.withWrite
+        .mockImplementationOnce((operation: () => Promise<unknown>) => operation())
+        .mockImplementationOnce((operation: () => Promise<unknown>) => operation())
+        .mockRejectedValueOnce(new EntityLockTimeoutError())
+      summary = await partialDeployments.cleanupExpired()
+    })
+
+    it('should stop listing at the busy upload and report a deferred run', () => {
       expect({ summary, listed: mocks.listExpired.mock.calls.length }).toEqual({
-        summary: { removed: 0, failed: PAGE_SIZE * PAGES_PER_RUN, outcome: 'error' },
-        listed: PAGES_PER_RUN
+        summary: { removed: SMALL_PAGE_SIZE, failed: 0, outcome: 'deferred' },
+        listed: 2
       })
     })
   })

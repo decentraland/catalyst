@@ -29,7 +29,7 @@ export interface FileReceipt {
   hash: string
   size: number
   stored: boolean
-  /** True when this upload writes the file, so its size counts against the staging budgets. */
+  /** True when the size counts against the staging budgets: every file but those published content already keeps. */
   charged: boolean
 }
 

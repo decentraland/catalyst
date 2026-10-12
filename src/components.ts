@@ -326,6 +326,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   // Expiry of stale partial (pending) deployments. Kept separate from the GC sweep, which short-circuits
   // when GARBAGE_COLLECTION is disabled — expiry must run on every node so staged uploads can't linger.
+  // The runner waits the interval after each run ends, so an unbounded run never overlaps the next.
   const pendingDeploymentsCleanupJob = createJobComponent(
     { logs },
     partialDeployments.cleanupExpired,

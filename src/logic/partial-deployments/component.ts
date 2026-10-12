@@ -50,9 +50,8 @@ const POINTER_CONFLICT_RETRY_AFTER_SECONDS = 5
 export const MAX_ENTITY_FILE_SIZE_BYTES = 10 * 1024 * 1024 // 10 MB
 const EMPTY_FILE = new Uint8Array(0)
 
-// Expired uploads listed per page, pages per cleanup run, and storage keys per exclusive delete batch.
+// Expired uploads listed per page, and storage keys per exclusive delete batch.
 const EXPIRED_UPLOADS_PER_PAGE = 100
-const EXPIRED_UPLOAD_PAGES_PER_CLEANUP = 5
 const CLEANUP_DELETE_BATCH_SIZE = 1000
 
 /**
@@ -105,6 +104,7 @@ async function streamToBufferCapped(
  * locks, then stored and possibly published under the shared content lock and the per-entity lock. Overlapping uploads
  * coexist within byte and count quotas; publication order is enforced by the deploy pipeline.
  * @param components Validation, persistence, storage and telemetry dependencies.
+ * @param options Tuning overrides; `expiredUploadsPerPage` is the cleanup listing page size (default 100).
  * @returns Partial deployment orchestration and expired-upload cleanup.
  * @throws Error when MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE can't fit a batch of the entity file and one maximum-size file.
  */
@@ -125,7 +125,8 @@ export function createPartialDeployments(
     | 'contentFilesRepository'
     | 'contentLocks'
     | 'deploymentMemoryBudget'
-  >
+  >,
+  options: { expiredUploadsPerPage?: number } = {}
 ): IPartialDeployments {
   const {
     logs,
@@ -159,6 +160,7 @@ export function createPartialDeployments(
     )
   }
   const cleanupIntervalMs = env.getConfig<number>(EnvironmentConfig.PENDING_DEPLOYMENTS_CLEANUP_INTERVAL)
+  const expiredUploadsPerPage = options.expiredUploadsPerPage ?? EXPIRED_UPLOADS_PER_PAGE
   // When the last cleanup run ended, to estimate the next one for Retry-After.
   let lastCleanupAt: number | undefined
   metrics.observe('dcl_partial_upload_capacity_bytes', {}, Number(globalBytes))
@@ -643,6 +645,7 @@ export function createPartialDeployments(
     )
     if (!pending?.initialized) {
       const infos = await inventory(contentHashes)
+      const sizes = new Map<string, number>()
       for (const [hash, info] of infos) {
         if (info === undefined) {
           continue
@@ -653,12 +656,16 @@ export function createPartialDeployments(
             `Couldn't determine the size of the already-stored content file: ${hash}`
           ])
         }
-        // Counts toward the scene size only: this upload doesn't stage it, and its manifest keeps it from GC.
-        receipts.set(hash, { hash, size: info.contentSize, stored: true, charged: false })
+        sizes.set(hash, info.contentSize)
+      }
+      // Only published content is free; content held just by pending uploads is charged as if received.
+      const published = await contentFilesRepository.findPublishedHashes(database, Array.from(sizes.keys()))
+      for (const [hash, size] of sizes) {
+        receipts.set(hash, { hash, size, stored: true, charged: !published.has(hash) })
         alreadyStored.add(hash)
       }
     }
-    // Every received byte counts toward the rate, but files already stored are neither rewritten nor charged.
+    // Every received byte counts toward the rate; already-stored files aren't rewritten, their receipts set the charge.
     let incomingBytes = 0
     const filesToStore = new Map<string, StagedFile>()
     for (const [hash, file] of uploadedFiles) {
@@ -762,12 +769,12 @@ export function createPartialDeployments(
     let deferred = false
     try {
       let after: ExpiredUpload | undefined
-      // Keyset paging moves past uploads that keep failing, so they can't starve the ones after them.
-      for (let page = 0; page < EXPIRED_UPLOAD_PAGES_PER_CLEANUP && !deferred; page++) {
+      // Keyset paging visits every expired upload once per run, moving past the ones that fail.
+      while (!deferred) {
         const expired = await pendingDeploymentsRepository.listExpired(
           database,
           pendingDeploymentTtlMs,
-          EXPIRED_UPLOADS_PER_PAGE,
+          expiredUploadsPerPage,
           after
         )
         for (const upload of expired) {
@@ -790,7 +797,7 @@ export function createPartialDeployments(
             })
           }
         }
-        if (expired.length < EXPIRED_UPLOADS_PER_PAGE) {
+        if (expired.length < expiredUploadsPerPage) {
           break
         }
         after = expired[expired.length - 1]
