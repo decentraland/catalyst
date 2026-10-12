@@ -25,3 +25,11 @@ export class InvalidPartialDeploymentError extends Error {
     this.name = 'InvalidPartialDeploymentError'
   }
 }
+
+/** Thrown inside expired-upload cleanup when storage fails to delete an upload's staged content. */
+export class StagedContentDeleteError extends Error {
+  constructor(public readonly entityId: string, cause: unknown) {
+    super(`Failed to delete staged content of ${entityId}: ${cause instanceof Error ? cause.message : String(cause)}`)
+    this.name = 'StagedContentDeleteError'
+  }
+}

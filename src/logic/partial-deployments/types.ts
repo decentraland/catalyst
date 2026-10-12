@@ -26,6 +26,16 @@ export type StageDeploymentResult =
   | { kind: 'deployed'; creationTimestamp: number }
   | { kind: 'incomplete'; missing: string[] }
 
+/** What one expired-upload cleanup run did. */
+export type ExpiredCleanupSummary = {
+  /** Uploads reclaimed. */
+  removed: number
+  /** Uploads whose reclaim failed; they stay charged and are retried on the next run. */
+  failed: number
+  /** `success` reclaimed every listed upload, `deferred` stopped on a busy content lock, `error` had a failure. */
+  outcome: 'success' | 'deferred' | 'error'
+}
+
 export interface IPartialDeployments {
   /**
    * Stages one batch of a partial (multi-request) scene deployment, keyed by entity id. Validates what
@@ -40,6 +50,9 @@ export interface IPartialDeployments {
    * locks stay busy, and UploadBudgetExceededError when the memory budget can't hold a resume's entity file.
    */
   stageDeployment(input: StageDeploymentInput): Promise<StageDeploymentResult>
-  /** Deletes expired uploads' unreferenced staged content, then releases their accounting. */
-  cleanupExpired(): Promise<number>
+  /**
+   * Deletes expired uploads' unreferenced staged content, then releases their accounting. A failing upload
+   * is logged, counted and skipped, so it never blocks the rest; only listing or housekeeping failures throw.
+   */
+  cleanupExpired(): Promise<ExpiredCleanupSummary>
 }

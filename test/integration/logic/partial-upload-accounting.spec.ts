@@ -4,6 +4,7 @@ import { bufferToStream } from '@dcl/catalyst-storage'
 import { EntityType } from '@dcl/schemas'
 import { EntityLockTimeoutError } from '../../../src/adapters/content-locks'
 import { EnvironmentConfig } from '../../../src/Environment'
+import { ExpiredCleanupSummary } from '../../../src/logic/partial-deployments'
 import { makeNoopValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import {
   buildPartialForm,
@@ -517,7 +518,7 @@ describe('Integration - Partial upload accounting', () => {
     })
 
     describe('and physical deletion fails during cleanup', () => {
-      let cleanupError: string | undefined
+      let summary: ExpiredCleanupSummary
       let response: Response
 
       beforeEach(async () => {
@@ -529,15 +530,50 @@ describe('Integration - Partial upload accounting', () => {
           }
           return deleteContent(keys)
         })
-        cleanupError = await server.components.partialDeployments.cleanupExpired().then(
-          () => undefined,
-          (error: Error) => error.message
-        )
+        summary = await server.components.partialDeployments.cleanupExpired()
         response = await stageLarge(server, next)
       })
 
-      it('should fail the cleanup and keep the expired bytes charged', () => {
-        expect({ cleanupError, status: response.status }).toEqual({ cleanupError: 'storage unavailable', status: 429 })
+      it('should report the failed upload and keep the expired bytes charged', () => {
+        expect({ summary, status: response.status }).toEqual({
+          summary: { removed: 0, failed: 1, outcome: 'error' },
+          status: 429
+        })
+      })
+    })
+
+    describe('and physical deletion fails for it while a later expired upload is reclaimable', () => {
+      let later: PreparedDeployment
+      let summary: ExpiredCleanupSummary
+      let pending: string[]
+
+      beforeEach(async () => {
+        later = await prepareUpload(identity, 'later')
+        // Expired a day after the failing one, so it is listed after it.
+        await server.components.pendingDeploymentsRepository.insert(server.components.database, {
+          entityId: later.entityId,
+          entityType: EntityType.SCENE,
+          pointers: ['5,5'],
+          contentHashes: later.contentHashes,
+          deployerAddress: identity.address.toLowerCase(),
+          createdAt: Date.now() - 24 * 60 * 60 * 1000
+        })
+        const deleteContent = server.components.storage.delete.bind(server.components.storage)
+        jest.spyOn(server.components.storage, 'delete').mockImplementation(async (keys: string[]) => {
+          if (keys.includes(largeHash(expired))) {
+            throw new Error('storage unavailable')
+          }
+          return deleteContent(keys)
+        })
+        summary = await server.components.partialDeployments.cleanupExpired()
+        pending = await pendingEntityIds(server)
+      })
+
+      it('should reclaim the later upload and keep only the failing one', () => {
+        expect({ summary, pending }).toEqual({
+          summary: { removed: 1, failed: 1, outcome: 'error' },
+          pending: [expired.entityId]
+        })
       })
     })
 
@@ -550,7 +586,7 @@ describe('Integration - Partial upload accounting', () => {
       beforeEach(async () => {
         jest.spyOn(server.components.contentLocks, 'withWrite').mockRejectedValueOnce(new EntityLockTimeoutError())
         ;[removed, cleanupError] = await server.components.partialDeployments.cleanupExpired().then(
-          (count) => [count, undefined],
+          (summary) => [summary.removed, undefined],
           (error) => [undefined, error]
         )
         stored = await server.components.storage.exist(largeHash(expired))
@@ -595,6 +631,41 @@ describe('Integration - Partial upload accounting', () => {
           pending: await pendingEntityIds(server)
         }).toEqual({ stored: true, pending: [sharing.entityId] })
       })
+    })
+  })
+
+  describe('when listing expired uploads one per page and they share a creation time', () => {
+    let listed: string[]
+    let expected: string[]
+
+    beforeEach(async () => {
+      const createdAt = Date.now() - 2 * 24 * 60 * 60 * 1000
+      expected = []
+      for (const label of ['a', 'b', 'c']) {
+        const deployment = await prepareUpload(identity, label)
+        expected.push(deployment.entityId)
+        await server.components.pendingDeploymentsRepository.insert(server.components.database, {
+          entityId: deployment.entityId,
+          entityType: EntityType.SCENE,
+          pointers: [`${expected.length},9`],
+          contentHashes: deployment.contentHashes,
+          deployerAddress: identity.address.toLowerCase(),
+          createdAt
+        })
+      }
+      expected.sort()
+      listed = []
+      const { database, pendingDeploymentsRepository } = server.components
+      let page = await pendingDeploymentsRepository.listExpired(database, TTL_SECONDS * 1000, 1)
+      // Bounded so a cursor that never advances fails the assertion instead of hanging.
+      for (let visits = 0; page.length > 0 && visits < 10; visits++) {
+        listed.push(page[0].entityId)
+        page = await pendingDeploymentsRepository.listExpired(database, TTL_SECONDS * 1000, 1, page[0])
+      }
+    })
+
+    it('should visit each upload once, ordered by entity id', () => {
+      expect(listed).toEqual(expected)
     })
   })
 

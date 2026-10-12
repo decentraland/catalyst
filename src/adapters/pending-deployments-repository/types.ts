@@ -61,6 +61,13 @@ export interface IncomingBytesWindow {
   endsInMs: number
 }
 
+/** An expired upload, positioned for keyset paging by `listExpired`. */
+export interface ExpiredUpload {
+  entityId: string
+  /** `created_at` as Postgres text, so a page cursor keeps its microseconds. */
+  createdAt: string
+}
+
 /** Which uploads `getOldestCreatedAt` considers. */
 export interface OldestUploadScope {
   /** Only this deployer's uploads; every upload on the server otherwise. */
@@ -101,8 +108,8 @@ export interface IPendingDeploymentsRepository {
   deleteByEntityId(db: DatabaseClient, entityId: string): Promise<void>
   /** Removes an upload whose first batch was never admitted, so it doesn't hold a slot of its deployer's cap. */
   deleteUnadmitted(db: DatabaseClient, entityId: string): Promise<void>
-  /** Returns up to `limit` expired upload ids. */
-  listExpired(db: DatabaseClient, ttlMs: number, limit: number): Promise<string[]>
+  /** Returns up to `limit` expired uploads by `(created_at, entity_id)`, after `after` when given. */
+  listExpired(db: DatabaseClient, ttlMs: number, limit: number, after?: ExpiredUpload): Promise<ExpiredUpload[]>
   /** Deletes an upload only if it is still expired, releasing its accounting. */
   deleteExpiredByEntityId(db: DatabaseClient, entityId: string, ttlMs: number): Promise<void>
   /** Drops rate windows that have already elapsed. */
