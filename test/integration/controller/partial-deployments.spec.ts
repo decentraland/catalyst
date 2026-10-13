@@ -403,6 +403,43 @@ describe('Integration - Partial deployments', () => {
     })
   })
 
+  describe('when a content file is uploaded under another content hash key', () => {
+    let deployment: PreparedDeployment
+    let response: Response
+    let stored: boolean[]
+
+    beforeEach(async () => {
+      const nonce = `${Date.now()}-${Math.random()}`
+      deployment = await prepareSceneDeployment(
+        ['5,7'],
+        { 'a.txt': Buffer.from(`misplaced a ${nonce}`), 'b.txt': Buffer.from(`misplaced b ${nonce}`) },
+        identity
+      )
+      const [hashA, hashB] = deployment.contentHashes
+      const form = buildPartialForm(deployment, [deployment.entityId])
+      // The bytes of a.txt declared as b.txt's hash.
+      form.append(hashB, Buffer.from(deployment.files.get(hashA)!), { filename: hashB })
+      response = await postForm(server, form)
+      const present = await server.components.storage.existMultiple([deployment.entityId, hashA, hashB])
+      stored = Array.from(present.values())
+    })
+
+    it('should reject it with a 400 naming the mismatched key and store nothing under any key', async () => {
+      const [, hashB] = deployment.contentHashes
+      expect({
+        status: response.status,
+        body: await response.json(),
+        stored,
+        pending: await pendingEntityIds(server)
+      }).toEqual({
+        status: 400,
+        body: { errors: [expect.stringContaining(`The uploaded file '${hashB}' does not match its content hash`)] },
+        stored: [false, false, false],
+        pending: []
+      })
+    })
+  })
+
   describe('when a batch fails its staging validation', () => {
     let response: Response
     let withRead: jest.SpyInstance
