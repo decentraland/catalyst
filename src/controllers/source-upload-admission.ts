@@ -20,7 +20,8 @@ export function createSourceUploadAdmission(
   const sourceOf = createClientSourceResolver(components)
   const maxRequestBytes = env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE)
   return async (context, next) => {
-    // The parser rejects a body past its declared length; one without a declaration may grow to the cap.
+    // The parser rejects a body past its declared length; one without a declaration may grow to the cap,
+    // so it takes the whole default share. That only serializes its own source, and every client declares.
     const declared = parseInt(context.request.headers.get('content-length') || '', 10)
     const bytes =
       Number.isSafeInteger(declared) && declared >= 0 ? Math.min(declared, maxRequestBytes) : maxRequestBytes

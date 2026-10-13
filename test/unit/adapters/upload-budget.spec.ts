@@ -302,6 +302,66 @@ describe('when acquiring from the upload budget', () => {
   })
 })
 
+describe('when admitting an upload on more bytes than it reserves', () => {
+  let budget: IUploadBudget
+
+  beforeEach(() => {
+    budget = createUploadBudget(
+      buildComponents({ capacityBytes: 100, minReservationBytes: 30, maxRequestBytes: 100 }),
+      'disk'
+    )
+  })
+
+  describe('and the admitted bytes exceed the remaining byte budget', () => {
+    let error: unknown
+
+    beforeEach(() => {
+      budget.acquire(40)
+      error = captureError(() => budget.acquire(0, 61))
+    })
+
+    it('should reject it', () => {
+      expect(error).toEqual(new UploadBudgetExceededError())
+    })
+  })
+
+  describe('and the admitted bytes fit', () => {
+    let errors: unknown[]
+
+    beforeEach(() => {
+      budget.acquire(0, 100)
+      errors = [captureError(() => budget.acquire(40)), captureError(() => budget.acquire(31))]
+    })
+
+    it('should reserve only the requested bytes, raised to the minimum reservation', () => {
+      expect(errors).toEqual([undefined, new UploadBudgetExceededError()])
+    })
+  })
+})
+
+describe('when checking whether bytes fit the upload budget', () => {
+  let budget: IUploadBudget
+  let components: ReturnType<typeof buildComponents>
+  let fits: boolean[]
+
+  beforeEach(() => {
+    components = buildComponents({ capacityBytes: 100, minReservationBytes: 30, maxRequestBytes: 100 })
+    budget = createUploadBudget(components, 'disk')
+    budget.acquire(50)
+    fits = [budget.fits(50), budget.fits(51), budget.fits(0)]
+  })
+
+  it('should compare them, raised to the minimum reservation, with what is free without reserving them', () => {
+    expect(fits).toEqual([true, false, true])
+  })
+
+  it('should count a rejection for the bytes that did not fit', () => {
+    expect(components.metrics.increment.mock.calls).toEqual([
+      ['dcl_upload_budget_rejections_total', { budget: 'disk', reason: 'bytes' }]
+    ])
+  })
+})
+
 describe('when acquiring from the memory budget', () => {
   let errors: unknown[]
 

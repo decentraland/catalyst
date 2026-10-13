@@ -69,10 +69,17 @@ export function createUploadBudget(
     metrics.observe('dcl_upload_budget_active', { budget: kind }, activeUploads)
   }
 
-  function acquire(requestedBytes: number): UploadBudgetLease {
-    const bytes = Math.max(requestedBytes, minReservationBytes)
-    if (reservedBytes + bytes > capacityBytes) {
+  function fits(requestedBytes: number): boolean {
+    if (reservedBytes + Math.max(requestedBytes, minReservationBytes) > capacityBytes) {
       metrics.increment('dcl_upload_budget_rejections_total', { budget: kind, reason: 'bytes' })
+      return false
+    }
+    return true
+  }
+
+  function acquire(requestedBytes: number, admitBytes = requestedBytes): UploadBudgetLease {
+    const bytes = Math.max(requestedBytes, minReservationBytes)
+    if (!fits(Math.max(admitBytes, bytes))) {
       throw new UploadBudgetExceededError()
     }
     activeUploads++
@@ -108,5 +115,5 @@ export function createUploadBudget(
     }
   }
 
-  return { capacityBytes, acquire }
+  return { capacityBytes, fits, acquire }
 }

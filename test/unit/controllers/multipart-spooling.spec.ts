@@ -113,24 +113,44 @@ describe('when spooling a multipart request fails', () => {
     await rm(tmpFolder, { recursive: true, force: true })
   })
 
-  describe('and writing a temporary file fails', () => {
+  describe.each(['ENOSPC', 'EIO', 'EDQUOT'])('and writing a temporary file fails with %s', (code) => {
     let error: unknown
+    let logError: jest.Mock
 
     beforeEach(async () => {
+      logError = jest.fn()
       const failingWriteStream = (): Writable =>
-        new Writable({ write: (_chunk, _encoding, callback) => callback(new Error('ENOSPC: no space left')) })
+        new Writable({
+          write: (_chunk, _encoding, callback) => callback(Object.assign(new Error(`${code}: write failed`), { code }))
+        })
       error = await multipartParserWrapper(
         handler as any,
         { maxFileSize: 1024 },
-        { spool: spoolIn(tmpFolder), createWriteStream: failingWriteStream, metrics: { increment } }
+        {
+          spool: spoolIn(tmpFolder),
+          createWriteStream: failingWriteStream,
+          metrics: { increment },
+          logs: { getLogger: () => ({ error: logError } as any) }
+        }
       )(buildContext(form)).catch((e) => e)
     })
 
-    it('should fail with the write error without running the handler and count one spool write error', () => {
-      expect({ error, handled: handler.mock.calls.length, metrics: increment.mock.calls }).toEqual({
-        error: new Error('ENOSPC: no space left'),
-        handled: 0,
-        metrics: [['dcl_upload_spool_failures_total', { reason: 'write_error' }]]
+    it('should answer a 503 retryable in 30 s without running the handler', () => {
+      expect({
+        error,
+        retryAfterSeconds: (error as ServiceUnavailableError).retryAfterSeconds,
+        handled: handler.mock.calls.length
+      }).toEqual({
+        error: new ServiceUnavailableError('The server cannot store uploads right now, please retry shortly.'),
+        retryAfterSeconds: 30,
+        handled: 0
+      })
+    })
+
+    it('should count one spool write error and log it with its code', () => {
+      expect({ metrics: increment.mock.calls, logged: logError.mock.calls }).toEqual({
+        metrics: [['dcl_upload_spool_failures_total', { reason: 'write_error' }]],
+        logged: [['Failed to write an upload spool file', { code, error: `${code}: write failed` }]]
       })
     })
   })
@@ -153,14 +173,16 @@ describe('when spooling a multipart request fails', () => {
       )(buildContext(form)).catch((e) => e)
     })
 
-    it('should answer a retryable 503 without running the handler', () => {
+    it('should answer a 503 retryable in 30 s without running the handler', () => {
       expect({
         unavailable: error instanceof ServiceUnavailableError,
         message: (error as Error).message,
+        retryAfterSeconds: (error as ServiceUnavailableError).retryAfterSeconds,
         handled: handler.mock.calls.length
       }).toEqual({
         unavailable: true,
         message: 'The server cannot store uploads right now, please retry shortly.',
+        retryAfterSeconds: 30,
         handled: 0
       })
     })

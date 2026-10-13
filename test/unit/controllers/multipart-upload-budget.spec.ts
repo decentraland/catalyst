@@ -71,13 +71,13 @@ describe('when parsing a multipart request under an upload budget', () => {
       )
     })
 
-    it('should reserve the declared size, run the handler and release the reservation afterwards', () => {
+    it('should admit it on the declared size while reserving only the minimum, run the handler and release the reservation afterwards', () => {
       expect({
-        reserved: budget.acquire.mock.calls,
+        acquired: budget.acquire.mock.calls,
         status: response.status,
         released: lease.release.mock.calls.length,
         releasedAfterHandler: lease.release.mock.invocationCallOrder[0] > handler.mock.invocationCallOrder[0]
-      }).toEqual({ reserved: [[declaredSize]], status: 200, released: 1, releasedAfterHandler: true })
+      }).toEqual({ acquired: [[0, declaredSize]], status: 200, released: 1, releasedAfterHandler: true })
     })
   })
 
@@ -96,8 +96,8 @@ describe('when parsing a multipart request under an upload budget', () => {
       )
     })
 
-    it('should reserve only a payload at the total allowed, since framing is never spooled', () => {
-      expect(budget.acquire.mock.calls).toEqual([[maxTotalSize]])
+    it('should admit it on a payload at the total allowed, since framing is never spooled', () => {
+      expect(budget.acquire.mock.calls).toEqual([[0, maxTotalSize]])
     })
   })
 
@@ -126,9 +126,9 @@ describe('when parsing a multipart request under an upload budget', () => {
       await wrapped(buildContext(form.getBuffer(), form.getHeaders()))
     })
 
-    it('should reserve nothing up front and grow the reservation as the body arrives', () => {
-      expect({ reserved: budget.acquire.mock.calls, grew: lease.resize.mock.calls.length > 0 }).toEqual({
-        reserved: [[0]],
+    it('should admit and reserve only the minimum up front and grow the reservation as the body arrives', () => {
+      expect({ acquired: budget.acquire.mock.calls, grew: lease.resize.mock.calls.length > 0 }).toEqual({
+        acquired: [[0, 0]],
         grew: true
       })
     })
@@ -195,9 +195,14 @@ describe('when parsing a multipart request under an upload budget', () => {
       error = await wrapped(buildContext(form.getBuffer(), form.getHeaders())).catch((e) => e)
     })
 
-    it('should reject with a ServiceUnavailableError without running the handler', () => {
-      expect({ error, handled: handler.mock.calls.length }).toEqual({
+    it('should reject with a ServiceUnavailableError retryable in 30 s without running the handler', () => {
+      expect({
+        error,
+        retryAfterSeconds: (error as ServiceUnavailableError).retryAfterSeconds,
+        handled: handler.mock.calls.length
+      }).toEqual({
         error: new ServiceUnavailableError('Server is handling too many uploads, please retry shortly.'),
+        retryAfterSeconds: 30,
         handled: 0
       })
     })
@@ -322,6 +327,81 @@ describe('when parsing multipart requests that together fill the upload budget',
 
   it('should complete every admitted request', () => {
     expect(outcomes).toEqual([200, 200])
+  })
+})
+
+describe('when a body declaring the whole upload budget stalls after sending a little of it', () => {
+  let tmpFolder: string
+  let budget: IUploadBudget
+  let stalled: Readable
+  let stalledUpload: Promise<unknown>
+  let honestOutcome: number | string
+  let fullAdmission: string
+
+  beforeEach(async () => {
+    tmpFolder = await mkdtemp(path.join(tmpdir(), 'multipart-'))
+    const capacity = 4 * SPOOL_FILE_OVERHEAD_BYTES
+    const values: Partial<Record<EnvironmentConfig, number>> = {
+      [EnvironmentConfig.MAX_IN_FLIGHT_UPLOAD_BYTES]: capacity,
+      [EnvironmentConfig.MIN_UPLOAD_RESERVATION_BYTES]: 1,
+      [EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE]: capacity - SPOOL_FILE_OVERHEAD_BYTES,
+      [EnvironmentConfig.MAX_UPLOAD_FILE_COUNT]: 1
+    }
+    budget = createUploadBudget(
+      {
+        env: { getConfig: (key: EnvironmentConfig) => values[key] },
+        metrics: { observe: jest.fn(), increment: jest.fn() }
+      } as any,
+      'disk'
+    )
+    const wrapped: Wrapped = multipartParserWrapper(
+      jest.fn().mockResolvedValue({ status: 200, body: {} }) as any,
+      { maxFileSize: capacity, maxFiles: 1, maxTotalSize: capacity - SPOOL_FILE_OVERHEAD_BYTES },
+      { spool: spoolIn(tmpFolder), uploadBudget: budget }
+    )
+    const liar = new FormData()
+    liar.append('entityId', 'an-entity-id')
+    stalled = new Readable({ read() {} })
+    stalled.push(liar.getBuffer().subarray(0, 40))
+    stalledUpload = wrapped({
+      request: {
+        headers: {
+          get: (name: string) =>
+            (({ ...liar.getHeaders(), 'content-length': String(capacity) } as Record<string, string>)[
+              name.toLowerCase()
+            ])
+        },
+        body: Readable.toWeb(stalled)
+      }
+    } as any).catch((e) => e)
+    const honest = new FormData()
+    honest.append('entityId', 'an-entity-id')
+    honest.append('file1', Buffer.alloc(1000, 1), { filename: 'file1' })
+    const honestBody = honest.getBuffer()
+    const response = await wrapped(
+      buildContext(honestBody, { ...honest.getHeaders(), 'content-length': String(honestBody.length) })
+    ).catch((e) => e)
+    honestOutcome = response instanceof Error ? response.name : response.status
+    try {
+      budget.acquire(0, capacity).release()
+      fullAdmission = 'admitted'
+    } catch (error) {
+      fullAdmission = (error as Error).name
+    }
+  })
+
+  afterEach(async () => {
+    stalled.destroy()
+    await stalledUpload
+    await rm(tmpFolder, { recursive: true, force: true })
+  })
+
+  it('should keep admitting other uploads, since only what it sent is reserved', () => {
+    expect(honestOutcome).toBe(200)
+  })
+
+  it('should still shed, before reading it, an upload whose declared size no longer fits', () => {
+    expect(fullAdmission).toBe('UploadBudgetExceededError')
   })
 })
 

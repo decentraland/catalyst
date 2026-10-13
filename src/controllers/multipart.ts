@@ -14,7 +14,13 @@ import {
   UploadBudgetLease
 } from '../adapters/upload-budget'
 import { IUploadSpool, UploadSpoolStoppedError } from '../adapters/upload-spool'
-import { InvalidRequestError, PayloadTooLargeError, RequestTimeoutError, ServiceUnavailableError } from './errors'
+import {
+  ClientClosedRequestError,
+  InvalidRequestError,
+  PayloadTooLargeError,
+  RequestTimeoutError,
+  ServiceUnavailableError
+} from './errors'
 
 /**
  * Limits applied to a multipart request while it is received.
@@ -43,6 +49,10 @@ export type MultipartLimits = {
   maxTotalSize?: number
   /** Maximum time, in milliseconds, to receive the whole body. */
   uploadTimeoutMs?: number
+  /** Least rate, in bytes per second, a body must keep arriving at over any receive window; 0 or unset disables it. */
+  minReceiveBytesPerSecond?: number
+  /** Time, in milliseconds, the receive rate is measured over; the first check runs once one has passed. */
+  receiveRateWindowMs?: number
 }
 
 export type MultipartOptions = {
@@ -54,7 +64,7 @@ export type MultipartOptions = {
   createWriteStream?: (filePath: string) => Writable
   /** Most time, in milliseconds, to flush the temporary files once the body is received. */
   spoolFlushTimeoutMs?: number
-  /** Counts upload timeouts and spool failures. */
+  /** Counts upload timeouts, aborted uploads and spool failures. */
   metrics?: Pick<AppComponents['metrics'], 'increment'>
   /** Logs spool failures the client only sees as a retryable 503. */
   logs?: Pick<AppComponents['logs'], 'getLogger'>
@@ -82,17 +92,42 @@ export const MAX_OPEN_SPOOL_FILES = 8
 // only reached by a stuck disk; the upload then fails with 503 rather than holding its budget share.
 export const DEFAULT_SPOOL_FLUSH_TIMEOUT_MS = 60_000
 
+// Long enough to ride out TCP slow start and short proxy or network stalls (at 64 KiB/s a sender may stall
+// for most of it after a burst), short enough that a stalled body holds its upload slot for seconds, not minutes.
+export const DEFAULT_RECEIVE_RATE_WINDOW_MS = 10_000
+
+const SPOOL_UNAVAILABLE_MESSAGE = 'The server cannot store uploads right now, please retry shortly.'
+
 /** Formats milliseconds as seconds for a client-facing message, e.g. 300000 → "300", 50 → "0.05". */
 export function formatSeconds(ms: number): string {
   return String(Number((ms / 1000).toFixed(3)))
+}
+
+/** Formats a rate in bytes per second as KiB/s for a client-facing message, e.g. 65536 → "64". */
+export function formatKiBPerSecond(bytesPerSecond: number): string {
+  return String(Number((bytesPerSecond / 1024).toFixed(2)))
+}
+
+function bytesPerSecond(bytes: number, ms: number): number {
+  return ms > 0 ? (bytes * 1000) / ms : 0
 }
 
 /** The 408 message for a body that did not arrive within `timeoutMs`, with what did arrive. */
 export function uploadTimedOutMessage(timeoutMs: number, receivedBytes: number, declaredBytes?: number): string {
   const received = declaredBytes === undefined ? `${receivedBytes}` : `${receivedBytes} of ${declaredBytes}`
   return (
-    `The upload did not finish within ${formatSeconds(timeoutMs)} s: received ${received} bytes. ` +
+    `The upload did not finish within ${formatSeconds(timeoutMs)} s: received ${received} bytes ` +
+    `(${formatKiBPerSecond(bytesPerSecond(receivedBytes, timeoutMs))} KiB/s). ` +
     'Retry on a faster connection or send smaller batches.'
+  )
+}
+
+/** The 408 message for a body arriving slower than `minBytesPerSecond`: the measured vs the required rate. */
+export function uploadTooSlowMessage(receivedBytes: number, elapsedMs: number, minBytesPerSecond: number): string {
+  return (
+    `The upload is too slow: received ${receivedBytes} bytes in ${formatSeconds(elapsedMs)} s ` +
+    `(${formatKiBPerSecond(bytesPerSecond(receivedBytes, elapsedMs))} KiB/s), ` +
+    `below the required ${formatKiBPerSecond(minBytesPerSecond)} KiB/s. Retry on a faster connection.`
   )
 }
 
@@ -114,13 +149,15 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       throw bodyTooLarge()
     }
 
-    // Reserve the declared size before reading the body, so a full budget sheds the upload unread. Framing
-    // never reaches disk, so it is capped at the payload limit; file overheads are charged per part.
-    const initialReservation =
+    // Admit on the declared size before reading the body, so a full budget sheds the upload unread, but
+    // reserve only the minimum: the reservation grows with the bytes spooled, so a body declaring more than
+    // it sends never holds budget it doesn't use. Framing never reaches disk, so it is capped at the payload
+    // limit; file overheads are charged per part.
+    const declaredPayload =
       Number.isSafeInteger(declaredSize) && declaredSize > 0 ? Math.min(declaredSize, maxTotalSize ?? Infinity) : 0
     let lease: UploadBudgetLease | undefined
     try {
-      lease = options.uploadBudget?.acquire(initialReservation)
+      lease = options.uploadBudget?.acquire(0, declaredPayload)
     } catch (error) {
       if (error instanceof UploadBudgetExceededError) {
         throw new ServiceUnavailableError(error.message)
@@ -128,7 +165,7 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       throw error
     }
     try {
-      return await parseAndHandle(ctx, lease, initialReservation)
+      return await parseAndHandle(ctx, lease)
     } finally {
       // Runs once removing the temporary files has finished or failed.
       lease?.release()
@@ -142,10 +179,19 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
     )
   }
 
+  // A spool disk that can't be written is the server's and may clear, so the client retries.
+  function spoolUnavailable(reason: string, message: string, error: unknown): ServiceUnavailableError {
+    options.metrics?.increment('dcl_upload_spool_failures_total', { reason })
+    logger?.error(message, {
+      code: (error as NodeJS.ErrnoException)?.code ?? 'unknown',
+      error: error instanceof Error ? error.message : String(error)
+    })
+    return new ServiceUnavailableError(SPOOL_UNAVAILABLE_MESSAGE)
+  }
+
   async function parseAndHandle(
     ctx: IHttpServerComponent.DefaultContext<U>,
-    lease: UploadBudgetLease | undefined,
-    initialReservation: number
+    lease: UploadBudgetLease | undefined
   ): Promise<T> {
     const { maxTotalSize } = limits
 
@@ -176,13 +222,7 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       if (error instanceof UploadSpoolStoppedError) {
         throw new ServiceUnavailableError(error.message)
       }
-      // A full, read-only or unwritable spool disk is the server's and may clear, so the client retries.
-      options.metrics?.increment('dcl_upload_spool_failures_total', { reason: 'folder' })
-      logger?.error('Failed to create an upload spool folder', {
-        code: (error as NodeJS.ErrnoException)?.code ?? 'unknown',
-        error: error instanceof Error ? error.message : String(error)
-      })
-      throw new ServiceUnavailableError('The server cannot store uploads right now, please retry shortly.')
+      throw spoolUnavailable('folder', 'Failed to create an upload spool folder', error)
     }
     const openWriter = options.createWriteStream ?? createWriteStream
     const writers = new Set<Writable>()
@@ -210,15 +250,15 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       // `maxTotalSize`.
       let totalBytes = 0
       let spooledFiles = 0
-      let reservedBytes = initialReservation
+      let reservedBytes = 0
       // Set once any limit is hit. `abort` destroys the parser exactly once, and the field/file
       // handlers short-circuit on `aborted` — so in-flight chunks aren't counted after a rejection
       // and destroy() is never called more than once.
       let aborted = false
       // The first rejection wins over whatever the torn-down pipeline reports.
       let abortReason: Error | undefined
-      // A temporary file that can't be written is a server failure, not a malformed request.
-      let writeError: Error | undefined
+      // A temporary file that can't be written (ENOSPC, EIO, EDQUOT...) is a retryable server failure.
+      let writeError: ServiceUnavailableError | undefined
       const abort = (error: Error): void => {
         if (aborted) {
           return
@@ -321,11 +361,8 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
                 }
               })
               writer.on('error', function (error: Error) {
-                if (!writeError) {
-                  options.metrics?.increment('dcl_upload_spool_failures_total', { reason: 'write_error' })
-                }
-                writeError = writeError ?? error
-                abort(error)
+                writeError ??= spoolUnavailable('write_error', 'Failed to write an upload spool file', error)
+                abort(writeError)
               })
               writer.on('close', function () {
                 writers.delete(writer)
@@ -374,8 +411,14 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       const source = requestBody ? Readable.fromWeb(requestBody) : Readable.from([])
       // busboy skips preambles, epilogues and unnamed parts without reporting their bytes.
       let bodyBytes = 0
+      // Time spent waiting for the client's next chunk; time our own backpressure (a slow disk) holds the
+      // body back is excluded, so it never counts against the client's receive rate.
+      let waitedMs = 0
+      let waitingSince: number | undefined = Date.now()
       const countBody = async function* (chunks: AsyncIterable<Uint8Array>): AsyncGenerator<Uint8Array> {
         for await (const chunk of chunks) {
+          waitedMs += Date.now() - (waitingSince ?? Date.now())
+          waitingSince = undefined
           bodyBytes += chunk.byteLength
           if (maxBodySize !== undefined && bodyBytes > maxBodySize) {
             const error = bodyTooLarge()
@@ -383,15 +426,28 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
             throw error
           }
           yield chunk
+          waitingSince = Date.now()
         }
       }
+      const clientTimeMs = (): number => waitedMs + (waitingSince === undefined ? 0 : Date.now() - waitingSince)
+
+      // The request's signal aborts when the client disconnects (@dcl/http-server ties it to the socket).
+      const signal: AbortSignal | undefined = ctx.request.signal
+      const clientClosed = (): ClientClosedRequestError => {
+        if (!aborted) {
+          options.metrics?.increment('dcl_multipart_upload_aborts_total', { reason: 'client_closed' })
+        }
+        return new ClientClosedRequestError('The client closed the connection before the upload was received.')
+      }
+      const onClientClosed = (): void => abort(clientClosed())
+      signal?.addEventListener('abort', onClientClosed)
 
       // `pipeline` tears down *both* streams if either errors: when a limit handler calls `abort()`
       // (destroying the parser) the request body (a web stream) is cancelled and the upload is aborted,
       // and a client that disconnects mid-upload rejects here — instead of leaving the parser and an
       // unsettled promise dangling (a slow resource leak).
       // The timeout is wall-clock, so it bounds how long a body holds its share whatever slows it.
-      const { uploadTimeoutMs } = limits
+      const { uploadTimeoutMs, minReceiveBytesPerSecond } = limits
       const declaredSize = parseInt(ctx.request.headers.get('content-length') || '', 10)
       const timeout =
         uploadTimeoutMs === undefined
@@ -410,27 +466,53 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
                 )
               )
             }, uploadTimeoutMs)
+      // Within the wall-clock bound, a body must keep arriving at the minimum rate over every window of client
+      // time, the first one included as its grace period. Rate-checking frees a stalled body's share early.
+      const rateWindowMs = limits.receiveRateWindowMs ?? DEFAULT_RECEIVE_RATE_WINDOW_MS
+      const samples = [{ at: 0, bytes: 0 }]
+      const rateCheck = !minReceiveBytesPerSecond
+        ? undefined
+        : setInterval(() => {
+            const at = clientTimeMs()
+            // While the server holds the body back, client time stands still and nothing is sampled.
+            if (at > samples[samples.length - 1].at) {
+              samples.push({ at, bytes: bodyBytes })
+            }
+            // Keep the latest sample at or before the window start as its baseline.
+            while (samples.length > 1 && samples[1].at <= at - rateWindowMs) {
+              samples.shift()
+            }
+            const elapsedMs = at - samples[0].at
+            const receivedBytes = bodyBytes - samples[0].bytes
+            if (elapsedMs >= rateWindowMs && bytesPerSecond(receivedBytes, elapsedMs) < minReceiveBytesPerSecond) {
+              if (!aborted) {
+                options.metrics?.increment('dcl_multipart_upload_aborts_total', { reason: 'too_slow' })
+              }
+              abort(new RequestTimeoutError(uploadTooSlowMessage(receivedBytes, elapsedMs, minReceiveBytesPerSecond)))
+            }
+          }, rateWindowMs / 10)
       try {
         await pipeline(source, countBody, formDataParser)
       } catch (error) {
-        if (writeError) {
-          throw writeError
-        }
-        const failure = abortReason ?? error
+        // A disconnect may fail the body stream before the abort listener runs.
+        const failure = abortReason ?? (signal?.aborted ? clientClosed() : error)
         // Our own rejections keep their status. Any other failure means we couldn't parse the
-        // request body (a malformed, truncated, or empty multipart body, or a mid-upload disconnect) —
-        // that's a client error (400), not an internal 500.
+        // request body (a malformed, truncated, or empty multipart body) — that's a client error (400),
+        // not an internal 500.
         if (
           failure instanceof InvalidRequestError ||
           failure instanceof PayloadTooLargeError ||
           failure instanceof ServiceUnavailableError ||
-          failure instanceof RequestTimeoutError
+          failure instanceof RequestTimeoutError ||
+          failure instanceof ClientClosedRequestError
         ) {
           throw failure
         }
         throw new InvalidRequestError('Invalid multipart/form-data request')
       } finally {
         clearTimeout(timeout)
+        clearInterval(rateCheck)
+        signal?.removeEventListener('abort', onClientClosed)
       }
       // The body is received: a slow flush is the server's, so it gets its own bound and a retryable 503.
       const flushTimeout = setTimeout(() => {
@@ -444,9 +526,6 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
         await Promise.all(writes)
       } finally {
         clearTimeout(flushTimeout)
-      }
-      if (writeError) {
-        throw writeError
       }
       if (abortReason) {
         throw abortReason

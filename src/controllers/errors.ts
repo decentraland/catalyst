@@ -35,8 +35,11 @@ export class PayloadTooLargeError extends Error {
   }
 }
 
+// Sent as Retry-After on a 503: most clear once an in-flight upload or deployment ends, or a disk frees up.
+export const SERVICE_UNAVAILABLE_RETRY_AFTER_SECONDS = 30
+
 export class ServiceUnavailableError extends Error {
-  constructor(message: string) {
+  constructor(message: string, public readonly retryAfterSeconds: number = SERVICE_UNAVAILABLE_RETRY_AFTER_SECONDS) {
     super(message)
     this.name = 'ServiceUnavailableError'
     Error.captureStackTrace(this, this.constructor)
@@ -47,6 +50,15 @@ export class RequestTimeoutError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'RequestTimeoutError'
+    Error.captureStackTrace(this, this.constructor)
+  }
+}
+
+/** The client closed the connection before its request was received; answered with nginx's 499. */
+export class ClientClosedRequestError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'ClientClosedRequestError'
     Error.captureStackTrace(this, this.constructor)
   }
 }

@@ -4,6 +4,7 @@ import { AppComponents } from '../types'
 import { State } from '../logic/sync-orchestrator'
 import { Error } from '@dcl/catalyst-api-specs/lib/client'
 import {
+  ClientClosedRequestError,
   InvalidRequestError,
   NotFoundError,
   PayloadTooLargeError,
@@ -33,7 +34,10 @@ export function preventExecutionIfBoostrapping({
   }
 }
 
-function handleError(logger: ILoggerComponent.ILogger, error: any): { status: number; body: Error } {
+function handleError(
+  logger: ILoggerComponent.ILogger,
+  error: any
+): { status: number; body: Error; headers?: Record<string, string> } {
   // Handlers throw HTTP-shaped errors (defined in `./errors.ts`) when they
   // want to surface a specific status. Add a new branch when a new HTTP error
   // class is introduced. Anything else is treated as an unexpected failure
@@ -51,7 +55,10 @@ function handleError(logger: ILoggerComponent.ILogger, error: any): { status: nu
     return { status: 408, body: { error: error.message } }
   }
   if (error instanceof ServiceUnavailableError) {
-    return { status: 503, body: { error: error.message } }
+    return { status: 503, headers: { 'Retry-After': String(error.retryAfterSeconds) }, body: { error: error.message } }
+  }
+  if (error instanceof ClientClosedRequestError) {
+    return { status: 499, body: { error: error.message } }
   }
 
   logger.error(error)

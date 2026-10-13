@@ -61,7 +61,8 @@ describe('when parsing a multipart request with an upload timeout', () => {
     it('should abort with a RequestTimeoutError saying what arrived, skip the handler and release the upload slot', () => {
       expect({ error, handled: handler.mock.calls.length, released: lease.release.mock.calls.length }).toEqual({
         error: new RequestTimeoutError(
-          'The upload did not finish within 0.05 s: received 60 bytes. Retry on a faster connection or send smaller batches.'
+          'The upload did not finish within 0.05 s: received 60 bytes (1.17 KiB/s). ' +
+            'Retry on a faster connection or send smaller batches.'
         ),
         handled: 0,
         released: 1
@@ -94,7 +95,7 @@ describe('when parsing a multipart request with an upload timeout', () => {
     it('should say how much of the declared body arrived', () => {
       expect(error).toEqual(
         new RequestTimeoutError(
-          `The upload did not finish within 0.05 s: received 60 of ${form.getBuffer().length} bytes. ` +
+          `The upload did not finish within 0.05 s: received 60 of ${form.getBuffer().length} bytes (1.17 KiB/s). ` +
             'Retry on a faster connection or send smaller batches.'
         )
       )

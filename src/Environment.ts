@@ -67,6 +67,9 @@ export const DEFAULT_MIN_UPLOAD_RESERVATION_BYTES = 16 * 1024 * 1024 // 16 MiB
 export const DEFAULT_MAX_CONCURRENT_UPLOADS_PER_SOURCE = 4
 // A body still arriving after this is aborted with 408, so slow senders can't hold upload slots.
 export const DEFAULT_MULTIPART_UPLOAD_TIMEOUT_MS = 5 * 60 * 1000
+// A body arriving slower than this over a 10 s window is aborted with 408 long before the timeout above, so
+// a sender can't hold its upload slot and spooled bytes for minutes while trickling. 0 disables it.
+export const DEFAULT_MULTIPART_MIN_RECEIVE_BYTES_PER_SECOND = 64 * 1024
 // POST /entities bodies are spooled on node-local disk: spool ownership is only provable within one host.
 // Its contents are managed by the upload spool; only the marked process folders it creates are ever reclaimed.
 export const DEFAULT_UPLOAD_SPOOL_FOLDER = path.join(os.tmpdir(), 'catalyst-uploads')
@@ -414,6 +417,7 @@ export enum EnvironmentConfig {
   MAX_CONCURRENT_UPLOADS_PER_SOURCE,
   MAX_IN_FLIGHT_UPLOAD_BYTES_PER_SOURCE,
   MULTIPART_UPLOAD_TIMEOUT_MS,
+  MULTIPART_MIN_RECEIVE_BYTES_PER_SECOND,
   UPLOAD_SPOOL_FOLDER,
   MAX_ACTIVE_ENTITIES_BODY_SIZE,
 
@@ -835,6 +839,10 @@ export class EnvironmentBuilder {
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MULTIPART_UPLOAD_TIMEOUT_MS, () =>
       parsePositiveIntEnv('MULTIPART_UPLOAD_TIMEOUT_MS', DEFAULT_MULTIPART_UPLOAD_TIMEOUT_MS)
+    )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MULTIPART_MIN_RECEIVE_BYTES_PER_SECOND, () =>
+      parseNonNegativeIntEnv('MULTIPART_MIN_RECEIVE_BYTES_PER_SECOND', DEFAULT_MULTIPART_MIN_RECEIVE_BYTES_PER_SECOND)
     )
 
     this.registerConfigIfNotAlreadySet(

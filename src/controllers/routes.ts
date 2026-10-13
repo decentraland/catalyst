@@ -5,6 +5,7 @@ import { multipartParserWrapper } from './multipart'
 import { createContentGetRateLimitMiddleware } from './content-get-rate-limit'
 import { createDeploymentQuotaAdmission, withDeploymentQuota } from './deployment-quota'
 import { createSourceUploadAdmission } from './source-upload-admission'
+import { createDeploymentMemoryAdmission } from './deployment-memory-admission'
 import { stampRequestArrival, withRequestArrival } from './request-arrival'
 import { GlobalContext } from '../types'
 import { activeEntitiesBodySchema, getActiveEntitiesHandler } from './handlers/active-entities-handler'
@@ -51,13 +52,15 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
     // The daily quota counts regular deployments after parsing; a source that has spent it is turned
     // away before its body is read unless the request declares itself partial with `?partial=true`.
     // Partial uploads are many batches, bounded by their account's byte quotas instead. Every body,
-    // counted or not, holds a share of its source's in-flight uploads until the request ends.
+    // counted or not, holds a share of its source's in-flight uploads until the request ends. A regular
+    // deployment whose declared size can't fit the memory its files are read into is shed unread.
     router.post(
       '/entities',
       stampRequestArrival(),
       burstLimit,
       preventExecutionIfBoostrapping({ syncOrchestrator: components.syncOrchestrator }),
       createDeploymentQuotaAdmission(components),
+      createDeploymentMemoryAdmission(components),
       createSourceUploadAdmission(components),
       multipartParserWrapper(
         withDeploymentQuota(components, withRequestArrival(createEntity)),
@@ -67,7 +70,8 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
           maxFields: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FIELD_COUNT),
           maxFieldSize: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_FIELD_SIZE),
           maxTotalSize: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE),
-          uploadTimeoutMs: env.getConfig<number>(EnvironmentConfig.MULTIPART_UPLOAD_TIMEOUT_MS)
+          uploadTimeoutMs: env.getConfig<number>(EnvironmentConfig.MULTIPART_UPLOAD_TIMEOUT_MS),
+          minReceiveBytesPerSecond: env.getConfig<number>(EnvironmentConfig.MULTIPART_MIN_RECEIVE_BYTES_PER_SECOND)
         },
         {
           spool: components.uploadSpool,
