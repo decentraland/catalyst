@@ -3,8 +3,17 @@ import { IHttpServerComponent } from '@dcl/core-commons'
 import { AppComponents } from '../types'
 import { State } from '../logic/sync-orchestrator'
 import { Error } from '@dcl/catalyst-api-specs/lib/client'
-import { InvalidRequestError, NotFoundError, PayloadTooLargeError } from './errors'
+import {
+  InvalidRequestError,
+  NotFoundError,
+  PayloadTooLargeError,
+  RequestTimeoutError,
+  ServiceUnavailableError
+} from './errors'
 import { Middleware } from '@dcl/http-server/dist/middleware'
+
+// Bootstrapping takes minutes; a shorter hint would only multiply rejected uploads.
+const BOOTSTRAPPING_RETRY_AFTER_SECONDS = 60
 
 export function preventExecutionIfBoostrapping({
   syncOrchestrator
@@ -12,13 +21,14 @@ export function preventExecutionIfBoostrapping({
   return async (
     _ctx: IHttpServerComponent.DefaultContext<object>,
     next: () => Promise<IHttpServerComponent.IResponse>
-  ): Promise<{ status: number; body: Error } | IHttpServerComponent.IResponse> => {
+  ): Promise<{ status: number; headers?: Record<string, string>; body: Error } | IHttpServerComponent.IResponse> => {
     if (syncOrchestrator.getState() == State.BOOTSTRAPPING) {
       const errorBody: Error = {
         error: 'Deployments are not allowed while the Catalyst is bootstrapping'
       }
       return {
         status: 503,
+        headers: { 'Retry-After': String(BOOTSTRAPPING_RETRY_AFTER_SECONDS) },
         body: errorBody
       }
     }
@@ -27,7 +37,10 @@ export function preventExecutionIfBoostrapping({
   }
 }
 
-function handleError(logger: ILoggerComponent.ILogger, error: any): { status: number; body: Error } {
+function handleError(
+  logger: ILoggerComponent.ILogger,
+  error: any
+): { status: number; headers?: Record<string, string>; body: Error } {
   // Handlers throw HTTP-shaped errors (defined in `./errors.ts`) when they
   // want to surface a specific status. Add a new branch when a new HTTP error
   // class is introduced. Anything else is treated as an unexpected failure
@@ -40,6 +53,16 @@ function handleError(logger: ILoggerComponent.ILogger, error: any): { status: nu
   }
   if (error instanceof PayloadTooLargeError) {
     return { status: 413, body: { error: error.message } }
+  }
+  if (error instanceof RequestTimeoutError) {
+    return { status: 408, body: { error: error.message } }
+  }
+  if (error instanceof ServiceUnavailableError) {
+    return {
+      status: 503,
+      headers: { 'Retry-After': String(error.retryAfterSeconds) },
+      body: { error: error.message }
+    }
   }
 
   logger.error(error)

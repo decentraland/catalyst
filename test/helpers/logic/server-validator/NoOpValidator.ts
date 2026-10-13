@@ -1,4 +1,5 @@
 import { DeploymentToValidate, ValidationResponse } from '@dcl/content-validator'
+import { EntityType } from '@dcl/schemas'
 import * as deploymentServiceServerValidator from '../../../../src/logic/deployment-service/server-validator'
 import { State } from '../../../../src/logic/sync-orchestrator'
 import { AppComponents } from '../../../../src/types'
@@ -7,10 +8,27 @@ export class NoOpValidator {
   async validate(_d: DeploymentToValidate): Promise<ValidationResponse> {
     return { ok: true }
   }
+  async validateStagingScene(_d: DeploymentToValidate): Promise<ValidationResponse> {
+    return { ok: true }
+  }
+  async validateCurrentAccess(_d: DeploymentToValidate): Promise<ValidationResponse> {
+    return { ok: true }
+  }
+  getMaxSizeInBytesPerPointer(_type: EntityType): number {
+    return 15 * 1024 * 1024
+  }
 }
 
-export function makeNoopValidator(components: Pick<AppComponents, 'validator'>) {
+export function makeNoopValidator(
+  components: Pick<AppComponents, 'validator'> & Partial<Pick<AppComponents, 'crypto'>>
+) {
+  // POST /entities checks the signature before taking a content lock, ahead of the validator.
+  if (components.crypto) {
+    jest.spyOn(components.crypto, 'validateSignature').mockResolvedValue({ ok: true })
+  }
   jest.spyOn(components.validator, 'validate').mockResolvedValue({ ok: true })
+  jest.spyOn(components.validator, 'validateStagingScene').mockResolvedValue({ ok: true })
+  jest.spyOn(components.validator, 'validateCurrentAccess').mockResolvedValue({ ok: true })
 }
 
 export function makeNoopDeploymentValidator(components: Pick<AppComponents, 'syncOrchestrator'>) {

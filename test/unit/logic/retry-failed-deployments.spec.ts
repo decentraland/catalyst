@@ -471,22 +471,27 @@ describe('when retrying failed deployments', () => {
   })
 
   describe('and an entry keeps failing after many attempts', () => {
-    let scheduledBackoffMs: number
+    // The deadline is taken at some instant during the run, so bound it from both ends of the run.
+    let longestBackoffMs: number
+    let shortestBackoffMs: number
 
     beforeEach(async () => {
       failedDeployments = [makeDeployment({ retryCount: 8, nextRetryAt: 0 })]
       deployEntityFromRemoteServer.mockRejectedValue(new Error('deploy-failed'))
       const startedAt = Date.now()
       await retryFailedDeploymentExecution(components)
-      scheduledBackoffMs = reportFailure.mock.calls[0][0].nextRetryAt - startedAt
+      const finishedAt = Date.now()
+      const nextRetryAt = reportFailure.mock.calls[0][0].nextRetryAt
+      longestBackoffMs = nextRetryAt - finishedAt
+      shortestBackoffMs = nextRetryAt - startedAt
     })
 
     it('should cap the backoff at 24 hours', () => {
-      expect(scheduledBackoffMs).toBeLessThanOrEqual(MAX_RETRY_INTERVAL_MS)
+      expect(longestBackoffMs).toBeLessThanOrEqual(MAX_RETRY_INTERVAL_MS)
     })
 
     it('should not schedule the next retry meaningfully earlier than the cap', () => {
-      expect(scheduledBackoffMs).toBeGreaterThanOrEqual(MAX_RETRY_INTERVAL_MS - 1000)
+      expect(shortestBackoffMs).toBeGreaterThanOrEqual(MAX_RETRY_INTERVAL_MS - 1000)
     })
   })
 })

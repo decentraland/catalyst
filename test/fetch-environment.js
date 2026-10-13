@@ -14,7 +14,9 @@ const HOST_GLOBALS = [
   'File',
   'ReadableStream',
   'WritableStream',
-  'TransformStream'
+  'TransformStream',
+  // The HTTP server aborts a disconnected client's request with one.
+  'DOMException'
 ]
 
 class FetchTestEnvironment extends NodeEnvironment {

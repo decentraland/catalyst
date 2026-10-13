@@ -59,6 +59,11 @@ async function* streamContentHashesNotBeingUsedAnymore(
   lastGarbageCollectionTimestamp: number,
   options?: { batchSize?: number }
 ): AsyncIterable<string> {
+  // This only produces GC *candidates*; pending (partial) deployments are not excluded here. The
+  // per-batch findReferencedHashes re-check (which includes non-expired pending entity ids and content
+  // hashes) runs immediately before deletion and is authoritative, so over-producing candidates is
+  // safe. A correlated pending_deployments anti-join here would run per content_files row across the
+  // whole table for no protection the re-check doesn't already provide.
   const query = SQL`
     SELECT content_files.content_hash
     FROM content_files
@@ -78,22 +83,9 @@ async function* streamContentHashesNotBeingUsedAnymore(
   }
 }
 
-/**
- * Given candidate hashes about to be garbage-collected, returns the subset that must NOT be deleted
- * because they are still referenced. A hash is referenced if:
- *  - a still-active deployment (deleter_deployment IS NULL) points to it via content_files — checking
- *    this right before the delete narrows (but does not fully close, absent locking) the race where a
- *    deployment re-references a hash between the sweep query and the delete;
- *  - it is a snapshot file hash; or
- *  - it is an entity id (i.e. the hash of an entity JSON stored in the shared content-addressed space).
- * The three checks matter because storage is one namespace shared by content files, entity JSONs and
- * snapshot files, and byte-identical files collide on hash.
- */
-async function findReferencedHashes(database: DatabaseClient, hashes: string[]): Promise<Set<string>> {
-  if (hashes.length === 0) {
-    return new Set()
-  }
-  const query = SQL`
+// Hashes kept by published content: an active deployment's content files, a snapshot, or a deployment's entity file.
+function publishedReferencesQuery(hashes: string[]) {
+  return SQL`
     SELECT cf.content_hash AS hash
       FROM content_files cf
       INNER JOIN deployments d ON cf.deployment = d.id
@@ -101,9 +93,50 @@ async function findReferencedHashes(database: DatabaseClient, hashes: string[]):
     UNION
     SELECT hash FROM snapshots WHERE hash = ANY(${hashes})
     UNION
-    SELECT entity_id AS hash FROM deployments WHERE entity_id = ANY(${hashes})
-  `
+    SELECT entity_id AS hash FROM deployments WHERE entity_id = ANY(${hashes})`
+}
+
+/**
+ * Given candidate hashes about to be garbage-collected, returns the subset that must NOT be deleted
+ * because they are still referenced. A hash is referenced if:
+ *  - a still-active deployment (deleter_deployment IS NULL) points to it via content_files — checking
+ *    this right before the delete narrows (but does not fully close, absent locking) the race where a
+ *    deployment re-references a hash between the sweep query and the delete;
+ *  - it is a snapshot file hash;
+ *  - it is an entity id (i.e. the hash of an entity JSON stored in the shared content-addressed space); or
+ *  - a non-expired pending (partial) deployment lists it as its entity id or one of its content hashes.
+ * The checks matter because storage is one namespace shared by content files, entity JSONs and
+ * snapshot files, and byte-identical files collide on hash.
+ */
+async function findReferencedHashes(
+  database: DatabaseClient,
+  hashes: string[],
+  pendingDeploymentTtlMs: number
+): Promise<Set<string>> {
+  if (hashes.length === 0) {
+    return new Set()
+  }
+  const pendingCutoff = Date.now() - pendingDeploymentTtlMs
+  const query = publishedReferencesQuery(hashes).append(SQL`
+    UNION
+    SELECT entity_id AS hash FROM pending_deployments
+      WHERE created_at >= to_timestamp(${pendingCutoff} / 1000.0) AND entity_id = ANY(${hashes})
+    UNION
+    SELECT unnest(content_hashes) AS hash FROM pending_deployments
+      WHERE created_at >= to_timestamp(${pendingCutoff} / 1000.0) AND content_hashes && ${hashes}
+  `)
   const result = await database.queryWithValues<{ hash: string }>(query, 'gc_recheck_referenced_hashes')
+  return new Set(result.rows.map((row) => row.hash))
+}
+
+async function findPublishedHashes(database: DatabaseClient, hashes: string[]): Promise<Set<string>> {
+  if (hashes.length === 0) {
+    return new Set()
+  }
+  const result = await database.queryWithValues<{ hash: string }>(
+    publishedReferencesQuery(hashes),
+    'published_referenced_hashes'
+  )
   return new Set(result.rows.map((row) => row.hash))
 }
 
@@ -121,6 +154,7 @@ export function createContentFilesRepository(): IContentFilesRepository {
     saveContentFiles,
     streamContentHashesNotBeingUsedAnymore,
     findReferencedHashes,
+    findPublishedHashes,
     streamAllDistinctContentFileHashes
   }
 }

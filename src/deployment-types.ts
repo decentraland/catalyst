@@ -86,7 +86,17 @@ export type PartialDeploymentHistory<T extends DeploymentBase> = {
 
 export type LocalDeploymentAuditInfo = Pick<AuditInfo, 'authChain'>
 
-export type InvalidResult = { errors: string[] }
+export type InvalidResult = {
+  errors: string[]
+  // Lets callers branch on structure instead of string-matching the error message.
+  kind?: InvalidResultKind
+}
+
+/**
+ * Why a deployment was rejected, when callers branch on it: `pointer-conflict` and `rate-limited` clear
+ * with time, `newer-entity` never does, `internal-error` is a server failure, not a verdict on the entity.
+ */
+export type InvalidResultKind = 'pointer-conflict' | 'newer-entity' | 'rate-limited' | 'internal-error'
 export function InvalidResult(val: InvalidResult): InvalidResult {
   return val
 }

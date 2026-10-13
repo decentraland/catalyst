@@ -116,9 +116,7 @@ describe('when reading the POST /entities rate limit configuration', () => {
     })
 
     it('should fail at startup rather than install a limit that rejects every deployment', async () => {
-      await expect(new EnvironmentBuilder().build()).rejects.toThrow(
-        'Invalid POST_ENTITIES_RATE_LIMIT_MAX'
-      )
+      await expect(new EnvironmentBuilder().build()).rejects.toThrow('Invalid POST_ENTITIES_RATE_LIMIT_MAX')
     })
   })
 
@@ -128,9 +126,7 @@ describe('when reading the POST /entities rate limit configuration', () => {
     })
 
     it('should fail at startup rather than install a zero-length window', async () => {
-      await expect(new EnvironmentBuilder().build()).rejects.toThrow(
-        'Invalid POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS'
-      )
+      await expect(new EnvironmentBuilder().build()).rejects.toThrow('Invalid POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS')
     })
   })
 
@@ -140,9 +136,7 @@ describe('when reading the POST /entities rate limit configuration', () => {
     })
 
     it('should fail at startup rather than silently truncate the value', async () => {
-      await expect(new EnvironmentBuilder().build()).rejects.toThrow(
-        'Invalid POST_ENTITIES_RATE_LIMIT_MAX'
-      )
+      await expect(new EnvironmentBuilder().build()).rejects.toThrow('Invalid POST_ENTITIES_RATE_LIMIT_MAX')
     })
   })
 
@@ -154,8 +148,8 @@ describe('when reading the POST /entities rate limit configuration', () => {
       env = await new EnvironmentBuilder().build()
     })
 
-    it('should leave it undefined so the limiter keys on the socket address', () => {
-      expect(env.getConfig(EnvironmentConfig.TRUSTED_CLIENT_IP_HEADER)).toBeUndefined()
+    it('should default to the X-Real-IP header the Catalyst nginx writes', () => {
+      expect(env.getConfig(EnvironmentConfig.TRUSTED_CLIENT_IP_HEADER)).toBe('x-real-ip')
     })
   })
 
@@ -180,7 +174,7 @@ describe('when reading the POST /entities rate limit configuration', () => {
       env = await new EnvironmentBuilder().build()
     })
 
-    it('should treat it as unset rather than pass a blank name the limiter would reject', () => {
+    it('should opt out so the limiter keys on the socket address, rather than pass a blank name', () => {
       expect(env.getConfig(EnvironmentConfig.TRUSTED_CLIENT_IP_HEADER)).toBeUndefined()
     })
   })
@@ -283,10 +277,7 @@ describe('when a client posts entities through the rate limit middleware', () =>
       // One more request than POST /entities allows. Nothing is rejected, because this mount falls
       // back to the component's neutral default instead of inheriting the deployment endpoint's.
       for (let i = 0; i < max + 1; i++) {
-        const response = (await otherMiddleware(
-          buildContext('/other', '203.0.113.7'),
-          next
-        )) as RateLimitedResponse
+        const response = (await otherMiddleware(buildContext('/other', '203.0.113.7'), next)) as RateLimitedResponse
         statuses.push(response.status)
       }
     })
@@ -335,10 +326,7 @@ describe('when the catalyst sits behind a proxy that sets a trusted client IP he
 
   // Every request arrives from the proxy, so the socket address is useless for keying.
   const postFromProxy = async (clientIp: string): Promise<RateLimitedResponse> =>
-    (await middleware(
-      buildContext('/entities', '172.18.0.2', { 'x-real-ip': clientIp }),
-      next
-    )) as RateLimitedResponse
+    (await middleware(buildContext('/entities', '172.18.0.2', { 'x-real-ip': clientIp }), next)) as RateLimitedResponse
 
   beforeEach(() => {
     next = jest.fn().mockResolvedValue({ status: 200 })

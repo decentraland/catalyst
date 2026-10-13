@@ -34,3 +34,22 @@ export class PayloadTooLargeError extends Error {
     Error.captureStackTrace(this, this.constructor)
   }
 }
+
+/** Seconds a client should wait before retrying a transient 503 (a busy lock or a full upload budget). */
+export const SERVICE_UNAVAILABLE_RETRY_AFTER_SECONDS = 10
+
+export class ServiceUnavailableError extends Error {
+  constructor(message: string, public readonly retryAfterSeconds: number = SERVICE_UNAVAILABLE_RETRY_AFTER_SECONDS) {
+    super(message)
+    this.name = 'ServiceUnavailableError'
+    Error.captureStackTrace(this, this.constructor)
+  }
+}
+
+export class RequestTimeoutError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'RequestTimeoutError'
+    Error.captureStackTrace(this, this.constructor)
+  }
+}

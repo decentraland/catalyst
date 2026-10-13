@@ -19,8 +19,15 @@ export interface IContentFilesRepository {
   ): AsyncIterable<string>
   /**
    * From a set of candidate hashes, return those still referenced (by an active deployment, a
-   * snapshot, or an entity id) and therefore unsafe to delete from storage.
+   * snapshot, an entity id, or a non-expired pending partial deployment) and therefore unsafe to
+   * delete from storage.
    */
-  findReferencedHashes(db: DatabaseClient, hashes: string[]): Promise<Set<string>>
+  findReferencedHashes(db: DatabaseClient, hashes: string[], pendingDeploymentTtlMs: number): Promise<Set<string>>
+  /**
+   * From a set of hashes, return those kept by published content (an active deployment's content
+   * files, a deployment's entity file, or a snapshot). References held only by pending partial
+   * deployments don't count.
+   */
+  findPublishedHashes(db: DatabaseClient, hashes: string[]): Promise<Set<string>>
   streamAllDistinctContentFileHashes(db: DatabaseClient): AsyncIterable<string>
 }

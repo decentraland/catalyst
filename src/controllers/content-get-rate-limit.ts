@@ -1,6 +1,7 @@
 import { IHttpServerComponent } from '@dcl/core-commons'
 import { IRateLimiterComponent } from '@dcl/rate-limiter-component'
-import { resolveClientIp, withSyncPeerExemption } from './sync-peer-exemption'
+import { resolveClientIp } from './client-source'
+import { withSyncPeerExemption } from './sync-peer-exemption'
 
 export type ContentGetRateLimitConfig = {
   /** Per-client burst limit: requests allowed per `burstWindowSeconds`. */

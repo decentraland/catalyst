@@ -1,7 +1,7 @@
 import FormData from 'form-data'
 import { Readable } from 'stream'
 import { IHttpServerComponent } from '@dcl/core-commons'
-import { multipartParserWrapper } from '../../../src/controllers/multipart'
+import { maxMultipartBodySize, multipartParserWrapper } from '../../../src/controllers/multipart'
 import { InvalidRequestError, PayloadTooLargeError } from '../../../src/controllers/errors'
 
 function buildContext(form: FormData): IHttpServerComponent.DefaultContext<any> {
@@ -73,6 +73,57 @@ describe('when parsing a multipart request with upload limits', () => {
     })
   })
 
+  describe('and a file is exactly the maximum allowed file size', () => {
+    let error: unknown
+
+    beforeEach(async () => {
+      const form = new FormData()
+      form.append('file1', Buffer.alloc(1024, 1), { filename: 'file1' })
+      error = await multipartParserWrapper(handler as any, { maxFileSize: 1024, maxFiles: 10 })(
+        buildContext(form)
+      ).then(
+        () => undefined,
+        (e) => e
+      )
+    })
+
+    it('should not reject', () => {
+      expect(error).toBeUndefined()
+    })
+
+    it('should invoke the handler with the whole file', () => {
+      expect(handler).toHaveBeenCalledWith(
+        expect.objectContaining({
+          formData: expect.objectContaining({
+            files: { file1: expect.objectContaining({ value: Buffer.alloc(1024, 1) }) }
+          })
+        })
+      )
+    })
+  })
+
+  describe('and a file is one byte over the maximum allowed file size', () => {
+    let error: unknown
+
+    beforeEach(async () => {
+      const form = new FormData()
+      form.append('file1', Buffer.alloc(1025, 1), { filename: 'file1.bin' })
+      error = await multipartParserWrapper(handler as any, { maxFileSize: 1024, maxFiles: 10 })(
+        buildContext(form)
+      ).catch((e) => e)
+    })
+
+    it('should reject with a PayloadTooLargeError naming the file and its size limit', () => {
+      expect(error).toEqual(
+        new PayloadTooLargeError("File 'file1.bin' is too large. The maximum allowed size per file is 1024 bytes.")
+      )
+    })
+
+    it('should not invoke the handler', () => {
+      expect(handler).not.toHaveBeenCalled()
+    })
+  })
+
   describe('and the request contains more files than the maximum allowed', () => {
     let form: FormData
     let wrapped: (ctx: IHttpServerComponent.DefaultContext<any>) => Promise<IHttpServerComponent.IResponse>
@@ -129,6 +180,64 @@ describe('when parsing a multipart request with upload limits', () => {
     })
   })
 
+  describe('and the request carries the maximum number of fields, each of the maximum size', () => {
+    beforeEach(async () => {
+      const form = new FormData()
+      form.append('a', 'x'.repeat(1024))
+      form.append('b', 'x'.repeat(1024))
+      await multipartParserWrapper(handler as any, { maxFields: 2, maxFieldSize: 1024 })(buildContext(form))
+    })
+
+    it('should invoke the handler with every field whole', () => {
+      expect(handler).toHaveBeenCalledWith(
+        expect.objectContaining({
+          formData: expect.objectContaining({
+            fields: {
+              a: expect.objectContaining({ value: 'x'.repeat(1024) }),
+              b: expect.objectContaining({ value: 'x'.repeat(1024) })
+            }
+          })
+        })
+      )
+    })
+  })
+
+  describe('and the request carries one field more than allowed', () => {
+    let error: unknown
+
+    beforeEach(async () => {
+      const form = new FormData()
+      form.append('a', 'x')
+      form.append('b', 'x')
+      form.append('c', 'x')
+      error = await multipartParserWrapper(handler as any, { maxFields: 2, maxFieldSize: 1024 })(
+        buildContext(form)
+      ).catch((e) => e)
+    })
+
+    it('should reject with a PayloadTooLargeError naming the field limit', () => {
+      expect(error).toEqual(new PayloadTooLargeError('Too many form fields in the request. The maximum allowed is 2.'))
+    })
+  })
+
+  describe('and a form field value is one byte over the maximum allowed size', () => {
+    let error: unknown
+
+    beforeEach(async () => {
+      const form = new FormData()
+      form.append('entityId', 'x'.repeat(1025))
+      error = await multipartParserWrapper(handler as any, { maxFields: 2, maxFieldSize: 1024 })(
+        buildContext(form)
+      ).catch((e) => e)
+    })
+
+    it('should reject with a PayloadTooLargeError naming the field and its size limit', () => {
+      expect(error).toEqual(
+        new PayloadTooLargeError("Field 'entityId' is too large. The maximum allowed size per field is 1024 bytes.")
+      )
+    })
+  })
+
   describe('and the cumulative size of the files exceeds the total allowed', () => {
     let form: FormData
     let wrapped: (ctx: IHttpServerComponent.DefaultContext<any>) => Promise<IHttpServerComponent.IResponse>
@@ -152,15 +261,16 @@ describe('when parsing a multipart request with upload limits', () => {
     })
   })
 
-  describe('and the declared Content-Length already exceeds the total allowed', () => {
+  describe('and the declared Content-Length exceeds the total allowed plus the framing of every part', () => {
     let wrapped: (ctx: IHttpServerComponent.DefaultContext<any>) => Promise<IHttpServerComponent.IResponse>
     let context: IHttpServerComponent.DefaultContext<any>
 
     beforeEach(() => {
       const form = new FormData()
       form.append('entityId', 'an-entity-id')
-      const headers = { ...form.getHeaders(), 'content-length': '5000' }
-      wrapped = multipartParserWrapper(handler as any, { maxFileSize: 4096, maxFiles: 10, maxTotalSize: 1500 })
+      const limits = { maxFileSize: 4096, maxFiles: 10, maxFields: 10, maxTotalSize: 1500 }
+      const headers = { ...form.getHeaders(), 'content-length': String(maxMultipartBodySize(limits)! + 1) }
+      wrapped = multipartParserWrapper(handler as any, limits)
       context = {
         request: {
           headers: { get: (name: string) => (headers as Record<string, string>)[name.toLowerCase()] },
@@ -177,6 +287,62 @@ describe('when parsing a multipart request with upload limits', () => {
       await expect(wrapped(context)).rejects.toThrow()
 
       expect(handler).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('and the payload is exactly the total allowed', () => {
+    let response: unknown
+
+    beforeEach(async () => {
+      const form = new FormData()
+      form.append('entityId', 'x'.repeat(40))
+      form.append('file', Buffer.alloc(60, 1), { filename: 'file' })
+      const body = form.getBuffer()
+      const headers = { ...form.getHeaders(), 'content-length': String(body.length) }
+      response = await multipartParserWrapper(handler as any, {
+        maxFileSize: 4096,
+        maxFiles: 1,
+        maxFields: 1,
+        maxTotalSize: 100
+      })({
+        request: {
+          headers: { get: (name: string) => (headers as Record<string, string>)[name.toLowerCase()] },
+          body: Readable.toWeb(Readable.from(body))
+        }
+      } as any)
+    })
+
+    it('should accept it although its Content-Length, framing included, is larger', () => {
+      expect(response).toEqual({ status: 200, body: {} })
+    })
+  })
+
+  describe('and a body without a declared size carries more bytes than its payload and framing allow', () => {
+    let error: unknown
+
+    beforeEach(async () => {
+      const form = new FormData()
+      form.append('entityId', 'an-entity-id')
+      const limits = { maxFileSize: 4096, maxFiles: 1, maxFields: 1, maxTotalSize: 100 }
+      // busboy skips a preamble without reporting it.
+      const preamble = Buffer.alloc(maxMultipartBodySize(limits)!, 'x')
+      const headers = form.getHeaders()
+      error = await multipartParserWrapper(
+        handler as any,
+        limits
+      )({
+        request: {
+          headers: { get: (name: string) => (headers as Record<string, string>)[name.toLowerCase()] },
+          body: Readable.toWeb(Readable.from(Buffer.concat([preamble, Buffer.from('\r\n'), form.getBuffer()])))
+        }
+      } as any).catch((e) => e)
+    })
+
+    it('should reject it with a PayloadTooLargeError without invoking the handler', () => {
+      expect({ rejected: error instanceof PayloadTooLargeError, handled: handler.mock.calls.length }).toEqual({
+        rejected: true,
+        handled: 0
+      })
     })
   })
 
@@ -308,27 +474,96 @@ describe('when parsing a multipart request with upload limits', () => {
     })
   })
 
-  describe('and two files share the same field name', () => {
-    let form: FormData
-    let wrapped: (ctx: IHttpServerComponent.DefaultContext<any>) => Promise<IHttpServerComponent.IResponse>
-    let capturedFiles: Record<string, { value: Buffer }> | undefined
+  describe('and the request declares its content length and carries several files', () => {
+    let files: Record<string, { value: Buffer }>
 
-    beforeEach(() => {
-      capturedFiles = undefined
-      handler.mockImplementation(async (ctx: any) => {
-        capturedFiles = ctx.formData.files
+    beforeEach(async () => {
+      const form = new FormData()
+      form.append('entityId', 'an-entity-id')
+      form.append('a', Buffer.alloc(3000, 1), { filename: 'a' })
+      form.append('empty', Buffer.alloc(0), { filename: 'empty' })
+      form.append('b', Buffer.from('second file'), { filename: 'b' })
+      handler.mockImplementationOnce(async (ctx: any) => {
+        files = ctx.formData.files
         return { status: 200, body: {} }
       })
-      form = new FormData()
-      form.append('dup', Buffer.from('first'), { filename: 'a.bin' })
-      form.append('dup', Buffer.from('second'), { filename: 'b.bin' })
-      wrapped = multipartParserWrapper(handler as any, { maxFileSize: 1024, maxFiles: 10 })
+      const wrapped = multipartParserWrapper(handler as any, { maxFileSize: 4096, maxFiles: 10 })
+      const headers: Record<string, string> = {
+        ...form.getHeaders(),
+        'content-length': String(form.getBuffer().length)
+      }
+      await wrapped({
+        request: {
+          headers: { get: (name: string) => headers[name.toLowerCase()] },
+          body: Readable.toWeb(Readable.from(form.getBuffer()))
+        }
+      } as any)
     })
 
-    it('should keep the last file uploaded under that name', async () => {
-      await wrapped(buildContext(form))
+    it('should hand the handler each file with its own bytes', () => {
+      expect({ a: files.a.value, empty: files.empty.value, b: files.b.value.toString() }).toEqual({
+        a: Buffer.alloc(3000, 1),
+        empty: Buffer.alloc(0),
+        b: 'second file'
+      })
+    })
+  })
 
-      expect(capturedFiles!['dup'].value.toString()).toBe('second')
+  describe('and two files share the same field name', () => {
+    let error: unknown
+
+    beforeEach(async () => {
+      const form = new FormData()
+      form.append('dup', Buffer.alloc(10, 1), { filename: 'dup' })
+      // Over maxTotalSize on its own, so buffering it would fail with a 413 instead.
+      form.append('dup', Buffer.alloc(2000, 2), { filename: 'dup' })
+      const wrapped = multipartParserWrapper(handler as any, { maxFileSize: 4096, maxFiles: 10, maxTotalSize: 1000 })
+      error = await wrapped(buildContext(form)).catch((e) => e)
+    })
+
+    it('should reject the repeated part before buffering it, without invoking the handler', () => {
+      expect({ error, handled: handler.mock.calls.length }).toEqual({
+        error: new InvalidRequestError("Duplicate form field 'dup'"),
+        handled: 0
+      })
+    })
+  })
+
+  describe('and two form fields share the same name', () => {
+    let error: unknown
+
+    beforeEach(async () => {
+      const form = new FormData()
+      form.append('partial', 'true')
+      form.append('partial', 'false')
+      const wrapped = multipartParserWrapper(handler as any, { maxFileSize: 1024, maxFiles: 10 })
+      error = await wrapped(buildContext(form)).catch((e) => e)
+    })
+
+    it('should reject with an InvalidRequestError without invoking the handler', () => {
+      expect({ error, handled: handler.mock.calls.length }).toEqual({
+        error: new InvalidRequestError("Duplicate form field 'partial'"),
+        handled: 0
+      })
+    })
+  })
+
+  describe('and a file reuses the name of a form field', () => {
+    let error: unknown
+
+    beforeEach(async () => {
+      const form = new FormData()
+      form.append('entityId', 'an-entity-id')
+      form.append('entityId', Buffer.alloc(10, 1), { filename: 'entityId' })
+      const wrapped = multipartParserWrapper(handler as any, { maxFileSize: 1024, maxFiles: 10 })
+      error = await wrapped(buildContext(form)).catch((e) => e)
+    })
+
+    it('should reject with an InvalidRequestError without invoking the handler', () => {
+      expect({ error, handled: handler.mock.calls.length }).toEqual({
+        error: new InvalidRequestError("Duplicate form field 'entityId'"),
+        handled: 0
+      })
     })
   })
 })
