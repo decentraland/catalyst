@@ -19,11 +19,11 @@ services:
     # no need to publish the superuser port on every host interface (where anyone on the same network
     # could connect with these well-known local-test credentials).
     ports:
-      - '127.0.0.1:5432:5432'
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres -d content']
+      test: ["CMD-SHELL", "pg_isready -U postgres -d content"]
       interval: 2s
       timeout: 2s
       retries: 10
@@ -31,7 +31,7 @@ services:
   content:
     build: .
     ports:
-      - '6969:6969'
+      - "6969:6969"
     environment:
       # Server root URL so identity challenge hits /challenge (app serves at root, not under /content)
       CONTENT_SERVER_ADDRESS: http://content:6969
@@ -44,7 +44,7 @@ services:
       # Single-server "DAO" so getContentServersFromDao doesn't fail (we filter ourselves out)
       CUSTOM_DAO: http://content:6969
       # Optional: avoid syncing with external catalysts
-      DISABLE_SYNCHRONIZATION: 'true'
+      DISABLE_SYNCHRONIZATION: "true"
       # Optional: reduce log noise
       LOG_LEVEL: INFO
       # Storage inside the container (ephemeral unless you mount a volume)
