@@ -43,6 +43,9 @@ type PreparedBatch = {
   requestedAt: number
 }
 
+// Filled when a batch releases its upload, so the staged keys are reclaimed once the content lock is free.
+type ReleasedUpload = { stagedKeys?: string[] }
+
 // Bounded retry for two requests completing the same upload at once: the loser of the in-memory
 // pointer lock retries and hits deployEntity's idempotency fast path.
 const FINALIZE_POINTER_CONFLICT_RETRIES = 3
@@ -298,13 +301,31 @@ export function createPartialDeployments(
     await pendingDeploymentsRepository.markMissing(database, entityId, hashes)
   }
 
+  // Drops an upload that can never be published, with its accounting, so it stops holding quota until expiry.
+  async function releaseUpload(entityId: string, released: ReleasedUpload): Promise<void> {
+    try {
+      const stagedKeys = await pendingDeploymentsRepository.getStagedKeys(database, entityId)
+      // One statement: the row and its receipts (by cascade) go together.
+      await pendingDeploymentsRepository.deleteByEntityId(database, entityId)
+      released.stagedKeys = stagedKeys
+      logger.info('Released a partial upload that can never be published', { entityId })
+    } catch (error) {
+      // The rejection stands; expired-upload cleanup reclaims the upload instead.
+      logger.warn('Failed to release a partial upload that can never be published', {
+        entityId,
+        error: error instanceof Error ? error.message : String(error)
+      })
+    }
+  }
+
   async function finalize(
     entity: Entity,
     entityFile: Uint8Array,
     authChain: StageDeploymentInput['authChain'],
     contentHashes: string[],
     admittedAt: number,
-    batches: number
+    batches: number,
+    released: ReleasedUpload
   ): Promise<StageDeploymentResult> {
     const expiresAt = admittedAt + pendingDeploymentTtlMs
     assertLiveUntil(expiresAt)
@@ -374,6 +395,8 @@ export function createPartialDeployments(
           'pointer_conflict'
         )
       }
+      // Newer entity, lost access, too big, invalid or expired: retrying can't help.
+      await releaseUpload(entityId, released)
       throw new InvalidPartialDeploymentError(result.errors)
     }
   }
@@ -566,13 +589,40 @@ export function createPartialDeployments(
         lockWait.end()
       }
     }
+    const released: ReleasedUpload = {}
     try {
       return await contentLocks.withRead(() => {
         endLockWait()
-        return commitBatch(prepared)
+        return commitBatch(prepared, released)
       }, input.entityId)
     } finally {
       endLockWait()
+      reclaimReleased(input.entityId, released)
+    }
+  }
+
+  // Releases an upload found doomed before taking the locks, under its entity's lock like any batch.
+  async function releaseUnlocked(entityId: string): Promise<void> {
+    const released: ReleasedUpload = {}
+    try {
+      await contentLocks.withRead(() => releaseUpload(entityId, released), entityId)
+    } catch (error) {
+      // Busy: expired-upload cleanup reclaims it instead.
+      if (!(error instanceof EntityLockTimeoutError)) throw error
+    }
+    reclaimReleased(entityId, released)
+  }
+
+  // Not awaited: the exclusive lock may wait for in-flight deployments, and the answer doesn't depend on it.
+  function reclaimReleased(entityId: string, { stagedKeys }: ReleasedUpload): void {
+    if (stagedKeys) {
+      void deleteOrphanedStagedKeys(entityId, stagedKeys).catch((error) => {
+        // Left to the unreferenced-files sweep.
+        logger.warn('Failed to delete the staged content of a released partial upload', {
+          entityId,
+          error: error instanceof Error ? error.message : String(error)
+        })
+      })
     }
   }
 
@@ -663,6 +713,7 @@ export function createPartialDeployments(
     if (deployer.isRateLimited(entity.type, entity.pointers)) {
       // The deployment holding the limit may be a newer entity that overtook this upload, which never clears.
       if (pending && (await deploymentsRepository.hasNewerDeploymentOnPointers(database, entity))) {
+        await releaseUnlocked(entityId)
         throw newerEntity()
       }
       throw new InvalidPartialDeploymentError(
@@ -702,17 +753,20 @@ export function createPartialDeployments(
   }
 
   // Runs under the shared content lock and the entity's lock, so batches of one upload are serialized.
-  async function commitBatch({
-    entity,
-    entityFile,
-    authChain,
-    uploadedFiles,
-    deployerAddress,
-    contentHashes,
-    maxSceneBytes,
-    seen,
-    requestedAt
-  }: PreparedBatch): Promise<StageDeploymentResult> {
+  async function commitBatch(
+    {
+      entity,
+      entityFile,
+      authChain,
+      uploadedFiles,
+      deployerAddress,
+      contentHashes,
+      maxSceneBytes,
+      seen,
+      requestedAt
+    }: PreparedBatch,
+    released: ReleasedUpload
+  ): Promise<StageDeploymentResult> {
     const entityId = entity.id
     // Another batch may have published the entity since this one was prepared.
     const alreadyDeployed = await deploymentsRepository.getEntityById(database, entityId)
@@ -819,7 +873,7 @@ export function createPartialDeployments(
     }
 
     return await timed('finalize_deploy', () =>
-      finalize(entity, entityFile, authChain, contentHashes, createdAt, batches)
+      finalize(entity, entityFile, authChain, contentHashes, createdAt, batches, released)
     )
   }
 
@@ -840,10 +894,8 @@ export function createPartialDeployments(
     }
   }
 
-  // Deletes an expired upload's unreferenced staged content, then releases its accounting.
-  async function reclaimUpload(entityId: string): Promise<void> {
-    // Accounting is released only after every physical delete batch succeeds.
-    const keys = await pendingDeploymentsRepository.getStagedKeys(database, entityId)
+  // Deletes the keys no published content or live upload references, under the exclusive content lock.
+  async function deleteOrphanedStagedKeys(entityId: string, keys: string[]): Promise<void> {
     for (let offset = 0; offset < keys.length; offset += CLEANUP_DELETE_BATCH_SIZE) {
       const batch = keys.slice(offset, offset + CLEANUP_DELETE_BATCH_SIZE)
       await contentLocks.withWrite(async () => {
@@ -858,6 +910,12 @@ export function createPartialDeployments(
         }
       })
     }
+  }
+
+  // Deletes an expired upload's unreferenced staged content, then releases its accounting.
+  async function reclaimUpload(entityId: string): Promise<void> {
+    // Accounting is released only after every physical delete batch succeeds.
+    await deleteOrphanedStagedKeys(entityId, await pendingDeploymentsRepository.getStagedKeys(database, entityId))
     await pendingDeploymentsRepository.deleteExpiredByEntityId(database, entityId, pendingDeploymentTtlMs)
   }
 
