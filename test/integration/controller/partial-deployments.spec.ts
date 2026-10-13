@@ -808,39 +808,37 @@ describe('Integration - Partial deployments', () => {
         expect(await countDeployments(server, deployment.entityId)).toBe(0)
       })
 
-      it('should release the upload and its accounting', async () => {
-        expect(await countUploadRows(server, deployment.entityId)).toEqual({ uploads: 0, receipts: 0 })
-      })
-
-      describe('and the released content is reclaimed', () => {
-        let remaining: string[]
+      describe('and the upload is inspected', () => {
+        let rows: { uploads: number; receipts: number }
+        let stored: boolean[]
 
         beforeEach(async () => {
-          remaining = await waitUntilDeleted(server, [deployment.entityId, ...deployment.contentHashes])
+          rows = await countUploadRows(server, deployment.entityId)
+          const present = await server.components.storage.existMultiple([
+            deployment.entityId,
+            ...deployment.contentHashes
+          ])
+          stored = Array.from(present.values())
         })
 
-        it('should delete the staged files no one else references', () => {
-          expect(remaining).toEqual([])
+        it('should keep the pending upload and its staged files', () => {
+          expect({ uploads: rows.uploads, stored }).toEqual({ uploads: 1, stored: [true, true, true] })
         })
       })
 
-      describe('and a later batch omits the entity file', () => {
+      describe('and access is later restored (e.g. the buyer grants operator rights back)', () => {
         let resumeResponse: Response
 
         beforeEach(async () => {
           ;(server.components.validator.validateCurrentAccess as jest.Mock).mockResolvedValue({ ok: true })
+
+          // All content is already staged; an empty resume request completes the upload.
           resumeResponse = await postForm(server, buildPartialForm(deployment, []))
         })
 
-        it('should ask for the entity file, as for an unknown upload', async () => {
-          expect({ status: resumeResponse.status, body: await resumeResponse.json() }).toEqual({
-            status: 400,
-            body: {
-              errors: [
-                `The first partial request for an entity, and any request by another signer, must include the entity file '${deployment.entityId}'.`
-              ]
-            }
-          })
+        it('should finalize the upload and deploy the entity', async () => {
+          expect(resumeResponse.status).toBe(200)
+          expect(await countDeployments(server, deployment.entityId)).toBe(1)
         })
       })
     })
@@ -1025,6 +1023,18 @@ describe('Integration - Partial deployments', () => {
 
       it('should release the older upload and its accounting', async () => {
         expect(await countUploadRows(server, older.entityId)).toEqual({ uploads: 0, receipts: 0 })
+      })
+
+      describe('and the released content is reclaimed', () => {
+        let remaining: string[]
+
+        beforeEach(async () => {
+          remaining = await waitUntilDeleted(server, [older.entityId, ...older.contentHashes])
+        })
+
+        it('should delete the staged files no one else references', () => {
+          expect(remaining).toEqual([])
+        })
       })
 
       it('should reject it with the same 400 as the pre-check', async () => {

@@ -396,8 +396,10 @@ export function createPartialDeployments(
           'pointer_conflict'
         )
       }
-      // Newer entity, lost access, too big, invalid or expired: retrying can't help.
-      await releaseUpload(entityId, released)
+      // Only an overtaken upload is released: other rejections (e.g. a subgraph error read as lost access) may clear.
+      if (result.kind === 'newer-entity') {
+        await releaseUpload(entityId, released)
+      }
       throw new InvalidPartialDeploymentError(result.errors)
     }
   }
