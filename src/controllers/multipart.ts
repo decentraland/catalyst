@@ -91,7 +91,7 @@ export const DEFAULT_SPOOL_FLUSH_TIMEOUT_MS = 60_000
 // Retry-After for a full upload budget or an unwritable spool: they clear once in-flight uploads end or the disk frees up.
 export const UPLOAD_UNAVAILABLE_RETRY_AFTER_SECONDS = 30
 
-const SPOOL_UNAVAILABLE_MESSAGE = 'The server cannot store uploads right now, please retry shortly.'
+export const SPOOL_UNAVAILABLE_MESSAGE = 'The server cannot store uploads right now, please retry shortly.'
 
 /** Formats milliseconds as seconds for a client-facing message, e.g. 300000 → "300", 50 → "0.05". */
 export function formatSeconds(ms: number): string {

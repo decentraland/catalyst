@@ -17,7 +17,7 @@ import { DeploymentFileSource, ReadDeployment } from '../../logic/deployment-ser
 import { FormHandlerContextWithPath, SpooledFile } from '../../types'
 import { InvalidRequestError, ServiceUnavailableError } from '../errors'
 import { RequestArrivalContext } from '../request-arrival'
-import { UPLOAD_UNAVAILABLE_RETRY_AFTER_SECONDS } from '../multipart'
+import { SPOOL_UNAVAILABLE_MESSAGE, UPLOAD_UNAVAILABLE_RETRY_AFTER_SECONDS } from '../multipart'
 import { PartialQuotaContext } from '../deployment-quota'
 
 /** Body of a 202 response to a partial deployment request: the content hashes not yet on the server. */
@@ -27,6 +27,20 @@ type PostEntity202 = { missing: string[] }
 // crafted `authChain[<huge>][...]` field name can't drive a large iteration count on the public,
 // unauthenticated POST /entities endpoint (issue #1936).
 const MAX_AUTH_CHAIN_LENGTH = 10
+
+// Spool read failures that may clear on retry; anything else (ENOENT included) is a bug and stays a 500.
+const TRANSIENT_SPOOL_READ_ERROR_CODES = new Set([
+  'EIO',
+  'EMFILE',
+  'ENFILE',
+  'ENOSPC',
+  'EAGAIN',
+  'EBUSY',
+  'EDQUOT',
+  'ENOMEM',
+  'ETIMEDOUT',
+  'ESTALE'
+])
 
 type Response =
   | { status: 200; body: PostEntity200 }
@@ -163,7 +177,7 @@ export async function createEntity(
     const readsEntity = !!uploadedEntity && uploadedEntity.size <= MAX_ENTITY_FILE_SIZE_BYTES
     const memoryLease = readsEntity ? acquireMemory(uploadedEntity.size) : undefined
     try {
-      const entityBytes = readsEntity ? await readFile(uploadedEntity.path) : undefined
+      const entityBytes = readsEntity ? await readPartialEntityFile(uploadedEntity.path) : undefined
       // Handed to staging only once it hashes to the entity id; a batch whose file doesn't fails staging's hash check.
       let entityFile: Uint8Array | undefined
       const read = entityBytes
@@ -287,9 +301,33 @@ export async function createEntity(
       return deployFiles
     } catch (error) {
       metrics.increment('dcl_deployments_endpoint_counter', { kind: 'error' })
-      logger.error(`POST /entities - Failed to read the uploaded files '${error}'`, { entityId, ethAddress, userAgent })
-      throw error
+      throw spoolReadFailure(error)
     }
+  }
+
+  async function readPartialEntityFile(filePath: string): Promise<Buffer> {
+    try {
+      return await readFile(filePath)
+    } catch (error) {
+      metrics.increment('dcl_partial_deployments_staging_total', { kind: 'error' })
+      throw spoolReadFailure(error)
+    }
+  }
+
+  // Logs a spool read failure and maps a transient one to the retryable 503 a spool write failure gets.
+  function spoolReadFailure(error: unknown): unknown {
+    const code = (error as NodeJS.ErrnoException)?.code
+    logger.error(`POST /entities - Failed to read the uploaded files '${error}'`, {
+      entityId,
+      ethAddress,
+      userAgent,
+      code: code ?? 'unknown'
+    })
+    if (!code || !TRANSIENT_SPOOL_READ_ERROR_CODES.has(code)) {
+      return error
+    }
+    metrics.increment('dcl_upload_spool_failures_total', { reason: 'read_error' })
+    return new ServiceUnavailableError(SPOOL_UNAVAILABLE_MESSAGE, UPLOAD_UNAVAILABLE_RETRY_AFTER_SECONDS)
   }
 
   async function deployRegular(deployFiles: Map<string, Uint8Array>, authChain: AuthChain): Promise<Response> {
