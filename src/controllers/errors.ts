@@ -35,7 +35,7 @@ export class PayloadTooLargeError extends Error {
   }
 }
 
-/** Seconds a client should wait before retrying a transient 503 (a busy lock or a full upload budget). */
+/** Seconds a client should wait before retrying a transient 503, e.g. a busy lock; upload pressure uses its own. */
 export const SERVICE_UNAVAILABLE_RETRY_AFTER_SECONDS = 10
 
 export class ServiceUnavailableError extends Error {

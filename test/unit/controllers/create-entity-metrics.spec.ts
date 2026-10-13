@@ -6,6 +6,7 @@ import {
   PartialDeploymentUnavailableError
 } from '../../../src/logic/partial-deployments'
 import { UploadBudgetExceededError } from '../../../src/adapters/upload-budget'
+import { ServiceUnavailableError } from '../../../src/controllers/errors'
 
 type Context = Parameters<typeof createEntity>[0]
 
@@ -145,9 +146,14 @@ describe('when a partial batch is rejected', () => {
       error = await createEntity(buildContext(stageDeployment, increment)).catch((e) => e)
     })
 
-    it('should fail with a 503 error and count the batch as busy', () => {
-      expect({ error: (error as Error).name, metrics: increment.mock.calls }).toEqual({
+    it('should fail with a 503 error retried after 10 seconds and count the batch as busy', () => {
+      expect({
+        error: (error as ServiceUnavailableError).name,
+        retryAfterSeconds: (error as ServiceUnavailableError).retryAfterSeconds,
+        metrics: increment.mock.calls
+      }).toEqual({
         error: 'ServiceUnavailableError',
+        retryAfterSeconds: 10,
         metrics: [['dcl_partial_deployments_staging_total', { kind: 'busy' }]]
       })
     })
@@ -161,9 +167,14 @@ describe('when a partial batch is rejected', () => {
       error = await createEntity(buildContext(stageDeployment, increment)).catch((e) => e)
     })
 
-    it('should fail with a 503 error and count the batch as busy', () => {
-      expect({ error: (error as Error).name, metrics: increment.mock.calls }).toEqual({
+    it('should fail with a 503 error retried after 30 seconds and count the batch as busy', () => {
+      expect({
+        error: (error as ServiceUnavailableError).name,
+        retryAfterSeconds: (error as ServiceUnavailableError).retryAfterSeconds,
+        metrics: increment.mock.calls
+      }).toEqual({
         error: 'ServiceUnavailableError',
+        retryAfterSeconds: 30,
         metrics: [['dcl_partial_deployments_staging_total', { kind: 'busy' }]]
       })
     })

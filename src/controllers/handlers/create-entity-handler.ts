@@ -276,7 +276,9 @@ export async function createEntity(
       }
       if (error instanceof EntityLockTimeoutError || error instanceof UploadBudgetExceededError) {
         metrics.increment('dcl_partial_deployments_staging_total', { kind: 'busy' })
-        throw new ServiceUnavailableError(error.message)
+        throw error instanceof UploadBudgetExceededError
+          ? new ServiceUnavailableError(error.message, UPLOAD_UNAVAILABLE_RETRY_AFTER_SECONDS)
+          : new ServiceUnavailableError(error.message)
       }
       metrics.increment('dcl_partial_deployments_staging_total', { kind: 'error' })
       // Never log `authChain` or `signature`: they are cryptographic credentials.
