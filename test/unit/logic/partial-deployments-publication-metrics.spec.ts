@@ -1,12 +1,16 @@
 import { Authenticator } from '@dcl/crypto'
+import { Readable } from 'stream'
 import { EntityType } from '@dcl/schemas'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { createPartialDeployments } from '../../../src/logic/partial-deployments'
 import { StageDeploymentResult } from '../../../src/logic/partial-deployments/types'
 
 const NOW = 1_800_000_000_000
-const ENTITY_ID = 'bafkreigdj5jyzxnhfwpkkvslq4vadvyymyi6zgf4gdhsvjfqqmbzl7u7fi'
-const CONTENT_HASH = 'bafkreia'
+// Staging hashes every uploaded file: these are the hashes of ENTITY_BYTES and CONTENT_BYTES.
+const ENTITY_BYTES = Buffer.from('entity')
+const CONTENT_BYTES = Buffer.from('a')
+const ENTITY_ID = 'bafkreif4unuf72ukzvhewxautb2odkrlvudqrz7f5veq6phqoawlpkf3ky'
+const CONTENT_HASH = 'bafkreigks6arfsq3xxfpvqrrwonchxcnu6do76auprhhfomao6c273sixm'
 const DEPLOYER = '0x' + '1'.repeat(40)
 const PUBLISHED_AT = NOW - 1000
 
@@ -107,9 +111,10 @@ function stageCompletingBatch(mocks: Mocks): Promise<StageDeploymentResult> {
     entityId: ENTITY_ID,
     authChain: Authenticator.createSimpleAuthChain(ENTITY_ID, DEPLOYER, '0x' + 'a'.repeat(130)),
     files: new Map([
-      [ENTITY_ID, Buffer.from('entity')],
-      [CONTENT_HASH, Buffer.from('a')]
+      [ENTITY_ID, { size: ENTITY_BYTES.length, openStream: () => Readable.from([ENTITY_BYTES]) }],
+      [CONTENT_HASH, { size: CONTENT_BYTES.length, openStream: () => Readable.from([CONTENT_BYTES]) }]
     ]),
+    entityFile: ENTITY_BYTES,
     requestedAt: NOW
   })
 }

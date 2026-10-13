@@ -90,7 +90,7 @@ describe('when admitting uploads by source', () => {
     it('should shed the upload and count the rejection', () => {
       expect({ error, counted: components.metrics.increment.mock.calls }).toEqual({
         error: new SourceUploadLimitExceededError('source_concurrency'),
-        counted: [['dcl_upload_budget_rejections_total', { reason: 'source_concurrency' }]]
+        counted: [['dcl_upload_budget_rejections_total', { budget: 'source', reason: 'source_concurrency' }]]
       })
     })
   })

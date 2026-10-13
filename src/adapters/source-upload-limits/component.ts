@@ -26,7 +26,7 @@ export function createSourceUploadLimits(components: Pick<AppComponents, 'env' |
   const inFlight = new Map<string, { uploads: number; bytes: number }>()
 
   function reject(reason: SourceUploadLimitExceededError['reason']): never {
-    metrics.increment('dcl_upload_budget_rejections_total', { reason })
+    metrics.increment('dcl_upload_budget_rejections_total', { budget: 'source', reason })
     throw new SourceUploadLimitExceededError(reason)
   }
 

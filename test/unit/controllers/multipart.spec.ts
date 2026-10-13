@@ -1,7 +1,11 @@
 import FormData from 'form-data'
+import { mkdtemp, readFile, rm } from 'fs/promises'
+import { tmpdir } from 'os'
+import path from 'path'
 import { Readable } from 'stream'
 import { IHttpServerComponent } from '@dcl/core-commons'
 import { maxMultipartBodySize, multipartParserWrapper } from '../../../src/controllers/multipart'
+import { spoolIn } from '../../helpers/upload-spool'
 import { InvalidRequestError, PayloadTooLargeError } from '../../../src/controllers/errors'
 
 function buildContext(form: FormData): IHttpServerComponent.DefaultContext<any> {
@@ -18,13 +22,16 @@ function buildContext(form: FormData): IHttpServerComponent.DefaultContext<any> 
 
 describe('when parsing a multipart request with upload limits', () => {
   let handler: jest.Mock
+  let tmpFolder: string
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    tmpFolder = await mkdtemp(path.join(tmpdir(), 'multipart-'))
     handler = jest.fn().mockResolvedValue({ status: 200, body: {} })
   })
 
-  afterEach(() => {
+  afterEach(async () => {
     jest.resetAllMocks()
+    await rm(tmpFolder, { recursive: true, force: true })
   })
 
   describe('and all files are within the configured limits', () => {
@@ -35,7 +42,11 @@ describe('when parsing a multipart request with upload limits', () => {
       form = new FormData()
       form.append('entityId', 'an-entity-id')
       form.append('file1', Buffer.alloc(10, 1), { filename: 'file1' })
-      wrapped = multipartParserWrapper(handler as any, { maxFileSize: 1024, maxFiles: 10 })
+      wrapped = multipartParserWrapper(
+        handler as any,
+        { maxFileSize: 1024, maxFiles: 10 },
+        { spool: spoolIn(tmpFolder) }
+      )
     })
 
     it('should invoke the handler with the parsed fields and files', async () => {
@@ -45,7 +56,7 @@ describe('when parsing a multipart request with upload limits', () => {
         expect.objectContaining({
           formData: expect.objectContaining({
             fields: expect.objectContaining({ entityId: expect.objectContaining({ value: 'an-entity-id' }) }),
-            files: expect.objectContaining({ file1: expect.objectContaining({ value: expect.any(Buffer) }) })
+            files: expect.objectContaining({ file1: expect.objectContaining({ path: expect.any(String), size: 10 }) })
           })
         })
       )
@@ -59,7 +70,11 @@ describe('when parsing a multipart request with upload limits', () => {
     beforeEach(() => {
       form = new FormData()
       form.append('big', Buffer.alloc(2048, 1), { filename: 'big.bin' })
-      wrapped = multipartParserWrapper(handler as any, { maxFileSize: 1024, maxFiles: 10 })
+      wrapped = multipartParserWrapper(
+        handler as any,
+        { maxFileSize: 1024, maxFiles: 10 },
+        { spool: spoolIn(tmpFolder) }
+      )
     })
 
     it('should reject with a PayloadTooLargeError', async () => {
@@ -75,13 +90,20 @@ describe('when parsing a multipart request with upload limits', () => {
 
   describe('and a file is exactly the maximum allowed file size', () => {
     let error: unknown
+    let spooledContent: Buffer | undefined
 
     beforeEach(async () => {
       const form = new FormData()
       form.append('file1', Buffer.alloc(1024, 1), { filename: 'file1' })
-      error = await multipartParserWrapper(handler as any, { maxFileSize: 1024, maxFiles: 10 })(
-        buildContext(form)
-      ).then(
+      handler.mockImplementationOnce(async (ctx) => {
+        spooledContent = await readFile(ctx.formData.files.file1.path)
+        return { status: 200, body: {} }
+      })
+      error = await multipartParserWrapper(
+        handler as any,
+        { maxFileSize: 1024, maxFiles: 10 },
+        { spool: spoolIn(tmpFolder) }
+      )(buildContext(form)).then(
         () => undefined,
         (e) => e
       )
@@ -91,14 +113,13 @@ describe('when parsing a multipart request with upload limits', () => {
       expect(error).toBeUndefined()
     })
 
-    it('should invoke the handler with the whole file', () => {
+    it('should invoke the handler with the whole file spooled', () => {
       expect(handler).toHaveBeenCalledWith(
         expect.objectContaining({
-          formData: expect.objectContaining({
-            files: { file1: expect.objectContaining({ value: Buffer.alloc(1024, 1) }) }
-          })
+          formData: expect.objectContaining({ files: { file1: expect.objectContaining({ size: 1024 }) } })
         })
       )
+      expect(spooledContent).toEqual(Buffer.alloc(1024, 1))
     })
   })
 
@@ -108,9 +129,11 @@ describe('when parsing a multipart request with upload limits', () => {
     beforeEach(async () => {
       const form = new FormData()
       form.append('file1', Buffer.alloc(1025, 1), { filename: 'file1.bin' })
-      error = await multipartParserWrapper(handler as any, { maxFileSize: 1024, maxFiles: 10 })(
-        buildContext(form)
-      ).catch((e) => e)
+      error = await multipartParserWrapper(
+        handler as any,
+        { maxFileSize: 1024, maxFiles: 10 },
+        { spool: spoolIn(tmpFolder) }
+      )(buildContext(form)).catch((e) => e)
     })
 
     it('should reject with a PayloadTooLargeError naming the file and its size limit', () => {
@@ -133,7 +156,11 @@ describe('when parsing a multipart request with upload limits', () => {
       form.append('f1', Buffer.alloc(1, 1), { filename: 'f1' })
       form.append('f2', Buffer.alloc(1, 1), { filename: 'f2' })
       form.append('f3', Buffer.alloc(1, 1), { filename: 'f3' })
-      wrapped = multipartParserWrapper(handler as any, { maxFileSize: 1024, maxFiles: 2 })
+      wrapped = multipartParserWrapper(
+        handler as any,
+        { maxFileSize: 1024, maxFiles: 2 },
+        { spool: spoolIn(tmpFolder) }
+      )
     })
 
     it('should reject with a PayloadTooLargeError', async () => {
@@ -151,7 +178,11 @@ describe('when parsing a multipart request with upload limits', () => {
       for (let i = 0; i < 50; i++) {
         form.append(`authChain[${i}][type]`, 'SIGNER')
       }
-      wrapped = multipartParserWrapper(handler as any, { maxFileSize: 1024, maxFiles: 10, maxFields: 10 })
+      wrapped = multipartParserWrapper(
+        handler as any,
+        { maxFileSize: 1024, maxFiles: 10, maxFields: 10 },
+        { spool: spoolIn(tmpFolder) }
+      )
     })
 
     it('should reject with a PayloadTooLargeError', async () => {
@@ -172,7 +203,11 @@ describe('when parsing a multipart request with upload limits', () => {
     beforeEach(() => {
       form = new FormData()
       form.append('entityId', 'x'.repeat(2048))
-      wrapped = multipartParserWrapper(handler as any, { maxFileSize: 1024, maxFiles: 10, maxFieldSize: 1024 })
+      wrapped = multipartParserWrapper(
+        handler as any,
+        { maxFileSize: 1024, maxFiles: 10, maxFieldSize: 1024 },
+        { spool: spoolIn(tmpFolder) }
+      )
     })
 
     it('should reject with a PayloadTooLargeError', async () => {
@@ -185,7 +220,11 @@ describe('when parsing a multipart request with upload limits', () => {
       const form = new FormData()
       form.append('a', 'x'.repeat(1024))
       form.append('b', 'x'.repeat(1024))
-      await multipartParserWrapper(handler as any, { maxFields: 2, maxFieldSize: 1024 })(buildContext(form))
+      await multipartParserWrapper(
+        handler as any,
+        { maxFields: 2, maxFieldSize: 1024 },
+        { spool: spoolIn(tmpFolder) }
+      )(buildContext(form))
     })
 
     it('should invoke the handler with every field whole', () => {
@@ -210,9 +249,11 @@ describe('when parsing a multipart request with upload limits', () => {
       form.append('a', 'x')
       form.append('b', 'x')
       form.append('c', 'x')
-      error = await multipartParserWrapper(handler as any, { maxFields: 2, maxFieldSize: 1024 })(
-        buildContext(form)
-      ).catch((e) => e)
+      error = await multipartParserWrapper(
+        handler as any,
+        { maxFields: 2, maxFieldSize: 1024 },
+        { spool: spoolIn(tmpFolder) }
+      )(buildContext(form)).catch((e) => e)
     })
 
     it('should reject with a PayloadTooLargeError naming the field limit', () => {
@@ -226,9 +267,11 @@ describe('when parsing a multipart request with upload limits', () => {
     beforeEach(async () => {
       const form = new FormData()
       form.append('entityId', 'x'.repeat(1025))
-      error = await multipartParserWrapper(handler as any, { maxFields: 2, maxFieldSize: 1024 })(
-        buildContext(form)
-      ).catch((e) => e)
+      error = await multipartParserWrapper(
+        handler as any,
+        { maxFields: 2, maxFieldSize: 1024 },
+        { spool: spoolIn(tmpFolder) }
+      )(buildContext(form)).catch((e) => e)
     })
 
     it('should reject with a PayloadTooLargeError naming the field and its size limit', () => {
@@ -247,7 +290,11 @@ describe('when parsing a multipart request with upload limits', () => {
       // Two files, each within maxFileSize, but together over maxTotalSize.
       form.append('a', Buffer.alloc(1000, 1), { filename: 'a.bin' })
       form.append('b', Buffer.alloc(1000, 1), { filename: 'b.bin' })
-      wrapped = multipartParserWrapper(handler as any, { maxFileSize: 4096, maxFiles: 10, maxTotalSize: 1500 })
+      wrapped = multipartParserWrapper(
+        handler as any,
+        { maxFileSize: 4096, maxFiles: 10, maxTotalSize: 1500 },
+        { spool: spoolIn(tmpFolder) }
+      )
     })
 
     it('should reject with a PayloadTooLargeError', async () => {
@@ -270,7 +317,7 @@ describe('when parsing a multipart request with upload limits', () => {
       form.append('entityId', 'an-entity-id')
       const limits = { maxFileSize: 4096, maxFiles: 10, maxFields: 10, maxTotalSize: 1500 }
       const headers = { ...form.getHeaders(), 'content-length': String(maxMultipartBodySize(limits)! + 1) }
-      wrapped = multipartParserWrapper(handler as any, limits)
+      wrapped = multipartParserWrapper(handler as any, limits, { spool: spoolIn(tmpFolder) })
       context = {
         request: {
           headers: { get: (name: string) => (headers as Record<string, string>)[name.toLowerCase()] },
@@ -299,12 +346,11 @@ describe('when parsing a multipart request with upload limits', () => {
       form.append('file', Buffer.alloc(60, 1), { filename: 'file' })
       const body = form.getBuffer()
       const headers = { ...form.getHeaders(), 'content-length': String(body.length) }
-      response = await multipartParserWrapper(handler as any, {
-        maxFileSize: 4096,
-        maxFiles: 1,
-        maxFields: 1,
-        maxTotalSize: 100
-      })({
+      response = await multipartParserWrapper(
+        handler as any,
+        { maxFileSize: 4096, maxFiles: 1, maxFields: 1, maxTotalSize: 100 },
+        { spool: spoolIn(tmpFolder) }
+      )({
         request: {
           headers: { get: (name: string) => (headers as Record<string, string>)[name.toLowerCase()] },
           body: Readable.toWeb(Readable.from(body))
@@ -327,10 +373,7 @@ describe('when parsing a multipart request with upload limits', () => {
       // busboy skips a preamble without reporting it.
       const preamble = Buffer.alloc(maxMultipartBodySize(limits)!, 'x')
       const headers = form.getHeaders()
-      error = await multipartParserWrapper(
-        handler as any,
-        limits
-      )({
+      error = await multipartParserWrapper(handler as any, limits, { spool: spoolIn(tmpFolder) })({
         request: {
           headers: { get: (name: string) => (headers as Record<string, string>)[name.toLowerCase()] },
           body: Readable.toWeb(Readable.from(Buffer.concat([preamble, Buffer.from('\r\n'), form.getBuffer()])))
@@ -356,7 +399,11 @@ describe('when parsing a multipart request with upload limits', () => {
       // adding a property; on a null-prototype map it is stored as an ordinary key.
       form.append('__proto__', 'polluted')
       form.append('entityId', 'an-entity-id')
-      wrapped = multipartParserWrapper(handler as any, { maxFileSize: 1024, maxFiles: 10 })
+      wrapped = multipartParserWrapper(
+        handler as any,
+        { maxFileSize: 1024, maxFiles: 10 },
+        { spool: spoolIn(tmpFolder) }
+      )
     })
 
     it('should keep the parsed fields on a null-prototype object so the prototype is not mutated', async () => {
@@ -379,7 +426,11 @@ describe('when parsing a multipart request with upload limits', () => {
     let context: IHttpServerComponent.DefaultContext<any>
 
     beforeEach(() => {
-      wrapped = multipartParserWrapper(handler as any, { maxFileSize: 1024, maxFiles: 10 })
+      wrapped = multipartParserWrapper(
+        handler as any,
+        { maxFileSize: 1024, maxFiles: 10 },
+        { spool: spoolIn(tmpFolder) }
+      )
       context = {
         request: {
           headers: { get: (name: string) => (name.toLowerCase() === 'content-type' ? 'application/json' : undefined) },
@@ -414,7 +465,11 @@ describe('when parsing a multipart request with upload limits', () => {
           this.destroy(new Error('socket hang up'))
         }
       })
-      wrapped = multipartParserWrapper(handler as any, { maxFileSize: 1024, maxFiles: 10 })
+      wrapped = multipartParserWrapper(
+        handler as any,
+        { maxFileSize: 1024, maxFiles: 10 },
+        { spool: spoolIn(tmpFolder) }
+      )
       context = {
         request: {
           headers: { get: (name: string) => headers[name.toLowerCase()] },
@@ -436,7 +491,11 @@ describe('when parsing a multipart request with upload limits', () => {
 
     beforeEach(() => {
       const headers = new FormData().getHeaders()
-      wrapped = multipartParserWrapper(handler as any, { maxFileSize: 1024, maxFiles: 10 })
+      wrapped = multipartParserWrapper(
+        handler as any,
+        { maxFileSize: 1024, maxFiles: 10 },
+        { spool: spoolIn(tmpFolder) }
+      )
       context = {
         request: {
           headers: { get: (name: string) => (headers as Record<string, string>)[name.toLowerCase()] },
@@ -466,46 +525,15 @@ describe('when parsing a multipart request with upload limits', () => {
       form.append('a', 'x'.repeat(50))
       form.append('b', 'x'.repeat(50))
       form.append('c', 'x'.repeat(50))
-      wrapped = multipartParserWrapper(handler as any, { maxFieldSize: 1024, maxFields: 10, maxTotalSize: 100 })
+      wrapped = multipartParserWrapper(
+        handler as any,
+        { maxFieldSize: 1024, maxFields: 10, maxTotalSize: 100 },
+        { spool: spoolIn(tmpFolder) }
+      )
     })
 
     it('should reject with a PayloadTooLargeError', async () => {
       await expect(wrapped(buildContext(form))).rejects.toThrow(PayloadTooLargeError)
-    })
-  })
-
-  describe('and the request declares its content length and carries several files', () => {
-    let files: Record<string, { value: Buffer }>
-
-    beforeEach(async () => {
-      const form = new FormData()
-      form.append('entityId', 'an-entity-id')
-      form.append('a', Buffer.alloc(3000, 1), { filename: 'a' })
-      form.append('empty', Buffer.alloc(0), { filename: 'empty' })
-      form.append('b', Buffer.from('second file'), { filename: 'b' })
-      handler.mockImplementationOnce(async (ctx: any) => {
-        files = ctx.formData.files
-        return { status: 200, body: {} }
-      })
-      const wrapped = multipartParserWrapper(handler as any, { maxFileSize: 4096, maxFiles: 10 })
-      const headers: Record<string, string> = {
-        ...form.getHeaders(),
-        'content-length': String(form.getBuffer().length)
-      }
-      await wrapped({
-        request: {
-          headers: { get: (name: string) => headers[name.toLowerCase()] },
-          body: Readable.toWeb(Readable.from(form.getBuffer()))
-        }
-      } as any)
-    })
-
-    it('should hand the handler each file with its own bytes', () => {
-      expect({ a: files.a.value, empty: files.empty.value, b: files.b.value.toString() }).toEqual({
-        a: Buffer.alloc(3000, 1),
-        empty: Buffer.alloc(0),
-        b: 'second file'
-      })
     })
   })
 
@@ -515,13 +543,17 @@ describe('when parsing a multipart request with upload limits', () => {
     beforeEach(async () => {
       const form = new FormData()
       form.append('dup', Buffer.alloc(10, 1), { filename: 'dup' })
-      // Over maxTotalSize on its own, so buffering it would fail with a 413 instead.
+      // Over maxTotalSize on its own, so spooling it would fail with a 413 instead.
       form.append('dup', Buffer.alloc(2000, 2), { filename: 'dup' })
-      const wrapped = multipartParserWrapper(handler as any, { maxFileSize: 4096, maxFiles: 10, maxTotalSize: 1000 })
+      const wrapped = multipartParserWrapper(
+        handler as any,
+        { maxFileSize: 4096, maxFiles: 10, maxTotalSize: 1000 },
+        { spool: spoolIn(tmpFolder) }
+      )
       error = await wrapped(buildContext(form)).catch((e) => e)
     })
 
-    it('should reject the repeated part before buffering it, without invoking the handler', () => {
+    it('should reject the repeated part before spooling it, without invoking the handler', () => {
       expect({ error, handled: handler.mock.calls.length }).toEqual({
         error: new InvalidRequestError("Duplicate form field 'dup'"),
         handled: 0
@@ -536,7 +568,11 @@ describe('when parsing a multipart request with upload limits', () => {
       const form = new FormData()
       form.append('partial', 'true')
       form.append('partial', 'false')
-      const wrapped = multipartParserWrapper(handler as any, { maxFileSize: 1024, maxFiles: 10 })
+      const wrapped = multipartParserWrapper(
+        handler as any,
+        { maxFileSize: 1024, maxFiles: 10 },
+        { spool: spoolIn(tmpFolder) }
+      )
       error = await wrapped(buildContext(form)).catch((e) => e)
     })
 
@@ -555,7 +591,11 @@ describe('when parsing a multipart request with upload limits', () => {
       const form = new FormData()
       form.append('entityId', 'an-entity-id')
       form.append('entityId', Buffer.alloc(10, 1), { filename: 'entityId' })
-      const wrapped = multipartParserWrapper(handler as any, { maxFileSize: 1024, maxFiles: 10 })
+      const wrapped = multipartParserWrapper(
+        handler as any,
+        { maxFileSize: 1024, maxFiles: 10 },
+        { spool: spoolIn(tmpFolder) }
+      )
       error = await wrapped(buildContext(form)).catch((e) => e)
     })
 

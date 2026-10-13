@@ -4,6 +4,7 @@ import { AppComponents } from '../types'
 import { State } from '../logic/sync-orchestrator'
 import { Error } from '@dcl/catalyst-api-specs/lib/client'
 import {
+  ClientClosedRequestError,
   InvalidRequestError,
   NotFoundError,
   PayloadTooLargeError,
@@ -63,6 +64,9 @@ function handleError(
       headers: { 'Retry-After': String(error.retryAfterSeconds) },
       body: { error: error.message }
     }
+  }
+  if (error instanceof ClientClosedRequestError) {
+    return { status: 499, body: { error: error.message } }
   }
 
   logger.error(error)

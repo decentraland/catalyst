@@ -1,4 +1,7 @@
 import { Authenticator } from '@dcl/crypto'
+import { mkdtempSync, rmSync, writeFileSync } from 'fs'
+import { tmpdir } from 'os'
+import path from 'path'
 import { createEntity } from '../../../src/controllers/handlers/create-entity-handler'
 import { EntityLockTimeoutError } from '../../../src/adapters/content-locks'
 import { ServiceUnavailableError } from '../../../src/controllers/errors'
@@ -8,6 +11,9 @@ type Context = Parameters<typeof createEntity>[0]
 const ENTITY_ID = 'bafkreigdj5jyzxnhfwpkkvslq4vadvyymyi6zgf4gdhsvjfqqmbzl7u7fi'
 const ENTITY_TIMESTAMP = 1_700_000_000_000
 const NOW = ENTITY_TIMESTAMP + 5 * 60 * 1000
+
+// The spool folder the request's files are written to; created per test.
+let spoolDir: string
 
 function buildContext(
   partial: boolean,
@@ -26,11 +32,17 @@ function buildContext(
     request: { headers: { get: () => null } },
     formData: {
       fields,
-      files: Object.fromEntries(Object.entries(files).map(([name, value]) => [name, { fieldname: name, value }]))
+      files: Object.fromEntries(
+        Object.entries(files).map(([name, value]) => {
+          writeFileSync(path.join(spoolDir, name), value)
+          return [name, { fieldname: name, path: path.join(spoolDir, name), size: value.length }]
+        })
+      )
     },
     components: {
       logs: { getLogger: () => ({ info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() }) },
       metrics: { increment: jest.fn() },
+      deploymentMemoryBudget: { acquire: () => ({ resize: jest.fn(), release: jest.fn() }) },
       ...components
     }
   } as unknown as Context
@@ -45,11 +57,12 @@ describe('when creating an entity under the content lock', () => {
   let stageDeployment: jest.Mock
 
   beforeEach(() => {
+    spoolDir = mkdtempSync(path.join(tmpdir(), 'create-entity-lock-'))
     withRead = jest.fn()
     stageDeployment = jest.fn()
     validateSignature = jest.fn()
     getDeployedEntityTimestamp = jest.fn().mockResolvedValue(undefined)
-    readDeployment = jest.fn().mockResolvedValue({ files: new Map(), entity: { timestamp: ENTITY_TIMESTAMP } })
+    readDeployment = jest.fn().mockResolvedValue({ hashes: [], entity: { timestamp: ENTITY_TIMESTAMP } })
     deployer = { getDeployedEntityTimestamp, readDeployment }
     jest.spyOn(Date, 'now').mockReturnValue(NOW)
   })
@@ -57,6 +70,7 @@ describe('when creating an entity under the content lock', () => {
   afterEach(() => {
     jest.resetAllMocks()
     jest.restoreAllMocks()
+    rmSync(spoolDir, { recursive: true, force: true })
   })
 
   describe('and a partial batch is not validly signed', () => {
@@ -126,6 +140,70 @@ describe('when creating an entity under the content lock', () => {
         checkedAt: validateSignature.mock.calls.map(([, , date]) => date),
         deployments: withRead.mock.calls.length + stageDeployment.mock.calls.length
       }).toEqual({ checkedAt: [ENTITY_TIMESTAMP], deployments: 1 })
+    })
+  })
+
+  describe('and a regular deployment is deployed', () => {
+    let deployEntity: jest.Mock
+    let response: Awaited<ReturnType<typeof createEntity>>
+
+    beforeEach(async () => {
+      validateSignature.mockResolvedValueOnce({ ok: true })
+      readDeployment.mockResolvedValueOnce({ hashes: [ENTITY_ID], entity: { timestamp: ENTITY_TIMESTAMP } })
+      deployEntity = jest.fn().mockResolvedValue(NOW)
+      // The spool is gone once the lock is held, so only files read before it can be deployed.
+      withRead.mockImplementationOnce(async (operation: () => Promise<unknown>) => {
+        rmSync(spoolDir, { recursive: true, force: true })
+        return operation()
+      })
+      response = await createEntity(
+        buildContext(false, {
+          contentLocks: { withRead },
+          crypto: { validateSignature },
+          deployer: { ...deployer, deployEntity }
+        })
+      )
+    })
+
+    it('should read its files in before taking the content lock', () => {
+      expect({ response, deployed: deployEntity.mock.calls.map(([files]) => files) }).toEqual({
+        response: { status: 200, body: { creationTimestamp: NOW } },
+        deployed: [new Map([[ENTITY_ID, Buffer.from('entity')]])]
+      })
+    })
+  })
+
+  describe('and a partial batch carrying its entity file is staged', () => {
+    let stagedEntity: string
+
+    beforeEach(async () => {
+      validateSignature.mockResolvedValueOnce({ ok: true })
+      readDeployment.mockImplementationOnce(async ([source]) => {
+        await source.read()
+        return { hashes: [ENTITY_ID], entity: { timestamp: ENTITY_TIMESTAMP } }
+      })
+      // The spool is gone by the time staging runs, so only bytes read once before it can be staged.
+      stageDeployment.mockImplementationOnce(async ({ files }) => {
+        rmSync(spoolDir, { recursive: true, force: true })
+        const chunks: Buffer[] = []
+        for await (const chunk of files.get(ENTITY_ID).openStream()) {
+          chunks.push(chunk)
+        }
+        stagedEntity = Buffer.concat(chunks).toString()
+        return { kind: 'incomplete', missing: [] }
+      })
+      await createEntity(
+        buildContext(true, {
+          contentLocks: { withRead },
+          crypto: { validateSignature },
+          deployer,
+          partialDeployments: { stageDeployment }
+        })
+      )
+    })
+
+    it('should stage the entity file from the bytes it read once', () => {
+      expect(stagedEntity).toBe('entity')
     })
   })
 

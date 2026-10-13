@@ -49,6 +49,8 @@ services:
       LOG_LEVEL: INFO
       # Storage inside the container (ephemeral unless you mount a volume)
       STORAGE_ROOT_FOLDER: /data/storage
+      # Spool uploads on the same node-local volume, not the container's writable layer
+      UPLOAD_SPOOL_FOLDER: /data/uploads
       # L1/L2 providers (required by components; use public RPC for local test)
       ETH_NETWORK: mainnet
       L1_HTTP_PROVIDER_URL: https://rpc.decentraland.org/mainnet?project=catalyst-content

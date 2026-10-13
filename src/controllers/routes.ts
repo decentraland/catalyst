@@ -5,6 +5,7 @@ import { multipartParserWrapper } from './multipart'
 import { createContentGetRateLimitMiddleware } from './content-get-rate-limit'
 import { createDeploymentQuotaAdmission, withDeploymentQuota } from './deployment-quota'
 import { createSourceUploadAdmission } from './source-upload-admission'
+import { createDeploymentMemoryAdmission } from './deployment-memory-admission'
 import { stampRequestArrival, withRequestArrival } from './request-arrival'
 import { GlobalContext } from '../types'
 import { activeEntitiesBodySchema, getActiveEntitiesHandler } from './handlers/active-entities-handler'
@@ -53,12 +54,14 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
     // Partial uploads are many batches, bounded by their account's byte quotas instead: only batches
     // rejected before joining their upload count, and a spent source may only resume its own uploads. Every body,
     // counted or not, holds a share of its source's in-flight uploads until the request ends.
+    // A regular deployment whose declared size can't fit the memory its files are read into is shed unread.
     router.post(
       '/entities',
       stampRequestArrival(),
       burstLimit,
       preventExecutionIfBoostrapping({ syncOrchestrator: components.syncOrchestrator }),
       createDeploymentQuotaAdmission(components),
+      createDeploymentMemoryAdmission(components),
       createSourceUploadAdmission(components),
       multipartParserWrapper(
         withDeploymentQuota(components, withRequestArrival(createEntity)),
@@ -70,8 +73,12 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
           maxTotalSize: env.getConfig<number>(EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE),
           uploadTimeoutMs: env.getConfig<number>(EnvironmentConfig.MULTIPART_UPLOAD_TIMEOUT_MS)
         },
-        components.uploadBudget,
-        components.metrics
+        {
+          spool: components.uploadSpool,
+          uploadBudget: components.uploadBudget,
+          metrics: components.metrics,
+          logs: components.logs
+        }
       )
     )
   }

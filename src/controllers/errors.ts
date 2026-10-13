@@ -35,7 +35,7 @@ export class PayloadTooLargeError extends Error {
   }
 }
 
-/** Seconds a client should wait before retrying a transient 503 (a busy lock or a full upload budget). */
+/** Seconds a client should wait before retrying a transient 503, e.g. a busy lock; upload pressure uses its own. */
 export const SERVICE_UNAVAILABLE_RETRY_AFTER_SECONDS = 10
 
 export class ServiceUnavailableError extends Error {
@@ -50,6 +50,15 @@ export class RequestTimeoutError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'RequestTimeoutError'
+    Error.captureStackTrace(this, this.constructor)
+  }
+}
+
+/** The client closed the connection before its request was received; answered with nginx's 499. */
+export class ClientClosedRequestError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'ClientClosedRequestError'
     Error.captureStackTrace(this, this.constructor)
   }
 }

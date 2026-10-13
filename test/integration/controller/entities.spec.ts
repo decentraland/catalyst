@@ -24,7 +24,7 @@ describe('Integration - Entities', () => {
   it('returns 500 when there is an exception while deploying the entity', async () => {
     jest
       .spyOn(server.components.deployer, 'readDeployment')
-      .mockResolvedValue({ files: new Map(), entity: { timestamp: Date.now() } as Entity })
+      .mockResolvedValue({ hashes: [], entity: { timestamp: Date.now() } as Entity })
     jest.spyOn(server.components.deployer, 'deployEntity').mockRejectedValue({ error: 'error' })
 
     // Send a well-formed multipart body so the request actually reaches the deployer; the mocked
