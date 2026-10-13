@@ -10,10 +10,10 @@ import {
   RequestTimeoutError,
   ServiceUnavailableError
 } from './errors'
+import { Middleware } from '@dcl/http-server/dist/middleware'
 
 // Bootstrapping takes minutes; a shorter hint would only multiply rejected uploads.
 const BOOTSTRAPPING_RETRY_AFTER_SECONDS = 60
-import { Middleware } from '@dcl/http-server/dist/middleware'
 
 export function preventExecutionIfBoostrapping({
   syncOrchestrator
