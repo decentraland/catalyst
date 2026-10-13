@@ -155,6 +155,68 @@ describe('Integration - Partial upload per-parcel caps', () => {
     })
   })
 
+  describe('when accounts start uploads on crossing sets of parcels at once', () => {
+    // Each trial races on its own parcels; a lock-order deadlock only shows in some interleavings.
+    const trials = 5
+    const rounds = 3
+    let outcomes: string[]
+    let admittedPerTrial: number[]
+    let usage: Record<string, number>
+
+    beforeEach(async () => {
+      const settle = async (pointers: string[]): Promise<string> => {
+        let timer: NodeJS.Timeout | undefined
+        const timeout = new Promise<string>((resolve) => {
+          timer = setTimeout(() => resolve('timeout'), 20_000)
+        })
+        const attempt = startUpload(server, pointers, createIdentity()).then(async (response) =>
+          response.status === 202 || response.status === 429
+            ? String(response.status)
+            : `${response.status} ${await response.text()}`
+        )
+        try {
+          return await Promise.race([attempt, timeout])
+        } finally {
+          clearTimeout(timer)
+        }
+      }
+      outcomes = []
+      admittedPerTrial = []
+      for (let trial = 0; trial < trials; trial++) {
+        // A, B and C each share a parcel with the next, closing a cycle; each parcel is wanted by 2 uploads per round.
+        const x = 30 + trial
+        const crossing = [
+          [`${x},0`, `${x},1`],
+          [`${x},1`, `${x},2`],
+          [`${x},2`, `${x},0`]
+        ]
+        const settled = await Promise.all(
+          Array.from({ length: rounds }, () => crossing)
+            .flat()
+            .map((pointers) => settle(pointers))
+        )
+        outcomes.push(...settled)
+        admittedPerTrial.push(settled.filter((outcome) => outcome === '202').length)
+      }
+      const result = await server.components.database.query<{ pointer: string; uploads: number }>(
+        'SELECT p AS pointer, COUNT(*)::int AS uploads FROM pending_deployments, unnest(pointers) AS p GROUP BY p'
+      )
+      usage = Object.fromEntries(result.rows.map((row) => [row.pointer, row.uploads]))
+    })
+
+    it('should settle every upload with an admission or a 429', () => {
+      expect(outcomes.filter((outcome) => outcome !== '202' && outcome !== '429')).toEqual([])
+    })
+
+    it('should keep every parcel within the cap', () => {
+      expect(Math.max(...Object.values(usage))).toBeLessThanOrEqual(4)
+    })
+
+    it('should admit uploads until the parcels fill', () => {
+      expect(admittedPerTrial.every((admitted) => admitted >= 4)).toBe(true)
+    })
+  })
+
   describe('when the uploads holding the cap on a parcel have expired', () => {
     let response: Response
 

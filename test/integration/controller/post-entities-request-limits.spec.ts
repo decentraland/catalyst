@@ -12,6 +12,7 @@ const BURST_LIMIT = 3
 const DAILY_QUOTA = 2
 const CLIENT_IP_HEADER = 'x-test-client-ip'
 const UPLOADS_PER_SOURCE = 2
+const ACCOUNT_BUDGET_BYTES = 20_000
 
 function uniqueContents(count: number): Record<string, Buffer> {
   // Storage is content-addressed and survives resetServer, so each run needs unique bytes.
@@ -19,6 +20,13 @@ function uniqueContents(count: number): Record<string, Buffer> {
   return Object.fromEntries(
     Array.from({ length: count }, (_, i) => [`file-${i}.txt`, Buffer.from(`content ${i} ${nonce}`)])
   )
+}
+
+// One file a single upload can never fit in the per-account storage budget.
+function oversizedContents(): Record<string, Buffer> {
+  return {
+    'oversized.bin': Buffer.concat([Buffer.from(`${Date.now()}-${Math.random()}`), Buffer.alloc(ACCOUNT_BUDGET_BYTES)])
+  }
 }
 
 describe('Integration - POST /entities request limits', () => {
@@ -73,7 +81,8 @@ describe('Integration - POST /entities request limits', () => {
       [EnvironmentConfig.POST_ENTITIES_RATE_LIMIT_MAX]: BURST_LIMIT,
       [EnvironmentConfig.POST_ENTITIES_DAILY_QUOTA_MAX]: DAILY_QUOTA,
       [EnvironmentConfig.TRUSTED_CLIENT_IP_HEADER]: CLIENT_IP_HEADER,
-      [EnvironmentConfig.MAX_CONCURRENT_UPLOADS_PER_SOURCE]: UPLOADS_PER_SOURCE
+      [EnvironmentConfig.MAX_CONCURRENT_UPLOADS_PER_SOURCE]: UPLOADS_PER_SOURCE,
+      [EnvironmentConfig.MAX_PENDING_BYTES_PER_DEPLOYER]: ACCOUNT_BUDGET_BYTES
     })
   })
 
@@ -267,6 +276,69 @@ describe('Integration - POST /entities request limits', () => {
 
     it('should not count them against its daily quota', () => {
       expect({ rejected, status }).toEqual({ rejected: Array(DAILY_QUOTA).fill(400), status: 200 })
+    })
+  })
+
+  describe('when first partial batches from a source are over the per-account storage budget', () => {
+    let rejected: number[]
+    let pendingRows: unknown[]
+    let status: number
+
+    beforeEach(async () => {
+      rejected = []
+      pendingRows = []
+      for (let i = 0; i < DAILY_QUOTA; i++) {
+        const deployment = await prepareSceneDeployment([`${110 + i},110`], oversizedContents(), identity)
+        const keys = [deployment.entityId, ...deployment.contentHashes]
+        rejected.push(await postFrom('203.0.113.12', buildPartialForm(deployment, keys), '?partial=true'))
+        pendingRows.push(
+          await server.components.pendingDeploymentsRepository.getByEntityId(
+            server.components.database,
+            deployment.entityId
+          )
+        )
+      }
+      const deployment = await prepareSceneDeployment(['115,110'], uniqueContents(1), identity)
+      const keys = [deployment.entityId, ...deployment.contentHashes]
+      status = await postFrom('203.0.113.12', buildPartialForm(deployment, keys, false))
+    })
+
+    it('should count them against its daily quota and leave no upload pending', () => {
+      expect({ rejected, pendingRows, status }).toEqual({
+        rejected: Array(DAILY_QUOTA).fill(400),
+        pendingRows: Array(DAILY_QUOTA).fill(undefined),
+        status: 429
+      })
+    })
+  })
+
+  describe('when a resumed partial batch from a source is over the per-account storage budget', () => {
+    let started: number
+    let rejected: number
+    let status: number
+
+    beforeEach(async () => {
+      const resumed = await prepareSceneDeployment(
+        ['120,120'],
+        { ...uniqueContents(1), ...oversizedContents() },
+        identity
+      )
+      const [small, big] = resumed.contentHashes.sort(
+        (a, b) => resumed.files.get(a)!.byteLength - resumed.files.get(b)!.byteLength
+      )
+      started = await postFrom('203.0.113.13', buildPartialForm(resumed, [resumed.entityId, small]), '?partial=true')
+      rejected = await postFrom('203.0.113.13', buildPartialForm(resumed, [big]), '?partial=true')
+      // Spent directly but for one: more requests would trip the per-minute burst limit first.
+      for (let i = 0; i < DAILY_QUOTA - 1; i++) {
+        await server.components.deploymentQuota.consume('203.0.113.13')
+      }
+      const deployment = await prepareSceneDeployment(['125,120'], uniqueContents(1), identity)
+      const keys = [deployment.entityId, ...deployment.contentHashes]
+      status = await postFrom('203.0.113.13', buildPartialForm(deployment, keys, false))
+    })
+
+    it('should not count it against its daily quota', () => {
+      expect({ started, rejected, status }).toEqual({ started: 202, rejected: 400, status: 200 })
     })
   })
 
