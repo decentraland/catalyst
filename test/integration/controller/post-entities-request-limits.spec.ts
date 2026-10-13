@@ -165,16 +165,42 @@ describe('Integration - POST /entities request limits', () => {
       })
     })
 
-    describe('and it sends a partial batch declared with the partial query parameter', () => {
+    describe('and it starts a new partial upload declared with the partial query parameter', () => {
+      let stagingValidations: jest.SpyInstance
+
       beforeEach(async () => {
         exhausting = await exhaustDailyQuota('203.0.113.5', 50)
+        stagingValidations = jest.spyOn(server.components.validator, 'validateStagingScene')
         const deployment = await prepareSceneDeployment(['54,50'], uniqueContents(1), identity)
         const keys = [deployment.entityId, ...deployment.contentHashes]
         status = await postFrom('203.0.113.5', buildPartialForm(deployment, keys), '?partial=true')
       })
 
-      it('should accept it', () => {
-        expect({ exhausting, status }).toEqual({ exhausting: [200, 200], status: 200 })
+      it('should rate limit it before checking its access', () => {
+        expect({ exhausting, status, accessChecks: stagingValidations.mock.calls.length }).toEqual({
+          exhausting: [200, 200],
+          status: 429,
+          accessChecks: 0
+        })
+      })
+    })
+
+    describe('and it resumes a partial upload it started before', () => {
+      let started: number
+
+      beforeEach(async () => {
+        const deployment = await prepareSceneDeployment(['55,50'], uniqueContents(2), identity)
+        const [firstBatch, secondBatch] = partialBatches(deployment)
+        started = await postFrom('203.0.113.9', buildPartialForm(deployment, firstBatch), '?partial=true')
+        // Spent directly: two more requests would trip the per-minute burst limit first.
+        for (let i = 0; i < DAILY_QUOTA; i++) {
+          await server.components.deploymentQuota.consume('203.0.113.9')
+        }
+        status = await postFrom('203.0.113.9', buildPartialForm(deployment, secondBatch), '?partial=true')
+      })
+
+      it('should let the upload finish', () => {
+        expect({ started, status }).toEqual({ started: 202, status: 200 })
       })
     })
 
@@ -194,6 +220,53 @@ describe('Integration - POST /entities request limits', () => {
           bodiesRead: 0
         })
       })
+    })
+  })
+
+  describe('when partial batches from a source are rejected before joining an upload', () => {
+    let rejected: number[]
+    let status: number
+
+    beforeEach(async () => {
+      jest.spyOn(server.components.crypto, 'validateSignature').mockResolvedValue({ ok: false, message: 'bad' })
+      rejected = []
+      for (let i = 0; i < DAILY_QUOTA; i++) {
+        const deployment = await prepareSceneDeployment([`${90 + i},90`], uniqueContents(1), identity)
+        rejected.push(
+          await postFrom('203.0.113.10', buildPartialForm(deployment, [deployment.entityId]), '?partial=true')
+        )
+      }
+      const deployment = await prepareSceneDeployment(['95,90'], uniqueContents(1), identity)
+      const keys = [deployment.entityId, ...deployment.contentHashes]
+      status = await postFrom('203.0.113.10', buildPartialForm(deployment, keys, false))
+    })
+
+    it('should count them against its daily quota', () => {
+      expect({ rejected, status }).toEqual({ rejected: Array(DAILY_QUOTA).fill(400), status: 429 })
+    })
+  })
+
+  describe('when partial batches from a source are rejected after joining their upload', () => {
+    let rejected: number[]
+    let status: number
+
+    beforeEach(async () => {
+      jest.spyOn(server.components.deployer, 'deployEntity').mockResolvedValue({ errors: ['invalid'] })
+      rejected = []
+      for (let i = 0; i < DAILY_QUOTA; i++) {
+        const deployment = await prepareSceneDeployment([`${100 + i},100`], uniqueContents(1), identity)
+        const keys = [deployment.entityId, ...deployment.contentHashes]
+        rejected.push(await postFrom('203.0.113.11', buildPartialForm(deployment, keys), '?partial=true'))
+      }
+      jest.restoreAllMocks()
+      makeNoopValidator(server.components)
+      const deployment = await prepareSceneDeployment(['105,100'], uniqueContents(1), identity)
+      const keys = [deployment.entityId, ...deployment.contentHashes]
+      status = await postFrom('203.0.113.11', buildPartialForm(deployment, keys, false))
+    })
+
+    it('should not count them against its daily quota', () => {
+      expect({ rejected, status }).toEqual({ rejected: Array(DAILY_QUOTA).fill(400), status: 200 })
     })
   })
 

@@ -242,3 +242,62 @@ describe('when a deployment is not validly signed', () => {
     })
   })
 })
+
+describe('when a partial batch comes from a source that spent its daily quota', () => {
+  let stageDeployment: jest.Mock
+  let increment: jest.Mock
+  let isLiveUploadOf: jest.Mock
+  let context: Context
+  let response: Awaited<ReturnType<typeof createEntity>>
+
+  beforeEach(() => {
+    stageDeployment = jest.fn()
+    increment = jest.fn()
+    isLiveUploadOf = jest.fn()
+    context = buildContext(stageDeployment, increment)
+    context.components.partialDeployments.isLiveUploadOf = isLiveUploadOf
+    context.partialQuota = { exhaustedRetryAfterSeconds: 120, admitted: false }
+  })
+
+  afterEach(() => {
+    jest.resetAllMocks()
+  })
+
+  describe('and the signer has no live upload of the entity', () => {
+    beforeEach(async () => {
+      isLiveUploadOf.mockResolvedValueOnce(false)
+      response = await createEntity(context)
+    })
+
+    it('should answer a 429 until the quota resets without staging the batch', () => {
+      expect({ response, staged: stageDeployment.mock.calls.length }).toEqual({
+        response: {
+          status: 429,
+          body: {
+            errors: ['The daily deployment quota for this client is exhausted. Only uploads in progress can continue.']
+          },
+          headers: { 'Retry-After': '120' }
+        },
+        staged: 0
+      })
+    })
+  })
+
+  describe('and the batch resumes the signer own live upload', () => {
+    beforeEach(async () => {
+      isLiveUploadOf.mockResolvedValueOnce(true)
+      stageDeployment.mockImplementationOnce(async (input: { onAdmitted?: () => void }) => {
+        input.onAdmitted?.()
+        return { kind: 'incomplete', missing: [] }
+      })
+      response = await createEntity(context)
+    })
+
+    it('should stage it and report it as admitted', () => {
+      expect({ status: response.status, quota: context.partialQuota }).toEqual({
+        status: 202,
+        quota: { exhaustedRetryAfterSeconds: 120, admitted: true }
+      })
+    })
+  })
+})

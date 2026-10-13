@@ -41,6 +41,7 @@ type PreparedBatch = {
   /** The upload as it was when the batch was prepared, if it existed. */
   seen: PendingDeploymentRow | undefined
   requestedAt: number
+  onAdmitted: StageDeploymentInput['onAdmitted']
 }
 
 // Filled when a batch releases its upload, so the staged keys are reclaimed once the content lock is free.
@@ -639,7 +640,8 @@ export function createPartialDeployments(
     entityId,
     authChain,
     files,
-    requestedAt
+    requestedAt,
+    onAdmitted
   }: StageDeploymentInput): Promise<PreparedBatch | StageDeploymentResult> {
     // Completion replay: a deployed entity is never deployed again.
     const alreadyDeployed = await deploymentsRepository.getEntityById(database, entityId)
@@ -756,7 +758,8 @@ export function createPartialDeployments(
       contentHashes,
       maxSceneBytes,
       seen: pending,
-      requestedAt
+      requestedAt,
+      onAdmitted
     }
   }
 
@@ -771,7 +774,8 @@ export function createPartialDeployments(
       contentHashes,
       maxSceneBytes,
       seen,
-      requestedAt
+      requestedAt,
+      onAdmitted
     }: PreparedBatch,
     released: ReleasedUpload
   ): Promise<StageDeploymentResult> {
@@ -833,6 +837,7 @@ export function createPartialDeployments(
 
     const createdAt = await timed('accounting', async () => {
       const created = await createUpload(entity, contentHashes, deployerAddress, seen ?? pending, requestedAt)
+      onAdmitted?.()
       try {
         await reserve(
           entityId,
@@ -988,5 +993,10 @@ export function createPartialDeployments(
     return { removed, failed, outcome }
   }
 
-  return { stageDeployment, cleanupExpired }
+  async function isLiveUploadOf(entityId: string, deployerAddress: string): Promise<boolean> {
+    const pending = await pendingDeploymentsRepository.getByEntityId(database, entityId)
+    return !!pending && isLive(pending) && pending.deployerAddress === deployerAddress.toLowerCase()
+  }
+
+  return { stageDeployment, cleanupExpired, isLiveUploadOf }
 }

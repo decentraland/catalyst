@@ -1,6 +1,6 @@
 import { PostEntity200, PostEntity400 } from '@dcl/catalyst-api-specs/lib/client'
 import { Field } from '@well-known-components/multipart-wrapper'
-import { AuthChain, AuthLink, EthAddress } from '@dcl/crypto'
+import { AuthChain, AuthLink, Authenticator, EthAddress } from '@dcl/crypto'
 import { DeploymentContext, isInvalidDeployment, isSuccessfulDeployment } from '../../deployment-types'
 import { EntityLockTimeoutError } from '../../adapters/content-locks'
 import { InvalidPartialDeploymentError, PartialDeploymentUnavailableError } from '../../logic/partial-deployments'
@@ -8,6 +8,7 @@ import { ReadDeployment } from '../../logic/deployment-service/types'
 import { FormHandlerContextWithPath } from '../../types'
 import { InvalidRequestError, ServiceUnavailableError } from '../errors'
 import { RequestArrivalContext } from '../request-arrival'
+import { PartialQuotaContext } from '../deployment-quota'
 
 /** Body of a 202 response to a partial deployment request: the content hashes not yet on the server. */
 type PostEntity202 = { missing: string[] }
@@ -28,7 +29,8 @@ export async function createEntity(
     'logs' | 'fs' | 'metrics' | 'deployer' | 'partialDeployments' | 'contentLocks' | 'crypto',
     '/entities'
   > &
-    RequestArrivalContext
+    RequestArrivalContext &
+    PartialQuotaContext
 ): Promise<Response> {
   const { metrics, deployer, partialDeployments, logs, contentLocks, crypto } = context.components
 
@@ -72,6 +74,23 @@ export async function createEntity(
     }
     logger.info(`POST /entities - Entity already deployed`, { entityId, ethAddress, userAgent })
     return { status: 200, body: { creationTimestamp: deployedTimestamp } }
+  }
+
+  // A source that spent its daily quota may only resume the signer's own upload, which skips the access check.
+  const quotaRetryAfter = context.partialQuota?.exhaustedRetryAfterSeconds
+  if (
+    isPartial &&
+    quotaRetryAfter !== undefined &&
+    !(await partialDeployments.isLiveUploadOf(entityId, Authenticator.ownerAddress(authChain)))
+  ) {
+    metrics.increment('dcl_partial_deployments_staging_total', { kind: 'throttled' })
+    return {
+      status: 429,
+      body: {
+        errors: ['The daily deployment quota for this client is exhausted. Only uploads in progress can continue.']
+      },
+      headers: { 'Retry-After': String(quotaRetryAfter) }
+    }
   }
 
   // Authenticate before taking any lock, so a request that can't be authenticated never holds a lock
@@ -121,7 +140,10 @@ export async function createEntity(
         entityId,
         authChain,
         files,
-        requestedAt: context.requestArrivedAt
+        requestedAt: context.requestArrivedAt,
+        onAdmitted: () => {
+          if (context.partialQuota) context.partialQuota.admitted = true
+        }
       })
       if (result.kind === 'deployed' || result.kind === 'replayed') {
         const finalized = result.kind === 'deployed'

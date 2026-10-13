@@ -7,6 +7,8 @@ export type StageDeploymentInput = {
   files: Map<string, Uint8Array>
   /** When the request arrived (epoch ms), before its body was read. A new upload's lifetime starts here. */
   requestedAt: number
+  /** Called once the batch joins its upload (created, or resumed by its creator). */
+  onAdmitted?: () => void
 }
 
 export type StageDeploymentResult =
@@ -60,4 +62,6 @@ export interface IPartialDeployments {
    * A run visits every upload expired when it lists it, unless a busy content lock defers the rest.
    */
   cleanupExpired(): Promise<ExpiredCleanupSummary>
+  /** Whether `deployerAddress` started a live upload of `entityId`, whose batches skip the access check. */
+  isLiveUploadOf(entityId: string, deployerAddress: string): Promise<boolean>
 }
