@@ -604,6 +604,15 @@ export function createPartialDeployments(
         endLockWait()
         return commitBatch(prepared, released)
       }, input.entityId)
+    } catch (error) {
+      // A concurrent final batch may have held the entity's lock while publishing it.
+      if (error instanceof EntityLockTimeoutError) {
+        const deployed = await deploymentsRepository.getEntityById(database, input.entityId)
+        if (deployed) {
+          return { kind: 'replayed', creationTimestamp: deployed.localTimestamp }
+        }
+      }
+      throw error
     } finally {
       endLockWait()
       reclaimReleased(input.entityId, released)

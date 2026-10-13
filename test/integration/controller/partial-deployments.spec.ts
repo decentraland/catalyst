@@ -2,6 +2,8 @@ import { bufferToStream, streamToBuffer } from '@dcl/catalyst-storage'
 import { Authenticator, IdentityType } from '@dcl/crypto'
 import FormData = require('form-data')
 import { request } from 'http'
+import { EntityLockTimeoutError } from '../../../src/adapters/content-locks'
+import { DeploymentContext } from '../../../src/deployment-types'
 import { DEFAULT_MAX_UPLOAD_FIELD_SIZE, EnvironmentConfig } from '../../../src/Environment'
 import { makeNoopValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import { createDefaultServer, resetServer } from '../simpleTestEnvironment'
@@ -614,6 +616,40 @@ describe('Integration - Partial deployments', () => {
           expect(await countDeployments(server, deployment.entityId)).toBe(1)
           expect(await countPendingDeployments(server)).toBe(0)
         })
+      })
+    })
+  })
+
+  describe('when a final batch waits out the entity lock while another one publishes the entity', () => {
+    let deployment: PreparedDeployment
+    let response: Response
+    let deployedAt: number | undefined
+
+    beforeEach(async () => {
+      deployment = await prepareSceneDeployment(
+        ['13,14'],
+        { 'a.txt': Buffer.from(`lock wait ${Date.now()}-${Math.random()}`) },
+        identity
+      )
+      await postForm(server, buildPartialForm(deployment, [deployment.entityId]))
+      jest.spyOn(server.components.contentLocks, 'withRead').mockImplementationOnce(async () => {
+        // The winner publishes while this batch waits, until the bounded wait gives up.
+        await server.components.deployer.deployEntity(
+          Array.from(deployment.files.values()),
+          deployment.entityId,
+          { authChain: deployment.authChain },
+          DeploymentContext.LOCAL
+        )
+        throw new EntityLockTimeoutError(deployment.entityId)
+      })
+      response = await postForm(server, buildPartialForm(deployment, deployment.contentHashes))
+      deployedAt = await server.components.deployer.getDeployedEntityTimestamp(deployment.entityId)
+    })
+
+    it('should answer 200 with the published creation timestamp', async () => {
+      expect({ status: response.status, body: await response.json() }).toEqual({
+        status: 200,
+        body: { creationTimestamp: deployedAt }
       })
     })
   })
