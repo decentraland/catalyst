@@ -13,7 +13,7 @@ import { DatabaseClient } from '../../adapters/database'
 import { EnvironmentConfig } from '../../Environment'
 import { DeploymentContext, isInvalidDeployment } from '../../deployment-types'
 import { AppComponents } from '../../types'
-import { REQUEST_TTL_FORWARDS } from '../deployment-service/server-validator'
+import { newerEntityMessage, REQUEST_TTL_FORWARDS } from '../deployment-service/server-validator'
 import { storeStreamsInBatches } from '../store-content'
 import {
   InvalidPartialDeploymentError,
@@ -357,8 +357,8 @@ export function createPartialDeployments(
       if (result.kind === 'internal-error') {
         throw new PartialDeploymentUnavailableError(result.errors, INTERNAL_ERROR_RETRY_AFTER_SECONDS)
       }
-      // Catalyst-only transient conditions keep their retryable 429.
-      if (deployer.isRateLimited(entity.type, entity.pointers)) {
+      // Only a rejection by the rate limit itself is retryable: a newer entity on the pointers never clears.
+      if (result.kind === 'rate-limited') {
         throw new InvalidPartialDeploymentError(
           result.errors,
           429,
@@ -656,12 +656,15 @@ export function createPartialDeployments(
     }
 
     // Fast-fail for new uploads only; the deploy pipeline enforces ordering at publication.
+    const newerEntity = () => new InvalidPartialDeploymentError([newerEntityMessage(entity)])
     if (!pending && (await deploymentsRepository.hasNewerDeploymentOnPointers(database, entity))) {
-      throw new InvalidPartialDeploymentError([
-        `There is a newer entity pointed by one or more of the pointers you provided (entityId=${entity.id}).`
-      ])
+      throw newerEntity()
     }
     if (deployer.isRateLimited(entity.type, entity.pointers)) {
+      // The deployment holding the limit may be a newer entity that overtook this upload, which never clears.
+      if (pending && (await deploymentsRepository.hasNewerDeploymentOnPointers(database, entity))) {
+        throw newerEntity()
+      }
       throw new InvalidPartialDeploymentError(
         [`Entity rate limited (entityId=${entity.id} pointers=${entity.pointers.join(',')}).`],
         429,

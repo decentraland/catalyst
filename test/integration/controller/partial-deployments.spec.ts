@@ -865,6 +865,78 @@ describe('Integration - Partial deployments', () => {
         expect(await countDeployments(server, older.entityId)).toBe(0)
       })
     })
+
+    describe('and the newer upload is published while the rate limiter holds the pointers', () => {
+      let olderCompletion: Response
+
+      beforeEach(async () => {
+        await postForm(server, buildPartialForm(older, [older.entityId]))
+        await postForm(server, buildPartialForm(newer, [newer.entityId, ...newer.contentHashes]))
+        jest.spyOn(server.components.deployer, 'isRateLimited').mockReturnValue(true)
+        olderCompletion = await postForm(server, buildPartialForm(older, older.contentHashes))
+      })
+
+      it('should reject the older batch with a 400 naming the newer entity, not a 429', async () => {
+        expect({ status: olderCompletion.status, body: await olderCompletion.json() }).toEqual({
+          status: 400,
+          body: {
+            errors: [
+              `There is a newer entity pointed by one or more of the pointers you provided (entityId=${older.entityId} pointers=5,5).`
+            ]
+          }
+        })
+      })
+    })
+
+    describe('and the newer entity is published once the older completion passed its pre-checks', () => {
+      let olderCompletion: Response
+
+      beforeEach(async () => {
+        await postForm(server, buildPartialForm(older, [older.entityId]))
+        // The newer deployment lands while the older batch is being stored, so only publication sees it.
+        jest.spyOn(server.components.deployer, 'isRateLimited').mockReturnValueOnce(false).mockReturnValue(true)
+        jest.spyOn(server.components.deployer, 'deployEntity').mockResolvedValueOnce({
+          kind: 'newer-entity',
+          errors: [
+            `There is a newer entity pointed by one or more of the pointers you provided (entityId=${older.entityId} pointers=5,5).`
+          ]
+        })
+        olderCompletion = await postForm(server, buildPartialForm(older, older.contentHashes))
+      })
+
+      it('should reject it with the same 400 as the pre-check', async () => {
+        expect({ status: olderCompletion.status, body: await olderCompletion.json() }).toEqual({
+          status: 400,
+          body: {
+            errors: [
+              `There is a newer entity pointed by one or more of the pointers you provided (entityId=${older.entityId} pointers=5,5).`
+            ]
+          }
+        })
+      })
+    })
+
+    describe('and the older completion is rejected by the deploy rate limit itself', () => {
+      let olderCompletion: Response
+
+      beforeEach(async () => {
+        await postForm(server, buildPartialForm(older, [older.entityId]))
+        jest.spyOn(server.components.deployer, 'getRateLimitTtlSeconds').mockReturnValue(60)
+        jest.spyOn(server.components.deployer, 'deployEntity').mockResolvedValueOnce({
+          kind: 'rate-limited',
+          errors: [`Entity rate limited (entityId=${older.entityId} pointers=5,5).`]
+        })
+        olderCompletion = await postForm(server, buildPartialForm(older, older.contentHashes))
+      })
+
+      it('should answer a retryable 429 and keep the upload', async () => {
+        expect({
+          status: olderCompletion.status,
+          retryAfter: olderCompletion.headers.get('retry-after'),
+          pending: await pendingEntityIds(server)
+        }).toEqual({ status: 429, retryAfter: '60', pending: [older.entityId] })
+      })
+    })
   })
 
   describe('when the first batch of an upload takes a while to arrive', () => {
