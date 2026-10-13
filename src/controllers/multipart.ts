@@ -49,10 +49,6 @@ export type MultipartLimits = {
   maxTotalSize?: number
   /** Maximum time, in milliseconds, to receive the whole body. */
   uploadTimeoutMs?: number
-  /** Least rate, in bytes per second, a body must keep arriving at over any receive window; 0 or unset disables it. */
-  minReceiveBytesPerSecond?: number
-  /** Time, in milliseconds, the receive rate is measured over; the first check runs once one has passed. */
-  receiveRateWindowMs?: number
 }
 
 export type MultipartOptions = {
@@ -92,10 +88,6 @@ export const MAX_OPEN_SPOOL_FILES = 8
 // only reached by a stuck disk; the upload then fails with 503 rather than holding its budget share.
 export const DEFAULT_SPOOL_FLUSH_TIMEOUT_MS = 60_000
 
-// Long enough to ride out TCP slow start and short proxy or network stalls (at 64 KiB/s a sender may stall
-// for most of it after a burst), short enough that a stalled body holds its upload slot for seconds, not minutes.
-export const DEFAULT_RECEIVE_RATE_WINDOW_MS = 10_000
-
 const SPOOL_UNAVAILABLE_MESSAGE = 'The server cannot store uploads right now, please retry shortly.'
 
 /** Formats milliseconds as seconds for a client-facing message, e.g. 300000 → "300", 50 → "0.05". */
@@ -119,15 +111,6 @@ export function uploadTimedOutMessage(timeoutMs: number, receivedBytes: number, 
     `The upload did not finish within ${formatSeconds(timeoutMs)} s: received ${received} bytes ` +
     `(${formatKiBPerSecond(bytesPerSecond(receivedBytes, timeoutMs))} KiB/s). ` +
     'Retry on a faster connection or send smaller batches.'
-  )
-}
-
-/** The 408 message for a body arriving slower than `minBytesPerSecond`: the measured vs the required rate. */
-export function uploadTooSlowMessage(receivedBytes: number, elapsedMs: number, minBytesPerSecond: number): string {
-  return (
-    `The upload is too slow: received ${receivedBytes} bytes in ${formatSeconds(elapsedMs)} s ` +
-    `(${formatKiBPerSecond(bytesPerSecond(receivedBytes, elapsedMs))} KiB/s), ` +
-    `below the required ${formatKiBPerSecond(minBytesPerSecond)} KiB/s. Retry on a faster connection.`
   )
 }
 
@@ -411,14 +394,8 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       const source = requestBody ? Readable.fromWeb(requestBody) : Readable.from([])
       // busboy skips preambles, epilogues and unnamed parts without reporting their bytes.
       let bodyBytes = 0
-      // Time spent waiting for the client's next chunk; time our own backpressure (a slow disk) holds the
-      // body back is excluded, so it never counts against the client's receive rate.
-      let waitedMs = 0
-      let waitingSince: number | undefined = Date.now()
       const countBody = async function* (chunks: AsyncIterable<Uint8Array>): AsyncGenerator<Uint8Array> {
         for await (const chunk of chunks) {
-          waitedMs += Date.now() - (waitingSince ?? Date.now())
-          waitingSince = undefined
           bodyBytes += chunk.byteLength
           if (maxBodySize !== undefined && bodyBytes > maxBodySize) {
             const error = bodyTooLarge()
@@ -426,10 +403,8 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
             throw error
           }
           yield chunk
-          waitingSince = Date.now()
         }
       }
-      const clientTimeMs = (): number => waitedMs + (waitingSince === undefined ? 0 : Date.now() - waitingSince)
 
       // The request's signal aborts when the client disconnects (@dcl/http-server ties it to the socket).
       const signal: AbortSignal | undefined = ctx.request.signal
@@ -447,7 +422,7 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       // and a client that disconnects mid-upload rejects here — instead of leaving the parser and an
       // unsettled promise dangling (a slow resource leak).
       // The timeout is wall-clock, so it bounds how long a body holds its share whatever slows it.
-      const { uploadTimeoutMs, minReceiveBytesPerSecond } = limits
+      const { uploadTimeoutMs } = limits
       const declaredSize = parseInt(ctx.request.headers.get('content-length') || '', 10)
       const timeout =
         uploadTimeoutMs === undefined
@@ -466,31 +441,6 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
                 )
               )
             }, uploadTimeoutMs)
-      // Within the wall-clock bound, a body must keep arriving at the minimum rate over every window of client
-      // time, the first one included as its grace period. Rate-checking frees a stalled body's share early.
-      const rateWindowMs = limits.receiveRateWindowMs ?? DEFAULT_RECEIVE_RATE_WINDOW_MS
-      const samples = [{ at: 0, bytes: 0 }]
-      const rateCheck = !minReceiveBytesPerSecond
-        ? undefined
-        : setInterval(() => {
-            const at = clientTimeMs()
-            // While the server holds the body back, client time stands still and nothing is sampled.
-            if (at > samples[samples.length - 1].at) {
-              samples.push({ at, bytes: bodyBytes })
-            }
-            // Keep the latest sample at or before the window start as its baseline.
-            while (samples.length > 1 && samples[1].at <= at - rateWindowMs) {
-              samples.shift()
-            }
-            const elapsedMs = at - samples[0].at
-            const receivedBytes = bodyBytes - samples[0].bytes
-            if (elapsedMs >= rateWindowMs && bytesPerSecond(receivedBytes, elapsedMs) < minReceiveBytesPerSecond) {
-              if (!aborted) {
-                options.metrics?.increment('dcl_multipart_upload_aborts_total', { reason: 'too_slow' })
-              }
-              abort(new RequestTimeoutError(uploadTooSlowMessage(receivedBytes, elapsedMs, minReceiveBytesPerSecond)))
-            }
-          }, rateWindowMs / 10)
       try {
         await pipeline(source, countBody, formDataParser)
       } catch (error) {
@@ -511,7 +461,6 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
         throw new InvalidRequestError('Invalid multipart/form-data request')
       } finally {
         clearTimeout(timeout)
-        clearInterval(rateCheck)
         signal?.removeEventListener('abort', onClientClosed)
       }
       // The body is received: a slow flush is the server's, so it gets its own bound and a retryable 503.

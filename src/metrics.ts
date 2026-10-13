@@ -191,9 +191,9 @@ export const metricsDeclaration = validateMetricsDeclaration({
     labelNames: []
   },
   dcl_multipart_upload_aborts_total: {
-    help: 'POST /entities bodies aborted while received: the client closed the connection (499) or sent below MULTIPART_MIN_RECEIVE_BYTES_PER_SECOND (408)',
+    help: 'POST /entities bodies aborted while received because the client closed the connection (499)',
     type: 'counter',
-    // reason=(client_closed|too_slow)
+    // reason=(client_closed)
     labelNames: ['reason']
   },
   dcl_upload_budget_reserved_bytes: {
