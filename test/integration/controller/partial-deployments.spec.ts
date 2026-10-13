@@ -1,3 +1,4 @@
+import { bufferToStream, streamToBuffer } from '@dcl/catalyst-storage'
 import { Authenticator, IdentityType } from '@dcl/crypto'
 import FormData = require('form-data')
 import { request } from 'http'
@@ -1524,6 +1525,59 @@ describe('Integration - Partial deployments', () => {
 
     it('should validate the signature with the configured verifier and publish the entity', () => {
       expect(response.status).toBe(200)
+    })
+  })
+
+  describe('when the stored entity file of a live upload no longer matches its id', () => {
+    let deployment: PreparedDeployment
+    let resumeResponse: Response
+
+    beforeEach(async () => {
+      const nonce = `${Date.now()}-${Math.random()}`
+      deployment = await prepareSceneDeployment(
+        ['12,14'],
+        { 'a.txt': Buffer.from(`corrupt a ${nonce}`), 'b.txt': Buffer.from(`corrupt b ${nonce}`) },
+        identity
+      )
+      const [hashA, hashB] = deployment.contentHashes
+      await postForm(server, buildPartialForm(deployment, [deployment.entityId, hashA]))
+      await server.components.storage.storeStream(deployment.entityId, bufferToStream(Buffer.from(`corrupt ${nonce}`)))
+      resumeResponse = await postForm(server, buildPartialForm(deployment, [hashB]))
+    })
+
+    it('should ask for the entity file instead of trusting the stored copy', async () => {
+      expect({ status: resumeResponse.status, body: await resumeResponse.json() }).toEqual({
+        status: 400,
+        body: {
+          errors: [
+            `The first partial request for an entity, and any request by another signer, must include the entity file '${deployment.entityId}'.`
+          ]
+        }
+      })
+    })
+
+    describe('and the client resends the batch with the entity file', () => {
+      let repairResponse: Response
+      let storedEntityFile: Buffer | undefined
+
+      beforeEach(async () => {
+        const [, hashB] = deployment.contentHashes
+        repairResponse = await postForm(server, buildPartialForm(deployment, [deployment.entityId, hashB]))
+        const stored = await server.components.storage.retrieve(deployment.entityId)
+        storedEntityFile = stored ? await streamToBuffer(await stored.asStream()) : undefined
+      })
+
+      it('should replace the corrupt copy and publish the entity', async () => {
+        expect({
+          status: repairResponse.status,
+          deployed: await countDeployments(server, deployment.entityId),
+          storedEntityFile
+        }).toEqual({
+          status: 200,
+          deployed: 1,
+          storedEntityFile: Buffer.from(deployment.files.get(deployment.entityId)!)
+        })
+      })
     })
   })
 

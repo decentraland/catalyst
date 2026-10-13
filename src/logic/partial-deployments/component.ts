@@ -426,7 +426,15 @@ export function createPartialDeployments(
     if (!stored) {
       throw mustInclude
     }
-    return streamToBufferCapped(await stored.asStream(), MAX_ENTITY_FILE_SIZE_BYTES)
+    const entityFile = await streamToBufferCapped(await stored.asStream(), MAX_ENTITY_FILE_SIZE_BYTES)
+    const [{ hash }] = await crypto.calculateIPFSHashes([entityFile])
+    if (hash !== entityId) {
+      logger.warn('The stored entity file of a partial upload does not match its id', { entityId, computed: hash })
+      // Unrecorded, so the entity file the client resends is written over the corrupt copy.
+      await markMissing(entityId, [entityId])
+      throw mustInclude
+    }
+    return entityFile
   }
 
   // Creates the upload unless it exists and returns when it was created. One seen earlier in this request
