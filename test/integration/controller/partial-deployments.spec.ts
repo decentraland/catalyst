@@ -777,6 +777,48 @@ describe('Integration - Partial deployments', () => {
     })
   })
 
+  describe('when publishing the completing batch fails on the server', () => {
+    let deployment: PreparedDeployment
+    let response: Response
+
+    beforeEach(async () => {
+      deployment = await prepareSceneDeployment(
+        ['9,11'],
+        { 'a.txt': Buffer.from(`server failure ${Date.now()}-${Math.random()}`) },
+        identity
+      )
+      jest
+        .spyOn(server.components.deployer, 'deployEntity')
+        .mockResolvedValueOnce({ kind: 'internal-error', errors: ['There was an error deploying the entity'] })
+      response = await postForm(
+        server,
+        buildPartialForm(deployment, [deployment.entityId, ...deployment.contentHashes])
+      )
+    })
+
+    it('should answer a 503 telling the client when to retry and keep the upload', async () => {
+      expect({
+        status: response.status,
+        retryAfter: response.headers.get('retry-after'),
+        pending: await pendingEntityIds(server)
+      }).toEqual({ status: 503, retryAfter: '5', pending: [deployment.entityId] })
+    })
+
+    describe('and the client resends the batch', () => {
+      let retryResponse: Response
+
+      beforeEach(async () => {
+        retryResponse = await postForm(server, buildPartialForm(deployment, []))
+      })
+
+      it('should publish the entity', async () => {
+        expect({ status: retryResponse.status, deployed: await countDeployments(server, deployment.entityId) }).toEqual(
+          { status: 200, deployed: 1 }
+        )
+      })
+    })
+  })
+
   describe('when two partial uploads target the same pointers', () => {
     let older: PreparedDeployment
     let newer: PreparedDeployment

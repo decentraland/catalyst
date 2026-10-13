@@ -3,7 +3,7 @@ import { Field } from '@well-known-components/multipart-wrapper'
 import { AuthChain, AuthLink, EthAddress } from '@dcl/crypto'
 import { DeploymentContext, isInvalidDeployment, isSuccessfulDeployment } from '../../deployment-types'
 import { EntityLockTimeoutError } from '../../adapters/content-locks'
-import { InvalidPartialDeploymentError } from '../../logic/partial-deployments'
+import { InvalidPartialDeploymentError, PartialDeploymentUnavailableError } from '../../logic/partial-deployments'
 import { ReadDeployment } from '../../logic/deployment-service/types'
 import { FormHandlerContextWithPath } from '../../types'
 import { InvalidRequestError, ServiceUnavailableError } from '../errors'
@@ -20,7 +20,7 @@ const MAX_AUTH_CHAIN_LENGTH = 10
 type Response =
   | { status: 200; body: PostEntity200 }
   | { status: 202; body: PostEntity202 }
-  | { status: 400 | 429; body: PostEntity400; headers?: Record<string, string> }
+  | { status: 400 | 429 | 503; body: PostEntity400; headers?: Record<string, string> }
 
 // Method: POST
 export async function createEntity(
@@ -165,6 +165,19 @@ export async function createEntity(
             ? { 'Retry-After': String(error.retryAfterSeconds) }
             : undefined
         return { status: error.statusCode, body: { errors: error.errors }, headers }
+      }
+      if (error instanceof PartialDeploymentUnavailableError) {
+        metrics.increment('dcl_partial_deployments_staging_total', { kind: 'error' })
+        logger.error(`POST /entities - Partial deployment could not be published (${error.errors.join(',')})`, {
+          entityId,
+          ethAddress,
+          userAgent
+        })
+        return {
+          status: 503,
+          body: { errors: error.errors },
+          headers: { 'Retry-After': String(error.retryAfterSeconds) }
+        }
       }
       if (error instanceof EntityLockTimeoutError) {
         metrics.increment('dcl_partial_deployments_staging_total', { kind: 'busy' })

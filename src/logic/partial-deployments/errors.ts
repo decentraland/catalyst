@@ -28,6 +28,17 @@ export class InvalidPartialDeploymentError extends Error {
   }
 }
 
+/**
+ * Thrown when publishing a complete upload fails for a server-side reason (e.g. a database error). The
+ * upload stays staged, so the controller answers 503 with `retryAfterSeconds` and the client resends.
+ */
+export class PartialDeploymentUnavailableError extends Error {
+  constructor(public readonly errors: string[], public readonly retryAfterSeconds: number) {
+    super(errors.join(', '))
+    this.name = 'PartialDeploymentUnavailableError'
+  }
+}
+
 /** Thrown inside expired-upload cleanup when storage fails to delete an upload's staged content. */
 export class StagedContentDeleteError extends Error {
   constructor(public readonly entityId: string, cause: unknown) {

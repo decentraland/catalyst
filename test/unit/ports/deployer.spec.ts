@@ -210,6 +210,33 @@ describe('Deployer', function () {
     // expect(serviceSpy).toHaveBeenCalledWith(expect.anything(), ['QmSQc2mGpzanz1DDtTf2ZCFnwTpJvAbcwzsS4An5PXaTqg'], undefined)
   })
 
+  describe('when storing the deployment fails with a server error', () => {
+    let deploymentResult: DeploymentResult
+
+    beforeEach(async () => {
+      const service = await buildDeployer()
+      jest.spyOn(service.components.deploymentsRepository, 'getEntityById').mockResolvedValue(undefined)
+      jest.spyOn(service.components.database, 'transaction').mockRejectedValueOnce(new Error('connection reset'))
+      deploymentResult = await service.deployEntity(
+        [entityFile, randomFile],
+        entity.id,
+        auditInfo,
+        DeploymentContext.LOCAL
+      )
+    })
+
+    afterEach(() => {
+      jest.restoreAllMocks()
+    })
+
+    it('should reject it marked as an internal error rather than a verdict on the entity', () => {
+      expect(deploymentResult).toEqual({
+        kind: 'internal-error',
+        errors: ['There was an error deploying the entity']
+      })
+    })
+  })
+
   async function buildDeployer() {
     const database = createTestDatabaseComponent()
     database.queryWithValues = () => Promise.resolve({ rows: [], rowCount: 0 } as any)

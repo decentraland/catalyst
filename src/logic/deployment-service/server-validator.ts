@@ -17,6 +17,18 @@ export interface ServiceCalls {
 
 export const IGNORING_FIX_ERROR = 'Ignoring fix for failed deployment since there are newer entities. '
 
+/** Server-side rejections callers branch on: a newer entity is permanent, a rate limit clears with time. */
+export type ServerRejectionReason = 'newer-entity' | 'rate-limited'
+
+/** The rejection message for an entity overtaken by a newer one on its pointers. */
+export function newerEntityMessage(entity: Pick<Entity, 'id' | 'pointers'>): string {
+  return `There is a newer entity pointed by one or more of the pointers you provided (entityId=${
+    entity.id
+  } pointers=${entity.pointers.join(',')}).`
+}
+
+type LocalCheckFailure = { message: string; reason?: ServerRejectionReason }
+
 /**
  * Server-side validations for the entity currently being deployed, for the `LOCAL` and
  * `FIX_ATTEMPT` contexts. `SYNCED` / `SYNCED_LEGACY_ENTITY` contexts skip these checks.
@@ -29,16 +41,16 @@ export async function validateForServer(
   entity: Entity,
   context: DeploymentContext,
   serviceCalls: ServiceCalls
-): Promise<{ ok: true } | { ok: false; message: string }> {
+): Promise<{ ok: true } | { ok: false; message: string; reason?: ServerRejectionReason }> {
   // SYNCED/SYNCED_LEGACY_ENTITY don't validate anything on this side.
   if (context === DeploymentContext.SYNCED || context === DeploymentContext.SYNCED_LEGACY_ENTITY) {
     return { ok: true }
   }
 
   if (context === DeploymentContext.LOCAL) {
-    const error = await localChecks(entity, serviceCalls)
-    if (error) {
-      return { ok: false, message: error }
+    const failure = await localChecks(entity, serviceCalls)
+    if (failure) {
+      return { ok: false, ...failure }
     }
   } else if (context === DeploymentContext.FIX_ATTEMPT) {
     // If there are newer entities, we can end up in a loop (unfixable failed deployment),
@@ -61,27 +73,32 @@ export async function validateForServer(
 }
 
 /** Checks when context is `DeploymentContext.LOCAL`. */
-async function localChecks(entity: Entity, serviceCalls: ServiceCalls): Promise<string | undefined> {
+async function localChecks(entity: Entity, serviceCalls: ServiceCalls): Promise<LocalCheckFailure | undefined> {
   if (await serviceCalls.areThereNewerEntities(entity))
-    return `There is a newer entity pointed by one or more of the pointers you provided (entityId=${
-      entity.id
-    } pointers=${entity.pointers.join(',')}).`
+    return { message: newerEntityMessage(entity), reason: 'newer-entity' }
 
   if (await serviceCalls.isEntityDeployedAlready(entity))
-    return `This entity was already deployed. You can't redeploy it`
+    return { message: `This entity was already deployed. You can't redeploy it` }
 
   if (await serviceCalls.isEntityRateLimited(entity))
-    return `Entity rate limited (entityId=${entity.id} pointers=${entity.pointers.join(',')}).`
+    return {
+      message: `Entity rate limited (entityId=${entity.id} pointers=${entity.pointers.join(',')}).`,
+      reason: 'rate-limited'
+    }
 
   if (await serviceCalls.isRequestTtlBackwards(entity))
-    return `The request is not recent enough, please submit it again with a new timestamp (entityId=${
-      entity.id
-    } pointers=${entity.pointers.join(',')}).`
+    return {
+      message: `The request is not recent enough, please submit it again with a new timestamp (entityId=${
+        entity.id
+      } pointers=${entity.pointers.join(',')}).`
+    }
 
   if (isRequestTtlForwards(entity))
-    return `The request is too far in the future, please submit it again with a new timestamp (entityId=${
-      entity.id
-    } pointers=${entity.pointers.join(',')}).`
+    return {
+      message: `The request is too far in the future, please submit it again with a new timestamp (entityId=${
+        entity.id
+      } pointers=${entity.pointers.join(',')}).`
+    }
 }
 
 /** Checks when context is `DeploymentContext.FIX_ATTEMPT`. */

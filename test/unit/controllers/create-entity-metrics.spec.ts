@@ -1,7 +1,10 @@
 import { Authenticator } from '@dcl/crypto'
 import { createEntity } from '../../../src/controllers/handlers/create-entity-handler'
 import { EntityLockTimeoutError } from '../../../src/adapters/content-locks'
-import { InvalidPartialDeploymentError } from '../../../src/logic/partial-deployments'
+import {
+  InvalidPartialDeploymentError,
+  PartialDeploymentUnavailableError
+} from '../../../src/logic/partial-deployments'
 
 type Context = Parameters<typeof createEntity>[0]
 
@@ -107,6 +110,28 @@ describe('when a partial batch is rejected', () => {
       expect({ status: response.status, metrics: increment.mock.calls }).toEqual({
         status: 400,
         metrics: [['dcl_partial_deployments_staging_total', { kind: 'validation_error' }]]
+      })
+    })
+  })
+
+  describe('and publishing the complete upload fails on the server', () => {
+    let response: Awaited<ReturnType<typeof createEntity>>
+
+    beforeEach(async () => {
+      stageDeployment.mockRejectedValueOnce(
+        new PartialDeploymentUnavailableError(['There was an error deploying the entity'], 5)
+      )
+      response = await createEntity(buildContext(stageDeployment, increment))
+    })
+
+    it('should answer a retryable 503 and count it as an error, not a validation failure', () => {
+      expect({ response, metrics: increment.mock.calls }).toEqual({
+        response: {
+          status: 503,
+          body: { errors: ['There was an error deploying the entity'] },
+          headers: { 'Retry-After': '5' }
+        },
+        metrics: [['dcl_partial_deployments_staging_total', { kind: 'error' }]]
       })
     })
   })

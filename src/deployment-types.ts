@@ -88,11 +88,15 @@ export type LocalDeploymentAuditInfo = Pick<AuditInfo, 'authChain'>
 
 export type InvalidResult = {
   errors: string[]
-  // Distinguishes a transient, retryable pointer-lock conflict (another deploy is holding the pointers
-  // right now) from a terminal validation failure, so callers can branch on structure instead of
-  // string-matching the error message.
-  kind?: 'pointer-conflict'
+  // Lets callers branch on structure instead of string-matching the error message.
+  kind?: InvalidResultKind
 }
+
+/**
+ * Why a deployment was rejected, when callers branch on it: `pointer-conflict` and `rate-limited` clear
+ * with time, `newer-entity` never does, `internal-error` is a server failure, not a verdict on the entity.
+ */
+export type InvalidResultKind = 'pointer-conflict' | 'newer-entity' | 'rate-limited' | 'internal-error'
 export function InvalidResult(val: InvalidResult): InvalidResult {
   return val
 }

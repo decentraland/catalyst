@@ -15,7 +15,12 @@ import { DeploymentContext, isInvalidDeployment } from '../../deployment-types'
 import { AppComponents } from '../../types'
 import { REQUEST_TTL_FORWARDS } from '../deployment-service/server-validator'
 import { storeStreamsInBatches } from '../store-content'
-import { InvalidPartialDeploymentError, PartialUploadThrottleReason, StagedContentDeleteError } from './errors'
+import {
+  InvalidPartialDeploymentError,
+  PartialDeploymentUnavailableError,
+  PartialUploadThrottleReason,
+  StagedContentDeleteError
+} from './errors'
 import {
   ExpiredCleanupSummary,
   IPartialDeployments,
@@ -44,6 +49,8 @@ const FINALIZE_POINTER_CONFLICT_RETRIES = 3
 const FINALIZE_POINTER_CONFLICT_DELAY_MS = 300
 // The conflicting deployment is in flight, so it clears within seconds.
 const POINTER_CONFLICT_RETRY_AFTER_SECONDS = 5
+// A failed publication (e.g. a database blip) is retried by resending the last batch; only publication repeats.
+const INTERNAL_ERROR_RETRY_AFTER_SECONDS = 5
 
 // Caps the manifest on both paths: a resume reads it back from storage outside the multipart budget.
 const MAX_ENTITY_FILE_SIZE_BYTES = 10 * 1024 * 1024 // 10 MB
@@ -346,6 +353,10 @@ export function createPartialDeployments(
         return incompleteUntil(missingNow, expiresAt)
       }
 
+      // A server failure says nothing about the entity: the upload stays staged for the client's retry.
+      if (result.kind === 'internal-error') {
+        throw new PartialDeploymentUnavailableError(result.errors, INTERNAL_ERROR_RETRY_AFTER_SECONDS)
+      }
       // Catalyst-only transient conditions keep their retryable 429.
       if (deployer.isRateLimited(entity.type, entity.pointers)) {
         throw new InvalidPartialDeploymentError(
