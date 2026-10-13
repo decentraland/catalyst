@@ -6,6 +6,6 @@ export function createNoOpDeployRateLimiter(): IDeployRateLimiterComponent {
     isRateLimited: () => false,
     newUnchangedDeployment: () => {},
     isUnchangedDeploymentRateLimited: () => false,
-    getRateLimitTtlSeconds: () => 0
+    getRateLimitRetryAfterSeconds: () => 1
   }
 }

@@ -17,11 +17,11 @@ describe('when the error handler maps an upload failure to a response', () => {
 
   describe('and the server is unavailable', () => {
     beforeEach(async () => {
-      failure = new ServiceUnavailableError('Server is handling too many uploads, please retry shortly.')
+      failure = new ServiceUnavailableError('Server is handling too many uploads, please retry shortly.', 30)
       response = await errorHandler({} as any, () => Promise.reject(failure))
     })
 
-    it('should answer a 503 with a Retry-After of 30 s', () => {
+    it('should answer a 503 with the Retry-After the error carries', () => {
       expect(response).toEqual({
         status: 503,
         headers: { 'Retry-After': '30' },

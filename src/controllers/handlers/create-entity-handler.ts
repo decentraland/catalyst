@@ -1,17 +1,24 @@
 import { PostEntity200, PostEntity400 } from '@dcl/catalyst-api-specs/lib/client'
 import { Field } from '@well-known-components/multipart-wrapper'
-import { AuthChain, AuthLink, EthAddress } from '@dcl/crypto'
+import { AuthChain, AuthLink, Authenticator, EthAddress } from '@dcl/crypto'
 import { DeploymentContext, InvalidResult, isInvalidDeployment, isSuccessfulDeployment } from '../../deployment-types'
 import { createReadStream } from 'fs'
 import { readFile } from 'fs/promises'
 import { bufferToStream } from '@dcl/catalyst-storage'
 import { EntityLockTimeoutError } from '../../adapters/content-locks'
 import { UploadBudgetExceededError, UploadBudgetLease } from '../../adapters/upload-budget'
-import { InvalidPartialDeploymentError, MAX_ENTITY_FILE_SIZE_BYTES, StagedFile } from '../../logic/partial-deployments'
+import {
+  InvalidPartialDeploymentError,
+  MAX_ENTITY_FILE_SIZE_BYTES,
+  PartialDeploymentUnavailableError,
+  StagedFile
+} from '../../logic/partial-deployments'
 import { DeploymentFileSource, ReadDeployment } from '../../logic/deployment-service/types'
 import { FormHandlerContextWithPath, SpooledFile } from '../../types'
 import { InvalidRequestError, ServiceUnavailableError } from '../errors'
 import { RequestArrivalContext } from '../request-arrival'
+import { UPLOAD_UNAVAILABLE_RETRY_AFTER_SECONDS } from '../multipart'
+import { PartialQuotaContext } from '../deployment-quota'
 
 /** Body of a 202 response to a partial deployment request: the content hashes not yet on the server. */
 type PostEntity202 = { missing: string[] }
@@ -24,7 +31,7 @@ const MAX_AUTH_CHAIN_LENGTH = 10
 type Response =
   | { status: 200; body: PostEntity200 }
   | { status: 202; body: PostEntity202 }
-  | { status: 400 | 429; body: PostEntity400; headers?: Record<string, string> }
+  | { status: 400 | 429 | 503; body: PostEntity400; headers?: Record<string, string> }
 
 // Method: POST
 export async function createEntity(
@@ -39,7 +46,8 @@ export async function createEntity(
     | 'crypto',
     '/entities'
   > &
-    RequestArrivalContext
+    RequestArrivalContext &
+    PartialQuotaContext
 ): Promise<Response> {
   const { metrics, deployer, partialDeployments, logs, contentLocks, deploymentMemoryBudget, crypto } =
     context.components
@@ -78,12 +86,29 @@ export async function createEntity(
   const deployedTimestamp = await deployer.getDeployedEntityTimestamp(entityId)
   if (deployedTimestamp !== undefined) {
     if (isPartial) {
-      metrics.increment('dcl_partial_deployments_staging_total', { kind: 'finalized' })
+      metrics.increment('dcl_partial_deployments_staging_total', { kind: 'replayed' })
     } else {
       metrics.increment('dcl_deployments_endpoint_counter', { kind: 'success' })
     }
     logger.info(`POST /entities - Entity already deployed`, { entityId, ethAddress, userAgent })
     return { status: 200, body: { creationTimestamp: deployedTimestamp } }
+  }
+
+  // A source that spent its daily quota may only resume the signer's own upload, which skips the access check.
+  const quotaRetryAfter = context.partialQuota?.exhaustedRetryAfterSeconds
+  if (
+    isPartial &&
+    quotaRetryAfter !== undefined &&
+    !(await partialDeployments.isLiveUploadOf(entityId, Authenticator.ownerAddress(authChain)))
+  ) {
+    metrics.increment('dcl_partial_deployments_staging_total', { kind: 'throttled' })
+    return {
+      status: 429,
+      body: {
+        errors: ['The daily deployment quota for this client is exhausted. Only uploads in progress can continue.']
+      },
+      headers: { 'Retry-After': String(quotaRetryAfter) }
+    }
   }
 
   // Authenticate before taking any lock, so a request that can't be authenticated never holds a lock
@@ -119,9 +144,15 @@ export async function createEntity(
 
   async function checkSignature(authChain: AuthChain, signatureDate: number): Promise<Response | undefined> {
     const signature = await crypto.validateSignature(entityId, authChain, signatureDate)
-    return signature.ok
-      ? undefined
-      : { status: 400, body: { errors: [`The signature is invalid. ${signature.message}`] } }
+    if (signature.ok) {
+      return undefined
+    }
+    if (isPartial) {
+      metrics.increment('dcl_partial_deployments_staging_total', { kind: 'validation_error' })
+    } else {
+      metrics.increment('dcl_deployments_endpoint_counter', { kind: 'validation_error' })
+    }
+    return { status: 400, body: { errors: [`The signature is invalid. ${signature.message}`] } }
   }
 
   // The entity file is read from disk once, under a memory share held until staging settles; it is hashed
@@ -168,11 +199,19 @@ export async function createEntity(
         authChain,
         files,
         entityFile,
-        requestedAt: context.requestArrivedAt
+        requestedAt: context.requestArrivedAt,
+        onAdmitted: () => {
+          if (context.partialQuota) context.partialQuota.admitted = true
+        }
       })
-      if (result.kind === 'deployed') {
-        metrics.increment('dcl_partial_deployments_staging_total', { kind: 'finalized' })
-        logger.info(`POST /entities - Partial deployment finalized`, { entityId, ethAddress, userAgent })
+      if (result.kind === 'deployed' || result.kind === 'replayed') {
+        const finalized = result.kind === 'deployed'
+        metrics.increment('dcl_partial_deployments_staging_total', { kind: finalized ? 'finalized' : 'replayed' })
+        logger.info(`POST /entities - Partial deployment ${finalized ? 'finalized' : 'already deployed'}`, {
+          entityId,
+          ethAddress,
+          userAgent
+        })
         return { status: 200, body: { creationTimestamp: result.creationTimestamp } }
       }
       metrics.increment('dcl_partial_deployments_staging_total', { kind: 'accepted' })
@@ -192,11 +231,13 @@ export async function createEntity(
         if (throttled) {
           metrics.increment('dcl_partial_upload_throttled_total', { reason: error.throttleReason ?? 'unknown' })
         }
-        logger.error(`POST /entities - Partial deployment failed (${error.errors.join(',')})`, {
-          entityId,
-          ethAddress,
-          userAgent
-        })
+        const logged = { entityId, ethAddress, userAgent }
+        if (throttled) {
+          // Throttling is ordinary client back-off, not a server failure.
+          logger.warn(`POST /entities - Partial deployment throttled (${error.errors.join(',')})`, logged)
+        } else {
+          logger.error(`POST /entities - Partial deployment failed (${error.errors.join(',')})`, logged)
+        }
         // statusCode is 429 for transient conditions (rate limiting), 400 for validation errors. On a
         // 429 with a known window, send Retry-After so the client waits it out instead of exhausting its
         // resume budget inside the window.
@@ -205,6 +246,19 @@ export async function createEntity(
             ? { 'Retry-After': String(error.retryAfterSeconds) }
             : undefined
         return { status: error.statusCode, body: { errors: error.errors }, headers }
+      }
+      if (error instanceof PartialDeploymentUnavailableError) {
+        metrics.increment('dcl_partial_deployments_staging_total', { kind: 'error' })
+        logger.error(`POST /entities - Partial deployment could not be published (${error.errors.join(',')})`, {
+          entityId,
+          ethAddress,
+          userAgent
+        })
+        return {
+          status: 503,
+          body: { errors: error.errors },
+          headers: { 'Retry-After': String(error.retryAfterSeconds) }
+        }
       }
       if (error instanceof EntityLockTimeoutError || error instanceof UploadBudgetExceededError) {
         metrics.increment('dcl_partial_deployments_staging_total', { kind: 'busy' })
@@ -304,7 +358,7 @@ export async function createEntity(
       return deploymentMemoryBudget.acquire(bytes)
     } catch (error) {
       if (error instanceof UploadBudgetExceededError) {
-        throw new ServiceUnavailableError(error.message)
+        throw new ServiceUnavailableError(error.message, UPLOAD_UNAVAILABLE_RETRY_AFTER_SECONDS)
       }
       throw error
     }

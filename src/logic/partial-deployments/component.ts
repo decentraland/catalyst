@@ -7,19 +7,26 @@ import {
   ExpiredUpload,
   FileReceipt,
   OldestUploadScope,
-  PendingDeploymentRow
+  PendingDeploymentRow,
+  PointerUsage
 } from '../../adapters/pending-deployments-repository'
 import { DatabaseClient } from '../../adapters/database'
 import { UploadBudgetExceededError, UploadBudgetLease } from '../../adapters/upload-budget'
 import { EnvironmentConfig } from '../../Environment'
 import { DeploymentContext, isInvalidDeployment } from '../../deployment-types'
 import { AppComponents } from '../../types'
-import { REQUEST_TTL_FORWARDS } from '../deployment-service/server-validator'
+import { newerEntityMessage, REQUEST_TTL_FORWARDS } from '../deployment-service/server-validator'
 import { CONTENT_STORE_CONCURRENCY, storeStreamsInBatches } from '../store-content'
-import { InvalidPartialDeploymentError, PartialUploadThrottleReason, StagedContentDeleteError } from './errors'
+import {
+  InvalidPartialDeploymentError,
+  PartialDeploymentUnavailableError,
+  PartialUploadThrottleReason,
+  StagedContentDeleteError
+} from './errors'
 import {
   ExpiredCleanupSummary,
   IPartialDeployments,
+  PartialUploadStage,
   StagedFile,
   StageDeploymentInput,
   StageDeploymentResult
@@ -37,7 +44,11 @@ type PreparedBatch = {
   /** The upload as it was when the batch was prepared, if it existed. */
   seen: PendingDeploymentRow | undefined
   requestedAt: number
+  onAdmitted: StageDeploymentInput['onAdmitted']
 }
+
+// Filled when a batch releases its upload, so the staged keys are reclaimed once the content lock is free.
+type ReleasedUpload = { stagedKeys?: string[] }
 
 // Bounded retry for two requests completing the same upload at once: the loser of the in-memory
 // pointer lock retries and hits deployEntity's idempotency fast path.
@@ -45,6 +56,8 @@ const FINALIZE_POINTER_CONFLICT_RETRIES = 3
 const FINALIZE_POINTER_CONFLICT_DELAY_MS = 300
 // The conflicting deployment is in flight, so it clears within seconds.
 const POINTER_CONFLICT_RETRY_AFTER_SECONDS = 5
+// A failed publication (e.g. a database blip) is retried by resending the last batch; only publication repeats.
+const INTERNAL_ERROR_RETRY_AFTER_SECONDS = 5
 
 // Caps the manifest on both paths: a resume reads it back from storage outside the multipart budget.
 export const MAX_ENTITY_FILE_SIZE_BYTES = 10 * 1024 * 1024 // 10 MB
@@ -78,6 +91,59 @@ export function secondsUntilCleanupFreesQuota(params: {
   return Math.max(1, Math.ceil((base + runs * cleanupIntervalMs - now) / 1000))
 }
 
+/** A per-pointer upload cap an upload would exceed. */
+export type PointerQuotaRejection = {
+  reason: Extract<PartialUploadThrottleReason, 'uploads_per_pointer' | 'uploads_per_pointer_account'>
+  message: string
+  retryAfterSeconds: number
+}
+
+/**
+ * Checks a new upload against the per-pointer caps: each of its pointers may be held by at most
+ * `maxUploadsPerPointer` live uploads across deployers, and by at most all but one of them (at least 1)
+ * of one deployer. Live uploads free their slots when they expire, so Retry-After is when every full
+ * pointer's oldest upload in scope expires; at least 1 s.
+ * @param params Live usage of the upload's pointers, the cap, current time and upload lifetime (ms).
+ * @returns The rejection, or undefined when the upload fits.
+ */
+export function checkPointerQuotas(params: {
+  usage: PointerUsage[]
+  maxUploadsPerPointer: number
+  now: number
+  ttlMs: number
+}): PointerQuotaRejection | undefined {
+  const { usage, maxUploadsPerPointer, now, ttlMs } = params
+  const maxPerDeployer = Math.max(1, maxUploadsPerPointer - 1)
+  const retryAfter = (oldest: number[]) => Math.max(1, Math.ceil((Math.max(...oldest) + ttlMs - now) / 1000))
+  const describe = (full: PointerUsage[]) =>
+    full
+      .slice(0, 5)
+      .map((entry) => entry.pointer)
+      .join(' ') + (full.length > 5 ? ` and ${full.length - 5} more` : '')
+
+  const full = usage.filter((entry) => entry.uploads >= maxUploadsPerPointer)
+  if (full.length > 0) {
+    return {
+      reason: 'uploads_per_pointer',
+      message: `Too many partial uploads in progress for parcels ${describe(
+        full
+      )} (max ${maxUploadsPerPointer} per parcel). Complete an upload or wait for one to expire.`,
+      retryAfterSeconds: retryAfter(full.map((entry) => entry.oldestCreatedAt))
+    }
+  }
+  const ownFull = usage.filter((entry) => entry.deployerUploads >= maxPerDeployer)
+  if (ownFull.length > 0) {
+    return {
+      reason: 'uploads_per_pointer_account',
+      message: `Too many partial uploads in progress for this account on parcels ${describe(
+        ownFull
+      )} (max ${maxPerDeployer} per parcel). Complete an upload or wait for one to expire.`,
+      retryAfterSeconds: retryAfter(ownFull.map((entry) => entry.deployerOldestCreatedAt ?? now - ttlMs))
+    }
+  }
+  return undefined
+}
+
 // Grows the memory share with the bytes read, so stored sizes (attacker-influenced when compressed) aren't trusted.
 async function streamToBufferCapped(
   stream: AsyncIterable<Buffer>,
@@ -102,7 +168,8 @@ async function streamToBufferCapped(
 /**
  * Stages authenticated, entity-keyed partial upload batches. Each batch is hashed and validated without
  * locks, then stored and possibly published under the shared content lock and the per-entity lock. Overlapping uploads
- * coexist within byte and count quotas; publication order is enforced by the deploy pipeline.
+ * coexist within byte and count quotas, including a per-parcel cap across deployers; publication order is enforced by
+ * the deploy pipeline.
  * @param components Validation, persistence, storage and telemetry dependencies.
  * @param options Tuning overrides; `expiredUploadsPerPage` is the cleanup listing page size (default 100).
  * @returns Partial deployment orchestration and expired-upload cleanup.
@@ -148,6 +215,7 @@ export function createPartialDeployments(
   const pendingDeploymentTtlMs = env.getConfig<number>(EnvironmentConfig.PENDING_DEPLOYMENT_TTL)
   const requestTtlBackwards = env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
   const maxPendingPerDeployer = env.getConfig<number>(EnvironmentConfig.MAX_PENDING_DEPLOYMENTS_PER_DEPLOYER)
+  const maxUploadsPerPointer = env.getConfig<number>(EnvironmentConfig.MAX_PENDING_UPLOADS_PER_POINTER)
   const accountBytes = BigInt(env.getConfig<number>(EnvironmentConfig.MAX_PENDING_BYTES_PER_DEPLOYER))
   const globalBytes = BigInt(env.getConfig<number>(EnvironmentConfig.MAX_PENDING_BYTES))
   const bytesPerMinute = BigInt(env.getConfig<number>(EnvironmentConfig.MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE))
@@ -164,6 +232,15 @@ export function createPartialDeployments(
   // When the last cleanup run ended, to estimate the next one for Retry-After.
   let lastCleanupAt: number | undefined
   metrics.observe('dcl_partial_upload_capacity_bytes', {}, Number(globalBytes))
+
+  async function timed<T>(stage: PartialUploadStage, operation: () => Promise<T>): Promise<T> {
+    const { end } = metrics.startTimer('dcl_partial_upload_stage_duration_seconds', { stage })
+    try {
+      return await operation()
+    } finally {
+      end()
+    }
+  }
 
   function isLive(row: PendingDeploymentRow): boolean {
     return Date.now() <= row.createdAt.getTime() + pendingDeploymentTtlMs
@@ -243,13 +320,31 @@ export function createPartialDeployments(
     await pendingDeploymentsRepository.markMissing(database, entityId, hashes)
   }
 
+  // Drops an upload that can never be published, with its accounting, so it stops holding quota until expiry.
+  async function releaseUpload(entityId: string, released: ReleasedUpload): Promise<void> {
+    try {
+      const stagedKeys = await pendingDeploymentsRepository.getStagedKeys(database, entityId)
+      // One statement: the row and its receipts (by cascade) go together.
+      await pendingDeploymentsRepository.deleteByEntityId(database, entityId)
+      released.stagedKeys = stagedKeys
+      logger.info('Released a partial upload that can never be published', { entityId })
+    } catch (error) {
+      // The rejection stands; expired-upload cleanup reclaims the upload instead.
+      logger.warn('Failed to release a partial upload that can never be published', {
+        entityId,
+        error: error instanceof Error ? error.message : String(error)
+      })
+    }
+  }
+
   async function finalize(
     entity: Entity,
     entityFile: Uint8Array,
     authChain: StageDeploymentInput['authChain'],
     contentHashes: string[],
     admittedAt: number,
-    batches: number
+    batches: number,
+    released: ReleasedUpload
   ): Promise<StageDeploymentResult> {
     const expiresAt = admittedAt + pendingDeploymentTtlMs
     assertLiveUntil(expiresAt)
@@ -257,6 +352,14 @@ export function createPartialDeployments(
     // The deploy pipeline re-reads content from storage, so only the entity file needs to be in the map.
     const finalizeFiles = new Map<string, Uint8Array>([[entityId, entityFile]])
     for (let attempt = 0; ; attempt++) {
+      // A retry after a pointer conflict may find the entity published by the request it conflicted with.
+      if (attempt > 0) {
+        const publishedMeanwhile = await deploymentsRepository.getEntityById(database, entityId)
+        if (publishedMeanwhile) {
+          await deletePendingBestEffort(entityId)
+          return { kind: 'replayed', creationTimestamp: publishedMeanwhile.localTimestamp }
+        }
+      }
       // Freshness is measured from the upload's admission, as when staging it.
       const result = await deployer.deployEntity(finalizeFiles, entityId, { authChain }, DeploymentContext.LOCAL, {
         requestTtlAnchor: admittedAt,
@@ -279,7 +382,7 @@ export function createPartialDeployments(
       const alreadyDeployed = await deploymentsRepository.getEntityById(database, entityId)
       if (alreadyDeployed) {
         await deletePendingBestEffort(entityId)
-        return { kind: 'deployed', creationTimestamp: alreadyDeployed.localTimestamp }
+        return { kind: 'replayed', creationTimestamp: alreadyDeployed.localTimestamp }
       }
 
       // Content went missing while the pipeline ran: resumable, the client re-uploads it.
@@ -290,12 +393,16 @@ export function createPartialDeployments(
         return incompleteUntil(missingNow, expiresAt)
       }
 
-      // Catalyst-only transient conditions keep their retryable 429.
-      if (deployer.isRateLimited(entity.type, entity.pointers)) {
+      // A server failure says nothing about the entity: the upload stays staged for the client's retry.
+      if (result.kind === 'internal-error') {
+        throw new PartialDeploymentUnavailableError(result.errors, INTERNAL_ERROR_RETRY_AFTER_SECONDS)
+      }
+      // Only a rejection by the rate limit itself is retryable: a newer entity on the pointers never clears.
+      if (result.kind === 'rate-limited') {
         throw new InvalidPartialDeploymentError(
           result.errors,
           429,
-          deployer.getRateLimitTtlSeconds(entity.type),
+          deployer.getRateLimitRetryAfterSeconds(entity.type, entity.pointers),
           'entity_rate_limit'
         )
       }
@@ -306,6 +413,10 @@ export function createPartialDeployments(
           POINTER_CONFLICT_RETRY_AFTER_SECONDS,
           'pointer_conflict'
         )
+      }
+      // Only an overtaken upload is released: other rejections (e.g. a subgraph error read as lost access) may clear.
+      if (result.kind === 'newer-entity') {
+        await releaseUpload(entityId, released)
       }
       throw new InvalidPartialDeploymentError(result.errors)
     }
@@ -342,7 +453,15 @@ export function createPartialDeployments(
     }
     // A file the budget can never hold is rejected outright rather than with a 503 it can't outwait.
     const maxBytes = Math.min(MAX_ENTITY_FILE_SIZE_BYTES, deploymentMemoryBudget.capacityBytes)
-    return streamToBufferCapped(await stored.asStream(), maxBytes, lease)
+    const entityFile = await streamToBufferCapped(await stored.asStream(), maxBytes, lease)
+    const [{ hash }] = await crypto.calculateIPFSHashes([entityFile])
+    if (hash !== entityId) {
+      logger.warn('The stored entity file of a partial upload does not match its id', { entityId, computed: hash })
+      // Unrecorded, so the entity file the client resends is written over the corrupt copy.
+      await markMissing(entityId, [entityId])
+      throw mustInclude
+    }
+    return entityFile
   }
 
   // Creates the upload unless it exists and returns when it was created. One seen earlier in this request
@@ -379,6 +498,27 @@ export function createPartialDeployments(
           `Too many partial uploads in progress for this account (max ${maxPendingPerDeployer}). Complete an upload or wait for expired uploads to be cleaned up.`,
           { deployerAddress },
           'uploads_per_account'
+        )
+      }
+      // Bounds what any set of parcels can stage, however many accounts may deploy to them.
+      await pendingDeploymentsRepository.acquirePointerLocks(tx, entity.pointers)
+      const pointerRejection = checkPointerQuotas({
+        usage: await pendingDeploymentsRepository.getLivePointerUsage(
+          tx,
+          entity.pointers,
+          deployerAddress,
+          pendingDeploymentTtlMs
+        ),
+        maxUploadsPerPointer,
+        now: Date.now(),
+        ttlMs: pendingDeploymentTtlMs
+      })
+      if (pointerRejection) {
+        throw new InvalidPartialDeploymentError(
+          [pointerRejection.message],
+          429,
+          pointerRejection.retryAfterSeconds,
+          pointerRejection.reason
         )
       }
       // A delayed first batch (slow parsing, validation or lock waits) may arrive already past its deadline.
@@ -478,22 +618,77 @@ export function createPartialDeployments(
       if ('kind' in prepared) {
         return prepared
       }
-      // Hashing and validation above hold no lock connection; storage and publication below do.
-      return await contentLocks.withRead(() => commitBatch(prepared), input.entityId)
+      return await commitLocked(input.entityId, prepared)
     } finally {
       leases.forEach((lease) => lease.release())
     }
   }
 
+  // Hashing and validation hold no lock connection; storage and publication do.
+  async function commitLocked(entityId: string, prepared: PreparedBatch): Promise<StageDeploymentResult> {
+    const lockWait = metrics.startTimer('dcl_partial_upload_stage_duration_seconds', { stage: 'lock_wait' })
+    let waiting = true
+    const endLockWait = () => {
+      if (waiting) {
+        waiting = false
+        lockWait.end()
+      }
+    }
+    const released: ReleasedUpload = {}
+    try {
+      return await contentLocks.withRead(() => {
+        endLockWait()
+        return commitBatch(prepared, released)
+      }, entityId)
+    } catch (error) {
+      // A concurrent final batch may have held the entity's lock while publishing it.
+      if (error instanceof EntityLockTimeoutError) {
+        const deployed = await deploymentsRepository.getEntityById(database, entityId)
+        if (deployed) {
+          return { kind: 'replayed', creationTimestamp: deployed.localTimestamp }
+        }
+      }
+      throw error
+    } finally {
+      endLockWait()
+      reclaimReleased(entityId, released)
+    }
+  }
+
+  // Releases an upload found doomed before taking the locks, under its entity's lock like any batch.
+  async function releaseUnlocked(entityId: string): Promise<void> {
+    const released: ReleasedUpload = {}
+    try {
+      await contentLocks.withRead(() => releaseUpload(entityId, released), entityId)
+    } catch (error) {
+      // Busy: expired-upload cleanup reclaims it instead.
+      if (!(error instanceof EntityLockTimeoutError)) throw error
+    }
+    reclaimReleased(entityId, released)
+  }
+
+  // Not awaited: the exclusive lock may wait for in-flight deployments, and the answer doesn't depend on it.
+  function reclaimReleased(entityId: string, { stagedKeys }: ReleasedUpload): void {
+    if (stagedKeys) {
+      void deleteOrphanedStagedKeys(entityId, stagedKeys).catch((error) => {
+        // Left to the unreferenced-files sweep.
+        logger.warn('Failed to delete the staged content of a released partial upload', {
+          entityId,
+          error: error instanceof Error ? error.message : String(error)
+        })
+      })
+    }
+  }
+
   // Everything that depends only on the request and slow-changing state, run outside the content lock.
   async function prepareBatch(
-    { entityId, authChain, files, entityFile: uploadedEntityBytes, requestedAt }: StageDeploymentInput,
+    { entityId, authChain, files, entityFile: uploadedEntityBytes, requestedAt, onAdmitted }: StageDeploymentInput,
     hold: (lease: UploadBudgetLease) => void
   ): Promise<PreparedBatch | StageDeploymentResult> {
     // Completion replay: a deployed entity is never deployed again.
     const alreadyDeployed = await deploymentsRepository.getEntityById(database, entityId)
     if (alreadyDeployed) {
-      return { kind: 'deployed', creationTimestamp: alreadyDeployed.localTimestamp }
+      return { kind: 'replayed', creationTimestamp: alreadyDeployed.localTimestamp }
     }
 
     if (!IPFSv2.validate(entityId)) {
@@ -505,18 +700,20 @@ export function createPartialDeployments(
     // In partial mode the field-name keys are load-bearing, so every file must hash to its key. Files are
     // hashed from their streams so a batch is never held in memory.
     const entries = Array.from(files.entries())
-    for (let i = 0; i < entries.length; i += CONTENT_STORE_CONCURRENCY) {
-      await Promise.all(
-        entries.slice(i, i + CONTENT_STORE_CONCURRENCY).map(async ([declaredKey, file]) => {
-          const computedHash = await hashV1(file.openStream())
-          if (declaredKey !== computedHash) {
-            throw new InvalidPartialDeploymentError([
-              `The uploaded file '${declaredKey}' does not match its content hash (computed ${computedHash}).`
-            ])
-          }
-        })
-      )
-    }
+    await timed('hash', async () => {
+      for (let i = 0; i < entries.length; i += CONTENT_STORE_CONCURRENCY) {
+        await Promise.all(
+          entries.slice(i, i + CONTENT_STORE_CONCURRENCY).map(async ([declaredKey, file]) => {
+            const computedHash = await hashV1(file.openStream())
+            if (declaredKey !== computedHash) {
+              throw new InvalidPartialDeploymentError([
+                `The uploaded file '${declaredKey}' does not match its content hash (computed ${computedHash}).`
+              ])
+            }
+          })
+        )
+      }
+    })
     const uploadedFiles: Map<string, StagedFile> = files
 
     let entityFile: Uint8Array
@@ -564,25 +761,31 @@ export function createPartialDeployments(
     const stagingFiles = new Map<string, Uint8Array>(
       Array.from(uploadedFiles.keys(), (key) => [key, key === entityId ? entityFile : EMPTY_FILE])
     )
-    const validationResult = await validator.validateStagingScene(
-      { entity, files: stagingFiles, auditInfo: { authChain } },
-      { skipAccessCheck: isResumeBySameDeployer }
+    const validationResult = await timed('validate', () =>
+      validator.validateStagingScene(
+        { entity, files: stagingFiles, auditInfo: { authChain } },
+        { skipAccessCheck: isResumeBySameDeployer }
+      )
     )
     if (!validationResult.ok) {
       throw new InvalidPartialDeploymentError(validationResult.errors ?? ['The staging validation was not successful.'])
     }
 
     // Fast-fail for new uploads only; the deploy pipeline enforces ordering at publication.
+    const newerEntity = () => new InvalidPartialDeploymentError([newerEntityMessage(entity)])
     if (!pending && (await deploymentsRepository.hasNewerDeploymentOnPointers(database, entity))) {
-      throw new InvalidPartialDeploymentError([
-        `There is a newer entity pointed by one or more of the pointers you provided (entityId=${entity.id}).`
-      ])
+      throw newerEntity()
     }
     if (deployer.isRateLimited(entity.type, entity.pointers)) {
+      // The deployment holding the limit may be a newer entity that overtook this upload, which never clears.
+      if (pending && (await deploymentsRepository.hasNewerDeploymentOnPointers(database, entity))) {
+        await releaseUnlocked(entityId)
+        throw newerEntity()
+      }
       throw new InvalidPartialDeploymentError(
         [`Entity rate limited (entityId=${entity.id} pointers=${entity.pointers.join(',')}).`],
         429,
-        deployer.getRateLimitTtlSeconds(entity.type),
+        deployer.getRateLimitRetryAfterSeconds(entity.type, entity.pointers),
         'entity_rate_limit'
       )
     }
@@ -611,27 +814,32 @@ export function createPartialDeployments(
       contentHashes,
       maxSceneBytes,
       seen: pending,
-      requestedAt
+      requestedAt,
+      onAdmitted
     }
   }
 
   // Runs under the shared content lock and the entity's lock, so batches of one upload are serialized.
-  async function commitBatch({
-    entity,
-    entityFile,
-    authChain,
-    uploadedFiles,
-    deployerAddress,
-    contentHashes,
-    maxSceneBytes,
-    seen,
-    requestedAt
-  }: PreparedBatch): Promise<StageDeploymentResult> {
+  async function commitBatch(
+    {
+      entity,
+      entityFile,
+      authChain,
+      uploadedFiles,
+      deployerAddress,
+      contentHashes,
+      maxSceneBytes,
+      seen,
+      requestedAt,
+      onAdmitted
+    }: PreparedBatch,
+    released: ReleasedUpload
+  ): Promise<StageDeploymentResult> {
     const entityId = entity.id
     // Another batch may have published the entity since this one was prepared.
     const alreadyDeployed = await deploymentsRepository.getEntityById(database, entityId)
     if (alreadyDeployed) {
-      return { kind: 'deployed', creationTimestamp: alreadyDeployed.localTimestamp }
+      return { kind: 'replayed', creationTimestamp: alreadyDeployed.localTimestamp }
     }
     const pending = await pendingDeploymentsRepository.getByEntityId(database, entityId)
     if (seen && !pending) {
@@ -644,7 +852,7 @@ export function createPartialDeployments(
       pending ? (await pendingDeploymentsRepository.getStoredFiles(database, entityId)).keys() : []
     )
     if (!pending?.initialized) {
-      const infos = await inventory(contentHashes)
+      const infos = await timed('inventory', () => inventory(contentHashes))
       const sizes = new Map<string, number>()
       for (const [hash, info] of infos) {
         if (info === undefined) {
@@ -683,31 +891,42 @@ export function createPartialDeployments(
       throw new InvalidPartialDeploymentError(['Deployment failed: The deployment is too big.'])
     }
 
-    const createdAt = await createUpload(entity, contentHashes, deployerAddress, seen ?? pending, requestedAt)
+    const createdAt = await timed('accounting', async () => {
+      const created = await createUpload(entity, contentHashes, deployerAddress, seen ?? pending, requestedAt)
+      onAdmitted?.()
+      try {
+        await reserve(
+          entityId,
+          Array.from(receipts.values()),
+          maxSceneBytes,
+          incomingBytes,
+          created + pendingDeploymentTtlMs
+        )
+      } catch (error) {
+        // A first batch that isn't admitted must not keep its new upload holding a slot of the cap.
+        if (!pending) await pendingDeploymentsRepository.deleteUnadmitted(database, entityId).catch(() => undefined)
+        throw error
+      }
+      return created
+    })
     const expiresAt = createdAt + pendingDeploymentTtlMs
-    try {
-      await reserve(entityId, Array.from(receipts.values()), maxSceneBytes, incomingBytes, expiresAt)
-    } catch (error) {
-      // A first batch that isn't admitted must not keep its new upload holding a slot of the cap.
-      if (!pending) await pendingDeploymentsRepository.deleteUnadmitted(database, entityId).catch(() => undefined)
-      throw error
-    }
     if (!pending) {
       metrics.increment('dcl_partial_uploads_started_total')
     }
 
-    await storeUntil(filesToStore, expiresAt)
+    await timed('store', () => storeUntil(filesToStore, expiresAt))
     // A write that outlived the upload is left unrecorded; cleanup reclaims it with the upload's receipts.
     let batches = 0
-    await database.transaction(async (tx) => {
-      if (!(await pendingDeploymentsRepository.markInitializedIfLive(tx, entityId, pendingDeploymentTtlMs))) {
-        throw expired()
-      }
-      await pendingDeploymentsRepository.markStored(tx, entityId, Array.from(filesToStore.keys()))
-      batches = await pendingDeploymentsRepository.countBatch(tx, entityId)
-    }, 'tx_record_pending_deployment_progress')
-
-    const progress = await pendingDeploymentsRepository.getStoredFiles(database, entityId)
+    const progress = await timed('progress', async () => {
+      await database.transaction(async (tx) => {
+        if (!(await pendingDeploymentsRepository.markInitializedIfLive(tx, entityId, pendingDeploymentTtlMs))) {
+          throw expired()
+        }
+        await pendingDeploymentsRepository.markStored(tx, entityId, Array.from(filesToStore.keys()))
+        batches = await pendingDeploymentsRepository.countBatch(tx, entityId)
+      }, 'tx_record_pending_deployment_progress')
+      return pendingDeploymentsRepository.getStoredFiles(database, entityId)
+    })
     const missing = contentHashes.filter((hash) => !progress.has(hash))
     metrics.increment('dcl_partial_upload_batches_total', { outcome: missing.length ? 'incomplete' : 'finalizing' })
     if (missing.length > 0) {
@@ -715,14 +934,16 @@ export function createPartialDeployments(
     }
 
     // One full verification at completion; the shared content lock keeps GC out until publication.
-    const presentInfos = await inventory(contentHashes)
+    const presentInfos = await timed('finalize_verify', () => inventory(contentHashes))
     const nowMissing = contentHashes.filter((hash) => presentInfos.get(hash) === undefined)
     if (nowMissing.length > 0) {
       await markMissing(entityId, nowMissing)
       return incompleteUntil(nowMissing, expiresAt)
     }
 
-    return await finalize(entity, entityFile, authChain, contentHashes, createdAt, batches)
+    return await timed('finalize_deploy', () =>
+      finalize(entity, entityFile, authChain, contentHashes, createdAt, batches, released)
+    )
   }
 
   async function cleanupExpired(): Promise<ExpiredCleanupSummary> {
@@ -742,10 +963,8 @@ export function createPartialDeployments(
     }
   }
 
-  // Deletes an expired upload's unreferenced staged content, then releases its accounting.
-  async function reclaimUpload(entityId: string): Promise<void> {
-    // Accounting is released only after every physical delete batch succeeds.
-    const keys = await pendingDeploymentsRepository.getStagedKeys(database, entityId)
+  // Deletes the keys no published content or live upload references, under the exclusive content lock.
+  async function deleteOrphanedStagedKeys(entityId: string, keys: string[]): Promise<void> {
     for (let offset = 0; offset < keys.length; offset += CLEANUP_DELETE_BATCH_SIZE) {
       const batch = keys.slice(offset, offset + CLEANUP_DELETE_BATCH_SIZE)
       await contentLocks.withWrite(async () => {
@@ -760,6 +979,12 @@ export function createPartialDeployments(
         }
       })
     }
+  }
+
+  // Deletes an expired upload's unreferenced staged content, then releases its accounting.
+  async function reclaimUpload(entityId: string): Promise<void> {
+    // Accounting is released only after every physical delete batch succeeds.
+    await deleteOrphanedStagedKeys(entityId, await pendingDeploymentsRepository.getStagedKeys(database, entityId))
     await pendingDeploymentsRepository.deleteExpiredByEntityId(database, entityId, pendingDeploymentTtlMs)
   }
 
@@ -824,5 +1049,10 @@ export function createPartialDeployments(
     return { removed, failed, outcome }
   }
 
-  return { stageDeployment, cleanupExpired }
+  async function isLiveUploadOf(entityId: string, deployerAddress: string): Promise<boolean> {
+    const pending = await pendingDeploymentsRepository.getByEntityId(database, entityId)
+    return !!pending && isLive(pending) && pending.deployerAddress === deployerAddress.toLowerCase()
+  }
+
+  return { stageDeployment, cleanupExpired, isLiveUploadOf }
 }

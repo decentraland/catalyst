@@ -11,6 +11,9 @@ import {
   RequestTimeoutError,
   ServiceUnavailableError
 } from './errors'
+
+// Bootstrapping takes minutes; a shorter hint would only multiply rejected uploads.
+const BOOTSTRAPPING_RETRY_AFTER_SECONDS = 60
 import { Middleware } from '@dcl/http-server/dist/middleware'
 
 export function preventExecutionIfBoostrapping({
@@ -19,13 +22,14 @@ export function preventExecutionIfBoostrapping({
   return async (
     _ctx: IHttpServerComponent.DefaultContext<object>,
     next: () => Promise<IHttpServerComponent.IResponse>
-  ): Promise<{ status: number; body: Error } | IHttpServerComponent.IResponse> => {
+  ): Promise<{ status: number; headers?: Record<string, string>; body: Error } | IHttpServerComponent.IResponse> => {
     if (syncOrchestrator.getState() == State.BOOTSTRAPPING) {
       const errorBody: Error = {
         error: 'Deployments are not allowed while the Catalyst is bootstrapping'
       }
       return {
         status: 503,
+        headers: { 'Retry-After': String(BOOTSTRAPPING_RETRY_AFTER_SECONDS) },
         body: errorBody
       }
     }
@@ -37,7 +41,7 @@ export function preventExecutionIfBoostrapping({
 function handleError(
   logger: ILoggerComponent.ILogger,
   error: any
-): { status: number; body: Error; headers?: Record<string, string> } {
+): { status: number; headers?: Record<string, string>; body: Error } {
   // Handlers throw HTTP-shaped errors (defined in `./errors.ts`) when they
   // want to surface a specific status. Add a new branch when a new HTTP error
   // class is introduced. Anything else is treated as an unexpected failure
@@ -55,7 +59,11 @@ function handleError(
     return { status: 408, body: { error: error.message } }
   }
   if (error instanceof ServiceUnavailableError) {
-    return { status: 503, headers: { 'Retry-After': String(error.retryAfterSeconds) }, body: { error: error.message } }
+    return {
+      status: 503,
+      headers: { 'Retry-After': String(error.retryAfterSeconds) },
+      body: { error: error.message }
+    }
   }
   if (error instanceof ClientClosedRequestError) {
     return { status: 499, body: { error: error.message } }

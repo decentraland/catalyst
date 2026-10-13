@@ -57,9 +57,13 @@ describe('when staging a partial batch', () => {
     }
     partialDeployments = createPartialDeployments({
       logs: { getLogger: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }) },
-      metrics: { increment: jest.fn(), observe: jest.fn() },
+      metrics: { increment: jest.fn(), observe: jest.fn(), startTimer: () => ({ end: jest.fn() }) },
       env: { getConfig: (key: number) => config[key] },
-      crypto: { validateSignature: jest.fn().mockResolvedValue({ ok: true }) },
+      crypto: {
+        validateSignature: jest.fn().mockResolvedValue({ ok: true }),
+        calculateIPFSHashes: async (files: Uint8Array[]) =>
+          Promise.all(files.map(async (file) => ({ hash: await hashV1(file), file })))
+      },
       storage: { retrieve },
       database: {},
       validator: { validateStagingScene },

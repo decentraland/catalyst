@@ -50,8 +50,8 @@ export interface IDeploymentService {
   getDeployedEntityTimestamp(entityId: string): Promise<number | undefined>
   /** Whether a deployment of this entity type on these pointers is currently rate limited. */
   isRateLimited(entityType: EntityType, pointers: string[]): boolean
-  /** The rate-limit window (seconds) for an entity type, used as a Retry-After hint on a 429. */
-  getRateLimitTtlSeconds(entityType: EntityType): number
+  /** Seconds until the rate limit on these pointers clears, used as Retry-After on a 429. */
+  getRateLimitRetryAfterSeconds(entityType: EntityType, pointers: string[]): number
 }
 
 /**

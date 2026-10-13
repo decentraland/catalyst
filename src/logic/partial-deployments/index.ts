@@ -1,9 +1,10 @@
 export { createPartialDeployments, MAX_ENTITY_FILE_SIZE_BYTES } from './component'
-export { InvalidPartialDeploymentError } from './errors'
+export { InvalidPartialDeploymentError, PartialDeploymentUnavailableError } from './errors'
 export type { PartialUploadThrottleReason } from './errors'
 export type {
   ExpiredCleanupSummary,
   IPartialDeployments,
+  PartialUploadStage,
   StagedFile,
   StageDeploymentInput,
   StageDeploymentResult

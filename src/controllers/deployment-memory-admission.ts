@@ -5,6 +5,7 @@ import { EnvironmentConfig } from '../Environment'
 import { AppComponents } from '../types'
 import { isDeclaredPartial } from './deployment-quota'
 import { ServiceUnavailableError } from './errors'
+import { UPLOAD_UNAVAILABLE_RETRY_AFTER_SECONDS } from './multipart'
 
 /**
  * Sheds a regular deployment, before its body is read, when its declared size doesn't fit the memory
@@ -23,7 +24,10 @@ export function createDeploymentMemoryAdmission(
       const declared = parseInt(context.request.headers.get('content-length') || '', 10)
       const bytes = Number.isSafeInteger(declared) && declared > 0 ? Math.min(declared, maxRequestBytes) : 0
       if (!deploymentMemoryBudget.fits(bytes)) {
-        throw new ServiceUnavailableError(new UploadBudgetExceededError().message)
+        throw new ServiceUnavailableError(
+          new UploadBudgetExceededError().message,
+          UPLOAD_UNAVAILABLE_RETRY_AFTER_SECONDS
+        )
       }
     }
     return next()

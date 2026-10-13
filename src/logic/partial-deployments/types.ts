@@ -20,11 +20,28 @@ export type StageDeploymentInput = {
   entityFile?: Uint8Array
   /** When the request arrived (epoch ms), before its body was read. A new upload's lifetime starts here. */
   requestedAt: number
+  /** Called once the batch joins its upload (created, or resumed by its creator). */
+  onAdmitted?: () => void
 }
 
 export type StageDeploymentResult =
+  /** This request published the entity. */
   | { kind: 'deployed'; creationTimestamp: number }
+  /** The entity was already published, by an earlier or a concurrent request. */
+  | { kind: 'replayed'; creationTimestamp: number }
   | { kind: 'incomplete'; missing: string[] }
+
+/** A timed step of a partial upload batch, labelling `dcl_partial_upload_stage_duration_seconds`. */
+export type PartialUploadStage =
+  | 'hash'
+  | 'validate'
+  | 'lock_wait'
+  | 'inventory'
+  | 'accounting'
+  | 'store'
+  | 'progress'
+  | 'finalize_verify'
+  | 'finalize_deploy'
 
 /** What one expired-upload cleanup run did. */
 export type ExpiredCleanupSummary = {
@@ -42,7 +59,8 @@ export interface IPartialDeployments {
    * doesn't need the full content set, reserves bytes, stores the batch and records progress. Files
    * already in storage are not stored again, and are charged against the staging budgets unless
    * published content (an active deployment or a snapshot) references them. The batch
-   * that completes the content set is verified, deployed and returns `{ kind: 'deployed' }`; otherwise
+   * that completes the content set is verified, deployed and returns `{ kind: 'deployed' }`; a batch for an
+   * entity another request already published returns `{ kind: 'replayed' }`; otherwise
    * `{ kind: 'incomplete' }` lists the hashes still missing. Hashing and validation run without any
    * lock; storage and publication take the shared content lock and the entity's lock, so batches of one
    * upload are serialized there.
@@ -57,4 +75,6 @@ export interface IPartialDeployments {
    * A run visits every upload expired when it lists it, unless a busy content lock defers the rest.
    */
   cleanupExpired(): Promise<ExpiredCleanupSummary>
+  /** Whether `deployerAddress` started a live upload of `entityId`, whose batches skip the access check. */
+  isLiveUploadOf(entityId: string, deployerAddress: string): Promise<boolean>
 }

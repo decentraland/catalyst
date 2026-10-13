@@ -8,6 +8,7 @@ import {
   IPendingDeploymentsRepository,
   OldestUploadScope,
   PendingDeploymentRow,
+  PointerUsage,
   ReservationTotals,
   StagingTotals
 } from './types'
@@ -82,6 +83,50 @@ async function acquireBudgetLock(database: DatabaseClient): Promise<void> {
     SQL`SELECT pg_advisory_xact_lock(hashtextextended('partial-upload-budget', 0))`,
     'pending_deployment_budget_lock'
   )
+}
+
+async function acquirePointerLocks(database: DatabaseClient, pointers: string[]): Promise<void> {
+  // Sorted by lock key, so transactions locking overlapping pointer sets can't deadlock.
+  await database.queryWithValues(
+    SQL`SELECT pg_advisory_xact_lock(k) FROM (
+          SELECT DISTINCT hashtextextended('pending_pointer:' || p, 0) AS k FROM unnest(${pointers}::text[]) AS p ORDER BY k
+        ) AS keys`,
+    'pending_deployment_pointer_locks'
+  )
+}
+
+async function getLivePointerUsage(
+  database: DatabaseClient,
+  pointers: string[],
+  deployerAddress: string,
+  ttlMs: number
+): Promise<PointerUsage[]> {
+  const deployer = deployerAddress.toLowerCase()
+  const result = await database.queryWithValues<{
+    pointer: string
+    uploads: number
+    deployer_uploads: number
+    oldest: number
+    deployer_oldest: number | null
+  }>(
+    SQL`SELECT p.pointer,
+          COUNT(*)::int AS uploads,
+          COUNT(*) FILTER (WHERE d.deployer_address = ${deployer})::int AS deployer_uploads,
+          (EXTRACT(EPOCH FROM MIN(d.created_at)) * 1000)::float8 AS oldest,
+          (EXTRACT(EPOCH FROM MIN(d.created_at) FILTER (WHERE d.deployer_address = ${deployer})) * 1000)::float8 AS deployer_oldest
+        FROM pending_deployments d CROSS JOIN LATERAL unnest(d.pointers) AS p(pointer)
+        WHERE d.pointers && ${pointers}::text[] AND p.pointer = ANY(${pointers}::text[]) AND d.created_at >= `
+      .append(cutoff(ttlMs))
+      .append(SQL` GROUP BY p.pointer`),
+    'pending_deployment_live_pointer_usage'
+  )
+  return result.rows.map((row) => ({
+    pointer: row.pointer,
+    uploads: row.uploads,
+    deployerUploads: row.deployer_uploads,
+    oldestCreatedAt: row.oldest,
+    deployerOldestCreatedAt: row.deployer_oldest ?? undefined
+  }))
 }
 
 async function upsertFileReceipts(database: DatabaseClient, entityId: string, receipts: FileReceipt[]): Promise<void> {
@@ -323,6 +368,8 @@ export function createPendingDeploymentsRepository(): IPendingDeploymentsReposit
     countByDeployer,
     acquireDeployerLock,
     acquireBudgetLock,
+    acquirePointerLocks,
+    getLivePointerUsage,
     upsertFileReceipts,
     refreshReservedBytes,
     getReservationTotals,

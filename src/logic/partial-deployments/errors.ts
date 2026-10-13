@@ -1,6 +1,8 @@
 /** Why a batch was answered with a retryable 429. */
 export type PartialUploadThrottleReason =
   | 'uploads_per_account'
+  | 'uploads_per_pointer'
+  | 'uploads_per_pointer_account'
   | 'bytes_per_account'
   | 'bytes_per_server'
   | 'bytes_per_minute'
@@ -23,6 +25,17 @@ export class InvalidPartialDeploymentError extends Error {
   ) {
     super(errors.join(', '))
     this.name = 'InvalidPartialDeploymentError'
+  }
+}
+
+/**
+ * Thrown when publishing a complete upload fails for a server-side reason (e.g. a database error). The
+ * upload stays staged, so the controller answers 503 with `retryAfterSeconds` and the client resends.
+ */
+export class PartialDeploymentUnavailableError extends Error {
+  constructor(public readonly errors: string[], public readonly retryAfterSeconds: number) {
+    super(errors.join(', '))
+    this.name = 'PartialDeploymentUnavailableError'
   }
 }
 

@@ -88,6 +88,9 @@ export const MAX_OPEN_SPOOL_FILES = 8
 // only reached by a stuck disk; the upload then fails with 503 rather than holding its budget share.
 export const DEFAULT_SPOOL_FLUSH_TIMEOUT_MS = 60_000
 
+// Retry-After for a full upload budget or an unwritable spool: they clear once in-flight uploads end or the disk frees up.
+export const UPLOAD_UNAVAILABLE_RETRY_AFTER_SECONDS = 30
+
 const SPOOL_UNAVAILABLE_MESSAGE = 'The server cannot store uploads right now, please retry shortly.'
 
 /** Formats milliseconds as seconds for a client-facing message, e.g. 300000 → "300", 50 → "0.05". */
@@ -143,7 +146,7 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       lease = options.uploadBudget?.acquire(0, declaredPayload)
     } catch (error) {
       if (error instanceof UploadBudgetExceededError) {
-        throw new ServiceUnavailableError(error.message)
+        throw new ServiceUnavailableError(error.message, UPLOAD_UNAVAILABLE_RETRY_AFTER_SECONDS)
       }
       throw error
     }
@@ -169,7 +172,7 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       code: (error as NodeJS.ErrnoException)?.code ?? 'unknown',
       error: error instanceof Error ? error.message : String(error)
     })
-    return new ServiceUnavailableError(SPOOL_UNAVAILABLE_MESSAGE)
+    return new ServiceUnavailableError(SPOOL_UNAVAILABLE_MESSAGE, UPLOAD_UNAVAILABLE_RETRY_AFTER_SECONDS)
   }
 
   async function parseAndHandle(
@@ -203,7 +206,7 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
       directory = await options.spool.createRequestFolder()
     } catch (error) {
       if (error instanceof UploadSpoolStoppedError) {
-        throw new ServiceUnavailableError(error.message)
+        throw new ServiceUnavailableError(error.message, UPLOAD_UNAVAILABLE_RETRY_AFTER_SECONDS)
       }
       throw spoolUnavailable('folder', 'Failed to create an upload spool folder', error)
     }
@@ -271,7 +274,12 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
         const footprint = totalBytes + spooledFiles * SPOOL_FILE_OVERHEAD_BYTES
         if (lease && footprint > reservedBytes) {
           if (!lease.resize(footprint)) {
-            abort(new ServiceUnavailableError('Server is handling too many uploads, please retry shortly.'))
+            abort(
+              new ServiceUnavailableError(
+                'Server is handling too many uploads, please retry shortly.',
+                UPLOAD_UNAVAILABLE_RETRY_AFTER_SECONDS
+              )
+            )
             return true
           }
           reservedBytes = footprint
@@ -468,7 +476,12 @@ export function multipartParserWrapper<U, Ctx extends FormDataContext<U>, T exte
         if (!aborted) {
           options.metrics?.increment('dcl_upload_spool_failures_total', { reason: 'flush_timeout' })
         }
-        abort(new ServiceUnavailableError('The upload could not be stored in time, please retry shortly.'))
+        abort(
+          new ServiceUnavailableError(
+            'The upload could not be stored in time, please retry shortly.',
+            UPLOAD_UNAVAILABLE_RETRY_AFTER_SECONDS
+          )
+        )
       }, options.spoolFlushTimeoutMs ?? DEFAULT_SPOOL_FLUSH_TIMEOUT_MS)
       try {
         // busboy finishes before the last temporary files are flushed.

@@ -31,6 +31,8 @@ Check full architecture [here](https://github.com/decentraland/architecture)
 
 This Server implements the v1 of the API Specification detailed [here](https://github.com/decentraland/catalyst-api-specs)
 
+Large scenes can be uploaded in several requests; see [partial uploads](docs/PARTIAL_UPLOADS.md).
+
 ## Monitoring
 
 For monitoring see [the following doc](docs/MONITORING.md)

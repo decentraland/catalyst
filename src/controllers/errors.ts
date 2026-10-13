@@ -35,8 +35,8 @@ export class PayloadTooLargeError extends Error {
   }
 }
 
-// Sent as Retry-After on a 503: most clear once an in-flight upload or deployment ends, or a disk frees up.
-export const SERVICE_UNAVAILABLE_RETRY_AFTER_SECONDS = 30
+/** Seconds a client should wait before retrying a transient 503 (a busy lock or a full upload budget). */
+export const SERVICE_UNAVAILABLE_RETRY_AFTER_SECONDS = 10
 
 export class ServiceUnavailableError extends Error {
   constructor(message: string, public readonly retryAfterSeconds: number = SERVICE_UNAVAILABLE_RETRY_AFTER_SECONDS) {

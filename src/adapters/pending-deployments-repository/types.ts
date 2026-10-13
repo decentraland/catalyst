@@ -44,6 +44,17 @@ export interface ReservationTotals {
   scene: bigint
 }
 
+/** Live uploads holding one pointer, across deployers and for one deployer. */
+export interface PointerUsage {
+  pointer: string
+  uploads: number
+  deployerUploads: number
+  /** Creation time (epoch ms) of the oldest live upload holding the pointer. */
+  oldestCreatedAt: number
+  /** Creation time (epoch ms) of the deployer's oldest live upload holding the pointer, if any. */
+  deployerOldestCreatedAt?: number
+}
+
 /** Server-wide staging state, expired uploads awaiting cleanup included. */
 export interface StagingTotals {
   /** Reserved bytes of every upload. */
@@ -83,6 +94,15 @@ export interface IPendingDeploymentsRepository {
   countByDeployer(db: DatabaseClient, deployerAddress: string): Promise<number>
   /** Transaction-scoped lock serializing a deployer's upload creation, guarding the count cap. */
   acquireDeployerLock(db: DatabaseClient, deployerAddress: string): Promise<void>
+  /** Transaction-scoped locks on each pointer, taken in a canonical order, guarding the per-pointer caps. */
+  acquirePointerLocks(db: DatabaseClient, pointers: string[]): Promise<void>
+  /** Per pointer of `pointers` held by any live upload: its live uploads, overall and of the deployer. */
+  getLivePointerUsage(
+    db: DatabaseClient,
+    pointers: string[],
+    deployerAddress: string,
+    ttlMs: number
+  ): Promise<PointerUsage[]>
   /** Transaction-scoped lock making the account and server-wide byte budgets atomic. */
   acquireBudgetLock(db: DatabaseClient): Promise<void>
   /** Adds receipts without double-charging a hash already reserved for the upload; a hash stays charged once charged. */

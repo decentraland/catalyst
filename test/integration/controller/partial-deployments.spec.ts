@@ -1,6 +1,9 @@
+import { bufferToStream, streamToBuffer } from '@dcl/catalyst-storage'
 import { Authenticator, IdentityType } from '@dcl/crypto'
 import FormData = require('form-data')
 import { request } from 'http'
+import { EntityLockTimeoutError } from '../../../src/adapters/content-locks'
+import { DeploymentContext } from '../../../src/deployment-types'
 import { DEFAULT_MAX_UPLOAD_FIELD_SIZE, EnvironmentConfig } from '../../../src/Environment'
 import { makeNoopValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import { createDefaultServer, resetServer } from '../simpleTestEnvironment'
@@ -65,6 +68,27 @@ async function isRecordedAsStored(server: TestProgram, entityId: string, hash: s
     entityId
   )
   return stored.has(hash)
+}
+
+// Released staged content is deleted in the background, once the exclusive content lock is free.
+async function waitUntilDeleted(server: TestProgram, hashes: string[], timeoutMs = 10_000): Promise<string[]> {
+  const deadline = Date.now() + timeoutMs
+  for (;;) {
+    const present = await server.components.storage.existMultiple(hashes)
+    const remaining = hashes.filter((hash) => present.get(hash))
+    if (remaining.length === 0 || Date.now() > deadline) {
+      return remaining
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100))
+  }
+}
+
+async function countUploadRows(server: TestProgram, entityId: string): Promise<{ uploads: number; receipts: number }> {
+  const result = await server.components.database.query<{ uploads: string; receipts: string }>(
+    `SELECT (SELECT COUNT(*) FROM pending_deployments WHERE entity_id = '${entityId}') AS uploads,
+            (SELECT COUNT(*) FROM pending_deployment_files WHERE entity_id = '${entityId}') AS receipts`
+  )
+  return { uploads: parseInt(result.rows[0].uploads), receipts: parseInt(result.rows[0].receipts) }
 }
 
 async function countDeployments(server: TestProgram, entityId: string): Promise<number> {
@@ -381,6 +405,43 @@ describe('Integration - Partial deployments', () => {
     })
   })
 
+  describe('when a content file is uploaded under another content hash key', () => {
+    let deployment: PreparedDeployment
+    let response: Response
+    let stored: boolean[]
+
+    beforeEach(async () => {
+      const nonce = `${Date.now()}-${Math.random()}`
+      deployment = await prepareSceneDeployment(
+        ['5,7'],
+        { 'a.txt': Buffer.from(`misplaced a ${nonce}`), 'b.txt': Buffer.from(`misplaced b ${nonce}`) },
+        identity
+      )
+      const [hashA, hashB] = deployment.contentHashes
+      const form = buildPartialForm(deployment, [deployment.entityId])
+      // The bytes of a.txt declared as b.txt's hash.
+      form.append(hashB, Buffer.from(deployment.files.get(hashA)!), { filename: hashB })
+      response = await postForm(server, form)
+      const present = await server.components.storage.existMultiple([deployment.entityId, hashA, hashB])
+      stored = Array.from(present.values())
+    })
+
+    it('should reject it with a 400 naming the mismatched key and store nothing under any key', async () => {
+      const [, hashB] = deployment.contentHashes
+      expect({
+        status: response.status,
+        body: await response.json(),
+        stored,
+        pending: await pendingEntityIds(server)
+      }).toEqual({
+        status: 400,
+        body: { errors: [expect.stringContaining(`The uploaded file '${hashB}' does not match its content hash`)] },
+        stored: [false, false, false],
+        pending: []
+      })
+    })
+  })
+
   describe('when a batch fails its staging validation', () => {
     let response: Response
     let withRead: jest.SpyInstance
@@ -559,6 +620,40 @@ describe('Integration - Partial deployments', () => {
     })
   })
 
+  describe('when a final batch waits out the entity lock while another one publishes the entity', () => {
+    let deployment: PreparedDeployment
+    let response: Response
+    let deployedAt: number | undefined
+
+    beforeEach(async () => {
+      deployment = await prepareSceneDeployment(
+        ['13,14'],
+        { 'a.txt': Buffer.from(`lock wait ${Date.now()}-${Math.random()}`) },
+        identity
+      )
+      await postForm(server, buildPartialForm(deployment, [deployment.entityId]))
+      jest.spyOn(server.components.contentLocks, 'withRead').mockImplementationOnce(async () => {
+        // The winner publishes while this batch waits, until the bounded wait gives up.
+        await server.components.deployer.deployEntity(
+          Array.from(deployment.files.values()),
+          deployment.entityId,
+          { authChain: deployment.authChain },
+          DeploymentContext.LOCAL
+        )
+        throw new EntityLockTimeoutError(deployment.entityId)
+      })
+      response = await postForm(server, buildPartialForm(deployment, deployment.contentHashes))
+      deployedAt = await server.components.deployer.getDeployedEntityTimestamp(deployment.entityId)
+    })
+
+    it('should answer 200 with the published creation timestamp', async () => {
+      expect({ status: response.status, body: await response.json() }).toEqual({
+        status: 200,
+        body: { creationTimestamp: deployedAt }
+      })
+    })
+  })
+
   describe('when uploading across multiple requests (resume fast-path)', () => {
     let deployment: PreparedDeployment
     let hashA: string
@@ -713,6 +808,24 @@ describe('Integration - Partial deployments', () => {
         expect(await countDeployments(server, deployment.entityId)).toBe(0)
       })
 
+      describe('and the upload is inspected', () => {
+        let rows: { uploads: number; receipts: number }
+        let stored: boolean[]
+
+        beforeEach(async () => {
+          rows = await countUploadRows(server, deployment.entityId)
+          const present = await server.components.storage.existMultiple([
+            deployment.entityId,
+            ...deployment.contentHashes
+          ])
+          stored = Array.from(present.values())
+        })
+
+        it('should keep the pending upload and its staged files', () => {
+          expect({ uploads: rows.uploads, stored }).toEqual({ uploads: 1, stored: [true, true, true] })
+        })
+      })
+
       describe('and access is later restored (e.g. the buyer grants operator rights back)', () => {
         let resumeResponse: Response
 
@@ -777,6 +890,48 @@ describe('Integration - Partial deployments', () => {
     })
   })
 
+  describe('when publishing the completing batch fails on the server', () => {
+    let deployment: PreparedDeployment
+    let response: Response
+
+    beforeEach(async () => {
+      deployment = await prepareSceneDeployment(
+        ['9,11'],
+        { 'a.txt': Buffer.from(`server failure ${Date.now()}-${Math.random()}`) },
+        identity
+      )
+      jest
+        .spyOn(server.components.deployer, 'deployEntity')
+        .mockResolvedValueOnce({ kind: 'internal-error', errors: ['There was an error deploying the entity'] })
+      response = await postForm(
+        server,
+        buildPartialForm(deployment, [deployment.entityId, ...deployment.contentHashes])
+      )
+    })
+
+    it('should answer a 503 telling the client when to retry and keep the upload', async () => {
+      expect({
+        status: response.status,
+        retryAfter: response.headers.get('retry-after'),
+        pending: await pendingEntityIds(server)
+      }).toEqual({ status: 503, retryAfter: '5', pending: [deployment.entityId] })
+    })
+
+    describe('and the client resends the batch', () => {
+      let retryResponse: Response
+
+      beforeEach(async () => {
+        retryResponse = await postForm(server, buildPartialForm(deployment, []))
+      })
+
+      it('should publish the entity', async () => {
+        expect({ status: retryResponse.status, deployed: await countDeployments(server, deployment.entityId) }).toEqual(
+          { status: 200, deployed: 1 }
+        )
+      })
+    })
+  })
+
   describe('when two partial uploads target the same pointers', () => {
     let older: PreparedDeployment
     let newer: PreparedDeployment
@@ -821,6 +976,98 @@ describe('Integration - Partial deployments', () => {
 
       it('should not deploy the older entity', async () => {
         expect(await countDeployments(server, older.entityId)).toBe(0)
+      })
+    })
+
+    describe('and the newer upload is published while the rate limiter holds the pointers', () => {
+      let olderCompletion: Response
+
+      beforeEach(async () => {
+        await postForm(server, buildPartialForm(older, [older.entityId]))
+        await postForm(server, buildPartialForm(newer, [newer.entityId, ...newer.contentHashes]))
+        jest.spyOn(server.components.deployer, 'isRateLimited').mockReturnValue(true)
+        olderCompletion = await postForm(server, buildPartialForm(older, older.contentHashes))
+      })
+
+      it('should release the older upload and its accounting', async () => {
+        expect(await countUploadRows(server, older.entityId)).toEqual({ uploads: 0, receipts: 0 })
+      })
+
+      it('should reject the older batch with a 400 naming the newer entity, not a 429', async () => {
+        expect({ status: olderCompletion.status, body: await olderCompletion.json() }).toEqual({
+          status: 400,
+          body: {
+            errors: [
+              `There is a newer entity pointed by one or more of the pointers you provided (entityId=${older.entityId} pointers=5,5).`
+            ]
+          }
+        })
+      })
+    })
+
+    describe('and the newer entity is published once the older completion passed its pre-checks', () => {
+      let olderCompletion: Response
+
+      beforeEach(async () => {
+        await postForm(server, buildPartialForm(older, [older.entityId]))
+        // The newer deployment lands while the older batch is being stored, so only publication sees it.
+        jest.spyOn(server.components.deployer, 'isRateLimited').mockReturnValueOnce(false).mockReturnValue(true)
+        jest.spyOn(server.components.deployer, 'deployEntity').mockResolvedValueOnce({
+          kind: 'newer-entity',
+          errors: [
+            `There is a newer entity pointed by one or more of the pointers you provided (entityId=${older.entityId} pointers=5,5).`
+          ]
+        })
+        olderCompletion = await postForm(server, buildPartialForm(older, older.contentHashes))
+      })
+
+      it('should release the older upload and its accounting', async () => {
+        expect(await countUploadRows(server, older.entityId)).toEqual({ uploads: 0, receipts: 0 })
+      })
+
+      describe('and the released content is reclaimed', () => {
+        let remaining: string[]
+
+        beforeEach(async () => {
+          remaining = await waitUntilDeleted(server, [older.entityId, ...older.contentHashes])
+        })
+
+        it('should delete the staged files no one else references', () => {
+          expect(remaining).toEqual([])
+        })
+      })
+
+      it('should reject it with the same 400 as the pre-check', async () => {
+        expect({ status: olderCompletion.status, body: await olderCompletion.json() }).toEqual({
+          status: 400,
+          body: {
+            errors: [
+              `There is a newer entity pointed by one or more of the pointers you provided (entityId=${older.entityId} pointers=5,5).`
+            ]
+          }
+        })
+      })
+    })
+
+    describe('and the older completion is rejected by the deploy rate limit itself', () => {
+      let olderCompletion: Response
+
+      beforeEach(async () => {
+        await postForm(server, buildPartialForm(older, [older.entityId]))
+        jest.spyOn(server.components.deployer, 'getRateLimitRetryAfterSeconds').mockReturnValue(60)
+        jest.spyOn(server.components.deployer, 'deployEntity').mockResolvedValueOnce({
+          kind: 'rate-limited',
+          errors: [`Entity rate limited (entityId=${older.entityId} pointers=5,5).`]
+        })
+        olderCompletion = await postForm(server, buildPartialForm(older, older.contentHashes))
+      })
+
+      it('should answer a retryable 429 and keep the upload', async () => {
+        expect({
+          status: olderCompletion.status,
+          retryAfter: olderCompletion.headers.get('retry-after'),
+          pending: await pendingEntityIds(server)
+        }).toEqual({ status: 429, retryAfter: '60', pending: [older.entityId] })
       })
     })
   })
@@ -1361,6 +1608,59 @@ describe('Integration - Partial deployments', () => {
 
     it('should validate the signature with the configured verifier and publish the entity', () => {
       expect(response.status).toBe(200)
+    })
+  })
+
+  describe('when the stored entity file of a live upload no longer matches its id', () => {
+    let deployment: PreparedDeployment
+    let resumeResponse: Response
+
+    beforeEach(async () => {
+      const nonce = `${Date.now()}-${Math.random()}`
+      deployment = await prepareSceneDeployment(
+        ['12,14'],
+        { 'a.txt': Buffer.from(`corrupt a ${nonce}`), 'b.txt': Buffer.from(`corrupt b ${nonce}`) },
+        identity
+      )
+      const [hashA, hashB] = deployment.contentHashes
+      await postForm(server, buildPartialForm(deployment, [deployment.entityId, hashA]))
+      await server.components.storage.storeStream(deployment.entityId, bufferToStream(Buffer.from(`corrupt ${nonce}`)))
+      resumeResponse = await postForm(server, buildPartialForm(deployment, [hashB]))
+    })
+
+    it('should ask for the entity file instead of trusting the stored copy', async () => {
+      expect({ status: resumeResponse.status, body: await resumeResponse.json() }).toEqual({
+        status: 400,
+        body: {
+          errors: [
+            `The first partial request for an entity, and any request by another signer, must include the entity file '${deployment.entityId}'.`
+          ]
+        }
+      })
+    })
+
+    describe('and the client resends the batch with the entity file', () => {
+      let repairResponse: Response
+      let storedEntityFile: Buffer | undefined
+
+      beforeEach(async () => {
+        const [, hashB] = deployment.contentHashes
+        repairResponse = await postForm(server, buildPartialForm(deployment, [deployment.entityId, hashB]))
+        const stored = await server.components.storage.retrieve(deployment.entityId)
+        storedEntityFile = stored ? await streamToBuffer(await stored.asStream()) : undefined
+      })
+
+      it('should replace the corrupt copy and publish the entity', async () => {
+        expect({
+          status: repairResponse.status,
+          deployed: await countDeployments(server, deployment.entityId),
+          storedEntityFile
+        }).toEqual({
+          status: 200,
+          deployed: 1,
+          storedEntityFile: Buffer.from(deployment.files.get(deployment.entityId)!)
+        })
+      })
     })
   })
 

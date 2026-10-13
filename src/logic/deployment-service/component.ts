@@ -12,6 +12,7 @@ import {
   DeploymentFiles,
   DeploymentResult,
   InvalidResult,
+  InvalidResultKind,
   LocalDeploymentAuditInfo,
   isInvalidDeployment
 } from '../../deployment-types'
@@ -196,7 +197,10 @@ export function createDeploymentService(
         errors: validationResult.errors?.join(',') ?? ''
       })
       return {
-        errors: validationResult.errors ?? ['The validateDeployment was not successful but it did not return any error']
+        errors: validationResult.errors ?? [
+          'The validateDeployment was not successful but it did not return any error'
+        ],
+        kind: validationResult.kind
       }
     }
 
@@ -327,7 +331,7 @@ export function createDeploymentService(
     hashes: Map<string, Uint8Array>,
     isContentUnchanged: boolean,
     requestTtlAnchor: number | undefined
-  ): Promise<{ ok: boolean; errors?: string[] }> {
+  ): Promise<{ ok: boolean; errors?: string[]; kind?: InvalidResultKind }> {
     // When deploying a new entity in some context which is not sync, we run some server side checks
     const serverValidationResult = await serverValidator.validateForServer(
       components.failedDeployments,
@@ -351,7 +355,8 @@ export function createDeploymentService(
     if (serverValidationResult.ok == false) {
       return {
         ok: false,
-        errors: [serverValidationResult.message]
+        errors: [serverValidationResult.message],
+        kind: serverValidationResult.reason
       }
     }
 
@@ -434,8 +439,8 @@ export function createDeploymentService(
     isRateLimited(entityType: EntityType, pointers: string[]): boolean {
       return rateLimiter.isRateLimited(entityType, pointers)
     },
-    getRateLimitTtlSeconds(entityType: EntityType): number {
-      return rateLimiter.getRateLimitTtlSeconds(entityType)
+    getRateLimitRetryAfterSeconds(entityType: EntityType, pointers: string[]): number {
+      return rateLimiter.getRateLimitRetryAfterSeconds(entityType, pointers)
     },
     async getDeployedEntityTimestamp(entityId: string): Promise<number | undefined> {
       const deployedEntity = await components.deploymentsRepository.getEntityById(components.database, entityId)
@@ -530,7 +535,10 @@ export function createDeploymentService(
             context,
             storeResult: JSON.stringify(storeResult)
           })
-          return InvalidResult({ errors: ['An internal server error occurred. This will raise an automatic alarm.'] })
+          return InvalidResult({
+            kind: 'internal-error',
+            errors: ['An internal server error occurred. This will raise an automatic alarm.']
+          })
         } else if (isInvalidDeployment(storeResult)) {
           logger.error(`Error deploying entity`, {
             entityId,
@@ -589,6 +597,7 @@ export function createDeploymentService(
         }
         logger.error(`There was an error deploying the entity: ${error}`, { entityId })
         return InvalidResult({
+          kind: 'internal-error',
           errors: [`There was an error deploying the entity`]
         })
       } finally {
