@@ -9,8 +9,8 @@ export type IDeployRateLimiterComponent = {
   isRateLimited(entityType: EntityType, pointers: string[]): boolean
   newUnchangedDeployment(entityType: EntityType, pointers: string[], localTimestamp: number): void
   isUnchangedDeploymentRateLimited(entityType: EntityType, pointers: string[]): boolean
-  /** The rate-limit window (seconds) for an entity type — the TTL after which a pointer clears. */
-  getRateLimitTtlSeconds(entityType: EntityType): number
+  /** Seconds until the pointers' rate limit clears: the latest-expiring limited pointer, else the full window. At least 1. */
+  getRateLimitRetryAfterSeconds(entityType: EntityType, pointers: string[]): number
 }
 
 export type DeploymentRateLimitConfig = {
@@ -112,9 +112,13 @@ export function createDeployRateLimiter(
       return limited
     },
 
-    getRateLimitTtlSeconds(entityType: EntityType): number {
-      // stdTTL is the per-type window in seconds (see generateDeploymentCacheMap).
-      return getCacheFromEntityType(entityType).cache.options.stdTTL ?? 0
+    getRateLimitRetryAfterSeconds(entityType: EntityType, pointers: string[]): number {
+      const { cache } = getCacheFromEntityType(entityType)
+      const now = Date.now()
+      // getTtl is the key's expiry in epoch ms; a full cache (no pointer hit) frees within one window.
+      const expiries = pointers.map((p) => cache.getTtl(p)).filter((t): t is number => !!t && t > now)
+      const remainingMs = expiries.length > 0 ? Math.max(...expiries) - now : (cache.options.stdTTL ?? 0) * 1000
+      return Math.max(1, Math.ceil(remainingMs / 1000))
     }
   }
 }

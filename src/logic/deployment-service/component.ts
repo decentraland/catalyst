@@ -420,8 +420,8 @@ export function createDeploymentService(
     isRateLimited(entityType: EntityType, pointers: string[]): boolean {
       return rateLimiter.isRateLimited(entityType, pointers)
     },
-    getRateLimitTtlSeconds(entityType: EntityType): number {
-      return rateLimiter.getRateLimitTtlSeconds(entityType)
+    getRateLimitRetryAfterSeconds(entityType: EntityType, pointers: string[]): number {
+      return rateLimiter.getRateLimitRetryAfterSeconds(entityType, pointers)
     },
     async getDeployedEntityTimestamp(entityId: string): Promise<number | undefined> {
       const deployedEntity = await components.deploymentsRepository.getEntityById(components.database, entityId)

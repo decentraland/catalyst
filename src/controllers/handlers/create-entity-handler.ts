@@ -66,7 +66,7 @@ export async function createEntity(
   const deployedTimestamp = await deployer.getDeployedEntityTimestamp(entityId)
   if (deployedTimestamp !== undefined) {
     if (isPartial) {
-      metrics.increment('dcl_partial_deployments_staging_total', { kind: 'finalized' })
+      metrics.increment('dcl_partial_deployments_staging_total', { kind: 'replayed' })
     } else {
       metrics.increment('dcl_deployments_endpoint_counter', { kind: 'success' })
     }
@@ -98,6 +98,11 @@ export async function createEntity(
   }
   const signature = await crypto.validateSignature(entityId, authChain, signatureDate)
   if (!signature.ok) {
+    if (isPartial) {
+      metrics.increment('dcl_partial_deployments_staging_total', { kind: 'validation_error' })
+    } else {
+      metrics.increment('dcl_deployments_endpoint_counter', { kind: 'validation_error' })
+    }
     return { status: 400, body: { errors: [`The signature is invalid. ${signature.message}`] } }
   }
 
@@ -118,9 +123,14 @@ export async function createEntity(
         files,
         requestedAt: context.requestArrivedAt
       })
-      if (result.kind === 'deployed') {
-        metrics.increment('dcl_partial_deployments_staging_total', { kind: 'finalized' })
-        logger.info(`POST /entities - Partial deployment finalized`, { entityId, ethAddress, userAgent })
+      if (result.kind === 'deployed' || result.kind === 'replayed') {
+        const finalized = result.kind === 'deployed'
+        metrics.increment('dcl_partial_deployments_staging_total', { kind: finalized ? 'finalized' : 'replayed' })
+        logger.info(`POST /entities - Partial deployment ${finalized ? 'finalized' : 'already deployed'}`, {
+          entityId,
+          ethAddress,
+          userAgent
+        })
         return { status: 200, body: { creationTimestamp: result.creationTimestamp } }
       }
       metrics.increment('dcl_partial_deployments_staging_total', { kind: 'accepted' })
@@ -140,11 +150,13 @@ export async function createEntity(
         if (throttled) {
           metrics.increment('dcl_partial_upload_throttled_total', { reason: error.throttleReason ?? 'unknown' })
         }
-        logger.error(`POST /entities - Partial deployment failed (${error.errors.join(',')})`, {
-          entityId,
-          ethAddress,
-          userAgent
-        })
+        const logged = { entityId, ethAddress, userAgent }
+        if (throttled) {
+          // Throttling is ordinary client back-off, not a server failure.
+          logger.warn(`POST /entities - Partial deployment throttled (${error.errors.join(',')})`, logged)
+        } else {
+          logger.error(`POST /entities - Partial deployment failed (${error.errors.join(',')})`, logged)
+        }
         // statusCode is 429 for transient conditions (rate limiting), 400 for validation errors. On a
         // 429 with a known window, send Retry-After so the client waits it out instead of exhausting its
         // resume budget inside the window.

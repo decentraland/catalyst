@@ -98,7 +98,7 @@ export const metricsDeclaration = validateMetricsDeclaration({
   dcl_partial_deployments_staging_total: {
     help: 'Partial (multi-request) deployment staging requests through HTTP',
     type: 'counter',
-    // kind=(accepted|finalized|validation_error|throttled|busy|error)
+    // kind=(accepted|finalized|replayed|validation_error|throttled|busy|error); replayed = already published
     labelNames: ['kind']
   },
   dcl_partial_upload_throttled_total: {
@@ -134,6 +134,13 @@ export const metricsDeclaration = validateMetricsDeclaration({
     type: 'histogram',
     labelNames: [],
     buckets: [1, 2, 3, 5, 10, 20, 50, 100, 250]
+  },
+  dcl_partial_upload_stage_duration_seconds: {
+    help: 'Time spent in each stage of a partial upload batch, including the finalize of the completing batch',
+    type: 'histogram',
+    // stage=(hash|validate|lock_wait|inventory|accounting|store|progress|finalize_verify|finalize_deploy)
+    labelNames: ['stage'],
+    buckets: [0.005, 0.025, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30, 60, 120]
   },
   dcl_partial_upload_capacity_bytes: {
     help: 'Server-wide staging byte cap for partial uploads (MAX_PENDING_BYTES)',

@@ -8,24 +8,37 @@ type Context = Parameters<typeof createEntity>[0]
 const ENTITY_ID = 'bafkreigdj5jyzxnhfwpkkvslq4vadvyymyi6zgf4gdhsvjfqqmbzl7u7fi'
 const ENTITY_TIMESTAMP = 1_700_000_000_000
 
-function buildContext(stageDeployment: jest.Mock, increment: jest.Mock): Context {
+type Logger = { info: jest.Mock; error: jest.Mock; warn: jest.Mock; debug: jest.Mock }
+
+function buildContext(
+  stageDeployment: jest.Mock,
+  increment: jest.Mock,
+  options: { logger?: Logger; partial?: boolean; signatureOk?: boolean; deployedTimestamp?: number } = {}
+): Context {
+  const { partial = true, signatureOk = true } = options
+  const logger = options.logger ?? { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() }
   const authChain = Authenticator.createSimpleAuthChain(ENTITY_ID, '0x' + '1'.repeat(40), '0x' + 'a'.repeat(130))
+  const fields: Record<string, { fieldname: string; value: string }> = {
+    entityId: { fieldname: 'entityId', value: ENTITY_ID },
+    authChain: { fieldname: 'authChain', value: JSON.stringify(authChain) }
+  }
+  if (partial) {
+    fields.partial = { fieldname: 'partial', value: 'true' }
+  }
   return {
     request: { headers: { get: () => null } },
     formData: {
-      fields: {
-        entityId: { fieldname: 'entityId', value: ENTITY_ID },
-        authChain: { fieldname: 'authChain', value: JSON.stringify(authChain) },
-        partial: { fieldname: 'partial', value: 'true' }
-      },
+      fields,
       files: { [ENTITY_ID]: { fieldname: ENTITY_ID, value: Buffer.from('entity') } }
     },
     components: {
-      logs: { getLogger: () => ({ info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() }) },
+      logs: { getLogger: () => logger },
       metrics: { increment },
-      crypto: { validateSignature: jest.fn().mockResolvedValue({ ok: true }) },
+      crypto: {
+        validateSignature: jest.fn().mockResolvedValue(signatureOk ? { ok: true } : { ok: false, message: 'bad' })
+      },
       deployer: {
-        getDeployedEntityTimestamp: jest.fn().mockResolvedValue(undefined),
+        getDeployedEntityTimestamp: jest.fn().mockResolvedValue(options.deployedTimestamp),
         readDeployment: jest.fn().mockResolvedValue({ files: new Map(), entity: { timestamp: ENTITY_TIMESTAMP } })
       },
       contentLocks: { withRead: jest.fn() },
@@ -49,8 +62,10 @@ describe('when a partial batch is rejected', () => {
 
   describe('and a partial-upload quota answers it with a 429', () => {
     let response: Awaited<ReturnType<typeof createEntity>>
+    let logger: Logger
 
     beforeEach(async () => {
+      logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() }
       stageDeployment.mockRejectedValueOnce(
         new InvalidPartialDeploymentError(
           ['Partial upload storage on this server is full.'],
@@ -59,7 +74,14 @@ describe('when a partial batch is rejected', () => {
           'bytes_per_server'
         )
       )
-      response = await createEntity(buildContext(stageDeployment, increment))
+      response = await createEntity(buildContext(stageDeployment, increment, { logger }))
+    })
+
+    it('should log the throttling as a warning, not an error', () => {
+      expect({ warnings: logger.warn.mock.calls.length, errors: logger.error.mock.calls.length }).toEqual({
+        warnings: 1,
+        errors: 0
+      })
     })
 
     it('should answer the 429 and count it as throttled by the quota that rejected it', () => {
@@ -101,6 +123,96 @@ describe('when a partial batch is rejected', () => {
       expect({ error: (error as Error).name, metrics: increment.mock.calls }).toEqual({
         error: 'ServiceUnavailableError',
         metrics: [['dcl_partial_deployments_staging_total', { kind: 'busy' }]]
+      })
+    })
+  })
+})
+
+describe('when a partial batch is answered 200', () => {
+  let stageDeployment: jest.Mock
+  let increment: jest.Mock
+
+  beforeEach(() => {
+    stageDeployment = jest.fn()
+    increment = jest.fn()
+  })
+
+  afterEach(() => {
+    jest.resetAllMocks()
+  })
+
+  describe('and it published the entity', () => {
+    beforeEach(async () => {
+      stageDeployment.mockResolvedValueOnce({ kind: 'deployed', creationTimestamp: ENTITY_TIMESTAMP })
+      await createEntity(buildContext(stageDeployment, increment))
+    })
+
+    it('should count it as finalized', () => {
+      expect(increment.mock.calls).toEqual([['dcl_partial_deployments_staging_total', { kind: 'finalized' }]])
+    })
+  })
+
+  describe('and another request had already published the entity', () => {
+    beforeEach(async () => {
+      stageDeployment.mockResolvedValueOnce({ kind: 'replayed', creationTimestamp: ENTITY_TIMESTAMP })
+      await createEntity(buildContext(stageDeployment, increment))
+    })
+
+    it('should count it as replayed, not finalized', () => {
+      expect(increment.mock.calls).toEqual([['dcl_partial_deployments_staging_total', { kind: 'replayed' }]])
+    })
+  })
+
+  describe('and the entity was published before the batch arrived', () => {
+    let response: Awaited<ReturnType<typeof createEntity>>
+
+    beforeEach(async () => {
+      response = await createEntity(buildContext(stageDeployment, increment, { deployedTimestamp: ENTITY_TIMESTAMP }))
+    })
+
+    it('should answer its timestamp and count it as replayed, not finalized', () => {
+      expect({ response, metrics: increment.mock.calls }).toEqual({
+        response: { status: 200, body: { creationTimestamp: ENTITY_TIMESTAMP } },
+        metrics: [['dcl_partial_deployments_staging_total', { kind: 'replayed' }]]
+      })
+    })
+  })
+})
+
+describe('when a deployment is not validly signed', () => {
+  let increment: jest.Mock
+  let response: Awaited<ReturnType<typeof createEntity>>
+
+  beforeEach(() => {
+    increment = jest.fn()
+  })
+
+  afterEach(() => {
+    jest.resetAllMocks()
+  })
+
+  describe('and it is a partial batch', () => {
+    beforeEach(async () => {
+      response = await createEntity(buildContext(jest.fn(), increment, { signatureOk: false }))
+    })
+
+    it('should answer a 400 counted as a staging validation error', () => {
+      expect({ status: response.status, metrics: increment.mock.calls }).toEqual({
+        status: 400,
+        metrics: [['dcl_partial_deployments_staging_total', { kind: 'validation_error' }]]
+      })
+    })
+  })
+
+  describe('and it is a regular deployment', () => {
+    beforeEach(async () => {
+      response = await createEntity(buildContext(jest.fn(), increment, { partial: false, signatureOk: false }))
+    })
+
+    it('should answer a 400 counted as a deployment validation error', () => {
+      expect({ status: response.status, metrics: increment.mock.calls }).toEqual({
+        status: 400,
+        metrics: [['dcl_deployments_endpoint_counter', { kind: 'validation_error' }]]
       })
     })
   })
