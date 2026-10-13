@@ -12,6 +12,9 @@ import { getIntegrationResourcePathFor } from '../resources/get-resource-path'
 import { makeNoopDeploymentValidator } from '../../helpers/logic/server-validator/NoOpValidator'
 import * as deploymentServiceServerValidator from '../../../src/logic/deployment-service/server-validator'
 
+// server2 only sees the entity through its background sync, which can take well over 10 s on a busy runner.
+const SYNC_ATTEMPTS = 30
+
 describe('Errors during sync', () => {
   const getTestEnv = setupTestEnvironment()
 
@@ -72,11 +75,11 @@ describe('Errors during sync', () => {
     })
 
     it('stores it as failed deployment locally', async function () {
-      await awaitUntil(() => assertDeploymentFailed(server2, FailureReason.DEPLOYMENT_ERROR, entity))
+      await awaitUntil(() => assertDeploymentFailed(server2, FailureReason.DEPLOYMENT_ERROR, entity), SYNC_ATTEMPTS)
     })
 
     it('fix the failed entity on server2 when retrying it, is correclty deployed', async () => {
-      await awaitUntil(() => assertDeploymentFailed(server2, FailureReason.DEPLOYMENT_ERROR, entity))
+      await awaitUntil(() => assertDeploymentFailed(server2, FailureReason.DEPLOYMENT_ERROR, entity), SYNC_ATTEMPTS)
       // Fix the entity
       await server2.deployEntity(deployData, true)
       await awaitUntil(() => assertEntitiesAreActiveOnServer(server2, entity))
@@ -85,7 +88,7 @@ describe('Errors during sync', () => {
     })
 
     it('fix the failed entity on server2 after a new one was correctly deployed', async () => {
-      await awaitUntil(() => assertDeploymentFailed(server2, FailureReason.DEPLOYMENT_ERROR, entity))
+      await awaitUntil(() => assertDeploymentFailed(server2, FailureReason.DEPLOYMENT_ERROR, entity), SYNC_ATTEMPTS)
 
       // Deploy a new entity for the same pointer
       const anotherEntityCombo = await buildDeployDataAfterEntity(entity, ['0,1'], {
@@ -114,7 +117,7 @@ describe('Errors during sync', () => {
         metadata: { a: 'metadata2' }
       })
       // Wait until entity from sync is deployed and failed
-      await awaitUntil(() => assertDeploymentFailed(server2, FailureReason.DEPLOYMENT_ERROR, entity))
+      await awaitUntil(() => assertDeploymentFailed(server2, FailureReason.DEPLOYMENT_ERROR, entity), SYNC_ATTEMPTS)
       // Deploy entity 2 (with same pointers) on server 2
       await server2.deployEntity(anotherEntityCombo.deployData)
       await awaitUntil(() => assertEntitiesAreActiveOnServer(server2, anotherEntityCombo.entity))
