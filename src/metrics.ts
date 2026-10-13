@@ -104,7 +104,7 @@ export const metricsDeclaration = validateMetricsDeclaration({
   dcl_partial_upload_throttled_total: {
     help: 'Partial upload batches answered 429, by the quota or limit that rejected them',
     type: 'counter',
-    // reason=(uploads_per_account|bytes_per_account|bytes_per_server|bytes_per_minute|entity_rate_limit|pointer_conflict)
+    // reason=(uploads_per_account|uploads_per_pointer|uploads_per_pointer_account|bytes_per_account|bytes_per_server|bytes_per_minute|entity_rate_limit|pointer_conflict)
     labelNames: ['reason']
   },
   dcl_partial_uploads_started_total: {

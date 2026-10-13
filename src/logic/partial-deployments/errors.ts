@@ -1,6 +1,8 @@
 /** Why a batch was answered with a retryable 429. */
 export type PartialUploadThrottleReason =
   | 'uploads_per_account'
+  | 'uploads_per_pointer'
+  | 'uploads_per_pointer_account'
   | 'bytes_per_account'
   | 'bytes_per_server'
   | 'bytes_per_minute'

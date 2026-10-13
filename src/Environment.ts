@@ -60,6 +60,7 @@ export const DEFAULT_MIN_UPLOAD_RESERVATION_BYTES = 16 * 1024 * 1024 // 16 MiB
 // completes is never authenticated or counted, so per-source concurrency is what bounds slow senders.
 // The per-source byte share (MAX_IN_FLIGHT_UPLOAD_BYTES_PER_SOURCE) defaults to MAX_UPLOAD_TOTAL_SIZE.
 export const DEFAULT_MAX_CONCURRENT_UPLOADS_PER_SOURCE = 4
+export const DEFAULT_MAX_PENDING_UPLOADS_PER_POINTER = 4
 // A body still arriving after this is aborted with 408, so slow senders can't hold upload slots.
 export const DEFAULT_MULTIPART_UPLOAD_TIMEOUT_MS = 5 * 60 * 1000
 
@@ -370,6 +371,7 @@ export enum EnvironmentConfig {
   PENDING_DEPLOYMENT_TTL,
   PENDING_DEPLOYMENTS_CLEANUP_INTERVAL,
   MAX_PENDING_DEPLOYMENTS_PER_DEPLOYER,
+  MAX_PENDING_UPLOADS_PER_POINTER,
   MAX_PENDING_BYTES_PER_DEPLOYER,
   MAX_PENDING_BYTES,
   MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE,
@@ -651,6 +653,10 @@ export class EnvironmentBuilder {
     // Max pending (partial) uploads per deployer, including expired ones awaiting cleanup.
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_PENDING_DEPLOYMENTS_PER_DEPLOYER, () =>
       parsePositiveIntEnv('MAX_PENDING_DEPLOYMENTS_PER_DEPLOYER', 10)
+    )
+    // Max live pending uploads holding any one parcel, across deployers; one deployer gets all but one of them.
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_PENDING_UPLOADS_PER_POINTER, () =>
+      parsePositiveIntEnv('MAX_PENDING_UPLOADS_PER_POINTER', DEFAULT_MAX_PENDING_UPLOADS_PER_POINTER)
     )
     // Bytes uploads hold (all but already-published content) per deployer and per server; expired uploads stay charged until cleanup.
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.MAX_PENDING_BYTES_PER_DEPLOYER, () =>

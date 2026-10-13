@@ -7,6 +7,7 @@ export type {
   IPendingDeploymentsRepository,
   OldestUploadScope,
   PendingDeploymentRow,
+  PointerUsage,
   ReservationTotals,
   StagingTotals
 } from './types'

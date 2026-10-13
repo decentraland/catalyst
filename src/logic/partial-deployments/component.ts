@@ -6,7 +6,8 @@ import {
   ExpiredUpload,
   FileReceipt,
   OldestUploadScope,
-  PendingDeploymentRow
+  PendingDeploymentRow,
+  PointerUsage
 } from '../../adapters/pending-deployments-repository'
 import { DatabaseClient } from '../../adapters/database'
 import { EnvironmentConfig } from '../../Environment'
@@ -69,6 +70,59 @@ export function secondsUntilCleanupFreesQuota(params: {
   return Math.max(1, Math.ceil((base + runs * cleanupIntervalMs - now) / 1000))
 }
 
+/** A per-pointer upload cap an upload would exceed. */
+export type PointerQuotaRejection = {
+  reason: Extract<PartialUploadThrottleReason, 'uploads_per_pointer' | 'uploads_per_pointer_account'>
+  message: string
+  retryAfterSeconds: number
+}
+
+/**
+ * Checks a new upload against the per-pointer caps: each of its pointers may be held by at most
+ * `maxUploadsPerPointer` live uploads across deployers, and by at most all but one of them (at least 1)
+ * of one deployer. Live uploads free their slots when they expire, so Retry-After is when every full
+ * pointer's oldest upload in scope expires; at least 1 s.
+ * @param params Live usage of the upload's pointers, the cap, current time and upload lifetime (ms).
+ * @returns The rejection, or undefined when the upload fits.
+ */
+export function checkPointerQuotas(params: {
+  usage: PointerUsage[]
+  maxUploadsPerPointer: number
+  now: number
+  ttlMs: number
+}): PointerQuotaRejection | undefined {
+  const { usage, maxUploadsPerPointer, now, ttlMs } = params
+  const maxPerDeployer = Math.max(1, maxUploadsPerPointer - 1)
+  const retryAfter = (oldest: number[]) => Math.max(1, Math.ceil((Math.max(...oldest) + ttlMs - now) / 1000))
+  const describe = (full: PointerUsage[]) =>
+    full
+      .slice(0, 5)
+      .map((entry) => entry.pointer)
+      .join(' ') + (full.length > 5 ? ` and ${full.length - 5} more` : '')
+
+  const full = usage.filter((entry) => entry.uploads >= maxUploadsPerPointer)
+  if (full.length > 0) {
+    return {
+      reason: 'uploads_per_pointer',
+      message: `Too many partial uploads in progress for parcels ${describe(
+        full
+      )} (max ${maxUploadsPerPointer} per parcel). Complete an upload or wait for one to expire.`,
+      retryAfterSeconds: retryAfter(full.map((entry) => entry.oldestCreatedAt))
+    }
+  }
+  const ownFull = usage.filter((entry) => entry.deployerUploads >= maxPerDeployer)
+  if (ownFull.length > 0) {
+    return {
+      reason: 'uploads_per_pointer_account',
+      message: `Too many partial uploads in progress for this account on parcels ${describe(
+        ownFull
+      )} (max ${maxPerDeployer} per parcel). Complete an upload or wait for one to expire.`,
+      retryAfterSeconds: retryAfter(ownFull.map((entry) => entry.deployerOldestCreatedAt ?? now - ttlMs))
+    }
+  }
+  return undefined
+}
+
 async function streamToBufferCapped(stream: AsyncIterable<Buffer>, maxBytes: number): Promise<Uint8Array> {
   const chunks: Buffer[] = []
   let total = 0
@@ -85,7 +139,8 @@ async function streamToBufferCapped(stream: AsyncIterable<Buffer>, maxBytes: num
 /**
  * Stages authenticated, entity-keyed partial upload batches. Each batch is hashed and validated without
  * locks, then stored and possibly published under the shared content lock and the per-entity lock. Overlapping uploads
- * coexist within byte and count quotas; publication order is enforced by the deploy pipeline.
+ * coexist within byte and count quotas, including a per-parcel cap across deployers; publication order is enforced by
+ * the deploy pipeline.
  * @param components Validation, persistence, storage and telemetry dependencies.
  * @param options Tuning overrides; `expiredUploadsPerPage` is the cleanup listing page size (default 100).
  * @returns Partial deployment orchestration and expired-upload cleanup.
@@ -129,6 +184,7 @@ export function createPartialDeployments(
   const pendingDeploymentTtlMs = env.getConfig<number>(EnvironmentConfig.PENDING_DEPLOYMENT_TTL)
   const requestTtlBackwards = env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
   const maxPendingPerDeployer = env.getConfig<number>(EnvironmentConfig.MAX_PENDING_DEPLOYMENTS_PER_DEPLOYER)
+  const maxUploadsPerPointer = env.getConfig<number>(EnvironmentConfig.MAX_PENDING_UPLOADS_PER_POINTER)
   const accountBytes = BigInt(env.getConfig<number>(EnvironmentConfig.MAX_PENDING_BYTES_PER_DEPLOYER))
   const globalBytes = BigInt(env.getConfig<number>(EnvironmentConfig.MAX_PENDING_BYTES))
   const bytesPerMinute = BigInt(env.getConfig<number>(EnvironmentConfig.MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE))
@@ -350,6 +406,27 @@ export function createPartialDeployments(
           `Too many partial uploads in progress for this account (max ${maxPendingPerDeployer}). Complete an upload or wait for expired uploads to be cleaned up.`,
           { deployerAddress },
           'uploads_per_account'
+        )
+      }
+      // Bounds what any set of parcels can stage, however many accounts may deploy to them.
+      await pendingDeploymentsRepository.acquirePointerLocks(tx, entity.pointers)
+      const pointerRejection = checkPointerQuotas({
+        usage: await pendingDeploymentsRepository.getLivePointerUsage(
+          tx,
+          entity.pointers,
+          deployerAddress,
+          pendingDeploymentTtlMs
+        ),
+        maxUploadsPerPointer,
+        now: Date.now(),
+        ttlMs: pendingDeploymentTtlMs
+      })
+      if (pointerRejection) {
+        throw new InvalidPartialDeploymentError(
+          [pointerRejection.message],
+          429,
+          pointerRejection.retryAfterSeconds,
+          pointerRejection.reason
         )
       }
       // A delayed first batch (slow parsing, validation or lock waits) may arrive already past its deadline.
