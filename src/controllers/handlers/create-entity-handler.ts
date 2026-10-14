@@ -214,8 +214,10 @@ export async function createEntity(
         files,
         entityFile,
         requestedAt: context.requestArrivedAt,
-        onAdmitted: () => {
-          if (context.partialQuota) context.partialQuota.admitted = true
+        onAdmitted: ({ created }) => {
+          if (!context.partialQuota) return
+          context.partialQuota.admitted = true
+          context.partialQuota.created = created
         }
       })
       if (result.kind === 'deployed' || result.kind === 'replayed') {

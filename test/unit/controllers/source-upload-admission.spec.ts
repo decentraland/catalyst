@@ -123,7 +123,7 @@ describe('when admitting a POST /entities body by its source', () => {
   })
 })
 
-describe('when admitting POST /entities bodies behind nginx with the default trusted client IP header', () => {
+describe('when admitting POST /entities bodies behind nginx with X-Real-IP as the trusted client IP header', () => {
   const NGINX_ADDRESS = '172.18.0.2'
   let savedHeader: string | undefined
   let admission: ReturnType<typeof createSourceUploadAdmission>
@@ -133,7 +133,7 @@ describe('when admitting POST /entities bodies behind nginx with the default tru
 
   beforeEach(async () => {
     savedHeader = process.env.TRUSTED_CLIENT_IP_HEADER
-    delete process.env.TRUSTED_CLIENT_IP_HEADER
+    process.env.TRUSTED_CLIENT_IP_HEADER = 'x-real-ip'
     const env = await new EnvironmentBuilder()
       .withConfig(EnvironmentConfig.MAX_CONCURRENT_UPLOADS_PER_SOURCE, 1)
       .withConfig(EnvironmentConfig.MAX_UPLOAD_TOTAL_SIZE, MAX_REQUEST_BYTES)

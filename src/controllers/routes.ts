@@ -51,8 +51,8 @@ export async function setupRouter({ components }: GlobalContext): Promise<Router
     })
     // The daily quota counts regular deployments after parsing; a source that has spent it is turned
     // away before its body is read unless the request declares itself partial with `?partial=true`.
-    // Partial uploads are many batches, bounded by their account's byte quotas instead: only batches
-    // rejected before joining their upload count, and a spent source may only resume its own uploads. Every body,
+    // A partial upload counts once, when its first batch creates it, as do batches rejected before joining
+    // their upload; a spent source may only resume its own uploads. Every body,
     // counted or not, holds a share of its source's in-flight uploads until the request ends.
     // A regular deployment whose declared size can't fit the memory its files are read into is shed unread.
     router.post(

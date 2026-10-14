@@ -26,6 +26,7 @@ describe('when counting POST /entities requests against the daily quota', () => 
   let assertAvailable: jest.Mock
   let consume: jest.Mock
   let handler: jest.Mock
+  let warn: jest.Mock
   let wrapped: (context: Context) => Promise<IHttpServerComponent.IResponse>
   let context: Context
   let response: IHttpServerComponent.IResponse | undefined
@@ -35,9 +36,11 @@ describe('when counting POST /entities requests against the daily quota', () => 
     assertAvailable = jest.fn().mockResolvedValue(undefined)
     consume = jest.fn().mockResolvedValue(undefined)
     handler = jest.fn()
+    warn = jest.fn()
     wrapped = withDeploymentQuota<Context>(
       {
         deploymentQuota: { assertAvailable, consume },
+        logs: { getLogger: () => ({ warn, info: jest.fn(), error: jest.fn(), debug: jest.fn(), log: jest.fn() }) },
         env: {
           getConfig: (key: EnvironmentConfig) =>
             key === EnvironmentConfig.TRUSTED_CLIENT_IP_HEADER ? CLIENT_IP_HEADER : undefined
@@ -83,10 +86,127 @@ describe('when counting POST /entities requests against the daily quota', () => 
     })
   })
 
-  describe('and a partial batch is accepted', () => {
+  describe('and a partial batch creates its upload', () => {
     beforeEach(async () => {
       context = buildContext(true)
-      handler.mockResolvedValueOnce({ status: 202, body: { missing: [] } })
+      handler.mockImplementationOnce(async (ctx: Context) => {
+        ctx.partialQuota!.admitted = true
+        ctx.partialQuota!.created = true
+        return { status: 202, body: { missing: ['bafkrei-missing'] } }
+      })
+      response = await wrapped(context)
+    })
+
+    it('should count it once and keep its answer', () => {
+      expect({ counted: consume.mock.calls, status: response?.status }).toEqual({ counted: [[SOURCE]], status: 202 })
+    })
+  })
+
+  describe('and a single partial batch creates and publishes its upload', () => {
+    beforeEach(async () => {
+      context = buildContext(true)
+      handler.mockImplementationOnce(async (ctx: Context) => {
+        ctx.partialQuota!.admitted = true
+        ctx.partialQuota!.created = true
+        return { status: 200, body: { creationTimestamp: 1 } }
+      })
+      response = await wrapped(context)
+    })
+
+    it('should count it once', () => {
+      expect({ counted: consume.mock.calls, status: response?.status }).toEqual({ counted: [[SOURCE]], status: 200 })
+    })
+  })
+
+  describe('and a partial batch creates its upload and the count spends the quota', () => {
+    beforeEach(async () => {
+      context = buildContext(true)
+      consume.mockRejectedValueOnce(new DeploymentQuotaExceededError(60))
+      handler.mockImplementationOnce(async (ctx: Context) => {
+        ctx.partialQuota!.admitted = true
+        ctx.partialQuota!.created = true
+        return { status: 202, body: { missing: [] } }
+      })
+      response = await wrapped(context)
+    })
+
+    it('should keep its answer', () => {
+      expect(response?.status).toBe(202)
+    })
+  })
+
+  describe('and a partial batch creates its upload and counting it fails', () => {
+    beforeEach(async () => {
+      context = buildContext(true)
+      consume.mockRejectedValueOnce(new Error('rate limit store unavailable'))
+      handler.mockImplementationOnce(async (ctx: Context) => {
+        ctx.partialQuota!.admitted = true
+        ctx.partialQuota!.created = true
+        return { status: 202, body: { missing: [] } }
+      })
+      response = await wrapped(context)
+    })
+
+    it('should keep its answer and log the failure', () => {
+      expect({ status: response?.status, warned: warn.mock.calls.length }).toEqual({ status: 202, warned: 1 })
+    })
+  })
+
+  describe('and a partial batch is rejected before it joins its upload and counting it fails', () => {
+    beforeEach(async () => {
+      context = buildContext(true)
+      consume.mockRejectedValueOnce(new Error('rate limit store unavailable'))
+      handler.mockResolvedValueOnce({ status: 400, body: { errors: ['The signature is invalid.'] } })
+      response = await wrapped(context)
+    })
+
+    it('should keep its answer and log the failure', () => {
+      expect({ status: response?.status, warned: warn.mock.calls.length }).toEqual({ status: 400, warned: 1 })
+    })
+  })
+
+  describe('and a partial batch is rejected as a malformed request and counting it fails', () => {
+    beforeEach(async () => {
+      context = buildContext(true)
+      consume.mockRejectedValueOnce(new Error('rate limit store unavailable'))
+      handler.mockRejectedValueOnce(new InvalidRequestError('Invalid auth chain'))
+      error = await wrapped(context).catch((e) => e)
+    })
+
+    it('should let its own error through and log the failure', () => {
+      expect({ error, warned: warn.mock.calls.length }).toEqual({
+        error: new InvalidRequestError('Invalid auth chain'),
+        warned: 1
+      })
+    })
+  })
+
+  describe('and a partial batch creates its upload and then fails', () => {
+    beforeEach(async () => {
+      context = buildContext(true)
+      handler.mockImplementationOnce(async (ctx: Context) => {
+        ctx.partialQuota!.admitted = true
+        ctx.partialQuota!.created = true
+        throw new Error('storage failure')
+      })
+      error = await wrapped(context).catch((e) => e)
+    })
+
+    it('should count it and let the error through', () => {
+      expect({ counted: consume.mock.calls, error }).toEqual({
+        counted: [[SOURCE]],
+        error: new Error('storage failure')
+      })
+    })
+  })
+
+  describe('and a partial batch resumes its upload', () => {
+    beforeEach(async () => {
+      context = buildContext(true)
+      handler.mockImplementationOnce(async (ctx: Context) => {
+        ctx.partialQuota!.admitted = true
+        return { status: 202, body: { missing: [] } }
+      })
       response = await wrapped(context)
     })
 
@@ -121,7 +241,7 @@ describe('when counting POST /entities requests against the daily quota', () => 
     it('should hand the batch to the handler with the time left until the quota resets', () => {
       expect({ checked: assertAvailable.mock.calls, quota: context.partialQuota, status: response?.status }).toEqual({
         checked: [[SOURCE]],
-        quota: { exhaustedRetryAfterSeconds: 120, admitted: false },
+        quota: { exhaustedRetryAfterSeconds: 120, admitted: false, created: false },
         status: 202
       })
     })

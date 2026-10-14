@@ -51,8 +51,8 @@ export const DEFAULT_MAX_UPLOAD_TOTAL_SIZE = 2 * 1024 * 1024 * 1024 // 2 GiB tot
 // Aggregate bound on POST /entities bodies spooled to temporary files at once across all clients, each
 // file charged 16 KiB on top of its bytes so it also bounds inodes. It must fit one maximum-size request
 // (MAX_UPLOAD_TOTAL_SIZE plus the charge for MAX_UPLOAD_FILE_COUNT files); unset, it is this default or that
-// size, whichever is larger. Partial batches are exempt from the per-IP daily quota below and are bounded by this budget, its per-source share and their account's
-// byte quotas instead.
+// size, whichever is larger. A partial upload counts once against the per-IP daily quota below, and its
+// batches are bounded by this budget, its per-source share and their account's byte quotas.
 export const DEFAULT_MAX_IN_FLIGHT_UPLOAD_BYTES = 4 * 1024 * 1024 * 1024 // 4 GiB
 // Aggregate bound on regular deployment files read into memory at once. Partial batches stream their
 // content from disk; only their entity file counts, held until the batch is staged. It must fit one MAX_UPLOAD_TOTAL_SIZE
@@ -89,14 +89,9 @@ export const DEFAULT_POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS = 60
 // Daily quota for POST /entities. A second, independent rate-limit bucket that caps the total
 // number of deployments a single IP can make in a 24-hour rolling window. This catches attackers
 // who stay just below the per-minute burst limit but sustain high volume over hours. It counts regular
-// deployments; once an IP has spent it, its requests are rejected before their body is read unless
-// they declare a partial batch with `POST /entities?partial=true`.
+// deployments and partial uploads (once, when created); once an IP has spent it, its requests are
+// rejected before their body is read unless they declare a partial batch with `?partial=true`.
 export const DEFAULT_POST_ENTITIES_DAILY_QUOTA_MAX = 300
-
-// Catalyst runs behind catalyst-owner's nginx, which forwards the connecting address in `X-Real-IP`
-// (`proxy_set_header X-Real-IP $remote_addr` in local/nginx/include/content_proxy.conf); keyed on the
-// socket address instead, every client would share nginx's address and so one budget.
-export const DEFAULT_TRUSTED_CLIENT_IP_HEADER = 'x-real-ip'
 
 // Per-client request budget for GET/HEAD /contents/:hashId. Added after the 2026-10-04 incident
 // where a single unaffiliated IP bulk-downloaded a node's entire content store (~490k requests,
@@ -189,14 +184,13 @@ function parsePositiveIntEnv(name: string, defaultValue: number): number {
 }
 
 /**
- * Reads an HTTP header name, falling back to `defaultValue` when unset and returning `undefined` when
- * set empty, which opts out. Trimmed because a padded header name is not merely unmatched —
- * `Headers.get` rejects it outright.
+ * Reads an optional HTTP header name, returning `undefined` when unset or empty. Trimmed because a padded
+ * header name is not merely unmatched — `Headers.get` rejects it outright.
  */
-function parseHeaderNameEnv(name: string, defaultValue: string): string | undefined {
+function parseHeaderNameEnv(name: string): string | undefined {
   const raw = process.env[name]
   if (raw === undefined) {
-    return defaultValue
+    return undefined
   }
   const trimmed = raw.trim()
   if (trimmed === '') {
@@ -873,10 +867,10 @@ export class EnvironmentBuilder {
       parsePositiveIntEnv('POST_ENTITIES_DAILY_QUOTA_MAX', DEFAULT_POST_ENTITIES_DAILY_QUOTA_MAX)
     )
 
-    // Defaults to the `X-Real-IP` catalyst-owner's nginx writes (see DEFAULT_TRUSTED_CLIENT_IP_HEADER).
-    // Set empty only for a directly exposed server, which then keys on the socket address.
+    // No default: only the deployment knows which header its proxy overwrites (catalyst-owner: x-real-ip).
+    // Unset, the limits key on the socket address.
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.TRUSTED_CLIENT_IP_HEADER, () =>
-      parseHeaderNameEnv('TRUSTED_CLIENT_IP_HEADER', DEFAULT_TRUSTED_CLIENT_IP_HEADER)
+      parseHeaderNameEnv('TRUSTED_CLIENT_IP_HEADER')
     )
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CONTENT_GET_RATE_LIMIT_MAX, () =>
