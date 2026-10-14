@@ -148,8 +148,8 @@ describe('when reading the POST /entities rate limit configuration', () => {
       env = await new EnvironmentBuilder().build()
     })
 
-    it('should default to the X-Real-IP header the Catalyst nginx writes', () => {
-      expect(env.getConfig(EnvironmentConfig.TRUSTED_CLIENT_IP_HEADER)).toBe('x-real-ip')
+    it('should have no default, so the limiter keys on the socket address', () => {
+      expect(env.getConfig(EnvironmentConfig.TRUSTED_CLIENT_IP_HEADER)).toBeUndefined()
     })
   })
 

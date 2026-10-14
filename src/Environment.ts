@@ -93,11 +93,6 @@ export const DEFAULT_POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS = 60
 // rejected before their body is read unless they declare a partial batch with `?partial=true`.
 export const DEFAULT_POST_ENTITIES_DAILY_QUOTA_MAX = 300
 
-// Catalyst runs behind catalyst-owner's nginx, which forwards the connecting address in `X-Real-IP`
-// (`proxy_set_header X-Real-IP $remote_addr` in local/nginx/include/content_proxy.conf); keyed on the
-// socket address instead, every client would share nginx's address and so one budget.
-export const DEFAULT_TRUSTED_CLIENT_IP_HEADER = 'x-real-ip'
-
 // Per-client request budget for GET/HEAD /contents/:hashId. Added after the 2026-10-04 incident
 // where a single unaffiliated IP bulk-downloaded a node's entire content store (~490k requests,
 // ~38 GB) over several hours: nginx's `limit_req` zones on `/content/*` are keyed on `$uri`, so a
@@ -167,14 +162,13 @@ function parsePositiveIntEnv(name: string, defaultValue: number): number {
 }
 
 /**
- * Reads an HTTP header name, falling back to `defaultValue` when unset and returning `undefined` when
- * set empty, which opts out. Trimmed because a padded header name is not merely unmatched —
- * `Headers.get` rejects it outright.
+ * Reads an optional HTTP header name, returning `undefined` when unset or empty. Trimmed because a padded
+ * header name is not merely unmatched — `Headers.get` rejects it outright.
  */
-function parseHeaderNameEnv(name: string, defaultValue: string): string | undefined {
+function parseHeaderNameEnv(name: string): string | undefined {
   const raw = process.env[name]
   if (raw === undefined) {
-    return defaultValue
+    return undefined
   }
   const trimmed = raw.trim()
   if (trimmed === '') {
@@ -867,10 +861,10 @@ export class EnvironmentBuilder {
       parsePositiveIntEnv('POST_ENTITIES_DAILY_QUOTA_MAX', DEFAULT_POST_ENTITIES_DAILY_QUOTA_MAX)
     )
 
-    // Defaults to the `X-Real-IP` catalyst-owner's nginx writes (see DEFAULT_TRUSTED_CLIENT_IP_HEADER).
-    // Set empty only for a directly exposed server, which then keys on the socket address.
+    // No default: only the deployment knows which header its proxy overwrites (catalyst-owner: x-real-ip).
+    // Unset, the limits key on the socket address.
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.TRUSTED_CLIENT_IP_HEADER, () =>
-      parseHeaderNameEnv('TRUSTED_CLIENT_IP_HEADER', DEFAULT_TRUSTED_CLIENT_IP_HEADER)
+      parseHeaderNameEnv('TRUSTED_CLIENT_IP_HEADER')
     )
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CONTENT_GET_RATE_LIMIT_MAX, () =>
