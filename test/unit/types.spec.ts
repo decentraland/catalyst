@@ -44,14 +44,29 @@ describe('when parsing an entity type', () => {
     })
   })
 
-  describe('and the input is in upper case', () => {
+  describe.each([
+    ['PROFILE', EntityType.PROFILE],
+    ['OUTFITS', EntityType.OUTFITS],
+    ['SCENES', EntityType.SCENE]
+  ])('and the input is the upper case env-style value "%s"', (upper, expected) => {
     beforeEach(() => {
-      input = 'OUTFITS'
+      input = upper
       result = parseEntityType(input)
     })
 
     it('should return the entity type', () => {
-      expect(result).toBe(EntityType.OUTFITS)
+      expect(result).toBe(expected)
+    })
+  })
+
+  describe('and the input is the outfits type without its trailing "s"', () => {
+    beforeEach(() => {
+      input = 'outfit'
+      result = parseEntityType(input)
+    })
+
+    it('should return undefined', () => {
+      expect(result).toBeUndefined()
     })
   })
 
