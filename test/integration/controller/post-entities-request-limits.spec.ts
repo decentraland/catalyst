@@ -201,8 +201,8 @@ describe('Integration - POST /entities request limits', () => {
         const deployment = await prepareSceneDeployment(['55,50'], uniqueContents(2), identity)
         const [firstBatch, secondBatch] = partialBatches(deployment)
         started = await postFrom('203.0.113.9', buildPartialForm(deployment, firstBatch), '?partial=true')
-        // Spent directly: two more requests would trip the per-minute burst limit first.
-        for (let i = 0; i < DAILY_QUOTA; i++) {
+        // The first batch counted once; the rest is spent directly, as more requests would trip the burst limit.
+        for (let i = 0; i < DAILY_QUOTA - 1; i++) {
           await server.components.deploymentQuota.consume('203.0.113.9')
         }
         status = await postFrom('203.0.113.9', buildPartialForm(deployment, secondBatch), '?partial=true')
@@ -255,7 +255,7 @@ describe('Integration - POST /entities request limits', () => {
     })
   })
 
-  describe('when partial batches from a source are rejected after joining their upload', () => {
+  describe('when partial uploads from a source are created and then rejected', () => {
     let rejected: number[]
     let status: number
 
@@ -274,8 +274,8 @@ describe('Integration - POST /entities request limits', () => {
       status = await postFrom('203.0.113.11', buildPartialForm(deployment, keys, false))
     })
 
-    it('should not count them against its daily quota', () => {
-      expect({ rejected, status }).toEqual({ rejected: Array(DAILY_QUOTA).fill(400), status: 200 })
+    it('should count each upload once against its daily quota', () => {
+      expect({ rejected, status }).toEqual({ rejected: Array(DAILY_QUOTA).fill(400), status: 429 })
     })
   })
 
@@ -328,8 +328,8 @@ describe('Integration - POST /entities request limits', () => {
       )
       started = await postFrom('203.0.113.13', buildPartialForm(resumed, [resumed.entityId, small]), '?partial=true')
       rejected = await postFrom('203.0.113.13', buildPartialForm(resumed, [big]), '?partial=true')
-      // Spent directly but for one: more requests would trip the per-minute burst limit first.
-      for (let i = 0; i < DAILY_QUOTA - 1; i++) {
+      // Spent directly but for one, after the upload's own count: more requests would trip the burst limit first.
+      for (let i = 0; i < DAILY_QUOTA - 2; i++) {
         await server.components.deploymentQuota.consume('203.0.113.13')
       }
       const deployment = await prepareSceneDeployment(['125,120'], uniqueContents(1), identity)

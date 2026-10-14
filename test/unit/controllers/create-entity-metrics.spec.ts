@@ -284,7 +284,7 @@ describe('when a partial batch comes from a source that spent its daily quota', 
     isLiveUploadOf = jest.fn()
     context = buildContext(stageDeployment, increment)
     context.components.partialDeployments.isLiveUploadOf = isLiveUploadOf
-    context.partialQuota = { exhaustedRetryAfterSeconds: 120, admitted: false }
+    context.partialQuota = { exhaustedRetryAfterSeconds: 120, admitted: false, created: false }
   })
 
   afterEach(() => {
@@ -314,8 +314,8 @@ describe('when a partial batch comes from a source that spent its daily quota', 
   describe('and the batch resumes the signer own live upload', () => {
     beforeEach(async () => {
       isLiveUploadOf.mockResolvedValueOnce(true)
-      stageDeployment.mockImplementationOnce(async (input: { onAdmitted?: () => void }) => {
-        input.onAdmitted?.()
+      stageDeployment.mockImplementationOnce(async (input: { onAdmitted?: (admission: { created: boolean }) => void }) => {
+        input.onAdmitted?.({ created: false })
         return { kind: 'incomplete', missing: [] }
       })
       response = await createEntity(context)
@@ -324,8 +324,35 @@ describe('when a partial batch comes from a source that spent its daily quota', 
     it('should stage it and report it as admitted', () => {
       expect({ status: response.status, quota: context.partialQuota }).toEqual({
         status: 202,
-        quota: { exhaustedRetryAfterSeconds: 120, admitted: true }
+        quota: { exhaustedRetryAfterSeconds: 120, admitted: true, created: false }
       })
     })
+  })
+})
+
+describe('when a partial batch creates its upload', () => {
+  let stageDeployment: jest.Mock
+  let increment: jest.Mock
+  let context: ReturnType<typeof buildContext>
+
+  beforeEach(async () => {
+    stageDeployment = jest.fn().mockImplementationOnce(
+      async (input: { onAdmitted?: (admission: { created: boolean }) => void }) => {
+        input.onAdmitted?.({ created: true })
+        return { kind: 'incomplete', missing: [] }
+      }
+    )
+    increment = jest.fn()
+    context = buildContext(stageDeployment, increment)
+    context.partialQuota = { admitted: false, created: false }
+    await createEntity(context)
+  })
+
+  afterEach(() => {
+    jest.resetAllMocks()
+  })
+
+  it('should report it as admitted and created', () => {
+    expect(context.partialQuota).toEqual({ admitted: true, created: true })
   })
 })

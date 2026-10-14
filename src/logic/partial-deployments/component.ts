@@ -894,7 +894,7 @@ export function createPartialDeployments(
     const createdAt = await timed('accounting', async () => {
       const created = await createUpload(entity, contentHashes, deployerAddress, seen ?? pending, requestedAt)
       // A resume joins its admitted upload even if over budget; a new upload is admitted once reserved.
-      if (pending) onAdmitted?.()
+      if (pending) onAdmitted?.({ created: false })
       try {
         await reserve(
           entityId,
@@ -908,7 +908,7 @@ export function createPartialDeployments(
         if (!pending) await pendingDeploymentsRepository.deleteUnadmitted(database, entityId).catch(() => undefined)
         throw error
       }
-      if (!pending) onAdmitted?.()
+      if (!pending) onAdmitted?.({ created: true })
       return created
     })
     const expiresAt = createdAt + pendingDeploymentTtlMs

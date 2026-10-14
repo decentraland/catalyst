@@ -47,6 +47,8 @@ services:
       DISABLE_SYNCHRONIZATION: "true"
       # Optional: reduce log noise
       LOG_LEVEL: INFO
+      # Published directly with no proxy, so no client-IP header can be trusted
+      TRUSTED_CLIENT_IP_HEADER: ""
       # Storage inside the container (ephemeral unless you mount a volume)
       STORAGE_ROOT_FOLDER: /data/storage
       # Spool uploads on the same node-local volume, not the container's writable layer

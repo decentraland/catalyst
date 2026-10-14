@@ -13,6 +13,8 @@ export type PartialQuotaState = {
   exhaustedRetryAfterSeconds?: number
   /** Set by the handler once the batch joins its upload; batches rejected before that are counted. */
   admitted: boolean
+  /** Set by the handler when the batch created its upload, which counts once as a deployment. */
+  created: boolean
 }
 
 export type PartialQuotaContext = { partialQuota?: PartialQuotaState }
@@ -56,8 +58,9 @@ export function createDeploymentQuotaAdmission(
 }
 
 /**
- * Wraps the parsed POST /entities handler: counts regular deployments against the daily quota, and
- * partial batches rejected (400) before joining their upload, and rejects a `?partial=true` request
+ * Wraps the parsed POST /entities handler: counts regular deployments against the daily quota, partial
+ * uploads once when their first batch creates them, and partial batches rejected (400) before joining
+ * their upload, and rejects a `?partial=true` request
  * whose form isn't partial. Partial batches of a spent source may only resume the signer's own upload.
  */
 export function withDeploymentQuota<Ctx extends FormDataContext<object>>(
@@ -67,8 +70,8 @@ export function withDeploymentQuota<Ctx extends FormDataContext<object>>(
   const { deploymentQuota } = components
   const sourceOf = createClientSourceResolver(components)
 
-  // A rejected partial batch is counted as a deployment, keeping its own answer.
-  async function countRejected(source: string): Promise<void> {
+  // A counted partial batch keeps its own answer even if it spends the quota.
+  async function countPartial(source: string): Promise<void> {
     try {
       await deploymentQuota.consume(source)
     } catch (error) {
@@ -78,7 +81,7 @@ export function withDeploymentQuota<Ctx extends FormDataContext<object>>(
 
   async function handlePartial(context: Ctx): Promise<IHttpServerComponent.IResponse> {
     const source = sourceOf(context)
-    const state: PartialQuotaState = { admitted: false }
+    const state: PartialQuotaState = { admitted: false, created: false }
     try {
       await deploymentQuota.assertAvailable(source)
     } catch (error) {
@@ -91,10 +94,10 @@ export function withDeploymentQuota<Ctx extends FormDataContext<object>>(
     try {
       response = await handler(context)
     } catch (error) {
-      if (error instanceof InvalidRequestError && !state.admitted) await countRejected(source)
+      if (state.created || (error instanceof InvalidRequestError && !state.admitted)) await countPartial(source)
       throw error
     }
-    if (response.status === 400 && !state.admitted) await countRejected(source)
+    if (state.created || (response.status === 400 && !state.admitted)) await countPartial(source)
     return response
   }
 

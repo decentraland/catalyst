@@ -51,8 +51,8 @@ export const DEFAULT_MAX_UPLOAD_TOTAL_SIZE = 2 * 1024 * 1024 * 1024 // 2 GiB tot
 // Aggregate bound on POST /entities bodies spooled to temporary files at once across all clients, each
 // file charged 16 KiB on top of its bytes so it also bounds inodes. It must fit one maximum-size request
 // (MAX_UPLOAD_TOTAL_SIZE plus the charge for MAX_UPLOAD_FILE_COUNT files); unset, it is this default or that
-// size, whichever is larger. Partial batches are exempt from the per-IP daily quota below and are bounded by this budget, its per-source share and their account's
-// byte quotas instead.
+// size, whichever is larger. A partial upload counts once against the per-IP daily quota below, and its
+// batches are bounded by this budget, its per-source share and their account's byte quotas.
 export const DEFAULT_MAX_IN_FLIGHT_UPLOAD_BYTES = 4 * 1024 * 1024 * 1024 // 4 GiB
 // Aggregate bound on regular deployment files read into memory at once. Partial batches stream their
 // content from disk; only their entity file counts, held until the batch is staged. It must fit one MAX_UPLOAD_TOTAL_SIZE
@@ -89,8 +89,8 @@ export const DEFAULT_POST_ENTITIES_RATE_LIMIT_WINDOW_SECONDS = 60
 // Daily quota for POST /entities. A second, independent rate-limit bucket that caps the total
 // number of deployments a single IP can make in a 24-hour rolling window. This catches attackers
 // who stay just below the per-minute burst limit but sustain high volume over hours. It counts regular
-// deployments; once an IP has spent it, its requests are rejected before their body is read unless
-// they declare a partial batch with `POST /entities?partial=true`.
+// deployments and partial uploads (once, when created); once an IP has spent it, its requests are
+// rejected before their body is read unless they declare a partial batch with `?partial=true`.
 export const DEFAULT_POST_ENTITIES_DAILY_QUOTA_MAX = 300
 
 // Catalyst runs behind catalyst-owner's nginx, which forwards the connecting address in `X-Real-IP`
