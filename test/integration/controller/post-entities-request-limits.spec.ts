@@ -342,6 +342,28 @@ describe('Integration - POST /entities request limits', () => {
     })
   })
 
+  describe('when a source creates a partial upload, resumes it and then sends a regular deployment', () => {
+    let batches: number[]
+    let status: number
+
+    beforeEach(async () => {
+      const upload = await prepareSceneDeployment(['130,130'], uniqueContents(3), identity)
+      const [firstBatch, secondBatch] = partialBatches(upload)
+      // One resume only: a fourth request would trip the burst limit first.
+      batches = [
+        await postFrom('203.0.113.14', buildPartialForm(upload, firstBatch), '?partial=true'),
+        await postFrom('203.0.113.14', buildPartialForm(upload, secondBatch), '?partial=true')
+      ]
+      const deployment = await prepareSceneDeployment(['135,130'], uniqueContents(1), identity)
+      const keys = [deployment.entityId, ...deployment.contentHashes]
+      status = await postFrom('203.0.113.14', buildPartialForm(deployment, keys, false))
+    })
+
+    it('should count only the creation against its daily quota', () => {
+      expect({ batches, status }).toEqual({ batches: [202, 202], status: 200 })
+    })
+  })
+
   describe('when a source already has its share of uploads in flight', () => {
     let stalled: ClientRequest[]
     let acquire: jest.SpyInstance

@@ -6,6 +6,7 @@ import { createClientSourceResolver } from './client-source'
 import { InvalidRequestError } from './errors'
 
 type QuotaComponents = Pick<AppComponents, 'deploymentQuota' | 'env'>
+type CountingComponents = Pick<AppComponents, 'deploymentQuota' | 'env' | 'logs'>
 
 /** The daily quota's state for a partial batch, shared with the handler. */
 export type PartialQuotaState = {
@@ -64,24 +65,30 @@ export function createDeploymentQuotaAdmission(
  * whose form isn't partial. Partial batches of a spent source may only resume the signer's own upload.
  */
 export function withDeploymentQuota<Ctx extends FormDataContext<object>>(
-  components: QuotaComponents,
+  components: CountingComponents,
   handler: (context: Ctx) => Promise<IHttpServerComponent.IResponse>
 ): (context: Ctx) => Promise<IHttpServerComponent.IResponse> {
-  const { deploymentQuota } = components
+  const { deploymentQuota, logs } = components
+  const logger = logs.getLogger('deployment-quota')
   const sourceOf = createClientSourceResolver(components)
 
-  // A counted partial batch keeps its own answer even if it spends the quota.
+  // A counted partial batch keeps its own answer, even if counting spends the quota or fails.
   async function countPartial(source: string): Promise<void> {
     try {
       await deploymentQuota.consume(source)
     } catch (error) {
-      if (!(error instanceof DeploymentQuotaExceededError)) throw error
+      if (!(error instanceof DeploymentQuotaExceededError)) {
+        logger.warn('Failed to count a partial batch against the daily deployment quota', {
+          error: error instanceof Error ? error.message : String(error)
+        })
+      }
     }
   }
 
   async function handlePartial(context: Ctx): Promise<IHttpServerComponent.IResponse> {
     const source = sourceOf(context)
     const state: PartialQuotaState = { admitted: false, created: false }
+    // Checked now, counted once settled: parallel creations may overshoot, bounded by the upload caps.
     try {
       await deploymentQuota.assertAvailable(source)
     } catch (error) {
