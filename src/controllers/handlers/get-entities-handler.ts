@@ -1,5 +1,5 @@
 import { EntityContentItemReference } from '@dcl/hashing'
-import { Entity, EntityType } from '@dcl/schemas'
+import { Entity } from '@dcl/schemas'
 import { HandlerContextWithPath, parseEntityType } from '../../types'
 import { EnvironmentConfig } from '../../Environment'
 
@@ -24,7 +24,7 @@ export async function getEntitiesHandler(
   context: HandlerContextWithPath<'activeEntities' | 'database' | 'queryParams' | 'denylist' | 'env', '/entities/:type'>
 ) {
   const { database, activeEntities, queryParams, denylist, env } = context.components
-  const type: EntityType = parseEntityType(context.params.type)
+  const type = parseEntityType(context.params.type)
   const parsedParams = queryParams.qsParser(context.url.searchParams)
 
   const pointers: string[] = queryParams

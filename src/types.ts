@@ -209,13 +209,15 @@ export type IStatusCapableComponent = {
   getComponentStatus(): Promise<StatusProbeResult>
 }
 
-export function parseEntityType(strType: string): EntityType {
-  if (strType.endsWith('s')) {
-    strType = strType.slice(0, -1)
-  }
-  strType = strType.toUpperCase().trim()
-  const type = EntityType[strType]
-  return type
+// Exact values plus an "s" plural for values that are not already plural (e.g. scenes, but not outfitss).
+const ENTITY_TYPES_BY_NAME = new Map<string, EntityType>()
+for (const type of Object.values(EntityType)) {
+  ENTITY_TYPES_BY_NAME.set(type, type)
+  if (!type.endsWith('s')) ENTITY_TYPES_BY_NAME.set(`${type}s`, type)
+}
+
+export function parseEntityType(strType: string): EntityType | undefined {
+  return ENTITY_TYPES_BY_NAME.get(strType.trim().toLowerCase())
 }
 
 export type DeploymentId = number
