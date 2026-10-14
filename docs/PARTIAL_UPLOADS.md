@@ -7,9 +7,9 @@ A scene too large for one request can be uploaded to `POST /entities` in several
 Every batch is a regular `POST /entities` multipart form (`entityId`, `authChain`, files keyed by their content hash) plus:
 
 - the form field `partial=true`, which makes the request a batch;
-- the query parameter `?partial=true` (recommended), which declares the batch before its body is read, so the per-IP daily quota of regular deployments doesn't turn it away. The query parameter without the form field gets a `400`.
+- the query parameter `?partial=true` (recommended), which declares the batch before its body is read, so two checks regular deployments get then don't apply: the per-IP daily quota, so a source that spent it can still resume its own uploads (checked once the body is parsed), and the in-memory deployment budget (`MAX_IN_MEMORY_DEPLOYMENT_BYTES`), since batches stream from disk. The query parameter without the form field gets a `400`.
 
-An upload counts once against that daily quota, when its first batch creates it. Batches that resume it don't count; batches rejected before joining an upload do. Once a source has spent the quota, it may only resume uploads its signer started.
+An upload counts once against that daily quota, when its first batch creates it. Batches that resume it don't count; batches rejected with a `400` before joining an upload do, while those throttled with a `429` don't. Once a source has spent the quota, it may only resume uploads its signer started.
 
 The first batch must carry the entity file. Later batches may omit it if they are signed by the account that started the upload. Each file must hash to its field name.
 
@@ -33,16 +33,16 @@ Content already on the server is never listed as missing. Publication runs the s
 
 `429` quotas, with the `reason` label of `dcl_partial_upload_throttled_total`:
 
-| Reason                        | Limit                                                                             | `Retry-After`                                                   |
-| ----------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| `uploads_per_account`         | `MAX_PENDING_DEPLOYMENTS_PER_DEPLOYER`                                            | The first cleanup run after the oldest charged upload expires.  |
-| `uploads_per_pointer`         | `MAX_PENDING_UPLOADS_PER_POINTER` live uploads on any one parcel, across accounts | When the oldest live upload on a full parcel expires.           |
-| `uploads_per_pointer_account` | All but one of those (at least 1) for one account                                 | When the account's oldest live upload on a full parcel expires. |
-| `bytes_per_account`           | `MAX_PENDING_BYTES_PER_DEPLOYER`                                                  | The first cleanup run after the oldest charged upload expires.  |
-| `bytes_per_server`            | `MAX_PENDING_BYTES`                                                               | Same, over every account's uploads.                             |
-| `bytes_per_minute`            | `MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE`                                             | Time left in the account's one-minute window.                   |
-| `entity_rate_limit`           | Per-pointer deployment rate limit                                                 | Time until the pointers' limit clears.                          |
-| `pointer_conflict`            | Another deployment of the same pointers is in flight                              | 5 s.                                                            |
+| Reason                        | Limit                                                                             | `Retry-After`                                                           |
+| ----------------------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `uploads_per_account`         | `MAX_PENDING_DEPLOYMENTS_PER_DEPLOYER`                                            | The first cleanup run after the oldest charged upload expires.          |
+| `uploads_per_pointer`         | `MAX_PENDING_UPLOADS_PER_POINTER` live uploads on any one parcel, across accounts | When every full parcel's oldest live upload has expired.                |
+| `uploads_per_pointer_account` | All but one of those (at least 1) for one account                                 | When the account's oldest live upload on every full parcel has expired. |
+| `bytes_per_account`           | `MAX_PENDING_BYTES_PER_DEPLOYER`                                                  | The first cleanup run after the oldest charged upload expires.          |
+| `bytes_per_server`            | `MAX_PENDING_BYTES`                                                               | Same, over every account's uploads.                                     |
+| `bytes_per_minute`            | `MAX_PARTIAL_UPLOAD_BYTES_PER_MINUTE`                                             | Time left in the account's one-minute window.                           |
+| `entity_rate_limit`           | Per-pointer deployment rate limit                                                 | Time until the pointers' limit clears.                                  |
+| `pointer_conflict`            | Another deployment of the same pointers is in flight                              | 5 s.                                                                    |
 
 The per-source limits (`MAX_CONCURRENT_UPLOADS_PER_SOURCE`, `MAX_IN_FLIGHT_UPLOAD_BYTES_PER_SOURCE`) and the per-minute burst limit (`POST_ENTITIES_RATE_LIMIT_MAX`) also answer `429` with `Retry-After`, before the body is read.
 

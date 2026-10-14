@@ -20,7 +20,10 @@ export type StageDeploymentInput = {
   entityFile?: Uint8Array
   /** When the request arrived (epoch ms), before its body was read. A new upload's lifetime starts here. */
   requestedAt: number
-  /** Called once the batch joins its upload: `created` within its budgets, or resumed by its creator. */
+  /**
+   * Called once the batch joins its upload; `created` is true when this batch created it within its budgets,
+   * false when it resumed its creator's upload.
+   */
   onAdmitted?: (admission: { created: boolean }) => void
 }
 
