@@ -148,6 +148,28 @@ function parseNonNegativeIntEnv(name: string, defaultValue: number): number {
 }
 
 /**
+ * Collects the `<prefix><ENTITY_TYPE>` env vars into a map keyed by entity type. Suffixes that are not
+ * an entity type are skipped with a warning (no logger exists while the config is being built).
+ */
+function parseEntityTypeEnvMap(
+  prefix: string,
+  parseValue: (name: string, value: string) => number
+): Map<EntityType, number> {
+  const result = new Map<EntityType, number>()
+  for (const [name, value] of Object.entries(process.env)) {
+    if (!name.startsWith(prefix) || !value) continue
+    const suffix = name.slice(prefix.length)
+    const type = parseEntityType(suffix)
+    if (!type) {
+      console.warn(`Ignoring ${name}: "${suffix}" is not an entity type`)
+      continue
+    }
+    result.set(type, parseValue(name, value))
+  }
+  return result
+}
+
+/**
  * Like `parseNonNegativeIntEnv` but rejects `0`. For a rate limit neither bound may be zero: a `max`
  * of 0 rejects every request and a window of 0 is not a window at all. Flooring up to 1 (as
  * `ENTITIES_CACHE_SIZE` does) would turn a typo into a 1-request-per-window outage that looks like
@@ -751,35 +773,19 @@ export class EnvironmentBuilder {
      * These are configured as 'DEPLOYMENT_RATE_LIMIT_MAX_{ENTITY_TYPE}=MAX_SIZE'.
      * For example: 'DEPLOYMENT_RATE_LIMIT_MAX_PROFILE=300'
      */
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DEPLOYMENT_RATE_LIMIT_MAX, () => {
-      const rateLimitMaxConfig: Map<EntityType, number> = new Map(
-        Object.entries(process.env)
-          .filter(([name, value]) => name.startsWith('DEPLOYMENT_RATE_LIMIT_MAX_') && !!value)
-          .map(([name]) => {
-            // Strict parse (same rules as parseNonNegativeIntEnv, which reads process.env[name]) so a
-            // mistyped value like "1_000" or "256MB" is rejected rather than silently truncated to a
-            // far-too-low rate-limit cap.
-            const parsed = parseNonNegativeIntEnv(name, 0)
-            return [parseEntityType(name.replace('DEPLOYMENT_RATE_LIMIT_MAX_', '')) as EntityType, parsed]
-          })
-      )
-      return rateLimitMaxConfig ?? new Map()
-    })
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DEPLOYMENT_RATE_LIMIT_MAX, () =>
+      // Strict parse (same rules as parseNonNegativeIntEnv, which reads process.env[name]) so a
+      // mistyped value like "1_000" or "256MB" is rejected rather than silently truncated to a
+      // far-too-low rate-limit cap.
+      parseEntityTypeEnvMap('DEPLOYMENT_RATE_LIMIT_MAX_', (name) => parseNonNegativeIntEnv(name, 0))
+    )
     /*
      * These are configured as 'DEPLOYMENT_RATE_LIMIT_TTL_{ENTITY_TYPE}=MAX_SIZE'.
      * For example: 'DEPLOYMENT_RATE_LIMIT_TTL_PROFILE=1m'
      */
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DEPLOYMENT_RATE_LIMIT_TTL, () => {
-      const rateLimitTtlConfig: Map<EntityType, number> = new Map(
-        Object.entries(process.env)
-          .filter(([name, value]) => name.startsWith('DEPLOYMENT_RATE_LIMIT_TTL_') && !!value)
-          .map(([name, value]) => [
-            parseEntityType(name.replace('DEPLOYMENT_RATE_LIMIT_TTL_', '')) as EntityType,
-            ms(value ?? '1m')
-          ])
-      )
-      return rateLimitTtlConfig ?? new Map()
-    })
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DEPLOYMENT_RATE_LIMIT_TTL, () =>
+      parseEntityTypeEnvMap('DEPLOYMENT_RATE_LIMIT_TTL_', (_name, value) => ms(value))
+    )
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.VALIDATE_API, () => process.env.VALIDATE_API == 'true')
 
