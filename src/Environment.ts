@@ -98,10 +98,12 @@ export const DEFAULT_POST_ENTITIES_DAILY_QUOTA_MAX = 300
 // ~38 GB) over several hours: nginx's `limit_req` zones on `/content/*` are keyed on `$uri`, so a
 // bootstrap-style client requesting a different hash every time never repeats a key and never
 // trips them — see the note on `DEFAULT_POST_ENTITIES_RATE_LIMIT_MAX` above, which is the same
-// gap for POST. 300 req/min is well above any single legitimate client's steady fetch rate
-// (comparable to `POST_ENTITIES_RATE_LIMIT_MAX`'s headroom) and far below the ~1,000-2,700 req/min
-// sustained by that incident's traffic. Tune per node if it hosts an unusually large catch-up load.
-export const DEFAULT_CONTENT_GET_RATE_LIMIT_MAX = 300
+// gap for POST. The burst budget was raised from 300 to 1000 req/min after a review of 429s across the
+// `peer*` hosts showed regular residential and mobile-ISP clients reaching ~400-1,000 content requests in
+// a single minute while loading scenes. Bulk scripts sit well above that (~1.9k-8k req/min), and the hourly
+// and daily quotas below still bound any sustained crawler such as the 2026-10-04 incident (~1,000-2,700
+// req/min), so only the short burst allowance grows. Tune per node if it hosts an unusually large catch-up load.
+export const DEFAULT_CONTENT_GET_RATE_LIMIT_MAX = 1000
 export const DEFAULT_CONTENT_GET_RATE_LIMIT_WINDOW_SECONDS = 60
 
 // Hourly and daily quotas for GET/HEAD /contents/:hashId, independent buckets layered on top of the

@@ -90,7 +90,7 @@ describe('when reading the GET /contents rate limit configuration', () => {
       env = await new EnvironmentBuilder().build()
     })
 
-    it('should default to 300 requests per 60 second window', () => {
+    it('should default to 1000 requests per 60 second window', () => {
       expect([
         env.getConfig(EnvironmentConfig.CONTENT_GET_RATE_LIMIT_MAX),
         env.getConfig(EnvironmentConfig.CONTENT_GET_RATE_LIMIT_WINDOW_SECONDS)
