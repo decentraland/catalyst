@@ -43,7 +43,7 @@ test: test the feature
 What should my pr title be in this case? You should look at what is going to be bumped in the table above and give priority to `major`, then `minor`, and for last `patch`. So for this example, the pr title will look like this
 
 ```
-feat: not neccesarily the same description as the commit's
+feat: not necessarily the same description as the commit's
 ```
 
 If your commits are tied in terms of priority, for example, if you only have `docs`, `chore`, and `fix`, select the one that you feel it is more descriptive or more predominant.
