@@ -72,7 +72,8 @@ async function createExternalCallsBag(
     // How many size fetches calculateDeploymentSize may run at once (only the sync path fetches these).
     // Controlled by CONTENT_SIZE_FETCH_CONCURRENCY (default 10); set to 1 for the sequential behavior.
     fetchContentFileSizeConcurrency: components.env.getConfig<number>(EnvironmentConfig.CONTENT_SIZE_FETCH_CONCURRENCY),
-    // The validator's newer @dcl/schemas adds link types @dcl/crypto rejects at runtime.
+    // Casts bridge the validator's newer @dcl/schemas: crypto 3.7.0 validates unknown link types with
+    // ERROR_VALIDATOR, which empties the authority so the chain's next link fails.
     ownerAddress: (auditInfo) => Authenticator.ownerAddress(auditInfo.authChain as AuthChain),
     isAddressOwnedByDecentraland: (address: string) => components.crypto.isAddressOwnedByDecentraland(address),
     validateSignature: (entityId, auditInfo, timestamp) =>
