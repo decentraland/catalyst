@@ -143,7 +143,7 @@ The `auth_chain` column stores an array of authentication links:
 [
   {
     "type": "SIGNER",
-    "payload": "0xd9b96b5dc720fc52bede1ec3b40a930e15f70ddd",
+    "payload": "0x1111222233334444555566667777888899990000",
     "signature": ""
   },
   {
