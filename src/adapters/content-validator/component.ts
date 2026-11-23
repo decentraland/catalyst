@@ -24,7 +24,7 @@ import { createTheGraphClient } from '@dcl/content-validator/dist/validations/ac
 import { entityParameters } from '@dcl/content-validator/dist/validations/ADR51'
 import { EntityType } from '@dcl/schemas'
 import { toCoreFetcher } from '../../logic/to-core-fetcher'
-import { Authenticator } from '@dcl/crypto'
+import { AuthChain, Authenticator } from '@dcl/crypto'
 import { hashV0, hashV1 } from '@dcl/hashing'
 import { createSubgraphComponent } from '@dcl/thegraph-component'
 import { HTTPProvider } from 'eth-connect'
@@ -72,10 +72,11 @@ async function createExternalCallsBag(
     // How many size fetches calculateDeploymentSize may run at once (only the sync path fetches these).
     // Controlled by CONTENT_SIZE_FETCH_CONCURRENCY (default 10); set to 1 for the sequential behavior.
     fetchContentFileSizeConcurrency: components.env.getConfig<number>(EnvironmentConfig.CONTENT_SIZE_FETCH_CONCURRENCY),
-    ownerAddress: (auditInfo) => Authenticator.ownerAddress(auditInfo.authChain),
+    // The validator's newer @dcl/schemas adds link types @dcl/crypto rejects at runtime.
+    ownerAddress: (auditInfo) => Authenticator.ownerAddress(auditInfo.authChain as AuthChain),
     isAddressOwnedByDecentraland: (address: string) => components.crypto.isAddressOwnedByDecentraland(address),
     validateSignature: (entityId, auditInfo, timestamp) =>
-      components.crypto.validateSignature(entityId, auditInfo.authChain, timestamp),
+      components.crypto.validateSignature(entityId, auditInfo.authChain as AuthChain, timestamp),
     calculateFilesHashes
   }
 }
