@@ -560,15 +560,15 @@
   dependencies:
     ethers "^5.6.8"
 
-"@dcl/content-validator@^8.1.0":
-  version "8.1.0"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-8.1.0.tgz#2207cd414cc14c3cb1effae37676d5d4b516b62c"
-  integrity sha512-viWvoolSis/lwQXXotFyQ9ycLdmORkahzIIlqXuUO9HoOKuZlg0H+yjnA6da6Hk7Om6fzUjAvTiRf8k2UAHilw==
+"@dcl/content-validator@^8.2.0":
+  version "8.2.0"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-8.2.0.tgz#be83a6075265942ba3c948a9e82705cf2dec32d7"
+  integrity sha512-P2+z6KOqSZGVMn0aYoyWSdi170BnS8q+2GOAugf/636H6kctdTKf4FEcZd7nsp1C752RjQBWeYrQE7Ve8rrzKg==
   dependencies:
     "@dcl/block-indexer" "^1.1.2"
     "@dcl/content-hash-tree" "^1.1.4"
     "@dcl/hashing" "1.2.0"
-    "@dcl/schemas" "^27.0.0"
+    "@dcl/schemas" "^27.3.0"
     "@dcl/urn-resolver" "3.6.1"
     "@well-known-components/interfaces" "^1.4.3"
     "@well-known-components/thegraph-component" "^1.6.0"
@@ -709,10 +709,20 @@
     ajv-keywords "^5.1.0"
     mitt "^3.0.1"
 
-"@dcl/schemas@^27.0.0", "@dcl/schemas@^27.2.0":
+"@dcl/schemas@^27.2.0":
   version "27.2.0"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-27.2.0.tgz#451b2483159b1dc1676643953b03fd13efd42f75"
   integrity sha512-VoiwWqskTa9bXAp4X64yyYhZCfVcE77NyHP/1C746DA5IhA1OkCDn6JSrDzgRfkxmFcWOU7j3VVNtGBllYCYlw==
+  dependencies:
+    ajv "^8.11.0"
+    ajv-errors "^3.0.0"
+    ajv-keywords "^5.1.0"
+    mitt "^3.0.1"
+
+"@dcl/schemas@^27.3.0":
+  version "27.4.0"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-27.4.0.tgz#54637f002a5f2add017411bc28055421830239d7"
+  integrity sha512-UoY1BjnK5Kwc1MsWnyN3nyhtAnkSNOfVg4UtVTQg0IhDhJNj7q6SOMYVQocRh/RwKYqGw8fsE32/FOr/MElNkA==
   dependencies:
     ajv "^8.11.0"
     ajv-errors "^3.0.0"
